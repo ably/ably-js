@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="ably-script" default="gen-ably-js-gz">
+<project name="ably-script" default="gen-ably">
 
     <!-- Concat all JavaScript files -->
-    <target name="gen-raw-js">
-        <concat destfile="ably.raw.js">
+    <target name="gen-ably-js">
+        <concat destfile="ably.js">
             <filelist dir="${basedir}">
                 <file name="prologue.js"/>
             </filelist>
@@ -62,17 +62,26 @@
         classpath="../../aardvark-realtime/tools/closure-compiler/compiler.jar"/>
 
     <!-- Use closure compiler to minify JavaScript -->
-    <target name="gen-ably-js" depends="gen-raw-js">
+    <target name="gen-ably-min-js" depends="gen-ably-js">
     	<!-- Available compilation levels: advanced, simple, whitespace -->
-        <jscompiler compilationlevel="whitespace" prettyPrint="true" output="ably.js">
+        <jscompiler compilationlevel="simple" prettyPrint="true" output="ably.min.js">
             <sources dir="${basedir}">
-                <file name="ably.raw.js"/>
+                <file name="ably.js"/>
             </sources>
         </jscompiler>
     </target>
 
 	<!-- Gzip -->
+    <target name="gen-ably-min-js-gz" depends="gen-ably-min-js">
+        <gzip src="ably.min.js" destfile="ably.min.js.gz" /> 
+    </target>
     <target name="gen-ably-js-gz" depends="gen-ably-js">
         <gzip src="ably.js" destfile="ably.js.gz" /> 
     </target>
+
+	<!-- All (default target) -->
+    <target name="gen-ably" depends="gen-ably-js,gen-ably-min-js,gen-ably-js-gz,gen-ably-min-js-gz">
+        <gzip src="ably.js" destfile="ably.js.gz" /> 
+    </target>
+
 </project>
