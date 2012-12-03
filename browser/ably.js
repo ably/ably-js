@@ -4106,14 +4106,14 @@ var Transport = (function() {
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-	var hasBuffer = isBrowser ? window.ArrayBuffer : Buffer;
+//	var hasBuffer = isBrowser ? window.ArrayBuffer : Buffer;
+	var hasBuffer = isBrowser ? false : Buffer;
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var thrift = isBrowser ? Thrift : require('thrift');
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, options) {
-//		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
-		options.useTextProtocol = true;
+		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
 		var binary = !options.useTextProtocol;
 		this.sendOptions = {binary: binary};
 		Transport.call(this, connectionManager, auth, options);
