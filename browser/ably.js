@@ -10,15 +10,14 @@ var UIMessages = {
 };
 var Defaults = {
 	protocolVersion:   1,
-	HOST:              'rt0.ably.io',
-	HOST_CDN:          'localhost',
-	HOST_DEBUG:        'sandbox.ably.io',
-	PATH:              '/',
-	HTTP_PORT:         8092,
-	HTTPS_PORT:        443,
-	WS_PORT:           8080,
+	REST_HOST_DEBUG:   'rest-debug.ably.io',
+	REST_HOST:         'rest.ably.io',
+	CDN_HOST:          'rest.ably.io',
+	WS_HOST_DEBUG:     'realtime-debug.ably.io',
+	WS_HOST:           'realtime.ably.io',
+	WS_PORT:           80,
 	WSS_PORT:          443,
-	STATIC_PATH:       '/',
+	HOST_DEBUG:        'sandbox.ably.io',
 	connectTimeout:    20000,
 	disconnectTimeout: 60000,
 	suspendedTimeout:  120000,
@@ -3968,7 +3967,7 @@ var ConnectionManager = (function() {
 			if(queueEvents) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing event');
 				var lastPending = this.pendingMessages[this.pendingMessages.length - 1];
-				if(lastPending && Channel.mergeTo(lastPending.msg, msg)) {
+				if(lastPending && RealtimeChannel.mergeTo(lastPending.msg, msg)) {
 					if(!lastPending.isMerged) {
 						lastPending.callback = new Multicaster([lastPending.callback]);
 						lastPending.isMerged = true;
@@ -4113,8 +4112,9 @@ var WebSocketTransport = (function() {
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, options) {
-		var binary = !(options.useTextProtocol |= !hasBuffer);
-		if(!hasBuffer) options.useTextProtocol = true;
+//		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
+		options.useTextProtocol = true;
+		var binary = !options.useTextProtocol;
 		this.sendOptions = {binary: binary};
 		Transport.call(this, connectionManager, auth, options);
 	}
@@ -4157,7 +4157,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this;
-		var host = this.options.host;
+		var host = this.options.wsHost;
 		var port = this.options.wsPort;
 		var wsScheme = this.options.encrypted ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + host + ':' + port + '/applications/' + this.options.appId;
@@ -4194,7 +4194,9 @@ var WebSocketTransport = (function() {
 		var self = this;
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				self.wsConnection.send(data, self.sendOptions);
+				/* here data is either a native Buffer (in the node case) or a Thrift Buffer or CheckedBuffer
+				 * (in the browser case) */
+				self.wsConnection.send((data.buf || data), self.sendOptions);
 				callback(null);
 			}));
 			msg.write(protocol);
@@ -4210,7 +4212,7 @@ var WebSocketTransport = (function() {
 		var protocol = binary
 			? new thrift.TBinaryProtocol(new thrift.TTransport(data))
 			: new thrift.TJSONProtocol(new thrift.TStringTransport(data));
-					
+
 		var message = new messagetypes.TChannelMessage();
 		try {
 			message.read(protocol);
@@ -4294,7 +4296,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this;
-		var host = this.options.host;
+		var host = this.options.wsHost;
 		var port = this.options.wsPort;
 		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
 
@@ -5099,11 +5101,13 @@ var Realtime = this.Realtime = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
-		var host = options.host = options.host || (options.debug ? Defaults.HOST_DEBUG : Defaults.HOST);
+		var restHost = options.restHost = options.restHost || (options.debug ? Defaults.REST_HOST_DEBUG : Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
-		var wsPort = options.wsPort = options.encrypted ? restPort : (options.port || Defaults.WS_PORT);
-		var authority = this.authority = 'https://' + host + ':' + restPort;
+		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
+
+		var wsHost = options.wsHost = options.wsHost || (options.debug ? Defaults.WS_HOST_DEBUG : Defaults.WS_HOST);
+		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		var format = options.format == 'json';
 		var headers = Utils.defaultHeaders[format];
