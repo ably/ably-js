@@ -7,8 +7,9 @@ var WebSocketTransport = (function() {
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, options) {
-		var binary = !(options.useTextProtocol |= !hasBuffer);
-		if(!hasBuffer) options.useTextProtocol = true;
+//		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
+		options.useTextProtocol = true;
+		var binary = !options.useTextProtocol;
 		this.sendOptions = {binary: binary};
 		Transport.call(this, connectionManager, auth, options);
 	}
@@ -51,7 +52,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this;
-		var host = this.options.host;
+		var host = this.options.wsHost;
 		var port = this.options.wsPort;
 		var wsScheme = this.options.encrypted ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + host + ':' + port + '/applications/' + this.options.appId;
@@ -88,7 +89,9 @@ var WebSocketTransport = (function() {
 		var self = this;
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				self.wsConnection.send(data, self.sendOptions);
+				/* here data is either a native Buffer (in the node case) or a Thrift Buffer or CheckedBuffer
+				 * (in the browser case) */
+				self.wsConnection.send((data.buf || data), self.sendOptions);
 				callback(null);
 			}));
 			msg.write(protocol);
@@ -104,7 +107,7 @@ var WebSocketTransport = (function() {
 		var protocol = binary
 			? new thrift.TBinaryProtocol(new thrift.TTransport(data))
 			: new thrift.TJSONProtocol(new thrift.TStringTransport(data));
-					
+
 		var message = new messagetypes.TChannelMessage();
 		try {
 			message.read(protocol);

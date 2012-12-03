@@ -33,7 +33,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this;
-		var host = this.options.host;
+		var host = this.options.wsHost;
 		var port = this.options.wsPort;
 		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
 

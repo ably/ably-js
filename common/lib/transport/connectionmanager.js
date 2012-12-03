@@ -291,7 +291,7 @@ var ConnectionManager = (function() {
 			if(queueEvents) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing event');
 				var lastPending = this.pendingMessages[this.pendingMessages.length - 1];
-				if(lastPending && Channel.mergeTo(lastPending.msg, msg)) {
+				if(lastPending && RealtimeChannel.mergeTo(lastPending.msg, msg)) {
 					if(!lastPending.isMerged) {
 						lastPending.callback = new Multicaster([lastPending.callback]);
 						lastPending.isMerged = true;
