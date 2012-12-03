@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="ably-script" default="gen-ably">
 
+	<!-- tools (gets closure compiler) -->
+    <target name="tools">
+        <mkdir dir="../tools/closure-compiler" />
+        <get src="http://closure-compiler.googlecode.com/files/compiler-latest.zip" dest="../tools/closure-compiler" />
+        <unzip src="../tools/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
+    </target>
+
     <!-- Concat all JavaScript files -->
     <target name="gen-ably-js">
         <concat destfile="ably.js">
@@ -57,12 +64,12 @@
         </concat>
     </target>
 
-    <!-- Task for the Google Closure Compiler for JavaScript minification -->
-    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
-        classpath="../tools/closure-compiler/compiler.jar"/>
-
     <!-- Use closure compiler to minify JavaScript -->
     <target name="gen-ably-min-js" depends="gen-ably-js">
+	    <!-- Task for the Google Closure Compiler for JavaScript minification -->
+	    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
+	        classpath="../tools/closure-compiler/compiler.jar"/>
+
     	<!-- Available compilation levels: advanced, simple, whitespace -->
         <jscompiler compilationlevel="simple" prettyPrint="true" output="ably.min.js">
             <sources dir="${basedir}">
