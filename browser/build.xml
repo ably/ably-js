@@ -59,7 +59,7 @@
 
     <!-- Task for the Google Closure Compiler for JavaScript minification -->
     <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
-        classpath="../../aardvark-realtime/tools/closure-compiler/compiler.jar"/>
+        classpath="../tools/closure-compiler/compiler.jar"/>
 
     <!-- Use closure compiler to minify JavaScript -->
     <target name="gen-ably-min-js" depends="gen-ably-js">
