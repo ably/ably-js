@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ably-script" default="gen-ably-js-gz">
+
+    <!-- Concat all JavaScript files -->
+    <target name="gen-raw-js">
+        <concat destfile="ably.raw.js">
+            <filelist dir="${basedir}">
+                <file name="prologue.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../common/lib">
+                <file name="client/uimessages.js"/>
+                <file name="transport/defaults.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../../thrift">
+                <file name="lib/js/util.js"/>
+                <file name="lib/js/int64.js"/>
+                <file name="lib/js/thrift.js"/>
+                <file name="lib/js/buffer.js"/>
+                <file name="lib/js/protocol.js"/>
+                <file name="lib/js/transport.js"/>
+            </filelist>
+            <filelist dir="${basedir}">
+                <file name="protocol/clientmessage_decls.js"/>
+                <file name="protocol/clientmessage_types.js"/>
+                <file name="protocol/clientmessage_refs.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../../web-socket-js">
+                <!-- flash support -->
+                <file name="swfobject.js"/>
+                <file name="web_socket.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../common/lib">
+                <file name="util/eventemitter.js"/>
+                <file name="util/logger.js"/>
+                <file name="util/utils.js"/>
+                <file name="util/multicaster.js"/>
+                <file name="transport/connectionmanager.js"/>
+                <file name="transport/transport.js"/>
+                <file name="transport/websockettransport.js"/>
+                <file name="transport/comettransport.js"/>
+                <file name="transport/xhrtransport.js"/>
+                <file name="transport/jsonptransport.js"/>
+                <file name="transport/flashtransport.js"/>
+                <file name="client/resource.js"/>
+                <file name="client/auth.js"/>
+                <file name="client/realtime.js"/>
+                <file name="client/connectionstatechange.js"/>
+                <file name="client/connection.js"/>
+                <file name="client/channel.js"/>
+                <file name="client/realtimechannel.js"/>
+                <file name="client/presence.js"/>
+                <file name="client/message.js"/>
+            </filelist>
+            <filelist dir="${basedir}">
+                <file name="epilogue.js"/>
+            </filelist>
+        </concat>
+    </target>
+
+    <!-- Task for the Google Closure Compiler for JavaScript minification -->
+    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
+        classpath="../../aardvark-realtime/tools/closure-compiler/compiler.jar"/>
+
+    <!-- Use closure compiler to minify JavaScript -->
+    <target name="gen-ably-js" depends="gen-raw-js">
+    	<!-- Available compilation levels: advanced, simple, whitespace -->
+        <jscompiler compilationlevel="whitespace" prettyPrint="true" output="ably.js">
+            <sources dir="${basedir}">
+                <file name="ably.raw.js"/>
+            </sources>
+        </jscompiler>
+    </target>
+
+	<!-- Gzip -->
+    <target name="gen-ably-js-gz" depends="gen-ably-js">
+        <gzip src="ably.js" destfile="ably.js.gz" /> 
+    </target>
+</project>

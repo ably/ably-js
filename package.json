@@ -1,0 +1,18 @@
+{
+  "name": "ably-js",
+  "description": "Realtime messaging client",
+  "version": "0.0.1",
+  "main": "./nodejs/index.js",
+  "dependencies": {
+    "request": "2.x.x",
+    "ws": "0.x.x"
+  },
+  "engines" : {
+    "node" : ">=0.6.21",
+    "npm" : ">= 1.1.0"
+  },
+  "repository":  {
+    "type" : "git",
+    "url" : "git@bitbucket.org:ably/ably-js.git"
+  }
+}
