@@ -10,7 +10,7 @@
 
     <!-- Concat all JavaScript files -->
     <target name="gen-ably-js">
-        <concat destfile="ably.js">
+        <concat destfile="lib/ably.js">
             <filelist dir="${basedir}">
                 <file name="prologue.js"/>
             </filelist>
@@ -71,24 +71,23 @@
 	        classpath="../tools/closure-compiler/compiler.jar"/>
 
     	<!-- Available compilation levels: advanced, simple, whitespace -->
-        <jscompiler compilationlevel="simple" prettyPrint="true" output="ably.min.js">
+        <jscompiler compilationlevel="simple" prettyPrint="true" output="lib/ably.min.js">
             <sources dir="${basedir}">
-                <file name="ably.js"/>
+                <file name="lib/ably.js"/>
             </sources>
         </jscompiler>
     </target>
 
 	<!-- Gzip -->
     <target name="gen-ably-min-js-gz" depends="gen-ably-min-js">
-        <gzip src="ably.min.js" destfile="ably.min.js.gz" /> 
+        <gzip src="lib/ably.min.js" destfile="lib/ably.min.js.gz" /> 
     </target>
     <target name="gen-ably-js-gz" depends="gen-ably-js">
-        <gzip src="ably.js" destfile="ably.js.gz" /> 
+        <gzip src="lib/ably.js" destfile="lib/ably.js.gz" /> 
     </target>
 
 	<!-- All (default target) -->
     <target name="gen-ably" depends="gen-ably-js,gen-ably-min-js,gen-ably-js-gz,gen-ably-min-js-gz">
-        <gzip src="ably.js" destfile="ably.js.gz" /> 
     </target>
 
 </project>
