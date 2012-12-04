@@ -57,37 +57,7 @@ var Realtime = this.Realtime = (function() {
 
 	function Channels(realtime) {
 		this.realtime = realtime;
-		var attached = this.attached = {};
-		var connectionManager = realtime.connection.connectionManager;
-    	connectionManager.on(function(newState, transport) {
-    		Logger.logAction(Logger.LOG_MICRO, 'Channels on connection state', 'newState = ' + newState.current);
-    		switch(newState.current) {
-    		case 'connected':
-    			Logger.logAction(Logger.LOG_MINOR, 'Channels on connection state', 'connected; transport = ' + transport);
-    			transport.on('channelmessage', function(msg) {
-    				var channelName = msg.channel;
-    				if(!channelName) {
-    					Logger.logAction(Logger.LOG_ERROR, 'Channels', 'connected: received event unspecified channel: ' + channelName);
-    					return;
-    				}
-    				var channel = attached[channelName];
-    				if(!channel) {
-    					Logger.logAction(Logger.LOG_ERROR, 'Channels', 'connected: received event for non-existent channel: ' + channelName);
-    					return;
-    				}
-    				channel.onMessage(msg);
-    			});
-    			break;
-    		case 'suspended':
-    		case 'closed':
-    		case 'failed':
-            	var connectionState = connectionManager.state;
-        		for(var channelName in attached)
-    				attached[channelName].setSuspended(connectionState);
-        		break;
-    		default:
-    		}
-    	});
+		this.attached = {};
 	}
 
 	Channels.prototype.get = function(name, options) {

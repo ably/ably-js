@@ -13,9 +13,9 @@ var ConnectionManager = (function() {
 	};
 
 	/* public constructor */
-	function ConnectionManager(ably, options) {
+	function ConnectionManager(realtime, options) {
 		EventEmitter.call(this);
-		this.ably = ably;
+		this.realtime = realtime;
 		this.options = options;
 		this.pendingMessages = [];
 		this.state = states.initialized;
@@ -25,15 +25,53 @@ var ConnectionManager = (function() {
 			if(options.transports[i] in ConnectionManager.availableTransports)
 				transports.push(options.transports[i]);
 		}
-		Logger.logAction(Logger.LOG_MINOR, 'Ably.ConnectionManager()', 'started');
-		Logger.logAction(Logger.LOG_MICRO, 'Ably.ConnectionManager()', 'requested transports = [' + options.transports + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Ably.ConnectionManager()', 'available transports = [' + transports + ']');
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + options.transports + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + transports + ']');
 
 		if(!transports.length) {
 			var msg = 'no requested transports available';
-			Logger.logAction(Logger.LOG_ERROR, 'Ably.ConnectionManager()', msg);
+			Logger.logAction(Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
 			throw new Error(msg);
 		}
+
+		/* generic state change handling */
+    	this.on(function(newState, transport) {
+    		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(connection state)', 'newState = ' + newState.current);
+    		switch(newState.current) {
+    		case 'connected':
+    			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager on(connected)', 'connected; transport = ' + transport);
+    			/* set up handler for events received on this transport */
+    			transport.on('channelmessage', function(msg) {
+    				var channelName = msg.channel;
+    				if(!channelName) {
+    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+    					return;
+    				}
+    				var channel = realtime.channels.attached[channelName];
+    				if(!channel) {
+    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+    					return;
+    				}
+    				channel.onMessage(msg);
+    			});
+    			/* re-attach any previously attached channels
+    			 * FIXME: is this conditional on us being connected with the same connectionId ? */
+    			var attached = realtime.channels.attached;
+        		for(var channelName in attached)
+    				attached[channelName].attachImpl();
+    			break;
+    		case 'suspended':
+    		case 'closed':
+    		case 'failed':
+            	var connectionState = connectionManager.state;
+        		for(var channelName in attached)
+    				attached[channelName].setSuspended(connectionState);
+        		break;
+    		default:
+    		}
+    	});
+
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
@@ -57,7 +95,7 @@ var ConnectionManager = (function() {
 				return;
 			}
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'trying ' + candidate);
-			(ConnectionManager.availableTransports[candidate]).tryConnect(self, self.ably.auth, self.options, function(err, transport) {
+			(ConnectionManager.availableTransports[candidate]).tryConnect(self, self.realtime.auth, self.options, function(err, transport) {
 				if(err) {
 					tryFirstCandidate(tryCb);
 					return;
@@ -78,7 +116,7 @@ var ConnectionManager = (function() {
 		['connected', 'closed', 'failed'].forEach(function(state) {
 			transport.on(state, function(reason, connectionId) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state, 'reason =  ' + reason + '; connectionId = ' + connectionId);
-				self.ably.connection.id = connectionId;
+				self.realtime.connection.id = connectionId;
 				self.notifyState({state:state, reason:reason});
 			});
 		});
@@ -235,7 +273,7 @@ var ConnectionManager = (function() {
 		this.startConnectTimer();
 
 		var self = this;
-		var auth = this.ably.auth;
+		var auth = this.realtime.auth;
 		var connectErr = function(err) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', err);
 			if(err.statusCode == 401 && err.message.indexOf('expire') != -1 && auth.method == 'token') {

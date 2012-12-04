@@ -81,11 +81,14 @@ var RealtimeChannel = (function() {
 				callback(err || connectionManager.state.defaultMessage);
 			}
 		});
+		this.attachImpl();
+    };
 
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending ATTACH message');
+    RealtimeChannel.prototype.attachImpl = function(callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.state = 'pending';
     	var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
-    	this.sendMessage(msg, noop);
+    	this.sendMessage(msg, (callback || noop));
 	};
 
     RealtimeChannel.prototype.detach = function(callback) {
@@ -113,10 +116,13 @@ var RealtimeChannel = (function() {
 				break;
 			}
 		});
+		this.detachImpl();
+	};
 
+	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
     	var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.DETACH, channel: this.name});
-    	this.sendMessage(msg);
+    	this.sendMessage(msg, (callback || noop));
 	};
 
 	var any = '*';
