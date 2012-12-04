@@ -10,16 +10,16 @@ var UIMessages = {
 };
 var Defaults = {
 	protocolVersion:   1,
-	REST_HOST_DEBUG:   'rest-debug.ably.io',
 	REST_HOST:         'rest.ably.io',
-	CDN_HOST:          'rest.ably.io',
-	WS_HOST_DEBUG:     'realtime-debug.ably.io',
 	WS_HOST:           'realtime.ably.io',
 	WS_PORT:           80,
 	WSS_PORT:          443,
-	HOST_DEBUG:        'sandbox.ably.io',
-	connectTimeout:    20000,
-	disconnectTimeout: 60000,
+	CDN_HOST:          'rest.ably.io',
+	CDN_HTTP_PORT:     80,
+	CDN_HTTPS_PORT:    443,
+	CDN_STATIC_PATH:   '/static/0/',
+	connectTimeout:    15000,
+	disconnectTimeout: 30000,
 	suspendedTimeout:  120000,
 	cometRecvTimeout:  90000,
 	cometSendTimeout:  10000,
@@ -2917,10 +2917,10 @@ var FlashWebSocket = (function() {
   var __swfLocation
     = protocol
     + '//'
-    + Defaults.HOST_CDN
+    + Defaults.CDN_HOST
     + ':'
-    + ((protocol == 'https:') ? Defaults.HTTPS_PORT : Defaults.HTTP_PORT)
-    + Defaults.STATIC_PATH
+    + ((protocol == 'https:') ? Defaults.CDN_HTTPS_PORT : Defaults.CDN_HTTP_PORT)
+    + Defaults.CDN_STATIC_PATH
     + 'WebSocketMainInsecure.swf';
 console.log('swf at: ' + __swfLocation);
 
@@ -5101,12 +5101,12 @@ var Realtime = this.Realtime = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
-		var restHost = options.restHost = options.restHost || (options.debug ? Defaults.REST_HOST_DEBUG : Defaults.REST_HOST);
+		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var wsHost = options.wsHost = options.wsHost || (options.debug ? Defaults.WS_HOST_DEBUG : Defaults.WS_HOST);
+		var wsHost = options.wsHost = (options.wsHost || Defaults.WS_HOST);
 		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		var format = options.format == 'json';
