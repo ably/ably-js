@@ -10,12 +10,12 @@ var Realtime = this.Realtime = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
-		var restHost = options.restHost = options.restHost || (options.debug ? Defaults.REST_HOST_DEBUG : Defaults.REST_HOST);
+		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var wsHost = options.wsHost = options.wsHost || (options.debug ? Defaults.WS_HOST_DEBUG : Defaults.WS_HOST);
+		var wsHost = options.wsHost = (options.wsHost || Defaults.WS_HOST);
 		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		var format = options.format == 'json';

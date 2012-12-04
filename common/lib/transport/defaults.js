@@ -1,9 +1,7 @@
 var Defaults = {
 	protocolVersion:   1,
-	REST_HOST_DEBUG:   'rest-debug.ably.io',
 	REST_HOST:         'rest.ably.io',
 	CDN_HOST:          'rest.ably.io',
-	WS_HOST_DEBUG:     'realtime-debug.ably.io',
 	WS_HOST:           'realtime.ably.io',
 	WS_PORT:           80,
 	WSS_PORT:          443,

@@ -9,7 +9,7 @@ var Rest = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
-		var restHost = options.restHost = options.restHost || (options.debug ? Defaults.REST_HOST_DEBUG : Defaults.REST_HOST);
+		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
