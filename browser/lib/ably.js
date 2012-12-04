@@ -3115,6 +3115,8 @@ console.log('swf at: ' + __swfLocation);
   WebSocket.CLOSING = 2;
   WebSocket.CLOSED = 3;
 
+  // Field to check implementation of WebSocket.
+  WebSocket.__isFlashImplementation = true;
   WebSocket.__initialized = false;
   WebSocket.__flash = null;
   WebSocket.__instances = {};
@@ -3249,10 +3251,6 @@ console.log('swf at: ' + __swfLocation);
     }
     return mimeType.enabledPlugin.filename.match(/flashlite/i) ? true : false;
   };
-  
-  swfobject.addDomLoadEvent(function() {
-    WebSocket.__initialize();
-  });
 
   return WebSocket;
 })();
@@ -4683,6 +4681,8 @@ var FlashTransport = (function() {
 		ConnectionManager.availableTransports.flash_socket = FlashTransport;
 
 	FlashTransport.tryConnect = function(connectionManager, auth, options, callback) {
+		/* load the swf if not already loaded */
+		FlashWebSocket.__initialize();
 		var transport = new FlashTransport(connectionManager, auth, options);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
