@@ -172,7 +172,7 @@ var ConnectionManager = (function() {
 		 * can re-select when we re-attempt connection */
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + indicated.state);
 		var newState = states[indicated.state];
-		if(!ConnectionManager.activeState(newState)) {
+		if(!newState.sendEvents) {
 			if(this.transport) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'deleting transport ' + this.transport);
 				this.transport.dispose();
