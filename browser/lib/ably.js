@@ -14,16 +14,13 @@ var Defaults = {
 	WS_HOST:           'realtime.ably.io',
 	WS_PORT:           80,
 	WSS_PORT:          443,
-	CDN_HOST:          'rest.ably.io',
-	CDN_HTTP_PORT:     80,
-	CDN_HTTPS_PORT:    443,
-	CDN_STATIC_PATH:   '/static/0/',
 	connectTimeout:    15000,
 	disconnectTimeout: 30000,
 	suspendedTimeout:  120000,
 	cometRecvTimeout:  90000,
 	cometSendTimeout:  10000,
-	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp']
+	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
+	flashTransport:   {swfLocation: 'swf/WebSocketMainInsecure.swf'}
 };
 var inherits = function(constructor, superConstructor, overrides) {
   function F() {}
@@ -2913,17 +2910,6 @@ var swfobject=function(){var D="undefined",r="object",S="Shockwave Flash",W="Sho
 
 var FlashWebSocket = (function() {
 
-  var protocol = window.location.protocol;
-  var __swfLocation
-    = protocol
-    + '//'
-    + Defaults.CDN_HOST
-    + ':'
-    + ((protocol == 'https:') ? Defaults.CDN_HTTPS_PORT : Defaults.CDN_HTTP_PORT)
-    + Defaults.CDN_STATIC_PATH
-    + 'WebSocketMainInsecure.swf';
-console.log('swf at: ' + __swfLocation);
-
   if (window.console && window.console.log && window.console.error) {
     // In some environment, console is defined but console.log or console.error is missing.
 	logger = window.console;
@@ -3163,7 +3149,7 @@ console.log('swf at: ' + __swfLocation);
     // See this article for hasPriority:
     // http://help.adobe.com/en_US/as3/mobile/WS4bebcd66a74275c36cfb8137124318eebc6-7ffd.html
     swfobject.embedSWF(
-      __swfLocation,
+      Defaults.flashTransport.swfLocation,
       "webSocketFlash",
       "1" /* width */,
       "1" /* height */,
@@ -4672,7 +4658,8 @@ var FlashTransport = (function() {
 		WebSocketTransport.call(this, connectionManager, auth, options);
 	}
 	Utils.inherits(FlashTransport, WebSocketTransport);
-
+window.FlashTransport = FlashTransport;
+window.swfobject = swfobject;
 	FlashTransport.isAvailable = function() {
 		return isBrowser && swfobject && swfobject.getFlashPlayerVersion().major >= 10 && FlashWebSocket;
 	};
