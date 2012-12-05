@@ -341,7 +341,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, events: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i in this.pendingEvents) {
