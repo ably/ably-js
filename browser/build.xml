@@ -85,9 +85,12 @@
     <target name="gen-ably-js-gz" depends="gen-ably-js">
         <gzip src="lib/ably.js" destfile="lib/ably.js.gz" /> 
     </target>
+    <target name="gen-swf-gz">
+        <gzip src="lib/swf/WebSocketMainInsecure.swf" destfile="lib/swf/WebSocketMainInsecure.swf.gz" /> 
+    </target>
 
 	<!-- All (default target) -->
-    <target name="gen-ably" depends="gen-ably-js,gen-ably-min-js,gen-ably-js-gz,gen-ably-min-js-gz">
+    <target name="gen-ably" depends="gen-ably-js,gen-ably-min-js,gen-ably-js-gz,gen-ably-min-js-gz,gen-swf-gz">
     </target>
 
 </project>
