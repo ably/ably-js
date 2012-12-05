@@ -3257,13 +3257,14 @@ var EventEmitter = (function() {
 	 * @param listener the listener to be called
 	 */
 	EventEmitter.prototype.on = function(event, listener) {
-		if(arguments.length == 2) {
+		if(arguments.length == 1 && typeof(event) == 'function') {
+			this.any.push(event);
+		} else if(event === null) {
+			this.any.push(listener);
+		} else {
 			var listeners = this.events[event] = this.events[event] || [];
 			listeners.push(listener);
-			return;
 		}
-		if(typeof(event) == 'function')
-			this.any.push(event);
 	};
 
 	/**
@@ -3275,36 +3276,50 @@ var EventEmitter = (function() {
 	 *        supplied, all listeners are removed.
 	 */
 	EventEmitter.prototype.off = function(event, listener) {
-		if(arguments.length == 2) {
+		if(arguments.length == 0) {
+			this.any = [];
+			this.events = {};
+			this.anyOnce = [];
+			this.eventsOnce = {};
+			return;
+		}
+		if(arguments.length == 1) {
+			if(typeof(event) == 'function') {
+				/* we take this to be the listener and treat the event as "any" .. */
+				listener = event;
+				event = null;
+			}
+			/* ... or we take event to be the actual event name and listener to be all */
+		}
+		var listeners, idx = -1;
+		if(event === null) {
+			/* "any" case */
 			if(listener) {
-				var listeners, idx = -1;
-				if(!(listeners = this.events[event]) || (idx = listeners.indexOf(listener)) == -1) {
-					if(listeners = this.eventsOnce[event])
+				if(!(listeners = this.any) || (idx = listeners.indexOf(listener)) == -1) {
+					if(listeners = this.anyOnce)
 						idx = listeners.indexOf(listener);
 				}
 				if(idx > -1)
 					listeners.splice(idx, 1);
 			} else {
-				delete this.events[event];
-				delete this.eventsOnce[event];
+				this.any = [];
+				this.anyOnce = [];
 			}
 			return;
 		}
-		if(typeof(event) == 'function') {
-			var listeners = this.any;
-			var idx = listeners.indexOf(event);
-			if(idx == -1) {
-				listeners = this.anyOnce;
-				idx = listeners.indexOf(event);
+		/* "normal* case where event is an actual event */
+		if(listener) {
+			var listeners, idx = -1;
+			if(!(listeners = this.events[event]) || (idx = listeners.indexOf(listener)) == -1) {
+				if(listeners = this.eventsOnce[event])
+					idx = listeners.indexOf(listener);
 			}
 			if(idx > -1)
 				listeners.splice(idx, 1);
-			return;
+		} else {
+			delete this.events[event];
+			delete this.eventsOnce[event];
 		}
-		this.any = [];
-		this.events = {};
-		this.anyOnce = [];
-		this.eventsOnce = {};
 	};
 
 	/**
@@ -3313,8 +3328,12 @@ var EventEmitter = (function() {
 	 * @return array of events, or null if none
 	 */
 	EventEmitter.prototype.listeners = function(event) {
-		if(event)
-			return this.events[event];
+		if(event) {
+			var listeners = (this.events[event] || []);
+			if(this.eventsOnce[event])
+				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
+			return listeners.length ? listeners : null;
+		}
 		return this.any.length ? this.any : null;
 	};
 
@@ -3352,13 +3371,14 @@ var EventEmitter = (function() {
 	 * @param listener the listener to be called
 	 */
 	EventEmitter.prototype.once = function(event, listener) {
-		if(arguments.length == 2) {
-			var listeners = this.eventsOnce[event] = this.eventsOnce[event] || [];
-			listeners.push(listener);
-			return;
-		}
-		if(typeof(event) == 'function')
+		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
+		} else if(event === null) {
+			this.anyOnce.push(listener);
+		} else {
+			var listeners = this.eventsOnce[event] = (this.eventsOnce[event] || []);
+			listeners.push(listener);
+		}
 	};
 
 	return EventEmitter;
@@ -3696,6 +3716,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* generic state change handling */
+		var self = this;
     	this.on(function(newState, transport) {
     		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(connection state)', 'newState = ' + newState.current);
     		switch(newState.current) {
@@ -3724,7 +3745,7 @@ var ConnectionManager = (function() {
     		case 'suspended':
     		case 'closed':
     		case 'failed':
-            	var connectionState = connectionManager.state;
+            	var connectionState = self.state;
         		for(var channelName in attached)
     				attached[channelName].setSuspended(connectionState);
         		break;
@@ -5315,6 +5336,7 @@ var RealtimeChannel = (function() {
     };
 
     RealtimeChannel.prototype.attach = function(callback) {
+    	callback = callback || noop;
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
@@ -5350,6 +5372,7 @@ var RealtimeChannel = (function() {
 	};
 
     RealtimeChannel.prototype.detach = function(callback) {
+    	callback = callback || noop;
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
@@ -5383,13 +5406,10 @@ var RealtimeChannel = (function() {
     	this.sendMessage(msg, (callback || noop));
 	};
 
-	var any = '*';
-
 	RealtimeChannel.prototype.subscribe = function() {
 		var args = Array.prototype.slice.call(arguments);
-		var isAny = (typeof(args[0]) == 'function');
-		if(isAny)
-			args.unshift(any);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
 		var events = args[0];
 		var listener = args[1];
@@ -5416,11 +5436,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.subscribeAttached = function(events, handler, callback) {
-		if(!events) {
-			callback();
-			return;
-		}
-		if(events.__proto__ !== Array.prototype) {
+		if(events === null || events.__proto__ !== Array.prototype) {
 			this.subscribeForEvent(events, handler, callback);
 			return;
 		}
@@ -5431,7 +5447,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.subscribeForEvent = function(name, listener, callback) {
 		/* determine if there is already a listener for this event */
-		var hasListener = this.subscriptions.listeners(name===any ? null : name);
+		var hasListener = this.subscriptions.listeners(name);
 		/* if there is a listener already, nothing to do */
 		if(hasListener) {
 			callback();
@@ -5440,10 +5456,11 @@ var RealtimeChannel = (function() {
 
 		/* send the subscription message */
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending SUBSCRIBE message');
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var subscriptionName = (name === null) ? ':' : name;
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(!pendingSubscriptions) {
 			pendingSubscriptions = [];
-			this.pendingSubscriptions[name] = pendingSubscriptions;
+			this.pendingSubscriptions[subscriptionName] = pendingSubscriptions;
 		}
 		pendingSubscriptions.push({listener: listener, callback: callback});
     	var msg = new messagetypes.TChannelMessage({
@@ -5456,9 +5473,8 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.unsubscribe = function() {
 		var args = Array.prototype.slice.call(arguments);
-		var isAny = (typeof(args[0]) == 'function');
-		if(isAny)
-			args.unshift(any);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
 		var events = args[0];
 		var listener = args[1];
@@ -5485,11 +5501,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.unsubscribeAttached = function(events, handler, callback) {
-		if(!events) {
-			callback();
-			return;
-		}
-		if(events.__proto__ !== Array.prototype) {
+		if(events === null || events.__proto__ !== Array.prototype) {
 			this.unsubscribeForEvent(events, handler, callback);
 			return;
 		}
@@ -5503,7 +5515,7 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		subscriptions.off(name, listener);
 		/* if there are still listeners for this event, nothing more to do */
-		var hasListener = subscriptions.listeners(name===any ? null : name);
+		var hasListener = subscriptions.listeners(name);
 		if(hasListener) {
 			callback();
 			return;
@@ -5613,7 +5625,7 @@ var RealtimeChannel = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i in this.pendingEvents) {
 					var event = this.pendingEvents[i];
-					msg.addToEvents(event.message);
+					msg.events.push(event.message);
 					multicaster.push(event.callback);
 				}
 				this.sendMessage(msg, multicaster);
@@ -5626,8 +5638,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setSubscribed = function(message) {
 		var name = message.name;
+		var subscriptionName = (name === null) ? ':' : name;
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSubscribed', 'activating event; name = ' + name);
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(pendingSubscriptions) {
 			var subscriptions = this.subscriptions;
 			Utils.nextTick(function() {
@@ -5636,7 +5649,7 @@ var RealtimeChannel = (function() {
 					pendingSubscriptions[i].callback();
 				}
 			});
-			delete this.pendingSubscriptions[message.name];
+			delete this.pendingSubscriptions[subscriptionName];
 		}
 	};
 
@@ -5653,14 +5666,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setUnsubscribed = function(message) {
 		var name = message.name;
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var subscriptionName = (name === null) ? ':' : name;
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(pendingSubscriptions) {
 			/* this is an error message */
 			Utils.nextTick(function() {
 				for(var i in pendingSubscriptions)
 					pendingSubscriptions[i].callback(message.reason || UIMessages.FAIL_REASON_REFUSED);
 			});
-			delete this.pendingSubscriptions[name];
+			delete this.pendingSubscriptions[subscriptionName];
 		}
 		this.subscriptions.off(name);
 	};
