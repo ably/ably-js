@@ -4658,8 +4658,7 @@ var FlashTransport = (function() {
 		WebSocketTransport.call(this, connectionManager, auth, options);
 	}
 	Utils.inherits(FlashTransport, WebSocketTransport);
-window.FlashTransport = FlashTransport;
-window.swfobject = swfobject;
+
 	FlashTransport.isAvailable = function() {
 		return isBrowser && swfobject && swfobject.getFlashPlayerVersion().major >= 10 && FlashWebSocket;
 	};
