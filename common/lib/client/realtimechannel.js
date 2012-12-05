@@ -57,6 +57,7 @@ var RealtimeChannel = (function() {
     };
 
     RealtimeChannel.prototype.attach = function(callback) {
+    	callback = callback || noop;
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
@@ -92,6 +93,7 @@ var RealtimeChannel = (function() {
 	};
 
     RealtimeChannel.prototype.detach = function(callback) {
+    	callback = callback || noop;
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
@@ -125,13 +127,10 @@ var RealtimeChannel = (function() {
     	this.sendMessage(msg, (callback || noop));
 	};
 
-	var any = '*';
-
 	RealtimeChannel.prototype.subscribe = function() {
 		var args = Array.prototype.slice.call(arguments);
-		var isAny = (typeof(args[0]) == 'function');
-		if(isAny)
-			args.unshift(any);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
 		var events = args[0];
 		var listener = args[1];
@@ -158,11 +157,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.subscribeAttached = function(events, handler, callback) {
-		if(!events) {
-			callback();
-			return;
-		}
-		if(events.__proto__ !== Array.prototype) {
+		if(events === null || events.__proto__ !== Array.prototype) {
 			this.subscribeForEvent(events, handler, callback);
 			return;
 		}
@@ -173,7 +168,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.subscribeForEvent = function(name, listener, callback) {
 		/* determine if there is already a listener for this event */
-		var hasListener = this.subscriptions.listeners(name===any ? null : name);
+		var hasListener = this.subscriptions.listeners(name);
 		/* if there is a listener already, nothing to do */
 		if(hasListener) {
 			callback();
@@ -182,10 +177,11 @@ var RealtimeChannel = (function() {
 
 		/* send the subscription message */
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending SUBSCRIBE message');
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var subscriptionName = (name === null) ? ':' : name;
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(!pendingSubscriptions) {
 			pendingSubscriptions = [];
-			this.pendingSubscriptions[name] = pendingSubscriptions;
+			this.pendingSubscriptions[subscriptionName] = pendingSubscriptions;
 		}
 		pendingSubscriptions.push({listener: listener, callback: callback});
     	var msg = new messagetypes.TChannelMessage({
@@ -198,9 +194,8 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.unsubscribe = function() {
 		var args = Array.prototype.slice.call(arguments);
-		var isAny = (typeof(args[0]) == 'function');
-		if(isAny)
-			args.unshift(any);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
 		var events = args[0];
 		var listener = args[1];
@@ -227,11 +222,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.unsubscribeAttached = function(events, handler, callback) {
-		if(!events) {
-			callback();
-			return;
-		}
-		if(events.__proto__ !== Array.prototype) {
+		if(events === null || events.__proto__ !== Array.prototype) {
 			this.unsubscribeForEvent(events, handler, callback);
 			return;
 		}
@@ -245,7 +236,7 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		subscriptions.off(name, listener);
 		/* if there are still listeners for this event, nothing more to do */
-		var hasListener = subscriptions.listeners(name===any ? null : name);
+		var hasListener = subscriptions.listeners(name);
 		if(hasListener) {
 			callback();
 			return;
@@ -355,7 +346,7 @@ var RealtimeChannel = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i in this.pendingEvents) {
 					var event = this.pendingEvents[i];
-					msg.addToEvents(event.message);
+					msg.events.push(event.message);
 					multicaster.push(event.callback);
 				}
 				this.sendMessage(msg, multicaster);
@@ -368,8 +359,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setSubscribed = function(message) {
 		var name = message.name;
+		var subscriptionName = (name === null) ? ':' : name;
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSubscribed', 'activating event; name = ' + name);
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(pendingSubscriptions) {
 			var subscriptions = this.subscriptions;
 			Utils.nextTick(function() {
@@ -378,7 +370,7 @@ var RealtimeChannel = (function() {
 					pendingSubscriptions[i].callback();
 				}
 			});
-			delete this.pendingSubscriptions[message.name];
+			delete this.pendingSubscriptions[subscriptionName];
 		}
 	};
 
@@ -395,14 +387,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setUnsubscribed = function(message) {
 		var name = message.name;
-		var pendingSubscriptions = this.pendingSubscriptions[name];
+		var subscriptionName = (name === null) ? ':' : name;
+		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(pendingSubscriptions) {
 			/* this is an error message */
 			Utils.nextTick(function() {
 				for(var i in pendingSubscriptions)
 					pendingSubscriptions[i].callback(message.reason || UIMessages.FAIL_REASON_REFUSED);
 			});
-			delete this.pendingSubscriptions[name];
+			delete this.pendingSubscriptions[subscriptionName];
 		}
 		this.subscriptions.off(name);
 	};
