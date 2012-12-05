@@ -36,6 +36,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* generic state change handling */
+		var self = this;
     	this.on(function(newState, transport) {
     		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(connection state)', 'newState = ' + newState.current);
     		switch(newState.current) {
@@ -64,7 +65,7 @@ var ConnectionManager = (function() {
     		case 'suspended':
     		case 'closed':
     		case 'failed':
-            	var connectionState = connectionManager.state;
+            	var connectionState = self.state;
         		for(var channelName in attached)
     				attached[channelName].setSuspended(connectionState);
         		break;
