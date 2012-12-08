@@ -92,7 +92,7 @@ var CometTransport = (function() {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingMessage = this.pendingMessage || new messagetypes.TMessageSet({items: []});
-			this.pendingMessage.push(msg);
+			this.pendingMessage.items.push(msg);
 
 			this.pendingCallback = this.pendingCallback || new Multicaster();
 			this.pendingCallback.push(callback);
