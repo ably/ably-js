@@ -3794,13 +3794,21 @@ var ConnectionManager = (function() {
 		var self = this;
 		this.transport = transport;
 
-		['connected', 'closed', 'failed'].forEach(function(state) {
-			transport.on(state, function(reason, connectionId) {
+		var handleStateEvent = function(state) {
+			return function(reason, connectionId) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state, 'reason =  ' + reason + '; connectionId = ' + connectionId);
-				self.realtime.connection.id = connectionId;
-				self.notifyState({state:state, reason:reason});
-			});
-		});
+				if(self.transport === transport) {
+					if(connectionId)
+						self.realtime.connection.id = connectionId;
+					self.notifyState({state:state, reason:reason});
+				}
+			};
+		};
+		var states = ['connected', 'disconnected', 'closed', 'failed'];
+		for(var i = 0; i < states.length; i++) {
+			var state = states[i];
+			transport.on(state, handleStateEvent(state));
+		}
 	};
 
 	/*********************
@@ -4137,7 +4145,8 @@ var Transport = (function() {
 			reason = UIMessages.FAIL_REASON_DISCONNECTED;
 		}
 		this.isConnected = false;
-		this.connectionManager.notifyState({state: newState, reason: reason});
+		this.emit(newState, reason);
+//		this.connectionManager.notifyState({state: newState, reason: reason});
 	};
 
 	Transport.prototype.dispose = function() {
