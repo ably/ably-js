@@ -4514,6 +4514,7 @@ var XHRTransport = (function() {
 
 	/* public constructor */
 	function XHRTransport(connectionManager, auth, options) {
+		options.useTextProtocol = options.useTextProtocol || !XHRTransport.binary;
 		CometTransport.call(this, connectionManager, auth, options);
 	}
 	Utils.inherits(XHRTransport, CometTransport);
@@ -4521,7 +4522,8 @@ var XHRTransport = (function() {
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
 		if(!xhr) return false;
-		XHRTransport.binary = (window.ArrayBuffer && xhr.responseType);
+//		XHRTransport.binary = (window.ArrayBuffer && xhr.responseType);
+		XHRTransport.binary = false;
 		return true;
 	};
 
