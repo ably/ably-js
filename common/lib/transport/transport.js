@@ -91,7 +91,8 @@ var Transport = (function() {
 			reason = UIMessages.FAIL_REASON_DISCONNECTED;
 		}
 		this.isConnected = false;
-		this.connectionManager.notifyState({state: newState, reason: reason});
+		this.emit(newState, reason);
+//		this.connectionManager.notifyState({state: newState, reason: reason});
 	};
 
 	Transport.prototype.dispose = function() {
