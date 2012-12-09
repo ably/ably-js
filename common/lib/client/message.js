@@ -68,7 +68,7 @@ var Message = (function() {
 			},
 			'object': function(msg, data) {
 				var func = resolveObjects[Object.prototype.toString.call(data)];
-				return (func && func(result, data));
+				return (func && func(msg, data));
 			}
 	};
 
