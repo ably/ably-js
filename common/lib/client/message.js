@@ -36,13 +36,13 @@ var Message = (function() {
 				return true;
 			},
 			'[object Object]': function(msg, data) {
-				result.type = messagetypes.TType.MAP;
-				result.mapData = data;
+				msg.type = messagetypes.TType.MAP;
+				msg.mapData = data;
 				return true;
 			},
 			'[object Function]': function(msg, data) {
-				result.type = messagetypes.TType.MAP;
-				result.mapData = data;
+				msg.type = messagetypes.TType.MAP;
+				msg.mapData = data;
 				return true;
 			}
 	};
