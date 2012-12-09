@@ -100,6 +100,22 @@ var Utils = (function() {
 	};
 
 	/*
+	 * Construct an array of the keys of the enumerable
+	 * properties of a given object, optionally limited
+	 * to only the own properties.
+	 * ob:      the object
+	 * ownOnly: boolean, get own properties only
+	 */
+	Utils.keysArray = function(ob, ownOnly) {
+		var result = [];
+		for(var prop in ob) {
+			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			result.push(prop);
+		}
+		return result.length ? result : undefined;
+	};
+
+	/*
 	 * Construct an array of the values of the enumerable
 	 * properties of a given object, optionally limited
 	 * to only the own properties.

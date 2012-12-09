@@ -7,13 +7,13 @@ var Auth = (function() {
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA1 && CryptoJS.enc.Base64)
 		hmac = function(text, key) {
-			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
+			return CryptoJS.HmacSHA1(text, key).toString(CryptoJS.enc.Base64);
 		};
 	if(!isBrowser)
 		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA256', key);
+			var inst = crypto.createHmac('SHA1', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
@@ -26,9 +26,13 @@ var Auth = (function() {
 			capability = JSON.parse(capability);
 
 		var c14nCapability = {};
-		Object.keys(capability).sort().forEach(function(key) {
-			c14nCapability[key] = capability[key].sort();
-		});
+		var keys = Utils.keysArray(capability, true);
+		if(!keys)
+			return '';
+		keys.sort();
+		for(var i = 0; i < keys.length; i++) {
+			c14nCapability[keys[i]] = capability[keys[i]].sort();
+		}
 		return JSON.stringify(c14nCapability);
 	}
 
