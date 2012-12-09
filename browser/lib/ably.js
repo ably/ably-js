@@ -5655,7 +5655,7 @@ var RealtimeChannel = (function() {
 		if(pendingSubscriptions) {
 			var subscriptions = this.subscriptions;
 			Utils.nextTick(function() {
-				for(var i in pendingSubscriptions) {
+				for(var i = 0; i < pendingSubscriptions.length; i++) {
 					subscriptions.on(name, pendingSubscriptions[i].listener);
 					pendingSubscriptions[i].callback();
 				}
