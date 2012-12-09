@@ -61,6 +61,7 @@ var Realtime = this.Realtime = (function() {
 	}
 
 	Channels.prototype.get = function(name, options) {
+		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
 			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, (options || {}));

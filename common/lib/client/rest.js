@@ -49,6 +49,7 @@ var Rest = (function() {
 	}
 
 	Channels.prototype.get = function(name) {
+		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
 			this.attached[name] = channel = new Channel(this.rest, name);
