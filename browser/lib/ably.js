@@ -5208,6 +5208,7 @@ var Realtime = this.Realtime = (function() {
 	}
 
 	Channels.prototype.get = function(name, options) {
+		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
 			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, (options || {}));
@@ -5340,7 +5341,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.onEvent = function(messages) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
-    	for(var i in messages) {
+    	for(var i = 0; i < messages.length; i++) {
     		var message = messages[i];
     		subscriptions.emit(message.name, message);
     	}
@@ -5576,7 +5577,7 @@ var RealtimeChannel = (function() {
 			var tMessages = message.messages;
 			if(tMessages) {
 				var messages = new Array(tMessages.length);
-				for(var i in tMessages) {
+				for(var i = 0; i < messages.length; i++) {
 					var tMessage = tMessages[i];
 					messages[i] = new Message(
 						tMessage.channelSerial,
@@ -5606,12 +5607,12 @@ var RealtimeChannel = (function() {
 			if((action = dest.action) == src.action) {
 				switch(action) {
 				case 10: /* EVENT */
-					for(var i in src.messages)
+					for(var i = 0; i < src.messages.length; i++)
 						dest.messages.push(src.messages[i]);
 					result = true;
 					break;
 				case 9: /* PRESENCE */
-					for(var i in src.presence)
+					for(var i = 0; i < src.presence.length; i++)
 						dest.presence.push(src.presence[i]);
 					result = true;
 					break;
@@ -5634,7 +5635,7 @@ var RealtimeChannel = (function() {
 				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, events: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
-				for(var i in this.pendingEvents) {
+				for(var i = 0; i < this.pendingEvents.length; i++) {
 					var event = this.pendingEvents[i];
 					msg.events.push(event.message);
 					multicaster.push(event.callback);
@@ -5682,7 +5683,7 @@ var RealtimeChannel = (function() {
 		if(pendingSubscriptions) {
 			/* this is an error message */
 			Utils.nextTick(function() {
-				for(var i in pendingSubscriptions)
+				for(var i = 0; i < pendingSubscriptions.length; i++)
 					pendingSubscriptions[i].callback(message.reason || UIMessages.FAIL_REASON_REFUSED);
 			});
 			delete this.pendingSubscriptions[subscriptionName];
@@ -5693,7 +5694,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.setSuspended = function(connectionState) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
 		this.state = 'detached';
-		for(var i in this.pendingEvents)
+		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
 				this.pendingEvents[i].callback(connectionState.defaultMessage);
 			} catch(e) {}
