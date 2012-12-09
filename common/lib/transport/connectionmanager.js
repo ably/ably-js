@@ -21,7 +21,7 @@ var ConnectionManager = (function() {
 		this.state = states.initialized;
 		options.transports = options.transports || Defaults.transports;
 		var transports = this.transports = [];
-		for(var i in options.transports) {
+		for(var i = 0; i < options.transports.length; i++) {
 			if(options.transports[i] in ConnectionManager.availableTransports)
 				transports.push(options.transports[i]);
 		}

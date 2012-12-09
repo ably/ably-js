@@ -169,7 +169,7 @@ var CometTransport = (function() {
 			msg.read(protocol);
 			var items = msg.items;
 			if(items && items.length)
-				for(var i in items)
+				for(var i = 0; i < items.length; i++)
 					this.onChannelMessage(items[i]);
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onSendResponse()', 'Unexpected exception handing channel event: ' + e.stack);

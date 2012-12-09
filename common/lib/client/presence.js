@@ -62,7 +62,7 @@ var Presence = (function() {
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; channel = ' + this.channel.name + ', client = ' + clientId);
-		for(var i in presenceSet) {
+		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
 			var clientData = undefined, clientId = presence.clientId;
 			if(presence.state == 'leave')
