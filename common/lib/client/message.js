@@ -17,8 +17,8 @@ var Message = (function() {
 				return true;
 			},
 			'[object Array]': function(msg, data) {
-				msg.type = messagetypes.TType.LIST;
-				msg.listData = data;
+				msg.type = messagetypes.TType.JSONARRAY;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			},
 			'[object String]': function(msg, data) {
@@ -36,13 +36,13 @@ var Message = (function() {
 				return true;
 			},
 			'[object Object]': function(msg, data) {
-				msg.type = messagetypes.TType.MAP;
-				msg.mapData = data;
+				msg.type = messagetypes.TType.JSONOBJECT;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			},
 			'[object Function]': function(msg, data) {
-				msg.type = messagetypes.TType.MAP;
-				msg.mapData = data;
+				msg.type = messagetypes.TType.JSONOBJECT;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			}
 	};
@@ -96,11 +96,9 @@ var Message = (function() {
 		case 7: /* BUFFER */
 			result = payload.binaryData;
 			break;
-		case 8: /* LIST */
-			result = payload.listData;
-			break;
-		case 9: /* MAP */
-			result = payload.mapData;
+		case 8: /* JSONARRAY */
+		case 9: /* JSONOBJECT */
+			result = JSON.parse(payload.stringData);
 			break;
 		case 0: /* NONE */
 		}
