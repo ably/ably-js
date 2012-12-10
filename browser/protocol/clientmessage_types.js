@@ -29,8 +29,8 @@ TType = {
 'DOUBLE' : 5,
 'STRING' : 6,
 'BUFFER' : 7,
-'LIST' : 8,
-'MAP' : 9
+'JSONARRAY' : 8,
+'JSONOBJECT' : 9
 };
 TPresenceState = {
 'ENTER' : 0,

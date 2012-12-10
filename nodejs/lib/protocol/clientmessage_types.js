@@ -30,8 +30,8 @@ ttypes.TType = {
 'DOUBLE' : 5,
 'STRING' : 6,
 'BUFFER' : 7,
-'LIST' : 8,
-'MAP' : 9
+'JSONARRAY' : 8,
+'JSONOBJECT' : 9
 };
 ttypes.TPresenceState = {
 'ENTER' : 0,
