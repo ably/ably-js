@@ -29,8 +29,8 @@ TType = {
 'DOUBLE' : 5,
 'STRING' : 6,
 'BUFFER' : 7,
-'LIST' : 8,
-'MAP' : 9
+'JSONARRAY' : 8,
+'JSONOBJECT' : 9
 };
 TPresenceState = {
 'ENTER' : 0,
@@ -43,8 +43,6 @@ TData = function(args) {
   this.doubleData = null;
   this.stringData = null;
   this.binaryData = null;
-  this.listData = null;
-  this.mapData = null;
   if (args) {
     if (args.type !== undefined) {
       this.type = args.type;
@@ -63,12 +61,6 @@ TData = function(args) {
     }
     if (args.binaryData !== undefined) {
       this.binaryData = args.binaryData;
-    }
-    if (args.listData !== undefined) {
-      this.listData = args.listData;
-    }
-    if (args.mapData !== undefined) {
-      this.mapData = args.mapData;
     }
   }
 };
@@ -128,55 +120,6 @@ TData.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 7:
-      if (ftype == Thrift.Type.LIST) {
-        var _size0 = 0;
-        var _rtmp34;
-        this.listData = [];
-        var _etype3 = 0;
-        _rtmp34 = input.readListBegin();
-        _etype3 = _rtmp34.etype;
-        _size0 = _rtmp34.size;
-        for (var _i5 = 0; _i5 < _size0; ++_i5)
-        {
-          var elem6 = null;
-          elem6 = input.readString();
-          this.listData.push(elem6);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 8:
-      if (ftype == Thrift.Type.MAP) {
-        var _size7 = 0;
-        var _rtmp311;
-        this.mapData = {};
-        var _ktype8 = 0;
-        var _vtype9 = 0;
-        _rtmp311 = input.readMapBegin();
-        _ktype8 = _rtmp311.ktype;
-        _vtype9 = _rtmp311.vtype;
-        _size7 = _rtmp311.size;
-        for (var _i12 = 0; _i12 < _size7; ++_i12)
-        {
-          if (_i12 > 0 ) {
-            if (input.rstack.length > input.rpos[input.rpos.length -1] + 1) {
-              input.rstack.pop();
-            }
-          }
-          var key13 = null;
-          var val14 = null;
-          key13 = input.readString();
-          val14 = input.readString();
-          this.mapData[key13] = val14;
-        }
-        input.readMapEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
       default:
         input.skip(ftype);
     }
@@ -216,35 +159,6 @@ TData.prototype.write = function(output) {
   if (this.binaryData !== null) {
     output.writeFieldBegin('binaryData', Thrift.Type.STRING, 6);
     output.writeString(this.binaryData);
-    output.writeFieldEnd();
-  }
-  if (this.listData !== null) {
-    output.writeFieldBegin('listData', Thrift.Type.LIST, 7);
-    output.writeListBegin(Thrift.Type.STRING, this.listData.length);
-    for (var iter15 in this.listData)
-    {
-      if (this.listData.hasOwnProperty(iter15))
-      {
-        iter15 = this.listData[iter15];
-        output.writeString(iter15);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  if (this.mapData !== null) {
-    output.writeFieldBegin('mapData', Thrift.Type.MAP, 8);
-    output.writeMapBegin(Thrift.Type.STRING, Thrift.Type.STRING, Thrift.objectLength(this.mapData));
-    for (var kiter16 in this.mapData)
-    {
-      if (this.mapData.hasOwnProperty(kiter16))
-      {
-        var viter17 = this.mapData[kiter16];
-        output.writeString(kiter16);
-        output.writeString(viter17);
-      }
-    }
-    output.writeMapEnd();
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -404,18 +318,18 @@ TMessage.prototype.read = function(input) {
       break;
       case 6:
       if (ftype == Thrift.Type.LIST) {
-        var _size18 = 0;
-        var _rtmp322;
+        var _size0 = 0;
+        var _rtmp34;
         this.tags = [];
-        var _etype21 = 0;
-        _rtmp322 = input.readListBegin();
-        _etype21 = _rtmp322.etype;
-        _size18 = _rtmp322.size;
-        for (var _i23 = 0; _i23 < _size18; ++_i23)
+        var _etype3 = 0;
+        _rtmp34 = input.readListBegin();
+        _etype3 = _rtmp34.etype;
+        _size0 = _rtmp34.size;
+        for (var _i5 = 0; _i5 < _size0; ++_i5)
         {
-          var elem24 = null;
-          elem24 = input.readString();
-          this.tags.push(elem24);
+          var elem6 = null;
+          elem6 = input.readString();
+          this.tags.push(elem6);
         }
         input.readListEnd();
       } else {
@@ -456,12 +370,12 @@ TMessage.prototype.write = function(output) {
   if (this.tags !== null) {
     output.writeFieldBegin('tags', Thrift.Type.LIST, 6);
     output.writeListBegin(Thrift.Type.STRING, this.tags.length);
-    for (var iter25 in this.tags)
+    for (var iter7 in this.tags)
     {
-      if (this.tags.hasOwnProperty(iter25))
+      if (this.tags.hasOwnProperty(iter7))
       {
-        iter25 = this.tags[iter25];
-        output.writeString(iter25);
+        iter7 = this.tags[iter7];
+        output.writeString(iter7);
       }
     }
     output.writeListEnd();
@@ -632,19 +546,19 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 13:
       if (ftype == Thrift.Type.LIST) {
-        var _size26 = 0;
-        var _rtmp330;
+        var _size8 = 0;
+        var _rtmp312;
         this.messages = [];
-        var _etype29 = 0;
-        _rtmp330 = input.readListBegin();
-        _etype29 = _rtmp330.etype;
-        _size26 = _rtmp330.size;
-        for (var _i31 = 0; _i31 < _size26; ++_i31)
+        var _etype11 = 0;
+        _rtmp312 = input.readListBegin();
+        _etype11 = _rtmp312.etype;
+        _size8 = _rtmp312.size;
+        for (var _i13 = 0; _i13 < _size8; ++_i13)
         {
-          var elem32 = null;
-          elem32 = new TMessage();
-          elem32.read(input);
-          this.messages.push(elem32);
+          var elem14 = null;
+          elem14 = new TMessage();
+          elem14.read(input);
+          this.messages.push(elem14);
         }
         input.readListEnd();
       } else {
@@ -653,19 +567,19 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 14:
       if (ftype == Thrift.Type.SET) {
-        var _size33 = 0;
-        var _rtmp337;
+        var _size15 = 0;
+        var _rtmp319;
         this.presence = [];
-        var _etype36 = 0;
-        _rtmp337 = input.readSetBegin();
-        _etype36 = _rtmp337.etype;
-        _size33 = _rtmp337.size;
-        for (var _i38 = 0; _i38 < _size33; ++_i38)
+        var _etype18 = 0;
+        _rtmp319 = input.readSetBegin();
+        _etype18 = _rtmp319.etype;
+        _size15 = _rtmp319.size;
+        for (var _i20 = 0; _i20 < _size15; ++_i20)
         {
-          var elem39 = null;
-          elem39 = new TPresence();
-          elem39.read(input);
-          this.presence.push(elem39);
+          var elem21 = null;
+          elem21 = new TPresence();
+          elem21.read(input);
+          this.presence.push(elem21);
         }
         input.readSetEnd();
       } else {
@@ -746,12 +660,12 @@ TChannelMessage.prototype.write = function(output) {
   if (this.messages !== null) {
     output.writeFieldBegin('messages', Thrift.Type.LIST, 13);
     output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
-    for (var iter40 in this.messages)
+    for (var iter22 in this.messages)
     {
-      if (this.messages.hasOwnProperty(iter40))
+      if (this.messages.hasOwnProperty(iter22))
       {
-        iter40 = this.messages[iter40];
-        iter40.write(output);
+        iter22 = this.messages[iter22];
+        iter22.write(output);
       }
     }
     output.writeListEnd();
@@ -760,12 +674,12 @@ TChannelMessage.prototype.write = function(output) {
   if (this.presence !== null) {
     output.writeFieldBegin('presence', Thrift.Type.SET, 14);
     output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
-    for (var iter41 in this.presence)
+    for (var iter23 in this.presence)
     {
-      if (this.presence.hasOwnProperty(iter41))
+      if (this.presence.hasOwnProperty(iter23))
       {
-        iter41 = this.presence[iter41];
-        iter41.write(output);
+        iter23 = this.presence[iter23];
+        iter23.write(output);
       }
     }
     output.writeSetEnd();
@@ -800,19 +714,19 @@ TMessageSet.prototype.read = function(input) {
     {
       case 1:
       if (ftype == Thrift.Type.LIST) {
-        var _size42 = 0;
-        var _rtmp346;
+        var _size24 = 0;
+        var _rtmp328;
         this.items = [];
-        var _etype45 = 0;
-        _rtmp346 = input.readListBegin();
-        _etype45 = _rtmp346.etype;
-        _size42 = _rtmp346.size;
-        for (var _i47 = 0; _i47 < _size42; ++_i47)
+        var _etype27 = 0;
+        _rtmp328 = input.readListBegin();
+        _etype27 = _rtmp328.etype;
+        _size24 = _rtmp328.size;
+        for (var _i29 = 0; _i29 < _size24; ++_i29)
         {
-          var elem48 = null;
-          elem48 = new TChannelMessage();
-          elem48.read(input);
-          this.items.push(elem48);
+          var elem30 = null;
+          elem30 = new TChannelMessage();
+          elem30.read(input);
+          this.items.push(elem30);
         }
         input.readListEnd();
       } else {
@@ -836,12 +750,12 @@ TMessageSet.prototype.write = function(output) {
   if (this.items !== null) {
     output.writeFieldBegin('items', Thrift.Type.LIST, 1);
     output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter49 in this.items)
+    for (var iter31 in this.items)
     {
-      if (this.items.hasOwnProperty(iter49))
+      if (this.items.hasOwnProperty(iter31))
       {
-        iter49 = this.items[iter49];
-        iter49.write(output);
+        iter31 = this.items[iter31];
+        iter31.write(output);
       }
     }
     output.writeListEnd();
