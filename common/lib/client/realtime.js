@@ -1,6 +1,17 @@
 var Realtime = this.Realtime = (function() {
 
 	function Realtime(options) {
+		if(typeof(options == 'string')) {
+			/* we assume that the string is of the form
+			 * <app id>:<key id>:<key value> */
+			var parts = options.split(':');
+			if(parts.length < 3)
+				throw new Error('Realtime(): invalid key');
+			options = {
+				appId: parts[0],
+				key: parts[1] + ':' + parts[2]
+			};
+		}
 		this.options = options = options || {};
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
