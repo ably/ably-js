@@ -1,7 +1,7 @@
 var Rest = (function() {
 
 	function Rest(options) {
-		if(typeof(options == 'string')) {
+		if(typeof(options) == 'string') {
 			/* we assume that the string is of the form
 			 * <app id>:<key id>:<key value> */
 			var parts = options.split(':');
