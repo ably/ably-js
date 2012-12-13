@@ -4548,43 +4548,45 @@ var FlashTransport = (function() {
 	return FlashTransport;
 })();
 var Resource = (function() {
+	function noop() {}
 
-	function Resource(rest, path) {
-		this.rest = rest;
-		this.uri = rest.baseUri + path;
-	}
+	function Resource() {}
 
-	Resource.prototype.get = function(params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 1 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.get = function(rest, path, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 4) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.get(uri, Utils.mixin(headers, rest.headers), params, callback);
+			Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, callback);
 		});
 	};
 
-	Resource.prototype.post = function(body, params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 2 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.post = function(rest, path, body, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 5) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.post(uri, Utils.mixin(headers, rest.headers), body, params, callback);
+			Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, callback);
 		});
 	};
 
@@ -4631,62 +4633,71 @@ var Auth = (function() {
 	function Auth(rest, options) {
 		this.rest = rest;
 		this.tokenUri = rest.baseUri + '/authorise';
-		var authOptions = this.authOptions = {};
-		if(options.key) {
-			var parts = options.key.split(':');
-			if(parts.length != 2) {
-				var msg = 'invalid key parameter';
-				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-				throw new Error(msg);
-			}
-			this.key = options.key;
-			this.keyId = parts[0];
-			this.keyValue = parts[1];
+
+		/* tokenOptions contains the parameters that may be used in
+		 * token requests */
+		var tokenOptions = this.tokenOptions = {};
+		if(options.keyId) tokenOptions.keyId = options.keyId;
+		if(options.keyValue) tokenOptions.keyValue = options.keyValue;
+
+		/* decide default auth method */
+		if(options.keyValue) {
 			if(!options.clientId) {
-				/* anonymous client */
+				/* we have the key and do not need to authenticate the client,
+				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				authOptions.key = options.key;
-				authOptions.key_id = this.keyId;
-				authOptions.key_value = this.keyValue;
+				this.keyId = options.keyId;
+				this.keyValue = options.keyValue;
 				return;
 			}
 			/* token auth, but we have the key so we can authorise
 			 * ourselves */
-			if(!hmac)
-				throw new Error('Auth(): client-side token request signing not supported');
+			if(!hmac) {
+				var msg = 'client-side token request signing not supported';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
+			}
 		}
+		/* using token auth, but decide the method */
 		this.method = 'token';
 		if(options.authToken)
 			this.token = {id: options.authToken};
-		if(options.auth_callback) {
+		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
-			authOptions.auth_callback = options.authCallback;
-		} else if(options.authURL) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authURL');
-			authOptions.auth_url = options.auth_url;
-		} else if(options.key) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using token auth with client-side signing');
-			authOptions.key = options.key;
-			authOptions.key_id = this.keyId;
-			authOptions.key_value = this.keyValue;
+			tokenOptions.authCallback = options.authCallback;
+		} else if(options.authUrl) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
+			tokenOptions.authUrl = options.authUrl;
+		} else if(options.keyValue) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
 		} else if(this.token) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
 		} else {
-			throw new Error('Auth(): options must include valid authentication parameters');
+			var msg = 'options must include valid authentication parameters';
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+			throw new Error(msg);
 		}
 	}
 
 	/**
-	 * Request an access token
+	 * Ensure valid auth credentials are present. This may rely in an already-known
+	 * and valid token, and will obtain a new token if necessary or explicitly
+	 * requested.
+	 * Authorisation will use the parameters supplied on construction except
+	 * where overridden with the options supplied in the call.
 	 * @param params
 	 * an object containing the request params:
-	 * - key:        (optional) the key to use in the format keyId:keyValue; if not
-	 *               specified, a key passed in constructing the Rest interface will be used
+	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
+	 *               passed in constructing the Rest interface may be used
 	 *
-	 * - expires:    (optional) the requested life of the token in seconds. If none is specified
-	 *               a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *               exceeeding that lifetime will be rejected with an error.
+	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
+	 *               value passed in constructing the Rest interface may be used
+	 *
+	 * - expires:    (optional) the requested life of any new token in seconds. If none
+	 *               is specified a default of 1 hour is provided. The maximum lifetime
+	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
@@ -4697,8 +4708,11 @@ var Auth = (function() {
 	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
-	 * - queryTime   (optional) boolean indicating that the aardvark system should be
-	 *               queried for the current time when none is specified explicitly
+	 * - queryTime   (optional) boolean indicating that the Ably system should be
+	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * - force       (optional) boolean indicating that a new token should be requested,
+	 *               even if a current token is still valid.
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
@@ -4730,23 +4744,23 @@ var Auth = (function() {
 	 * Request an access token
 	 * @param options
 	 * an object containing the request options:
-	 * - key_id:        the id of the key to use.
+	 * - keyId:         the id of the key to use.
 	 *
-	 * - key_value:     (optional) the secret value of the key; if not
+	 * - keyValue:      (optional) the secret value of the key; if not
 	 *                  specified, a key passed in constructing the Rest interface will be used; or
 	 *                  if no key is available, a token request callback or url will be used.
 	 *
-	 * - auth_callback: (optional) a javascript callback to be used, passing a set of token
+	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
 	 *                  request params, to get a signed token request.
 	 *
-	 * - auth_url:      (optional) a URL to be used to GET or POST a set of token request
+	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
 	 *                  params, to obtain a signed token request.
 	 *
-	 * - auth_headers:  (optional) a set of application-specific headers to be added to any request
-	 *                  made to the auth_url.
+	 * - authHeaders:   (optional) a set of application-specific headers to be added to any request
+	 *                  made to the authUrl.
 	 *
-	 * - auth_params:   (optional) a set of application-specific query params to be added to any
-	 *                  request made to the auth_url.
+	 * - authParams:    (optional) a set of application-specific query params to be added to any
+	 *                  request made to the authUrl.
 	 *
 	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
@@ -4777,23 +4791,20 @@ var Auth = (function() {
 		callback = callback || noop;
 
 		/* merge supplied options with the already-known options */
-		options = Utils.mixin(Utils.copy(this.authOptions), options);
+		options = Utils.mixin(Utils.copy(this.tokenOptions), options);
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
 		var tokenRequestCallback;
-		if(options.auth_callback) {
+		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
-			tokenRequestCallback = options.auth_callback;
-		} else if(options.auth_url) {
+			tokenRequestCallback = options.authCallback;
+		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(options.auth_url, options.auth_headers || {}, Utils.mixin(params, options.auth_params), cb);
+				Http.get(options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
 			};
-		} else if(options.key) {
-			var parts = options.key.split(':');
-			options.key_id = parts[0];
-			options.key_value = parts[1];
+		} else if(options.keyValue) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(Utils.mixin(Utils.copy(options), params), cb); };
@@ -4803,7 +4814,7 @@ var Auth = (function() {
 
 		/* now set up the request params */
 		var requestParams = {};
-		var clientId = options.client_id || this.rest.clientId;
+		var clientId = options.clientId || this.rest.clientId;
 		if(clientId)
 			requestParams.client_id = clientId;
 
@@ -4846,7 +4857,9 @@ var Auth = (function() {
 	 * owner (either using the token request callback or url).
 	 *
 	 * Valid token request options are:
-	 * - key_id:        the id of the key to use.
+	 * - keyId:         the id of the key to use.
+	 *
+	 * - keyValue:      the secret value of the key to use.
 	 *
 	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
@@ -4866,8 +4879,8 @@ var Auth = (function() {
 	 *                  queried for the current time when none is specified explicitly
 	 */
 	Auth.prototype.createTokenRequest = function(options, callback) {
-		var keyId = options.key_id;
-		var keyValue = options.key_value;
+		var keyId = options.keyId;
+		var keyValue = options.keyValue;
 		if(!keyId || !keyValue) {
 			callback(new Error('No key specified'));
 			return;
@@ -4953,8 +4966,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthHeaders = function(callback) {
 		if(this.method == 'basic') {
-			var keyStr = this.key || this.key_id + ':' + this.key_value;
-			callback(null, {authorization: 'Basic ' + toBase64(keyStr)});
+			callback(null, {authorization: 'Basic ' + toBase64(this.keyId + ':' + this.keyValue)});
 		} else {
 			this.authorise({}, function(err, token) {
 				if(err) {
@@ -4971,24 +4983,36 @@ var Auth = (function() {
 var Realtime = this.Realtime = (function() {
 
 	function Realtime(options) {
-		if(typeof(options) == 'string') {
-			/* we assume that the string is of the form
-			 * <app id>:<key id>:<key value> */
-			var parts = options.split(':');
-			if(parts.length < 3)
-				throw new Error('Realtime(): invalid key');
-			options = {
-				appId: parts[0],
-				key: parts[1] + ':' + parts[2]
-			};
+		/* normalise options */
+		if(!options) {
+			var msg = 'no options provided';
+			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+			throw new Error(msg);
 		}
-		this.options = options = options || {};
+		if(typeof(options) == 'string')
+			options = {key: options};
+		if(options.key) {
+			var keyParts = options.key.split(':');
+			if(keyParts.length != 3) {
+				var msg = 'invalid key parameter';
+				Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+				throw new Error(msg);
+			}
+			options.appId = keyParts[0];
+			options.keyId = keyParts[1];
+			options.keyValue = keyParts[2];
+		}
+		if(!options.appId) {
+			var msg = 'no appId provided';
+			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+			throw new Error(msg);
+		}
+		this.options = options;
+
+		/* process options */
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', 'started');
-		var realtime = this;
-		if(!options.appId)
-			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
@@ -5010,11 +5034,17 @@ var Realtime = this.Realtime = (function() {
 		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
-		this.events = new Resource(this, '/events');
-		this.stats = new Resource(this, '/stats');
 
 		this.connection.connectionManager.start();
 	}
+
+	Realtime.prototype.history = function(params, callback) {
+		Resource.get(this, '/events', params, callback);
+	};
+
+	Realtime.prototype.stats = function(params, callback) {
+		Resource.get(this, '/stats', params, callback);
+	};
 
 	Realtime.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
@@ -5110,17 +5140,24 @@ var Channel = (function() {
 		EventEmitter.call(this);
 		this.rest = rest;
     	this.name = name;
-    	this.presence = new Resource(rest, '/channels/' + name + '/presence');
-		this.events = new Resource(rest, '/channels/' + name + '/events');
-		this.stats = new Resource(rest, '/channels/' + name + '/stats');
 	}
 	Utils.inherits(Channel, EventEmitter);
 
+	Channel.prototype.presence = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/presence', params, callback);
+	};
+
+	Channel.prototype.history = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/events', params, callback);
+	};
+
+	Channel.prototype.stats = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/stats', params, callback);
+	};
+
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'name = ' + name);
-		callback = callback || noop;
-		var publish = this._publish = (this._publish || new Resource(this.rest, '/channels/' + this.name + '/publish'));
-		publish.post({name:name, payload:data}, callback);
+		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, payload:data}, callback);
 	};
 
 	return Channel;
