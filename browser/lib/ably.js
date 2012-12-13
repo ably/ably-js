@@ -4991,6 +4991,8 @@ var Realtime = this.Realtime = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
+		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
+			options.encrypted = true;
 		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
@@ -5466,12 +5468,12 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, events: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
 					var event = this.pendingEvents[i];
-					msg.events.push(event.message);
+					msg.messages.push(event.message);
 					multicaster.push(event.callback);
 				}
 				this.sendMessage(msg, multicaster);
