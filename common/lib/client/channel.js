@@ -7,17 +7,24 @@ var Channel = (function() {
 		EventEmitter.call(this);
 		this.rest = rest;
     	this.name = name;
-    	this.presence = new Resource(rest, '/channels/' + name + '/presence');
-		this.events = new Resource(rest, '/channels/' + name + '/events');
-		this.stats = new Resource(rest, '/channels/' + name + '/stats');
 	}
 	Utils.inherits(Channel, EventEmitter);
 
+	Channel.prototype.presence = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/presence', params, callback);
+	};
+
+	Channel.prototype.history = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/events', params, callback);
+	};
+
+	Channel.prototype.stats = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/stats', params, callback);
+	};
+
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'name = ' + name);
-		callback = callback || noop;
-		var publish = this._publish = (this._publish || new Resource(this.rest, '/channels/' + this.name + '/publish'));
-		publish.post({name:name, payload:data}, callback);
+		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, payload:data}, callback);
 	};
 
 	return Channel;
