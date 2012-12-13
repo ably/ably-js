@@ -5161,7 +5161,6 @@ var RealtimeChannel = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
     		msg.action = messagetypes.TAction.EVENT;
-    		msg.name = name;
     		msg.channel = this.name;
     		msg.messages = [message];
     		this.sendMessage(msg, callback);
@@ -5468,7 +5467,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, messages: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
