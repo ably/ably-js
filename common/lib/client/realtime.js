@@ -21,6 +21,8 @@ var Realtime = this.Realtime = (function() {
 			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
+		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
+			options.encrypted = true;
 		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
