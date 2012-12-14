@@ -1,41 +1,43 @@
 var Resource = (function() {
+	function noop() {}
 
-	function Resource(rest, path) {
-		this.rest = rest;
-		this.uri = rest.baseUri + path;
-	}
+	function Resource() {}
 
-	Resource.prototype.get = function(params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 1 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.get = function(rest, path, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 4) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.get(uri, Utils.mixin(headers, rest.headers), params, callback);
+			Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, callback);
 		});
 	};
 
-	Resource.prototype.post = function(body, params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 2 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.post = function(rest, path, body, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 5) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.post(uri, Utils.mixin(headers, rest.headers), body, params, callback);
+			Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, callback);
 		});
 	};
 

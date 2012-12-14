@@ -2068,8 +2068,8 @@ TType = {
 'DOUBLE' : 5,
 'STRING' : 6,
 'BUFFER' : 7,
-'LIST' : 8,
-'MAP' : 9
+'JSONARRAY' : 8,
+'JSONOBJECT' : 9
 };
 TPresenceState = {
 'ENTER' : 0,
@@ -2082,8 +2082,6 @@ TData = function(args) {
   this.doubleData = null;
   this.stringData = null;
   this.binaryData = null;
-  this.listData = null;
-  this.mapData = null;
   if (args) {
     if (args.type !== undefined) {
       this.type = args.type;
@@ -2102,12 +2100,6 @@ TData = function(args) {
     }
     if (args.binaryData !== undefined) {
       this.binaryData = args.binaryData;
-    }
-    if (args.listData !== undefined) {
-      this.listData = args.listData;
-    }
-    if (args.mapData !== undefined) {
-      this.mapData = args.mapData;
     }
   }
 };
@@ -2167,55 +2159,6 @@ TData.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 7:
-      if (ftype == Thrift.Type.LIST) {
-        var _size0 = 0;
-        var _rtmp34;
-        this.listData = [];
-        var _etype3 = 0;
-        _rtmp34 = input.readListBegin();
-        _etype3 = _rtmp34.etype;
-        _size0 = _rtmp34.size;
-        for (var _i5 = 0; _i5 < _size0; ++_i5)
-        {
-          var elem6 = null;
-          elem6 = input.readString();
-          this.listData.push(elem6);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 8:
-      if (ftype == Thrift.Type.MAP) {
-        var _size7 = 0;
-        var _rtmp311;
-        this.mapData = {};
-        var _ktype8 = 0;
-        var _vtype9 = 0;
-        _rtmp311 = input.readMapBegin();
-        _ktype8 = _rtmp311.ktype;
-        _vtype9 = _rtmp311.vtype;
-        _size7 = _rtmp311.size;
-        for (var _i12 = 0; _i12 < _size7; ++_i12)
-        {
-          if (_i12 > 0 ) {
-            if (input.rstack.length > input.rpos[input.rpos.length -1] + 1) {
-              input.rstack.pop();
-            }
-          }
-          var key13 = null;
-          var val14 = null;
-          key13 = input.readString();
-          val14 = input.readString();
-          this.mapData[key13] = val14;
-        }
-        input.readMapEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
       default:
         input.skip(ftype);
     }
@@ -2255,35 +2198,6 @@ TData.prototype.write = function(output) {
   if (this.binaryData !== null) {
     output.writeFieldBegin('binaryData', Thrift.Type.STRING, 6);
     output.writeString(this.binaryData);
-    output.writeFieldEnd();
-  }
-  if (this.listData !== null) {
-    output.writeFieldBegin('listData', Thrift.Type.LIST, 7);
-    output.writeListBegin(Thrift.Type.STRING, this.listData.length);
-    for (var iter15 in this.listData)
-    {
-      if (this.listData.hasOwnProperty(iter15))
-      {
-        iter15 = this.listData[iter15];
-        output.writeString(iter15);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  if (this.mapData !== null) {
-    output.writeFieldBegin('mapData', Thrift.Type.MAP, 8);
-    output.writeMapBegin(Thrift.Type.STRING, Thrift.Type.STRING, Thrift.objectLength(this.mapData));
-    for (var kiter16 in this.mapData)
-    {
-      if (this.mapData.hasOwnProperty(kiter16))
-      {
-        var viter17 = this.mapData[kiter16];
-        output.writeString(kiter16);
-        output.writeString(viter17);
-      }
-    }
-    output.writeMapEnd();
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -2443,18 +2357,18 @@ TMessage.prototype.read = function(input) {
       break;
       case 6:
       if (ftype == Thrift.Type.LIST) {
-        var _size18 = 0;
-        var _rtmp322;
+        var _size0 = 0;
+        var _rtmp34;
         this.tags = [];
-        var _etype21 = 0;
-        _rtmp322 = input.readListBegin();
-        _etype21 = _rtmp322.etype;
-        _size18 = _rtmp322.size;
-        for (var _i23 = 0; _i23 < _size18; ++_i23)
+        var _etype3 = 0;
+        _rtmp34 = input.readListBegin();
+        _etype3 = _rtmp34.etype;
+        _size0 = _rtmp34.size;
+        for (var _i5 = 0; _i5 < _size0; ++_i5)
         {
-          var elem24 = null;
-          elem24 = input.readString();
-          this.tags.push(elem24);
+          var elem6 = null;
+          elem6 = input.readString();
+          this.tags.push(elem6);
         }
         input.readListEnd();
       } else {
@@ -2495,12 +2409,12 @@ TMessage.prototype.write = function(output) {
   if (this.tags !== null) {
     output.writeFieldBegin('tags', Thrift.Type.LIST, 6);
     output.writeListBegin(Thrift.Type.STRING, this.tags.length);
-    for (var iter25 in this.tags)
+    for (var iter7 in this.tags)
     {
-      if (this.tags.hasOwnProperty(iter25))
+      if (this.tags.hasOwnProperty(iter7))
       {
-        iter25 = this.tags[iter25];
-        output.writeString(iter25);
+        iter7 = this.tags[iter7];
+        output.writeString(iter7);
       }
     }
     output.writeListEnd();
@@ -2671,19 +2585,19 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 13:
       if (ftype == Thrift.Type.LIST) {
-        var _size26 = 0;
-        var _rtmp330;
+        var _size8 = 0;
+        var _rtmp312;
         this.messages = [];
-        var _etype29 = 0;
-        _rtmp330 = input.readListBegin();
-        _etype29 = _rtmp330.etype;
-        _size26 = _rtmp330.size;
-        for (var _i31 = 0; _i31 < _size26; ++_i31)
+        var _etype11 = 0;
+        _rtmp312 = input.readListBegin();
+        _etype11 = _rtmp312.etype;
+        _size8 = _rtmp312.size;
+        for (var _i13 = 0; _i13 < _size8; ++_i13)
         {
-          var elem32 = null;
-          elem32 = new TMessage();
-          elem32.read(input);
-          this.messages.push(elem32);
+          var elem14 = null;
+          elem14 = new TMessage();
+          elem14.read(input);
+          this.messages.push(elem14);
         }
         input.readListEnd();
       } else {
@@ -2692,19 +2606,19 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 14:
       if (ftype == Thrift.Type.SET) {
-        var _size33 = 0;
-        var _rtmp337;
+        var _size15 = 0;
+        var _rtmp319;
         this.presence = [];
-        var _etype36 = 0;
-        _rtmp337 = input.readSetBegin();
-        _etype36 = _rtmp337.etype;
-        _size33 = _rtmp337.size;
-        for (var _i38 = 0; _i38 < _size33; ++_i38)
+        var _etype18 = 0;
+        _rtmp319 = input.readSetBegin();
+        _etype18 = _rtmp319.etype;
+        _size15 = _rtmp319.size;
+        for (var _i20 = 0; _i20 < _size15; ++_i20)
         {
-          var elem39 = null;
-          elem39 = new TPresence();
-          elem39.read(input);
-          this.presence.push(elem39);
+          var elem21 = null;
+          elem21 = new TPresence();
+          elem21.read(input);
+          this.presence.push(elem21);
         }
         input.readSetEnd();
       } else {
@@ -2785,12 +2699,12 @@ TChannelMessage.prototype.write = function(output) {
   if (this.messages !== null) {
     output.writeFieldBegin('messages', Thrift.Type.LIST, 13);
     output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
-    for (var iter40 in this.messages)
+    for (var iter22 in this.messages)
     {
-      if (this.messages.hasOwnProperty(iter40))
+      if (this.messages.hasOwnProperty(iter22))
       {
-        iter40 = this.messages[iter40];
-        iter40.write(output);
+        iter22 = this.messages[iter22];
+        iter22.write(output);
       }
     }
     output.writeListEnd();
@@ -2799,12 +2713,12 @@ TChannelMessage.prototype.write = function(output) {
   if (this.presence !== null) {
     output.writeFieldBegin('presence', Thrift.Type.SET, 14);
     output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
-    for (var iter41 in this.presence)
+    for (var iter23 in this.presence)
     {
-      if (this.presence.hasOwnProperty(iter41))
+      if (this.presence.hasOwnProperty(iter23))
       {
-        iter41 = this.presence[iter41];
-        iter41.write(output);
+        iter23 = this.presence[iter23];
+        iter23.write(output);
       }
     }
     output.writeSetEnd();
@@ -2839,19 +2753,19 @@ TMessageSet.prototype.read = function(input) {
     {
       case 1:
       if (ftype == Thrift.Type.LIST) {
-        var _size42 = 0;
-        var _rtmp346;
+        var _size24 = 0;
+        var _rtmp328;
         this.items = [];
-        var _etype45 = 0;
-        _rtmp346 = input.readListBegin();
-        _etype45 = _rtmp346.etype;
-        _size42 = _rtmp346.size;
-        for (var _i47 = 0; _i47 < _size42; ++_i47)
+        var _etype27 = 0;
+        _rtmp328 = input.readListBegin();
+        _etype27 = _rtmp328.etype;
+        _size24 = _rtmp328.size;
+        for (var _i29 = 0; _i29 < _size24; ++_i29)
         {
-          var elem48 = null;
-          elem48 = new TChannelMessage();
-          elem48.read(input);
-          this.items.push(elem48);
+          var elem30 = null;
+          elem30 = new TChannelMessage();
+          elem30.read(input);
+          this.items.push(elem30);
         }
         input.readListEnd();
       } else {
@@ -2875,12 +2789,12 @@ TMessageSet.prototype.write = function(output) {
   if (this.items !== null) {
     output.writeFieldBegin('items', Thrift.Type.LIST, 1);
     output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter49 in this.items)
+    for (var iter31 in this.items)
     {
-      if (this.items.hasOwnProperty(iter49))
+      if (this.items.hasOwnProperty(iter31))
       {
-        iter49 = this.items[iter49];
-        iter49.write(output);
+        iter31 = this.items[iter31];
+        iter31.write(output);
       }
     }
     output.writeListEnd();
@@ -3453,108 +3367,6 @@ var Utils = (function() {
 	};
 
 	/*
-	 * Ensure a directory and its parents exists
-	 * dirPath: path to the directory
-	 */
-	Utils.mkdirs = function(dirPath) {
-		var pathElements = dirPath.split('/');
-		dirPath = (dirPath[0] == '/') ? '/' : '';
-		while(pathElements.length) {
-			var elt = pathElements.shift();
-			if(elt == '') continue;
-			dirPath = path.resolve(dirPath, elt);
-			if(path.existsSync(dirPath)) {
-				var stat = fs.statSync(dirPath);
-				if(stat.isFile())
-					throw new Error('Utils.mkdirs: specified path is a file');
-				if(stat.isDirectory())
-					continue;
-			}
-			fs.mkdirSync(dirPath);
-		}
-		return dirPath;
-	};
-
-	/*
-	 * Delete a directory, recursively deleting its
-	 * children as required.
-	 * dirPath: the directory to delete.
-	 */
-	Utils.deleteDir = function(dirPath) {
-		if(!path.existsSync(dirPath))
-			return;
-		var stat = fs.statSync(dirPath);
-		if(!stat.isDirectory())
-			throw new Error('Utils.deleteDir: specified path is not a directory');
-
-		var files = fs.readdirSync(dirPath);
-		for(var i in files) {
-			var item = path.resolve(dirPath, files[i]);
-			stat = fs.statSync(item);
-			if(stat.isFile())
-				fs.unlinkSync(item);
-			else
-				Utils.deleteDir(item);
-		}
-		fs.rmdirSync(dirPath);
-	};
-
-	/*
-	 * Copy a file, including cross-mount copy.
-	 * Optionally force overwrite if destination already exists.
-	 * source:    path to source file.
-	 * dest:      path to destination (includes name of copied file)
-	 * overwrite: boolean, force overwrite
-	 */
-	Utils.copyFile = function(source, dest, overwrite) {
-		if(!path.existsSync(source))
-			throw new Error('Utils.copyFile: specified source file does not exist');
-		if(path.existsSync(dest)) {
-			if(!overwrite)
-				throw new Error('Utils.copyFile: specified dest file aleady exists');
-			fs.unlink(dest);
-		}
-		var destDir = path.dirname(dest);
-		Utils.mkdirs(destDir);
-		var buf = new Buffer(1024);
-		var sourceFd = fs.openSync(source, 'r');
-		var destFd = fs.openSync(dest, 'w');
-		var read;
-		while((read = fs.readSync(sourceFd, buf, 0, 1024)) > 0)
-			fs.writeSync(destFd, buf, 0, read);
-		fs.closeSync(sourceFd);
-		fs.fsyncSync(destFd);
-		fs.closeSync(destFd);
-	};
-
-	/*
-	 * Copy a directory, including cross-mount copy.
-	 * Optionally force overwrite if destination already exists.
-	 * source:    path to source directory.
-	 * dest:      path to destination (includes name of copied directory)
-	 * overwrite: boolean, force overwrite
-	 */
-	Utils.copyDir = function(source, dest, overwrite) {
-		if(!path.existsSync(source))
-			throw new Error('Utils.copyDir: specified source dir does not exist');
-		if(path.existsSync(dest)) {
-			if(!overwrite)
-				throw new Error('Utils.copyDir: specified dest dir aleady exists');
-			Utils.deleteDir(dest);
-		}
-		Utils.mkdirs(dest);
-		var files = fs.readdirSync(source);
-		for(var i in files) {
-			var item = path.resolve(source, files[i]);
-			stat = fs.statSync(item);
-			if(stat.isFile())
-				Utils.copyFile(item, path.resolve(dest, files[i]), false);
-			else
-				Utils.copyDir(item, path.resolve(dest, files[i]), false);
-		}
-	};
-
-	/*
 	 * Determine whether or not an object contains
 	 * any enumerable properties.
 	 * ob: the object
@@ -3629,6 +3441,22 @@ var Utils = (function() {
 	};
 
 	/*
+	 * Construct an array of the keys of the enumerable
+	 * properties of a given object, optionally limited
+	 * to only the own properties.
+	 * ob:      the object
+	 * ownOnly: boolean, get own properties only
+	 */
+	Utils.keysArray = function(ob, ownOnly) {
+		var result = [];
+		for(var prop in ob) {
+			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			result.push(prop);
+		}
+		return result.length ? result : undefined;
+	};
+
+	/*
 	 * Construct an array of the values of the enumerable
 	 * properties of a given object, optionally limited
 	 * to only the own properties.
@@ -3667,7 +3495,7 @@ var Multicaster = (function() {
 
 	function Multicaster(members) {
 		members = members || [];
-		var multi = function(err, data) { for(var i in members) try { members[i](err, data); } catch(e){} };
+		var multi = function(err, data) { for(var i = 0; i < members.length; i++) try { members[i](err, data); } catch(e){} };
 		multi.__proto__ = this.__proto__;
 		multi.members = members;
 		return multi;
@@ -3701,7 +3529,7 @@ var ConnectionManager = (function() {
 		this.state = states.initialized;
 		options.transports = options.transports || Defaults.transports;
 		var transports = this.transports = [];
-		for(var i in options.transports) {
+		for(var i = 0; i < options.transports.length; i++) {
 			if(options.transports[i] in ConnectionManager.availableTransports)
 				transports.push(options.transports[i]);
 		}
@@ -4316,15 +4144,6 @@ var WebSocketTransport = (function() {
 var CometTransport = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 
-	function mixin(target, source) {
-		target = target || {};
-		if(source) {
-			Object.keys(source).forEach(function(key) {
-				target[key] = source[key];
-			});
-		}
-		return target;
-	}
 	/*
 	 * A base comet transport class
 	 */
@@ -4484,7 +4303,7 @@ var CometTransport = (function() {
 			msg.read(protocol);
 			var items = msg.items;
 			if(items && items.length)
-				for(var i in items)
+				for(var i = 0; i < items.length; i++)
 					this.onChannelMessage(items[i]);
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onSendResponse()', 'Unexpected exception handing channel event: ' + e.stack);
@@ -4729,43 +4548,45 @@ var FlashTransport = (function() {
 	return FlashTransport;
 })();
 var Resource = (function() {
+	function noop() {}
 
-	function Resource(rest, path) {
-		this.rest = rest;
-		this.uri = rest.baseUri + path;
-	}
+	function Resource() {}
 
-	Resource.prototype.get = function(params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 1 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.get = function(rest, path, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 4) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.get(uri, Utils.mixin(headers, rest.headers), params, callback);
+			Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, callback);
 		});
 	};
 
-	Resource.prototype.post = function(body, params, callback) {
-		/* params is optional; see if that argument contains the callback */
-		if(arguments.length == 2 && typeof(params) == 'function') {
-			callback = params;
-			params = null;
+	Resource.post = function(rest, path, body, params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(arguments.length < 5) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
-		var rest = this.rest;
-		var uri = this.uri;
 		rest.auth.getAuthHeaders(function(err, headers) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			Http.post(uri, Utils.mixin(headers, rest.headers), body, params, callback);
+			Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, callback);
 		});
 	};
 
@@ -4780,13 +4601,13 @@ var Auth = (function() {
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA1 && CryptoJS.enc.Base64)
 		hmac = function(text, key) {
-			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
+			return CryptoJS.HmacSHA1(text, key).toString(CryptoJS.enc.Base64);
 		};
 	if(!isBrowser)
 		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA256', key);
+			var inst = crypto.createHmac('SHA1', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
@@ -4799,71 +4620,84 @@ var Auth = (function() {
 			capability = JSON.parse(capability);
 
 		var c14nCapability = {};
-		Object.keys(capability).sort().forEach(function(key) {
-			c14nCapability[key] = capability[key].sort();
-		});
+		var keys = Utils.keysArray(capability, true);
+		if(!keys)
+			return '';
+		keys.sort();
+		for(var i = 0; i < keys.length; i++) {
+			c14nCapability[keys[i]] = capability[keys[i]].sort();
+		}
 		return JSON.stringify(c14nCapability);
 	}
 
 	function Auth(rest, options) {
 		this.rest = rest;
 		this.tokenUri = rest.baseUri + '/authorise';
-		var authOptions = this.authOptions = {};
-		if(options.key) {
-			var parts = options.key.split(':');
-			if(parts.length != 2) {
-				var msg = 'invalid key parameter';
-				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-				throw new Error(msg);
-			}
-			this.key = options.key;
-			this.keyId = parts[0];
-			this.keyValue = parts[1];
+
+		/* tokenOptions contains the parameters that may be used in
+		 * token requests */
+		var tokenOptions = this.tokenOptions = {};
+		if(options.keyId) tokenOptions.keyId = options.keyId;
+		if(options.keyValue) tokenOptions.keyValue = options.keyValue;
+
+		/* decide default auth method */
+		if(options.keyValue) {
 			if(!options.clientId) {
-				/* anonymous client */
+				/* we have the key and do not need to authenticate the client,
+				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				authOptions.key = options.key;
-				authOptions.key_id = this.keyId;
-				authOptions.key_value = this.keyValue;
+				this.keyId = options.keyId;
+				this.keyValue = options.keyValue;
 				return;
 			}
 			/* token auth, but we have the key so we can authorise
 			 * ourselves */
-			if(!hmac)
-				throw new Error('Auth(): client-side token request signing not supported');
+			if(!hmac) {
+				var msg = 'client-side token request signing not supported';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
+			}
 		}
+		/* using token auth, but decide the method */
 		this.method = 'token';
 		if(options.authToken)
 			this.token = {id: options.authToken};
-		if(options.auth_callback) {
+		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
-			authOptions.auth_callback = options.authCallback;
-		} else if(options.authURL) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authURL');
-			authOptions.auth_url = options.auth_url;
-		} else if(options.key) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using token auth with client-side signing');
-			authOptions.key = options.key;
-			authOptions.key_id = this.keyId;
-			authOptions.key_value = this.keyValue;
+			tokenOptions.authCallback = options.authCallback;
+		} else if(options.authUrl) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
+			tokenOptions.authUrl = options.authUrl;
+		} else if(options.keyValue) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
 		} else if(this.token) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
 		} else {
-			throw new Error('Auth(): options must include valid authentication parameters');
+			var msg = 'options must include valid authentication parameters';
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+			throw new Error(msg);
 		}
 	}
 
 	/**
-	 * Request an access token
+	 * Ensure valid auth credentials are present. This may rely in an already-known
+	 * and valid token, and will obtain a new token if necessary or explicitly
+	 * requested.
+	 * Authorisation will use the parameters supplied on construction except
+	 * where overridden with the options supplied in the call.
 	 * @param params
 	 * an object containing the request params:
-	 * - key:        (optional) the key to use in the format keyId:keyValue; if not
-	 *               specified, a key passed in constructing the Rest interface will be used
+	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
+	 *               passed in constructing the Rest interface may be used
 	 *
-	 * - expires:    (optional) the requested life of the token in seconds. If none is specified
-	 *               a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *               exceeeding that lifetime will be rejected with an error.
+	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
+	 *               value passed in constructing the Rest interface may be used
+	 *
+	 * - expires:    (optional) the requested life of any new token in seconds. If none
+	 *               is specified a default of 1 hour is provided. The maximum lifetime
+	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
@@ -4874,8 +4708,11 @@ var Auth = (function() {
 	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
-	 * - queryTime   (optional) boolean indicating that the aardvark system should be
-	 *               queried for the current time when none is specified explicitly
+	 * - queryTime   (optional) boolean indicating that the Ably system should be
+	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * - force       (optional) boolean indicating that a new token should be requested,
+	 *               even if a current token is still valid.
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
@@ -4907,23 +4744,23 @@ var Auth = (function() {
 	 * Request an access token
 	 * @param options
 	 * an object containing the request options:
-	 * - key_id:        the id of the key to use.
+	 * - keyId:         the id of the key to use.
 	 *
-	 * - key_value:     (optional) the secret value of the key; if not
+	 * - keyValue:      (optional) the secret value of the key; if not
 	 *                  specified, a key passed in constructing the Rest interface will be used; or
 	 *                  if no key is available, a token request callback or url will be used.
 	 *
-	 * - auth_callback: (optional) a javascript callback to be used, passing a set of token
+	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
 	 *                  request params, to get a signed token request.
 	 *
-	 * - auth_url:      (optional) a URL to be used to GET or POST a set of token request
+	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
 	 *                  params, to obtain a signed token request.
 	 *
-	 * - auth_headers:  (optional) a set of application-specific headers to be added to any request
-	 *                  made to the auth_url.
+	 * - authHeaders:   (optional) a set of application-specific headers to be added to any request
+	 *                  made to the authUrl.
 	 *
-	 * - auth_params:   (optional) a set of application-specific query params to be added to any
-	 *                  request made to the auth_url.
+	 * - authParams:    (optional) a set of application-specific query params to be added to any
+	 *                  request made to the authUrl.
 	 *
 	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
@@ -4954,23 +4791,20 @@ var Auth = (function() {
 		callback = callback || noop;
 
 		/* merge supplied options with the already-known options */
-		options = Utils.mixin(Utils.copy(this.authOptions), options);
+		options = Utils.mixin(Utils.copy(this.tokenOptions), options);
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
 		var tokenRequestCallback;
-		if(options.auth_callback) {
+		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
-			tokenRequestCallback = options.auth_callback;
-		} else if(options.auth_url) {
+			tokenRequestCallback = options.authCallback;
+		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(options.auth_url, options.auth_headers || {}, Utils.mixin(params, options.auth_params), cb);
+				Http.get(options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
 			};
-		} else if(options.key) {
-			var parts = options.key.split(':');
-			options.key_id = parts[0];
-			options.key_value = parts[1];
+		} else if(options.keyValue) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(Utils.mixin(Utils.copy(options), params), cb); };
@@ -4980,7 +4814,7 @@ var Auth = (function() {
 
 		/* now set up the request params */
 		var requestParams = {};
-		var clientId = options.client_id || this.rest.clientId;
+		var clientId = options.clientId || this.rest.clientId;
 		if(clientId)
 			requestParams.client_id = clientId;
 
@@ -5023,7 +4857,9 @@ var Auth = (function() {
 	 * owner (either using the token request callback or url).
 	 *
 	 * Valid token request options are:
-	 * - key_id:        the id of the key to use.
+	 * - keyId:         the id of the key to use.
+	 *
+	 * - keyValue:      the secret value of the key to use.
 	 *
 	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
@@ -5043,8 +4879,8 @@ var Auth = (function() {
 	 *                  queried for the current time when none is specified explicitly
 	 */
 	Auth.prototype.createTokenRequest = function(options, callback) {
-		var keyId = options.key_id;
-		var keyValue = options.key_value;
+		var keyId = options.keyId;
+		var keyValue = options.keyValue;
 		if(!keyId || !keyValue) {
 			callback(new Error('No key specified'));
 			return;
@@ -5130,8 +4966,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthHeaders = function(callback) {
 		if(this.method == 'basic') {
-			var keyStr = this.key || this.key_id + ':' + this.key_value;
-			callback(null, {authorization: 'Basic ' + toBase64(keyStr)});
+			callback(null, {authorization: 'Basic ' + toBase64(this.keyId + ':' + this.keyValue)});
 		} else {
 			this.authorise({}, function(err, token) {
 				if(err) {
@@ -5148,15 +4983,40 @@ var Auth = (function() {
 var Realtime = this.Realtime = (function() {
 
 	function Realtime(options) {
-		this.options = options = options || {};
+		/* normalise options */
+		if(!options) {
+			var msg = 'no options provided';
+			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+			throw new Error(msg);
+		}
+		if(typeof(options) == 'string')
+			options = {key: options};
+		if(options.key) {
+			var keyParts = options.key.split(':');
+			if(keyParts.length != 3) {
+				var msg = 'invalid key parameter';
+				Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+				throw new Error(msg);
+			}
+			options.appId = keyParts[0];
+			options.keyId = keyParts[1];
+			options.keyValue = keyParts[2];
+		}
+		if(!options.appId) {
+			var msg = 'no appId provided';
+			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
+			throw new Error(msg);
+		}
+		this.options = options;
+
+		/* process options */
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', 'started');
-		var realtime = this;
-		if(!options.appId)
-			throw new Error('Realtime(): no appId provided');
 		this.clientId = options.clientId;
 
+		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
+			options.encrypted = true;
 		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
 		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
@@ -5174,11 +5034,17 @@ var Realtime = this.Realtime = (function() {
 		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
-		this.events = new Resource(this, '/events');
-		this.stats = new Resource(this, '/stats');
 
 		this.connection.connectionManager.start();
 	}
+
+	Realtime.prototype.history = function(params, callback) {
+		Resource.get(this, '/events', params, callback);
+	};
+
+	Realtime.prototype.stats = function(params, callback) {
+		Resource.get(this, '/stats', params, callback);
+	};
 
 	Realtime.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
@@ -5274,17 +5140,24 @@ var Channel = (function() {
 		EventEmitter.call(this);
 		this.rest = rest;
     	this.name = name;
-    	this.presence = new Resource(rest, '/channels/' + name + '/presence');
-		this.events = new Resource(rest, '/channels/' + name + '/events');
-		this.stats = new Resource(rest, '/channels/' + name + '/stats');
 	}
 	Utils.inherits(Channel, EventEmitter);
 
+	Channel.prototype.presence = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/presence', params, callback);
+	};
+
+	Channel.prototype.history = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/events', params, callback);
+	};
+
+	Channel.prototype.stats = function(params, callback) {
+		Resource.get(this, '/channels/' + this.name + '/stats', params, callback);
+	};
+
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'name = ' + name);
-		callback = callback || noop;
-		var publish = this._publish = (this._publish || new Resource(this.rest, '/channels/' + this.name + '/publish'));
-		publish.post({name:name, payload:data}, callback);
+		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, payload:data}, callback);
 	};
 
 	return Channel;
@@ -5325,7 +5198,6 @@ var RealtimeChannel = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
     		msg.action = messagetypes.TAction.EVENT;
-    		msg.name = name;
     		msg.channel = this.name;
     		msg.messages = [message];
     		this.sendMessage(msg, callback);
@@ -5632,12 +5504,12 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, name: this.name, events: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
 					var event = this.pendingEvents[i];
-					msg.events.push(event.message);
+					msg.messages.push(event.message);
 					multicaster.push(event.callback);
 				}
 				this.sendMessage(msg, multicaster);
@@ -5769,7 +5641,7 @@ var Presence = (function() {
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; channel = ' + this.channel.name + ', client = ' + clientId);
-		for(var i in presenceSet) {
+		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
 			var clientData = undefined, clientId = presence.clientId;
 			if(presence.state == 'leave')
@@ -5817,8 +5689,8 @@ var Message = (function() {
 				return true;
 			},
 			'[object Array]': function(msg, data) {
-				msg.type = messagetypes.TType.LIST;
-				msg.listData = data;
+				msg.type = messagetypes.TType.JSONARRAY;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			},
 			'[object String]': function(msg, data) {
@@ -5836,13 +5708,13 @@ var Message = (function() {
 				return true;
 			},
 			'[object Object]': function(msg, data) {
-				msg.type = messagetypes.TType.MAP;
-				msg.mapData = data;
+				msg.type = messagetypes.TType.JSONOBJECT;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			},
 			'[object Function]': function(msg, data) {
-				msg.type = messagetypes.TType.MAP;
-				msg.mapData = data;
+				msg.type = messagetypes.TType.JSONOBJECT;
+				msg.stringData = JSON.stringify(data);
 				return true;
 			}
 	};
@@ -5896,11 +5768,9 @@ var Message = (function() {
 		case 7: /* BUFFER */
 			result = payload.binaryData;
 			break;
-		case 8: /* LIST */
-			result = payload.listData;
-			break;
-		case 9: /* MAP */
-			result = payload.mapData;
+		case 8: /* JSONARRAY */
+		case 9: /* JSONOBJECT */
+			result = JSON.parse(payload.stringData);
 			break;
 		case 0: /* NONE */
 		}
