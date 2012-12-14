@@ -53,6 +53,7 @@ var Auth = (function() {
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
+				this.basicKey = toBase64(options.key || [options.appId, options.keyId, options.keyValue].join(':'));
 				this.keyId = options.keyId;
 				this.keyValue = options.keyValue;
 				return;
@@ -372,7 +373,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthHeaders = function(callback) {
 		if(this.method == 'basic') {
-			callback(null, {authorization: 'Basic ' + toBase64(this.keyId + ':' + this.keyValue)});
+			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
 			this.authorise({}, function(err, token) {
 				if(err) {
