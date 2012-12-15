@@ -60,7 +60,7 @@ var Transport = (function() {
 				code: message.code,
 				reason: message.reason
 			};
-			this.abort(error).
+			this.abort(error);
 			break;
 		default:
 			this.emit('channelmessage', message);
