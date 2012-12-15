@@ -11,9 +11,7 @@ this.Http = (function() {
 			}
 			var statusCode = response.statusCode;
 			if(statusCode >= 300) {
-				err = new Error(JSON.stringify(body));
-				err.statusCode = statusCode;
-				callback(err);
+				callback(body.error || {statusCode: statusCode});
 				return;
 			}
 			callback(null, body);
