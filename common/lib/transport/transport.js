@@ -90,7 +90,7 @@ var Transport = (function() {
 		 * then we probably initiated it */
 		if(this.connectionManager.state.state == 'closed')
 			return;
-		var newState = wasClean ?  'closed' : 'disconnected';
+		var newState = wasClean ?  'disconnected' : 'failed';
 		this.isConnected = false;
 		var error = Utils.copy(ConnectionError[newState]);
 		if(reason) error.reason = reason;
