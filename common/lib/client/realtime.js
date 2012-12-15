@@ -53,7 +53,7 @@ var Realtime = this.Realtime = (function() {
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
 
-		this.connection.connectionManager.start();
+		this.connection.connect();
 	}
 
 	Realtime.prototype.history = function(params, callback) {

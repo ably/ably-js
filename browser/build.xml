@@ -15,8 +15,8 @@
                 <file name="prologue.js"/>
             </filelist>
             <filelist dir="${basedir}/../common/lib">
-                <file name="client/uimessages.js"/>
                 <file name="transport/defaults.js"/>
+                <file name="transport/connectionerror.js"/>
             </filelist>
             <filelist dir="${basedir}/../../thrift">
                 <file name="lib/js/util.js"/>

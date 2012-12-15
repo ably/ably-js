@@ -6,10 +6,10 @@ var ConnectionManager = (function() {
 		initialized:  {state: 'initialized',  terminal: false, queueEvents: true,  sendEvents: false},
 		connecting:   {state: 'connecting',   terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
 		connected:    {state: 'connected',    terminal: false, queueEvents: false, sendEvents: true, failState: 'disconnected'},
-		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout, defaultMessage: UIMessages.FAIL_REASON_DISCONNECTED},
-		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout, defaultMessage: UIMessages.FAIL_REASON_SUSPENDED},
-		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false, defaultMessage: UIMessages.FAIL_REASON_CLOSED},
-		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false, defaultMessage: UIMessages.FAIL_REASON_FAILED}
+		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
+		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
+		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false},
+		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
 	};
 
 	/* public constructor */
@@ -19,6 +19,7 @@ var ConnectionManager = (function() {
 		this.options = options;
 		this.pendingMessages = [];
 		this.state = states.initialized;
+		this.error = null;
 		options.transports = options.transports || Defaults.transports;
 		var transports = this.transports = [];
 		for(var i = 0; i < options.transports.length; i++) {
@@ -81,7 +82,7 @@ var ConnectionManager = (function() {
 	 *********************/
 
 	ConnectionManager.availableTransports = {};
-	
+
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		if(this.transport) {
 			callback(this.transport);
@@ -115,12 +116,16 @@ var ConnectionManager = (function() {
 		this.transport = transport;
 
 		var handleStateEvent = function(state) {
-			return function(reason, connectionId) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state, 'reason =  ' + reason + '; connectionId = ' + connectionId);
+			return function(error, connectionId) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state);
+				if(error && error.reason)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; reason =  ' + error.reason);
+				if(connectionId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; connectionId =  ' + connectionId);
 				if(self.transport === transport) {
 					if(connectionId)
 						self.realtime.connection.id = connectionId;
-					self.notifyState({state:state, reason:reason});
+					self.notifyState({state:state, error:error});
 				}
 			};
 		};
@@ -142,6 +147,8 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current);
 		this.state = states[stateChange.current];
+		if(this.state.terminal)
+			this.error = stateChange.error;
 		this.emit(stateChange.current, stateChange, this.transport);
 	};
 
@@ -204,10 +211,6 @@ var ConnectionManager = (function() {
 		}
 	};
 
-	ConnectionManager.prototype.start = function() {
-		this.requestState({state: 'connecting'});
-	};
-
 	ConnectionManager.prototype.notifyState = function(indicated) {
 		/* do nothing if we're already in the indicated state
 		 * or we're unable to move from the current state*/
@@ -235,7 +238,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* set up retry and suspended timers */
-		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.reason || newState.defaultMessage));
+		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 		if(newState.retryDelay)
 			this.startRetryTimer(newState.retryDelay);
 
@@ -252,7 +255,7 @@ var ConnectionManager = (function() {
 		if(request.state == this.state.state)
 			return; /* silently do nothing */
 		if(this.state.terminal)
-			throw new Error(this.state.defaultMessage);
+			throw new Error(this.error.reason);
 		if(request.state == 'connecting') {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
@@ -272,7 +275,7 @@ var ConnectionManager = (function() {
 			}
 		}
 		var newState = states[request.state];
-		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.reason || newState.defaultMessage));
+		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
 		this.enactStateChange(change);
 	};
 
@@ -298,9 +301,9 @@ var ConnectionManager = (function() {
 			/* FIXME: decide if fatal */
 			var fatal = false;
 			if(fatal)
-				self.notifyState({state: 'failed', reason: UIMessages.FAIL_REASON_FAILED + '(' + err + ')'});
+				self.notifyState({state: 'failed', error: err});
 			else
-				self.notifyState({state: states.connecting.failState, reason: UIMessages.FAIL_REASON_SUSPENDED + '(' + err + ')'});
+				self.notifyState({state: states.connecting.failState, error: err});
 		};
 
 		var tryConnect = function() {
@@ -325,7 +328,6 @@ var ConnectionManager = (function() {
 					tryConnect();
 			});
 		}
-
 	};
 
 	/******************
@@ -349,7 +351,7 @@ var ConnectionManager = (function() {
 				}
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
-				callback(this.state.defaultMessage);
+				callback(this.error);
 			}
 		}
 		if(this.state.sendEvents) {

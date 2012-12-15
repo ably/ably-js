@@ -262,10 +262,6 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.onMessage = function(message) {
 		switch(message.action) {
-		case 3: /* ERROR */
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Error received: statusCode = ' + message.statusCode + '; reason = ' + message.reason);
-			this.abort(UIMessages.FAIL_REASON_REFUSED);
-			break;
 		case 5: /* ATTACHED */
 			this.setAttached(message);
 			break;
@@ -374,12 +370,13 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
-		var oldState = this.state;
-		this.state = 'detached';
-		if(oldState == 'pending') {
+		if(message.code) {
 			/* this is an error message */
-			this.emit('failed', message);
+			this.state = 'failed';
+			var err = {statusCode: message.statusCode, code: message.code, reason: message.reason};
+			this.emit('failed', err);
 		} else {
+			this.state = 'detached';
 			this.emit('detached');
 		}
 	};
@@ -390,9 +387,10 @@ var RealtimeChannel = (function() {
 		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
 		if(pendingSubscriptions) {
 			/* this is an error message */
+			var err = {statusCode: message.statusCode, code: message.code, reason: message.reason};
 			Utils.nextTick(function() {
 				for(var i = 0; i < pendingSubscriptions.length; i++)
-					pendingSubscriptions[i].callback(message.reason || UIMessages.FAIL_REASON_REFUSED);
+					pendingSubscriptions[i].callback(err);
 			});
 			delete this.pendingSubscriptions[subscriptionName];
 		}

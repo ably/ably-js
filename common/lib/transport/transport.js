@@ -5,9 +5,9 @@ var Transport = (function() {
 	 * EventEmitter, generates the following events:
 	 * 
 	 * event name       data
-	 * closed           string reason
-	 * failed           string reason
-	 * connected        string reason, connectionId
+	 * closed           error
+	 * failed           error
+	 * connected        null error, connectionId
 	 * event            channel message object
 	 */
 	var thrift = isBrowser ? Thrift : require('thrift');
@@ -35,12 +35,12 @@ var Transport = (function() {
 
 	Transport.prototype.close = function() {
 		this.isConnected = false;
-		this.emit('closed', UIMessages.FAIL_REASON_CLOSED);
+		this.emit('closed', ConnectionError.closed);
 	};
 
-	Transport.prototype.abort = function(reason) {
+	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
-		this.emit('failed', reason);
+		this.emit('failed', error);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -52,7 +52,15 @@ var Transport = (function() {
 			this.connectionId = message.connectionId;
 			this.isConnected = true;
 			this.onConnect();
-			this.emit('connected', '', this.connectionId);
+			this.emit('connected', null, this.connectionId);
+			break;
+		case 3: /* ERROR */
+			var err = {
+				statusCode: message.statusCode,
+				code: message.code,
+				reason: message.reason
+			};
+			this.abort(error).
 			break;
 		default:
 			this.emit('channelmessage', message);
@@ -71,7 +79,7 @@ var Transport = (function() {
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.sendMessage()', msg);
-			callback(new Error(msg));
+			callback({statusCode: 500, code: 50000, reason: msg});
 		}
 	};
 
@@ -82,17 +90,11 @@ var Transport = (function() {
 		 * then we probably initiated it */
 		if(this.connectionManager.state.state == 'closed')
 			return;
-		var newState;
-		if(wasClean) {
-			newState = 'closed';
-			reason = UIMessages.FAIL_REASON_CLOSED;
-		} else {
-			newState = 'disconnected';
-			reason = UIMessages.FAIL_REASON_DISCONNECTED;
-		}
+		var newState = wasClean ?  'closed' : 'disconnected';
 		this.isConnected = false;
-		this.emit(newState, reason);
-//		this.connectionManager.notifyState({state: newState, reason: reason});
+		var error = Utils.copy(ConnectionError[newState]);
+		if(reason) error.reason = reason;
+		this.emit(newState, error);
 	};
 
 	Transport.prototype.dispose = function() {

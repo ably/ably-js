@@ -25,7 +25,6 @@ includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
 includeScript('../common/lib/transport/defaults.js');
-includeScript('../common/lib/client/uimessages.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/channel.js');
