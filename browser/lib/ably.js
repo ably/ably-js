@@ -3968,7 +3968,7 @@ var Transport = (function() {
 				code: message.code,
 				reason: message.reason
 			};
-			this.abort(error);
+			this.abort(err);
 			break;
 		default:
 			this.emit('channelmessage', message);
