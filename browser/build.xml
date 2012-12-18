@@ -86,7 +86,7 @@
         <gzip src="lib/ably.js" destfile="lib/ably.js.gz" /> 
     </target>
     <target name="gen-swf-gz">
-        <gzip src="lib/swf/WebSocketMainInsecure.swf" destfile="lib/swf/WebSocketMainInsecure.swf.gz" /> 
+        <gzip src="lib/swf/WebSocketMainInsecure-0.9.swf" destfile="lib/swf/WebSocketMainInsecure-0.9.swf.gz" />
     </target>
 
 	<!-- All (default target) -->
