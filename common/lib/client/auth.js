@@ -319,7 +319,7 @@ var Auth = (function() {
 				});
 				return;
 			}
-			options.timestamp = Math.floor(Date.now()/1000);
+			options.timestamp = timestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -358,12 +358,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key_id: this.keyId, key_value: this.keyValue});
 		else
-			this.getToken(false, function(err, token) {
+			this.authorise({}, function(err, tokenResponse) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:token.id});
+				callback(null, {access_token:tokenResponse.access_token.id});
 			});
 	};
 
