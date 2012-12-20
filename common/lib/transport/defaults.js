@@ -10,5 +10,5 @@ var Defaults = {
 	cometRecvTimeout:  90000,
 	cometSendTimeout:  10000,
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:   {swfLocation: 'swf/WebSocketMainInsecure.swf'}
+	flashTransport:   {swfLocation: 'swf/WebSocketMainInsecure-0.9.swf'}
 };
