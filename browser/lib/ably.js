@@ -4012,17 +4012,25 @@ var Utils = (function() {
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
 	var contentTypes = {
-		json:  'application/json',
-		jsonp: 'application/javascript',
-		xml:   'application/xml',
-		html:  'text/html'
+		json:   'application/json',
+		jsonp:  'application/javascript',
+		xml:    'application/xml',
+		html:   'text/html',
+		thrift: 'application/x-thrift'
 	};
 
-	Utils.defaultHeaders = function(format) {
-		var mimeType = contentTypes[format];
+	Utils.defaultGetHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
 		return {
-			accept: mimeType,
-			'content-type': mimeType
+			accept: accept
+		};
+	};
+
+	Utils.defaultPostHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+		return {
+			accept: accept,
+			'content-type': binary ? contentTypes.thrift : contentTypes.json
 		};
 	};
 
@@ -5093,21 +5101,23 @@ var Resource = (function() {
 
 	function Resource() {}
 
-	Resource.get = function(rest, path, params, callback) {
+	Resource.get = function(rest, path, headers, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined && typeof(params) == 'function') {
-			callback = params;
-			params = null;
-		} else {
-			callback = noop;
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
 		function tryGet() {
-			rest.auth.getAuthHeaders(function(err, headers) {
+			rest.auth.getAuthHeaders(function(err, authHeaders) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, function(err, res) {
+				Http.get(rest.baseUri + path, Utils.mixin(authHeaders, headers), params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -5127,21 +5137,23 @@ var Resource = (function() {
 		tryGet();
 	};
 
-	Resource.post = function(rest, path, body, params, callback) {
+	Resource.post = function(rest, path, body, headers, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined && typeof(params) == 'function') {
-			callback = params;
-			params = null;
-		} else {
-			callback = noop;
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
 		function tryPost() {
-			rest.auth.getAuthHeaders(function(err, headers) {
+			rest.auth.getAuthHeaders(function(err, authHeaders) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, function(err, res) {
+				Http.post(rest.baseUri + path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -5400,9 +5412,9 @@ var Auth = (function() {
 		var self = this;
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, null, ob, null, tokenCb);
+				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, null, ob, tokenCb);
+				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {
@@ -5594,14 +5606,8 @@ var Realtime = this.Realtime = (function() {
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var wsHost = options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
-
-		var format = options.format == 'json';
-		var headers = Utils.defaultHeaders[format];
-		if(options.headers)
-			headers = Utils.mixin(Utils.copy(options.headers), this.headers);
-		this.headers = headers;
+		options.wsHost = (options.wsHost || Defaults.WS_HOST);
+		options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
@@ -5716,17 +5722,39 @@ var Channel = (function() {
 
 	Channel.prototype.presence = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
-		Resource.get(this.rest, '/channels/' + this.name + '/presence', params, callback);
+		var rest = this.rest;
+		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.get(rest, '/channels/' + this.name + '/presence', headers, params, callback);
 	};
 
 	Channel.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
-		Resource.get(this.rest, '/channels/' + this.name + '/history', params, callback);
+		var rest = this.rest;
+		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, callback);
 	};
 
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
-		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, data:data}, callback);
+		var rest = this.rest;
+		var binary = !rest.options.useTextProtocol;
+		var requestBody;
+		if(binary) {
+			/* FIXME: binary not yet supported here .... */
+			Logger.logAction(Logger.LOG_ERROR, 'Channel.publish()', 'Unable to publish message in binary format (not supported yet)');
+			binary = false;
+			requestBody = {name:name, data:data};
+		} else {
+			requestBody = {name:name, data:data};
+		}
+		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.post(rest, '/channels/' + this.name + '/publish', requestBody, headers, null, callback);
 	};
 
 	return Channel;
@@ -5762,7 +5790,7 @@ var RealtimeChannel = (function() {
 		}
     	var message = new messagetypes.TMessage();
     	message.name = name;
-    	message.payload = Message.createPayload(data);
+    	message.data = Message.createPayload(data);
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
@@ -6020,7 +6048,7 @@ var RealtimeChannel = (function() {
 						tMessage.channelSerial,
 						tMessage.timestamp,
 						tMessage.name,
-						Message.getPayload(tMessage.payload)
+						Message.getPayload(tMessage.data)
 					);
 				}
 				this.onEvent(messages);
