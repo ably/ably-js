@@ -134,17 +134,25 @@ var Utils = (function() {
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
 	var contentTypes = {
-		json:  'application/json',
-		jsonp: 'application/javascript',
-		xml:   'application/xml',
-		html:  'text/html'
+		json:   'application/json',
+		jsonp:  'application/javascript',
+		xml:    'application/xml',
+		html:   'text/html',
+		thrift: 'application/x-thrift'
 	};
 
-	Utils.defaultHeaders = function(format) {
-		var mimeType = contentTypes[format];
+	Utils.defaultGetHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
 		return {
-			accept: mimeType,
-			'content-type': mimeType
+			accept: accept
+		};
+	};
+
+	Utils.defaultPostHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+		return {
+			accept: accept,
+			'content-type': binary ? contentTypes.thrift : contentTypes.json
 		};
 	};
 
