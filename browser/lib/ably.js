@@ -4582,40 +4582,70 @@ var Resource = (function() {
 
 	Resource.get = function(rest, path, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(arguments.length < 4) {
-			if(typeof(params) == 'function') {
-				callback = params;
-				params = null;
-			} else {
-				callback = noop;
-			}
+		if(callback === undefined && typeof(params) == 'function') {
+			callback = params;
+			params = null;
+		} else {
+			callback = noop;
 		}
-		rest.auth.getAuthHeaders(function(err, headers) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, callback);
-		});
+		function tryGet() {
+			rest.auth.getAuthHeaders(function(err, headers) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, function(err, res) {
+					if(err && err.code == 40140) {
+						/* token has expired, so get a new one */
+						rest.auth.authorise({force:true}, function(err) {
+							if(err) {
+								callback(err);
+								return;
+							}
+							/* retry ... */
+							tryGet();
+						});
+						return;
+					}
+					callback(err, res);
+				});
+			});
+		}
+		tryGet();
 	};
 
 	Resource.post = function(rest, path, body, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(arguments.length < 5) {
-			if(typeof(params) == 'function') {
-				callback = params;
-				params = null;
-			} else {
-				callback = noop;
-			}
+		if(callback === undefined && typeof(params) == 'function') {
+			callback = params;
+			params = null;
+		} else {
+			callback = noop;
 		}
-		rest.auth.getAuthHeaders(function(err, headers) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, callback);
-		});
+		function tryPost() {
+			rest.auth.getAuthHeaders(function(err, headers) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, function(err, res) {
+					if(err && err.code == 40140) {
+						/* token has expired, so get a new one */
+						rest.auth.authorise({force:true}, function(err) {
+							if(err) {
+								callback(err);
+								return;
+							}
+							/* retry ... */
+							tryPost();
+						});
+						return;
+					}
+					callback(err, res);
+				});
+			});
+		}
+		tryPost();
 	};
 
 	return Resource;
@@ -4629,13 +4659,13 @@ var Auth = (function() {
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA1 && CryptoJS.enc.Base64)
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
 		hmac = function(text, key) {
-			return CryptoJS.HmacSHA1(text, key).toString(CryptoJS.enc.Base64);
+			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
 		};
 	if(!isBrowser)
 		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA1', key);
+			var inst = crypto.createHmac('SHA256', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
@@ -4723,7 +4753,7 @@ var Auth = (function() {
 	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
 	 *               value passed in constructing the Rest interface may be used
 	 *
-	 * - expires:    (optional) the requested life of any new token in seconds. If none
+	 * - ttl:    (optional) the requested life of any new token in seconds. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -4791,7 +4821,7 @@ var Auth = (function() {
 	 * - authParams:    (optional) a set of application-specific query params to be added to any
 	 *                  request made to the authUrl.
 	 *
-	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -4847,9 +4877,9 @@ var Auth = (function() {
 		if(clientId)
 			requestParams.client_id = clientId;
 
-		var expires = options.expires || '';
-		if('expires' in options)
-			requestParams.expires = expires;
+		var ttl = options.ttl || '';
+		if('ttl' in options)
+			requestParams.ttl = ttl;
 
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
@@ -4890,7 +4920,7 @@ var Auth = (function() {
 	 *
 	 * - keyValue:      the secret value of the key to use.
 	 *
-	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -4919,9 +4949,9 @@ var Auth = (function() {
 		if(clientId)
 			request.client_id = options.clientId;
 
-		var expires = options.expires || '';
-		if(expires)
-			request.expires = expires;
+		var ttl = options.ttl || '';
+		if(ttl)
+			request.ttl = ttl;
 
 		var capability = options.capability || '';
 		if(capability)
@@ -4955,7 +4985,7 @@ var Auth = (function() {
 
 			var signText
 			=	request.id + '\n'
-			+	expires + '\n'
+			+	ttl + '\n'
 			+	capability + '\n'
 			+	clientId + '\n'
 			+	timestamp + '\n'
@@ -5161,7 +5191,6 @@ var Connection = (function() {
 	return Connection;
 })();
 var Channel = (function() {
-	var noop = function() {};
 
 	/* public constructor */
 	function Channel(rest, name, options) {
@@ -5173,20 +5202,18 @@ var Channel = (function() {
 	Utils.inherits(Channel, EventEmitter);
 
 	Channel.prototype.presence = function(params, callback) {
-		Resource.get(this, '/channels/' + this.name + '/presence', params, callback);
+		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
+		Resource.get(this.rest, '/channels/' + this.name + '/presence', params, callback);
 	};
 
 	Channel.prototype.history = function(params, callback) {
-		Resource.get(this, '/channels/' + this.name + '/events', params, callback);
-	};
-
-	Channel.prototype.stats = function(params, callback) {
-		Resource.get(this, '/channels/' + this.name + '/stats', params, callback);
+		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
+		Resource.get(this.rest, '/channels/' + this.name + '/history', params, callback);
 	};
 
 	Channel.prototype.publish = function(name, data, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'name = ' + name);
-		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, payload:data}, callback);
+		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
+		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, data:data}, callback);
 	};
 
 	return Channel;
