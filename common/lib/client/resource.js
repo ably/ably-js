@@ -5,13 +5,11 @@ var Resource = (function() {
 
 	Resource.get = function(rest, path, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(arguments.length < 4) {
-			if(typeof(params) == 'function') {
-				callback = params;
-				params = null;
-			} else {
-				callback = noop;
-			}
+		if(callback === undefined && typeof(params) == 'function') {
+			callback = params;
+			params = null;
+		} else {
+			callback = noop;
 		}
 		function tryGet() {
 			rest.auth.getAuthHeaders(function(err, headers) {
@@ -36,17 +34,16 @@ var Resource = (function() {
 				});
 			});
 		}
+		tryGet();
 	};
 
 	Resource.post = function(rest, path, body, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(arguments.length < 5) {
-			if(typeof(params) == 'function') {
-				callback = params;
-				params = null;
-			} else {
-				callback = noop;
-			}
+		if(callback === undefined && typeof(params) == 'function') {
+			callback = params;
+			params = null;
+		} else {
+			callback = noop;
 		}
 		function tryPost() {
 			rest.auth.getAuthHeaders(function(err, headers) {
@@ -71,6 +68,7 @@ var Resource = (function() {
 				});
 			});
 		}
+		tryPost();
 	};
 
 	return Resource;
