@@ -40,14 +40,8 @@ var Realtime = this.Realtime = (function() {
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var wsHost = options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
-
-		var format = options.format == 'json';
-		var headers = Utils.defaultHeaders[format];
-		if(options.headers)
-			headers = Utils.mixin(Utils.copy(options.headers), this.headers);
-		this.headers = headers;
+		options.wsHost = (options.wsHost || Defaults.WS_HOST);
+		options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
