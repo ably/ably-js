@@ -7,13 +7,13 @@ var Auth = (function() {
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA1 && CryptoJS.enc.Base64)
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
 		hmac = function(text, key) {
-			return CryptoJS.HmacSHA1(text, key).toString(CryptoJS.enc.Base64);
+			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
 		};
 	if(!isBrowser)
 		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA1', key);
+			var inst = crypto.createHmac('SHA256', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
@@ -101,7 +101,7 @@ var Auth = (function() {
 	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
 	 *               value passed in constructing the Rest interface may be used
 	 *
-	 * - expires:    (optional) the requested life of any new token in seconds. If none
+	 * - ttl:    (optional) the requested life of any new token in seconds. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -169,7 +169,7 @@ var Auth = (function() {
 	 * - authParams:    (optional) a set of application-specific query params to be added to any
 	 *                  request made to the authUrl.
 	 *
-	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -225,9 +225,9 @@ var Auth = (function() {
 		if(clientId)
 			requestParams.client_id = clientId;
 
-		var expires = options.expires || '';
-		if('expires' in options)
-			requestParams.expires = expires;
+		var ttl = options.ttl || '';
+		if('ttl' in options)
+			requestParams.ttl = ttl;
 
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
@@ -268,7 +268,7 @@ var Auth = (function() {
 	 *
 	 * - keyValue:      the secret value of the key to use.
 	 *
-	 * - expires:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -297,9 +297,9 @@ var Auth = (function() {
 		if(clientId)
 			request.client_id = options.clientId;
 
-		var expires = options.expires || '';
-		if(expires)
-			request.expires = expires;
+		var ttl = options.ttl || '';
+		if(ttl)
+			request.ttl = ttl;
 
 		var capability = options.capability || '';
 		if(capability)
@@ -319,7 +319,7 @@ var Auth = (function() {
 				});
 				return;
 			}
-			options.timestamp = Math.floor(Date.now()/1000);
+			options.timestamp = timestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -333,7 +333,7 @@ var Auth = (function() {
 
 			var signText
 			=	request.id + '\n'
-			+	expires + '\n'
+			+	ttl + '\n'
 			+	capability + '\n'
 			+	clientId + '\n'
 			+	timestamp + '\n'
@@ -358,12 +358,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key_id: this.keyId, key_value: this.keyValue});
 		else
-			this.getToken(false, function(err, token) {
+			this.authorise({}, function(err, tokenResponse) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:token.id});
+				callback(null, {access_token:tokenResponse.access_token.id});
 			});
 	};
 

@@ -40,7 +40,7 @@ var Rest = (function() {
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var format = options.format == 'json';
+		var format = options.format || 'json';
 		var headers = Utils.defaultHeaders[format];
 		if(options.headers)
 			headers = Utils.mixin(Utils.copy(options.headers), this.headers);
@@ -49,10 +49,6 @@ var Rest = (function() {
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
-
-	Rest.prototype.history = function(params, callback) {
-		Resource.get(this, '/events', params, callback);
-	};
 
 	Rest.prototype.stats = function(params, callback) {
 		Resource.get(this, '/stats', params, callback);
