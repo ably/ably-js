@@ -50,10 +50,6 @@ var Rest = (function() {
 		this.channels = new Channels(this);
 	}
 
-	Rest.prototype.history = function(params, callback) {
-		Resource.get(this, '/events', params, callback);
-	};
-
 	Rest.prototype.stats = function(params, callback) {
 		Resource.get(this, '/stats', params, callback);
 	};
