@@ -1101,12 +1101,14 @@ SMessageTypes.prototype.write = function(output) {
   return;
 };
 
-SConnectionCount = function(args) {
+SResourceCount = function(args) {
   this.opened = null;
   this.peak = null;
   this.mean = null;
   this.min = null;
   this.refused = null;
+  this.sample_count = null;
+  this.sample_sum = null;
   if (args) {
     if (args.opened !== undefined) {
       this.opened = args.opened;
@@ -1123,10 +1125,16 @@ SConnectionCount = function(args) {
     if (args.refused !== undefined) {
       this.refused = args.refused;
     }
+    if (args.sample_count !== undefined) {
+      this.sample_count = args.sample_count;
+    }
+    if (args.sample_sum !== undefined) {
+      this.sample_sum = args.sample_sum;
+    }
   }
 };
-SConnectionCount.prototype = {};
-SConnectionCount.prototype.read = function(input) {
+SResourceCount.prototype = {};
+SResourceCount.prototype.read = function(input) {
   input.readStructBegin();
   while (true)
   {
@@ -1174,6 +1182,20 @@ SConnectionCount.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 10:
+      if (ftype == Thrift.Type.I32) {
+        this.sample_count = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 11:
+      if (ftype == Thrift.Type.I32) {
+        this.sample_sum = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -1183,8 +1205,8 @@ SConnectionCount.prototype.read = function(input) {
   return;
 };
 
-SConnectionCount.prototype.write = function(output) {
-  output.writeStructBegin('SConnectionCount');
+SResourceCount.prototype.write = function(output) {
+  output.writeStructBegin('SResourceCount');
   if (this.opened !== null) {
     output.writeFieldBegin('opened', Thrift.Type.I32, 1);
     output.writeI32(this.opened);
@@ -1208,6 +1230,16 @@ SConnectionCount.prototype.write = function(output) {
   if (this.refused !== null) {
     output.writeFieldBegin('refused', Thrift.Type.I32, 5);
     output.writeI32(this.refused);
+    output.writeFieldEnd();
+  }
+  if (this.sample_count !== null) {
+    output.writeFieldBegin('sample_count', Thrift.Type.I32, 10);
+    output.writeI32(this.sample_count);
+    output.writeFieldEnd();
+  }
+  if (this.sample_sum !== null) {
+    output.writeFieldBegin('sample_sum', Thrift.Type.I32, 11);
+    output.writeI32(this.sample_sum);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -1247,7 +1279,7 @@ SConnectionTypes.prototype.read = function(input) {
     {
       case 1:
       if (ftype == Thrift.Type.STRUCT) {
-        this.all = new SConnectionCount();
+        this.all = new SResourceCount();
         this.all.read(input);
       } else {
         input.skip(ftype);
@@ -1255,7 +1287,7 @@ SConnectionTypes.prototype.read = function(input) {
       break;
       case 2:
       if (ftype == Thrift.Type.STRUCT) {
-        this.plain = new SConnectionCount();
+        this.plain = new SResourceCount();
         this.plain.read(input);
       } else {
         input.skip(ftype);
@@ -1263,7 +1295,7 @@ SConnectionTypes.prototype.read = function(input) {
       break;
       case 3:
       if (ftype == Thrift.Type.STRUCT) {
-        this.tls = new SConnectionCount();
+        this.tls = new SResourceCount();
         this.tls.read(input);
       } else {
         input.skip(ftype);
@@ -1412,120 +1444,6 @@ SMessageTraffic.prototype.write = function(output) {
   if (this.httpStream !== null) {
     output.writeFieldBegin('httpStream', Thrift.Type.STRUCT, 5);
     this.httpStream.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SChannelCount = function(args) {
-  this.opened = null;
-  this.peak = null;
-  this.mean = null;
-  this.min = null;
-  this.refused = null;
-  if (args) {
-    if (args.opened !== undefined) {
-      this.opened = args.opened;
-    }
-    if (args.peak !== undefined) {
-      this.peak = args.peak;
-    }
-    if (args.mean !== undefined) {
-      this.mean = args.mean;
-    }
-    if (args.min !== undefined) {
-      this.min = args.min;
-    }
-    if (args.refused !== undefined) {
-      this.refused = args.refused;
-    }
-  }
-};
-SChannelCount.prototype = {};
-SChannelCount.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.opened = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.peak = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.I32) {
-        this.mean = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.I32) {
-        this.min = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.I32) {
-        this.refused = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SChannelCount.prototype.write = function(output) {
-  output.writeStructBegin('SChannelCount');
-  if (this.opened !== null) {
-    output.writeFieldBegin('opened', Thrift.Type.I32, 1);
-    output.writeI32(this.opened);
-    output.writeFieldEnd();
-  }
-  if (this.peak !== null) {
-    output.writeFieldBegin('peak', Thrift.Type.I32, 2);
-    output.writeI32(this.peak);
-    output.writeFieldEnd();
-  }
-  if (this.mean !== null) {
-    output.writeFieldBegin('mean', Thrift.Type.I32, 3);
-    output.writeI32(this.mean);
-    output.writeFieldEnd();
-  }
-  if (this.min !== null) {
-    output.writeFieldBegin('min', Thrift.Type.I32, 4);
-    output.writeI32(this.min);
-    output.writeFieldEnd();
-  }
-  if (this.refused !== null) {
-    output.writeFieldBegin('refused', Thrift.Type.I32, 5);
-    output.writeI32(this.refused);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -1707,7 +1625,7 @@ SStats.prototype.read = function(input) {
       break;
       case 6:
       if (ftype == Thrift.Type.STRUCT) {
-        this.channels = new SChannelCount();
+        this.channels = new SResourceCount();
         this.channels.read(input);
       } else {
         input.skip(ftype);
