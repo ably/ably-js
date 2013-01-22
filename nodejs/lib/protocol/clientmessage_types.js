@@ -978,8 +978,8 @@ SMessageCount.prototype.read = function(input) {
     switch (fid)
     {
       case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.count = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.count = input.readDouble();
       } else {
         input.skip(ftype);
       }
@@ -1003,8 +1003,8 @@ SMessageCount.prototype.read = function(input) {
 SMessageCount.prototype.write = function(output) {
   output.writeStructBegin('SMessageCount');
   if (this.count !== null) {
-    output.writeFieldBegin('count', Thrift.Type.I32, 1);
-    output.writeI32(this.count);
+    output.writeFieldBegin('count', Thrift.Type.DOUBLE, 1);
+    output.writeDouble(this.count);
     output.writeFieldEnd();
   }
   if (this.data !== null) {
@@ -1149,50 +1149,50 @@ SResourceCount.prototype.read = function(input) {
     switch (fid)
     {
       case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.opened = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.opened = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.peak = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.peak = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 3:
-      if (ftype == Thrift.Type.I32) {
-        this.mean = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.mean = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 4:
-      if (ftype == Thrift.Type.I32) {
-        this.min = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.min = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 5:
-      if (ftype == Thrift.Type.I32) {
-        this.refused = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.refused = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 10:
-      if (ftype == Thrift.Type.I32) {
-        this.sample_count = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.sample_count = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 11:
-      if (ftype == Thrift.Type.I32) {
-        this.sample_sum = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.sample_sum = input.readDouble();
       } else {
         input.skip(ftype);
       }
@@ -1209,38 +1209,38 @@ SResourceCount.prototype.read = function(input) {
 SResourceCount.prototype.write = function(output) {
   output.writeStructBegin('SResourceCount');
   if (this.opened !== null) {
-    output.writeFieldBegin('opened', Thrift.Type.I32, 1);
-    output.writeI32(this.opened);
+    output.writeFieldBegin('opened', Thrift.Type.DOUBLE, 1);
+    output.writeDouble(this.opened);
     output.writeFieldEnd();
   }
   if (this.peak !== null) {
-    output.writeFieldBegin('peak', Thrift.Type.I32, 2);
-    output.writeI32(this.peak);
+    output.writeFieldBegin('peak', Thrift.Type.DOUBLE, 2);
+    output.writeDouble(this.peak);
     output.writeFieldEnd();
   }
   if (this.mean !== null) {
-    output.writeFieldBegin('mean', Thrift.Type.I32, 3);
-    output.writeI32(this.mean);
+    output.writeFieldBegin('mean', Thrift.Type.DOUBLE, 3);
+    output.writeDouble(this.mean);
     output.writeFieldEnd();
   }
   if (this.min !== null) {
-    output.writeFieldBegin('min', Thrift.Type.I32, 4);
-    output.writeI32(this.min);
+    output.writeFieldBegin('min', Thrift.Type.DOUBLE, 4);
+    output.writeDouble(this.min);
     output.writeFieldEnd();
   }
   if (this.refused !== null) {
-    output.writeFieldBegin('refused', Thrift.Type.I32, 5);
-    output.writeI32(this.refused);
+    output.writeFieldBegin('refused', Thrift.Type.DOUBLE, 5);
+    output.writeDouble(this.refused);
     output.writeFieldEnd();
   }
   if (this.sample_count !== null) {
-    output.writeFieldBegin('sample_count', Thrift.Type.I32, 10);
-    output.writeI32(this.sample_count);
+    output.writeFieldBegin('sample_count', Thrift.Type.DOUBLE, 10);
+    output.writeDouble(this.sample_count);
     output.writeFieldEnd();
   }
   if (this.sample_sum !== null) {
-    output.writeFieldBegin('sample_sum', Thrift.Type.I32, 11);
-    output.writeI32(this.sample_sum);
+    output.writeFieldBegin('sample_sum', Thrift.Type.DOUBLE, 11);
+    output.writeDouble(this.sample_sum);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -1483,22 +1483,22 @@ SRequestCount.prototype.read = function(input) {
     switch (fid)
     {
       case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.succeeded = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.succeeded = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.failed = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.failed = input.readDouble();
       } else {
         input.skip(ftype);
       }
       break;
       case 3:
-      if (ftype == Thrift.Type.I32) {
-        this.refused = input.readI32();
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.refused = input.readDouble();
       } else {
         input.skip(ftype);
       }
@@ -1515,18 +1515,18 @@ SRequestCount.prototype.read = function(input) {
 SRequestCount.prototype.write = function(output) {
   output.writeStructBegin('SRequestCount');
   if (this.succeeded !== null) {
-    output.writeFieldBegin('succeeded', Thrift.Type.I32, 1);
-    output.writeI32(this.succeeded);
+    output.writeFieldBegin('succeeded', Thrift.Type.DOUBLE, 1);
+    output.writeDouble(this.succeeded);
     output.writeFieldEnd();
   }
   if (this.failed !== null) {
-    output.writeFieldBegin('failed', Thrift.Type.I32, 2);
-    output.writeI32(this.failed);
+    output.writeFieldBegin('failed', Thrift.Type.DOUBLE, 2);
+    output.writeDouble(this.failed);
     output.writeFieldEnd();
   }
   if (this.refused !== null) {
-    output.writeFieldBegin('refused', Thrift.Type.I32, 3);
-    output.writeI32(this.refused);
+    output.writeFieldBegin('refused', Thrift.Type.DOUBLE, 3);
+    output.writeDouble(this.refused);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
