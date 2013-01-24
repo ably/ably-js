@@ -235,9 +235,9 @@ var Auth = (function() {
 		var self = this;
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, null, ob, null, tokenCb);
+				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, null, ob, tokenCb);
+				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {

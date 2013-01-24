@@ -40,22 +40,25 @@ var Rest = (function() {
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var format = options.format || 'json';
-		var headers = Utils.defaultHeaders[format];
-		if(options.headers)
-			headers = Utils.mixin(Utils.copy(options.headers), this.headers);
-		this.headers = headers;
+		/* FIXME: temporarily force use of json and not thrift */
+		options.useTextProtocol = true;
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
-		Resource.get(this, '/stats', params, callback);
+		var headers = Utils.copy(Utils.defaultGetHeaders(!this.options.useTextProtocol));
+		if(this.options.headers)
+			Utils.mixin(headers, this.options.headers);
+		Resource.get(this, '/stats', headers, params, callback);
 	};
 
 	Rest.prototype.time = function(callback) {
-		Http.get(this.authority + '/time', null, null, function(err, res) {
+		var headers = Utils.copy(Utils.defaultGetHeaders());
+		if(this.options.headers)
+			Utils.mixin(headers, this.options.headers);
+		Http.get(this.authority + '/time', headers, null, function(err, res) {
 			if(err) {
 				callback(err);
 				return;

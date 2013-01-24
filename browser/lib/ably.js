@@ -2300,7 +2300,7 @@ TMessage = function(args) {
   this.name = null;
   this.clientId = null;
   this.timestamp = null;
-  this.payload = null;
+  this.data = null;
   this.tags = null;
   if (args) {
     if (args.name !== undefined) {
@@ -2312,8 +2312,8 @@ TMessage = function(args) {
     if (args.timestamp !== undefined) {
       this.timestamp = args.timestamp;
     }
-    if (args.payload !== undefined) {
-      this.payload = args.payload;
+    if (args.data !== undefined) {
+      this.data = args.data;
     }
     if (args.tags !== undefined) {
       this.tags = args.tags;
@@ -2357,8 +2357,8 @@ TMessage.prototype.read = function(input) {
       break;
       case 5:
       if (ftype == Thrift.Type.STRUCT) {
-        this.payload = new TData();
-        this.payload.read(input);
+        this.data = new TData();
+        this.data.read(input);
       } else {
         input.skip(ftype);
       }
@@ -2409,9 +2409,9 @@ TMessage.prototype.write = function(output) {
     output.writeI64(this.timestamp);
     output.writeFieldEnd();
   }
-  if (this.payload !== null) {
-    output.writeFieldBegin('payload', Thrift.Type.STRUCT, 5);
-    this.payload.write(output);
+  if (this.data !== null) {
+    output.writeFieldBegin('data', Thrift.Type.STRUCT, 5);
+    this.data.write(output);
     output.writeFieldEnd();
   }
   if (this.tags !== null) {
@@ -2819,6 +2819,519 @@ TMessageSet.prototype.write = function(output) {
       {
         iter31 = this.items[iter31];
         iter31.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+CTraffic = function(args) {
+  this.messageCount = null;
+  this.messageSize = null;
+  if (args) {
+    if (args.messageCount !== undefined) {
+      this.messageCount = args.messageCount;
+    }
+    if (args.messageSize !== undefined) {
+      this.messageSize = args.messageSize;
+    }
+  }
+};
+CTraffic.prototype = {};
+CTraffic.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.I32) {
+        this.messageCount = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.DOUBLE) {
+        this.messageSize = input.readDouble();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+CTraffic.prototype.write = function(output) {
+  output.writeStructBegin('CTraffic');
+  if (this.messageCount !== null) {
+    output.writeFieldBegin('messageCount', Thrift.Type.I32, 1);
+    output.writeI32(this.messageCount);
+    output.writeFieldEnd();
+  }
+  if (this.messageSize !== null) {
+    output.writeFieldBegin('messageSize', Thrift.Type.DOUBLE, 2);
+    output.writeDouble(this.messageSize);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+CConnections = function(args) {
+  this.plain = null;
+  this.tls = null;
+  if (args) {
+    if (args.plain !== undefined) {
+      this.plain = args.plain;
+    }
+    if (args.tls !== undefined) {
+      this.tls = args.tls;
+    }
+  }
+};
+CConnections.prototype = {};
+CConnections.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.I32) {
+        this.plain = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.I32) {
+        this.tls = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+CConnections.prototype.write = function(output) {
+  output.writeStructBegin('CConnections');
+  if (this.plain !== null) {
+    output.writeFieldBegin('plain', Thrift.Type.I32, 1);
+    output.writeI32(this.plain);
+    output.writeFieldEnd();
+  }
+  if (this.tls !== null) {
+    output.writeFieldBegin('tls', Thrift.Type.I32, 2);
+    output.writeI32(this.tls);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+CTimelineStats = function(args) {
+  this.published = null;
+  this.deliveredAll = null;
+  this.deliveredRealtime = null;
+  this.deliveredRest = null;
+  this.deliveredPost = null;
+  this.deliveredHttpStream = null;
+  this.connections = null;
+  if (args) {
+    if (args.published !== undefined) {
+      this.published = args.published;
+    }
+    if (args.deliveredAll !== undefined) {
+      this.deliveredAll = args.deliveredAll;
+    }
+    if (args.deliveredRealtime !== undefined) {
+      this.deliveredRealtime = args.deliveredRealtime;
+    }
+    if (args.deliveredRest !== undefined) {
+      this.deliveredRest = args.deliveredRest;
+    }
+    if (args.deliveredPost !== undefined) {
+      this.deliveredPost = args.deliveredPost;
+    }
+    if (args.deliveredHttpStream !== undefined) {
+      this.deliveredHttpStream = args.deliveredHttpStream;
+    }
+    if (args.connections !== undefined) {
+      this.connections = args.connections;
+    }
+  }
+};
+CTimelineStats.prototype = {};
+CTimelineStats.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.published = new CTraffic();
+        this.published.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.deliveredAll = new CTraffic();
+        this.deliveredAll.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.deliveredRealtime = new CTraffic();
+        this.deliveredRealtime.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.deliveredRest = new CTraffic();
+        this.deliveredRest.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.deliveredPost = new CTraffic();
+        this.deliveredPost.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.deliveredHttpStream = new CTraffic();
+        this.deliveredHttpStream.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 7:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.connections = new CConnections();
+        this.connections.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+CTimelineStats.prototype.write = function(output) {
+  output.writeStructBegin('CTimelineStats');
+  if (this.published !== null) {
+    output.writeFieldBegin('published', Thrift.Type.STRUCT, 1);
+    this.published.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.deliveredAll !== null) {
+    output.writeFieldBegin('deliveredAll', Thrift.Type.STRUCT, 2);
+    this.deliveredAll.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.deliveredRealtime !== null) {
+    output.writeFieldBegin('deliveredRealtime', Thrift.Type.STRUCT, 3);
+    this.deliveredRealtime.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.deliveredRest !== null) {
+    output.writeFieldBegin('deliveredRest', Thrift.Type.STRUCT, 4);
+    this.deliveredRest.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.deliveredPost !== null) {
+    output.writeFieldBegin('deliveredPost', Thrift.Type.STRUCT, 5);
+    this.deliveredPost.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.deliveredHttpStream !== null) {
+    output.writeFieldBegin('deliveredHttpStream', Thrift.Type.STRUCT, 6);
+    this.deliveredHttpStream.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.connections !== null) {
+    output.writeFieldBegin('connections', Thrift.Type.STRUCT, 7);
+    this.connections.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+TMessageArray = function(args) {
+  this.items = null;
+  if (args) {
+    if (args.items !== undefined) {
+      this.items = args.items;
+    }
+  }
+};
+TMessageArray.prototype = {};
+TMessageArray.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.LIST) {
+        var _size32 = 0;
+        var _rtmp336;
+        this.items = [];
+        var _etype35 = 0;
+        _rtmp336 = input.readListBegin();
+        _etype35 = _rtmp336.etype;
+        _size32 = _rtmp336.size;
+        for (var _i37 = 0; _i37 < _size32; ++_i37)
+        {
+          var elem38 = null;
+          elem38 = new TMessage();
+          elem38.read(input);
+          this.items.push(elem38);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+TMessageArray.prototype.write = function(output) {
+  output.writeStructBegin('TMessageArray');
+  if (this.items !== null) {
+    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
+    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
+    for (var iter39 in this.items)
+    {
+      if (this.items.hasOwnProperty(iter39))
+      {
+        iter39 = this.items[iter39];
+        iter39.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+TPresenceArray = function(args) {
+  this.items = null;
+  if (args) {
+    if (args.items !== undefined) {
+      this.items = args.items;
+    }
+  }
+};
+TPresenceArray.prototype = {};
+TPresenceArray.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.LIST) {
+        var _size40 = 0;
+        var _rtmp344;
+        this.items = [];
+        var _etype43 = 0;
+        _rtmp344 = input.readListBegin();
+        _etype43 = _rtmp344.etype;
+        _size40 = _rtmp344.size;
+        for (var _i45 = 0; _i45 < _size40; ++_i45)
+        {
+          var elem46 = null;
+          elem46 = new TPresence();
+          elem46.read(input);
+          this.items.push(elem46);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+TPresenceArray.prototype.write = function(output) {
+  output.writeStructBegin('TPresenceArray');
+  if (this.items !== null) {
+    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
+    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
+    for (var iter47 in this.items)
+    {
+      if (this.items.hasOwnProperty(iter47))
+      {
+        iter47 = this.items[iter47];
+        iter47.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+TStatsArray = function(args) {
+  this.items = null;
+  if (args) {
+    if (args.items !== undefined) {
+      this.items = args.items;
+    }
+  }
+};
+TStatsArray.prototype = {};
+TStatsArray.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.LIST) {
+        var _size48 = 0;
+        var _rtmp352;
+        this.items = [];
+        var _etype51 = 0;
+        _rtmp352 = input.readListBegin();
+        _etype51 = _rtmp352.etype;
+        _size48 = _rtmp352.size;
+        for (var _i53 = 0; _i53 < _size48; ++_i53)
+        {
+          var elem54 = null;
+          elem54 = new CTimelineStats();
+          elem54.read(input);
+          this.items.push(elem54);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+TStatsArray.prototype.write = function(output) {
+  output.writeStructBegin('TStatsArray');
+  if (this.items !== null) {
+    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
+    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
+    for (var iter55 in this.items)
+    {
+      if (this.items.hasOwnProperty(iter55))
+      {
+        iter55 = this.items[iter55];
+        iter55.write(output);
       }
     }
     output.writeListEnd();
@@ -3499,17 +4012,25 @@ var Utils = (function() {
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
 	var contentTypes = {
-		json:  'application/json',
-		jsonp: 'application/javascript',
-		xml:   'application/xml',
-		html:  'text/html'
+		json:   'application/json',
+		jsonp:  'application/javascript',
+		xml:    'application/xml',
+		html:   'text/html',
+		thrift: 'application/x-thrift'
 	};
 
-	Utils.defaultHeaders = function(format) {
-		var mimeType = contentTypes[format];
+	Utils.defaultGetHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
 		return {
-			accept: mimeType,
-			'content-type': mimeType
+			accept: accept
+		};
+	};
+
+	Utils.defaultPostHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+		return {
+			accept: accept,
+			'content-type': binary ? contentTypes.thrift : contentTypes.json
 		};
 	};
 
@@ -4580,21 +5101,23 @@ var Resource = (function() {
 
 	function Resource() {}
 
-	Resource.get = function(rest, path, params, callback) {
+	Resource.get = function(rest, path, headers, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined && typeof(params) == 'function') {
-			callback = params;
-			params = null;
-		} else {
-			callback = noop;
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
 		function tryGet() {
-			rest.auth.getAuthHeaders(function(err, headers) {
+			rest.auth.getAuthHeaders(function(err, authHeaders) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				Http.get(rest.baseUri + path, Utils.mixin(headers, rest.headers), params, function(err, res) {
+				Http.get(rest.baseUri + path, Utils.mixin(authHeaders, headers), params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -4614,21 +5137,23 @@ var Resource = (function() {
 		tryGet();
 	};
 
-	Resource.post = function(rest, path, body, params, callback) {
+	Resource.post = function(rest, path, body, headers, params, callback) {
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined && typeof(params) == 'function') {
-			callback = params;
-			params = null;
-		} else {
-			callback = noop;
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
 		}
 		function tryPost() {
-			rest.auth.getAuthHeaders(function(err, headers) {
+			rest.auth.getAuthHeaders(function(err, authHeaders) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				Http.post(rest.baseUri + path, Utils.mixin(headers, rest.headers), body, params, function(err, res) {
+				Http.post(rest.baseUri + path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -4887,9 +5412,9 @@ var Auth = (function() {
 		var self = this;
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, null, ob, null, tokenCb);
+				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, null, ob, tokenCb);
+				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {
@@ -5081,14 +5606,8 @@ var Realtime = this.Realtime = (function() {
 		var authority = this.authority = 'https://' + restHost + ':' + restPort;
 		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		var wsHost = options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		var wsPort = options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
-
-		var format = options.format == 'json';
-		var headers = Utils.defaultHeaders[format];
-		if(options.headers)
-			headers = Utils.mixin(Utils.copy(options.headers), this.headers);
-		this.headers = headers;
+		options.wsHost = (options.wsHost || Defaults.WS_HOST);
+		options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
 
 		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
@@ -5203,17 +5722,39 @@ var Channel = (function() {
 
 	Channel.prototype.presence = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
-		Resource.get(this.rest, '/channels/' + this.name + '/presence', params, callback);
+		var rest = this.rest;
+		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.get(rest, '/channels/' + this.name + '/presence', headers, params, callback);
 	};
 
 	Channel.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
-		Resource.get(this.rest, '/channels/' + this.name + '/history', params, callback);
+		var rest = this.rest;
+		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, callback);
 	};
 
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
-		Resource.post(this.rest, '/channels/' + this.name + '/publish', {name:name, data:data}, callback);
+		var rest = this.rest;
+		var binary = !rest.options.useTextProtocol;
+		var requestBody;
+		if(binary) {
+			/* FIXME: binary not yet supported here .... */
+			Logger.logAction(Logger.LOG_ERROR, 'Channel.publish()', 'Unable to publish message in binary format (not supported yet)');
+			binary = false;
+			requestBody = {name:name, data:data};
+		} else {
+			requestBody = {name:name, data:data};
+		}
+		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+		Resource.post(rest, '/channels/' + this.name + '/publish', requestBody, headers, null, callback);
 	};
 
 	return Channel;
@@ -5249,7 +5790,7 @@ var RealtimeChannel = (function() {
 		}
     	var message = new messagetypes.TMessage();
     	message.name = name;
-    	message.payload = Message.createPayload(data);
+    	message.data = Message.createPayload(data);
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
@@ -5507,7 +6048,7 @@ var RealtimeChannel = (function() {
 						tMessage.channelSerial,
 						tMessage.timestamp,
 						tMessage.name,
-						Message.getPayload(tMessage.payload)
+						Message.getPayload(tMessage.data)
 					);
 				}
 				this.onEvent(messages);
@@ -5762,8 +6303,13 @@ var Message = (function() {
 				return true;
 			},
 			'[object Object]': function(msg, data) {
-				msg.type = messagetypes.TType.JSONOBJECT;
-				msg.stringData = JSON.stringify(data);
+				if(typeof(Buffer) !== 'undefined' && Buffer.isBuffer(data)) {
+					msg.type = ctypes.TType.BUFFER;
+					msg.binaryData = data;
+				} else {
+					msg.type = ctypes.TType.JSONOBJECT;
+					msg.stringData = JSON.stringify(data);
+				}
 				return true;
 			},
 			'[object Function]': function(msg, data) {

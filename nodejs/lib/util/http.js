@@ -21,14 +21,16 @@ this.Http = (function() {
 	function Http() {}
 
 	Http.get = function(uri, headers, params, callback) {
-		var options = {uri:uri, headers:headers, json:true};
+		var options = {uri:uri, headers:headers};
+		if(!headers || headers.accept == 'application/json') options.json = true;
 		if(params)
 			options.qs = params;
 		request.get(options, handler(callback));
 	};
 
 	Http.post = function(uri, headers, body, params, callback) {
-		var options = {uri:uri, headers:headers, body:body, json:true};
+		var options = {uri:uri, headers:headers, body:body};
+		if(!headers || headers.accept == 'application/json') options.json = true;
 		if(params)
 			options.qs = params;
 		request.post(options, handler(callback));
