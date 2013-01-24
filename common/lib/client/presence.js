@@ -20,9 +20,9 @@ var Presence = (function() {
 		this.clients[clientId] = clientData;
 		var presence = new messagetypes.TPresence({
 			state : messagetypes.TPresenceState.ENTER,
-			clientId : this.clientId
+			clientId : this.clientId,
+			clientData: Channel.createPayload(clientData)
 		});
-		presence.clientData = Channel.createPayload(clientData);
 		if (this.channel.state == 'pending')
 			this.pendingPresence = {
 				presence : 'enter',
@@ -57,7 +57,7 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.get = function(clientId) {
-		return clients[clientId || this.clientId];
+		return this.clients[clientId || this.clientId];
 	};
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
