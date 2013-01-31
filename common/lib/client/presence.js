@@ -74,9 +74,9 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setSubscribed = function() {
+	Presence.prototype.setAttached = function() {
 		if(this.pendingPresence) {
-			Logger.logAction(Logger.LOG_MICRO, 'Presence.setSubscribed', 'sending queued presence; state = ' + this.state);
+			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; state = ' + this.state);
 			this.channel.sendPresence(this.pendingPresence.presence, this.pendingPresence.callback);
 			delete this.pendingPresence;
 		}

@@ -26,6 +26,14 @@ var Utils = (function() {
 	};
 
 	/*
+	 * Determine whether or not a given object is
+	 * an array.
+	 */
+	Utils.isArray = function(ob) {
+		return Object.prototype.toString.call(ob) == '[object Array]';
+	};
+
+	/*
 	 * Determine whether or not an object contains
 	 * any enumerable properties.
 	 * ob: the object
