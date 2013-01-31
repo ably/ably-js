@@ -51,7 +51,7 @@ var Realtime = this.Realtime = (function() {
 	}
 
 	Realtime.prototype.history = function(params, callback) {
-		Resource.get(this, '/events', params, callback);
+		Resource.get(this, '/history', params, callback);
 	};
 
 	Realtime.prototype.stats = function(params, callback) {
