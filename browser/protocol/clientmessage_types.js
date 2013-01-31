@@ -13,12 +13,8 @@ TAction = {
 'ATTACHED' : 5,
 'DETACH' : 6,
 'DETACHED' : 7,
-'SUBSCRIBE' : 8,
-'SUBSCRIBED' : 9,
-'UNSUBSCRIBE' : 10,
-'UNSUBSCRIBED' : 11,
-'PRESENCE' : 12,
-'EVENT' : 13
+'PRESENCE' : 8,
+'MESSAGE' : 9
 };
 TType = {
 'NONE' : 0,
@@ -560,12 +556,11 @@ TChannelMessage = function(args) {
   this.code = null;
   this.reason = null;
   this.applicationId = null;
-  this.clientId = null;
   this.connectionId = null;
   this.connectionSerial = null;
   this.channel = null;
   this.channelSerial = null;
-  this.name = null;
+  this.publisherSerial = null;
   this.timestamp = null;
   this.size = null;
   this.messages = null;
@@ -586,9 +581,6 @@ TChannelMessage = function(args) {
     if (args.applicationId !== undefined) {
       this.applicationId = args.applicationId;
     }
-    if (args.clientId !== undefined) {
-      this.clientId = args.clientId;
-    }
     if (args.connectionId !== undefined) {
       this.connectionId = args.connectionId;
     }
@@ -601,8 +593,8 @@ TChannelMessage = function(args) {
     if (args.channelSerial !== undefined) {
       this.channelSerial = args.channelSerial;
     }
-    if (args.name !== undefined) {
-      this.name = args.name;
+    if (args.publisherSerial !== undefined) {
+      this.publisherSerial = args.publisherSerial;
     }
     if (args.timestamp !== undefined) {
       this.timestamp = args.timestamp;
@@ -669,61 +661,54 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 6:
       if (ftype == Thrift.Type.STRING) {
-        this.clientId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRING) {
         this.connectionId = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 8:
-      if (ftype == Thrift.Type.I32) {
-        this.connectionSerial = input.readI32();
+      case 7:
+      if (ftype == Thrift.Type.I64) {
+        this.connectionSerial = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 9:
+      case 8:
       if (ftype == Thrift.Type.STRING) {
         this.channel = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 10:
+      case 9:
       if (ftype == Thrift.Type.STRING) {
         this.channelSerial = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 11:
-      if (ftype == Thrift.Type.STRING) {
-        this.name = input.readString();
+      case 10:
+      if (ftype == Thrift.Type.I64) {
+        this.publisherSerial = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 12:
+      case 11:
       if (ftype == Thrift.Type.I64) {
         this.timestamp = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 13:
+      case 12:
       if (ftype == Thrift.Type.I32) {
         this.size = input.readI32();
       } else {
         input.skip(ftype);
       }
       break;
-      case 14:
+      case 13:
       if (ftype == Thrift.Type.LIST) {
         var _size24 = 0;
         var _rtmp328;
@@ -744,7 +729,7 @@ TChannelMessage.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 15:
+      case 14:
       if (ftype == Thrift.Type.SET) {
         var _size31 = 0;
         var _rtmp335;
@@ -801,48 +786,43 @@ TChannelMessage.prototype.write = function(output) {
     output.writeString(this.applicationId);
     output.writeFieldEnd();
   }
-  if (this.clientId !== null) {
-    output.writeFieldBegin('clientId', Thrift.Type.STRING, 6);
-    output.writeString(this.clientId);
-    output.writeFieldEnd();
-  }
   if (this.connectionId !== null) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 7);
+    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
     output.writeString(this.connectionId);
     output.writeFieldEnd();
   }
   if (this.connectionSerial !== null) {
-    output.writeFieldBegin('connectionSerial', Thrift.Type.I32, 8);
-    output.writeI32(this.connectionSerial);
+    output.writeFieldBegin('connectionSerial', Thrift.Type.I64, 7);
+    output.writeI64(this.connectionSerial);
     output.writeFieldEnd();
   }
   if (this.channel !== null) {
-    output.writeFieldBegin('channel', Thrift.Type.STRING, 9);
+    output.writeFieldBegin('channel', Thrift.Type.STRING, 8);
     output.writeString(this.channel);
     output.writeFieldEnd();
   }
   if (this.channelSerial !== null) {
-    output.writeFieldBegin('channelSerial', Thrift.Type.STRING, 10);
+    output.writeFieldBegin('channelSerial', Thrift.Type.STRING, 9);
     output.writeString(this.channelSerial);
     output.writeFieldEnd();
   }
-  if (this.name !== null) {
-    output.writeFieldBegin('name', Thrift.Type.STRING, 11);
-    output.writeString(this.name);
+  if (this.publisherSerial !== null) {
+    output.writeFieldBegin('publisherSerial', Thrift.Type.I64, 10);
+    output.writeI64(this.publisherSerial);
     output.writeFieldEnd();
   }
   if (this.timestamp !== null) {
-    output.writeFieldBegin('timestamp', Thrift.Type.I64, 12);
+    output.writeFieldBegin('timestamp', Thrift.Type.I64, 11);
     output.writeI64(this.timestamp);
     output.writeFieldEnd();
   }
   if (this.size !== null) {
-    output.writeFieldBegin('size', Thrift.Type.I32, 13);
+    output.writeFieldBegin('size', Thrift.Type.I32, 12);
     output.writeI32(this.size);
     output.writeFieldEnd();
   }
   if (this.messages !== null) {
-    output.writeFieldBegin('messages', Thrift.Type.LIST, 14);
+    output.writeFieldBegin('messages', Thrift.Type.LIST, 13);
     output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
     for (var iter38 in this.messages)
     {
@@ -856,7 +836,7 @@ TChannelMessage.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.presence !== null) {
-    output.writeFieldBegin('presence', Thrift.Type.SET, 15);
+    output.writeFieldBegin('presence', Thrift.Type.SET, 14);
     output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
     for (var iter39 in this.presence)
     {
