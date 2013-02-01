@@ -7,15 +7,17 @@ var Thrift = require('thrift').Thrift;
 var ttypes = module.exports = {};
 ttypes.TAction = {
 'HEARTBEAT' : 0,
-'CONNECT' : 1,
-'CONNECTED' : 2,
-'ERROR' : 3,
-'ATTACH' : 4,
-'ATTACHED' : 5,
-'DETACH' : 6,
-'DETACHED' : 7,
-'PRESENCE' : 8,
-'MESSAGE' : 9
+'ACK' : 1,
+'NACK' : 2,
+'CONNECT' : 3,
+'CONNECTED' : 4,
+'ERROR' : 5,
+'ATTACH' : 6,
+'ATTACHED' : 7,
+'DETACH' : 8,
+'DETACHED' : 9,
+'PRESENCE' : 10,
+'MESSAGE' : 11
 };
 ttypes.TType = {
 'NONE' : 0,
@@ -33,6 +35,88 @@ ttypes.TPresenceState = {
 'ENTER' : 0,
 'LEAVE' : 1
 };
+var TError = module.exports.TError = function(args) {
+  this.statusCode = null;
+  this.code = null;
+  this.reason = null;
+  if (args) {
+    if (args.statusCode !== undefined) {
+      this.statusCode = args.statusCode;
+    }
+    if (args.code !== undefined) {
+      this.code = args.code;
+    }
+    if (args.reason !== undefined) {
+      this.reason = args.reason;
+    }
+  }
+};
+TError.prototype = {};
+TError.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.I16) {
+        this.statusCode = input.readI16();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.I16) {
+        this.code = input.readI16();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRING) {
+        this.reason = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+TError.prototype.write = function(output) {
+  output.writeStructBegin('TError');
+  if (this.statusCode !== null) {
+    output.writeFieldBegin('statusCode', Thrift.Type.I16, 1);
+    output.writeI16(this.statusCode);
+    output.writeFieldEnd();
+  }
+  if (this.code !== null) {
+    output.writeFieldBegin('code', Thrift.Type.I16, 2);
+    output.writeI16(this.code);
+    output.writeFieldEnd();
+  }
+  if (this.reason !== null) {
+    output.writeFieldBegin('reason', Thrift.Type.STRING, 3);
+    output.writeString(this.reason);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 var TData = module.exports.TData = function(args) {
   this.type = null;
   this.i32Data = null;
@@ -553,31 +637,30 @@ TMessageArray.prototype.write = function(output) {
 
 var TChannelMessage = module.exports.TChannelMessage = function(args) {
   this.action = null;
-  this.statusCode = null;
-  this.code = null;
-  this.reason = null;
+  this.count = null;
+  this.size = null;
+  this.error = null;
   this.applicationId = null;
   this.connectionId = null;
   this.connectionSerial = null;
   this.channel = null;
   this.channelSerial = null;
-  this.publisherSerial = null;
+  this.msgSerial = null;
   this.timestamp = null;
-  this.size = null;
   this.messages = null;
   this.presence = null;
   if (args) {
     if (args.action !== undefined) {
       this.action = args.action;
     }
-    if (args.statusCode !== undefined) {
-      this.statusCode = args.statusCode;
+    if (args.count !== undefined) {
+      this.count = args.count;
     }
-    if (args.code !== undefined) {
-      this.code = args.code;
+    if (args.size !== undefined) {
+      this.size = args.size;
     }
-    if (args.reason !== undefined) {
-      this.reason = args.reason;
+    if (args.error !== undefined) {
+      this.error = args.error;
     }
     if (args.applicationId !== undefined) {
       this.applicationId = args.applicationId;
@@ -594,14 +677,11 @@ var TChannelMessage = module.exports.TChannelMessage = function(args) {
     if (args.channelSerial !== undefined) {
       this.channelSerial = args.channelSerial;
     }
-    if (args.publisherSerial !== undefined) {
-      this.publisherSerial = args.publisherSerial;
+    if (args.msgSerial !== undefined) {
+      this.msgSerial = args.msgSerial;
     }
     if (args.timestamp !== undefined) {
       this.timestamp = args.timestamp;
-    }
-    if (args.size !== undefined) {
-      this.size = args.size;
     }
     if (args.messages !== undefined) {
       this.messages = args.messages;
@@ -633,22 +713,23 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 2:
-      if (ftype == Thrift.Type.I16) {
-        this.statusCode = input.readI16();
+      if (ftype == Thrift.Type.I32) {
+        this.count = input.readI32();
       } else {
         input.skip(ftype);
       }
       break;
       case 3:
-      if (ftype == Thrift.Type.I16) {
-        this.code = input.readI16();
+      if (ftype == Thrift.Type.I32) {
+        this.size = input.readI32();
       } else {
         input.skip(ftype);
       }
       break;
       case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.reason = input.readString();
+      if (ftype == Thrift.Type.STRUCT) {
+        this.error = new ttypes.TError();
+        this.error.read(input);
       } else {
         input.skip(ftype);
       }
@@ -690,7 +771,7 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 10:
       if (ftype == Thrift.Type.I64) {
-        this.publisherSerial = input.readI64();
+        this.msgSerial = input.readI64();
       } else {
         input.skip(ftype);
       }
@@ -703,13 +784,6 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 12:
-      if (ftype == Thrift.Type.I32) {
-        this.size = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 13:
       if (ftype == Thrift.Type.LIST) {
         var _size24 = 0;
         var _rtmp328;
@@ -730,7 +804,7 @@ TChannelMessage.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 14:
+      case 13:
       if (ftype == Thrift.Type.SET) {
         var _size31 = 0;
         var _rtmp335;
@@ -767,19 +841,19 @@ TChannelMessage.prototype.write = function(output) {
     output.writeI32(this.action);
     output.writeFieldEnd();
   }
-  if (this.statusCode !== null) {
-    output.writeFieldBegin('statusCode', Thrift.Type.I16, 2);
-    output.writeI16(this.statusCode);
+  if (this.count !== null) {
+    output.writeFieldBegin('count', Thrift.Type.I32, 2);
+    output.writeI32(this.count);
     output.writeFieldEnd();
   }
-  if (this.code !== null) {
-    output.writeFieldBegin('code', Thrift.Type.I16, 3);
-    output.writeI16(this.code);
+  if (this.size !== null) {
+    output.writeFieldBegin('size', Thrift.Type.I32, 3);
+    output.writeI32(this.size);
     output.writeFieldEnd();
   }
-  if (this.reason !== null) {
-    output.writeFieldBegin('reason', Thrift.Type.STRING, 4);
-    output.writeString(this.reason);
+  if (this.error !== null) {
+    output.writeFieldBegin('error', Thrift.Type.STRUCT, 4);
+    this.error.write(output);
     output.writeFieldEnd();
   }
   if (this.applicationId !== null) {
@@ -807,9 +881,9 @@ TChannelMessage.prototype.write = function(output) {
     output.writeString(this.channelSerial);
     output.writeFieldEnd();
   }
-  if (this.publisherSerial !== null) {
-    output.writeFieldBegin('publisherSerial', Thrift.Type.I64, 10);
-    output.writeI64(this.publisherSerial);
+  if (this.msgSerial !== null) {
+    output.writeFieldBegin('msgSerial', Thrift.Type.I64, 10);
+    output.writeI64(this.msgSerial);
     output.writeFieldEnd();
   }
   if (this.timestamp !== null) {
@@ -817,13 +891,8 @@ TChannelMessage.prototype.write = function(output) {
     output.writeI64(this.timestamp);
     output.writeFieldEnd();
   }
-  if (this.size !== null) {
-    output.writeFieldBegin('size', Thrift.Type.I32, 12);
-    output.writeI32(this.size);
-    output.writeFieldEnd();
-  }
   if (this.messages !== null) {
-    output.writeFieldBegin('messages', Thrift.Type.LIST, 13);
+    output.writeFieldBegin('messages', Thrift.Type.LIST, 12);
     output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
     for (var iter38 in this.messages)
     {
@@ -837,7 +906,7 @@ TChannelMessage.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.presence !== null) {
-    output.writeFieldBegin('presence', Thrift.Type.SET, 14);
+    output.writeFieldBegin('presence', Thrift.Type.SET, 13);
     output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
     for (var iter39 in this.presence)
     {
