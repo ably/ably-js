@@ -17,9 +17,15 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
-		this.pendingMessages = [];
 		this.state = states.initialized;
 		this.error = null;
+
+		this.queuedMessages = [];
+		this.pendingMessages = [];
+		this.msgSerial = 0;
+		this.connectionId = undefined;
+		this.connectionSerial = undefined;
+
 		options.transports = options.transports || Defaults.transports;
 		var transports = this.transports = [];
 		for(var i = 0; i < options.transports.length; i++) {
@@ -43,29 +49,12 @@ var ConnectionManager = (function() {
     		switch(newState.current) {
     		case 'connected':
     			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager on(connected)', 'connected; transport = ' + transport);
-    			/* set up handler for events received on this transport */
-    			transport.on('channelmessage', function(msg) {
-    				var channelName = msg.channel;
-    				if(!channelName) {
-    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-    					return;
-    				}
-    				var channel = realtime.channels.attached[channelName];
-    				if(!channel) {
-    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-    					return;
-    				}
-    				channel.onMessage(msg);
-    			});
-    			/* re-attach any previously attached channels
-    			 * FIXME: is this conditional on us being connected with the same connectionId ? */
-    			var attached = realtime.channels.attached;
-        		for(var channelName in attached)
-    				attached[channelName].attachImpl();
+    			self.activateTransport(transport);
     			break;
     		case 'suspended':
     		case 'closed':
     		case 'failed':
+    			var attached = realtime.channels.attached;
             	var connectionState = self.state;
         		for(var channelName in attached)
     				attached[channelName].setSuspended(connectionState);
@@ -124,7 +113,7 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; connectionId =  ' + connectionId);
 				if(self.transport === transport) {
 					if(connectionId)
-						self.realtime.connection.id = connectionId;
+						self.realtime.connection.id = self.connectionId = connectionId;
 					self.notifyState({state:state, error:error});
 				}
 			};
@@ -134,6 +123,45 @@ var ConnectionManager = (function() {
 			var state = states[i];
 			transport.on(state, handleStateEvent(state));
 		}
+	};
+
+	ConnectionManager.prototype.activateTransport = function(transport) {
+		/* set up handler for events received on this transport */
+		var self = this;
+		var realtime = this.realtime;
+		transport.on('channelmessage', function(msg) {
+			var channelName = msg.channel;
+			if(!channelName) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+				return;
+			}
+			var channel = realtime.channels.attached[channelName];
+			if(!channel) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+				return;
+			}
+			channel.onMessage(msg);
+		});
+		transport.on('ack', function(serial, count) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count);
+			self.ackMessage(serial, count);
+		});
+		transport.on('nack', function(serial, count, err) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
+			if(!err) {
+				err = new Error('Unknown error');
+				err.statusCode = 500;
+				err.code = 50001;
+				err.reason = 'Unable to send message; channel not responding';
+			}
+			self.ackMessage(serial, count, err);
+		});
+		this.msgSerial = 0;
+		/* re-attach any previously attached channels
+		 * FIXME: is this conditional on us being connected with the same connectionId ? */
+		var attached = realtime.channels.attached;
+		for(var channelName in attached)
+			attached[channelName].attachImpl();
 	};
 
 	/*********************
@@ -245,7 +273,9 @@ var ConnectionManager = (function() {
 		/* implement the change and notify */
 		this.enactStateChange(change);
 		if(this.state.sendEvents)
-			this.sendPendingMessages();
+			this.sendQueuedMessages();
+		else if(this.state.queueEvents)
+			this.queuePendingMessages();
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
@@ -334,21 +364,17 @@ var ConnectionManager = (function() {
 	 * event queueing
 	 ******************/
 
+	function PendingMessage(msg, callback) {
+		this.msg = msg;
+		this.callback = callback;
+		this.merged = false;
+	}
+
 	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
 		callback = callback || noop;
 		if(this.state.queueEvents) {
 			if(queueEvents) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing event');
-				var lastPending = this.pendingMessages[this.pendingMessages.length - 1];
-				if(lastPending && RealtimeChannel.mergeTo(lastPending.msg, msg)) {
-					if(!lastPending.isMerged) {
-						lastPending.callback = new Multicaster([lastPending.callback]);
-						lastPending.isMerged = true;
-					}
-					lastPending.listener.push(callback);
-				} else {
-					this.pendingMessages.push({msg: msg, callback: callback});
-				}
+				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
 				callback(this.error);
@@ -356,20 +382,64 @@ var ConnectionManager = (function() {
 		}
 		if(this.state.sendEvents) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-			this.transport.send(msg, callback);
+			this.sendImpl(new PendingMessage(msg, callback));
 		}
 	};
 
-	ConnectionManager.prototype.sendPendingMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendPendingMessages()', 'sending ' + this.pendingMessages.length + ' queued messages');
-		var pending = this.pendingMessages.shift();
-		if(pending) {
-			try {
-				this.transport.send(pending.msg, pending.callback);
-			} catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendPendingMessages()', 'Unexpected exception in transport.send(): ' + e);
+	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
+		var msg = pendingMessage.msg;
+		msg.msgSerial = this.msgSerial++;
+		this.pendingMessages.push(pendingMessage);
+		try {
+			this.transport.send(msg, function(err) {
+				/* FIXME: schedule a retry directly if we get an error */
+			});
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendQueuedMessages()', 'Unexpected exception in transport.send(): ' + e);
+		}
+	};
+
+	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
+		err = err || null;
+		var pendingMessages = this.pendingMessages;
+console.log('*** ackMessage: serial = ' + serial + '; count = ' + count + '; pendingMessages = ' + require('util').inspect(pendingMessages));
+		var firstPending = pendingMessages[0];
+		if(firstPending) {
+			var startSerial = firstPending.msg.msgSerial;
+			var ackSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
+			if(ackSerial > startSerial) {
+				var ackMessages = pendingMessages.splice(0, (ackSerial - startSerial));
+				for(var i = 0; i < ackMessages.length; i++)
+					ackMessages[i].callback(err);
 			}
 		}
+	};
+
+	ConnectionManager.prototype.queue = function(msg, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
+		var lastQueued = this.queuedMessages[this.queuedMessages.length - 1];
+		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.msg, msg)) {
+			if(!lastQueued.merged) {
+				lastQueued.callback = new Multicaster([lastQueued.callback]);
+				lastQueued.merged = true;
+			}
+			lastQueued.listener.push(callback);
+		} else {
+			this.queuedMessages.push(new PendingMessage(msg, callback));
+		}
+	};
+
+	ConnectionManager.prototype.sendQueuedMessages = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.length + ' queued messages');
+		var pendingMessage;
+		while(pendingMessage = this.queuedMessages.shift())
+			this.sendImpl(pendingMessage);
+	};
+
+	ConnectionManager.prototype.queuePendingMessages = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + this.pendingMessages.length + ' pending messages');
+		this.queuedMessages = this.pendingMessages.concat(this.queuedMessages);
+		this.pendingMessages = [];
 	};
 
 	return ConnectionManager;

@@ -1,5 +1,7 @@
 var Transport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -44,17 +46,25 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
+console.log('************* onChannelMessage: ' + message.action);
 		switch(message.action) {
-		case 0: /* HEARTBEAT */
+		case actions.HEARTBEAT:
 			this.emit('heartbeat');
 			break;
-		case 2: /* CONNECTED */
+		case actions.CONNECTED:
 			this.connectionId = message.connectionId;
 			this.isConnected = true;
 			this.onConnect();
 			this.emit('connected', null, this.connectionId);
 			break;
-		case 3: /* ERROR */
+		case actions.ACK:
+console.log('************* onChannelMessage: emitting ack');
+			this.emit('ack', message.msgSerial, message.count);
+			break;
+		case actions.NACK:
+			this.emit('nack', message.msgSerial, message.count, message.error);
+			break;
+		case actions.ERROR:
 			var err = {
 				statusCode: message.statusCode,
 				code: message.code,
@@ -64,22 +74,6 @@ var Transport = (function() {
 			break;
 		default:
 			this.emit('channelmessage', message);
-		}
-	};
-
-	Transport.prototype.sendMessage = function(message, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Transport.sendMessage()', '');
-		var self = this;
-		try {
-			var protocol = new (this.thriftProtocol)(new (this.thriftTransport)(undefined, function(data) {
-				self.sendData(data, callback);
-			}));
-			message.write(protocol);
-			protocol.flush();
-		} catch (e) {
-			var msg = 'Unexpected send exception: ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.sendMessage()', msg);
-			callback({statusCode: 500, code: 50000, reason: msg});
 		}
 	};
 

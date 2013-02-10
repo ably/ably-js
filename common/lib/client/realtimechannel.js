@@ -1,5 +1,6 @@
 var RealtimeChannel = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -21,6 +22,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
+		callback = callback || noop;
     	var connectionState = this.connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionState.defaultMessage);
@@ -32,7 +34,7 @@ var RealtimeChannel = (function() {
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
-    		msg.action = messagetypes.TAction.EVENT;
+    		msg.action = messagetypes.TAction.MESSAGE;
     		msg.channel = this.name;
     		msg.messages = [message];
     		this.sendMessage(msg, callback);
@@ -171,16 +173,16 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.onMessage = function(message) {
 		switch(message.action) {
-		case 5: /* ATTACHED */
+		case actions.ATTACHED:
 			this.setAttached(message);
 			break;
-		case 7: /* DETACHED */
+		case actions.DETACHED:
 			this.setDetached(message);
 			break;
-		case 12: /* PRESENCE */
+		case actions.PRESENCE:
 			this.setPresence(message.presence);
 			break;
-		case 13: /* EVENT */
+		case actions.MESSAGE:
 			var tMessages = message.messages;
 			if(tMessages) {
 				var messages = new Array(tMessages.length);
@@ -196,9 +198,6 @@ var RealtimeChannel = (function() {
 				this.onEvent(messages);
 			}
 			break;
-		case 1: /* CONNECT */
-		case 4: /* ATTACH */
-		case 6: /* DETACH */
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.abort(UIMessages.FAIL_REASON_FAILED);
@@ -211,12 +210,12 @@ var RealtimeChannel = (function() {
 		if(dest.channel == src.channel) {
 			if((action = dest.action) == src.action) {
 				switch(action) {
-				case 10: /* EVENT */
+				case actions.MESSAGE:
 					for(var i = 0; i < src.messages.length; i++)
 						dest.messages.push(src.messages[i]);
 					result = true;
 					break;
-				case 9: /* PRESENCE */
+				case actions.PRESENCE:
 					for(var i = 0; i < src.presence.length; i++)
 						dest.presence.push(src.presence[i]);
 					result = true;
@@ -237,7 +236,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, channel: this.name, messages: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
