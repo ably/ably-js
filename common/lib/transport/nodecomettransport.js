@@ -51,7 +51,7 @@ var NodeCometTransport = (function() {
 
 		var self = this;
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = setTimeout(timeout, function() { self.req.abort(); });
+		var timer = setTimeout(function() { self.req.abort(); }, timeout);
 		this.req = request({
 			uri: uri,
 			method: method,
