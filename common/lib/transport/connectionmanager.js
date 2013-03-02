@@ -106,11 +106,11 @@ var ConnectionManager = (function() {
 
 		var handleStateEvent = function(state) {
 			return function(error, connectionId) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state);
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'on state = ' + state);
 				if(error && error.reason)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; reason =  ' + error.reason);
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'reason =  ' + error.reason);
 				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; connectionId =  ' + connectionId);
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'connectionId =  ' + connectionId);
 				if(self.transport === transport) {
 					if(connectionId)
 						self.realtime.connection.id = self.connectionId = connectionId;
