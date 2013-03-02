@@ -199,7 +199,7 @@ var RealtimeChannel = (function() {
 			}
 			break;
 		default:
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.abort(UIMessages.FAIL_REASON_FAILED);
 		}
 	};
