@@ -7,6 +7,10 @@ var CometTransport = (function() {
 	function CometTransport(connectionManager, auth, options) {
 		Transport.call(this, connectionManager, auth, options);
 		this.binary = !options.useTextProtocol;
+		this.sendRequest = null;
+		this.recvRequest = null;
+		this.pendingCallback = null;
+		this.pendingMessage = null;
 	}
 	(Utils || require('util')).inherits(CometTransport, Transport);
 
@@ -28,8 +32,8 @@ var CometTransport = (function() {
 		var port = this.options.wsPort;
 		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
 
-		this.baseUri = cometScheme + host + ':' + port + '/comet/' + this.options.appId;
-		var connectUri = this.baseUri + '/recv';
+		this.baseUri = cometScheme + host + ':' + port + '/comet/';
+		var connectUri = this.baseUri + this.options.appId + '/connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			self.params = authParams;
@@ -56,11 +60,11 @@ var CometTransport = (function() {
 		this.isConnected = false;
 		if(this.recvRequest) {
 			this.recvRequest.abort();
-			delete this.recvRequest;
+			this.recvRequest = null;
 		}
 		var self = this;
 		this.recvRequest = this.request(this.closeUri, this.params, null, false, function(err, response) {
-			delete self.recvRequest;
+			self.recvRequest = null;;
 			if(err) {
 				self.emit('error', err);
 				return;
@@ -73,9 +77,10 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.onConnect = function() {
-		this.sendUri = this.baseUri + '/send/' + this.connectionId;
-		this.recvUri = this.baseUri + '/recv/' + this.connectionId;
-		this.closeUri = this.baseUri + '/close/' + this.connectionId;
+		var baseConnectionUri =  this.baseUri + this.connectionId;
+		this.sendUri = baseConnectionUri + '/send';
+		this.recvUri = baseConnectionUri + '/recv';
+		this.closeUri = baseConnectionUri + '/close';
 		this.recv();
 	};
 
@@ -92,13 +97,13 @@ var CometTransport = (function() {
 		/* send this, plus any pending, now */
 		var pendingMessage = this.pendingMessage || new messagetypes.TMessageSet({items: []});
 		pendingMessage.items.push(msg);
-		delete this.pendingMessage;
+		this.pendingMessage = null;;
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
 			pendingCallback.push(callback);
 			callback = pendingCallback;
-			delete this.pendingCallback;
+			this.pendingCallback = null;
 		}
 
 		this.sendMessage(pendingMessage, callback);
@@ -109,11 +114,11 @@ var CometTransport = (function() {
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
 				self.sendRequest = self.request(self.sendUri, self.params, data, false, function(err, response) {
-					delete self.sendRequest;
+					self.sendRequest = null;
 					if(self.pendingMessage) {
 						self.sendMessage(self.pendingMessage, self.pendingCallback);
-						delete self.pendingMessage;
-						delete self.pendingCallback;
+						self.pendingMessage = null;
+						self.pendingCallback = null;
 					}
 					if(err) {
 						callback(err);
@@ -135,7 +140,7 @@ var CometTransport = (function() {
 	CometTransport.prototype.recv = function() {
 		if(this.recvRequest) {
 			this.recvRequest.abort();
-			delete this.recvRequest;
+			this.recvRequest = null;
 		}
 
 		if(!this.isConnected)
@@ -148,7 +153,7 @@ var CometTransport = (function() {
 				return;
 			}
 			self.onRecvResponse(response);
-			delete self.recvRequest;
+			self.recvRequest = null;
 			self.recv();
 		});
 	};
