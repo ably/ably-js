@@ -265,7 +265,7 @@ TBinaryProtocol.prototype.readI32 = function() {
 
 TBinaryProtocol.prototype.readI64 = function() {
   var buff = this.trans.read(8);
-  return new Int64(buff);
+  return new Int64(buff).toNumber();
 }
 
 TBinaryProtocol.prototype.readDouble = function() {

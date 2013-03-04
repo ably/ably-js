@@ -2053,19 +2053,17 @@ var clientmessage_types = {
 
 TAction = {
 'HEARTBEAT' : 0,
-'CONNECT' : 1,
-'CONNECTED' : 2,
-'ERROR' : 3,
-'ATTACH' : 4,
-'ATTACHED' : 5,
-'DETACH' : 6,
-'DETACHED' : 7,
-'SUBSCRIBE' : 8,
-'SUBSCRIBED' : 9,
-'UNSUBSCRIBE' : 10,
-'UNSUBSCRIBED' : 11,
-'PRESENCE' : 12,
-'EVENT' : 13
+'ACK' : 1,
+'NACK' : 2,
+'CONNECT' : 3,
+'CONNECTED' : 4,
+'ERROR' : 5,
+'ATTACH' : 6,
+'ATTACHED' : 7,
+'DETACH' : 8,
+'DETACHED' : 9,
+'PRESENCE' : 10,
+'MESSAGE' : 11
 };
 TType = {
 'NONE' : 0,
@@ -2083,6 +2081,88 @@ TPresenceState = {
 'ENTER' : 0,
 'LEAVE' : 1
 };
+TError = function(args) {
+  this.statusCode = null;
+  this.code = null;
+  this.reason = null;
+  if (args) {
+    if (args.statusCode !== undefined) {
+      this.statusCode = args.statusCode;
+    }
+    if (args.code !== undefined) {
+      this.code = args.code;
+    }
+    if (args.reason !== undefined) {
+      this.reason = args.reason;
+    }
+  }
+};
+TError.prototype = {};
+TError.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.I16) {
+        this.statusCode = input.readI16();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.I16) {
+        this.code = input.readI16();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRING) {
+        this.reason = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+TError.prototype.write = function(output) {
+  output.writeStructBegin('TError');
+  if (this.statusCode !== null) {
+    output.writeFieldBegin('statusCode', Thrift.Type.I16, 1);
+    output.writeI16(this.statusCode);
+    output.writeFieldEnd();
+  }
+  if (this.code !== null) {
+    output.writeFieldBegin('code', Thrift.Type.I16, 2);
+    output.writeI16(this.code);
+    output.writeFieldEnd();
+  }
+  if (this.reason !== null) {
+    output.writeFieldBegin('reason', Thrift.Type.STRING, 3);
+    output.writeString(this.reason);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 TData = function(args) {
   this.type = null;
   this.i32Data = null;
@@ -2603,38 +2683,33 @@ TMessageArray.prototype.write = function(output) {
 
 TChannelMessage = function(args) {
   this.action = null;
-  this.statusCode = null;
-  this.code = null;
-  this.reason = null;
+  this.count = null;
+  this.size = null;
+  this.error = null;
   this.applicationId = null;
-  this.clientId = null;
   this.connectionId = null;
   this.connectionSerial = null;
   this.channel = null;
   this.channelSerial = null;
-  this.name = null;
+  this.msgSerial = null;
   this.timestamp = null;
-  this.size = null;
   this.messages = null;
   this.presence = null;
   if (args) {
     if (args.action !== undefined) {
       this.action = args.action;
     }
-    if (args.statusCode !== undefined) {
-      this.statusCode = args.statusCode;
+    if (args.count !== undefined) {
+      this.count = args.count;
     }
-    if (args.code !== undefined) {
-      this.code = args.code;
+    if (args.size !== undefined) {
+      this.size = args.size;
     }
-    if (args.reason !== undefined) {
-      this.reason = args.reason;
+    if (args.error !== undefined) {
+      this.error = args.error;
     }
     if (args.applicationId !== undefined) {
       this.applicationId = args.applicationId;
-    }
-    if (args.clientId !== undefined) {
-      this.clientId = args.clientId;
     }
     if (args.connectionId !== undefined) {
       this.connectionId = args.connectionId;
@@ -2648,14 +2723,11 @@ TChannelMessage = function(args) {
     if (args.channelSerial !== undefined) {
       this.channelSerial = args.channelSerial;
     }
-    if (args.name !== undefined) {
-      this.name = args.name;
+    if (args.msgSerial !== undefined) {
+      this.msgSerial = args.msgSerial;
     }
     if (args.timestamp !== undefined) {
       this.timestamp = args.timestamp;
-    }
-    if (args.size !== undefined) {
-      this.size = args.size;
     }
     if (args.messages !== undefined) {
       this.messages = args.messages;
@@ -2687,22 +2759,23 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 2:
-      if (ftype == Thrift.Type.I16) {
-        this.statusCode = input.readI16();
+      if (ftype == Thrift.Type.I32) {
+        this.count = input.readI32();
       } else {
         input.skip(ftype);
       }
       break;
       case 3:
-      if (ftype == Thrift.Type.I16) {
-        this.code = input.readI16();
+      if (ftype == Thrift.Type.I32) {
+        this.size = input.readI32();
       } else {
         input.skip(ftype);
       }
       break;
       case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.reason = input.readString();
+      if (ftype == Thrift.Type.STRUCT) {
+        this.error = new TError();
+        this.error.read(input);
       } else {
         input.skip(ftype);
       }
@@ -2716,61 +2789,47 @@ TChannelMessage.prototype.read = function(input) {
       break;
       case 6:
       if (ftype == Thrift.Type.STRING) {
-        this.clientId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRING) {
         this.connectionId = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 8:
-      if (ftype == Thrift.Type.I32) {
-        this.connectionSerial = input.readI32();
+      case 7:
+      if (ftype == Thrift.Type.I64) {
+        this.connectionSerial = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 9:
+      case 8:
       if (ftype == Thrift.Type.STRING) {
         this.channel = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 10:
+      case 9:
       if (ftype == Thrift.Type.STRING) {
         this.channelSerial = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 11:
-      if (ftype == Thrift.Type.STRING) {
-        this.name = input.readString();
+      case 10:
+      if (ftype == Thrift.Type.I64) {
+        this.msgSerial = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 12:
+      case 11:
       if (ftype == Thrift.Type.I64) {
         this.timestamp = input.readI64();
       } else {
         input.skip(ftype);
       }
       break;
-      case 13:
-      if (ftype == Thrift.Type.I32) {
-        this.size = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 14:
+      case 12:
       if (ftype == Thrift.Type.LIST) {
         var _size24 = 0;
         var _rtmp328;
@@ -2791,7 +2850,7 @@ TChannelMessage.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 15:
+      case 13:
       if (ftype == Thrift.Type.SET) {
         var _size31 = 0;
         var _rtmp335;
@@ -2828,19 +2887,19 @@ TChannelMessage.prototype.write = function(output) {
     output.writeI32(this.action);
     output.writeFieldEnd();
   }
-  if (this.statusCode !== null) {
-    output.writeFieldBegin('statusCode', Thrift.Type.I16, 2);
-    output.writeI16(this.statusCode);
+  if (this.count !== null) {
+    output.writeFieldBegin('count', Thrift.Type.I32, 2);
+    output.writeI32(this.count);
     output.writeFieldEnd();
   }
-  if (this.code !== null) {
-    output.writeFieldBegin('code', Thrift.Type.I16, 3);
-    output.writeI16(this.code);
+  if (this.size !== null) {
+    output.writeFieldBegin('size', Thrift.Type.I32, 3);
+    output.writeI32(this.size);
     output.writeFieldEnd();
   }
-  if (this.reason !== null) {
-    output.writeFieldBegin('reason', Thrift.Type.STRING, 4);
-    output.writeString(this.reason);
+  if (this.error !== null) {
+    output.writeFieldBegin('error', Thrift.Type.STRUCT, 4);
+    this.error.write(output);
     output.writeFieldEnd();
   }
   if (this.applicationId !== null) {
@@ -2848,48 +2907,38 @@ TChannelMessage.prototype.write = function(output) {
     output.writeString(this.applicationId);
     output.writeFieldEnd();
   }
-  if (this.clientId !== null) {
-    output.writeFieldBegin('clientId', Thrift.Type.STRING, 6);
-    output.writeString(this.clientId);
-    output.writeFieldEnd();
-  }
   if (this.connectionId !== null) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 7);
+    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
     output.writeString(this.connectionId);
     output.writeFieldEnd();
   }
   if (this.connectionSerial !== null) {
-    output.writeFieldBegin('connectionSerial', Thrift.Type.I32, 8);
-    output.writeI32(this.connectionSerial);
+    output.writeFieldBegin('connectionSerial', Thrift.Type.I64, 7);
+    output.writeI64(this.connectionSerial);
     output.writeFieldEnd();
   }
   if (this.channel !== null) {
-    output.writeFieldBegin('channel', Thrift.Type.STRING, 9);
+    output.writeFieldBegin('channel', Thrift.Type.STRING, 8);
     output.writeString(this.channel);
     output.writeFieldEnd();
   }
   if (this.channelSerial !== null) {
-    output.writeFieldBegin('channelSerial', Thrift.Type.STRING, 10);
+    output.writeFieldBegin('channelSerial', Thrift.Type.STRING, 9);
     output.writeString(this.channelSerial);
     output.writeFieldEnd();
   }
-  if (this.name !== null) {
-    output.writeFieldBegin('name', Thrift.Type.STRING, 11);
-    output.writeString(this.name);
+  if (this.msgSerial !== null) {
+    output.writeFieldBegin('msgSerial', Thrift.Type.I64, 10);
+    output.writeI64(this.msgSerial);
     output.writeFieldEnd();
   }
   if (this.timestamp !== null) {
-    output.writeFieldBegin('timestamp', Thrift.Type.I64, 12);
+    output.writeFieldBegin('timestamp', Thrift.Type.I64, 11);
     output.writeI64(this.timestamp);
     output.writeFieldEnd();
   }
-  if (this.size !== null) {
-    output.writeFieldBegin('size', Thrift.Type.I32, 13);
-    output.writeI32(this.size);
-    output.writeFieldEnd();
-  }
   if (this.messages !== null) {
-    output.writeFieldBegin('messages', Thrift.Type.LIST, 14);
+    output.writeFieldBegin('messages', Thrift.Type.LIST, 12);
     output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
     for (var iter38 in this.messages)
     {
@@ -2903,7 +2952,7 @@ TChannelMessage.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.presence !== null) {
-    output.writeFieldBegin('presence', Thrift.Type.SET, 15);
+    output.writeFieldBegin('presence', Thrift.Type.SET, 13);
     output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
     for (var iter39 in this.presence)
     {
@@ -4388,6 +4437,14 @@ var Utils = (function() {
 	};
 
 	/*
+	 * Determine whether or not a given object is
+	 * an array.
+	 */
+	Utils.isArray = function(ob) {
+		return Object.prototype.toString.call(ob) == '[object Array]';
+	};
+
+	/*
 	 * Determine whether or not an object contains
 	 * any enumerable properties.
 	 * ob: the object
@@ -4554,9 +4611,15 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
-		this.pendingMessages = [];
 		this.state = states.initialized;
 		this.error = null;
+
+		this.queuedMessages = [];
+		this.pendingMessages = [];
+		this.msgSerial = 0;
+		this.connectionId = undefined;
+		this.connectionSerial = undefined;
+
 		options.transports = options.transports || Defaults.transports;
 		var transports = this.transports = [];
 		for(var i = 0; i < options.transports.length; i++) {
@@ -4580,29 +4643,12 @@ var ConnectionManager = (function() {
     		switch(newState.current) {
     		case 'connected':
     			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager on(connected)', 'connected; transport = ' + transport);
-    			/* set up handler for events received on this transport */
-    			transport.on('channelmessage', function(msg) {
-    				var channelName = msg.channel;
-    				if(!channelName) {
-    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-    					return;
-    				}
-    				var channel = realtime.channels.attached[channelName];
-    				if(!channel) {
-    					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-    					return;
-    				}
-    				channel.onMessage(msg);
-    			});
-    			/* re-attach any previously attached channels
-    			 * FIXME: is this conditional on us being connected with the same connectionId ? */
-    			var attached = realtime.channels.attached;
-        		for(var channelName in attached)
-    				attached[channelName].attachImpl();
+    			self.activateTransport(transport);
     			break;
     		case 'suspended':
     		case 'closed':
     		case 'failed':
+    			var attached = realtime.channels.attached;
             	var connectionState = self.state;
         		for(var channelName in attached)
     				attached[channelName].setSuspended(connectionState);
@@ -4654,14 +4700,14 @@ var ConnectionManager = (function() {
 
 		var handleStateEvent = function(state) {
 			return function(error, connectionId) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; on state = ' + state);
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'on state = ' + state);
 				if(error && error.reason)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; reason =  ' + error.reason);
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'reason =  ' + error.reason);
 				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport; connectionId =  ' + connectionId);
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'connectionId =  ' + connectionId);
 				if(self.transport === transport) {
 					if(connectionId)
-						self.realtime.connection.id = connectionId;
+						self.realtime.connection.id = self.connectionId = connectionId;
 					self.notifyState({state:state, error:error});
 				}
 			};
@@ -4671,6 +4717,45 @@ var ConnectionManager = (function() {
 			var state = states[i];
 			transport.on(state, handleStateEvent(state));
 		}
+	};
+
+	ConnectionManager.prototype.activateTransport = function(transport) {
+		/* set up handler for events received on this transport */
+		var self = this;
+		var realtime = this.realtime;
+		transport.on('channelmessage', function(msg) {
+			var channelName = msg.channel;
+			if(!channelName) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+				return;
+			}
+			var channel = realtime.channels.attached[channelName];
+			if(!channel) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+				return;
+			}
+			channel.onMessage(msg);
+		});
+		transport.on('ack', function(serial, count) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count);
+			self.ackMessage(serial, count);
+		});
+		transport.on('nack', function(serial, count, err) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
+			if(!err) {
+				err = new Error('Unknown error');
+				err.statusCode = 500;
+				err.code = 50001;
+				err.reason = 'Unable to send message; channel not responding';
+			}
+			self.ackMessage(serial, count, err);
+		});
+		this.msgSerial = 0;
+		/* re-attach any previously attached channels
+		 * FIXME: is this conditional on us being connected with the same connectionId ? */
+		var attached = realtime.channels.attached;
+		for(var channelName in attached)
+			attached[channelName].attachImpl();
 	};
 
 	/*********************
@@ -4782,7 +4867,9 @@ var ConnectionManager = (function() {
 		/* implement the change and notify */
 		this.enactStateChange(change);
 		if(this.state.sendEvents)
-			this.sendPendingMessages();
+			this.sendQueuedMessages();
+		else if(this.state.queueEvents)
+			this.queuePendingMessages();
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
@@ -4871,21 +4958,17 @@ var ConnectionManager = (function() {
 	 * event queueing
 	 ******************/
 
+	function PendingMessage(msg, callback) {
+		this.msg = msg;
+		this.callback = callback;
+		this.merged = false;
+	}
+
 	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
 		callback = callback || noop;
 		if(this.state.queueEvents) {
 			if(queueEvents) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing event');
-				var lastPending = this.pendingMessages[this.pendingMessages.length - 1];
-				if(lastPending && RealtimeChannel.mergeTo(lastPending.msg, msg)) {
-					if(!lastPending.isMerged) {
-						lastPending.callback = new Multicaster([lastPending.callback]);
-						lastPending.isMerged = true;
-					}
-					lastPending.listener.push(callback);
-				} else {
-					this.pendingMessages.push({msg: msg, callback: callback});
-				}
+				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
 				callback(this.error);
@@ -4893,26 +4976,72 @@ var ConnectionManager = (function() {
 		}
 		if(this.state.sendEvents) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-			this.transport.send(msg, callback);
+			this.sendImpl(new PendingMessage(msg, callback));
 		}
 	};
 
-	ConnectionManager.prototype.sendPendingMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendPendingMessages()', 'sending ' + this.pendingMessages.length + ' queued messages');
-		var pending = this.pendingMessages.shift();
-		if(pending) {
-			try {
-				this.transport.send(pending.msg, pending.callback);
-			} catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendPendingMessages()', 'Unexpected exception in transport.send(): ' + e);
+	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
+		var msg = pendingMessage.msg;
+		msg.msgSerial = this.msgSerial++;
+		this.pendingMessages.push(pendingMessage);
+		try {
+			this.transport.send(msg, function(err) {
+				/* FIXME: schedule a retry directly if we get an error */
+			});
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendQueuedMessages()', 'Unexpected exception in transport.send(): ' + e);
+		}
+	};
+
+	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
+		err = err || null;
+		var pendingMessages = this.pendingMessages;
+console.log('*** ackMessage: serial = ' + serial + '; count = ' + count + '; pendingMessages = ' + require('util').inspect(pendingMessages));
+		var firstPending = pendingMessages[0];
+		if(firstPending) {
+			var startSerial = firstPending.msg.msgSerial;
+			var ackSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
+			if(ackSerial > startSerial) {
+				var ackMessages = pendingMessages.splice(0, (ackSerial - startSerial));
+				for(var i = 0; i < ackMessages.length; i++)
+					ackMessages[i].callback(err);
 			}
 		}
+	};
+
+	ConnectionManager.prototype.queue = function(msg, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
+		var lastQueued = this.queuedMessages[this.queuedMessages.length - 1];
+		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.msg, msg)) {
+			if(!lastQueued.merged) {
+				lastQueued.callback = new Multicaster([lastQueued.callback]);
+				lastQueued.merged = true;
+			}
+			lastQueued.listener.push(callback);
+		} else {
+			this.queuedMessages.push(new PendingMessage(msg, callback));
+		}
+	};
+
+	ConnectionManager.prototype.sendQueuedMessages = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.length + ' queued messages');
+		var pendingMessage;
+		while(pendingMessage = this.queuedMessages.shift())
+			this.sendImpl(pendingMessage);
+	};
+
+	ConnectionManager.prototype.queuePendingMessages = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + this.pendingMessages.length + ' pending messages');
+		this.queuedMessages = this.pendingMessages.concat(this.queuedMessages);
+		this.pendingMessages = [];
 	};
 
 	return ConnectionManager;
 })();
 var Transport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -4957,17 +5086,25 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
+console.log('************* onChannelMessage: ' + message.action);
 		switch(message.action) {
-		case 0: /* HEARTBEAT */
+		case actions.HEARTBEAT:
 			this.emit('heartbeat');
 			break;
-		case 2: /* CONNECTED */
+		case actions.CONNECTED:
 			this.connectionId = message.connectionId;
 			this.isConnected = true;
 			this.onConnect();
 			this.emit('connected', null, this.connectionId);
 			break;
-		case 3: /* ERROR */
+		case actions.ACK:
+console.log('************* onChannelMessage: emitting ack');
+			this.emit('ack', message.msgSerial, message.count);
+			break;
+		case actions.NACK:
+			this.emit('nack', message.msgSerial, message.count, message.error);
+			break;
+		case actions.ERROR:
 			var err = {
 				statusCode: message.statusCode,
 				code: message.code,
@@ -4977,22 +5114,6 @@ var Transport = (function() {
 			break;
 		default:
 			this.emit('channelmessage', message);
-		}
-	};
-
-	Transport.prototype.sendMessage = function(message, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Transport.sendMessage()', '');
-		var self = this;
-		try {
-			var protocol = new (this.thriftProtocol)(new (this.thriftTransport)(undefined, function(data) {
-				self.sendData(data, callback);
-			}));
-			message.write(protocol);
-			protocol.flush();
-		} catch (e) {
-			var msg = 'Unexpected send exception: ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.sendMessage()', msg);
-			callback({statusCode: 500, code: 50000, reason: msg});
 		}
 	};
 
@@ -5183,6 +5304,10 @@ var CometTransport = (function() {
 	function CometTransport(connectionManager, auth, options) {
 		Transport.call(this, connectionManager, auth, options);
 		this.binary = !options.useTextProtocol;
+		this.sendRequest = null;
+		this.recvRequest = null;
+		this.pendingCallback = null;
+		this.pendingMessage = null;
 	}
 	(Utils || require('util')).inherits(CometTransport, Transport);
 
@@ -5204,8 +5329,8 @@ var CometTransport = (function() {
 		var port = this.options.wsPort;
 		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
 
-		this.baseUri = cometScheme + host + ':' + port + '/comet/' + this.options.appId;
-		var connectUri = this.baseUri + '/recv';
+		this.baseUri = cometScheme + host + ':' + port + '/comet/';
+		var connectUri = this.baseUri + this.options.appId + '/connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			self.params = authParams;
@@ -5232,11 +5357,11 @@ var CometTransport = (function() {
 		this.isConnected = false;
 		if(this.recvRequest) {
 			this.recvRequest.abort();
-			delete this.recvRequest;
+			this.recvRequest = null;
 		}
 		var self = this;
 		this.recvRequest = this.request(this.closeUri, this.params, null, false, function(err, response) {
-			delete self.recvRequest;
+			self.recvRequest = null;;
 			if(err) {
 				self.emit('error', err);
 				return;
@@ -5249,9 +5374,10 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.onConnect = function() {
-		this.sendUri = this.baseUri + '/send/' + this.connectionId;
-		this.recvUri = this.baseUri + '/recv/' + this.connectionId;
-		this.closeUri = this.baseUri + '/close/' + this.connectionId;
+		var baseConnectionUri =  this.baseUri + this.connectionId;
+		this.sendUri = baseConnectionUri + '/send';
+		this.recvUri = baseConnectionUri + '/recv';
+		this.closeUri = baseConnectionUri + '/close';
 		this.recv();
 	};
 
@@ -5268,13 +5394,13 @@ var CometTransport = (function() {
 		/* send this, plus any pending, now */
 		var pendingMessage = this.pendingMessage || new messagetypes.TMessageSet({items: []});
 		pendingMessage.items.push(msg);
-		delete this.pendingMessage;
+		this.pendingMessage = null;;
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
 			pendingCallback.push(callback);
 			callback = pendingCallback;
-			delete this.pendingCallback;
+			this.pendingCallback = null;
 		}
 
 		this.sendMessage(pendingMessage, callback);
@@ -5285,11 +5411,11 @@ var CometTransport = (function() {
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
 				self.sendRequest = self.request(self.sendUri, self.params, data, false, function(err, response) {
-					delete self.sendRequest;
+					self.sendRequest = null;
 					if(self.pendingMessage) {
 						self.sendMessage(self.pendingMessage, self.pendingCallback);
-						delete self.pendingMessage;
-						delete self.pendingCallback;
+						self.pendingMessage = null;
+						self.pendingCallback = null;
 					}
 					if(err) {
 						callback(err);
@@ -5311,7 +5437,7 @@ var CometTransport = (function() {
 	CometTransport.prototype.recv = function() {
 		if(this.recvRequest) {
 			this.recvRequest.abort();
-			delete this.recvRequest;
+			this.recvRequest = null;
 		}
 
 		if(!this.isConnected)
@@ -5324,7 +5450,7 @@ var CometTransport = (function() {
 				return;
 			}
 			self.onRecvResponse(response);
-			delete self.recvRequest;
+			self.recvRequest = null;
 			self.recv();
 		});
 	};
@@ -6101,7 +6227,7 @@ var Realtime = this.Realtime = (function() {
 	}
 
 	Realtime.prototype.history = function(params, callback) {
-		Resource.get(this, '/events', params, callback);
+		Resource.get(this, '/history', params, callback);
 	};
 
 	Realtime.prototype.stats = function(params, callback) {
@@ -6245,6 +6371,7 @@ var Channel = (function() {
 })();
 var RealtimeChannel = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -6260,13 +6387,13 @@ var RealtimeChannel = (function() {
     	this.options = Utils.prototypicalClone(defaultOptions, options);
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
-    	this.pendingSubscriptions = {};
     	this.pendingEvents = [];
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
+		callback = callback || noop;
     	var connectionState = this.connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionState.defaultMessage);
@@ -6278,7 +6405,7 @@ var RealtimeChannel = (function() {
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
-    		msg.action = messagetypes.TAction.EVENT;
+    		msg.action = messagetypes.TAction.MESSAGE;
     		msg.channel = this.name;
     		msg.messages = [message];
     		this.sendMessage(msg, callback);
@@ -6376,64 +6503,18 @@ var RealtimeChannel = (function() {
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var events = args[0];
+		var event = args[0];
 		var listener = args[1];
 		var callback = args[2] = (args[2] || noop);
+		var subscriptions = this.subscriptions;
 
-		if(this.state == 'attached') {
-			this.subscribeAttached(events, listener, callback);
-			return;
-		}
+		if(event === null || !Utils.isArray(event))
+			subscriptions.on(event, listener);
+		else
+			for(var i = 0; i < event.length; i++)
+				subscriptions.on(event[i], listener);
 
-		if(this.state != 'pending')
-			this.attach();
-		var self = this;
-		this.once(function(err) {
-			switch(this.event) {
-			case 'attached':
-				self.subscribeAttached(events, listener, callback);
-				break;
-			case 'detached':
-			case 'failed':
-				callback(err || self.connectionManager.state.defaultMessage);
-			}
-		});
-	};
-
-	RealtimeChannel.prototype.subscribeAttached = function(events, handler, callback) {
-		if(events === null || events.__proto__ !== Array.prototype) {
-			this.subscribeForEvent(events, handler, callback);
-			return;
-		}
-		for(var i = 0; i < events.length; i++) {
-			this.subscribeForEvent(events[i], handler, callback);
-		}
-	};
-
-	RealtimeChannel.prototype.subscribeForEvent = function(name, listener, callback) {
-		/* determine if there is already a listener for this event */
-		var hasListener = this.subscriptions.listeners(name);
-		/* if there is a listener already, nothing to do */
-		if(hasListener) {
-			callback();
-			return;
-		}
-
-		/* send the subscription message */
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending SUBSCRIBE message');
-		var subscriptionName = (name === null) ? ':' : name;
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(!pendingSubscriptions) {
-			pendingSubscriptions = [];
-			this.pendingSubscriptions[subscriptionName] = pendingSubscriptions;
-		}
-		pendingSubscriptions.push({listener: listener, callback: callback});
-    	var msg = new messagetypes.TChannelMessage({
-    		action: messagetypes.TAction.SUBSCRIBE,
-    		channel: this.name,
-    		name: name
-    	});
-    	this.sendMessage(msg, noop);
+		this.attach(callback);
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function() {
@@ -6441,59 +6522,15 @@ var RealtimeChannel = (function() {
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var events = args[0];
+		var event = args[0];
 		var listener = args[1];
-		var callback = args[2] = (args[2] || noop);
-
-		if(this.state == 'attached') {
-			this.unsubscribeAttached(events, listener, callback);
-			return;
-		}
-
-		if(this.state != 'pending')
-			this.attach();
-		var self = this;
-		this.once(function(err) {
-			switch(this.event) {
-			case 'attached':
-				self.unsubscribeAttached(events, listener, callback);
-				break;
-			case 'detached':
-			case 'failed':
-				callback(err || self.connectionManager.state.defaultMessage);
-			}
-		});
-	};
-
-	RealtimeChannel.prototype.unsubscribeAttached = function(events, handler, callback) {
-		if(events === null || events.__proto__ !== Array.prototype) {
-			this.unsubscribeForEvent(events, handler, callback);
-			return;
-		}
-		for(var i = 0; i < events.length; i++) {
-			this.unsubscribeForEvent(events[i], handler, callback);
-		}
-	};
-
-	RealtimeChannel.prototype.unsubscribeForEvent = function(name, listener, callback) {
-		/* remove from the set of subscriptions if it's there */
 		var subscriptions = this.subscriptions;
-		subscriptions.off(name, listener);
-		/* if there are still listeners for this event, nothing more to do */
-		var hasListener = subscriptions.listeners(name);
-		if(hasListener) {
-			callback();
-			return;
-		}
 
-		/* send the unsubscription message */
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.unsubscribe()', 'sending UNSUBSCRIBE message');
-    	var msg = new messagetypes.TChannelMessage({
-    		action: messagetypes.TAction.UNSUBSCRIBE,
-    		channel: this.name,
-    		name: name
-    	});
-    	this.sendMessage(msg, noop);
+		if(event === null || !Utils.isArray(event))
+			subscriptions.off(event, listener);
+		else
+			for(var i = 0; i < event.length; i++)
+				subscriptions.off(event[i], listener);
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
@@ -6507,22 +6544,16 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.onMessage = function(message) {
 		switch(message.action) {
-		case 5: /* ATTACHED */
+		case actions.ATTACHED:
 			this.setAttached(message);
 			break;
-		case 7: /* DETACHED */
+		case actions.DETACHED:
 			this.setDetached(message);
 			break;
-		case 9: /* SUBSCRIBED */
-			this.setSubscribed(message);
-			break;
-		case 11: /* UNSUBSCRIBED */
-			this.setUnsubscribed(message);
-			break;
-		case 12: /* PRESENCE */
+		case actions.PRESENCE:
 			this.setPresence(message.presence);
 			break;
-		case 13: /* EVENT */
+		case actions.MESSAGE:
 			var tMessages = message.messages;
 			if(tMessages) {
 				var messages = new Array(tMessages.length);
@@ -6538,13 +6569,8 @@ var RealtimeChannel = (function() {
 				this.onEvent(messages);
 			}
 			break;
-		case 1: /* CONNECT */
-		case 4: /* ATTACH */
-		case 6: /* DETACH */
-		case 8: /* SUBSCRIBE */
-		case 10: /* UNSUBSCRIBE */
 		default:
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.abort(UIMessages.FAIL_REASON_FAILED);
 		}
 	};
@@ -6555,12 +6581,12 @@ var RealtimeChannel = (function() {
 		if(dest.channel == src.channel) {
 			if((action = dest.action) == src.action) {
 				switch(action) {
-				case 10: /* EVENT */
+				case actions.MESSAGE:
 					for(var i = 0; i < src.messages.length; i++)
 						dest.messages.push(src.messages[i]);
 					result = true;
 					break;
-				case 9: /* PRESENCE */
+				case actions.PRESENCE:
 					for(var i = 0; i < src.presence.length; i++)
 						dest.presence.push(src.presence[i]);
 					result = true;
@@ -6581,7 +6607,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, channel: this.name, messages: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
@@ -6591,26 +6617,9 @@ var RealtimeChannel = (function() {
 				}
 				this.sendMessage(msg, multicaster);
 			}
-			this.presence.setSubscribed();
+			this.presence.setAttached();
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
-		}
-	};
-
-	RealtimeChannel.prototype.setSubscribed = function(message) {
-		var name = message.name;
-		var subscriptionName = (name === null) ? ':' : name;
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSubscribed', 'activating event; name = ' + name);
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(pendingSubscriptions) {
-			var subscriptions = this.subscriptions;
-			Utils.nextTick(function() {
-				for(var i = 0; i < pendingSubscriptions.length; i++) {
-					subscriptions.on(name, pendingSubscriptions[i].listener);
-					pendingSubscriptions[i].callback();
-				}
-			});
-			delete this.pendingSubscriptions[subscriptionName];
 		}
 	};
 
@@ -6624,22 +6633,6 @@ var RealtimeChannel = (function() {
 			this.state = 'detached';
 			this.emit('detached');
 		}
-	};
-
-	RealtimeChannel.prototype.setUnsubscribed = function(message) {
-		var name = message.name;
-		var subscriptionName = (name === null) ? ':' : name;
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(pendingSubscriptions) {
-			/* this is an error message */
-			var err = {statusCode: message.statusCode, code: message.code, reason: message.reason};
-			Utils.nextTick(function() {
-				for(var i = 0; i < pendingSubscriptions.length; i++)
-					pendingSubscriptions[i].callback(err);
-			});
-			delete this.pendingSubscriptions[subscriptionName];
-		}
-		this.subscriptions.off(name);
 	};
 
 	RealtimeChannel.prototype.setSuspended = function(connectionState) {
@@ -6678,9 +6671,9 @@ var Presence = (function() {
 		this.clients[clientId] = clientData;
 		var presence = new messagetypes.TPresence({
 			state : messagetypes.TPresenceState.ENTER,
-			clientId : this.clientId
+			clientId : this.clientId,
+			clientData: Channel.createPayload(clientData)
 		});
-		presence.clientData = Channel.createPayload(clientData);
 		if (this.channel.state == 'pending')
 			this.pendingPresence = {
 				presence : 'enter',
@@ -6715,7 +6708,7 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.get = function(clientId) {
-		return clients[clientId || this.clientId];
+		return this.clients[clientId || this.clientId];
 	};
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
@@ -6732,9 +6725,9 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setSubscribed = function() {
+	Presence.prototype.setAttached = function() {
 		if(this.pendingPresence) {
-			Logger.logAction(Logger.LOG_MICRO, 'Presence.setSubscribed', 'sending queued presence; state = ' + this.state);
+			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; state = ' + this.state);
 			this.channel.sendPresence(this.pendingPresence.presence, this.pendingPresence.callback);
 			delete this.pendingPresence;
 		}
