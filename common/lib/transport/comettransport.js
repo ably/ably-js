@@ -28,8 +28,8 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this;
-		var host = this.options.wsHost;
-		var port = this.options.wsPort;
+		var host = this.options.restHost;
+		var port = this.options.restPort;
 		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
@@ -49,7 +49,7 @@ var CometTransport = (function() {
 						return;
 					}
 					self.emit('preconnect');
-					self.onRecvResponse(response);
+					self.onResponseData(response);
 				});
 			} catch(e) { self.emit('error', e); }
 		});
@@ -163,6 +163,7 @@ var CometTransport = (function() {
 		var msg = new messagetypes.TMessageSet();
 		try {
 			msg.read(protocol);
+require('util').inspect(msg);
 			var items = msg.items;
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)

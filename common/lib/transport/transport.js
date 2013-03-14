@@ -46,7 +46,6 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
-console.log('************* onChannelMessage: ' + message.action);
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			this.emit('heartbeat');
@@ -58,7 +57,6 @@ console.log('************* onChannelMessage: ' + message.action);
 			this.emit('connected', null, this.connectionId);
 			break;
 		case actions.ACK:
-console.log('************* onChannelMessage: emitting ack');
 			this.emit('ack', message.msgSerial, message.count);
 			break;
 		case actions.NACK:

@@ -402,7 +402,6 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
 		err = err || null;
 		var pendingMessages = this.pendingMessages;
-console.log('*** ackMessage: serial = ' + serial + '; count = ' + count + '; pendingMessages = ' + require('util').inspect(pendingMessages));
 		var firstPending = pendingMessages[0];
 		if(firstPending) {
 			var startSerial = firstPending.msg.msgSerial;
