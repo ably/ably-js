@@ -1,0 +1,7 @@
+{
+	"Init": "init.js",
+	"Ws": "ws.js",
+	"Flash": "flash.js",
+	"Xhr": "xhr.js",
+	"Jsonp": "jsonp.js"
+}

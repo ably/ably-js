@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "main": "./nodejs/index.js",
   "dependencies": {
+    "nodeunit": "0.x.x",
     "request": "2.x.x",
     "ws": "0.x.x"
   },

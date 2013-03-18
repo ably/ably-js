@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+
+/**********************************
+ * Usage
+ *
+ * main host=<host> port=<port> [--exter-after-tests] [--pipe-json]
+ **********************************/
+
+var console2 = require('./quietconsole.js');
+
+process.on('exit', function() {
+	console2.log('browser-srv: exiting');
+});
+
+process.on('uncaughtException', function (err) {
+	console2.error('browser-src: exception caught by event loop: ' + err + '; ' + err.stack);
+});
+
+function startsWith(string, substr) {
+	return string.substr(0, substr.length) == substr;
+}
+
+/* trivial args processing */
+var opts = {host:'localhost', port:8092};
+
+for(var i = 2; i < process.argv.length; i++) {
+	if(startsWith(process.argv[i], 'host='))
+		opts.host = process.argv[i].substr('host='.length);
+	if(startsWith(process.argv[i], 'port='))
+		opts.port = process.argv[i].substr('port='.length);
+  if(process.argv[i] == '--exit-after-tests')
+    opts.exitAfterTests = true;
+  if(process.argv[i] == '--pipe-json') {
+    console2.quiet(true);
+    opts.pipeJSON = true;
+  }
+}
+
+/* load and run module */
+require('./index').start(opts);

@@ -1,0 +1,7 @@
+{
+  "credentials": {
+    "username": "<your email>",
+    "password": "<your password>",
+    "tunnel_key": "<go to http://www.browserstack.com/automated-browser-testing-api#automated-local-testing>"
+  }
+}
