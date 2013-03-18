@@ -31,7 +31,7 @@ var TEST_TIMEOUT = 60 * 3,  // time we allow for the tests to run in an external
     SERVER_HOST = 'localhost',
     SERVER_PORT = 8092,
     TUNNEL_PORTS = [8092, 843, 8080],
-    DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6'];
+    DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'];
 
 // gracefully handle termination of worker and report error to the console if there was a problem killing the worker at BrowserStack
 function terminateWorker(workerId, callback) {
