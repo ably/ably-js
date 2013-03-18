@@ -90,6 +90,7 @@ process.on('SIGTERM', cleanUpOnExitWithCode);
 
 process.on('uncaughtException', function (err) {
   console.error('browser-stack: exception caught by event loop: ', err + '; ' + err.stack);
+  process.exit(1);
 });
 
 try {

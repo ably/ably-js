@@ -6,7 +6,7 @@ var url = require('url');
 var util = require('util');
 var testvars = require('../framework/testvars');
 var existsSync = fs.existsSync || path.existsSync;
-var console2 = require('../quietconsole');
+var console2 = require('../lib/quietconsole');
 
 var external = {
 	'ably.js' : path.normalize(__dirname + '../../../../browser/lib/ably.js'),

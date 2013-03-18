@@ -6,7 +6,7 @@
  * main host=<host> port=<port> [--exter-after-tests] [--pipe-json]
  **********************************/
 
-var console2 = require('./quietconsole.js');
+var console2 = require('./lib/quietconsole.js');
 
 process.on('exit', function() {
 	console2.log('browser-srv: exiting');

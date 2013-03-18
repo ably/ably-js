@@ -4,7 +4,7 @@ var setup = require('./framework/setup');
 var teardown = require('./framework/teardown');
 var testvars = require('./framework/testvars');
 var noop = function() {};
-var console2 = require('./quietconsole');
+var console2 = require('./lib/quietconsole');
 
 var runModule = function(module, callback) {
 	callback = callback || noop;

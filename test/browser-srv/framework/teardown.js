@@ -1,37 +1,37 @@
-/* Admin */
-var Admin = require('../../../../../admin/nodejs/admin').Admin;
+var http = require('http');
 
-var adminOpts = {};
-var username = process.env.ADMIN_USERNAME || 'admin';
-var password = process.env.ADMIN_PASSWORD || 'admin';
-var hostname = process.env.GOSSIP_ADDRESS || 'localhost';
-var uri = 'http://' + username + ':' + password + '@' + hostname + ':8090';
-var admin = new Admin(uri, adminOpts);
+exports.deleteAccount = function(testVars, callback) {
+	var auth = 'Basic ' + new Buffer(testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value).toString('base64');
+	var postOptions = {
+    host: 'localhost',
+    port: '8080',
+    path: '/apps/' + testVars.testAppId,
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': auth
+    }
+  };
 
-exports.clearTest = function(testVars, callback) {
-	admin.apps.id(testVars.testAppId).get(function(err, app) {
-		if(err) {
-			callback(err);
-			return;
-		}
-		app.del(function(err) {
-			if(err) {
-				callback(err);
-				return;
+  var response = '';
+  var request = http.request(postOptions, function(res) {
+    res.setEncoding('utf8');
+    res.on('data', function (chunk) {
+      response += chunk;
+    });
+    res.on('end', function() {
+			if (res.statusCode !== 200) {
+				console.log("Cannot tear down" + response);
+				callback('Invalid HTTP request: ' + response);
+			} else {
+				callback();
 			}
-			admin.accounts.id(testVars.testAcctId).get(function(err, acct) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				acct.del(function(err) {
-					if(err) {
-						callback(err);
-						return;
-					}
-					callback();
-				});
-			});
-		});
-	});
+    });
+  });
+
+  request.on('error', function(err) {
+		callback(err);
+  });
+
+  request.end();
 };
