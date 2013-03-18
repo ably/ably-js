@@ -4,9 +4,10 @@
   "version": "0.0.1",
   "main": "./nodejs/index.js",
   "dependencies": {
+    "node-int64": "0.x.x",
     "nodeunit": "0.x.x",
     "request": "2.x.x",
-    "ws": "0.x.x"
+    "ws": "0.x.x",
   },
   "engines" : {
     "node" : ">=0.6.19",
