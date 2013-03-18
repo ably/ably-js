@@ -8,14 +8,6 @@ var hostname = process.env.GOSSIP_ADDRESS || 'localhost';
 var uri = 'http://' + username + ':' + password + '@' + hostname + ':8090';
 var admin = new Admin(uri, adminOpts);
 
-/* REST */
-var Rest = require('../../../../../rest/nodejs/rest').Rest;
-
-var restOpts = {
-		uri: 'http://'+ hostname + ':8080',
-};
-var rest = function(opts) {return new Rest(restOpts);};
-
 var testAcct, testApp;
 
 exports.createAccount = function(testVars, callback) {
