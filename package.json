@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "main": "./nodejs/index.js",
   "dependencies": {
+    "browserstack": "git://github.com/ably-forks/node-browserstack.git",
     "node-int64": "0.x.x",
     "nodeunit": "0.x.x",
     "request": "2.x.x",
