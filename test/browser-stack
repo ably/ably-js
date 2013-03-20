@@ -121,7 +121,9 @@ function startsWith(string, substr) {
 
 var chosenBrowsers = [];
 for(var i = 2; i < process.argv.length; i++) {
-  if (process.argv[i] == '--all') {
+  if(process.argv[i] == '--skip-setup') {
+    // do nothing, skip set up is used in CI tests and gets passed through
+  } else if(process.argv[i] == '--all') {
     if (browserQueue.length) incorrectBrowserParams();
     browserQueue = browsers;
   } else if(startsWith(process.argv[i], 'ws_host=')) {
