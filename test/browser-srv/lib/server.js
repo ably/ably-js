@@ -201,7 +201,7 @@ exports.start = function(opts, callback) {
 			callback(err, testSrv);
 			return;
 		}
-		console2.log('Web server started: ' + util.inspect(opts));
+		console2.log('Web server started with opts: ' + util.inspect(opts));
 		callback(null, testSrv);
 	});
 	testSrv.on('close', function() {

@@ -20,6 +20,12 @@ var runModule = function(module, callback) {
 exports.start = function(opts) {
 	if (opts.pipeJSON) console2.quiet(true);
 
+	if (typeof(opts.testVars) == 'object') {
+		for (var key in opts.testVars) {
+			testvars[key] = opts.testVars[key];
+		}
+	}
+
 	runModule(setup, function(err) {
 		if(err) {
 			console2.error('Unexpected error in server setup: ' + err.stack);

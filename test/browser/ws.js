@@ -6,10 +6,10 @@ this.ws = {
 			test.expect(1);
 			try {
 				var ably = new Ably.Realtime({
-					restHost:'localhost',
-					restPort:8080,
-					wsHost:'localhost',
-					wsPort:8080,
+					restHost:testVars.realtimeHost,
+					restPort:testVars.realtimePort,
+					wsHost:testVars.realtimeHost,
+					wsPort:testVars.realtimePort,
 					key: testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value
 				});
 				ably.connection.on('connected', function() {
@@ -36,10 +36,10 @@ this.ws = {
 			test.expect(1);
 			try {
 				var ably = new Ably.Realtime({
-					restHost:'localhost',
-					restPort:8080,
-					wsHost:'localhost',
-					wsPort:8080,
+					restHost:testVars.realtimeHost,
+					restPort:testVars.realtimePort,
+					wsHost:testVars.realtimeHost,
+					wsPort:testVars.realtimePort,
 					key: testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value
 				});
 				ably.connection.once('connected', function() {

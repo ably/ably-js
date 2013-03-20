@@ -3,8 +3,8 @@ var http = require('http');
 exports.createAccountAppAndKeys = function(testVars, callback) {
 	var postData = '{ "keys": [ {} ] }';
 	var postOptions = {
-    host: 'localhost',
-    port: '8080',
+    host: testVars.realtimeHost,
+    port: testVars.realtimePort,
     path: '/apps',
     method: 'POST',
     headers: {

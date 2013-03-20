@@ -3,8 +3,8 @@ var http = require('http');
 exports.deleteAccount = function(testVars, callback) {
 	var auth = 'Basic ' + new Buffer(testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value).toString('base64');
 	var postOptions = {
-    host: 'localhost',
-    port: '8080',
+    host: testVars.realtimeHost,
+    port: testVars.realtimePort,
     path: '/apps/' + testVars.testAppId,
     method: 'DELETE',
     headers: {
