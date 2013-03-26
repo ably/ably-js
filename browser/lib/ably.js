@@ -3,15 +3,17 @@ var Defaults = {
 	protocolVersion:   1,
 	REST_HOST:         'rest.ably.io',
 	WS_HOST:           'realtime.ably.io',
-	WS_PORT:           80,
-	WSS_PORT:          443,
+	FALLBACK_HOSTS:    ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
+	PORT:              80,
+	TLS_PORT:          443,
 	connectTimeout:    15000,
 	disconnectTimeout: 30000,
 	suspendedTimeout:  120000,
 	cometRecvTimeout:  90000,
 	cometSendTimeout:  10000,
-	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:   {swfLocation: 'swf/WebSocketMainInsecure-0.9.swf'}
+	httpTransports:    ['comet', 'xhr', 'jsonp'],
+	transports:      ['web_socket', 'flash_socket', 'comet', 'xhr', 'jsonp'],
+	flashTransport:    {swfLocation: 'swf/WebSocketMainInsecure-0.9.swf'}
 };
 var ConnectionError = {
 	disconnected: {
@@ -3884,6 +3886,53 @@ var clientmessage_refs = {
 	TChannelMessage: TChannelMessage,
 	TMessageSet: TMessageSet
 };
+this.Cookie = (function() {
+	var isBrowser = (typeof(window) == 'object');
+	function noop() {}
+
+	function Cookie() {}
+
+	if(isBrowser) {
+		Cookie.create = function(name, value, ttl) {
+			var expires = '';
+			if(ttl) {
+				var date = new Date();
+				date.setTime(date.getTime() + ttl);
+				expires = '; expires=' + date.toGMTString();
+			}
+			document.cookie = name + '=' + value + expires + '; path=/';
+		};
+
+		Cookie.read = function(name) {
+			var nameEQ = name + '=';
+			var ca = document.cookie.split(';');
+			for(var i=0; i < ca.length; i++) {
+				var c = ca[i];
+				while(c.charAt(0)==' ') c = c.substring(1, c.length);
+				if(c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+			}
+			return null;
+		};
+
+		Cookie.erase = function(name) {
+			createCookie(name, '', -1 * 3600 * 1000);
+		};
+	}
+
+	return Cookie;
+})();
+this.Http = (function() {
+	function Http() {}
+
+	if(ConnectionManager.httpTransports.xhr) {
+		Http.get = XHRTransport.get;
+		Http.post = XHRTransport.post;
+	} else {
+		Http.get = JSONPTransport.get;
+	}
+
+	return Http;
+})();
 /*	SWFObject v2.2 <http://code.google.com/p/swfobject/> 
 	is released under the MIT License <http://www.opensource.org/licenses/mit-license.php> 
 */
@@ -4518,6 +4567,38 @@ var Utils = (function() {
 		return false;
 	};
 
+	Utils.intersect = function(arr, ob) { return Array.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
+
+	Utils.arrIntersect = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var member = arr1[i];
+			if(arr2.indexOf(member) != -1)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrIntersectOb = function(arr, ob) {
+		var result = [];
+		for(var i = 0; i < arr.length; i++) {
+			var member = arr[i];
+			if(member in ob)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrSubtract = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var element = arr1[i];
+			if(arr2.indexOf(element) == -1)
+				result.push(element);
+		}
+		return result;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
@@ -4575,6 +4656,10 @@ var Utils = (function() {
 		};
 	};
 
+	Utils.arrRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length));
+	};
+
 	return Utils;
 })();
 var Multicaster = (function() {
@@ -4593,6 +4678,10 @@ var Multicaster = (function() {
 	return Multicaster;
 })();
 var ConnectionManager = (function() {
+	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
+	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
+	var connectionIdCookie = 'ably-connection-id';
+	var connectionSerialCookie = 'ably-connection-serial';
 
 	var noop = function() {};
 
@@ -4604,6 +4693,39 @@ var ConnectionManager = (function() {
 		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
 		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false},
 		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
+	};
+
+	function TransportParams(options, host, mode, connectionId, connectionSerial) {
+		this.options = options;
+		this.binary = !options.useTextProtocol;
+		this.host = host;
+		this.mode = mode;
+		this.connectionId = connectionId;
+		this.connectionSerial = connectionSerial;
+	}
+
+	TransportParams.prototype.getConnectParams = function(params) {
+		params = params || {};
+		switch(this.mode) {
+			case 'resume':
+				params.resume = this.connectionId;
+				params.connection_serial = this.connectionSerial;
+				break;
+			case 'recover':
+				if(this.options.recover === true) {
+					params.recover = readCookie(connectionIdCookie);
+					params.connection_serial = readCookie(connectionSerialCookie);
+				} else {
+					var match = this.options.recover.match(/^([\w|\d]+):([\w|\d]+)$/);
+					if(match) {
+						params.recover = match[1];
+						params.connection_serial = match[2];
+					}
+				}
+				break;
+			default:
+		}
+		return params;
 	};
 
 	/* public constructor */
@@ -4620,43 +4742,38 @@ var ConnectionManager = (function() {
 		this.connectionId = undefined;
 		this.connectionSerial = undefined;
 
-		options.transports = options.transports || Defaults.transports;
-		var transports = this.transports = [];
-		for(var i = 0; i < options.transports.length; i++) {
-			if(options.transports[i] in ConnectionManager.availableTransports)
-				transports.push(options.transports[i]);
+		this.httpTransports = Utils.intersect((options.transports || Defaults.httpTransports), ConnectionManager.httpTransports);
+		this.transports = Utils.intersect((options.transports || Defaults.transports), ConnectionManager.transports);
+		this.upgradeTransports = Utils.arrSubtract(this.transports, this.httpTransports);
+		var fallbackHosts = options.fallbackHosts;
+		if(fallbackHosts) {
+			var tmp;
+			this.httpHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.restHost);
+			this.wsHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.wsHost);
+		} else {
+			this.httpHosts = [options.restHost];
+			this.wsHosts = [options.wsHost];
 		}
-		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + options.transports + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + transports + ']');
+		this.transport = null;
+		this.pendingTransport = null;
+		this.host = null;
 
-		if(!transports.length) {
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available http transports = [' + this.httpTransports + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'ws hosts = [' + this.wsHosts + ']');
+
+		if(!this.transports.length) {
 			var msg = 'no requested transports available';
 			Logger.logAction(Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
 			throw new Error(msg);
 		}
 
-		/* generic state change handling */
-		var self = this;
-    	this.on(function(newState, transport) {
-    		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(connection state)', 'newState = ' + newState.current);
-    		switch(newState.current) {
-    		case 'connected':
-    			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager on(connected)', 'connected; transport = ' + transport);
-    			self.activateTransport(transport);
-    			break;
-    		case 'suspended':
-    		case 'closed':
-    		case 'failed':
-    			var attached = realtime.channels.attached;
-            	var connectionState = self.state;
-        		for(var channelName in attached)
-    				attached[channelName].setSuspended(connectionState);
-        		break;
-    		default:
-    		}
-    	});
-
+		/* intercept close event in browser to persist connection id if requested */
+		if(createCookie && options.recover)
+			window.addEventListener('beforeunload', function() { self.persistConnection(); });
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
@@ -4664,78 +4781,210 @@ var ConnectionManager = (function() {
 	 * transport management
 	 *********************/
 
-	ConnectionManager.availableTransports = {};
+	ConnectionManager.httpTransports = ConnectionManager.transports = {};
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
+		/* if there's already a transport, we're done */
 		if(this.transport) {
-			callback(this.transport);
+			callback(null, this.transport);
+			return;
+		}
+
+		/* set up the transport params */
+		/* first attempt the main host; no need to check for general connectivity first.
+		 * Inherit any connection state */
+		var mode = this.connectionId ? 'resume' : (this.options.recover ? 'recover' : 'clean');
+		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
+
+		/* first try to establish an http transport */
+		var self = this;
+		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
+			if(err) {
+				/* http failed, so nothing's going to work */
+				callback(err);
+				return;
+			}
+			/* we have the http transport; if there is a potential upgrade
+			 * transport, lets see if we can upgrade to that. We won't
+			  * be trying any fallback hosts, so we know the host to use */
+			if(!self.upgradeTransports.length) {
+				/* no upgrade available */
+				callback(null, httpTransport);
+				return;
+			}
+			transportParams = new TransportParams(self.options, transportParams.host, 'resume', self.connectionId, self.connectionSerial);
+ 			self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), function(err, upgradeTransport) {
+				callback(null, upgradeTransport);
+			});
+  		});
+	};
+
+	/**
+	 * Attempt to connect to a specified host using a given
+	 * list of candidate transports in descending priority order
+	 * @param transportParams
+	 * @param candidateTransports
+	 * @param callback
+	 */
+	ConnectionManager.prototype.chooseTransportForHost = function(transportParams, candidateTransports, callback) {
+		var candidate = candidateTransports.shift();
+		if(!candidate) {
+			var err = new Error('Unable to connect (no available transport)');
+			err.statusCode = 404;
+			err.code = 80000;
+			callback(err);
 			return;
 		}
 		var self = this;
-		var candidateTransports = this.transports.slice();
-		var tryFirstCandidate = function(tryCb) {
-			var candidate = candidateTransports.shift();
-			if(!candidate) {
-				tryCb(null);
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'trying ' + candidate);
+		(ConnectionManager.transports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
+			if(err) {
+				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
 			}
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'trying ' + candidate);
-			(ConnectionManager.availableTransports[candidate]).tryConnect(self, self.realtime.auth, self.options, function(err, transport) {
-				if(err) {
-					tryFirstCandidate(tryCb);
-					return;
-				}
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'transport ' + candidate + ' connecting');
-				self.setupTransport(transport);
-				tryCb(transport);
-			});
-		};
-
-		tryFirstCandidate(callback);
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'transport ' + candidate + ' connecting');
+			self.setTransportPending(transport);
+			callback(null, transport);
+		});
 	};
 
-	ConnectionManager.prototype.setupTransport = function(transport) {
+	/**
+	 * Try to establish a transport on an http transport, checking for
+	 * network connectivity and trying fallback hosts if applicable
+	 * @param transportParams
+	 * @param callback
+	 */
+	ConnectionManager.prototype.chooseHttpTransport = function(transportParams, callback) {
+		var candidateHosts = this.httpHosts.slice();
+		/* first try to establish a connection with the priority host with http transport */
+		var host = candidateHosts.shift();
+		if(!host) {
+			var err = new Error('Unable to connect (no available host)');
+			err.statusCode = 404;
+			err.code = 80000;
+			callback(err);
+			return;
+		}
+		transportParams.host = host;
 		var self = this;
-		this.transport = transport;
 
-		var handleStateEvent = function(state) {
-			return function(error, connectionId) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'on state = ' + state);
-				if(error && error.reason)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'reason =  ' + error.reason);
-				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setupTransport', 'connectionId =  ' + connectionId);
-				if(self.transport === transport) {
-					if(connectionId)
-						self.realtime.connection.id = self.connectionId = connectionId;
-					self.notifyState({state:state, error:error});
+		/* this is what we'll be doing if the attempt for the main host fails */
+		function tryFallbackHosts() {
+			/* before trying any fallback (or any remaining fallback) we decide if
+			 * there is a problem with the ably host, or there is a general connectivity
+			 * problem */
+			ConnectionManager.httpTransports[self.httpTransports[0]].checkConnectivity(function(err, connectivity) {
+				/* we know err won't happen but handle it here anyway */
+				if(err) {
+					callback(err);
+					return;
 				}
+				if(!connectivity) {
+					/* the internet isn't reachable, so don't try the fallback hosts */
+					var err = new Error('Unable to connect (network unreachable)');
+					err.statusCode = 404;
+					err.code = 80000;
+					callback(err);
+					return;
+				}
+				/* the network is there, so there's a problem with the main host, or
+				 * its dns. Try the fallback hosts. We could try them simultaneously but
+				 * that would potentially cause a huge spike in load on the load balancer */
+				transportParams.host = Utils.arrRandomElement(candidateHosts);
+				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
+					if(err) {
+						tryFallbackHosts();
+						return;
+					}
+					/* succeeded */
+					callback(null, httpTransport);
+				});
+			});
+		}
+
+		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
+			if(err) {
+				tryFallbackHosts();
+				return;
+			}
+			/* succeeded */
+			callback(null, httpTransport);
+		});
+	};
+
+	/**
+	 * Called when a transport is indicated to be viable, and the connectionmanager
+	 * expects to activate this transport as soon as it is connected.
+	 * @param host
+	 * @param transport
+	 */
+	ConnectionManager.prototype.setTransportPending = function(transport) {
+		if(this.pendingTransport)
+			this.pendingTransport.abort();
+		this.pendingTransport = transport;
+
+		var self = this;
+		var handleTransportEvent = function(state) {
+			return function(error, connectionId) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
+				if(error && error.reason)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.reason);
+				if(connectionId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
+
+				/* handle activity transition */
+				if(state == 'connected')
+					self.activateTransport(transport, connectionId);
+				else
+					self.deactivateTransport(transport);
+
+				/* if this is the active transport, notify clients */
+				if(self.transport === transport)
+					self.notifyState({state:state, error:error});
 			};
 		};
 		var states = ['connected', 'disconnected', 'closed', 'failed'];
 		for(var i = 0; i < states.length; i++) {
 			var state = states[i];
-			transport.on(state, handleStateEvent(state));
+			transport.on(state, handleTransportEvent(state));
 		}
 	};
 
-	ConnectionManager.prototype.activateTransport = function(transport) {
-		/* set up handler for events received on this transport */
+	/**
+	 * Called when a transport is connected, and the connectionmanager decides that
+	 * it will now be the active transport.
+	 * @param transport the transport instance
+	 * @param connectionId the id of the new active connection
+	 * @param mode the nature of the activation:
+	 *   'clean': new connection;
+	 *   'recover': new connection with recoverable messages;
+	 *   'resume': uninterrupted resumption of connection without loss of messages
+	 */
+	ConnectionManager.prototype.activateTransport = function(transport, connectionId) {
+		/* if the connectionmanager moved to the closed state before this
+		 * connection event, then we won't activate this transport */
+		if(this.state == states.closed)
+			return;
+
+ 		/* Terminate any existing transport */
+		var existingTransport = this.transport;
+ 		if(existingTransport) {
+			 this.transport = null;
+			 existingTransport.close();
+		}
+		existingTransport = this.pendingTransport;
+		if(existingTransport)
+			this.pendingTransport = null;
+
+		/* the given transport is connected; this will immediately
+		 * take over as the active transport */
+		this.transport = transport;
+		this.host = transport.params.host;
+		if(connectionId)
+			this.realtime.connection.id = this.connectionId = connectionId;
+
+ 		/* set up handler for events received on this transport */
 		var self = this;
-		var realtime = this.realtime;
-		transport.on('channelmessage', function(msg) {
-			var channelName = msg.channel;
-			if(!channelName) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-				return;
-			}
-			var channel = realtime.channels.attached[channelName];
-			if(!channel) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-				return;
-			}
-			channel.onMessage(msg);
-		});
 		transport.on('ack', function(serial, count) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count);
 			self.ackMessage(serial, count);
@@ -4751,11 +5000,37 @@ var ConnectionManager = (function() {
 			self.ackMessage(serial, count, err);
 		});
 		this.msgSerial = 0;
-		/* re-attach any previously attached channels
-		 * FIXME: is this conditional on us being connected with the same connectionId ? */
-		var attached = realtime.channels.attached;
-		for(var channelName in attached)
-			attached[channelName].attachImpl();
+		this.emit('transport.active', transport, connectionId, transport.params);
+	};
+
+	/**
+	 * Called when a transport is no longer the active transport. This can occur
+	 * in any transport connection state.
+	 * @param transport
+	 */
+	ConnectionManager.prototype.deactivateTransport = function(transport) {
+		transport.off('ack');
+		transport.off('nack');
+		if(this.transport === transport)
+			this.transport = this.host = null;
+		else if(this.pendingTransport === transport)
+			this.pendingTransport = null;
+
+		this.msgSerial = null;
+		this.emit('transport.inactive', transport);
+	};
+
+	/**
+	 * Called when the connectionmanager wants to persist transport
+	 * state for later recovery
+	 */
+	ConnectionManager.prototype.persistConnection = function() {
+		if(createCookie) {
+			if(this.connectionId)
+				createCookie(connectionIdCookie, this.connectionId);
+			if(this.connectionSerial)
+				createCookie(connectionSerialCookie, this.connectionSerial);
+		}
 	};
 
 	/*********************
@@ -4771,7 +5046,7 @@ var ConnectionManager = (function() {
 		this.state = states[stateChange.current];
 		if(this.state.terminal)
 			this.error = stateChange.error;
-		this.emit(stateChange.current, stateChange, this.transport);
+		this.emit('connectionstate', stateChange, this.transport);
 	};
 
 	/****************************************
@@ -4884,23 +5159,31 @@ var ConnectionManager = (function() {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
 			this.connectImpl();
-		} else if(request.state == 'failed') {
-			if(this.transport) {
-				this.transport.abort(request.reason);
-				delete this.transport;
+		} else {
+			if(this.pendingTransport) {
+				this.pendingTransport.close();
+				this.pendingTransport = null;
 			}
-		} else if(request.state = 'closed') {
-			if(this.transport) {
-				this.transport.close();
-				delete this.transport;
+			if(request.state == 'failed') {
+				if(this.transport) {
+					this.transport.abort(request.reason);
+					this.transport = null;
+				}
+			} else if(request.state = 'closed') {
 				this.cancelConnectTimer();
 				this.cancelRetryTimer();
 				this.cancelSuspendTimer();
+				if(this.transport) {
+					this.transport.close();
+					this.transport = null;
+				}
 			}
 		}
-		var newState = states[request.state];
-		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
-		this.enactStateChange(change);
+		if(request.state != this.state.state) {
+			var newState = states[request.state];
+			var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+			this.enactStateChange(change);
+		}
 	};
 
 	ConnectionManager.prototype.connectImpl = function() {
@@ -4931,9 +5214,8 @@ var ConnectionManager = (function() {
 		};
 
 		var tryConnect = function() {
-			self.chooseTransport(function(transport) {
-				if(!transport) {
-					var err = new Error('Unable to connect using any available transport');
+			self.chooseTransport(function(err, transport) {
+				if(err) {
 					connectErr(err);
 					return;
 				}
@@ -4996,7 +5278,6 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
 		err = err || null;
 		var pendingMessages = this.pendingMessages;
-console.log('*** ackMessage: serial = ' + serial + '; count = ' + count + '; pendingMessages = ' + require('util').inspect(pendingMessages));
 		var firstPending = pendingMessages[0];
 		if(firstPending) {
 			var startSerial = firstPending.msg.msgSerial;
@@ -5036,6 +5317,15 @@ console.log('*** ackMessage: serial = ' + serial + '; count = ' + count + '; pen
 		this.pendingMessages = [];
 	};
 
+	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
+		if(transport === this.transport || transport.connectionId == this.connectionId) {
+			this.realtime.channels.onChannelMessage(message);
+			return;
+		}
+		/* message was received on connection that is no longer the current connection */
+		this.realtime.channels.retryChannelMessage(message);
+	};
+
 	return ConnectionManager;
 })();
 var Transport = (function() {
@@ -5056,18 +5346,18 @@ var Transport = (function() {
 	var defaultBufferSize = 1024;
 
 	/* public constructor */
-	function Transport(connectionManager, auth, options) {
+	function Transport(connectionManager, auth, params) {
 		EventEmitter.call(this);
 		this.connectionManager = connectionManager;
 		this.auth = auth;
-		this.options = options;
-		if(options.useTextProtocol) {
-			this.thriftTransport = thrift.TStringTransport;
-			this.thriftProtocol = thrift.TJSONProtocol;
-		} else {
+		this.params = params;
+		if(params.binary) {
 			this.thriftTransport = thrift.TTransport;
 			this.thriftProtocol = thrift.TBinaryProtocol;
 			this.protocolBuffer = new thrift.CheckedBuffer(defaultBufferSize);
+		} else {
+			this.thriftTransport = thrift.TStringTransport;
+			this.thriftProtocol = thrift.TJSONProtocol;
 		}
 		this.isConnected = false;
 	}
@@ -5086,7 +5376,6 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
-console.log('************* onChannelMessage: ' + message.action);
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			this.emit('heartbeat');
@@ -5098,7 +5387,6 @@ console.log('************* onChannelMessage: ' + message.action);
 			this.emit('connected', null, this.connectionId);
 			break;
 		case actions.ACK:
-console.log('************* onChannelMessage: emitting ack');
 			this.emit('ack', message.msgSerial, message.count);
 			break;
 		case actions.NACK:
@@ -5113,7 +5401,7 @@ console.log('************* onChannelMessage: emitting ack');
 			this.abort(err);
 			break;
 		default:
-			this.emit('channelmessage', message);
+			this.connectionManager.onChannelMessage(message, this);
 		}
 	};
 
@@ -5146,11 +5434,10 @@ var WebSocketTransport = (function() {
 	var thrift = isBrowser ? Thrift : require('thrift');
 
 	/* public constructor */
-	function WebSocketTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
-		var binary = !options.useTextProtocol;
+	function WebSocketTransport(connectionManager, auth, params) {
+		var binary = params.binary = params.binary && hasBuffer;
 		this.sendOptions = {binary: binary};
-		Transport.call(this, connectionManager, auth, options);
+		Transport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(WebSocketTransport, Transport);
 
@@ -5159,10 +5446,10 @@ var WebSocketTransport = (function() {
 	};
 
 	if(WebSocketTransport.isAvailable())
-		ConnectionManager.availableTransports.web_socket = WebSocketTransport;
+		ConnectionManager.transports.web_socket = WebSocketTransport;
 
-	WebSocketTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new WebSocketTransport(connectionManager, auth, options);
+	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
@@ -5173,11 +5460,11 @@ var WebSocketTransport = (function() {
 		transport.connect();
 	};
 
-	WebSocketTransport.prototype.createWebSocket = function(uri, params) {
+	WebSocketTransport.prototype.createWebSocket = function(uri, connectParams) {
 		var paramCount = 0;
-		if(params) {
-			for(var key in params)
-				uri += (paramCount++ ? '&' : '?') + key + '=' + params[key];
+		if(connectParams) {
+			for(var key in connectParams)
+				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
 		}
 		this.uri = uri;
 		return new WebSocket(uri);
@@ -5190,21 +5477,22 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this;
-		var host = this.options.wsHost;
-		var port = this.options.wsPort;
-		var wsScheme = this.options.encrypted ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + host + ':' + port + '/applications/' + this.options.appId;
+		var self = this, params = this.params, options = params.options;
+		var host = params.host;
+		var port = options.wsPort;
+		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
+		var wsUri = wsScheme + host + ':' + port + '/applications/' + options.appId;
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-		this.auth.getAuthParams(function(err, params) {
-			var paramStr = ''; for(var param in params) paramStr += ' ' + param + ': ' + params[param] + ';';
+		this.auth.getAuthParams(function(err, authParams) {
+			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr);
 			if(err) {
 				self.abort(UIMessages.FAIL_REASON_REFUSED);
 				return;
 			}
+			var connectParams = params.getConnectParams(authParams);
 			try {
-				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, params);
+				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
@@ -5301,9 +5589,9 @@ var CometTransport = (function() {
 	/*
 	 * A base comet transport class
 	 */
-	function CometTransport(connectionManager, auth, options) {
-		Transport.call(this, connectionManager, auth, options);
-		this.binary = !options.useTextProtocol;
+	function CometTransport(connectionManager, auth, params) {
+		Transport.call(this, connectionManager, auth, params);
+		this.binary = this.params.binary;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
@@ -5324,29 +5612,30 @@ var CometTransport = (function() {
 	CometTransport.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this;
-		var host = this.options.wsHost;
-		var port = this.options.wsPort;
-		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
+		var self = this, params = this.params, options = params.options;
+		var host = params.host;
+		var port = options.wsPort;
+		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
-		var connectUri = this.baseUri + this.options.appId + '/connect';
+		var connectUri = this.baseUri + options.appId + '/connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
-			self.params = authParams;
-			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'authParams:' + CometTransport.paramStr(authParams));
 			if(err) {
 				self.abort(UIMessages.FAIL_REASON_REFUSED);
 				return;
 			}
+			self.authParams = authParams;
+			var connectParams = self.params.getConnectParams(authParams);
+			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + CometTransport.paramStr(connectParams));
 			try {
-				self.request(connectUri, self.params, null, false, function(err, response) {
+				self.request(connectUri, connectParams, null, false, function(err, response) {
 					if(err) {
 						self.emit('error', err);
 						return;
 					}
 					self.emit('preconnect');
-					self.onRecvResponse(response);
+					self.onResponseData(response);
 				});
 			} catch(e) { self.emit('error', e); }
 		});
@@ -5360,7 +5649,7 @@ var CometTransport = (function() {
 			this.recvRequest = null;
 		}
 		var self = this;
-		this.recvRequest = this.request(this.closeUri, this.params, null, false, function(err, response) {
+		this.recvRequest = this.request(this.closeUri, this.authParams, null, false, function(err, response) {
 			self.recvRequest = null;;
 			if(err) {
 				self.emit('error', err);
@@ -5410,7 +5699,7 @@ var CometTransport = (function() {
 		var self = this;
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				self.sendRequest = self.request(self.sendUri, self.params, data, false, function(err, response) {
+				self.sendRequest = self.request(self.sendUri, self.authParams, data, false, function(err, response) {
 					self.sendRequest = null;
 					if(self.pendingMessage) {
 						self.sendMessage(self.pendingMessage, self.pendingCallback);
@@ -5444,7 +5733,7 @@ var CometTransport = (function() {
 			return;
 
 		var self = this;
-		this.recvRequest = this.request(this.recvUri, this.params, null, true, function(err, response) {
+		this.recvRequest = this.request(this.recvUri, this.authParams, null, true, function(err, response) {
 			if(err) {
 				self.emit('error', err);
 				return;
@@ -5460,6 +5749,7 @@ var CometTransport = (function() {
 		var msg = new messagetypes.TMessageSet();
 		try {
 			msg.read(protocol);
+require('util').inspect(msg);
 			var items = msg.items;
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
@@ -5491,25 +5781,40 @@ var XHRTransport = (function() {
 	};
 
 	/* public constructor */
-	function XHRTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !XHRTransport.binary;
-		CometTransport.call(this, connectionManager, auth, options);
+	function XHRTransport(connectionManager, auth, params) {
+		params.binary = params.binary && XHRTransport.binary;
+		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
-		if(!xhr) return false;
+		if(!xhr)return false;
 //		XHRTransport.binary = (window.ArrayBuffer && xhr.responseType);
 		XHRTransport.binary = false;
 		return true;
 	};
 
 	if(XHRTransport.isAvailable())
-		ConnectionManager.availableTransports.xhr = XHRTransport;
+		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
 
-	XHRTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new XHRTransport(connectionManager, auth, options);
+	XHRTransport.get = function(options, path, headers, params, callback) {
+
+	};
+
+	XHRTransport.post = function(options, path, headers, body, params, callback) {
+
+	};
+
+	XHRTransport.checkConnectivity = function(callback) {
+		new XHRTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+			callback(null, (!err && responseText == 'yes'));
+		});
+	};
+
+	XHRTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new XHRTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {
@@ -5579,18 +5884,39 @@ var XHRTransport = (function() {
 var JSONPTransport = (function() {
 
 	/* public constructor */
-	function JSONPTransport(connectionManager, auth, options) {
-		options.useTextProtocol = true;
-		CometTransport.call(this, connectionManager, auth, options);
+	function JSONPTransport(connectionManager, auth, params) {
+		params.binary = false;
+		CometTransport.call(this, connectionManager, auth, params);
 		Ably._ = {};
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
 	JSONPTransport.isAvailable = function() { return true; };
-	ConnectionManager.availableTransports.jsonp = JSONPTransport;
+	ConnectionManager.httpTransports.jsonp = ConnectionManager.transports.jsonp = JSONPTransport;
 
-	JSONPTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new JSONPTransport(connectionManager, auth, options);
+	JSONPTransport.get = function(options, path, headers, params, callback) {
+
+	};
+
+	/* connectivity check; since this has a hard-coded callback id,
+	 * we just make sure that we handle concurrent requests (but the
+	 * connectionmanager should ensure this doesn't happen anyway */
+	var checksInProgress = null;
+	JSONPTransport.checkConnectivity = function(callback) {
+		if(checksInProgress) {
+			checksInProgress.push(callback);
+			return;
+		}
+		checksInProgress = [callback];
+		new JSONPTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, 'isTheInternetUp', function(err, response) {
+			var result = !err && response;
+			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
+			checksInProgress = null;
+		});
+	};
+
+	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new JSONPTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {
@@ -5610,14 +5936,14 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return new JSONPTransport.Request(uri, params, body, expectToBlock, callback);
+		return new JSONPTransport.Request(uri, params, body, expectToBlock, null, callback);
 	};
 
 	var requestId = 0;
-	JSONPTransport.Request = function(uri, params, body, expectToBlock, callback) {
+	JSONPTransport.Request = function(uri, params, body, expectToBlock, thisId, callback) {
 		var _ = Ably._;
 		this.callback = callback;
-		var thisId = this.requestId = requestId++;
+		if(thisId === null) thisId = this.requestId = requestId++;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });
@@ -5663,9 +5989,9 @@ var FlashTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 
 	/* public constructor */
-	function FlashTransport(connectionManager, auth, options) {
-		options.useTextProtocol = true;
-		WebSocketTransport.call(this, connectionManager, auth, options);
+	function FlashTransport(connectionManager, auth, params) {
+		params.binary = false;
+		WebSocketTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(FlashTransport, WebSocketTransport);
 
@@ -5674,12 +6000,12 @@ var FlashTransport = (function() {
 	};
 
 	if(FlashTransport.isAvailable())
-		ConnectionManager.availableTransports.flash_socket = FlashTransport;
+		ConnectionManager.transports.flash_socket = FlashTransport;
 
-	FlashTransport.tryConnect = function(connectionManager, auth, options, callback) {
+	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
 		FlashWebSocket.__initialize();
-		var transport = new FlashTransport(connectionManager, auth, options);
+		var transport = new FlashTransport(connectionManager, auth, params);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
@@ -5690,14 +6016,15 @@ var FlashTransport = (function() {
 		transport.connect();
 	};
 
-	FlashTransport.prototype.createWebSocket = function(uri, params) {
+	FlashTransport.prototype.createWebSocket = function(uri, connectParams) {
 		var paramCount = 0;
-		if(params) {
-			for(var key in params)
-				uri += (paramCount++ ? '&' : '?') + key + '=' + params[key];
+		if(connectParams) {
+			for(var key in connectParams)
+				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
 		}
 		this.uri = uri;
-		return new FlashWebSocket(uri, [], this.options.proxyHost, this.options.proxyPort);
+		var options = this.params.options;
+		return new FlashWebSocket(uri, [], options.proxyHost, options.proxyPort);
 	};
 
 	FlashTransport.prototype.toString = function() {
@@ -5727,7 +6054,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.get(rest.baseUri + path, Utils.mixin(authHeaders, headers), params, function(err, res) {
+				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -5763,7 +6090,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.post(rest.baseUri + path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
+				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -5825,7 +6152,7 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenUri = rest.baseUri + '/authorise';
+		this.tokenUri = function(host) { return rest.baseUri(host) + '/authorise'; };
 
 		/* tokenOptions contains the parameters that may be used in
 		 * token requests */
@@ -5989,14 +6316,14 @@ var Auth = (function() {
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback;
+		var tokenRequestCallback, rest = this.rest;
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = options.authCallback;
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
+				Http.get(rest, options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
 			};
 		} else if(options.keyValue) {
 			var self = this;
@@ -6019,12 +6346,12 @@ var Auth = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var self = this;
+		var tokenUri = self.tokenUri, rest = this.rest;
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
+				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
+				Http.get(rest, tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {
@@ -6177,89 +6504,56 @@ var Auth = (function() {
 var Realtime = this.Realtime = (function() {
 
 	function Realtime(options) {
-		/* normalise options */
-		if(!options) {
-			var msg = 'no options provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
-			throw new Error(msg);
-		}
-		if(typeof(options) == 'string')
-			options = {key: options};
-		if(options.key) {
-			var keyParts = options.key.split(':');
-			if(keyParts.length != 3) {
-				var msg = 'invalid key parameter';
-				Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
-				throw new Error(msg);
-			}
-			options.appId = keyParts[0];
-			options.keyId = keyParts[1];
-			options.keyValue = keyParts[2];
-		}
-		if(!options.appId) {
-			var msg = 'no appId provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Realtime()', msg);
-			throw new Error(msg);
-		}
-		this.options = options;
-
-		/* process options */
-		if(options.log)
-			Logger.setLog(options.log.level, options.log.handler);
-		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', 'started');
-		this.clientId = options.clientId;
-
-		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
-			options.encrypted = true;
-		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
-		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
-		var authority = this.authority = 'https://' + restHost + ':' + restPort;
-		this.baseUri = authority + '/apps/' + this.options.appId;
-
+		Rest.call(this, options);
 		options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		options.wsPort = options.encrypted ? restPort : (options.wsPort || Defaults.WS_PORT);
+		options.wsPort = options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
 
-		this.auth = new Auth(this, options);
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
 
 		this.connection.connect();
 	}
-
-	Realtime.prototype.history = function(params, callback) {
-		Resource.get(this, '/history', params, callback);
-	};
-
-	Realtime.prototype.stats = function(params, callback) {
-		Resource.get(this, '/stats', params, callback);
-	};
+	Utils.inherits(Realtime, Rest);
 
 	Realtime.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
-		this.connection.connectionManager.requestState({state: 'closed'});
-	};
-
-	Realtime.prototype.time = function(callback) {
-		Http.get(this.authority + '/time', null, null, function(err, res) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			var time = res[0];
-			if(!time) {
-				err = new Error('Internal error (unexpected result type from GET /time');
-				err.statusCode = 500;
-				callback(err);
-				return;
-			}
-			callback(null, time);
-		});
+		this.connection.close();
 	};
 
 	function Channels(realtime) {
 		this.realtime = realtime;
 		this.attached = {};
 	}
+
+	Channels.prototype.onChannelMessage = function(msg) {
+		var channelName = msg.channel;
+		if(!channelName) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+			return;
+		}
+		var channel = this.attached[channelName];
+		if(!channel) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+			return;
+		}
+		channel.onMessage(msg);
+	};
+
+	/* called when a message response indicates that a particular
+	 * operation needs, or is likely to need, retrying */
+	Channels.prototype.retryChannelMessage = function(msg) {
+		var channelName = msg.channel;
+		if(!channelName) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+			return;
+		}
+		var channel = this.attached[channelName];
+		if(!channel) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+			return;
+		}
+		channel.retryMessage(msg);
+	};
 
 	Channels.prototype.get = function(name, options) {
 		name = String(name);
@@ -6295,10 +6589,10 @@ var Connection = (function() {
 		this.id = undefined;
 
 		var self = this;
-		this.connectionManager.on(function(stateChange) {
-			self.state = stateChange.current;
+		this.connectionManager.on('connectionstate', function(stateChange) {
+			var state = self.state = stateChange.current;
 			Utils.nextTick(function() {
-				self.emit(self.state, stateChange);
+				self.emit(state, stateChange);
 			});
 		});
 	}
@@ -6315,6 +6609,10 @@ var Connection = (function() {
 
 	Connection.prototype.connect = function() {
 		this.connectionManager.requestState({state: 'connecting'});
+	};
+
+	Connection.prototype.close = function() {
+		this.connectionManager.requestState({state: 'closed'});
 	};
 
 	return Connection;
@@ -6571,7 +6869,7 @@ var RealtimeChannel = (function() {
 			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.abort(UIMessages.FAIL_REASON_FAILED);
+			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
 		}
 	};
 
@@ -6645,6 +6943,21 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
+	};
+
+	RealtimeChannel.prototype.retryMessage = function(message) {
+		/* the given message is a response that indicates a given
+		 * operation needs to be retried */
+		switch(message.action) {
+			case actions.ATTACHED:
+				this.attachImpl();
+				break;
+			case actions.DETACHED:
+				this.detachImpl();
+				break;
+			default:
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
+		}
 	};
 
 	return RealtimeChannel;
