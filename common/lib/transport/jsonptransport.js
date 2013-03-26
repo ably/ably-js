@@ -1,18 +1,39 @@
 var JSONPTransport = (function() {
 
 	/* public constructor */
-	function JSONPTransport(connectionManager, auth, options) {
-		options.useTextProtocol = true;
-		CometTransport.call(this, connectionManager, auth, options);
+	function JSONPTransport(connectionManager, auth, params) {
+		params.binary = false;
+		CometTransport.call(this, connectionManager, auth, params);
 		Ably._ = {};
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
 	JSONPTransport.isAvailable = function() { return true; };
-	ConnectionManager.availableTransports.jsonp = JSONPTransport;
+	ConnectionManager.httpTransports.jsonp = ConnectionManager.transports.jsonp = JSONPTransport;
 
-	JSONPTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new JSONPTransport(connectionManager, auth, options);
+	JSONPTransport.get = function(options, path, headers, params, callback) {
+
+	};
+
+	/* connectivity check; since this has a hard-coded callback id,
+	 * we just make sure that we handle concurrent requests (but the
+	 * connectionmanager should ensure this doesn't happen anyway */
+	var checksInProgress = null;
+	JSONPTransport.checkConnectivity = function(callback) {
+		if(checksInProgress) {
+			checksInProgress.push(callback);
+			return;
+		}
+		checksInProgress = [callback];
+		new JSONPTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, 'isTheInternetUp', function(err, response) {
+			var result = !err && response;
+			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
+			checksInProgress = null;
+		});
+	};
+
+	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new JSONPTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {
@@ -32,14 +53,14 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return new JSONPTransport.Request(uri, params, body, expectToBlock, callback);
+		return new JSONPTransport.Request(uri, params, body, expectToBlock, null, callback);
 	};
 
 	var requestId = 0;
-	JSONPTransport.Request = function(uri, params, body, expectToBlock, callback) {
+	JSONPTransport.Request = function(uri, params, body, expectToBlock, thisId, callback) {
 		var _ = Ably._;
 		this.callback = callback;
-		var thisId = this.requestId = requestId++;
+		if(thisId === null) thisId = this.requestId = requestId++;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });

@@ -200,7 +200,7 @@ var RealtimeChannel = (function() {
 			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.abort(UIMessages.FAIL_REASON_FAILED);
+			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
 		}
 	};
 
@@ -274,6 +274,21 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
+	};
+
+	RealtimeChannel.prototype.retryMessage = function(message) {
+		/* the given message is a response that indicates a given
+		 * operation needs to be retried */
+		switch(message.action) {
+			case actions.ATTACHED:
+				this.attachImpl();
+				break;
+			case actions.DETACHED:
+				this.detachImpl();
+				break;
+			default:
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
+		}
 	};
 
 	return RealtimeChannel;

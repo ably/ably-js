@@ -38,7 +38,7 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenUri = rest.baseUri + '/authorise';
+		this.tokenUri = function(host) { return rest.baseUri(host) + '/authorise'; };
 
 		/* tokenOptions contains the parameters that may be used in
 		 * token requests */
@@ -202,14 +202,14 @@ var Auth = (function() {
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback;
+		var tokenRequestCallback, rest = this.rest;
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = options.authCallback;
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
+				Http.get(rest, options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
 			};
 		} else if(options.keyValue) {
 			var self = this;
@@ -232,12 +232,12 @@ var Auth = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var self = this;
+		var tokenUri = self.tokenUri, rest = this.rest;
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
+				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
+				Http.get(rest, tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {

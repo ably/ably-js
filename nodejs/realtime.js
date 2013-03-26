@@ -40,6 +40,7 @@ includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/realtimechannel.js');
 includeScript('../common/lib/client/presence.js');
 includeScript('../common/lib/client/message.js');
+includeScript('../common/lib/client/rest.js');
 includeScript('../common/lib/client/realtime.js');
 
 module.exports = context.Realtime;

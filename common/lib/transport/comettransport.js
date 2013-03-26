@@ -4,9 +4,9 @@ var CometTransport = (function() {
 	/*
 	 * A base comet transport class
 	 */
-	function CometTransport(connectionManager, auth, options) {
-		Transport.call(this, connectionManager, auth, options);
-		this.binary = !options.useTextProtocol;
+	function CometTransport(connectionManager, auth, params) {
+		Transport.call(this, connectionManager, auth, params);
+		this.binary = this.params.binary;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
@@ -27,23 +27,24 @@ var CometTransport = (function() {
 	CometTransport.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this;
-		var host = this.options.restHost;
-		var port = this.options.restPort;
-		var cometScheme = this.options.encrypted ? 'https://' : 'http://';
+		var self = this, params = this.params, options = params.options;
+		var host = params.host;
+		var port = options.wsPort;
+		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
-		var connectUri = this.baseUri + this.options.appId + '/connect';
+		var connectUri = this.baseUri + options.appId + '/connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
-			self.params = authParams;
-			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'authParams:' + CometTransport.paramStr(authParams));
 			if(err) {
 				self.abort(UIMessages.FAIL_REASON_REFUSED);
 				return;
 			}
+			self.authParams = authParams;
+			var connectParams = self.params.getConnectParams(authParams);
+			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + CometTransport.paramStr(connectParams));
 			try {
-				self.request(connectUri, self.params, null, false, function(err, response) {
+				self.request(connectUri, connectParams, null, false, function(err, response) {
 					if(err) {
 						self.emit('error', err);
 						return;
@@ -63,7 +64,7 @@ var CometTransport = (function() {
 			this.recvRequest = null;
 		}
 		var self = this;
-		this.recvRequest = this.request(this.closeUri, this.params, null, false, function(err, response) {
+		this.recvRequest = this.request(this.closeUri, this.authParams, null, false, function(err, response) {
 			self.recvRequest = null;;
 			if(err) {
 				self.emit('error', err);
@@ -113,7 +114,7 @@ var CometTransport = (function() {
 		var self = this;
 		try {
 			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				self.sendRequest = self.request(self.sendUri, self.params, data, false, function(err, response) {
+				self.sendRequest = self.request(self.sendUri, self.authParams, data, false, function(err, response) {
 					self.sendRequest = null;
 					if(self.pendingMessage) {
 						self.sendMessage(self.pendingMessage, self.pendingCallback);
@@ -147,7 +148,7 @@ var CometTransport = (function() {
 			return;
 
 		var self = this;
-		this.recvRequest = this.request(this.recvUri, this.params, null, true, function(err, response) {
+		this.recvRequest = this.request(this.recvUri, this.authParams, null, true, function(err, response) {
 			if(err) {
 				self.emit('error', err);
 				return;

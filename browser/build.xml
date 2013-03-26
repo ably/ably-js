@@ -30,6 +30,8 @@
                 <file name="protocol/clientmessage_decls.js"/>
                 <file name="protocol/clientmessage_types.js"/>
                 <file name="protocol/clientmessage_refs.js"/>
+                <file name="lib/util/cookie.js"/>
+                <file name="lib/util/http.js"/>
             </filelist>
             <filelist dir="${basedir}/../../web-socket-js">
                 <!-- flash support -->

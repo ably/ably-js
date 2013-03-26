@@ -16,18 +16,18 @@ var Transport = (function() {
 	var defaultBufferSize = 1024;
 
 	/* public constructor */
-	function Transport(connectionManager, auth, options) {
+	function Transport(connectionManager, auth, params) {
 		EventEmitter.call(this);
 		this.connectionManager = connectionManager;
 		this.auth = auth;
-		this.options = options;
-		if(options.useTextProtocol) {
-			this.thriftTransport = thrift.TStringTransport;
-			this.thriftProtocol = thrift.TJSONProtocol;
-		} else {
+		this.params = params;
+		if(params.binary) {
 			this.thriftTransport = thrift.TTransport;
 			this.thriftProtocol = thrift.TBinaryProtocol;
 			this.protocolBuffer = new thrift.CheckedBuffer(defaultBufferSize);
+		} else {
+			this.thriftTransport = thrift.TStringTransport;
+			this.thriftProtocol = thrift.TJSONProtocol;
 		}
 		this.isConnected = false;
 	}
@@ -71,7 +71,7 @@ var Transport = (function() {
 			this.abort(err);
 			break;
 		default:
-			this.emit('channelmessage', message);
+			this.connectionManager.onChannelMessage(message, this);
 		}
 	};
 

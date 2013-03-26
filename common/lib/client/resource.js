@@ -19,7 +19,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.get(rest.baseUri + path, Utils.mixin(authHeaders, headers), params, function(err, res) {
+				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -55,7 +55,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.post(rest.baseUri + path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
+				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {

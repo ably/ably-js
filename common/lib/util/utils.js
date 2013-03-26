@@ -107,6 +107,38 @@ var Utils = (function() {
 		return false;
 	};
 
+	Utils.intersect = function(arr, ob) { return Array.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
+
+	Utils.arrIntersect = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var member = arr1[i];
+			if(arr2.indexOf(member) != -1)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrIntersectOb = function(arr, ob) {
+		var result = [];
+		for(var i = 0; i < arr.length; i++) {
+			var member = arr[i];
+			if(member in ob)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrSubtract = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var element = arr1[i];
+			if(arr2.indexOf(element) == -1)
+				result.push(element);
+		}
+		return result;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
@@ -162,6 +194,10 @@ var Utils = (function() {
 			accept: accept,
 			'content-type': binary ? contentTypes.thrift : contentTypes.json
 		};
+	};
+
+	Utils.arrRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length));
 	};
 
 	return Utils;

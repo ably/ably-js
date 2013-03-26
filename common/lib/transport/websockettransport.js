@@ -7,11 +7,10 @@ var WebSocketTransport = (function() {
 	var thrift = isBrowser ? Thrift : require('thrift');
 
 	/* public constructor */
-	function WebSocketTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
-		var binary = !options.useTextProtocol;
+	function WebSocketTransport(connectionManager, auth, params) {
+		var binary = params.binary = params.binary && hasBuffer;
 		this.sendOptions = {binary: binary};
-		Transport.call(this, connectionManager, auth, options);
+		Transport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(WebSocketTransport, Transport);
 
@@ -20,10 +19,10 @@ var WebSocketTransport = (function() {
 	};
 
 	if(WebSocketTransport.isAvailable())
-		ConnectionManager.availableTransports.web_socket = WebSocketTransport;
+		ConnectionManager.transports.web_socket = WebSocketTransport;
 
-	WebSocketTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new WebSocketTransport(connectionManager, auth, options);
+	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
@@ -34,11 +33,11 @@ var WebSocketTransport = (function() {
 		transport.connect();
 	};
 
-	WebSocketTransport.prototype.createWebSocket = function(uri, params) {
+	WebSocketTransport.prototype.createWebSocket = function(uri, connectParams) {
 		var paramCount = 0;
-		if(params) {
-			for(var key in params)
-				uri += (paramCount++ ? '&' : '?') + key + '=' + params[key];
+		if(connectParams) {
+			for(var key in connectParams)
+				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
 		}
 		this.uri = uri;
 		return new WebSocket(uri);
@@ -51,21 +50,22 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this;
-		var host = this.options.wsHost;
-		var port = this.options.wsPort;
-		var wsScheme = this.options.encrypted ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + host + ':' + port + '/applications/' + this.options.appId;
+		var self = this, params = this.params, options = params.options;
+		var host = params.host;
+		var port = options.wsPort;
+		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
+		var wsUri = wsScheme + host + ':' + port + '/applications/' + options.appId;
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-		this.auth.getAuthParams(function(err, params) {
-			var paramStr = ''; for(var param in params) paramStr += ' ' + param + ': ' + params[param] + ';';
+		this.auth.getAuthParams(function(err, authParams) {
+			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr);
 			if(err) {
 				self.abort(UIMessages.FAIL_REASON_REFUSED);
 				return;
 			}
+			var connectParams = params.getConnectParams(authParams);
 			try {
-				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, params);
+				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };

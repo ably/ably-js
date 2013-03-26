@@ -13,25 +13,40 @@ var XHRTransport = (function() {
 	};
 
 	/* public constructor */
-	function XHRTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !XHRTransport.binary;
-		CometTransport.call(this, connectionManager, auth, options);
+	function XHRTransport(connectionManager, auth, params) {
+		params.binary = params.binary && XHRTransport.binary;
+		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
-		if(!xhr) return false;
+		if(!xhr)return false;
 //		XHRTransport.binary = (window.ArrayBuffer && xhr.responseType);
 		XHRTransport.binary = false;
 		return true;
 	};
 
 	if(XHRTransport.isAvailable())
-		ConnectionManager.availableTransports.xhr = XHRTransport;
+		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
 
-	XHRTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new XHRTransport(connectionManager, auth, options);
+	XHRTransport.get = function(options, path, headers, params, callback) {
+
+	};
+
+	XHRTransport.post = function(options, path, headers, body, params, callback) {
+
+	};
+
+	XHRTransport.checkConnectivity = function(callback) {
+		new XHRTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+			callback(null, (!err && responseText == 'yes'));
+		});
+	};
+
+	XHRTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new XHRTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {

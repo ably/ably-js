@@ -1,4 +1,4 @@
-var Rest = (function() {
+var Rest = this.Rest = (function() {
 
 	function Rest(options) {
 		/* normalise options */
@@ -35,10 +35,12 @@ var Rest = (function() {
 
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
 			options.encrypted = true;
-		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
-		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
-		var authority = this.authority = 'https://' + restHost + ':' + restPort;
-		this.baseUri = authority + '/apps/' + this.options.appId;
+
+		options.fallbackHosts = options.restHost ? null : Default.fallbackHosts;
+		options.restHost = (options.restHost || Defaults.REST_HOST);
+
+		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
+		this.baseUri = function(host) { return authority(host) + '/apps/' + options.appId; };
 
 		/* FIXME: temporarily force use of json and not thrift */
 		options.useTextProtocol = true;
@@ -58,7 +60,9 @@ var Rest = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Http.get(this.authority + '/time', headers, null, function(err, res) {
+		var self = this;
+		var timeUri = function(host) { return self.authority(host) + '/time' };
+		Http.get(this, timeUri, headers, null, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
