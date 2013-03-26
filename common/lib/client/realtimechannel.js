@@ -30,7 +30,7 @@ var RealtimeChannel = (function() {
 		}
     	var message = new messagetypes.TMessage();
     	message.name = name;
-    	message.data = Message.createPayload(data);
+    	message.data = Data.toTData(data);
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
@@ -192,7 +192,7 @@ var RealtimeChannel = (function() {
 						tMessage.channelSerial,
 						tMessage.timestamp,
 						tMessage.name,
-						Message.getPayload(tMessage.data)
+						Data.fromTData(tMessage.data)
 					);
 				}
 				this.onEvent(messages);

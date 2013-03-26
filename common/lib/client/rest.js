@@ -50,10 +50,18 @@ var Rest = this.Rest = (function() {
 	}
 
 	Rest.prototype.stats = function(params, callback) {
-		var headers = Utils.copy(Utils.defaultGetHeaders(!this.options.useTextProtocol));
+		var binary = !this.options.useTextProtocol;
+		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Resource.get(this, '/stats', headers, params, callback);
+		Resource.get(this, '/stats', headers, params, function(err, res) {
+			if(err) {
+				callback(err);
+				return;
+			}
+			if(binary) Stats.decodeTStatsArray(res, callback);
+			else callback(null, res);
+		});
 	};
 
 	Rest.prototype.time = function(callback) {

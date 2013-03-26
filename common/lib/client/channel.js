@@ -15,7 +15,14 @@ var Channel = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
-		Resource.get(rest, '/channels/' + this.name + '/presence', headers, params, callback);
+		Resource.get(rest, '/channels/' + this.name + '/presence', headers, params, function(err, res) {
+			if(err) {
+				callback(err);
+				return;
+			}
+			if(binary) PresenceMessage.decodeTPresenceArray(res, callback);
+			else callback(null, res);
+		});
 	};
 
 	Channel.prototype.history = function(params, callback) {
@@ -24,22 +31,23 @@ var Channel = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
-		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, callback);
+		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, function(err, res) {
+			if(err) {
+				callback(err);
+				return;
+			}
+			if(binary) Message.decodeTMessageArray(res, callback);
+			else callback(null, res);
+		});
 	};
 
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
 		var rest = this.rest;
 		var binary = !rest.options.useTextProtocol;
-		var requestBody;
-		if(binary) {
-			/* FIXME: binary not yet supported here .... */
-			Logger.logAction(Logger.LOG_ERROR, 'Channel.publish()', 'Unable to publish message in binary format (not supported yet)');
-			binary = false;
-			requestBody = {name:name, data:data};
-		} else {
-			requestBody = {name:name, data:data};
-		}
+		var requestBody = {name:name, data:data};
+binary = false;
+		if(binary) requestBody = Message.encodeTMessageSync(requestBody);
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
