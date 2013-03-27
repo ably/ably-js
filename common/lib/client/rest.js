@@ -50,6 +50,15 @@ var Rest = this.Rest = (function() {
 	}
 
 	Rest.prototype.stats = function(params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
 		var binary = !this.options.useTextProtocol;
 		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
 		if(this.options.headers)

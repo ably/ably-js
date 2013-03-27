@@ -11,8 +11,17 @@ var Channel = (function() {
 
 	Channel.prototype.presence = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
-		var rest = this.rest;
-		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+		var rest = this.rest, binary = !rest.options.useTextProtocol;
+		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.get(rest, '/channels/' + this.name + '/presence', headers, params, function(err, res) {
@@ -27,8 +36,17 @@ var Channel = (function() {
 
 	Channel.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
-		var rest = this.rest;
-		var headers = Utils.copy(Utils.defaultGetHeaders(!rest.options.useTextProtocol));
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+		var rest = this.rest, binary = !rest.options.useTextProtocol;
+		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, function(err, res) {
