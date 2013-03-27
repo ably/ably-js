@@ -50,6 +50,11 @@
                 <file name="transport/xhrtransport.js"/>
                 <file name="transport/jsonptransport.js"/>
                 <file name="transport/flashtransport.js"/>
+                <file name="types/data.js"/>
+                <file name="types/message.js"/>
+                <file name="types/presencemessage.js"/>
+                <file name="types/stats.js"/>
+                <file name="types/thrift.js"/>
                 <file name="client/resource.js"/>
                 <file name="client/auth.js"/>
                 <file name="client/realtime.js"/>
@@ -58,7 +63,6 @@
                 <file name="client/channel.js"/>
                 <file name="client/realtimechannel.js"/>
                 <file name="client/presence.js"/>
-                <file name="client/message.js"/>
             </filelist>
             <filelist dir="${basedir}">
                 <file name="epilogue.js"/>
