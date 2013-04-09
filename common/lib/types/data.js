@@ -37,10 +37,10 @@ this.Data = (function() {
 		},
 		'[object Object]': function(msg, data) {
 			if(typeof(Buffer) !== 'undefined' && Buffer.isBuffer(data)) {
-				msg.type = ctypes.TType.BUFFER;
+				msg.type = messagetypes.TType.BUFFER;
 				msg.binaryData = data;
 			} else {
-				msg.type = ctypes.TType.JSONOBJECT;
+				msg.type = messagetypes.TType.JSONOBJECT;
 				msg.stringData = JSON.stringify(data);
 			}
 			return true;

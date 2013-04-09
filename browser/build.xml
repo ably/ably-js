@@ -15,7 +15,6 @@
                 <file name="prologue.js"/>
             </filelist>
             <filelist dir="${basedir}/../common/lib">
-                <file name="transport/defaults.js"/>
                 <file name="transport/connectionerror.js"/>
             </filelist>
             <filelist dir="${basedir}/../../thrift">
@@ -31,7 +30,9 @@
                 <file name="protocol/clientmessage_types.js"/>
                 <file name="protocol/clientmessage_refs.js"/>
                 <file name="lib/util/cookie.js"/>
+                <file name="lib/util/defaults.js"/>
                 <file name="lib/util/http.js"/>
+                <file name="lib/util/thrift.js"/>
             </filelist>
             <filelist dir="${basedir}/../../web-socket-js">
                 <!-- flash support -->
@@ -53,8 +54,7 @@
                 <file name="types/data.js"/>
                 <file name="types/message.js"/>
                 <file name="types/presencemessage.js"/>
-                <file name="types/stats.js"/>
-                <file name="types/thrift.js"/>
+                <file name="types/serialize.js"/>
                 <file name="client/resource.js"/>
                 <file name="client/auth.js"/>
                 <file name="client/realtime.js"/>

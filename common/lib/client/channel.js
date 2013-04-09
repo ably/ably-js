@@ -1,4 +1,5 @@
 var Channel = (function() {
+	function noop() {}
 
 	/* public constructor */
 	function Channel(rest, name, options) {
@@ -54,13 +55,17 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			if(binary) Message.decodeTMessageArray(res, callback);
-			else callback(null, res);
+			try {
+				callback(null, Serialize.TMessageArray.decode(res, binary));
+			} catch(err) {
+				callback(err);
+			}
 		});
 	};
 
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
+		callback = callback || noop;
 		var rest = this.rest;
 		var binary = !rest.options.useTextProtocol;
 		var requestBody = {name:name, data:data};

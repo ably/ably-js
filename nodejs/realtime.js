@@ -21,11 +21,12 @@ var includeScript = function(name) {
 
 /* include libraries */
 includeScript('./lib/util/http.js');
+includeScript('./lib/util/thrift.js');
+includeScript('./lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
 includeScript('../common/lib/util/multicaster.js');
-includeScript('../common/lib/transport/defaults.js');
 includeScript('../common/lib/transport/connectionerror.js');
 includeScript('../common/lib/transport/connectionmanager.js');
 includeScript('../common/lib/transport/transport.js');
@@ -35,8 +36,7 @@ includeScript('../common/lib/transport/nodecomettransport.js');
 includeScript('../common/lib/types/data.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
-includeScript('../common/lib/types/stats.js');
-includeScript('../common/lib/types/thrift.js');
+includeScript('../common/lib/types/serialize.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/connectionstatechange.js');

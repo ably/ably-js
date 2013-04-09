@@ -1,5 +1,4 @@
 var Resource = (function() {
-	function noop() {}
 
 	function Resource() {}
 

@@ -10,15 +10,15 @@ var Rest = this.Rest = (function() {
 		if(typeof(options) == 'string')
 			options = {key: options};
 		if(options.key) {
-			var keyParts = options.key.split(':');
-			if(keyParts.length != 3) {
+			var keyMatch = options.key.match(/^([^:.\s]+):([^:.\s]+)[:|.]([^:.\s]+)$/);
+			if(!keyMatch) {
 				var msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.appId = keyParts[0];
-			options.keyId = keyParts[1];
-			options.keyValue = keyParts[2];
+			options.appId = keyMatch[1];
+			options.keyId = keyMatch[2];
+			options.keyValue = keyMatch[3];
 		}
 		if(!options.appId) {
 			var msg = 'no appId provided';
@@ -42,9 +42,6 @@ var Rest = this.Rest = (function() {
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 		this.baseUri = function(host) { return authority(host) + '/apps/' + options.appId; };
 
-		/* FIXME: temporarily force use of json and not thrift */
-		options.useTextProtocol = true;
-
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
@@ -59,18 +56,10 @@ var Rest = this.Rest = (function() {
 				callback = noop;
 			}
 		}
-		var binary = !this.options.useTextProtocol;
-		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
+		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Resource.get(this, '/stats', headers, params, function(err, res) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			if(binary) Stats.decodeTStatsArray(res, callback);
-			else callback(null, res);
-		});
+		Resource.get(this, '/stats', headers, params, callback);
 	};
 
 	Rest.prototype.time = function(callback) {

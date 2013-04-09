@@ -1,10 +1,8 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-//	var hasBuffer = isBrowser ? window.ArrayBuffer : Buffer;
-	var hasBuffer = isBrowser ? false : Buffer;
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var thrift = isBrowser ? Thrift : require('thrift');
+//	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
+	var hasBuffer = isBrowser ? false : !!Buffer;
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -75,27 +73,9 @@ var WebSocketTransport = (function() {
 		});
 	};
 
-	WebSocketTransport.prototype.close = function() {
-		this.dispose();
-		Transport.prototype.close.call(this);
-	};
-
-	WebSocketTransport.prototype.abort = function(reason) {
-		this.dispose();
-		Transport.prototype.abort.call(this);
-	};
-
-	WebSocketTransport.prototype.send = function(msg, callback) {
-		var self = this;
+	WebSocketTransport.prototype.send = function(message, callback) {
 		try {
-			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				/* here data is either a native Buffer (in the node case) or a Thrift Buffer or CheckedBuffer
-				 * (in the browser case) */
-				self.wsConnection.send((data.buf || data), self.sendOptions);
-				callback(null);
-			}));
-			msg.write(protocol);
-			protocol.flush();
+			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary), this.sendOptions);
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -104,16 +84,11 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
-		var protocol = binary
-			? new thrift.TBinaryProtocol(new thrift.TTransport(data))
-			: new thrift.TJSONProtocol(new thrift.TStringTransport(data));
-
-		var message = new messagetypes.TChannelMessage();
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
 		try {
-			message.read(protocol);
-			this.onChannelMessage(message);
+			this.onChannelMessage(Serialize.TChannelMessage.decode(data, binary));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelEvent()', 'Unexpected exception handing channel event: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
 	};
 
