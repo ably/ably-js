@@ -10,13 +10,15 @@ TAction = {
 'NACK' : 2,
 'CONNECT' : 3,
 'CONNECTED' : 4,
-'ERROR' : 5,
-'ATTACH' : 6,
-'ATTACHED' : 7,
-'DETACH' : 8,
-'DETACHED' : 9,
-'PRESENCE' : 10,
-'MESSAGE' : 11
+'DISCONNECT' : 5,
+'DISCONNECTED' : 6,
+'ERROR' : 7,
+'ATTACH' : 8,
+'ATTACHED' : 9,
+'DETACH' : 10,
+'DETACHED' : 11,
+'PRESENCE' : 12,
+'MESSAGE' : 13
 };
 TType = {
 'NONE' : 0,
@@ -32,7 +34,8 @@ TType = {
 };
 TPresenceState = {
 'ENTER' : 0,
-'LEAVE' : 1
+'LEAVE' : 1,
+'UPDATE' : 2
 };
 TError = function(args) {
   this.statusCode = undefined;
