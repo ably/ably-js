@@ -33,6 +33,9 @@ ttypes.TType = {
 'JSONARRAY' : 8,
 'JSONOBJECT' : 9
 };
+ttypes.TFlags = {
+'SYNC_TIME' : 0
+};
 ttypes.TPresenceState = {
 'ENTER' : 0,
 'LEAVE' : 1,
@@ -640,8 +643,8 @@ TMessageArray.prototype.write = function(output) {
 
 var TChannelMessage = module.exports.TChannelMessage = function(args) {
   this.action = undefined;
+  this.flags = undefined;
   this.count = undefined;
-  this.size = undefined;
   this.error = undefined;
   this.applicationId = undefined;
   this.connectionId = undefined;
@@ -656,11 +659,11 @@ var TChannelMessage = module.exports.TChannelMessage = function(args) {
     if (args.action !== undefined) {
       this.action = args.action;
     }
+    if (args.flags !== undefined) {
+      this.flags = args.flags;
+    }
     if (args.count !== undefined) {
       this.count = args.count;
-    }
-    if (args.size !== undefined) {
-      this.size = args.size;
     }
     if (args.error !== undefined) {
       this.error = args.error;
@@ -716,15 +719,15 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.count = input.readI32();
+      if (ftype == Thrift.Type.BYTE) {
+        this.flags = input.readByte();
       } else {
         input.skip(ftype);
       }
       break;
       case 3:
       if (ftype == Thrift.Type.I32) {
-        this.size = input.readI32();
+        this.count = input.readI32();
       } else {
         input.skip(ftype);
       }
@@ -844,14 +847,14 @@ TChannelMessage.prototype.write = function(output) {
     output.writeI32(this.action);
     output.writeFieldEnd();
   }
-  if (this.count !== undefined) {
-    output.writeFieldBegin('count', Thrift.Type.I32, 2);
-    output.writeI32(this.count);
+  if (this.flags !== undefined) {
+    output.writeFieldBegin('flags', Thrift.Type.BYTE, 2);
+    output.writeByte(this.flags);
     output.writeFieldEnd();
   }
-  if (this.size !== undefined) {
-    output.writeFieldBegin('size', Thrift.Type.I32, 3);
-    output.writeI32(this.size);
+  if (this.count !== undefined) {
+    output.writeFieldBegin('count', Thrift.Type.I32, 3);
+    output.writeI32(this.count);
     output.writeFieldEnd();
   }
   if (this.error !== undefined) {
