@@ -2,9 +2,24 @@ this.Thrift = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var thrift = isBrowser ? Thrift : require('thrift');
 	var defaultBufferSize = 1024;
-	var thriftTransport = thrift.TTransport;
-	var thriftProtocol = thrift.TBinaryProtocol;
-	var protocolBuffer = new thrift.CheckedBuffer(defaultBufferSize);
+	var thriftTransport = new thrift.TTransport();
+	var thriftProtocol = new thrift.TBinaryProtocol(thriftTransport);
+	var defaultBufferSize = 16384;
+
+	var buffers = [];
+
+	function createBuffer(len) { return new Buffer(len || defaultBufferSize); }
+	function getBuffer(len) {
+		var len = len || 0;
+		if(buffers.length) {
+			var buf = buffers.shift();
+			if(buf.length >= len)
+				return buf;
+		}
+		return createBuffer(len);
+	}
+
+	function releaseBuffer(buf) { buffers.unshift(buf); }
 
 	function Thrift() {}
 
@@ -23,30 +38,27 @@ this.Thrift = (function() {
 	Thrift.encodeSync = function(ob) {
 		var result = undefined;
 		if(ob) {
-			var protocol = new thriftProtocol(new thriftTransport(protocolBuffer, function(encoded) {
+			var buf = getBuffer();
+			thriftTransport.reset(buf, function(encoded) {
 				result = encoded;
-			}));
-			ob.write(protocol);
-			protocol.flush();
+			});
+			ob.write(thriftProtocol);
+			thriftProtocol.flush();
+			releaseBuffer(buf);
 		}
 		return result;
 	};
 
 	Thrift.decode = function(ob, encoded, callback) {
-		try {
-			callback(null, ob.read(new thriftProtocol(new thriftTransport(encoded))));
-		} catch(e) {
-			var msg = 'Unexpected exception decoding thrift message; exception = ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'Thrift.decode()', msg, e);
-			var err = new Error(msg);
-			err.statusCode = 400;
-			callback(err);
-		}
+		var err = Thrift.decodeSync(ob, encoded);
+		if(err) callback(err);
+		else callback(null, ob, encoded);
 	};
 
 	Thrift.decodeSync = function(ob, encoded) {
 		try {
-			ob.read(new thriftProtocol(new thriftTransport(encoded)));
+			thriftTransport.reset(encoded);
+			ob.read(thriftProtocol);
 			return ob;
 		} catch(e) {
 			var msg = 'Unexpected exception decoding thrift message; exception = ' + e;

@@ -10,7 +10,7 @@ var CometTransport = (function() {
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
-		this.pendingMessage = null;
+		this.pendingItems = null;
 	}
 	(Utils || require('util')).inherits(CometTransport, Transport);
 
@@ -33,7 +33,7 @@ var CometTransport = (function() {
 		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
-		var connectUri = this.baseUri + options.appId + '/connect';
+		var connectUri = this.baseUri + 'connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
@@ -56,13 +56,7 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.close = function() {
-		Transport.prototype.close.call(this);
-		this.isConnected = false;
-		if(this.recvRequest) {
-			this.recvRequest.abort();
-			this.recvRequest = null;
-		}
+	CometTransport.prototype.sendDisconnect = function() {
 		var self = this;
 		this.recvRequest = this.request(this.closeUri, this.authParams, null, false, function(err, response) {
 			self.recvRequest = null;;
@@ -73,8 +67,11 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.abort = function(reason) {
-		Transport.prototype.abort.call(this, reason);
+	CometTransport.prototype.dispose = function() {
+		if(this.recvRequest) {
+			this.recvRequest.abort();
+			this.recvRequest = null;
+		}
 	};
 
 	CometTransport.prototype.onConnect = function() {
@@ -88,17 +85,17 @@ var CometTransport = (function() {
 	CometTransport.prototype.send = function(msg, callback) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
-			this.pendingMessage = this.pendingMessage || new messagetypes.TMessageSet({items: []});
-			this.pendingMessage.items.push(msg);
+			this.pendingItems = this.pendingItems || [];
+			this.pendingItems.push(msg);
 
 			this.pendingCallback = this.pendingCallback || new Multicaster();
 			this.pendingCallback.push(callback);
 			return;
 		}
 		/* send this, plus any pending, now */
-		var pendingMessage = this.pendingMessage || new messagetypes.TMessageSet({items: []});
-		pendingMessage.items.push(msg);
-		this.pendingMessage = null;;
+		var pendingItems = this.pendingItems || [];
+		pendingItems.push(msg);
+		this.pendingItems = null;
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
@@ -107,33 +104,29 @@ var CometTransport = (function() {
 			this.pendingCallback = null;
 		}
 
-		this.sendMessage(pendingMessage, callback);
+		this.sendItems(pendingItems, callback);
 	};
 
-	CometTransport.prototype.sendMessage = function(message, callback) {
+	CometTransport.prototype.sendItems = function(items, callback) {
 		var self = this;
 		try {
-			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				self.sendRequest = self.request(self.sendUri, self.authParams, data, false, function(err, response) {
-					self.sendRequest = null;
-					if(self.pendingMessage) {
-						self.sendMessage(self.pendingMessage, self.pendingCallback);
-						self.pendingMessage = null;
-						self.pendingCallback = null;
-					}
-					if(err) {
-						callback(err);
-						return;
-					}
-					self.onResponseData(response);
-					callback(null);
-				});
-			}));
-			message.write(protocol);
-			protocol.flush();
+			this.sendRequest = self.request(self.sendUri, self.authParams, this.encodeRequest(items), false, function(err, response) {
+				self.sendRequest = null;
+				if(self.pendingItems) {
+					self.sendItems(self.pendingItems, self.pendingCallback);
+					self.pendingItems = null;
+					self.pendingCallback = null;
+				}
+				if(err) {
+					callback(err);
+					return;
+				}
+				self.onResponseData(response);
+				callback(null);
+			});
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendMessage()', msg);
+			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', msg);
 			callback(new Error(msg));
 		}
 	};
@@ -160,23 +153,26 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.onResponseData = function(responseData) {
-		var protocol = new this.thriftProtocol(new this.thriftTransport(responseData));
-		var msg = new messagetypes.TMessageSet();
 		try {
-			msg.read(protocol);
-require('util').inspect(msg);
-			var items = msg.items;
+			var items = this.decodeResponse(responseData);
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
 					this.onChannelMessage(items[i]);
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onSendResponse()', 'Unexpected exception handing channel event: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onResponseData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}
-
 	};
 
 	CometTransport.prototype.onRecvResponse = function(responseData) {
 		this.onResponseData(responseData);
+	};
+
+	CometTransport.prototype.encodeRequest = function(requestItems) {
+		return Serialize.TMessageSet.encode(requestItems, this.binary);
+	};
+
+	CometTransport.prototype.decodeResponse = function(responseData) {
+		return Serialize.TMessageSet.decode(responseData, this.binary);
 	};
 
 	return CometTransport;

@@ -1,7 +1,8 @@
 var Transport = (function() {
 	var isBrowser = (typeof(window) == 'object');
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var actions = messagetypes.TAction;
+	var noop = function() {};
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -12,8 +13,6 @@ var Transport = (function() {
 	 * connected        null error, connectionId
 	 * event            channel message object
 	 */
-	var thrift = isBrowser ? Thrift : require('thrift');
-	var defaultBufferSize = 1024;
 
 	/* public constructor */
 	function Transport(connectionManager, auth, params) {
@@ -21,28 +20,29 @@ var Transport = (function() {
 		this.connectionManager = connectionManager;
 		this.auth = auth;
 		this.params = params;
-		if(params.binary) {
-			this.thriftTransport = thrift.TTransport;
-			this.thriftProtocol = thrift.TBinaryProtocol;
-			this.protocolBuffer = new thrift.CheckedBuffer(defaultBufferSize);
-		} else {
-			this.thriftTransport = thrift.TStringTransport;
-			this.thriftProtocol = thrift.TJSONProtocol;
-		}
 		this.isConnected = false;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function() {
+	Transport.prototype.close = function(sendDisconnect) {
 		this.isConnected = false;
 		this.emit('closed', ConnectionError.closed);
+		if(sendDisconnect)
+			this.sendDisconnect();
+		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
 		this.emit('failed', error);
+		this.sendDisconnect();
+		this.dispose();
+	};
+
+	Transport.prototype.sendDisconnect = function() {
+		this.send(new messagetypes.TChannelMessage({action: messagetypes.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -55,6 +55,11 @@ var Transport = (function() {
 			this.isConnected = true;
 			this.onConnect();
 			this.emit('connected', null, this.connectionId);
+			break;
+		case actions.DISCONNECTED:
+			this.isConnected = false;
+			this.onDisconnect();
+			/* FIXME: do we need to emit an event here? */
 			break;
 		case actions.ACK:
 			this.emit('ack', message.msgSerial, message.count);
@@ -76,6 +81,7 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onConnect = function() {};
+	Transport.prototype.onDisconnect = function() {};
 
 	Transport.prototype.onClose = function(wasClean, reason) {
 		/* if the connectionmanager already thinks we're closed

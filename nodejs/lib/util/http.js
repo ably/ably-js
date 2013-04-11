@@ -47,7 +47,7 @@ this.Http = (function() {
 		var hosts = fallbackHosts ? fallbackHosts.slice().unshift(restHost) : restHost;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 
-		var getOptions = {headers:headers}, wrappedCb = handler(callback);
+		var getOptions = {headers:headers, encoding:null}, wrappedCb = handler(callback);
 		if(!headers || headers.accept == 'application/json') getOptions.json = true;
 		if(params)
 			getOptions.qs = params;
@@ -100,7 +100,7 @@ this.Http = (function() {
 		var hosts = fallbackHosts ? fallbackHosts.slice().unshift(restHost) : restHost;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 
-		var postOptions = {headers:headers, body:body}, wrappedCb = handler(callback);
+		var postOptions = {headers:headers, body:body, encoding:null}, wrappedCb = handler(callback);
 		if(!headers || headers.accept == 'application/json') postOptions.json = true;
 		if(params)
 			postOptions.qs = params;

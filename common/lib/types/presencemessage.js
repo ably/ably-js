@@ -3,7 +3,4 @@ this.PresenceMessage = (function() {
 
 	function PresenceMessage() {}
 
-	PresenceMessage.decodeTPresence = function(encoded, callback) { Thrift.decode(new messagetypes.decodeTPresence(), encoded, callback); }
-	PresenceMessage.decodeTPresenceArray = function(encoded, callback) { Thrift.decode(new messagetypes.decodeTPresenceArray(), encoded, callback); }
-
 })();

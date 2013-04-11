@@ -45,10 +45,6 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.toString = function() {
-		return 'JSONPTransport; uri=' + uri + '; state=' + this.state;
-	};
-
-	JSONPTransport.prototype.toString = function() {
 		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 

@@ -9,25 +9,19 @@ var Rest = this.Rest = (function() {
 		}
 		if(typeof(options) == 'string')
 			options = {key: options};
+		this.options = options;
+
+		/* process options */
 		if(options.key) {
-			var keyParts = options.key.split(':');
-			if(keyParts.length != 3) {
+			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
+			if(!keyMatch) {
 				var msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.appId = keyParts[0];
-			options.keyId = keyParts[1];
-			options.keyValue = keyParts[2];
+			options.keyId = keyMatch[1];
+			options.keyValue = keyMatch[2];
 		}
-		if(!options.appId) {
-			var msg = 'no appId provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-			throw new Error(msg);
-		}
-		this.options = options;
-
-		/* process options */
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
@@ -40,28 +34,26 @@ var Rest = this.Rest = (function() {
 		options.restHost = (options.restHost || Defaults.REST_HOST);
 
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
-		this.baseUri = function(host) { return authority(host) + '/apps/' + options.appId; };
-
-		/* FIXME: temporarily force use of json and not thrift */
-		options.useTextProtocol = true;
+		this.baseUri = authority;
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
-		var binary = !this.options.useTextProtocol;
-		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Resource.get(this, '/stats', headers, params, function(err, res) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			if(binary) Stats.decodeTStatsArray(res, callback);
-			else callback(null, res);
-		});
+		Resource.get(this, '/stats', headers, params, callback);
 	};
 
 	Rest.prototype.time = function(callback) {

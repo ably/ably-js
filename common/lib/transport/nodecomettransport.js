@@ -33,7 +33,7 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.toString = function() {
-		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
+		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected + '; binary=' + this.binary;
 	};
 
 	NodeCometTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
