@@ -33,7 +33,7 @@ var CometTransport = (function() {
 		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
-		var connectUri = this.baseUri + options.appId + '/connect';
+		var connectUri = this.baseUri + 'connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {

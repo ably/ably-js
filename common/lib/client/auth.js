@@ -38,12 +38,11 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenUri = function(host) { return rest.baseUri(host) + '/authorise'; };
 
 		/* tokenOptions contains the parameters that may be used in
 		 * token requests */
 		var tokenOptions = this.tokenOptions = {};
-		if(options.keyId) tokenOptions.keyId = options.keyId;
+		if(options.keyId) var keyId = tokenOptions.keyId = options.keyId;
 		if(options.keyValue) tokenOptions.keyValue = options.keyValue;
 
 		/* decide default auth method */
@@ -53,7 +52,7 @@ var Auth = (function() {
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				this.basicKey = toBase64(options.key || (options.appId + ':' + options.keyId + '.' + options.keyValue));
+				this.basicKey = toBase64(options.key || (options.keyId + ':' + options.keyValue));
 				this.keyId = options.keyId;
 				this.keyValue = options.keyValue;
 				return;
@@ -232,7 +231,7 @@ var Auth = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var tokenUri = self.tokenUri, rest = this.rest;
+		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/authorise'; };
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
 				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);

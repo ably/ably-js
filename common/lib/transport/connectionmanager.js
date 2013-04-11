@@ -105,7 +105,8 @@ var ConnectionManager = (function() {
 	 * transport management
 	 *********************/
 
-	ConnectionManager.httpTransports = ConnectionManager.transports = {};
+	ConnectionManager.httpTransports = {};
+	ConnectionManager.transports = {};
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		/* if there's already a transport, we're done */
@@ -121,9 +122,11 @@ var ConnectionManager = (function() {
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
 		var self = this;
 
-		/* if there are no http transports, just choose from the available transports;
+		/* if there are no http transports, just choose from the available transports,
+		 * falling back to the first host only;
 		 * NOTE: this behaviour will never apply with a default configuration. */
 		if(!this.httpTransports.length) {
+			transportParams.host = this.httpHosts[0];
 			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
 			return;
 		}

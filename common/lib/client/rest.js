@@ -9,25 +9,19 @@ var Rest = this.Rest = (function() {
 		}
 		if(typeof(options) == 'string')
 			options = {key: options};
+		this.options = options;
+
+		/* process options */
 		if(options.key) {
-			var keyMatch = options.key.match(/^([^:.\s]+):([^:.\s]+)[:|.]([^:.\s]+)$/);
+			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
 			if(!keyMatch) {
 				var msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.appId = keyMatch[1];
-			options.keyId = keyMatch[2];
-			options.keyValue = keyMatch[3];
+			options.keyId = keyMatch[1];
+			options.keyValue = keyMatch[2];
 		}
-		if(!options.appId) {
-			var msg = 'no appId provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-			throw new Error(msg);
-		}
-		this.options = options;
-
-		/* process options */
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
@@ -40,7 +34,7 @@ var Rest = this.Rest = (function() {
 		options.restHost = (options.restHost || Defaults.REST_HOST);
 
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
-		this.baseUri = function(host) { return authority(host) + '/apps/' + options.appId; };
+		this.baseUri = authority;
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);

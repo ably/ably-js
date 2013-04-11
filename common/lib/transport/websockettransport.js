@@ -52,7 +52,7 @@ var WebSocketTransport = (function() {
 		var host = params.host;
 		var port = options.wsPort;
 		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + host + ':' + port + '/applications/' + options.appId;
+		var wsUri = wsScheme + host + ':' + port + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
