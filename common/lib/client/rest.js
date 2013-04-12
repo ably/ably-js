@@ -73,7 +73,6 @@ var Rest = this.Rest = (function() {
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
 		var timeUri = function(host) { return self.authority(host) + '/time' };
-		if(this.connection.id)
 		Http.get(this, timeUri, headers, params, function(err, res) {
 			if(err) {
 				callback(err);
@@ -86,7 +85,7 @@ var Rest = this.Rest = (function() {
 				callback(err);
 				return;
 			}
-			self.serverTimeOffset = (time = Date.now());
+			self.serverTimeOffset = (time - Date.now());
 			callback(null, time);
 		});
 	};
