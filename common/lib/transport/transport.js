@@ -2,6 +2,7 @@ var Transport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var actions = messagetypes.TAction;
+	var flags = messagetypes.TFlags;
 	var noop = function() {};
 
 	/*
@@ -53,8 +54,8 @@ var Transport = (function() {
 		case actions.CONNECTED:
 			this.connectionId = message.connectionId;
 			this.isConnected = true;
-			this.onConnect();
-			this.emit('connected', null, this.connectionId);
+			this.onConnect(message);
+			this.emit('connected', null, this.connectionId, message.flags);
 			break;
 		case actions.DISCONNECTED:
 			this.isConnected = false;
@@ -80,7 +81,12 @@ var Transport = (function() {
 		}
 	};
 
-	Transport.prototype.onConnect = function() {};
+	/* if the connected message asks us to sync the time with the server, make the request */
+	Transport.prototype.onConnect = function(message) {
+		if(message.flags && (message.flags & (1 << flags.SYNC_TIME)))
+			this.connectionManager.realtime.time({connection_id:message.connectionId});
+	};
+
 	Transport.prototype.onDisconnect = function() {};
 
 	Transport.prototype.onClose = function(wasClean, reason) {

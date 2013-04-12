@@ -49,6 +49,7 @@ var ConnectionManager = (function() {
 			default:
 		}
 		params.binary = this.binary;
+		params.timestamp = Date.now();
 		return params;
 	};
 
@@ -284,6 +285,7 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 			var state = states[i];
 			transport.on(state, handleTransportEvent(state));
 		}
+		this.emit('transport.pending', transport);
 	};
 
 	/**

@@ -3,7 +3,6 @@ var Auth = (function() {
 	var crypto = isBrowser ? null : require('crypto');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
-	function timestamp() { return Math.floor(Date.now()/1000); }
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
@@ -124,7 +123,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.authorise = function(options, callback) {
 		if(this.token) {
-			if(this.token.expires > timestamp()) {
+			if(this.token.expires > this.getTimestamp()) {
 				if(!options.force) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + this.token.expires);
 					callback();
@@ -304,7 +303,7 @@ var Auth = (function() {
 		if(capability)
 			request.capability = capability;
 
-		var rest = this.rest;
+		var rest = this.rest, self = this;
 		(function(authoriseCb) {
 			if(options.timestamp) {
 				authoriseCb();
@@ -318,7 +317,7 @@ var Auth = (function() {
 				});
 				return;
 			}
-			options.timestamp = timestamp();
+			options.timestamp = self.getTimestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -382,6 +381,11 @@ var Auth = (function() {
 				callback(null, {authorization: 'Bearer ' + toBase64(token.id)});
 			});
 		}
+	};
+
+	Auth.prototype.getTimestamp = function() {
+		var time = Date.now() + (this.rest.serverTimeOffset || 0);
+		return Math.floor(time / 1000);
 	};
 
 	return Auth;

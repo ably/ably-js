@@ -1,4 +1,5 @@
 var Rest = this.Rest = (function() {
+	var noop = function() {};
 
 	function Rest(options) {
 		/* normalise options */
@@ -33,6 +34,7 @@ var Rest = this.Rest = (function() {
 		options.fallbackHosts = options.restHost ? null : Default.fallbackHosts;
 		options.restHost = (options.restHost || Defaults.REST_HOST);
 
+		this.serverTimeOffset = null;
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 		this.baseUri = authority;
 
@@ -56,13 +58,23 @@ var Rest = this.Rest = (function() {
 		Resource.get(this, '/stats', headers, params, callback);
 	};
 
-	Rest.prototype.time = function(callback) {
+	Rest.prototype.time = function(params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
 		var timeUri = function(host) { return self.authority(host) + '/time' };
-		Http.get(this, timeUri, headers, null, function(err, res) {
+		if(this.connection.id)
+		Http.get(this, timeUri, headers, params, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
@@ -74,6 +86,7 @@ var Rest = this.Rest = (function() {
 				callback(err);
 				return;
 			}
+			self.serverTimeOffset = (time = Date.now());
 			callback(null, time);
 		});
 	};
