@@ -52,11 +52,11 @@ var Realtime = this.Realtime = (function() {
 		channel.retryMessage(msg);
 	};
 
-	Channels.prototype.get = function(name, options) {
+	Channels.prototype.get = function(name) {
 		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
-			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, (options || {}));
+			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, this.realtime.options);
 		}
 		return channel;
 	};

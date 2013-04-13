@@ -122,17 +122,18 @@ var Auth = (function() {
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(options, callback) {
-		if(this.token) {
-			if(this.token.expires > this.getTimestamp()) {
+		var token = this.token;
+		if(token) {
+			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!options.force) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + this.token.expires);
-					callback();
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+					callback(null, token);
 					return;
 				}
 			} else {
 				/* expired, so remove */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				delete this.token;
+				this.token = null;
 			}
 		}
 		var self = this;
@@ -141,7 +142,7 @@ var Auth = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, (self.token = tokenResponse));
+			callback(null, (self.token = tokenResponse.access_token));
 		});
 	};
 
@@ -356,12 +357,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key_id: this.keyId, key_value: this.keyValue});
 		else
-			this.authorise({}, function(err, tokenResponse) {
+			this.authorise({}, function(err, token) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:tokenResponse.access_token.id});
+				callback(null, {access_token:token.id});
 			});
 	};
 

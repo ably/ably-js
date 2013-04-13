@@ -3,6 +3,8 @@ var ConnectionManager = (function() {
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
+	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 
 	var noop = function() {};
 
@@ -14,6 +16,11 @@ var ConnectionManager = (function() {
 		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
 		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false},
 		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
+	};
+
+	var channelMessage = function(msg) {
+		var action = msg.action;
+		return (action == actions.MESSAGE || action == actions.PRESENCE);
 	};
 
 	function TransportParams(options, host, mode, connectionId, connectionSerial) {
@@ -52,6 +59,14 @@ var ConnectionManager = (function() {
 		params.timestamp = Date.now();
 		return params;
 	};
+
+	function PendingMessage(msg, callback) {
+		this.msg = msg;
+		var action = msg.action;
+		this.ackRequired = channelMessage(msg);
+		this.callback = callback;
+		this.merged = false;
+	}
 
 	/* public constructor */
 	function ConnectionManager(realtime, options) {
@@ -319,8 +334,10 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 		 * take over as the active transport */
 		this.transport = transport;
 		this.host = transport.params.host;
-		if(connectionId)
+		if(connectionId && this.connectionId != connectionId)  {
 			this.realtime.connection.id = this.connectionId = connectionId;
+			this.msgSerial = 0;
+		}
 
  		/* set up handler for events received on this transport */
 		var self = this;
@@ -329,7 +346,7 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 			self.ackMessage(serial, count);
 		});
 		transport.on('nack', function(serial, count, err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
 			if(!err) {
 				err = new Error('Unknown error');
 				err.statusCode = 500;
@@ -338,7 +355,6 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 			}
 			self.ackMessage(serial, count, err);
 		});
-		this.msgSerial = 0;
 		this.emit('transport.active', transport, connectionId, transport.params);
 	};
 
@@ -356,7 +372,6 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 		else if(this.pendingTransport === transport)
 			this.pendingTransport = null;
 
-		this.msgSerial = null;
 		this.emit('transport.inactive', transport);
 	};
 
@@ -567,7 +582,7 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.getToken(false, function(err) {
+			auth.authorise(false, function(err) {
 				if(err)
 					connectErr(err);
 				else
@@ -579,12 +594,6 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 	/******************
 	 * event queueing
 	 ******************/
-
-	function PendingMessage(msg, callback) {
-		this.msg = msg;
-		this.callback = callback;
-		this.merged = false;
-	}
 
 	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
 		callback = callback || noop;
@@ -604,8 +613,10 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
 		var msg = pendingMessage.msg;
-		msg.msgSerial = this.msgSerial++;
-		this.pendingMessages.push(pendingMessage);
+		if(pendingMessage.ackRequired) {
+			msg.msgSerial = this.msgSerial++;
+			this.pendingMessages.push(pendingMessage);
+		}
 		try {
 			this.transport.send(msg, function(err) {
 				/* FIXME: schedule a retry directly if we get an error */
@@ -616,6 +627,7 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 	};
 
 	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.ackMessage()', 'serial = ' + serial + '; count = ' + count);
 		err = err || null;
 		var pendingMessages = this.pendingMessages;
 		var firstPending = pendingMessages[0];
@@ -624,8 +636,9 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 			var ackSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
 			if(ackSerial > startSerial) {
 				var ackMessages = pendingMessages.splice(0, (ackSerial - startSerial));
-				for(var i = 0; i < ackMessages.length; i++)
+				for(var i = 0; i < ackMessages.length; i++) {
 					ackMessages[i].callback(err);
+				}
 			}
 		}
 	};

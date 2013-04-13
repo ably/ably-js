@@ -146,7 +146,7 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function() {
+	RealtimeChannel.prototype.unsubscribe = function(/* event, listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -167,7 +167,11 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
-		var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.PRESENCE, name: name});
+		var msg = new messagetypes.TChannelMessage({
+			action: messagetypes.TAction.PRESENCE,
+			channel: this.name,
+			presence: [presence]
+		});
 		this.sendMessage(msg, callback);
 	};
 
@@ -180,7 +184,7 @@ var RealtimeChannel = (function() {
 			this.setDetached(message);
 			break;
 		case actions.PRESENCE:
-			this.setPresence(message.presence);
+			this.presence.setPresence(message.presence, true);
 			break;
 		case actions.MESSAGE:
 			var tMessages = message.messages;

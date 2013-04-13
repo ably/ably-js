@@ -16,20 +16,26 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.enterClient = function(clientId, clientData, callback) {
-		Logger.logAction('Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		this.clients[clientId] = clientData;
 		var presence = new messagetypes.TPresence({
 			state : messagetypes.TPresenceState.ENTER,
 			clientId : this.clientId,
-			clientData: Channel.createPayload(clientData)
+			clientData: Data.toTData(clientData)
 		});
-		if (this.channel.state == 'pending')
+		var channel = this.channel;
+		if(channel.state == 'pending') {
 			this.pendingPresence = {
 				presence : 'enter',
 				callback : callback
 			};
-		else if (this.channel.state == 'subscribed')
-			channel.sendPresence(presence, listener);
+		} else if (channel.state == 'attached') {
+			channel.sendPresence(presence, callback);
+		} else {
+			var err = new Error('Unable to enter presence channel (incompatible state)');
+			err.code = 90001;
+			callback(err);
+		}
 	};
 
 	Presence.prototype.leave = function(callback) {
@@ -68,7 +74,7 @@ var Presence = (function() {
 			if(presence.state == 'leave')
 				delete this.clients[clientId];
 			else
-				clientData = this.clients[clientId] = Message.getPayload(presence.clientData);
+				clientData = this.clients[clientId] = Data.toTData(presence.clientData);
 			if(broadcast)
 				this.emit(presence.state, clientId, clientData);
 		}
