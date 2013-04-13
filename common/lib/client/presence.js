@@ -24,17 +24,22 @@ var Presence = (function() {
 			clientData: Data.toTData(clientData)
 		});
 		var channel = this.channel;
-		if(channel.state == 'pending') {
-			this.pendingPresence = {
-				presence : 'enter',
-				callback : callback
-			};
-		} else if (channel.state == 'attached') {
-			channel.sendPresence(presence, callback);
-		} else {
-			var err = new Error('Unable to enter presence channel (incompatible state)');
-			err.code = 90001;
-			callback(err);
+		switch(channel.state) {
+			case 'attached':
+				channel.sendPresence(presence, callback);
+				break;
+			case 'initialized':
+				channel.attach();
+			case 'pending':
+				this.pendingPresence = {
+					presence : presence,
+					callback : callback
+				};
+				break;
+			default:
+				var err = new Error('Unable to enter presence channel (incompatible state)');
+				err.code = 90001;
+				callback(err);
 		}
 	};
 
@@ -51,15 +56,31 @@ var Presence = (function() {
 			state : messagetypes.TPresenceState.LEAVE,
 			clientId : this.channel.ably.options.clientId
 		});
-		if (this.channel.state == 'subscribed')
-			this.channel.sendPresence(presence, callback);
-		else if (this.channel.state == 'pending')
-			this.pendingPresence = {
-				presence : 'leave',
-				callback : callback
-			};
-		else
-			delete this.pendingPresence;
+		var channel = this.channel;
+		switch(channel.state) {
+			case 'attached':
+				channel.sendPresence(presence, callback);
+				break;
+			case 'pending':
+				this.pendingPresence = {
+					presence : presence,
+					callback : callback
+				};
+				break;
+			case 'initialized':
+				/* we're not attached; therefore we let any entered status
+				 * timeout by itself instead of attaching just in order to  leave */
+				this.pendingPresence = null;
+				var err = new Error('Unable to enter presence channel (incompatible state)');
+				err.code = 90001;
+				callback(err);
+				break
+			default:
+				/* there is no connection; therefore we let
+				 * any entered status will timeout by itself */
+				this.pendingPresence = null;
+				callback(ConnectionError.failed);
+		}
 	};
 
 	Presence.prototype.get = function(clientId) {
@@ -84,14 +105,14 @@ var Presence = (function() {
 		if(this.pendingPresence) {
 			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; state = ' + this.state);
 			this.channel.sendPresence(this.pendingPresence.presence, this.pendingPresence.callback);
-			delete this.pendingPresence;
+			this.pendingPresence = null;
 		}
 	};
 
 	Presence.prototype.setSuspended = function(connectionState) {
 		if(this.pendingPresence) {
-			this.pendingPresence.callback(connectionState.defaultMessage);
-			delete this.pendingPresence;
+			this.pendingPresence.callback(ConnectionError[connectionState.state]);
+			this.pendingPresence = null;
 		}
 	};
 

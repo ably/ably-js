@@ -125,8 +125,10 @@ var ConnectionManager = (function() {
 	ConnectionManager.transports = {};
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
+		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
 		if(this.transport) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport already established');
 			callback(null, this.transport);
 			return;
 		}
@@ -136,6 +138,7 @@ var ConnectionManager = (function() {
 		 * Inherit any connection state */
 		var mode = this.connectionId ? 'resume' : (this.options.recover ? 'recover' : 'clean');
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId));
 		var self = this;
 
 		/* if there are no http transports, just choose from the available transports,
@@ -143,6 +146,7 @@ var ConnectionManager = (function() {
 		 * NOTE: this behaviour will never apply with a default configuration. */
 		if(!this.httpTransports.length) {
 			transportParams.host = this.httpHosts[0];
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
 			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
 			return;
 		}
@@ -150,10 +154,12 @@ var ConnectionManager = (function() {
 		/* first try to establish an http transport */
 		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
 			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + err);
 				/* http failed, so nothing's going to work */
 				callback(err);
 				return;
 			}
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
 			callback(null, httpTransport);
 			/* we have the http transport; if there is a potential upgrade
 			 * transport, lets see if we can upgrade to that. We won't
@@ -162,7 +168,7 @@ var ConnectionManager = (function() {
 				/* we can't initiate the selection of the upgrade transport until we have
 				 * the actual connection, since we need the connectionId */
 				httpTransport.on('connected', function(error, connectionId) {
-console.log('************** upgrading ... connectionId = ' + connectionId);
+					Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionId = ' + connectionId);
 					transportParams = new TransportParams(self.options, transportParams.host, 'resume', connectionId, self.connectionSerial);
 					self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
 				});
@@ -391,6 +397,10 @@ console.log('************** upgrading ... connectionId = ' + connectionId);
 	/*********************
 	 * state management
 	 *********************/
+
+	ConnectionManager.prototype.getStateError = function() {
+		return ConnectionError[this.state.state];
+	};
 
 	ConnectionManager.activeState = function(state) {
 		return state.queueEvents || state.sendEvents;

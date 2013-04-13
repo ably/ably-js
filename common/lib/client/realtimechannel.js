@@ -20,12 +20,18 @@ var RealtimeChannel = (function() {
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
+	RealtimeChannel.invalidStateError = {
+		statusCode: 400,
+		code: 90001,
+		reason: 'Channel operation failed (invalid channel state)'
+	};
+
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
 		callback = callback || noop;
-    	var connectionState = this.connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+		var connectionManager = this.connectionManager;
+    	if(!ConnectionManager.activeState(connectionManager.state)) {
+			callback(connectionManager.getStateError());
 			return;
 		}
     	var message = new messagetypes.TMessage();
@@ -61,7 +67,7 @@ var RealtimeChannel = (function() {
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		if(this.state == 'attached') {
@@ -69,7 +75,7 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		if(this.state == 'failed') {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		this.once(function(err) {
@@ -79,7 +85,7 @@ var RealtimeChannel = (function() {
 				break;
 			case 'detached':
 			case 'failed':
-				callback(err || connectionManager.state.defaultMessage);
+				callback(err || connectionManager.getStateError());
 			}
 		});
 		this.attachImpl();
@@ -97,7 +103,7 @@ var RealtimeChannel = (function() {
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		if(this.state == 'detached') {
@@ -114,7 +120,7 @@ var RealtimeChannel = (function() {
 				callback(UIMessages.FAIL_REASON_UNKNOWN);
 				break;
 			case 'failed':
-				callback(err || connectionManager.state.defaultMessage);
+				callback(err || connectionManager.getStateError());
 				break;
 			}
 		});
