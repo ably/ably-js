@@ -1,17 +1,13 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-//	var hasBuffer = isBrowser ? window.ArrayBuffer : Buffer;
-	var hasBuffer = isBrowser ? false : Buffer;
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var thrift = isBrowser ? Thrift : require('thrift');
+//	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
+	var hasBuffer = isBrowser ? false : !!Buffer;
 
 	/* public constructor */
-	function WebSocketTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !hasBuffer;
-		var binary = !options.useTextProtocol;
-		this.sendOptions = {binary: binary};
-		Transport.call(this, connectionManager, auth, options);
+	function WebSocketTransport(connectionManager, auth, params) {
+		var binary = params.binary = params.binary && hasBuffer;
+		Transport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(WebSocketTransport, Transport);
 
@@ -20,10 +16,10 @@ var WebSocketTransport = (function() {
 	};
 
 	if(WebSocketTransport.isAvailable())
-		ConnectionManager.availableTransports.web_socket = WebSocketTransport;
+		ConnectionManager.transports.web_socket = WebSocketTransport;
 
-	WebSocketTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new WebSocketTransport(connectionManager, auth, options);
+	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
@@ -34,11 +30,11 @@ var WebSocketTransport = (function() {
 		transport.connect();
 	};
 
-	WebSocketTransport.prototype.createWebSocket = function(uri, params) {
+	WebSocketTransport.prototype.createWebSocket = function(uri, connectParams) {
 		var paramCount = 0;
-		if(params) {
-			for(var key in params)
-				uri += (paramCount++ ? '&' : '?') + key + '=' + params[key];
+		if(connectParams) {
+			for(var key in connectParams)
+				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
 		}
 		this.uri = uri;
 		return new WebSocket(uri);
@@ -51,21 +47,22 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this;
-		var host = this.options.wsHost;
-		var port = this.options.wsPort;
-		var wsScheme = this.options.encrypted ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + host + ':' + port + '/applications/' + this.options.appId;
+		var self = this, params = this.params, options = params.options;
+		var host = params.host;
+		var port = options.wsPort;
+		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
+		var wsUri = wsScheme + host + ':' + port + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-		this.auth.getAuthParams(function(err, params) {
-			var paramStr = ''; for(var param in params) paramStr += ' ' + param + ': ' + params[param] + ';';
+		this.auth.getAuthParams(function(err, authParams) {
+			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr);
 			if(err) {
 				self.abort(UIMessages.FAIL_REASON_REFUSED);
 				return;
 			}
+			var connectParams = params.getConnectParams(authParams);
 			try {
-				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, params);
+				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
@@ -75,27 +72,9 @@ var WebSocketTransport = (function() {
 		});
 	};
 
-	WebSocketTransport.prototype.close = function() {
-		this.dispose();
-		Transport.prototype.close.call(this);
-	};
-
-	WebSocketTransport.prototype.abort = function(reason) {
-		this.dispose();
-		Transport.prototype.abort.call(this);
-	};
-
-	WebSocketTransport.prototype.send = function(msg, callback) {
-		var self = this;
+	WebSocketTransport.prototype.send = function(message, callback) {
 		try {
-			var protocol = new this.thriftProtocol(new this.thriftTransport(this.protocolBuffer, function(data) {
-				/* here data is either a native Buffer (in the node case) or a Thrift Buffer or CheckedBuffer
-				 * (in the browser case) */
-				self.wsConnection.send((data.buf || data), self.sendOptions);
-				callback(null);
-			}));
-			msg.write(protocol);
-			protocol.flush();
+			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary));
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -104,16 +83,11 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
-		var protocol = binary
-			? new thrift.TBinaryProtocol(new thrift.TTransport(data))
-			: new thrift.TJSONProtocol(new thrift.TStringTransport(data));
-
-		var message = new messagetypes.TChannelMessage();
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
 		try {
-			message.read(protocol);
-			this.onChannelMessage(message);
+			this.onChannelMessage(Serialize.TChannelMessage.decode(data, binary));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelEvent()', 'Unexpected exception handing channel event: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
 	};
 

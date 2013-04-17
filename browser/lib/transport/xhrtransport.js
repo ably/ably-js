@@ -13,25 +13,29 @@ var XHRTransport = (function() {
 	};
 
 	/* public constructor */
-	function XHRTransport(connectionManager, auth, options) {
-		options.useTextProtocol = options.useTextProtocol || !XHRTransport.binary;
-		CometTransport.call(this, connectionManager, auth, options);
+	function XHRTransport(connectionManager, auth, params) {
+		params.binary = params.binary && XHRTransport.binary;
+		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
-		if(!xhr) return false;
+		if(!xhr)return false;
 //		XHRTransport.binary = (window.ArrayBuffer && xhr.responseType);
 		XHRTransport.binary = false;
 		return true;
 	};
 
-	if(XHRTransport.isAvailable())
-		ConnectionManager.availableTransports.xhr = XHRTransport;
+	XHRTransport.checkConnectivity = function(callback) {
+		new XHRTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+			callback(null, (!err && responseText == 'yes'));
+		});
+	};
 
-	XHRTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new XHRTransport(connectionManager, auth, options);
+	XHRTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new XHRTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {
@@ -52,7 +56,7 @@ var XHRTransport = (function() {
 
 	XHRTransport.Request = function(uri, params, body, expectToBlock, binary, callback) {
 		uri = CometTransport.paramStr(params, uri);
-		var successCode, method; 
+		var successCode, method, err, timedout;
 		if(body) method = 'POST', successCode = 201;
 		else method = 'GET', successCode = 200;
 
@@ -61,31 +65,50 @@ var XHRTransport = (function() {
 			xhr.responseType = 'arraybuffer';
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = setTimeout(timeout, function() { xhr.abort(); });
+		var timer = setTimeout(timeout, function() { timedout = true; xhr.abort(); });
 		xhr.open(method, uri, true);
 		xhr.setRequestHeader('Accept', binary ? 'application/x-thrift' : 'application/json');
+		xhr.onerror = function(err) {
+			err = err;
+			err.code = 80000;
+			callback(err);
+		};
+		xhr.onabort = function() {
+			err = new Error(timedout ? 'Request timed out' : 'Request cancelled');
+			err.statusCode = 404;
+			err.code = 80000;
+			callback(err);
+		};
 		xhr.onreadystatechange = function() {
 			if(xhr.readyState == 4) {
 				clearTimeout(timer);
-				var err = null;
-				if(xhr.status != successCode) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				if(xhr.status == successCode) {
+					var response = null;
+					if(binary) {
+						if(xhr.response) {
+							response = new Buffer();
+							response.buf = xhr.response;
+							response.view = new DataView(response.buf);
+						}
+					} else {
+						response = xhr.responseText;
+					}
+					callback(null, response);
+					return;
+				}
+				if(xhr.status != 0) {
 					err = new Error('Unexpected response: statusCode = ' + xhr.status);
 					err.statusCode = xhr.status;
+					err.code = 80000;
 					err.statusText = xhr.statusText;
 					callback(err);
 					return;
 				}
-				var response = null;
-				if(binary) {
-					if(xhr.response) {
-						response = new Buffer();
-						response.buf = xhr.response;
-						response.view = new DataView(response.buf);
-					}
-				} else {
-					response = xhr.responseText;
-				}
-				callback(null, response);
+				/* statusCode is 0, so expect either an onerror or onabort callback */
 			}
 		};
 		xhr.send(body);
@@ -95,6 +118,11 @@ var XHRTransport = (function() {
 		if(this.xhr)
 			this.xhr.abort();
 	};
+
+	if(XHRTransport.isAvailable()) {
+		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
+		Http.Request = XHRTransport.Request;
+	}
 
 	return XHRTransport;
 })();

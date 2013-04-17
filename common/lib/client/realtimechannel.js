@@ -1,5 +1,6 @@
 var RealtimeChannel = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -15,25 +16,31 @@ var RealtimeChannel = (function() {
     	this.options = Utils.prototypicalClone(defaultOptions, options);
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
-    	this.pendingSubscriptions = {};
     	this.pendingEvents = [];
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
+	RealtimeChannel.invalidStateError = {
+		statusCode: 400,
+		code: 90001,
+		reason: 'Channel operation failed (invalid channel state)'
+	};
+
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
-    	var connectionState = this.connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+		callback = callback || noop;
+		var connectionManager = this.connectionManager;
+    	if(!ConnectionManager.activeState(connectionManager.state)) {
+			callback(connectionManager.getStateError());
 			return;
 		}
     	var message = new messagetypes.TMessage();
     	message.name = name;
-    	message.data = Message.createPayload(data);
+    	message.data = Data.toTData(data);
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
     		var msg = new messagetypes.TChannelMessage();
-    		msg.action = messagetypes.TAction.EVENT;
+    		msg.action = messagetypes.TAction.MESSAGE;
     		msg.channel = this.name;
     		msg.messages = [message];
     		this.sendMessage(msg, callback);
@@ -60,7 +67,7 @@ var RealtimeChannel = (function() {
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		if(this.state == 'attached') {
@@ -68,7 +75,7 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		if(this.state == 'failed') {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		this.once(function(err) {
@@ -78,7 +85,7 @@ var RealtimeChannel = (function() {
 				break;
 			case 'detached':
 			case 'failed':
-				callback(err || connectionManager.state.defaultMessage);
+				callback(err || connectionManager.getStateError());
 			}
 		});
 		this.attachImpl();
@@ -96,7 +103,7 @@ var RealtimeChannel = (function() {
     	var connectionManager = this.connectionManager;
     	var connectionState = connectionManager.state;
     	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionState.defaultMessage);
+			callback(connectionManager.getStateError());
 			return;
 		}
 		if(this.state == 'detached') {
@@ -113,7 +120,7 @@ var RealtimeChannel = (function() {
 				callback(UIMessages.FAIL_REASON_UNKNOWN);
 				break;
 			case 'failed':
-				callback(err || connectionManager.state.defaultMessage);
+				callback(err || connectionManager.getStateError());
 				break;
 			}
 		});
@@ -131,124 +138,34 @@ var RealtimeChannel = (function() {
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var events = args[0];
+		var event = args[0];
 		var listener = args[1];
 		var callback = args[2] = (args[2] || noop);
+		var subscriptions = this.subscriptions;
 
-		if(this.state == 'attached') {
-			this.subscribeAttached(events, listener, callback);
-			return;
-		}
+		if(event === null || !Utils.isArray(event))
+			subscriptions.on(event, listener);
+		else
+			for(var i = 0; i < event.length; i++)
+				subscriptions.on(event[i], listener);
 
-		if(this.state != 'pending')
-			this.attach();
-		var self = this;
-		this.once(function(err) {
-			switch(this.event) {
-			case 'attached':
-				self.subscribeAttached(events, listener, callback);
-				break;
-			case 'detached':
-			case 'failed':
-				callback(err || self.connectionManager.state.defaultMessage);
-			}
-		});
+		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.subscribeAttached = function(events, handler, callback) {
-		if(events === null || events.__proto__ !== Array.prototype) {
-			this.subscribeForEvent(events, handler, callback);
-			return;
-		}
-		for(var i = 0; i < events.length; i++) {
-			this.subscribeForEvent(events[i], handler, callback);
-		}
-	};
-
-	RealtimeChannel.prototype.subscribeForEvent = function(name, listener, callback) {
-		/* determine if there is already a listener for this event */
-		var hasListener = this.subscriptions.listeners(name);
-		/* if there is a listener already, nothing to do */
-		if(hasListener) {
-			callback();
-			return;
-		}
-
-		/* send the subscription message */
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending SUBSCRIBE message');
-		var subscriptionName = (name === null) ? ':' : name;
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(!pendingSubscriptions) {
-			pendingSubscriptions = [];
-			this.pendingSubscriptions[subscriptionName] = pendingSubscriptions;
-		}
-		pendingSubscriptions.push({listener: listener, callback: callback});
-    	var msg = new messagetypes.TChannelMessage({
-    		action: messagetypes.TAction.SUBSCRIBE,
-    		channel: this.name,
-    		name: name
-    	});
-    	this.sendMessage(msg, noop);
-	};
-
-	RealtimeChannel.prototype.unsubscribe = function() {
+	RealtimeChannel.prototype.unsubscribe = function(/* event, listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var events = args[0];
+		var event = args[0];
 		var listener = args[1];
-		var callback = args[2] = (args[2] || noop);
-
-		if(this.state == 'attached') {
-			this.unsubscribeAttached(events, listener, callback);
-			return;
-		}
-
-		if(this.state != 'pending')
-			this.attach();
-		var self = this;
-		this.once(function(err) {
-			switch(this.event) {
-			case 'attached':
-				self.unsubscribeAttached(events, listener, callback);
-				break;
-			case 'detached':
-			case 'failed':
-				callback(err || self.connectionManager.state.defaultMessage);
-			}
-		});
-	};
-
-	RealtimeChannel.prototype.unsubscribeAttached = function(events, handler, callback) {
-		if(events === null || events.__proto__ !== Array.prototype) {
-			this.unsubscribeForEvent(events, handler, callback);
-			return;
-		}
-		for(var i = 0; i < events.length; i++) {
-			this.unsubscribeForEvent(events[i], handler, callback);
-		}
-	};
-
-	RealtimeChannel.prototype.unsubscribeForEvent = function(name, listener, callback) {
-		/* remove from the set of subscriptions if it's there */
 		var subscriptions = this.subscriptions;
-		subscriptions.off(name, listener);
-		/* if there are still listeners for this event, nothing more to do */
-		var hasListener = subscriptions.listeners(name);
-		if(hasListener) {
-			callback();
-			return;
-		}
 
-		/* send the unsubscription message */
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.unsubscribe()', 'sending UNSUBSCRIBE message');
-    	var msg = new messagetypes.TChannelMessage({
-    		action: messagetypes.TAction.UNSUBSCRIBE,
-    		channel: this.name,
-    		name: name
-    	});
-    	this.sendMessage(msg, noop);
+		if(event === null || !Utils.isArray(event))
+			subscriptions.off(event, listener);
+		else
+			for(var i = 0; i < event.length; i++)
+				subscriptions.off(event[i], listener);
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
@@ -256,28 +173,26 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
-		var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.PRESENCE, name: name});
+		var msg = new messagetypes.TChannelMessage({
+			action: messagetypes.TAction.PRESENCE,
+			channel: this.name,
+			presence: [presence]
+		});
 		this.sendMessage(msg, callback);
 	};
 
 	RealtimeChannel.prototype.onMessage = function(message) {
 		switch(message.action) {
-		case 5: /* ATTACHED */
+		case actions.ATTACHED:
 			this.setAttached(message);
 			break;
-		case 7: /* DETACHED */
+		case actions.DETACHED:
 			this.setDetached(message);
 			break;
-		case 9: /* SUBSCRIBED */
-			this.setSubscribed(message);
+		case actions.PRESENCE:
+			this.presence.setPresence(message.presence, true);
 			break;
-		case 11: /* UNSUBSCRIBED */
-			this.setUnsubscribed(message);
-			break;
-		case 12: /* PRESENCE */
-			this.setPresence(message.presence);
-			break;
-		case 13: /* EVENT */
+		case actions.MESSAGE:
 			var tMessages = message.messages;
 			if(tMessages) {
 				var messages = new Array(tMessages.length);
@@ -287,20 +202,15 @@ var RealtimeChannel = (function() {
 						tMessage.channelSerial,
 						tMessage.timestamp,
 						tMessage.name,
-						Message.getPayload(tMessage.data)
+						Data.fromTData(tMessage.data)
 					);
 				}
 				this.onEvent(messages);
 			}
 			break;
-		case 1: /* CONNECT */
-		case 4: /* ATTACH */
-		case 6: /* DETACH */
-		case 8: /* SUBSCRIBE */
-		case 10: /* UNSUBSCRIBE */
 		default:
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.abort(UIMessages.FAIL_REASON_FAILED);
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
+			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
 		}
 	};
 
@@ -310,12 +220,12 @@ var RealtimeChannel = (function() {
 		if(dest.channel == src.channel) {
 			if((action = dest.action) == src.action) {
 				switch(action) {
-				case 10: /* EVENT */
+				case actions.MESSAGE:
 					for(var i = 0; i < src.messages.length; i++)
 						dest.messages.push(src.messages[i]);
 					result = true;
 					break;
-				case 9: /* PRESENCE */
+				case actions.PRESENCE:
 					for(var i = 0; i < src.presence.length; i++)
 						dest.presence.push(src.presence[i]);
 					result = true;
@@ -336,7 +246,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.EVENT, channel: this.name, messages: []});
+				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
@@ -346,26 +256,9 @@ var RealtimeChannel = (function() {
 				}
 				this.sendMessage(msg, multicaster);
 			}
-			this.presence.setSubscribed();
+			this.presence.setAttached();
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
-		}
-	};
-
-	RealtimeChannel.prototype.setSubscribed = function(message) {
-		var name = message.name;
-		var subscriptionName = (name === null) ? ':' : name;
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSubscribed', 'activating event; name = ' + name);
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(pendingSubscriptions) {
-			var subscriptions = this.subscriptions;
-			Utils.nextTick(function() {
-				for(var i = 0; i < pendingSubscriptions.length; i++) {
-					subscriptions.on(name, pendingSubscriptions[i].listener);
-					pendingSubscriptions[i].callback();
-				}
-			});
-			delete this.pendingSubscriptions[subscriptionName];
 		}
 	};
 
@@ -381,22 +274,6 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setUnsubscribed = function(message) {
-		var name = message.name;
-		var subscriptionName = (name === null) ? ':' : name;
-		var pendingSubscriptions = this.pendingSubscriptions[subscriptionName];
-		if(pendingSubscriptions) {
-			/* this is an error message */
-			var err = {statusCode: message.statusCode, code: message.code, reason: message.reason};
-			Utils.nextTick(function() {
-				for(var i = 0; i < pendingSubscriptions.length; i++)
-					pendingSubscriptions[i].callback(err);
-			});
-			delete this.pendingSubscriptions[subscriptionName];
-		}
-		this.subscriptions.off(name);
-	};
-
 	RealtimeChannel.prototype.setSuspended = function(connectionState) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
 		this.state = 'detached';
@@ -407,6 +284,21 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
+	};
+
+	RealtimeChannel.prototype.retryMessage = function(message) {
+		/* the given message is a response that indicates a given
+		 * operation needs to be retried */
+		switch(message.action) {
+			case actions.ATTACHED:
+				this.attachImpl();
+				break;
+			case actions.DETACHED:
+				this.detachImpl();
+				break;
+			default:
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
+		}
 	};
 
 	return RealtimeChannel;

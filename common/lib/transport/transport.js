@@ -1,5 +1,9 @@
 var Transport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var actions = messagetypes.TAction;
+	var flags = messagetypes.TFlags;
+	var noop = function() {};
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -10,51 +14,61 @@ var Transport = (function() {
 	 * connected        null error, connectionId
 	 * event            channel message object
 	 */
-	var thrift = isBrowser ? Thrift : require('thrift');
-	var defaultBufferSize = 1024;
 
 	/* public constructor */
-	function Transport(connectionManager, auth, options) {
+	function Transport(connectionManager, auth, params) {
 		EventEmitter.call(this);
 		this.connectionManager = connectionManager;
 		this.auth = auth;
-		this.options = options;
-		if(options.useTextProtocol) {
-			this.thriftTransport = thrift.TStringTransport;
-			this.thriftProtocol = thrift.TJSONProtocol;
-		} else {
-			this.thriftTransport = thrift.TTransport;
-			this.thriftProtocol = thrift.TBinaryProtocol;
-			this.protocolBuffer = new thrift.CheckedBuffer(defaultBufferSize);
-		}
+		this.params = params;
 		this.isConnected = false;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function() {
+	Transport.prototype.close = function(sendDisconnect) {
 		this.isConnected = false;
 		this.emit('closed', ConnectionError.closed);
+		if(sendDisconnect)
+			this.sendDisconnect();
+		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
 		this.emit('failed', error);
+		this.sendDisconnect();
+		this.dispose();
+	};
+
+	Transport.prototype.sendDisconnect = function() {
+		this.send(new messagetypes.TChannelMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
 		switch(message.action) {
-		case 0: /* HEARTBEAT */
+		case actions.HEARTBEAT:
 			this.emit('heartbeat');
 			break;
-		case 2: /* CONNECTED */
+		case actions.CONNECTED:
 			this.connectionId = message.connectionId;
 			this.isConnected = true;
-			this.onConnect();
-			this.emit('connected', null, this.connectionId);
+			this.onConnect(message);
+			this.emit('connected', null, this.connectionId, message.flags);
 			break;
-		case 3: /* ERROR */
+		case actions.DISCONNECTED:
+			this.isConnected = false;
+			this.onDisconnect();
+			/* FIXME: do we need to emit an event here? */
+			break;
+		case actions.ACK:
+			this.emit('ack', message.msgSerial, message.count);
+			break;
+		case actions.NACK:
+			this.emit('nack', message.msgSerial, message.count, message.error);
+			break;
+		case actions.ERROR:
 			var err = {
 				statusCode: message.statusCode,
 				code: message.code,
@@ -63,27 +77,17 @@ var Transport = (function() {
 			this.abort(err);
 			break;
 		default:
-			this.emit('channelmessage', message);
+			this.connectionManager.onChannelMessage(message, this);
 		}
 	};
 
-	Transport.prototype.sendMessage = function(message, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Transport.sendMessage()', '');
-		var self = this;
-		try {
-			var protocol = new (this.thriftProtocol)(new (this.thriftTransport)(undefined, function(data) {
-				self.sendData(data, callback);
-			}));
-			message.write(protocol);
-			protocol.flush();
-		} catch (e) {
-			var msg = 'Unexpected send exception: ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.sendMessage()', msg);
-			callback({statusCode: 500, code: 50000, reason: msg});
-		}
+	/* if the connected message asks us to sync the time with the server, make the request */
+	Transport.prototype.onConnect = function(message) {
+		if(message.flags && (message.flags & (1 << flags.SYNC_TIME)))
+			this.connectionManager.realtime.time({connection_id:message.connectionId});
 	};
 
-	Transport.prototype.onConnect = function() {};
+	Transport.prototype.onDisconnect = function() {};
 
 	Transport.prototype.onClose = function(wasClean, reason) {
 		/* if the connectionmanager already thinks we're closed

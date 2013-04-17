@@ -1,4 +1,5 @@
-var Rest = (function() {
+var Rest = this.Rest = (function() {
+	var noop = function() {};
 
 	function Rest(options) {
 		/* normalise options */
@@ -9,25 +10,19 @@ var Rest = (function() {
 		}
 		if(typeof(options) == 'string')
 			options = {key: options};
+		this.options = options;
+
+		/* process options */
 		if(options.key) {
-			var keyParts = options.key.split(':');
-			if(keyParts.length != 3) {
+			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
+			if(!keyMatch) {
 				var msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.appId = keyParts[0];
-			options.keyId = keyParts[1];
-			options.keyValue = keyParts[2];
+			options.keyId = keyMatch[1];
+			options.keyValue = keyMatch[2];
 		}
-		if(!options.appId) {
-			var msg = 'no appId provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-			throw new Error(msg);
-		}
-		this.options = options;
-
-		/* process options */
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
@@ -35,30 +30,50 @@ var Rest = (function() {
 
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
 			options.encrypted = true;
-		var restHost = options.restHost = (options.restHost || Defaults.REST_HOST);
-		var restPort = options.restPort = options.tlsPort || (options.encrypted && options.port) || Defaults.WSS_PORT;
-		var authority = this.authority = 'https://' + restHost + ':' + restPort;
-		this.baseUri = authority + '/apps/' + this.options.appId;
 
-		/* FIXME: temporarily force use of json and not thrift */
-		options.useTextProtocol = true;
+		options.fallbackHosts = options.restHost ? null : Defaults.fallbackHosts;
+		options.restHost = (options.restHost || Defaults.REST_HOST);
+
+		this.serverTimeOffset = null;
+		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
+		this.baseUri = authority;
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
-		var headers = Utils.copy(Utils.defaultGetHeaders(!this.options.useTextProtocol));
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		Resource.get(this, '/stats', headers, params, callback);
 	};
 
-	Rest.prototype.time = function(callback) {
+	Rest.prototype.time = function(params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Http.get(this.authority + '/time', headers, null, function(err, res) {
+		var self = this;
+		var timeUri = function(host) { return self.authority(host) + '/time' };
+		Http.get(this, timeUri, headers, params, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
@@ -70,6 +85,7 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
+			self.serverTimeOffset = (time - Date.now());
 			callback(null, time);
 		});
 	};

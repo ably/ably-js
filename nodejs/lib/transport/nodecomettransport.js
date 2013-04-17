@@ -6,16 +6,22 @@ var NodeCometTransport = (function() {
 	 * A transport to use with nodejs
 	 * to simulate an XHR transport for test purposes
 	 */
-	function NodeCometTransport(connectionManager, auth, options) {
-		CometTransport.call(this, connectionManager, auth, options);
+	function NodeCometTransport(connectionManager, auth, params) {
+		CometTransport.call(this, connectionManager, auth, params);
 	}
 	util.inherits(NodeCometTransport, CometTransport);
 
 	NodeCometTransport.isAvailable = function() { return true; };
-	ConnectionManager.availableTransports.comet = NodeCometTransport;
+	ConnectionManager.httpTransports.comet = ConnectionManager.transports.comet = NodeCometTransport;
 
-	NodeCometTransport.tryConnect = function(connectionManager, auth, options, callback) {
-		var transport = new NodeCometTransport(connectionManager, auth, options);
+	NodeCometTransport.checkConnectivity = function(callback) {
+		new NodeCometTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, false, function(err, responseText) {
+			callback(null, (!err && responseText == 'yes'));
+		});
+	};
+
+	NodeCometTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new NodeCometTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
 		transport.on('error', errorCb);
 		transport.on('preconnect', function() {
@@ -27,7 +33,7 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.toString = function() {
-		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
+		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected + '; binary=' + this.binary;
 	};
 
 	NodeCometTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {

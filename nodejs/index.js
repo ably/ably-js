@@ -1,4 +1,4 @@
 module.exports = {
-	Realtime: require('./realtime'),
-	Rest: require('./rest')
+	Rest: require('./rest'),
+	Realtime: require('./realtime')
 };

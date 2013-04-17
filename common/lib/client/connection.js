@@ -9,10 +9,10 @@ var Connection = (function() {
 		this.id = undefined;
 
 		var self = this;
-		this.connectionManager.on(function(stateChange) {
-			self.state = stateChange.current;
+		this.connectionManager.on('connectionstate', function(stateChange) {
+			var state = self.state = stateChange.current;
 			Utils.nextTick(function() {
-				self.emit(self.state, stateChange);
+				self.emit(state, stateChange);
 			});
 		});
 	}
@@ -29,6 +29,10 @@ var Connection = (function() {
 
 	Connection.prototype.connect = function() {
 		this.connectionManager.requestState({state: 'connecting'});
+	};
+
+	Connection.prototype.close = function() {
+		this.connectionManager.requestState({state: 'closed'});
 	};
 
 	return Connection;

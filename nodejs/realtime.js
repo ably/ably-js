@@ -21,17 +21,21 @@ var includeScript = function(name) {
 
 /* include libraries */
 includeScript('./lib/util/http.js');
+includeScript('./lib/util/thriftutil.js');
+includeScript('./lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
 includeScript('../common/lib/util/multicaster.js');
-includeScript('../common/lib/transport/defaults.js');
 includeScript('../common/lib/transport/connectionerror.js');
 includeScript('../common/lib/transport/connectionmanager.js');
 includeScript('../common/lib/transport/transport.js');
 includeScript('../common/lib/transport/websockettransport.js');
 includeScript('../common/lib/transport/comettransport.js');
-includeScript('../common/lib/transport/nodecomettransport.js');
+includeScript('../common/lib/types/data.js');
+includeScript('../common/lib/types/message.js');
+includeScript('../common/lib/types/presencemessage.js');
+includeScript('../common/lib/types/serialize.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/connectionstatechange.js');
@@ -39,7 +43,8 @@ includeScript('../common/lib/client/connection.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/realtimechannel.js');
 includeScript('../common/lib/client/presence.js');
-includeScript('../common/lib/client/message.js');
+includeScript('../common/lib/client/rest.js');
 includeScript('../common/lib/client/realtime.js');
+includeScript('./lib/transport/nodecomettransport.js');
 
 module.exports = context.Realtime;

@@ -3,7 +3,6 @@ var Auth = (function() {
 	var crypto = isBrowser ? null : require('crypto');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
-	function timestamp() { return Math.floor(Date.now()/1000); }
 	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
 	var hmac = undefined;
@@ -38,12 +37,11 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenUri = rest.baseUri + '/authorise';
 
 		/* tokenOptions contains the parameters that may be used in
 		 * token requests */
 		var tokenOptions = this.tokenOptions = {};
-		if(options.keyId) tokenOptions.keyId = options.keyId;
+		if(options.keyId) var keyId = tokenOptions.keyId = options.keyId;
 		if(options.keyValue) tokenOptions.keyValue = options.keyValue;
 
 		/* decide default auth method */
@@ -53,7 +51,7 @@ var Auth = (function() {
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				this.basicKey = toBase64(options.key || [options.appId, options.keyId, options.keyValue].join(':'));
+				this.basicKey = toBase64(options.key || (options.keyId + ':' + options.keyValue));
 				this.keyId = options.keyId;
 				this.keyValue = options.keyValue;
 				return;
@@ -124,17 +122,18 @@ var Auth = (function() {
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(options, callback) {
-		if(this.token) {
-			if(this.token.expires > timestamp()) {
+		var token = this.token;
+		if(token) {
+			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!options.force) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + this.token.expires);
-					callback();
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+					callback(null, token);
 					return;
 				}
 			} else {
 				/* expired, so remove */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				delete this.token;
+				this.token = null;
 			}
 		}
 		var self = this;
@@ -143,7 +142,7 @@ var Auth = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, (self.token = tokenResponse));
+			callback(null, (self.token = tokenResponse.access_token));
 		});
 	};
 
@@ -202,14 +201,14 @@ var Auth = (function() {
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback;
+		var tokenRequestCallback, rest = this.rest;
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = options.authCallback;
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
+				Http.get(rest, options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
 			};
 		} else if(options.keyValue) {
 			var self = this;
@@ -232,12 +231,12 @@ var Auth = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var self = this;
+		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/authorise'; };
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
-				Http.post(self.tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
+				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
 			else
-				Http.get(self.tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
+				Http.get(rest, tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {
@@ -305,7 +304,7 @@ var Auth = (function() {
 		if(capability)
 			request.capability = capability;
 
-		var rest = this.rest;
+		var rest = this.rest, self = this;
 		(function(authoriseCb) {
 			if(options.timestamp) {
 				authoriseCb();
@@ -319,7 +318,7 @@ var Auth = (function() {
 				});
 				return;
 			}
-			options.timestamp = timestamp();
+			options.timestamp = self.getTimestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -358,12 +357,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key_id: this.keyId, key_value: this.keyValue});
 		else
-			this.authorise({}, function(err, tokenResponse) {
+			this.authorise({}, function(err, token) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:tokenResponse.access_token.id});
+				callback(null, {access_token:token.id});
 			});
 	};
 
@@ -380,9 +379,14 @@ var Auth = (function() {
 					callback(err);
 					return;
 				}
-				callback(null, {authorization: 'Bearer ' + token.id});
+				callback(null, {authorization: 'Bearer ' + toBase64(token.id)});
 			});
 		}
+	};
+
+	Auth.prototype.getTimestamp = function() {
+		var time = Date.now() + (this.rest.serverTimeOffset || 0);
+		return Math.floor(time / 1000);
 	};
 
 	return Auth;
