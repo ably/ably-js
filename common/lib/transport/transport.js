@@ -43,7 +43,7 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.sendDisconnect = function() {
-		this.send(new messagetypes.TChannelMessage({action: messagetypes.DISCONNECT}), noop);
+		this.send(new messagetypes.TChannelMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {

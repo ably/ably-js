@@ -7,7 +7,6 @@ var WebSocketTransport = (function() {
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
 		var binary = params.binary = params.binary && hasBuffer;
-		this.sendOptions = {binary: binary};
 		Transport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(WebSocketTransport, Transport);
@@ -75,7 +74,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.send = function(message, callback) {
 		try {
-			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary), this.sendOptions);
+			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary));
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);

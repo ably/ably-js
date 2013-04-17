@@ -103,7 +103,7 @@ this.Serialize = (function() {
 	TChannelMessage.decode = function(encoded, binary) {
 		var result, err;
 		if(binary) {
-			if(err = Thrift.decodeSync((result = new messagetypes.TChannelMessage()), encoded)) throw err;
+			if(err = ThriftUtil.decodeSync((result = new messagetypes.TChannelMessage()), encoded)) throw err;
 		} else {
 			result = TChannelMessage.fromJSON(JSON.parse(encoded));
 		}
@@ -112,37 +112,41 @@ this.Serialize = (function() {
 
 	/* NOTE: decodes to items */
 	TMessageSet.decode = function(encoded, binary) {
-		var items, err;
-		if(binary) {
-			var ob;
-			if(err = Thrift.decodeSync((ob = new messagetypes.TMessageSet()), encoded)) throw err;
-			items = ob.items;
-		} else {
-			var elements = JSON.parse(encoded), count = elements.length;
-			items = new Array(count);
-			for(var i = 0; i < count; i++) items[i] = TChannelMessage.fromJSON(elements[i]);
+		var items = null, err;
+		if(encoded) {
+			if(binary) {
+				var ob;
+				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageSet()), encoded)) throw err;
+				items = ob.items;
+			} else {
+				var elements = JSON.parse(encoded), count = elements.length;
+				items = new Array(count);
+				for(var i = 0; i < count; i++) items[i] = TChannelMessage.fromJSON(elements[i]);
+			}
 		}
 		return items;
 	};
 
 	TChannelMessage.encode = function(message, binary) {
-		return binary ? Thrift.encodeSync(message) : JSON.stringify(message);
+		return binary ? ThriftUtil.encodeSync(message) : JSON.stringify(message);
 	};
 
 	TMessageSet.encode = function(items, binary) {
-		return binary ? Thrift.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
+		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
 	};
 
 	TMessageArray.decode = function(encoded, binary) {
-		var items, err;
-		if(binary) {
-			var ob;
-			if(err = Thrift.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
-			items = ob.items;
-		} else {
-			var elements = JSON.parse(encoded), count = elements.length;
-			items = new Array(count);
-			for(var i = 0; i < count; i++) items[i] = TMessage.fromJSON(elements[i]);
+		var items = null, err;
+		if(encoded) {
+			if(binary) {
+				var ob;
+				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
+				items = ob.items;
+			} else {
+				var elements = JSON.parse(encoded), count = elements.length;
+				items = new Array(count);
+				for(var i = 0; i < count; i++) items[i] = TMessage.fromJSON(elements[i]);
+			}
 		}
 		return items;
 	};

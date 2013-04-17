@@ -1,6 +1,5 @@
-this.Thrift = (function() {
+this.ThriftUtil = (function() {
 	var thrift = require('thrift');
-	var defaultBufferSize = 1024;
 	var thriftTransport = new thrift.TTransport();
 	var thriftProtocol = new thrift.TBinaryProtocol(thriftTransport);
 	var defaultBufferSize = 16384;
@@ -21,17 +20,17 @@ this.Thrift = (function() {
 
 	function releaseBuffer(buf) { buffers.unshift(buf); }
 
-	function Thrift() {}
+	function ThriftUtil() {}
 
-	Thrift.encode = function(ob, callback) {
+	ThriftUtil.encode = function(ob, callback) {
 		try {
-			callback(null, Thrift.encodeSync(ob));
+			callback(null, ThriftUtil.encodeSync(ob));
 		} catch(err) {
 			callback(err);
 		}
 	};
 
-	Thrift.encodeSync = function(ob, buf) {
+	ThriftUtil.encodeSync = function(ob, buf) {
 		var result = undefined;
 		if(ob) {
 			buf = buf || getBuffer();
@@ -49,11 +48,11 @@ this.Thrift = (function() {
 					 * not returned to the pool, and the new enlarged buffer is
 					 * added to the head of the pool */
 					buf = createBuffer(buf.length * 2);
-					return Thrift.encodeSync(ob, buf);
+					return ThriftUtil.encodeSync(ob, buf);
 				}
 				/* it was some other error */
 				var msg = 'Unexpected exception encoding Thrift; exception = ' + e;
-				Logger.logAction(Logger.LOG_ERROR, 'Thrift.encode()', msg, e);
+				Logger.logAction(Logger.LOG_ERROR, 'ThriftUtil.encode()', msg, e);
 				var err = new Error(msg);
 				err.statusCode = 400;
 				throw err;
@@ -62,25 +61,25 @@ this.Thrift = (function() {
 		return result;
 	};
 
-	Thrift.decode = function(ob, encoded, callback) {
-		var err = Thrift.decodeSync(ob, encoded);
+	ThriftUtil.decode = function(ob, encoded, callback) {
+		var err = ThriftUtil.decodeSync(ob, encoded);
 		if(err) callback(err);
 		else callback(null, ob, encoded);
 	};
 
-	Thrift.decodeSync = function(ob, encoded) {
+	ThriftUtil.decodeSync = function(ob, encoded) {
 		try {
 			thriftTransport.reset(encoded);
 			ob.read(thriftProtocol);
 			return null;
 		} catch(e) {
 			var msg = 'Unexpected exception decoding thrift message; exception = ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'Thrift.decode()', msg, e);
+			Logger.logAction(Logger.LOG_ERROR, 'ThriftUtil.decode()', msg, e);
 			var err = new Error(msg);
 			err.statusCode = 400;
 			return err;
 		}
 	};
 
-	return Thrift;
+	return ThriftUtil;
 })();

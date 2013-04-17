@@ -33,7 +33,7 @@ var ConnectionManager = (function() {
 	}
 
 	TransportParams.prototype.getConnectParams = function(params) {
-		params = params || {};
+		params = params ? Utils.prototypicalClone(params) : {};
 		var options = this.options;
 		switch(this.mode) {
 			case 'resume':
@@ -227,6 +227,14 @@ var ConnectionManager = (function() {
 
 		/* this is what we'll be doing if the attempt for the main host fails */
 		function tryFallbackHosts() {
+			/* if there aren't any fallback hosts, fail */
+			if(!candidateHosts.length) {
+				var err = new Error('Unable to connect (no available host)');
+				err.statusCode = 404;
+				err.code = 80000;
+				callback(err);
+				return;
+			}
 			/* before trying any fallback (or any remaining fallback) we decide if
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
@@ -277,8 +285,17 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
+		if(this.state == states.closed) {
+			/* the connection was closed when we were away
+			 * attempting this transport so close */
+			transport.close(true);
+			return;
+ 		}
+		/* if there was already a pending transport, abandon it */
 		if(this.pendingTransport)
 			this.pendingTransport.close(false);
+
+		/* this is now the pending transport */
 		this.pendingTransport = transport;
 
 		var self = this;
@@ -301,10 +318,10 @@ var ConnectionManager = (function() {
 					self.notifyState({state:state, error:error});
 			};
 		};
-		var states = ['connected', 'disconnected', 'closed', 'failed'];
-		for(var i = 0; i < states.length; i++) {
-			var state = states[i];
-			transport.on(state, handleTransportEvent(state));
+		var events = ['connected', 'disconnected', 'closed', 'failed'];
+		for(var i = 0; i < events.length; i++) {
+			var event = events[i];
+			transport.on(event, handleTransportEvent(event));
 		}
 		this.emit('transport.pending', transport);
 	};

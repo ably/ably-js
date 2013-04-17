@@ -31,7 +31,7 @@ var Rest = this.Rest = (function() {
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
 			options.encrypted = true;
 
-		options.fallbackHosts = options.restHost ? null : Default.fallbackHosts;
+		options.fallbackHosts = options.restHost ? null : Defaults.fallbackHosts;
 		options.restHost = (options.restHost || Defaults.REST_HOST);
 
 		this.serverTimeOffset = null;

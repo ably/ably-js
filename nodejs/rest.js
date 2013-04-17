@@ -21,7 +21,7 @@ var includeScript = function(name) {
 
 /* include libraries */
 includeScript('./lib/util/http.js');
-includeScript('./lib/util/thrift.js');
+includeScript('./lib/util/thriftutil.js');
 includeScript('./lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');

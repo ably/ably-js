@@ -58,8 +58,7 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.sendDisconnect = function() {
 		var self = this;
-		this.recvRequest = this.request(this.closeUri, this.authParams, null, false, function(err, response) {
-			self.recvRequest = null;;
+		this.request(this.closeUri, this.authParams, null, false, function(err, response) {
 			if(err) {
 				self.emit('error', err);
 				return;

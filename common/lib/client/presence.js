@@ -1,5 +1,7 @@
 var Presence = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var presenceState = messagetypes.TPresenceState;
+	var presenceStateToEvent = ['enter', 'leave', 'update'];
 
 	function Presence(channel, options) {
 		EventEmitter.call(this);
@@ -19,8 +21,8 @@ var Presence = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		this.clients[clientId] = clientData;
 		var presence = new messagetypes.TPresence({
-			state : messagetypes.TPresenceState.ENTER,
-			clientId : this.clientId,
+			state : presenceState.ENTER,
+			clientId : clientId,
 			clientData: Data.toTData(clientData)
 		});
 		var channel = this.channel;
@@ -53,8 +55,8 @@ var Presence = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		delete this.clients[clientId];
 		var presence = new messagetypes.TPresence({
-			state : messagetypes.TPresenceState.LEAVE,
-			clientId : this.channel.ably.options.clientId
+			state : presenceState.LEAVE,
+			clientId : clientId
 		});
 		var channel = this.channel;
 		switch(channel.state) {
@@ -88,16 +90,16 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; channel = ' + this.channel.name + ', client = ' + clientId);
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
 			var clientData = undefined, clientId = presence.clientId;
-			if(presence.state == 'leave')
+			if(presence.state == presenceState.LEAVE)
 				delete this.clients[clientId];
 			else
 				clientData = this.clients[clientId] = Data.toTData(presence.clientData);
 			if(broadcast)
-				this.emit(presence.state, clientId, clientData);
+				this.emit(presenceStateToEvent[presence.state], clientId, clientData);
 		}
 	};
 
