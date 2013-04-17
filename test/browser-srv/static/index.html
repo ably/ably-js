@@ -1,9 +1,108 @@
 <html>
-  <head>
-    <title>Ably Browser Client Test Suite</title>
-    <link rel="stylesheet" href="nodeunit.css" type="text/css" />
-  </head>
-  <body>
-  <iframe width=100% height=100% frameBorder=0 src="/test/"></iframe>
-  </body>
+<head>
+  <title>Ably Browser Client Test Suite</title>
+  <link rel="stylesheet" href="/nodeunit.css" type="text/css" />
+  <script src="/nodeunit.js"></script>
+  <script src="/jquery.min.js"></script>
+  <script src="/ably.js"></script>
+  <script>
+    var path = window.location.pathname + 'test/';
+    function __populateTests(testDescription) {
+      window.testDescription = testDescription;
+      for(var test in testDescription) {
+        var script = $('<script>');
+        script.attr('src', path + testDescription[test]);
+        $('head').append(script);
+      }
+    }
+    function __setTestvars(testVars) {
+      window.testVars = testVars;
+    }
+  </script>
+  <script src="/testvars?callback=__setTestvars"></script>
+  <script src="test/index.json?callback=__populateTests"></script>
+</head>
+<body>
+  <button id="manual-start" style="font-size: 15px; font-weight: bold; margin: 0 0 1em 0; padding: 0.5em;">Run the tests</button>
+  <h1 id="nodeunit-header" style="display: none">
+    Running tests: <span id="nodeunit-header-path"></span>
+  </h1>
+  <script>
+    function endsWith(string, substr) {
+      return string.substr(string.length - substr.length) == substr;
+    }
+    // monkey patch runModules so that it supports passing of additional callback options
+    // as we would like to keep the HTML formatting logic that exists when using nodeunit.run
+    nodeunit._runModules = nodeunit.runModules;
+    nodeunit._globalRunModuleOptions = {};
+    nodeunit.runModules = function(modules, options) {
+      var globalOptions = nodeunit._globalRunModuleOptions;
+      for (var option in globalOptions) {
+        if (globalOptions.hasOwnProperty(option)) {
+          if (options[option]) {
+            var callback = options[option];
+            options[option] = function() {
+              callback.apply(this, arguments);
+              return globalOptions[option].apply(this, arguments);
+            }
+          } else {
+            options[option] = globalOptions[option];
+          }
+        }
+      }
+      return nodeunit._runModules(modules, options);
+    }
+
+    $(function() {
+      if (testVars.disableAutostart) {
+        $('button#manual-start').on('click', function() {
+          runTests();
+        });
+      } else {
+        runTests();
+      }
+    });
+
+    function runTests() {
+      $('button#manual-start').hide();
+      $('#nodeunit-header').show();
+      $('#nodeunit-header-path').html(path);
+      var moduleSet = {},
+          testSet = [];
+      for(var module in testDescription) {
+        var moduleId = testDescription[module];
+        if(endsWith(moduleId, '.js'))
+          moduleId = moduleId.substr(0, moduleId.length-3);
+        moduleSet[module] = window[moduleId];
+        for (var test in moduleSet[module]) {
+          testSet.push(moduleId + "#" + test);
+        }
+      }
+      nodeunit._globalRunModuleOptions = { done: function(assertions) {
+        var errors = [];
+        for (var i = 0; i < assertions.length; i++) {
+          var assertion = assertions[i];
+          if (assertion.failed()) {
+            errors.push("Method: " + testSet[i] + "\nError: " + assertion.message + "\nStack: " + assertion.error.stack);
+          }
+        }
+        var payload = { tests: testSet.length, failed: errors.length, errors: errors };
+        $.post('/tests-complete', payload);
+        if (errors.length) {
+          console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
+          console.log(errors.join('\n --------------------------- \n'));
+        } else {
+          console.log('All ' + testSet.length + ' test(s) passed');
+        }
+      } };
+      nodeunit.run(moduleSet);
+
+      // if tests don't complete in TEST_TIMEOUT minutes, send a notice of failure
+      var TEST_TIMEOUT = 5;
+      setTimeout(function() {
+        $.post('/tests-complete', { tests: testSet.length, failed: testSet.length, errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT + " minutes so chose to abort.  All test are assumed to have failed."] });
+      }, 1000*60 * TEST_TIMEOUT);
+    }
+  </script>
+</body>
 </html>

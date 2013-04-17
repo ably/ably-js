@@ -139,22 +139,6 @@ exports.start = function(opts, callback) {
 				});
 				return;
 			}
-			var index = path.normalize(filename + '/index.json');
-			if(existsSync(index)) {
-				fs.readFile(index, function(err, file) {
-					if(err) {
-						res500(response, err);
-						return;
-					}
-					fs.readFile(path.normalize(__dirname + '/../framework/runner.html'), function(err, file) {
-						if(err)
-							res500(response, err);
-						else
-							res200(response, 'text/html', file);
-					});
-				});
-				return;
-			}
 			res404(response);
 			return;
 		}
