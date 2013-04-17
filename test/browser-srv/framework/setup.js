@@ -29,6 +29,7 @@ exports.createAccountAppAndKeys = function(testVars, callback) {
 				testVars.testKey0Id = response.keys[0].id;
 				testVars.testKey0Value = response.keys[0].value;
 				testVars.testKey0Str = response.id + '.' + response.keys[0].id + ':' + response.keys[0].value;
+				console.log("Test account set up, account ID: `" + response.accountId + "`, app ID: `" + response.id + "`, key: `" + testVars.testKey0Str + "`");
 				callback();
 			}
     });
