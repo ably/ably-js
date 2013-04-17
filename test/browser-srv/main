@@ -3,7 +3,15 @@
 /**********************************
  * Usage
  *
- * main host=<host> port=<port> ws_host=<host> ws_port=<port> [--exter-after-tests] [--pipe-json]
+ * main server-host=<test server host>
+ *      server-port=<test server port>
+ *      realtime-host=<realtime server host address>
+ *      realtime-port=<realtime server standard unencrypted port>
+ *      realtime-tls-port=<realtime server TLS port>
+ *      realtime=<host>,<port>,<tls port> (shortcut method to provide 3 params in one)
+ *      [--exit-after-tests-complete]
+ *      [--pipe-json] (only pipe JSON result from tests to stdout)
+ *      [--no-auto-start] (do not automatically start the browser tests, wait for user interaction)
  **********************************/
 
 var console2 = require('./lib/quietconsole.js');
@@ -30,15 +38,23 @@ if (process.env.WEBSOCKET_ADDRESS) opts.testVars.realtimeHost = process.env.WEBS
 if (process.env.WEBSOCKET_PORT) opts.testVars.realtimeHost = process.env.WEBSOCKET_PORT;
 
 for(var i = 2; i < process.argv.length; i++) {
-	if(startsWith(process.argv[i], 'host='))
-		opts.host = process.argv[i].substr('host='.length);
-	if(startsWith(process.argv[i], 'port='))
-		opts.port = process.argv[i].substr('port='.length);
-  if(startsWith(process.argv[i], 'ws_host='))
-    opts.testVars.realtimeHost = process.argv[i].substr('ws_host='.length);
-  if(startsWith(process.argv[i], 'ws_port='))
-    opts.testVars.realtimePort = process.argv[i].substr('ws_port='.length);
-  if(process.argv[i] == '--exit-after-tests')
+	if(startsWith(process.argv[i], 'server-host='))
+		opts.host = process.argv[i].substr('server-host='.length);
+	if(startsWith(process.argv[i], 'server-port='))
+		opts.port = process.argv[i].substr('server-port='.length);
+  if(startsWith(process.argv[i], 'realtime-host='))
+    opts.testVars.realtimeHost = process.argv[i].substr('realtime-host='.length);
+  if(startsWith(process.argv[i], 'realtime-port='))
+    opts.testVars.realtimePort = process.argv[i].substr('realtime-port='.length);
+  if(startsWith(process.argv[i], 'realtime-tls-port='))
+    opts.testVars.realtimeTlsPort = process.argv[i].substr('realtime-tls-port='.length);
+  if(startsWith(process.argv[i], 'realtime=')) {
+    var realtimeParams = process.argv[i].substr('realtime='.length).split(',');
+    opts.testVars.realtimeHost = realtimeParams[0];
+    opts.testVars.realtimePort = realtimeParams[1];
+    opts.testVars.realtimeTlsPort = realtimeParams[2];
+  }
+  if(process.argv[i] == '--exit-after-tests-complete')
     opts.exitAfterTests = true;
   if(process.argv[i] == '--pipe-json') {
     console2.quiet(true);

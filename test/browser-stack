@@ -3,9 +3,13 @@
 /**********************************
  * Usage
  *
- * browser-stack ws_host=<host> ws_port=<port> [--all | browser-ids comma/space separated] (defaults to reduced browser list)
+ * browser-stack realtime_host=<host>
+ *               realtime_port=<port>
+ *               realtime_tls_port=<port>
+ *               [--all | browser-ids comma/space separated] (defaults to reduced browser list unless -all is specified)
  *
- * args: ws_host and ws_port are optional, however need to be provided unless you wish to run the tests against staging-realtime.ably.io:80
+ * args: realtime_host, realtime_port and realtime_tls_port are optional, however they need to be provided unless
+ *       you wish to run the tests against staging-realtime.ably.io:80 and staging-realtime.ably.io:443
  **********************************/
 
 var fs = require('fs'),
@@ -32,8 +36,9 @@ var TEST_TIMEOUT = 60 * 3,  // time we allow for the tests to run in an external
     TEST_GRACE = 10, // time we allow for browser start up to get tests running
     SERVER_HOST = 'localhost',
     SERVER_PORT = 8092,
-    REALTIME_SERVER_HOST = process.env.WEBSOCKET_ADDRESS || 'staging-realtime.ably.io',
-    REALTIME_SERVER_PORT = process.env.WEBSOCKET_PORT || 80,
+    REALTIME_HOST = process.env.REALTIME_ADDRESS || 'staging-realtime.ably.io',
+    REALTIME_PORT = process.env.REALTIME_PORT || 80,
+    REALTIME_TLS_PORT = process.env.REALTIME_TLS_PORT || 443,
     DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'];
 
 // gracefully handle termination of worker and report error to the console if there was a problem killing the worker at BrowserStack
@@ -126,10 +131,12 @@ for(var i = 2; i < process.argv.length; i++) {
   } else if(process.argv[i] == '--all') {
     if (browserQueue.length) incorrectBrowserParams();
     browserQueue = browsers;
-  } else if(startsWith(process.argv[i], 'ws_host=')) {
-    REALTIME_SERVER_HOST = process.argv[i].substr('ws_host='.length);
-  } else if(startsWith(process.argv[i], 'ws_port=')) {
-    REALTIME_SERVER_PORT = process.argv[i].substr('ws_port='.length);
+  } else if(startsWith(process.argv[i], 'realtime_host=')) {
+    REALTIME_HOST = process.argv[i].substr('realtime_host='.length);
+  } else if(startsWith(process.argv[i], 'realtime_port=')) {
+    REALTIME_PORT = process.argv[i].substr('realtime_port='.length);
+  } else if(startsWith(process.argv[i], 'realtime_tls_port=')) {
+    REALTIME_TLS_PORT = process.argv[i].substr('realtime_tls_port='.length);
   } else {
     chosenBrowsers.push(process.argv[i]);
   }
@@ -157,7 +164,10 @@ for (var i = 0; i < chosenBrowsers.length; i++) {
 }
 
 var tunnelPorts = [8092, 843];
-if ( (REALTIME_SERVER_HOST == 'localhost') || (REALTIME_SERVER_HOST == '127.0.0.1') ) tunnelPorts.push(REALTIME_SERVER_PORT);
+if ( (REALTIME_HOST == 'localhost') || (REALTIME_HOST == '127.0.0.1') ) {
+  tunnelPorts.push(REALTIME_PORT);
+  tunnelPorts.push(REALTIME_TLS_PORT);
+}
 
 var tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0'; }),
     tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['automated_testing_tunnel_key'],tunnelHosts.join(',')];
@@ -336,8 +346,9 @@ var serverOpts = {
 };
 
 // ensure we are testing against the correct realtime service, defaults to staging
-testvars.realtimeHost = REALTIME_SERVER_HOST;
-testvars.realtimePort = REALTIME_SERVER_PORT;
+testvars.realtimeHost = REALTIME_HOST;
+testvars.realtimePort = REALTIME_PORT;
+testvars.realtimeTlsPort = REALTIME_TLS_PORT;
 
 launchServer(serverOpts, function(err) {
   if (err) {
@@ -346,7 +357,8 @@ launchServer(serverOpts, function(err) {
     process.exit(6);
   } else {
     console.log('Test web server started at http://' + SERVER_HOST + ':' + SERVER_PORT);
-    console.log('Configured to test against realtime service at ws://' + REALTIME_SERVER_HOST + ':' + REALTIME_SERVER_PORT);
+    console.log('Configured to test against realtime service at ws://' + REALTIME_HOST + ':' + REALTIME_PORT);
+    console.log('                                           and wss://' + REALTIME_HOST + ':' + REALTIME_TLS_PORT);
     console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
     dequeue();
   }
