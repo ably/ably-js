@@ -36,12 +36,13 @@ var guessContentType = function(string) {
 	return contentType;
 };
 
-var policyText  = '<?xml version="1.0"?>' +
-									'<!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">' +
-									'<cross-domain-policy>' +
-									'<site-control permitted-cross-domain-policies="master-only"/>' +
-									'<allow-access-from domain="*" to-ports="80,443,8080"/>' +
-									'</cross-domain-policy>';
+var policyText  =
+	'<?xml version="1.0"?>' +
+	'<!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">' +
+	'<cross-domain-policy>' +
+	'<site-control permitted-cross-domain-policies="master-only"/>' +
+	'<allow-access-from domain="*" to-ports="80,443,8080"/>' +
+	'</cross-domain-policy>';
 
 exports.start = function(opts, callback) {
 	if (opts.pipeJSON || opts.onTestResult) console2.quiet(true);
