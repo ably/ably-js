@@ -1,9 +1,9 @@
 [submodule "submodules/thrift-js"]
 	path = submodules/thrift-js
-	url = git@github.com:ably-forks/thrift-js.git
+	url = git://github.com/ably-forks/thrift-js.git
 [submodule "submodules/ably-common"]
 	path = submodules/ably-common
-	url = git@bitbucket.org:ably/ably-common.git
+	url = git://github.com/ably/ably-common.git
 [submodule "submodules/web-socket-js"]
 	path = submodules/web-socket-js
-	url = git@github.com:ably-forks/web-socket-js.git
+	url = git://github.com/ably-forks/web-socket-js.git
