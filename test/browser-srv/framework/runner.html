@@ -22,8 +22,9 @@
 	<script src="/testvars?callback=__setTestvars"></script>
 	<script src="index.json?callback=__populateTests"></script>
 </head>
-<body onload="__init()">
-	<h1 id="nodeunit-header">
+<body>
+	<button id="manual-start" style="font-size: 15px; font-weight: bold; margin: 0 0 1em 0; padding: 0.5em;">Run the tests</button>
+	<h1 id="nodeunit-header" style="display: none">
 		Running tests: <span id="nodeunit-header-path"></span>
 	</h1>
 	<script>
@@ -51,7 +52,20 @@
     	}
     	return nodeunit._runModules(modules, options);
 		}
-		function __init() {
+
+		$(function() {
+			if (testVars.disableAutostart) {
+				$('button#manual-start').on('click', function() {
+					runTests();
+				});
+			} else {
+				runTests();
+			}
+		});
+
+		function runTests() {
+			$('button#manual-start').hide();
+			$('#nodeunit-header').show();
 			$('#nodeunit-header-path').html(path);
 			var moduleSet = {},
 					testSet = [];

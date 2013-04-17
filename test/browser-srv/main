@@ -9,9 +9,9 @@
  *      realtime-port=<realtime server standard unencrypted port>
  *      realtime-tls-port=<realtime server TLS port>
  *      realtime=<host>,<port>,<tls port> (shortcut method to provide 3 params in one)
- *      [--exit-after-tests-complete]
+ *      [--disable-autostart | -d] (do not automatically start the browser tests, wait for user interaction)
+ *      [--exit-after-tests-complete] (used for automated tests where the process should exit when done)
  *      [--pipe-json] (only pipe JSON result from tests to stdout)
- *      [--no-auto-start] (do not automatically start the browser tests, wait for user interaction)
  **********************************/
 
 var console2 = require('./lib/quietconsole.js');
@@ -60,6 +60,8 @@ for(var i = 2; i < process.argv.length; i++) {
     console2.quiet(true);
     opts.pipeJSON = true;
   }
+  if(['--disable-autostart','-d'].indexOf(process.argv[i]) !== -1)
+    opts.testVars.disableAutostart = true;
 }
 
 /* load and run module */
