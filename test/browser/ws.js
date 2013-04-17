@@ -13,7 +13,7 @@ ws.wsbase0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['web_socket']
 		});
 		ably.connection.on('connected', function () {
@@ -45,7 +45,7 @@ ws.wsheartbeat0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['web_socket']
 		});
 		/* when we see the transport we're interested in get activated,
@@ -101,7 +101,7 @@ ws.wspublish0 = function (test) {
 		wsHost:testVars.realtimeHost,
 		port:testVars.realtimePort,
 		tlsPort:testVars.realtimeTlsPort,
-		key: testVars.testKey0Str,
+		key: testVars.key0Str,
 		transports: ['web_socket']
 	});
 	test.expect(count);

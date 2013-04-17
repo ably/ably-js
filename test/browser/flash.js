@@ -13,7 +13,7 @@ flash.flashbase0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['flash_socket']
 		});
 		ably.connection.on('connected', function () {
@@ -45,7 +45,7 @@ flash.flashheartbeat0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['flash_socket']
 		});
 		/* when we see the transport we're interested in get activated,
@@ -100,7 +100,7 @@ flash.flashppublish0 = function (test) {
 		wsHost:testVars.realtimeHost,
 		port:testVars.realtimePort,
 		tlsPort:testVars.realtimeTlsPort,
-		key: testVars.testKey0Str,
+		key: testVars.key0Str,
 		transports: ['flash_socket']
 	});
 	test.expect(count);

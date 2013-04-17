@@ -13,7 +13,7 @@ init.initbase0 = function(test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str
+			key: testVars.key0Str
 		});
 		ably.connection.on('connected', function() {
 			test.ok(true, 'Verify init with key');

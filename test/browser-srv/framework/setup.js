@@ -1,6 +1,6 @@
 var http = require('http');
 
-exports.createAccountAppAndKeys = function(testVars, callback) {
+exports.createAccountAppAndKeys = function(testVars, console, callback) {
 	var postData = '{ "keys": [ {} ] }';
 	var postOptions = {
     host: testVars.realtimeHost,
@@ -20,17 +20,20 @@ exports.createAccountAppAndKeys = function(testVars, callback) {
       response += chunk;
     });
     res.on('end', function() {
+      var completeKey;
 			if (res.statusCode >= 300) {
 				callback('Invalid HTTP request: ' + response + '; statusCode = ' + res.statusCode);
 			} else {
-				response = JSON.parse(response);
-				testVars.testAcctId = response.accountId;
-				testVars.testAppId = response.id;
-				testVars.testKey0Id = response.keys[0].id;
-				testVars.testKey0Value = response.keys[0].value;
-				testVars.testKey0Str = response.id + '.' + response.keys[0].id + ':' + response.keys[0].value;
-				console.log("Test account set up, account ID: `" + response.accountId + "`, app ID: `" + response.id + "`, key: `" + testVars.testKey0Str + "`");
-				callback();
+        response = JSON.parse(response);
+				completeKey = response.id + '.' + response.keys[0].id + ':' + response.keys[0].value;
+        console.log(" Test starting -> Account set up, account ID: `" + response.accountId + "`, app ID: `" + response.id + "`, key: `" + completeKey + "`");
+				callback(null, {
+          acctId: response.accountId,
+					appId: response.id,
+					key0Id: response.keys[0].id,
+					key0Value: response.keys[0].value,
+					key0Str: completeKey
+        });
 			}
     });
   });

@@ -13,7 +13,7 @@ jsonp.jsonpbase0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['web_socket']
 		});
 		ably.connection.on('connected', function () {
@@ -45,7 +45,7 @@ jsonp.jsonpheartbeat0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['jsonp']
 		});
 		/* when we see the transport we're interested in get activated,
@@ -100,7 +100,7 @@ jsonp.jsonppublish0 = function (test) {
 		wsHost:testVars.realtimeHost,
 		port:testVars.realtimePort,
 		tlsPort:testVars.realtimeTlsPort,
-		key: testVars.testKey0Str,
+		key: testVars.key0Str,
 		transports: ['jsonp']
 	});
 	test.expect(count);

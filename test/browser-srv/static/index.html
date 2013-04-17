@@ -2,6 +2,12 @@
 <head>
   <title>Ably Browser Client Test Suite</title>
   <link rel="stylesheet" href="/nodeunit.css" type="text/css" />
+  <style>
+    body {
+      font-family: Arial, Helvetica;
+      font-size: 13px;
+    }
+  </style>
   <script src="/nodeunit.js"></script>
   <script src="/jquery.min.js"></script>
   <script src="/ably.js"></script>
@@ -24,6 +30,9 @@
 </head>
 <body>
   <button id="manual-start" style="font-size: 15px; font-weight: bold; margin: 0 0 1em 0; padding: 0.5em;">Run the tests</button>
+  <div id="test-setup" style="color: red; display: none;">
+    Please wait, setting up account and app before the tests begin...
+  </div>
   <h1 id="nodeunit-header" style="display: none">
     Running tests: <span id="nodeunit-header-path"></span>
   </h1>
@@ -56,15 +65,35 @@
     $(function() {
       if (testVars.disableAutostart) {
         $('button#manual-start').on('click', function() {
-          runTests();
+          setupTests();
         });
       } else {
-        runTests();
+        setupTests();
       }
     });
 
-    function runTests() {
+    function setupTests() {
       $('button#manual-start').hide();
+      $('#test-setup').show();
+      $.post('/test/setup')
+        .done(function(testAccount) {
+          console.log('Test account set up, details are:');
+          console.log(testAccount);
+          testVars.testAccount = testAccount;
+          for (var needle in testAccount) {
+            testVars[needle] = testAccount[needle];
+          }
+          $('#test-setup').hide();
+          runTests();
+        })
+        .fail(function(e) {
+          alert('Error: Could not run setup for tests.\n\n' + JSON.stringify(e));
+          $('button#manual-start').show();
+          $('#test-setup').hide();
+        });
+    }
+
+    function runTests() {
       $('#nodeunit-header').show();
       $('#nodeunit-header-path').html(path);
       var moduleSet = {},
@@ -86,7 +115,12 @@
             errors.push("Method: " + testSet[i] + "\nError: " + assertion.message + "\nStack: " + assertion.error.stack);
           }
         }
-        var payload = { tests: testSet.length, failed: errors.length, errors: errors };
+        var payload = {
+          testAccount: JSON.stringify(testVars.testAccount),
+          tests: testSet.length,
+          failed: errors.length,
+          errors: errors
+        };
         $.post('/tests-complete', payload);
         if (errors.length) {
           console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
@@ -100,7 +134,12 @@
       // if tests don't complete in TEST_TIMEOUT minutes, send a notice of failure
       var TEST_TIMEOUT = 5;
       setTimeout(function() {
-        $.post('/tests-complete', { tests: testSet.length, failed: testSet.length, errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT + " minutes so chose to abort.  All test are assumed to have failed."] });
+        $.post('/tests-complete', {
+          testAccount: JSON.stringify(testVars.testAccount),
+          tests: testSet.length,
+          failed: testSet.length,
+          errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT + " minutes so chose to abort.  All test are assumed to have failed."]
+        });
       }, 1000*60 * TEST_TIMEOUT);
     }
   </script>

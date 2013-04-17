@@ -13,7 +13,7 @@ xhr.xhrbase0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['web_socket']
 		});
 		ably.connection.on('connected', function () {
@@ -45,7 +45,7 @@ xhr.xhrheartbeat0 = function (test) {
 			wsHost:testVars.realtimeHost,
 			port:testVars.realtimePort,
 			tlsPort:testVars.realtimeTlsPort,
-			key: testVars.testKey0Str,
+			key: testVars.key0Str,
 			transports: ['xhr']
 		});
 		/* when we see the transport we're interested in get activated,
@@ -100,7 +100,7 @@ xhr.xhrppublish0 = function (test) {
 		wsHost:testVars.realtimeHost,
 		port:testVars.realtimePort,
 		tlsPort:testVars.realtimeTlsPort,
-		key: testVars.testKey0Str,
+		key: testVars.key0Str,
 		transports: ['xhr']
 	});
 	test.expect(count);

@@ -7,6 +7,10 @@ var util = require('util');
 var testvars = require('../framework/testvars');
 var existsSync = fs.existsSync || path.existsSync;
 var console2 = require('../lib/quietconsole');
+var setup = require('../framework/setup');
+var teardown = require('../framework/teardown');
+
+var testAccounts = {}; // keep track of all accounts set up that have not yet been torn down
 
 var external = {
 	'ably.js' : path.normalize(__dirname + '../../../../browser/lib/ably.js'),
@@ -117,6 +121,17 @@ exports.start = function(opts, callback) {
 				return;
 			}
 		}
+		if (req == 'test/setup') {
+			setup.createAccountAppAndKeys(testvars, console2, function(err, testAccount) {
+				if (err) {
+					res500(response, err);
+				} else {
+					testAccounts[testAccount.acctId] = testAccount;
+					res200(response, 'application/json', JSON.stringify(testAccount));
+				}
+			});
+			return;
+		}
 		if(startsWith(req, 'test/')) {
 			/* return test file */
 			var filename = path.normalize(__dirname + '/../../browser/' + req.substr('test/'.length));
@@ -150,6 +165,7 @@ exports.start = function(opts, callback) {
 			request.on('end', function () {
 				var postData = require('querystring').parse(body);
 				res200(response, 'text/html', 'Test results received');
+				if (postData.testAccount) teardown.deleteAccount(testvars, JSON.parse(postData.testAccount), console2);
 				postData.tests = !isNaN(parseInt(postData.tests, 10)) ? Number(postData.tests) : 0;
 				postData.failed = !isNaN(parseInt(postData.failed, 10)) ? Number(postData.failed) : 1;
 				if (postData.tests === 0) {
@@ -196,3 +212,23 @@ exports.start = function(opts, callback) {
 		}
 	});
 };
+
+function cleanUpAccounts() {
+	for (var acctId in testAccounts) {
+		var testAccount = testAccounts[acctId];
+		console2.log('! Test Account ID: ' + testAccount.acctId + ' was not torn down, attempting to tear down now..');
+		teardown.deleteAccount(testvars, testAccount, console2);
+		delete testAccounts[acctId];
+	}
+}
+
+process.on('exit', cleanUpAccounts);
+process.on('SIGINT', function() {
+	cleanUpAccounts();
+	process.exit();
+});
+process.on('uncaughtException', function(err) {
+	console.log('Uncaught exception: ' + err);
+  cleanUpAccounts();
+	process.exit();
+});

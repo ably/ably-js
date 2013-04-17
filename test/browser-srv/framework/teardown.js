@@ -1,17 +1,19 @@
 var http = require('http');
 
-exports.deleteAccount = function(testVars, callback) {
-	var auth = 'Basic ' + new Buffer(testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value).toString('base64');
+exports.deleteAccount = function(testVars, testAccount, console, callback) {
+	var auth = 'Basic ' + new Buffer(testAccount.appId + '.' + testAccount.key0Id + ':' + testAccount.key0Value).toString('base64');
 	var delOptions = {
     host: testVars.realtimeHost,
     port: testVars.realtimePort,
-    path: '/apps/' + testVars.testAppId,
+    path: '/apps/' + testAccount.appId,
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': auth
     }
   };
+
+  callback = callback || (function() {});
 
   var response = '';
   var request = http.request(delOptions, function(res) {
@@ -24,6 +26,7 @@ exports.deleteAccount = function(testVars, callback) {
 				console.log("Cannot tear down" + response);
 				callback('Invalid HTTP request: ' + response + '; statusCode = ' + res.statusCode);
 			} else {
+				console.log(' account ID: ' + testAccount.acctId + ' & app ID:' + testAccount.appId + ' has been torn down');
 				callback();
 			}
     });
