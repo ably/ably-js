@@ -20,14 +20,15 @@ exports.createAccountAppAndKeys = function(testVars, callback) {
       response += chunk;
     });
     res.on('end', function() {
-			if (res.statusCode !== 200) {
-				callback('Invalid HTTP request: ' + response);
+			if (res.statusCode >= 300) {
+				callback('Invalid HTTP request: ' + response + '; statusCode = ' + res.statusCode);
 			} else {
 				response = JSON.parse(response);
 				testVars.testAcctId = response.accountId;
 				testVars.testAppId = response.id;
 				testVars.testKey0Id = response.keys[0].id;
 				testVars.testKey0Value = response.keys[0].value;
+				testVars.testKey0Str = response.id + '.' + response.keys[0].id + ':' + response.keys[0].value;
 				callback();
 			}
     });

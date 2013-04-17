@@ -2,7 +2,7 @@ var http = require('http');
 
 exports.deleteAccount = function(testVars, callback) {
 	var auth = 'Basic ' + new Buffer(testVars.testAppId + ':' + testVars.testKey0Id + ':' + testVars.testKey0Value).toString('base64');
-	var postOptions = {
+	var delOptions = {
     host: testVars.realtimeHost,
     port: testVars.realtimePort,
     path: '/apps/' + testVars.testAppId,
@@ -14,7 +14,7 @@ exports.deleteAccount = function(testVars, callback) {
   };
 
   var response = '';
-  var request = http.request(postOptions, function(res) {
+  var request = http.request(delOptions, function(res) {
     res.setEncoding('utf8');
     res.on('data', function (chunk) {
       response += chunk;
@@ -22,7 +22,7 @@ exports.deleteAccount = function(testVars, callback) {
     res.on('end', function() {
 			if (res.statusCode !== 200) {
 				console.log("Cannot tear down" + response);
-				callback('Invalid HTTP request: ' + response);
+				callback('Invalid HTTP request: ' + response + '; statusCode = ' + res.statusCode);
 			} else {
 				callback();
 			}
