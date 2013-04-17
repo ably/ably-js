@@ -104,7 +104,7 @@ xhr.xhrppublish0 = function (test) {
 		transports: ['xhr']
 	});
 	test.expect(count);
-	var channel = ably.channels.get('xhrpublish0');
+	var channel = ably.channels.get('xhrpublish0' + String(Math.random()).substr(1));
 	/* subscribe to event */
 	channel.subscribe('event0', function (msg) {
 		test.ok(true, 'Received event0');

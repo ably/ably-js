@@ -104,7 +104,7 @@ flash.flashppublish0 = function (test) {
 		transports: ['flash_socket']
 	});
 	test.expect(count);
-	var channel = ably.channels.get('flashpublish0');
+	var channel = ably.channels.get('flashpublish0' + String(Math.random()).substr(1));
 	/* subscribe to event */
 	channel.subscribe('event0', function (msg) {
 		test.ok(true, 'Received event0');

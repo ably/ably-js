@@ -105,7 +105,7 @@ ws.wspublish0 = function (test) {
 		transports: ['web_socket']
 	});
 	test.expect(count);
-	var channel = ably.channels.get('wspublish0');
+	var channel = ably.channels.get('wspublish0' + String(Math.random()).substr(1));
 	/* subscribe to event */
 	channel.subscribe('event0', function (msg) {
 		test.ok(true, 'Received event0');
