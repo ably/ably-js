@@ -17,13 +17,13 @@
             <filelist dir="${basedir}/../common/lib">
                 <file name="transport/connectionerror.js"/>
             </filelist>
-            <filelist dir="${basedir}/../../thrift">
-                <file name="lib/js/util.js"/>
-                <file name="lib/js/int64.js"/>
-                <file name="lib/js/thrift.js"/>
-                <file name="lib/js/buffer.js"/>
-                <file name="lib/js/protocol.js"/>
-                <file name="lib/js/transport.js"/>
+            <filelist dir="${basedir}/../submodules/thrift-js">
+                <file name="util.js"/>
+                <file name="int64.js"/>
+                <file name="thrift.js"/>
+                <file name="buffer.js"/>
+                <file name="protocol.js"/>
+                <file name="transport.js"/>
             </filelist>
             <filelist dir="${basedir}">
                 <file name="protocol/clientmessage_decls.js"/>
@@ -34,7 +34,7 @@
                 <file name="lib/util/http.js"/>
                 <file name="lib/util/thriftutil.js"/>
             </filelist>
-            <filelist dir="${basedir}/../../web-socket-js">
+            <filelist dir="${basedir}/../submodules/web-socket-js">
                 <!-- flash support -->
                 <file name="swfobject.js"/>
                 <file name="web_socket.js"/>
