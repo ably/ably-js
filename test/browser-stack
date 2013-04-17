@@ -1,0 +1,354 @@
+#!/usr/bin/env node
+
+/**********************************
+ * Usage
+ *
+ * browser-stack ws_host=<host> ws_port=<port> [--all | browser-ids comma/space separated] (defaults to reduced browser list)
+ *
+ * args: ws_host and ws_port are optional, however need to be provided unless you wish to run the tests against staging-realtime.ably.io:80
+ **********************************/
+
+var fs = require('fs'),
+    server = require('./browser-srv/lib/server'),
+    setup = require('./browser-srv/framework/setup'),
+    teardown = require('./browser-srv/framework/teardown'),
+    testvars = require('./browser-srv/framework/testvars'),
+    browserStack = require('browserstack'),
+    childProcess = require('child_process'),
+    path = require('path'),
+    inspect = require('util').inspect,
+    async = require('async'),
+    config,
+    browserClient,
+    currentBrowserClientId,
+    tunnelProcess,
+    tunnelOutput = '',
+    browsers,
+    browserQueue = [],
+    results = [],
+    testsCompleteCallback;
+
+var TEST_TIMEOUT = 60 * 3,  // time we allow for the tests to run in an external browser
+    TEST_GRACE = 10, // time we allow for browser start up to get tests running
+    SERVER_HOST = 'localhost',
+    SERVER_PORT = 8092,
+    REALTIME_SERVER_HOST = process.env.WEBSOCKET_ADDRESS || 'staging-realtime.ably.io',
+    REALTIME_SERVER_PORT = process.env.WEBSOCKET_PORT || 80,
+    DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'];
+
+// gracefully handle termination of worker and report error to the console if there was a problem killing the worker at BrowserStack
+function terminateWorker(workerId, callback) {
+  callback = callback || function() {};
+  if (workerId) {
+    try {
+      browserClient.getWorker(workerId, function(err, worker) {
+        if (err) {
+          console.warn('Warning: Browser with id ' + workerId + ' failed on getWorker call. ' + inspect(err));
+          callback(err);
+        } else {
+          if ( (typeof(worker) == 'object') && worker['status'] ) {
+            browserClient.terminateWorker(workerId, function(err, data) {
+              if (err) {
+                console.warn('Warning: Browser with id ' + workerId + ' termination failed. ' + inspect(err));
+              } else {
+                console.log('Running browser with id ' + workerId + ' terminated successfully');
+              }
+              callback(err);
+            });
+          } else {
+            callback();
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Warning: Could not kill browser with id ' + workerId);
+      console.warn(inspect(e));
+      callback(e);
+    }
+  } else {
+    callback();
+  }
+}
+
+var cleanedUp = false;
+function cleanUpOnExit(exitCode) {
+  if (!cleanedUp) {
+    cleanedUp = true;
+    console.log('browser-stack: exiting and cleaning up');
+    if (currentBrowserClientId) browserClient.terminateWorker(currentBrowserClientId, function() {
+      if ((exitCode === 0) || (exitCode)) { process.exit(exitCode); }
+    });
+    if (tunnelProcess) tunnelProcess.kill();
+  }
+}
+function cleanUpOnExitAndLeaveExitCode() {
+  cleanUpOnExit();
+}
+function cleanUpOnExitWithCode() {
+  cleanUpOnExit(0);
+}
+process.on('exit', cleanUpOnExitAndLeaveExitCode);
+process.on('SIGINT', cleanUpOnExitWithCode);
+process.on('SIGTERM', cleanUpOnExitWithCode);
+
+process.on('uncaughtException', function (err) {
+  console.error('browser-stack: exception caught by event loop: ', err + '; ' + err.stack);
+  process.exit(1);
+});
+
+try {
+  config = JSON.parse(fs.readFileSync(path.normalize(__dirname + '/browser-stack.json')));
+} catch (e) {
+  console.error('Could not load browser-stack.json configuration.  Please ensure this exists and follows the format in browser-stack.json.example');
+  console.error('Error: ' + e.message);
+  process.exit(1);
+}
+
+browserClient = browserStack.createClient({
+  username: config['credentials']['username'],
+  password: config['credentials']['password']
+});
+
+browsers = JSON.parse(fs.readFileSync(path.normalize(__dirname + '/supported-browsers.json')));
+
+function incorrectBrowserParams() {
+  console.error('You cannot specify an individual browser and --all, please specify a list of browsers or all');
+  process.exit(7);
+}
+function startsWith(string, substr) {
+  return string.substr(0, substr.length) == substr;
+}
+
+var chosenBrowsers = [];
+for(var i = 2; i < process.argv.length; i++) {
+  if(process.argv[i] == '--skip-setup') {
+    // do nothing, skip set up is used in CI tests and gets passed through
+  } else if(process.argv[i] == '--all') {
+    if (browserQueue.length) incorrectBrowserParams();
+    browserQueue = browsers;
+  } else if(startsWith(process.argv[i], 'ws_host=')) {
+    REALTIME_SERVER_HOST = process.argv[i].substr('ws_host='.length);
+  } else if(startsWith(process.argv[i], 'ws_port=')) {
+    REALTIME_SERVER_PORT = process.argv[i].substr('ws_port='.length);
+  } else {
+    chosenBrowsers.push(process.argv[i]);
+  }
+}
+
+if (chosenBrowsers.length === 0) chosenBrowsers = DEFAULT_BROWSERS;
+for (var i = 0; i < chosenBrowsers.length; i++) {
+  var args = chosenBrowsers[i].split(',');
+  for (var argI in args) {
+    var browser, arg = args[argI];
+    for (var browserObj in browsers) {
+      if (browsers[browserObj].id == arg) {
+        browser = browsers[browserObj];
+        break;
+      }
+    }
+    if (!browser) {
+      console.error('A browser with id `' + arg + '` could not be found. Aborting browser-stack test.');
+      process.exit(3);
+    } else {
+      if (browserQueue == browsers) incorrectBrowserParams();
+      browserQueue.push(browser);
+    }
+  }
+}
+
+var tunnelPorts = [8092, 843];
+if ( (REALTIME_SERVER_HOST == 'localhost') || (REALTIME_SERVER_HOST == '127.0.0.1') ) tunnelPorts.push(REALTIME_SERVER_PORT);
+
+var tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0'; }),
+    tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['automated_testing_tunnel_key'],tunnelHosts.join(',')];
+
+tunnelProcess = childProcess.spawn('java', tunnelArgs);
+[tunnelProcess.stdout, tunnelProcess.stderr].forEach(function(stream) {
+  stream.on('readable', function() {
+    tunnelOutput += tunnelProcess.stdout.read();
+  });
+});
+tunnelProcess.on('exit', function(code, signal) {
+  if (browserQueue.length) {
+    console.error('Tunnel closed prematurely with exit code: ' + code);
+    if (tunnelOutput) console.error('Tunnel log:\n' + tunnelOutput);
+    process.exit(2);
+  }
+});
+console.log('Tunnel opened to BrowserStack for ports ' + tunnelPorts.join(', '));
+
+// module async runner for setup & tear down
+function runModule(module, moduleCallback) {
+  moduleCallback = moduleCallback || function() {};
+  var tasks = Object.keys(module).map(function(item) {
+    return function(itemCb) {
+      module[item](testvars, itemCb);
+    };
+  });
+  async.series(tasks, moduleCallback);
+}
+
+function launchServer(opts, callback) {
+  server.start(opts, function(err, srv) {
+    if(err) console.error('Unexpected error in server start: ' + inspect(err));
+    callback(err);
+  });
+}
+
+function testSetup(callback) {
+  runModule(setup, function(err) {
+    if(err) console.error('Unexpected error in server setup: ' + inspect(err));
+    callback(err);
+  });
+}
+
+function testTeardown(callback) {
+  runModule(teardown, function(err) {
+    if(err) console.error('Unexpected error in server teardown: ' + inspect(err));
+    callback(err);
+  });
+}
+
+function dequeue() {
+  if (browserQueue.length) {
+    var browser = browserQueue.pop(),
+        testTimeout;
+
+    var launchBrowser = function(err) {
+      if (err) {
+        testsComplete({ tests: 0, failed: 1, errors: ['Could not execute the test setup so have had to abort', inspect(err)] });
+      } else {
+        console.log('  .. launching browser `' + browser.id + '`');
+        var browserOpts = {
+          os: browser.os,
+          os_version: browser.os_version,
+          browser: browser.browser,
+          browser_version: browser.browser_version,
+          device: browser.device,
+          url: 'http://' + SERVER_HOST + ':' + SERVER_PORT,
+          timeout: TEST_TIMEOUT,
+          version: 3
+        };
+        browserClient.createWorker(browserOpts, function(err, worker) {
+          if (err) {
+            console.log('Error: Could not launch browser ' + browser.id);
+            console.log('Error message: ' + inspect(err));
+            testsComplete({ tests: 0, failed: 1, errors: ['Could not launch browser', inspect(err)] });
+            return;
+          }
+
+          currentBrowserClientId = worker.id;
+          console.log('  .. launched browser with worker id `' + worker.id + '`');
+
+          testTimeout = setTimeout(function() {
+            testsComplete({ tests: 0, failed: 1, errors: ['Timeout - No response from browser tests received'] });
+          }, (TEST_TIMEOUT + TEST_GRACE) * 1000); // allow 30 seconds more than timeout for browser tests allowing for start up and launch time
+        });
+      }
+    };
+
+    var testsComplete = function(result) {
+      console.log('  .. ' + (result.failed ? 'FAILED' : 'passing') + ' browser tests received for `' + browser.id + '`');
+      clearTimeout(testTimeout); // we have results, don't let the timeout
+
+      var logResultAndProcessQueue = function() {
+        currentBrowserClientId = null;
+        // payload from AJAX post changes errors to errors[] for some reason, and a single array item becomes a string
+        if (result['errors[]']) {
+          if (typeof(result['errors[]']) == 'string') {
+            result.errors = [result['errors[]']];
+          } else if (typeof('errors[]') == 'object') {
+            result.errors = result['errors[]'];
+          }
+        }
+        results.push({
+          browser: browser,
+          result: result
+        });
+        testTeardown(function (err) {
+          dequeue();
+        });
+      };
+
+      if (currentBrowserClientId) {
+        terminateWorker(currentBrowserClientId, function(err) {
+          if (!err) console.log('Closed browser ' + browser.id + ' with worker ID ' + currentBrowserClientId);
+          logResultAndProcessQueue();
+        });
+      } else {
+        logResultAndProcessQueue();
+      }
+    };
+
+    console.log('Starting test server for browser `' + browser.id + '`...');
+    testsCompleteCallback = testsComplete;
+    testSetup(launchBrowser);
+  } else {
+    presentResults();
+  }
+}
+
+// callback needs to be in global space so that same callback is used for each request to the test server which in turn maps to the particular callback for each dequeue step
+function testsComplete(result) {
+  testsCompleteCallback(result);
+}
+
+function presentResults() {
+  var failedBrowsers = 0, stepErrors = 0, totalSteps = 0;
+  console.log('\n--- Browser-stack tests complete ---\n');
+
+  for (var i = 0; i < results.length; i++) {
+    var outcome = results[i],
+        result = outcome.result;
+
+    totalSteps += result.steps;
+
+    console.log('Browser: ' + outcome.browser.id + ' - ' + (result.failed ? 'FAILED (' + result.failed + ' out of ' + result.tests + ')' : 'passed ' + result.tests + ' steps'));
+    if (result.failed) {
+      failedBrowsers++;
+      stepErrors += result.failed;
+      if (result.errors) {
+        for (var errorIndex = 0; errorIndex < result.errors.length; errorIndex++) {
+          var err = result.errors[errorIndex];
+          console.log('         - ' + err);
+        }
+      } else {
+        console.log('         - missing any error information');
+      }
+      console.log('\n');
+    }
+  }
+
+  if (failedBrowsers === 0) {
+    console.log('\nAll ' + results.length + ' browser test(s) passed\n');
+    process.exit(0);
+  } else {
+    console.log('FAILURE: ' + failedBrowsers + ' out of ' + results.length + ' browser tests failed to succeed');
+    console.log('         There were a total of ' + stepErrors + ' failed steps\n');
+    process.exit(10);
+  }
+}
+
+var serverOpts = {
+  host: SERVER_HOST,
+  port: SERVER_PORT,
+  onTestResult: testsComplete
+};
+
+// ensure we are testing against the correct realtime service, defaults to staging
+testvars.realtimeHost = REALTIME_SERVER_HOST;
+testvars.realtimePort = REALTIME_SERVER_PORT;
+
+launchServer(serverOpts, function(err) {
+  if (err) {
+    console.error('Fatal error.  Could not launch local test web server');
+    console.error(inspect(err));
+    process.exit(6);
+  } else {
+    console.log('Test web server started at http://' + SERVER_HOST + ':' + SERVER_PORT);
+    console.log('Configured to test against realtime service at ws://' + REALTIME_SERVER_HOST + ':' + REALTIME_SERVER_PORT);
+    console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
+    dequeue();
+  }
+});
+
