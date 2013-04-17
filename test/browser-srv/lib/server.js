@@ -41,7 +41,7 @@ var policyText  =
 	'<!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">' +
 	'<cross-domain-policy>' +
 	'<site-control permitted-cross-domain-policies="master-only"/>' +
-	'<allow-access-from domain="*" to-ports="80,443,8080"/>' +
+	'<allow-access-from domain="*" to-ports="*"/>' +
 	'</cross-domain-policy>';
 
 exports.start = function(opts, callback) {
