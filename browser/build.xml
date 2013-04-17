@@ -32,7 +32,7 @@
                 <file name="lib/util/cookie.js"/>
                 <file name="lib/util/defaults.js"/>
                 <file name="lib/util/http.js"/>
-                <file name="lib/util/thrift.js"/>
+                <file name="lib/util/thriftutil.js"/>
             </filelist>
             <filelist dir="${basedir}/../../web-socket-js">
                 <!-- flash support -->
@@ -48,21 +48,24 @@
                 <file name="transport/transport.js"/>
                 <file name="transport/websockettransport.js"/>
                 <file name="transport/comettransport.js"/>
-                <file name="transport/xhrtransport.js"/>
-                <file name="transport/jsonptransport.js"/>
-                <file name="transport/flashtransport.js"/>
                 <file name="types/data.js"/>
                 <file name="types/message.js"/>
                 <file name="types/presencemessage.js"/>
                 <file name="types/serialize.js"/>
                 <file name="client/resource.js"/>
                 <file name="client/auth.js"/>
+                <file name="client/rest.js"/>
                 <file name="client/realtime.js"/>
                 <file name="client/connectionstatechange.js"/>
                 <file name="client/connection.js"/>
                 <file name="client/channel.js"/>
                 <file name="client/realtimechannel.js"/>
                 <file name="client/presence.js"/>
+            </filelist>
+            <filelist dir="${basedir}/lib">
+                <file name="transport/jsonptransport.js"/>
+                <file name="transport/xhrtransport.js"/>
+                <file name="transport/flashtransport.js"/>
             </filelist>
             <filelist dir="${basedir}">
                 <file name="epilogue.js"/>
