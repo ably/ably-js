@@ -28,20 +28,20 @@ exports.start = function(opts) {
 
 	runModule(setup, function(err) {
 		if(err) {
-			console2.error('Unexpected error in server setup: ' + err.stack);
+			console2.error('Unexpected error in server setup: ' + err);
 			process.exit(1);
 		}
 		console2.log('Starting server ...');
 		server.start(opts, function(err, srv) {
 			if(err) {
-				console2.error('Unexpected error in server start: ' + err.stack);
+				console2.error('Unexpected error in server start: ' + err);
 				process.exit(1);
 			}
 			srv.on('close', function() {
 				console2.log('Server exited');
 				runModule(teardown, function(err) {
 					if(err) {
-						console2.error('Unexpected error in server teardown: ' + err.stack);
+						console2.error('Unexpected error in server teardown: ' + err);
 						process.exit(1);
 					}
 					process.exit(0);
