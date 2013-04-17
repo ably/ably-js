@@ -5,8 +5,8 @@
   "main": "./nodejs/index.js",
   "dependencies": {
     "request": "2.x.x",
-	"thrift-nodejs": "git://github.com/ably-forks/thrift-nodejs.git#0.8-ably",
-    "ws": "0.x.x"
+    "thrift": "git://github.com/ably-forks/thrift-nodejs.git#0.8-ably",
+    "ws": "git://github.com/einaros/ws.git"
   },
   "engines" : {
     "node" : ">=0.6.19",
