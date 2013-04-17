@@ -9,10 +9,10 @@ flash.flashbase0 = function (test) {
 	try {
 		var ably = new Ably.Realtime({
 			log: {level: 4},
-			restHost: 'localhost',
-			wsHost: 'localhost',
-			port: 8080,
-			tlsPort: 8081,
+			restHost:testVars.realtimeHost,
+			wsHost:testVars.realtimeHost,
+			port:testVars.realtimePort,
+			tlsPort:testVars.realtimeTlsPort,
 			key: testVars.testKey0Str,
 			transports: ['flash_socket']
 		});
@@ -41,10 +41,10 @@ flash.flashheartbeat0 = function (test) {
 	try {
 		var ably = new Ably.Realtime({
 			log: {level: 4},
-			restHost: 'localhost',
-			wsHost: 'localhost',
-			port: 8080,
-			tlsPort: 8081,
+			restHost:testVars.realtimeHost,
+			wsHost:testVars.realtimeHost,
+			port:testVars.realtimePort,
+			tlsPort:testVars.realtimeTlsPort,
 			key: testVars.testKey0Str,
 			transports: ['flash_socket']
 		});
@@ -96,10 +96,10 @@ flash.flashppublish0 = function (test) {
 	};
 	var ably = new Ably.Realtime({
 		log: {level: 4},
-		restHost: 'localhost',
-		wsHost: 'localhost',
-		port: 8080,
-		tlsPort: 8081,
+		restHost:testVars.realtimeHost,
+		wsHost:testVars.realtimeHost,
+		port:testVars.realtimePort,
+		tlsPort:testVars.realtimeTlsPort,
 		key: testVars.testKey0Str,
 		transports: ['flash_socket']
 	});
