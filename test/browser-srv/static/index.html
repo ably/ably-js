@@ -10,6 +10,7 @@
   </style>
   <script src="/nodeunit.js"></script>
   <script src="/jquery.min.js"></script>
+  <script src="/json2.js"></script>
   <script src="/ably.js"></script>
   <script>
     var path = window.location.pathname + 'test/';
@@ -77,8 +78,10 @@
       $('#test-setup').show();
       $.post('/test/setup')
         .done(function(testAccount) {
-          console.log('Test account set up, details are:');
-          console.log(testAccount);
+          if (window.console) {
+            console.log('Test account set up, details are:');
+            console.log(testAccount);
+          }
           testVars.testAccount = testAccount;
           for (var needle in testAccount) {
             testVars[needle] = testAccount[needle];
@@ -123,10 +126,12 @@
         };
         $.post('/tests-complete', payload);
         if (errors.length) {
-          console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
-          console.log(errors.join('\n --------------------------- \n'));
+          if (window.console) {
+            console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
+            console.log(errors.join('\n --------------------------- \n'));
+          }
         } else {
-          console.log('All ' + testSet.length + ' test(s) passed');
+          if (window.console) console.log('All ' + testSet.length + ' test(s) passed');
         }
       } };
       nodeunit.run(moduleSet);
