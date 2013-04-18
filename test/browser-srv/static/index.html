@@ -138,16 +138,16 @@
       } };
       nodeunit.run(moduleSet);
 
-      // if tests don't complete in TEST_TIMEOUT minutes, send a notice of failure
-      var TEST_TIMEOUT = 5;
+      // if tests don't complete in TEST_TIMEOUT_SECONDS seconds, send a notice of failure
+      var TEST_TIMEOUT_SECONDS = 60;
       setTimeout(function() {
         $.post('/tests-complete', {
           testAccount: JSON.stringify(testVars.testAccount),
           tests: testSet.length,
           failed: testSet.length,
-          errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT + " minutes so chose to abort.  All test are assumed to have failed."]
+          errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " minutes so chose to abort.  All test are assumed to have failed."]
         });
-      }, 1000*60 * TEST_TIMEOUT);
+      }, 1000*TEST_TIMEOUT_SECONDS);
     }
   </script>
 </body>

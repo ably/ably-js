@@ -14,13 +14,26 @@ function sharedTestsClass() {
     });
   }
 
+  function failWithin(timeInSeconds, test, description) {
+    var timeout = setTimeout(function() {
+      test.ok(false, 'Timed out: Trying to ' + description + ' took longer than ' + timeInSeconds + ' second(s)');
+    }, timeInSeconds * 1000);
+
+    return {
+      stop: function() {
+        clearTimeout(timeout);
+      }
+    }
+  }
+
   return {
     connectionWithTransport: function (test, transport) {
       test.expect(1);
-      console.log(test);
       try {
-        var ably = realtimeConnection([transport]);
+        var ably = realtimeConnection([transport]),
+            connectionTimeout = failWithin(5, test, 'connect');
         ably.connection.on('connected', function () {
+          connectionTimeout.stop();
           test.ok(true, 'Verify ' + transport + ' connection with key');
           test.done();
           ably.close();
@@ -40,7 +53,9 @@ function sharedTestsClass() {
     heartbeatWithTransport: function(test, transport) {
       test.expect(1);
       try {
-        var ably = realtimeConnection([transport]);
+        var ably = realtimeConnection([transport]),
+            connectionTimeout = failWithin(5, test, 'connect'),
+            heartbeatTimeout;
         /* when we see the transport we're interested in get activated,
          * listen for the heartbeat event */
         var failTimer;
@@ -56,13 +71,12 @@ function sharedTestsClass() {
         });
 
         ably.connection.on('connected', function () {
-          failTimer = setTimeout(function () {
-            test.ok(false, transport + ' heartbeat failed (timer expired)');
-            test.done();
-          }, 25000);
+          connectionTimeout.stop();
+          heartbeatTimeout = failWithin(25, test, 'wait for heartbeat');
         });
         ['failed', 'suspended'].forEach(function (state) {
           ably.connection.on(state, function () {
+            heartbeatTimeout.stop();
             test.ok(false, 'Connection to server failed');
             test.done();
           });
@@ -79,11 +93,20 @@ function sharedTestsClass() {
       var timer;
       var checkFinish = function () {
         if ((receivedCount === count) && (sentCbCount === count)) {
+          receiveMessagesTimeout.stop();
           test.done();
           ably.close();
         }
       };
-      var ably = realtimeConnection([transport]);
+      var ably = realtimeConnection([transport]),
+          connectionTimeout = failWithin(5, test, 'connect'),
+          receiveMessagesTimeout;
+
+      ably.connection.on('connected', function () {
+        connectionTimeout.stop();
+        receiveMessagesTimeout = failWithin(15, test, 'wait for published messages to be received');
+      });
+
       test.expect(count);
       var channel = ably.channels.get(transport + 'publish0' + String(Math.random()).substr(1));
       /* subscribe to event */
