@@ -126,6 +126,7 @@ exports.start = function(opts, callback) {
 				if (err) {
 					res500(response, err);
 				} else {
+					testAccount.startedAt = new Date().getTime();
 					testAccounts[testAccount.acctId] = testAccount;
 					res200(response, 'application/json', JSON.stringify(testAccount));
 				}
@@ -163,9 +164,17 @@ exports.start = function(opts, callback) {
 				body += data;
 			});
 			request.on('end', function () {
-				var postData = require('querystring').parse(body);
+				var postData = require('querystring').parse(body),
+					testAccount = JSON.parse(postData.testAccount);
 				res200(response, 'text/html', 'Test results received');
-				if (postData.testAccount) teardown.deleteAccount(testvars, JSON.parse(postData.testAccount), console2);
+				if (testAccount) {
+					if (testAccounts[testAccount.acctId]) {
+						var timePassed = (new Date().getTime() - (testAccount.startedAt || 0) ) / 1000;
+						console.log(' test with account ' + testAccount.acctId + ' finished in ' + Math.round(timePassed*10)/10 + 's');
+						delete testAccounts[testAccount.acctId];
+					}
+					teardown.deleteAccount(testvars, testAccount, console2);
+				}
 				postData.tests = !isNaN(parseInt(postData.tests, 10)) ? Number(postData.tests) : 0;
 				postData.failed = !isNaN(parseInt(postData.failed, 10)) ? Number(postData.failed) : 1;
 				if (postData.tests === 0) {
