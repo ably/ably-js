@@ -27,6 +27,9 @@
     function __setTestvars(testVars) {
       window.testVars = testVars;
     }
+    // ensure console messages in older browsers do not cause errors
+    if (!window.console) window.console = {};
+    if (!window.console.log) window.console.log = function() { };
   </script>
   <script src="/testvars?callback=__setTestvars"></script>
   <script src="test/index.json?callback=__populateTests"></script>
