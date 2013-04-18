@@ -2,7 +2,6 @@ var sharedTests = sharedTestsClass();
 
 function sharedTestsClass() {
   function realtimeConnection(transports) {
-    console.log(transports);
     return new Ably.Realtime({
       log: {level: 4},
       restHost:testVars.realtimeHost,

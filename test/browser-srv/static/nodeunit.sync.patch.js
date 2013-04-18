@@ -79,7 +79,7 @@ nodeunit.run = function(modules, options) {
           tests.appendChild(test);
         },
         moduleDone: function (name, assertions) {
-          allAssertions.concat(assertions);
+          allAssertions = allAssertions.concat(assertions);
           modulesBeingTested.pop(module);
         }
       };
