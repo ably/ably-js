@@ -3,19 +3,22 @@
 /**********************************
  * Usage
  *
- * browser-stack realtime_host=<host>
- *               realtime_port=<port>
- *               realtime_tls_port=<port>
+ * browser-stack realtime-host=<host>
+ *               realtime-port=<port>
+ *               realtime-tls-port=<tls_port>
  *               [--all | browser-ids comma/space separated] (defaults to reduced browser list unless -all is specified)
  *
  * args: realtime_host, realtime_port and realtime_tls_port are optional, however they need to be provided unless
  *       you wish to run the tests against staging-realtime.ably.io:80 and staging-realtime.ably.io:443
+ *
+ *       Note there is a shortcut arg: realtime=<host><port><tls-port>
+ *
+ *       REALTIME_HOST, REALTIME_PORT, REALTIME_TLS_PORT shell environment variables will be used as the default if set
+ *
  **********************************/
 
 var fs = require('fs'),
     server = require('./browser-srv/lib/server'),
-    setup = require('./browser-srv/framework/setup'),
-    teardown = require('./browser-srv/framework/teardown'),
     testvars = require('./browser-srv/framework/testvars'),
     browserStack = require('browserstack'),
     childProcess = require('child_process'),
@@ -36,7 +39,7 @@ var TEST_TIMEOUT = 60 * 3,  // time we allow for the tests to run in an external
     TEST_GRACE = 10, // time we allow for browser start up to get tests running
     SERVER_HOST = 'localhost',
     SERVER_PORT = 8092,
-    REALTIME_HOST = process.env.REALTIME_ADDRESS || 'staging-realtime.ably.io',
+    REALTIME_HOST = process.env.REALTIME_HOST || 'staging-realtime.ably.io',
     REALTIME_PORT = process.env.REALTIME_PORT || 80,
     REALTIME_TLS_PORT = process.env.REALTIME_TLS_PORT || 443,
     DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'];
@@ -131,12 +134,17 @@ for(var i = 2; i < process.argv.length; i++) {
   } else if(process.argv[i] == '--all') {
     if (browserQueue.length) incorrectBrowserParams();
     browserQueue = browsers;
-  } else if(startsWith(process.argv[i], 'realtime_host=')) {
-    REALTIME_HOST = process.argv[i].substr('realtime_host='.length);
-  } else if(startsWith(process.argv[i], 'realtime_port=')) {
-    REALTIME_PORT = process.argv[i].substr('realtime_port='.length);
-  } else if(startsWith(process.argv[i], 'realtime_tls_port=')) {
-    REALTIME_TLS_PORT = process.argv[i].substr('realtime_tls_port='.length);
+  } else if(startsWith(process.argv[i], 'realtime-host=')) {
+    REALTIME_HOST = process.argv[i].substr('realtime-host='.length);
+  } else if(startsWith(process.argv[i], 'realtime-port=')) {
+    REALTIME_PORT = process.argv[i].substr('realtime-port='.length);
+  } else if(startsWith(process.argv[i], 'realtime-tls-port=')) {
+    REALTIME_TLS_PORT = process.argv[i].substr('realtime-tls-port='.length);
+  } else if(startsWith(process.argv[i], 'realtime=')) {
+    var realtimeParams = process.argv[i].substr('realtime='.length).split(',');
+    REALTIME_HOST = realtimeParams[0];
+    REALTIME_PORT = realtimeParams[1];
+    REALTIME_TLS_PORT = realtimeParams[2];
   } else {
     chosenBrowsers.push(process.argv[i]);
   }
@@ -164,7 +172,7 @@ for (var i = 0; i < chosenBrowsers.length; i++) {
 }
 
 var tunnelPorts = [8092, 843];
-if ( (REALTIME_HOST == 'localhost') || (REALTIME_HOST == '127.0.0.1') ) {
+if (['127.0.0.1','localhost','localhost.ably.io'].indexOf(REALTIME_HOST) !== -1) {
   tunnelPorts.push(REALTIME_PORT);
   tunnelPorts.push(REALTIME_TLS_PORT);
 }
@@ -201,20 +209,6 @@ function runModule(module, moduleCallback) {
 function launchServer(opts, callback) {
   server.start(opts, function(err, srv) {
     if(err) console.error('Unexpected error in server start: ' + inspect(err));
-    callback(err);
-  });
-}
-
-function testSetup(callback) {
-  runModule(setup, function(err) {
-    if(err) console.error('Unexpected error in server setup: ' + inspect(err));
-    callback(err);
-  });
-}
-
-function testTeardown(callback) {
-  runModule(teardown, function(err) {
-    if(err) console.error('Unexpected error in server teardown: ' + inspect(err));
     callback(err);
   });
 }
@@ -275,9 +269,7 @@ function dequeue() {
           browser: browser,
           result: result
         });
-        testTeardown(function (err) {
-          dequeue();
-        });
+        dequeue();
       };
 
       if (currentBrowserClientId) {
@@ -292,7 +284,7 @@ function dequeue() {
 
     console.log('Starting test server for browser `' + browser.id + '`...');
     testsCompleteCallback = testsComplete;
-    testSetup(launchBrowser);
+    launchBrowser();
   } else {
     presentResults();
   }
