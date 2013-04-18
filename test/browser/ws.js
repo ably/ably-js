@@ -84,9 +84,8 @@ ws.wsheartbeat0 = function (test) {
  * Publish and subscribe, json transport
  */
 ws.wspublish0 = function (test) {
-	var count = 10;
+	var count = 5;
 	var sent = 0, sendCb = 0, recv = 0;
-	var cbCount = 10;
 	var timer;
 	var checkFinish = function () {
 		console.log('checkFinish(): sendCb = ' + sendCb + '; recv = ' + recv);
@@ -109,17 +108,18 @@ ws.wspublish0 = function (test) {
 	/* subscribe to event */
 	channel.subscribe('event0', function (msg) {
 		test.ok(true, 'Received event0');
+		console.log('ws publish event received');
 		++recv;
 		checkFinish();
 	});
 	timer = setInterval(function () {
 		console.log('sending: ' + sent++);
 		channel.publish('event0', 'Hello world at: ' + new Date(), function (err) {
-			console.log('publish callback called');
+			console.log('ws publish callback called');
 			++sendCb;
 			checkFinish();
 		});
 		if(sent == count)
 			clearInterval(timer);
-	}, 2000);
+	}, 1000);
 };

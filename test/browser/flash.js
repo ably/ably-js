@@ -84,12 +84,11 @@ flash.flashheartbeat0 = function (test) {
  * Publish and subscribe, json transport
  */
 flash.flashppublish0 = function (test) {
-	var count = 10;
-	var cbCount = 10;
+	var count = 5;
+	var sentCount = 0, receivedCount = 0, sentCbCount = 0;
 	var timer;
 	var checkFinish = function () {
-		if (!count && !cbCount) {
-			clearInterval(timer);
+		if ((receivedCount === count) && (sentCbCount === count)) {
 			test.done();
 			ably.close();
 		}
@@ -108,15 +107,17 @@ flash.flashppublish0 = function (test) {
 	/* subscribe to event */
 	channel.subscribe('event0', function (msg) {
 		test.ok(true, 'Received event0');
-		--count;
+		console.log('flash event received');
+		receivedCount++;
 		checkFinish();
 	});
 	timer = setInterval(function () {
-		console.log('sending: ' + count);
+		console.log('sending: ' + sentCount++);
 		channel.publish('event0', 'Hello world at: ' + new Date(), function (err) {
-			console.log('publish callback called');
-			--cbCount;
+			console.log('flash publish callback called');
+			sentCbCount++;
 			checkFinish();
 		});
-	}, 2000);
+		if (sentCount === count) clearInterval(timer);
+	}, 1000);
 };
