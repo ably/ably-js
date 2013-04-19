@@ -173,6 +173,7 @@
           var runAgainLink = $('<a href="#">Run the tests again with the same set of keys »</a>')
           $('#nodeunit-banner').html(runAgainLink);
           runAgainLink.on('click', function() {
+            runAgainLink.remove();
             $('#nodeunit-testresult').remove();
             $('#nodeunit-banner').removeClass('pass').removeClass('fail');
             $('#nodeunit-tests li').remove();
