@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# **********************************
+# *
+# * For usage information, refer to browser-srv/main
+# *
+# **********************************/
+
+current_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+"$current_dir/browser-srv/main" "$@"
