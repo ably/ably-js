@@ -148,7 +148,7 @@
           testAccount: JSON.stringify(testVars.testAccount),
           tests: testSet.length,
           failed: testSet.length,
-          errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " minutes so chose to abort.  All test are assumed to have failed."]
+          errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " seconds so had to abort.  All test are assumed to have failed."]
         });
       }, 1000*TEST_TIMEOUT_SECONDS);
     }

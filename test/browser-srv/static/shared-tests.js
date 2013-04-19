@@ -22,7 +22,7 @@ function sharedTestsClass() {
       stop: function() {
         clearTimeout(timeout);
       }
-    }
+    };
   }
 
   return {
