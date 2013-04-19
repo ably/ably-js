@@ -1,5 +1,6 @@
 <html>
 <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>Ably Browser Client Test Suite</title>
   <link rel="stylesheet" href="/nodeunit.css" type="text/css" />
   <style>
@@ -10,6 +11,16 @@
     .parallel-toggle {
       font-size: 80%;
       float: right;
+    }
+    #nodeunit-banner {
+      font-size: 90%;
+      padding: 10px;
+    }
+    #nodeunit-banner a {
+      color: white;
+    }
+    #nodeunit-banner a:hover {
+      color: yellow;
     }
   </style>
   <script src="/nodeunit.js"></script>
@@ -47,6 +58,7 @@
     Running tests: <span id="nodeunit-header-path"></span>
     <div class="parallel-toggle"><input type="checkbox" id="parallel-toggle"><label for="parallel-toggle">run test modules in parallel</label></input></div>
   </h1>
+  <div id="old-tests" style="display: none; padding-top: 15px; border-top: 1px solid #CCC; margin-top: 15px">Previous tests: <ol></ol></div>
   <script>
     function endsWith(string, substr) {
       return string.substr(string.length - substr.length) == substr;
@@ -134,7 +146,7 @@
           testSet.push(moduleId + "#" + test);
         }
       }
-      nodeunit._globalRunModuleOptions = {
+      var runOptions = {
         done: function(assertions) {
           var errors = [];
           for (var i = 0; i < assertions.length; i++) {
@@ -158,9 +170,19 @@
           } else {
             if (window.console) console.log('All ' + testSet.length + ' test(s) passed');
           }
-        }
+          var runAgainLink = $('<a href="#">Run the tests again with the same set of keys »</a>')
+          $('#nodeunit-banner').html(runAgainLink);
+          runAgainLink.on('click', function() {
+            $('#nodeunit-testresult').remove();
+            $('#nodeunit-banner').removeClass('pass').removeClass('fail');
+            $('#nodeunit-tests li').remove();
+            runTests();
+            return (false);
+          })
+        },
+        runTestInParallel: runTestInParallel
       };
-      nodeunit.run(moduleSet, { runTestInParallel: runTestInParallel });
+      nodeunit.run(moduleSet, runOptions);
 
       // if tests don't complete in TEST_TIMEOUT_SECONDS seconds, send a notice of failure
       var TEST_TIMEOUT_SECONDS = 60;
