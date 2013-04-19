@@ -3926,7 +3926,7 @@ var Defaults = {
 	cometSendTimeout:  10000,
 	httpTransports:    ['xhr', 'jsonp'],
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:    {swfLocation: window.location.protocol + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf'}
+	flashTransport:    {swfLocation: window.location.protocol + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyUrl: "xmlsocket://realtime.ably.io:8843"}
 };
 this.Http = (function() {
 	var noop = function() {};
@@ -7707,6 +7707,8 @@ var FlashTransport = (function() {
 	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
 		FlashWebSocket.__initialize(Defaults.flashTransport.swfLocation);
+		if(Defaults.flashTransport.policyUrl)
+			FlashWebSocket.loadFlashPolicyFile(Defaults.flashTransport.policyUrl);
 		var transport = new FlashTransport(connectionManager, auth, params);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);

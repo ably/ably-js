@@ -12,5 +12,5 @@ var Defaults = {
 	cometSendTimeout:  10000,
 	httpTransports:    ['xhr', 'jsonp'],
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:    {swfLocation: window.location.protocol + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf'}
+	flashTransport:    {swfLocation: window.location.protocol + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyUrl: "xmlsocket://realtime.ably.io:8843"}
 };
