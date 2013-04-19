@@ -1,11 +1,26 @@
 <html>
 <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>Ably Browser Client Test Suite</title>
   <link rel="stylesheet" href="/nodeunit.css" type="text/css" />
   <style>
     body {
       font-family: Arial, Helvetica;
       font-size: 13px;
+    }
+    .parallel-toggle {
+      font-size: 80%;
+      float: right;
+    }
+    #nodeunit-banner {
+      font-size: 90%;
+      padding: 10px;
+    }
+    #nodeunit-banner a {
+      color: white;
+    }
+    #nodeunit-banner a:hover {
+      color: yellow;
     }
   </style>
   <script src="/nodeunit.js"></script>
@@ -41,7 +56,9 @@
   </div>
   <h1 id="nodeunit-header" style="display: none">
     Running tests: <span id="nodeunit-header-path"></span>
+    <div class="parallel-toggle"><input type="checkbox" id="parallel-toggle"><label for="parallel-toggle">run test modules in parallel</label></input></div>
   </h1>
+  <div id="old-tests" style="display: none; padding-top: 15px; border-top: 1px solid #CCC; margin-top: 15px">Previous tests: <ol></ol></div>
   <script>
     function endsWith(string, substr) {
       return string.substr(string.length - substr.length) == substr;
@@ -78,6 +95,19 @@
       }
     });
 
+    var runTestInParallel = false;
+    if (document.location.href.indexOf('sync=true') === -1) {
+      $('#parallel-toggle').prop('checked', true);
+      runTestInParallel = true;
+    }
+    $('#parallel-toggle').on('change', function() {
+      if ($(this).is(':checked')) {
+        document.location.href = document.location.href.replace(/\?sync=true/,'');
+      } else {
+        document.location.href = document.location.href + '?sync=true';
+      }
+    });
+
     function setupTests() {
       $('button#manual-start').hide();
       $('#test-setup').show();
@@ -106,6 +136,7 @@
       $('#nodeunit-header-path').html(path);
       var moduleSet = {},
           testSet = [];
+
       for(var module in testDescription) {
         var moduleId = testDescription[module];
         if(endsWith(moduleId, '.js'))
@@ -115,31 +146,43 @@
           testSet.push(moduleId + "#" + test);
         }
       }
-      nodeunit._globalRunModuleOptions = { done: function(assertions) {
-        var errors = [];
-        for (var i = 0; i < assertions.length; i++) {
-          var assertion = assertions[i];
-          if (assertion.failed()) {
-            errors.push("Method: " + testSet[i] + "\nError: " + assertion.message + "\nStack: " + assertion.error.stack);
+      var runOptions = {
+        done: function(assertions) {
+          var errors = [];
+          for (var i = 0; i < assertions.length; i++) {
+            var assertion = assertions[i];
+            if (assertion.failed()) {
+              errors.push("Method: " + testSet[i] + "\nError: " + assertion.message + "\nStack: " + assertion.error.stack);
+            }
           }
-        }
-        var payload = {
-          testAccount: JSON.stringify(testVars.testAccount),
-          tests: testSet.length,
-          failed: errors.length,
-          errors: errors
-        };
-        $.post('/tests-complete', payload);
-        if (errors.length) {
-          if (window.console) {
-            console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
-            console.log(errors.join('\n --------------------------- \n'));
+          var payload = {
+            testAccount: JSON.stringify(testVars.testAccount),
+            tests: testSet.length,
+            failed: errors.length,
+            errors: errors
+          };
+          $.post('/tests-complete', payload);
+          if (errors.length) {
+            if (window.console) {
+              console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
+              console.log(errors.join('\n --------------------------- \n'));
+            }
+          } else {
+            if (window.console) console.log('All ' + testSet.length + ' test(s) passed');
           }
-        } else {
-          if (window.console) console.log('All ' + testSet.length + ' test(s) passed');
-        }
-      } };
-      nodeunit.run(moduleSet);
+          var runAgainLink = $('<a href="#">Run the tests again with the same set of keys »</a>')
+          $('#nodeunit-banner').html(runAgainLink);
+          runAgainLink.on('click', function() {
+            $('#nodeunit-testresult').remove();
+            $('#nodeunit-banner').removeClass('pass').removeClass('fail');
+            $('#nodeunit-tests li').remove();
+            runTests();
+            return (false);
+          })
+        },
+        runTestInParallel: runTestInParallel
+      };
+      nodeunit.run(moduleSet, runOptions);
 
       // if tests don't complete in TEST_TIMEOUT_SECONDS seconds, send a notice of failure
       var TEST_TIMEOUT_SECONDS = 60;

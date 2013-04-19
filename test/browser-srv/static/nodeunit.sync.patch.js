@@ -1,5 +1,12 @@
 nodeunit.async_run = nodeunit.run;
 
+// Array Remove - By John Resig (MIT Licensed)
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 nodeunit.run = function(modules, options) {
   var start = new Date().getTime();
   options = options || {};
@@ -23,6 +30,10 @@ nodeunit.run = function(modules, options) {
     return el;
   }
 
+  function mergeInto(obj1, obj2){
+    for (var attrname in obj2) { obj1[attrname] = obj2[attrname]; }
+  }
+
   var header = getOrCreate('h1', 'nodeunit-header');
   var banner = getOrCreate('h2', 'nodeunit-banner');
   var userAgent = getOrCreate('h2', 'nodeunit-userAgent');
@@ -34,10 +45,45 @@ nodeunit.run = function(modules, options) {
   var modulesBeingTested = [],
       allAssertions = [];
 
-  for (var module in modules) {
-    if (modules.hasOwnProperty(module)) {
-      modulesBeingTested.push(module);
-      var moduleRunOptions = {
+  for (var moduleId in modules) {
+    if (modules.hasOwnProperty(moduleId)) {
+      var moduleContainer = {
+        moduleId: moduleId,
+        module: modules[moduleId]
+      };
+      modulesBeingTested.push(moduleContainer);
+      var moduleRunOptions = {};
+
+      moduleContainer.runModule = function() {
+        nodeunit.runModule(this.moduleId, this.module, moduleRunOptions, function() {
+          if (modulesBeingTested.length === 0) {
+            var end = new Date().getTime(),
+                duration = end - start,
+                passes = 0,
+                failures = 0;
+
+            banner.className = 'pass';
+            for (var i = 0; i < allAssertions.length; i++) {
+              if (allAssertions[i].failed()) {
+                banner.className = 'fail';
+                failures++;
+              } else {
+                passes++;
+              }
+            }
+
+            result.innerHTML = 'Tests completed in ' + duration +
+              ' milliseconds.<br/><span class="passed">' +
+              passes + '</span> assertions of ' +
+              '<span class="all">' + allAssertions.length + '<span> passed, ' +
+              failures + ' failed.';
+
+            if (typeof(options.done) == 'function') options.done(allAssertions);
+          }
+        });
+      };
+
+      mergeInto(moduleRunOptions, {
         testStart: function(name) {
           $(tests).append($("<li>").text(name + " running..."));
         },
@@ -80,35 +126,16 @@ nodeunit.run = function(modules, options) {
         },
         moduleDone: function (name, assertions) {
           allAssertions = allAssertions.concat(assertions);
-          modulesBeingTested.pop(module);
-        }
-      };
-      nodeunit.runModule(module, modules[module], moduleRunOptions, function() {
-        if (modulesBeingTested.length === 0) {
-          var end = new Date().getTime(),
-              duration = end - start,
-              passes = 0,
-              failures = 0;
-
-          banner.className = 'pass';
-          for (var i = 0; i < allAssertions.length; i++) {
-            if (allAssertions[i].failed()) {
-              banner.className = 'fail';
-              failures++;
-            } else {
-              passes++;
-            }
+          modulesBeingTested.shift();
+          if (modulesBeingTested.length && !options.runTestInParallel) {
+            modulesBeingTested[0].runModule();
           }
-
-          result.innerHTML = 'Tests completed in ' + duration +
-            ' milliseconds.<br/><span class="passed">' +
-            passes + '</span> assertions of ' +
-            '<span class="all">' + allAssertions.length + '<span> passed, ' +
-            failures + ' failed.';
-
-          if (typeof(options.done) == 'function') options.done(allAssertions);
         }
       });
+
+      if (options.runTestInParallel || (modulesBeingTested.length <= 1)) {
+        moduleContainer.runModule();
+      }
     }
   }
 };
