@@ -19,7 +19,7 @@ var FlashTransport = (function() {
 		/* load the swf if not already loaded */
 		FlashWebSocket.__initialize(Defaults.flashTransport.swfLocation);
 		if(Defaults.flashTransport.policyUrl)
-			FlashWebSocket.loadFlashPolicyFile(Defaults.flashTransport.policyUrl);
+			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + Defaults.flashTransport.policyPort);
 		var transport = new FlashTransport(connectionManager, auth, params);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
