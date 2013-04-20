@@ -16,6 +16,7 @@ function sharedTestsClass() {
   function failWithin(timeInSeconds, test, description) {
     var timeout = setTimeout(function() {
       test.ok(false, 'Timed out: Trying to ' + description + ' took longer than ' + timeInSeconds + ' second(s)');
+      test.done();
     }, timeInSeconds * 1000);
 
     return {
