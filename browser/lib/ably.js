@@ -7487,7 +7487,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, function(err, response) {
+		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
@@ -7520,13 +7520,13 @@ var JSONPTransport = (function() {
 
 	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
 		this.callback = callback;
-		var thisId = this.requestId;
+		var id = this.requestId;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });
 
 		params = params || {};
-		params.callback = 'Ably._(' + thisId + ')';
+		params.callback = 'Ably._(' + id + ')';
 		if(body)
 			params.body = encodeURIComponent(body);
 		else
@@ -7537,14 +7537,14 @@ var JSONPTransport = (function() {
 		script.onerror = function(e) {  self.abort(); };
 		script.src = CometTransport.paramStr(params, uri);
 
-		var self = this;
 		var _finish = this._finish = function() {
 			clearTimeout(timer);
 			if(script.parentNode) script.parentNode.removeChild(script);
-			delete _[thisId];
+			delete _[id];
 		}
 
-		_[thisId] = function(message) {
+		var self = this;
+		_[id] = function(message) {
 			_finish();
 			if(!self.aborted)
 				callback(null, message);
