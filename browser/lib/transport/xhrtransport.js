@@ -29,7 +29,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		new XHRTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -47,14 +47,16 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return new XHRTransport.Request(uri, params, body, expectToBlock, this.binary, callback);
+		(new XHRTransport.Request()).send(uri, params, body, expectToBlock, this.binary, callback);
 	};
 
 	XHRTransport.prototype.toString = function() {
 		return 'XHRTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRTransport.Request = function(uri, params, body, expectToBlock, binary, callback) {
+	XHRTransport.Request = function() {};
+
+	XHRTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary, callback) {
 		uri = CometTransport.paramStr(params, uri);
 		var successCode, method, err, timedout;
 		if(body) method = 'POST', successCode = 201;
@@ -121,7 +123,9 @@ var XHRTransport = (function() {
 
 	if(XHRTransport.isAvailable()) {
 		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
-		Http.Request = XHRTransport.Request;
+		Http.Request = function(uri, params, body, binary, callback) {
+			(new XHRTransport.Request()).send(uri, params, body, false, binary, callback);
+		};
 	}
 
 	return XHRTransport;

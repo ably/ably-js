@@ -1,2 +1,2 @@
-window.Ably = {Realtime: this.Realtime};
+window.Ably.Realtime = this.Realtime;
 })();

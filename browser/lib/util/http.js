@@ -17,7 +17,7 @@ this.Http = (function() {
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryGet(uri, cb) {
-			Http.Request(uri, params, null, false, binary, callback);
+			Http.Request(uri, params, null, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */
@@ -68,7 +68,7 @@ this.Http = (function() {
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryPost(uri, cb) {
-			Http.Request(uri, params, body, false, binary, callback);
+			Http.Request(uri, params, body, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */

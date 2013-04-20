@@ -1,4 +1,5 @@
 (function() {
+	window.Ably = {};
 var ConnectionError = {
 	disconnected: {
 		statusCode: 408,
@@ -3947,7 +3948,7 @@ this.Http = (function() {
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryGet(uri, cb) {
-			Http.Request(uri, params, null, false, binary, callback);
+			Http.Request(uri, params, null, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */
@@ -3998,7 +3999,7 @@ this.Http = (function() {
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryPost(uri, cb) {
-			Http.Request(uri, params, body, false, binary, callback);
+			Http.Request(uri, params, body, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */
@@ -7462,12 +7463,14 @@ var Presence = (function() {
 	return Presence;
 })();
 var JSONPTransport = (function() {
+	var noop = function() {};
+	var _ = window.Ably._ = function(id) { var f = _[id]; return f ? f : noop; };
+	var requestId = 0;
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
 		params.binary = false;
 		CometTransport.call(this, connectionManager, auth, params);
-		Ably._ = {};
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
@@ -7484,7 +7487,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		new JSONPTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, 'isTheInternetUp', function(err, response) {
+		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
@@ -7508,20 +7511,22 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return new JSONPTransport.Request(uri, params, body, expectToBlock, false, callback);
+		return (new JSONPTransport.Request()).send(uri, params, body, expectToBlock, false, callback);
 	};
 
-	var requestId = 0;
-	JSONPTransport.Request = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
-		var _ = Ably._;
+	JSONPTransport.Request = function(id) {
+		this.requestId = id || requestId++
+	};
+
+	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
 		this.callback = callback;
-		var thisId = this.requestId = requestId++;
+		var thisId = this.requestId;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });
 
 		params = params || {};
-		params.callback = 'Ably._._' + thisId;
+		params.callback = 'Ably._(' + thisId + ')';
 		if(body)
 			params.body = encodeURIComponent(body);
 		else
@@ -7529,33 +7534,37 @@ var JSONPTransport = (function() {
 
 		var script = document.createElement('script');
 		script.async = true;
-		script.onerror = function() { self.abort(); };
+		script.onerror = function(e) {  self.abort(); };
 		script.src = CometTransport.paramStr(params, uri);
 
 		var self = this;
-		Ably._['_' + thisId] = function(message) {
+		var _finish = this._finish = function() {
 			clearTimeout(timer);
-			delete _['_' + thisId];
-			if(self.aborted)
-				return;
-			script.parentNode.removeChild(script);
-			callback(null, message);
+			if(script.parentNode) script.parentNode.removeChild(script);
+			delete _[thisId];
+		}
+
+		_[thisId] = function(message) {
+			_finish();
+			if(!self.aborted)
+				callback(null, message);
 		};
 
 		var insertAt = document.getElementsByTagName('script')[0];
 	    insertAt.parentNode.insertBefore(script, insertAt);
-	    this.script = script;
 	};
 
 	JSONPTransport.Request.prototype.abort = function() {
 		/* No abort possible, but flag this request
 		 * so no action occurs if it does complete */
-		clearTimeout(this.timer);
 		this.aborted = true;
-		delete Ably._['_' + this.requestId];
+ 		this._finish();
 		this.callback(new Error('JSONPTransport: requestId ' + this.requestId + ' aborted'));
 	};
-	Http.Request = JSONPTransport.Request;
+
+	Http.Request = function(uri, params, body, binary, callback) {
+		(new JSONPTransport.Request()).send(uri, params, body, false, binary, callback);
+	};
 
 	return JSONPTransport;
 })();
@@ -7590,7 +7599,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		new XHRTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -7608,14 +7617,16 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return new XHRTransport.Request(uri, params, body, expectToBlock, this.binary, callback);
+		(new XHRTransport.Request()).send(uri, params, body, expectToBlock, this.binary, callback);
 	};
 
 	XHRTransport.prototype.toString = function() {
 		return 'XHRTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRTransport.Request = function(uri, params, body, expectToBlock, binary, callback) {
+	XHRTransport.Request = function() {};
+
+	XHRTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary, callback) {
 		uri = CometTransport.paramStr(params, uri);
 		var successCode, method, err, timedout;
 		if(body) method = 'POST', successCode = 201;
@@ -7682,7 +7693,9 @@ var XHRTransport = (function() {
 
 	if(XHRTransport.isAvailable()) {
 		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
-		Http.Request = XHRTransport.Request;
+		Http.Request = function(uri, params, body, binary, callback) {
+			(new XHRTransport.Request()).send(uri, params, body, false, binary, callback);
+		};
 	}
 
 	return XHRTransport;
@@ -7737,5 +7750,5 @@ var FlashTransport = (function() {
 
 	return FlashTransport;
 })();
-window.Ably = {Realtime: this.Realtime};
+window.Ably.Realtime = this.Realtime;
 })();
