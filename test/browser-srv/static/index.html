@@ -86,13 +86,10 @@
     }
 
     $(function() {
-      if (testVars.disableAutostart) {
-        $('button#manual-start').on('click', function() {
-          setupTests();
-        });
-      } else {
+      $('button#manual-start').on('click', function() {
         setupTests();
-      }
+      });
+      setupTests();
     });
 
     var runTestInParallel = false;
