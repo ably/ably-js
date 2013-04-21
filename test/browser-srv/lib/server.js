@@ -9,6 +9,7 @@ var existsSync = fs.existsSync || path.existsSync;
 var console2 = require('../lib/quietconsole');
 var setup = require('../framework/setup');
 var teardown = require('../framework/teardown');
+var browserDefaults = require('../../../browser/lib/util/defaults.js').defaults;
 
 var testAccounts = {}; // keep track of all accounts set up that have not yet been torn down
 
@@ -47,6 +48,12 @@ var policyText  =
 	'<site-control permitted-cross-domain-policies="master-only"/>' +
 	'<allow-access-from domain="*" to-ports="*"/>' +
 	'</cross-domain-policy>';
+
+// serve swf locally rather than from CDN by default
+testvars.flashTransport = {
+	swfLocation: browserDefaults.flashTransport.swfLocation.replace(/https?:\/\/cdn.ably.io\/lib\/swf\//, '/test/swf/'),
+	policyPort: 843
+};
 
 exports.start = function(opts, callback) {
 	if (opts.pipeJSON || opts.onTestResult) console2.quiet(true);

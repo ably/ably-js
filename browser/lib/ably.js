@@ -3927,9 +3927,11 @@ var Defaults = {
 	cometSendTimeout:  10000,
 	httpTransports:    ['xhr', 'jsonp'],
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:    {swfLocation: window.location.protocol + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '8843'}
+	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '8843'}
 };
-this.Http = (function() {
+if (typeof exports !== 'undefined' && this.exports !== exports) {
+	exports.defaults = Defaults;
+}this.Http = (function() {
 	var noop = function() {};
 
 	function Http() {}
@@ -7719,9 +7721,17 @@ var FlashTransport = (function() {
 
 	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
-		FlashWebSocket.__initialize(Defaults.flashTransport.swfLocation);
-		if(Defaults.flashTransport.policyPort)
-			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + ':' + Defaults.flashTransport.policyPort);
+		var swfLocation = Defaults.flashTransport.swfLocation,
+				policyPort = Defaults.flashTransport.policyPort;
+		if (connectionManager.options.flashTransport) {
+			if (connectionManager.options.flashTransport.swfLocation)
+				swfLocation = connectionManager.options.flashTransport.swfLocation;
+			if (connectionManager.options.flashTransport.policyPort)
+				swfLocation = connectionManager.options.flashTransport.swfLocation;
+		}
+		FlashWebSocket.__initialize(swfLocation);
+		if(policyPort)
+			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + ':' + policyPort);
 		var transport = new FlashTransport(connectionManager, auth, params);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);

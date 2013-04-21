@@ -2,15 +2,17 @@ var sharedTests = sharedTestsClass();
 
 function sharedTestsClass() {
   function realtimeConnection(transports) {
-    return new Ably.Realtime({
+    var options = {
       log: {level: 4},
       restHost:testVars.realtimeHost,
       wsHost:testVars.realtimeHost,
       port:testVars.realtimePort,
       tlsPort:testVars.realtimeTlsPort,
       key: testVars.key0Str,
-      transports: transports
-    });
+      flashTransport: testVars.flashTransport
+    };
+    if (transports) options.transports = transports;
+    return new Ably.Realtime(options);
   }
 
   function failWithin(timeInSeconds, test, description) {
@@ -27,6 +29,8 @@ function sharedTestsClass() {
   }
 
   return {
+    realtimeConnection: realtimeConnection,
+
     connectionWithTransport: function (test, transport) {
       test.expect(1);
       try {

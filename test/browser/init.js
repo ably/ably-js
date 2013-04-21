@@ -8,14 +8,7 @@ init.initbase0 = function(test) {
 	test.expect(1);
 	try {
 		var timeout,
-				ably = new Ably.Realtime({
-					log: {level: 4},
-					restHost:testVars.realtimeHost,
-					wsHost:testVars.realtimeHost,
-					port:testVars.realtimePort,
-					tlsPort:testVars.realtimeTlsPort,
-					key: testVars.key0Str
-				});
+				ably = sharedTests.realtimeConnection();
 		ably.connection.on('connected', function() {
 			clearTimeout(timeout);
 			test.ok(true, 'Verify init with key');

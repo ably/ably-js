@@ -17,9 +17,17 @@ var FlashTransport = (function() {
 
 	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
-		FlashWebSocket.__initialize(Defaults.flashTransport.swfLocation);
-		if(Defaults.flashTransport.policyPort)
-			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + ':' + Defaults.flashTransport.policyPort);
+		var swfLocation = Defaults.flashTransport.swfLocation,
+				policyPort = Defaults.flashTransport.policyPort;
+		if (connectionManager.options.flashTransport) {
+			if (connectionManager.options.flashTransport.swfLocation)
+				swfLocation = connectionManager.options.flashTransport.swfLocation;
+			if (connectionManager.options.flashTransport.policyPort)
+				swfLocation = connectionManager.options.flashTransport.swfLocation;
+		}
+		FlashWebSocket.__initialize(swfLocation);
+		if(policyPort)
+			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + ':' + policyPort);
 		var transport = new FlashTransport(connectionManager, auth, params);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
