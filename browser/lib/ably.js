@@ -6731,7 +6731,7 @@ var Auth = (function() {
 
 	return Auth;
 })();
-var Rest = this.Rest = (function() {
+var Rest = (function() {
 	var noop = function() {};
 
 	function Rest(options) {
@@ -6838,7 +6838,7 @@ var Rest = this.Rest = (function() {
 	};
 
 	return Rest;
-})();var Realtime = this.Realtime = (function() {
+})();var Realtime = (function() {
 
 	function Realtime(options) {
 		Rest.call(this, options);
@@ -7750,5 +7750,5 @@ var FlashTransport = (function() {
 
 	return FlashTransport;
 })();
-window.Ably.Realtime = this.Realtime;
+window.Ably.Realtime = Realtime;
 })();
