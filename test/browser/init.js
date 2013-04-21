@@ -20,11 +20,13 @@ init.initbase0 = function(test) {
 				clearTimeout(timeout);
 				test.ok(false, 'Connection to server failed');
 				test.done();
+				ably.close();
 			});
 		});
 		timeout = setTimeout(function() {
       test.ok(false, 'Timed out: Trying to connect took longer than expected');
       test.done();
+      ably.close();
     }, 10 * 1000);
 	} catch(e) {
 		test.ok(false, 'Init with key failed with exception: ' + e.stack);

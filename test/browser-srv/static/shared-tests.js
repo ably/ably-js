@@ -15,10 +15,11 @@ function sharedTestsClass() {
     return new Ably.Realtime(options);
   }
 
-  function failWithin(timeInSeconds, test, description) {
+  function failWithin(timeInSeconds, test, ably, description) {
     var timeout = setTimeout(function() {
       test.ok(false, 'Timed out: Trying to ' + description + ' took longer than ' + timeInSeconds + ' second(s)');
       test.done();
+      ably.close()
     }, timeInSeconds * 1000);
 
     return {
@@ -35,7 +36,7 @@ function sharedTestsClass() {
       test.expect(1);
       try {
         var ably = realtimeConnection([transport]),
-            connectionTimeout = failWithin(10, test, 'connect');
+            connectionTimeout = failWithin(10, test, ably, 'connect');
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
           test.ok(true, 'Verify ' + transport + ' connection with key');
@@ -53,6 +54,7 @@ function sharedTestsClass() {
       } catch (e) {
         test.ok(false, 'Init ' + transport + ' connection failed with exception: ' + e.stack);
         test.done();
+        connectionTimeout.stop();
       }
     },
 
@@ -60,16 +62,15 @@ function sharedTestsClass() {
       test.expect(1);
       try {
         var ably = realtimeConnection([transport]),
-            connectionTimeout = failWithin(10, test, 'connect'),
-            heartbeatTimeout = failWithin(30, test, 'wait for heartbeat');
+            connectionTimeout = failWithin(10, test, ably, 'connect'),
+            heartbeatTimeout;
         /* when we see the transport we're interested in get activated,
          * listen for the heartbeat event */
-        var failTimer;
         var connectionManager = ably.connection.connectionManager;
         connectionManager.on('transport.active', function (transport) {
           if ((transport.toString().indexOf('ws://') > -1) || (transport.toString().indexOf('/comet/') > -1))
             transport.once('heartbeat', function () {
-              clearTimeout(failTimer);
+              heartbeatTimeout.stop();
               test.ok(true, 'verify ' + transport + ' heartbeat');
               test.done();
               ably.close();
@@ -78,11 +79,12 @@ function sharedTestsClass() {
 
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
+          heartbeatTimeout = failWithin(25, test, ably, 'wait for heartbeat');
         });
         ['failed', 'suspended'].forEach(function (state) {
           ably.connection.on(state, function () {
             connectionTimeout.stop();
-            heartbeatTimeout.stop();
+            if (heartbeatTimeout) heartbeatTimeout.stop();
             test.ok(false, 'Connection to server failed');
             test.done();
             ably.close();
@@ -91,6 +93,8 @@ function sharedTestsClass() {
       } catch (e) {
         test.ok(false, transport + ' connect with key failed with exception: ' + e.stack);
         test.done();
+        connectionTimeout.stop();
+        if (heartbeatTimeout) heartbeatTimeout.stop();
       }
     },
 
@@ -106,12 +110,22 @@ function sharedTestsClass() {
         }
       };
       var ably = realtimeConnection([transport]),
-          connectionTimeout = failWithin(5, test, 'connect'),
+          connectionTimeout = failWithin(5, test, ably, 'connect'),
           receiveMessagesTimeout;
 
       ably.connection.on('connected', function () {
         connectionTimeout.stop();
-        receiveMessagesTimeout = failWithin(15, test, 'wait for published messages to be received');
+        receiveMessagesTimeout = failWithin(15, test, ably, 'wait for published messages to be received');
+
+        timer = setInterval(function () {
+          console.log('sending: ' + sentCount++);
+          channel.publish('event0', 'Hello world at: ' + new Date(), function (err) {
+            console.log(transport + 'publish callback called');
+            sentCbCount++;
+            checkFinish();
+          });
+          if (sentCount === count) clearInterval(timer);
+        }, 1000);
       });
 
       test.expect(count);
@@ -123,15 +137,6 @@ function sharedTestsClass() {
         receivedCount++;
         checkFinish();
       });
-      timer = setInterval(function () {
-        console.log('sending: ' + sentCount++);
-        channel.publish('event0', 'Hello world at: ' + new Date(), function (err) {
-          console.log(transport + 'publish callback called');
-          sentCbCount++;
-          checkFinish();
-        });
-        if (sentCount === count) clearInterval(timer);
-      }, 1000);
     }
   };
 }
