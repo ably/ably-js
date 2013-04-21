@@ -35,7 +35,7 @@ function sharedTestsClass() {
       test.expect(1);
       try {
         var ably = realtimeConnection([transport]),
-            connectionTimeout = failWithin(5, test, 'connect');
+            connectionTimeout = failWithin(10, test, 'connect');
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
           test.ok(true, 'Verify ' + transport + ' connection with key');
@@ -44,8 +44,10 @@ function sharedTestsClass() {
         });
         ['failed', 'suspended'].forEach(function (state) {
           ably.connection.on(state, function () {
+            connectionTimeout.stop();
             test.ok(false, transport + ' connection to server failed');
             test.done();
+            ably.close();
           });
         });
       } catch (e) {
@@ -58,8 +60,8 @@ function sharedTestsClass() {
       test.expect(1);
       try {
         var ably = realtimeConnection([transport]),
-            connectionTimeout = failWithin(5, test, 'connect'),
-            heartbeatTimeout;
+            connectionTimeout = failWithin(10, test, 'connect'),
+            heartbeatTimeout = failWithin(30, test, 'wait for heartbeat');
         /* when we see the transport we're interested in get activated,
          * listen for the heartbeat event */
         var failTimer;
@@ -76,13 +78,14 @@ function sharedTestsClass() {
 
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
-          heartbeatTimeout = failWithin(25, test, 'wait for heartbeat');
         });
         ['failed', 'suspended'].forEach(function (state) {
           ably.connection.on(state, function () {
+            connectionTimeout.stop();
             heartbeatTimeout.stop();
             test.ok(false, 'Connection to server failed');
             test.done();
+            ably.close();
           });
         });
       } catch (e) {
