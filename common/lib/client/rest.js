@@ -1,4 +1,4 @@
-var Rest = this.Rest = (function() {
+var Rest = (function() {
 	var noop = function() {};
 
 	function Rest(options) {

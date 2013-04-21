@@ -1,4 +1,4 @@
-var Realtime = this.Realtime = (function() {
+var Realtime = (function() {
 
 	function Realtime(options) {
 		Rest.call(this, options);
