@@ -21,13 +21,16 @@ try {
   process.exit(1);
 }
 
+var tunnelPorts;
+
 if (!process.argv[2]) {
-  console.error('You must specify a comma separated list of ports for this tunnel');
-  process.exit(2);
+  console.error('You did not specify any ports, we will default to ports commonly used with a simple farm: 843,8092,8180,8181');
+  tunnelPorts = ['843','8092','8180','8181'];
+} else {
+  tunnelPorts = process.argv[2].split(',');
 }
 
-var tunnelPorts = process.argv[2].split(','),
-    tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0'; }),
+var tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0'; }),
     tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['manual_testing_tunnel_key'],tunnelHosts.join(',')];
 
 tunnelProcess = childProcess.spawn('java', tunnelArgs);
@@ -40,6 +43,6 @@ tunnelProcess.on('exit', function(code, signal) {
 
 console.log('Tunnel opened to BrowserStack for ports ' + tunnelPorts.join(', '));
 
-if (!tunnelPorts['8092'] || !tunnelPorts['843']) console.warn('\n! The test server runs on port 8092 and serves Flash policies on 843, did you mean to leave those ports out?\n');
+if ((tunnelPorts.indexOf('8092') == -1) || (tunnelPorts.indexOf('843') == -1)) console.warn('\n! The test server runs on port 8092 and serves Flash policies on 843, did you mean to leave those ports out?\n');
 
 setInterval(function() {}, 1000);

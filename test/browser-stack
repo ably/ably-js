@@ -35,7 +35,7 @@ var fs = require('fs'),
     results = [],
     testsCompleteCallback;
 
-var TEST_TIMEOUT = 60 * 3,  // time we allow for the tests to run in an external browser
+var TEST_TIMEOUT = 90,  // time we allow for the tests to run in an external browser
     TEST_GRACE = 10, // time we allow for browser start up to get tests running
     SERVER_HOST = 'localhost',
     SERVER_PORT = 8092,
@@ -251,7 +251,7 @@ function dequeue() {
       }
     };
 
-    var testsComplete = function(result) {
+    var testsCompleteFn = function(result) {
       console.log('  .. ' + (result.failed ? 'FAILED' : 'passing') + ' browser tests received for `' + browser.id + '`');
       clearTimeout(testTimeout); // we have results, don't let the timeout
 
@@ -261,7 +261,7 @@ function dequeue() {
         if (result['errors[]']) {
           if (typeof(result['errors[]']) == 'string') {
             result.errors = [result['errors[]']];
-          } else if (typeof('errors[]') == 'object') {
+          } else {
             result.errors = result['errors[]'];
           }
         }
@@ -283,7 +283,7 @@ function dequeue() {
     };
 
     console.log('Starting test server for browser `' + browser.id + '`...');
-    testsCompleteCallback = testsComplete;
+    testsCompleteCallback = testsCompleteFn;
     launchBrowser();
   } else {
     presentResults();
