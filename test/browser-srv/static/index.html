@@ -132,7 +132,6 @@
       $('#nodeunit-header').show();
       $('#nodeunit-header-path').html(path);
       var moduleSet = {},
-          testSet = [],
           testTimeout;
 
       for(var module in testDescription) {
@@ -140,34 +139,33 @@
         if(endsWith(moduleId, '.js'))
           moduleId = moduleId.substr(0, moduleId.length-3);
         moduleSet[module] = window[moduleId];
-        for (var test in moduleSet[module]) {
-          testSet.push(moduleId + "#" + test);
-        }
       }
       var runOptions = {
         done: function(assertions) {
           var errors = [];
           clearTimeout(testTimeout);
-          for (var i = 0; i < assertions.length; i++) {
-            var assertion = assertions[i];
-            if (assertion.failed()) {
-              errors.push("Method: " + testSet[i] + "\nError: " + assertion.message + "\nStack: " + assertion.error.stack);
-            }
-          }
+          $('ol#nodeunit-tests>li.fail').each(function() {
+            var method = $(this).find('strong').text().replace(/\s*\([^\)]+\)$/,''),
+                methodErrors = $(this).find('ol>li.fail').map(function() { return $(this).text().replace($(this).find('pre').text(),'') });
+            errors.push("Method: " + method + "\nError" + (errors.length != 1 ? 's' : '') + ": " + Array.prototype.join.call(methodErrors, ', '));
+          })
+
           var payload = {
             testAccount: JSON.stringify(testVars.testAccount),
-            tests: testSet.length,
+            tests: $('ol#nodeunit-tests>li').length,
             failed: errors.length,
             errors: errors
           };
+          console.log(payload);
           $.post('/tests-complete', payload);
+
           if (errors.length) {
             if (window.console) {
-              console.log('There were ' + errors.length + ' error(s) out of ' + testSet.length + ' test(s)\n --------------------------- \n');
+              console.log('There were ' + errors.length + ' error(s) out of ' + payload.tests + ' test(s)\n --------------------------- \n');
               console.log(errors.join('\n --------------------------- \n'));
             }
           } else {
-            if (window.console) console.log('All ' + testSet.length + ' test(s) passed');
+            if (window.console) console.log('All ' + payload.tests + ' test(s) passed');
           }
           var runAgainLink = $('<a href="#">Run the tests again with the same set of keys »</a>')
           $('#nodeunit-banner').html(runAgainLink);
