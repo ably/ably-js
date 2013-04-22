@@ -132,7 +132,8 @@
       $('#nodeunit-header').show();
       $('#nodeunit-header-path').html(path);
       var moduleSet = {},
-          testSet = [];
+          testSet = [],
+          testTimeout;
 
       for(var module in testDescription) {
         var moduleId = testDescription[module];
@@ -146,6 +147,7 @@
       var runOptions = {
         done: function(assertions) {
           var errors = [];
+          clearTimeout(testTimeout);
           for (var i = 0; i < assertions.length; i++) {
             var assertion = assertions[i];
             if (assertion.failed()) {
@@ -184,7 +186,7 @@
 
       // if tests don't complete in TEST_TIMEOUT_SECONDS seconds, send a notice of failure
       var TEST_TIMEOUT_SECONDS = 60;
-      setTimeout(function() {
+      testTimeout = setTimeout(function() {
         $.post('/tests-complete', {
           testAccount: JSON.stringify(testVars.testAccount),
           tests: testSet.length,
