@@ -9,6 +9,7 @@
  *      realtime-port=<realtime server standard unencrypted port>
  *      realtime-tls-port=<realtime server TLS port>
  *      realtime=<host>,<port>,<tls port> (shortcut method to provide 3 params in one)
+ *      --local (shortcut method for generic local ably farm config of realtime=localhost.ably.io,8180,8181)
  *      [--disable-autostart | -d] (do not automatically start the browser tests, wait for user interaction)
  *      [--exit-after-tests-complete] (used for automated tests where the process should exit when done)
  *      [--pipe-json] (only pipe JSON result from tests to stdout)
@@ -53,6 +54,11 @@ for(var i = 2; i < process.argv.length; i++) {
     opts.testVars.realtimeHost = realtimeParams[0];
     opts.testVars.realtimePort = realtimeParams[1];
     opts.testVars.realtimeTlsPort = realtimeParams[2];
+  }
+  if(startsWith(process.argv[i], '--local')) {
+    opts.testVars.realtimeHost = 'localhost.ably.io';
+    opts.testVars.realtimePort = '8180';
+    opts.testVars.realtimeTlsPort = '8181';
   }
   if(process.argv[i] == '--exit-after-tests-complete')
     opts.exitAfterTests = true;
