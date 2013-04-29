@@ -57,13 +57,15 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.sendDisconnect = function() {
-		var self = this;
-		this.request(this.closeUri, this.authParams, null, false, function(err, response) {
-			if(err) {
-				self.emit('error', err);
-				return;
-			}
-		});
+		if(this.closeUri) {
+			var self = this;
+			this.request(this.closeUri, this.authParams, null, false, function(err, response) {
+				if(err) {
+					self.emit('error', err);
+					return;
+				}
+			});
+		}
 	};
 
 	CometTransport.prototype.dispose = function() {
