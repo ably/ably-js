@@ -3927,7 +3927,7 @@ var Defaults = {
 	cometSendTimeout:  10000,
 	httpTransports:    ['xhr', 'jsonp'],
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '8843'}
+	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '80'}
 };
 if (typeof exports !== 'undefined' && this.exports !== exports) {
 	exports.defaults = Defaults;
