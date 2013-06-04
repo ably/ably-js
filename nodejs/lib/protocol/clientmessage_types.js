@@ -256,8 +256,11 @@ TData.prototype.write = function(output) {
 var TPresence = module.exports.TPresence = function(args) {
   this.state = undefined;
   this.clientId = undefined;
-  this.connectionId = undefined;
   this.clientData = undefined;
+  this.memberId = undefined;
+  this.inheritMemberId = undefined;
+  this.connectionId = undefined;
+  this.instanceId = undefined;
   if (args) {
     if (args.state !== undefined) {
       this.state = args.state;
@@ -265,11 +268,20 @@ var TPresence = module.exports.TPresence = function(args) {
     if (args.clientId !== undefined) {
       this.clientId = args.clientId;
     }
+    if (args.clientData !== undefined) {
+      this.clientData = args.clientData;
+    }
+    if (args.memberId !== undefined) {
+      this.memberId = args.memberId;
+    }
+    if (args.inheritMemberId !== undefined) {
+      this.inheritMemberId = args.inheritMemberId;
+    }
     if (args.connectionId !== undefined) {
       this.connectionId = args.connectionId;
     }
-    if (args.clientData !== undefined) {
-      this.clientData = args.clientData;
+    if (args.instanceId !== undefined) {
+      this.instanceId = args.instanceId;
     }
   }
 };
@@ -302,16 +314,37 @@ TPresence.prototype.read = function(input) {
       }
       break;
       case 3:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.clientData = new ttypes.TData();
+        this.clientData.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRING) {
+        this.memberId = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRING) {
+        this.inheritMemberId = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
       if (ftype == Thrift.Type.STRING) {
         this.connectionId = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.clientData = new ttypes.TData();
-        this.clientData.read(input);
+      case 7:
+      if (ftype == Thrift.Type.STRING) {
+        this.instanceId = input.readString();
       } else {
         input.skip(ftype);
       }
@@ -337,14 +370,29 @@ TPresence.prototype.write = function(output) {
     output.writeString(this.clientId);
     output.writeFieldEnd();
   }
+  if (this.clientData !== undefined) {
+    output.writeFieldBegin('clientData', Thrift.Type.STRUCT, 3);
+    this.clientData.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.memberId !== undefined) {
+    output.writeFieldBegin('memberId', Thrift.Type.STRING, 4);
+    output.writeString(this.memberId);
+    output.writeFieldEnd();
+  }
+  if (this.inheritMemberId !== undefined) {
+    output.writeFieldBegin('inheritMemberId', Thrift.Type.STRING, 5);
+    output.writeString(this.inheritMemberId);
+    output.writeFieldEnd();
+  }
   if (this.connectionId !== undefined) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 3);
+    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
     output.writeString(this.connectionId);
     output.writeFieldEnd();
   }
-  if (this.clientData !== undefined) {
-    output.writeFieldBegin('clientData', Thrift.Type.STRUCT, 4);
-    this.clientData.write(output);
+  if (this.instanceId !== undefined) {
+    output.writeFieldBegin('instanceId', Thrift.Type.STRING, 7);
+    output.writeString(this.instanceId);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -1392,7 +1440,7 @@ var SMessageTraffic = module.exports.SMessageTraffic = function(args) {
   this.all = undefined;
   this.realtime = undefined;
   this.rest = undefined;
-  this.post = undefined;
+  this.push = undefined;
   this.httpStream = undefined;
   if (args) {
     if (args.all !== undefined) {
@@ -1404,8 +1452,8 @@ var SMessageTraffic = module.exports.SMessageTraffic = function(args) {
     if (args.rest !== undefined) {
       this.rest = args.rest;
     }
-    if (args.post !== undefined) {
-      this.post = args.post;
+    if (args.push !== undefined) {
+      this.push = args.push;
     }
     if (args.httpStream !== undefined) {
       this.httpStream = args.httpStream;
@@ -1452,8 +1500,8 @@ SMessageTraffic.prototype.read = function(input) {
       break;
       case 4:
       if (ftype == Thrift.Type.STRUCT) {
-        this.post = new ttypes.SMessageTypes();
-        this.post.read(input);
+        this.push = new ttypes.SMessageTypes();
+        this.push.read(input);
       } else {
         input.skip(ftype);
       }
@@ -1492,9 +1540,9 @@ SMessageTraffic.prototype.write = function(output) {
     this.rest.write(output);
     output.writeFieldEnd();
   }
-  if (this.post !== undefined) {
-    output.writeFieldBegin('post', Thrift.Type.STRUCT, 4);
-    this.post.write(output);
+  if (this.push !== undefined) {
+    output.writeFieldBegin('push', Thrift.Type.STRUCT, 4);
+    this.push.write(output);
     output.writeFieldEnd();
   }
   if (this.httpStream !== undefined) {
