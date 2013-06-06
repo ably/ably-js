@@ -81,33 +81,35 @@ this.Data = (function() {
 
 	Data.fromTData = function(tData) {
 		var result = undefined;
-		switch(tData.type) {
-			case 1: /* TRUE */
-				result = true;
-				break;
-			case 2: /* FALSE */
-				result = false;
-				break;
-			case 3: /* INT32 */
-				result = tData.i32Data;
-				break;
-			case 4: /* INT64 */
-				result = tData.i64Data;
-				break;
-			case 5: /* DOUBLE */
-				result = tData.doubleData;
-				break;
-			case 6: /* STRING */
-				result = tData.stringData;
-				break;
-			case 7: /* BUFFER */
-				result = tData.binaryData;
-				break;
-			case 8: /* JSONARRAY */
-			case 9: /* JSONOBJECT */
-				result = JSON.parse(tData.stringData);
-				break;
-			case 0: /* NONE */
+		if(tData) {
+			switch(tData.type) {
+				case 1: /* TRUE */
+					result = true;
+					break;
+				case 2: /* FALSE */
+					result = false;
+					break;
+				case 3: /* INT32 */
+					result = tData.i32Data;
+					break;
+				case 4: /* INT64 */
+					result = tData.i64Data;
+					break;
+				case 5: /* DOUBLE */
+					result = tData.doubleData;
+					break;
+				case 6: /* STRING */
+					result = tData.stringData;
+					break;
+				case 7: /* BUFFER */
+					result = tData.binaryData;
+					break;
+				case 8: /* JSONARRAY */
+				case 9: /* JSONOBJECT */
+					result = JSON.parse(tData.stringData);
+					break;
+				case 0: /* NONE */
+			}
 		}
 		return result;
 	};
