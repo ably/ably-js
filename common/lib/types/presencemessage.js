@@ -1,6 +1,11 @@
-this.PresenceMessage = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+var PresenceMessage = (function() {
 
-	function PresenceMessage() {}
+	/* public constructor */
+	function PresenceMessage(clientId, clientData, memberId) {
+		this.clientId = clientId;
+		this.clientData = clientData;
+		this.memberId = memberId;
+	}
 
+	return PresenceMessage;
 })();
