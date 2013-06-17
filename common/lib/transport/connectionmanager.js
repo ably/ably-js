@@ -138,7 +138,7 @@ var ConnectionManager = (function() {
 		 * Inherit any connection state */
 		var mode = this.connectionId ? 'resume' : (this.options.recover ? 'recover' : 'clean');
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId));
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId + '; connectionSerial = ' + this.connectionSerial));
 		var self = this;
 
 		/* if there are no http transports, just choose from the available transports,
@@ -699,6 +699,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		if(transport === this.transport || transport.connectionId == this.connectionId) {
+			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
 			return;
 		}
