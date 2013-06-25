@@ -52,8 +52,6 @@ var Transport = (function() {
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:
-			this.connectionId = message.connectionId;
-			this.isConnected = true;
 			this.onConnect(message);
 			this.emit('connected', null, this.connectionId, message.flags);
 			break;
@@ -81,10 +79,16 @@ var Transport = (function() {
 		}
 	};
 
-	/* if the connected message asks us to sync the time with the server, make the request */
 	Transport.prototype.onConnect = function(message) {
-		if(message.flags && (message.flags & (1 << flags.SYNC_TIME)))
-			this.connectionManager.realtime.time({connection_id:message.connectionId});
+		this.connectionId = message.connectionId;
+		this.isConnected = true;
+		/* if the connected message asks us to sync the time with the server, make the request */
+		if(message.flags && (message.flags & (1 << flags.SYNC_TIME))) {
+			var self = this;
+			Utils.nextTick(function() {
+				self.connectionManager.realtime.time({connection_id:message.connectionId});
+			});
+		}
 	};
 
 	Transport.prototype.onDisconnect = function() {};

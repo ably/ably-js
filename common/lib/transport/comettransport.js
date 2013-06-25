@@ -75,8 +75,15 @@ var CometTransport = (function() {
 		}
 	};
 
-	CometTransport.prototype.onConnect = function() {
-		var baseConnectionUri =  this.baseUri + this.connectionId;
+	CometTransport.prototype.onConnect = function(message) {
+		/* the connectionId in a comet connected response is really
+		 * <instId>-<connectionId> */
+		var connectionStr = message.connectionId;
+		message.connectionId = connectionStr.split('-').pop();
+		Transport.prototype.onConnect.call(this, message);
+
+		var baseConnectionUri =  this.baseUri + connectionStr;
+		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = baseConnectionUri + '/close';
