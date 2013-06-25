@@ -89,17 +89,17 @@ var XHRTransport = (function() {
 					return;
 				}
 				if(xhr.status == successCode) {
-					var response = null;
+					var responseBody = null;
 					if(binary) {
 						if(xhr.response) {
-							response = new Buffer();
-							response.buf = xhr.response;
-							response.view = new DataView(response.buf);
+							responseBody = new Buffer();
+							responseBody.buf = xhr.response;
+							responseBody.view = new DataView(responseBody.buf);
 						}
 					} else {
-						response = xhr.responseText;
+						responseBody = xhr.responseText;
 					}
-					callback(null, response);
+					callback(null, responseBody);
 					return;
 				}
 				if(xhr.status != 0) {
