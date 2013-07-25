@@ -308,13 +308,16 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
 
 				/* handle activity transition */
-				if(state == 'connected')
+				var notifyState;
+				if(state == 'connected') {
 					self.activateTransport(transport, connectionId);
-				else
-					self.deactivateTransport(transport);
+					notifyState = true;
+				} else {
+					notifyState = self.deactivateTransport(transport);
+				}
 
 				/* if this is the active transport, notify clients */
-				if(self.transport === transport)
+				if(notifyState)
 					self.notifyState({state:state, error:error});
 			};
 		};
@@ -387,15 +390,17 @@ var ConnectionManager = (function() {
 	 * @param transport
 	 */
 	ConnectionManager.prototype.deactivateTransport = function(transport) {
+		var wasActive = this.transport === transport;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
 		transport.off('ack');
 		transport.off('nack');
-		if(this.transport === transport)
+		if(wasActive)
 			this.transport = this.host = null;
 		else if(this.pendingTransport === transport)
 			this.pendingTransport = null;
 
 		this.emit('transport.inactive', transport);
+		return wasActive;
 	};
 
 	/**
