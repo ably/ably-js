@@ -2,12 +2,8 @@ var Realtime = (function() {
 
 	function Realtime(options) {
 		Rest.call(this, options);
-		options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		options.wsPort = options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
-
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
-
 		this.connection.connect();
 	}
 	Utils.inherits(Realtime, Rest);

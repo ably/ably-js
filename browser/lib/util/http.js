@@ -26,20 +26,19 @@ this.Http = (function() {
 			return;
 		}
 
-		var host, connection = realtime.connection, options = realtime.options, restHost = options.restHost;
-		if(connection.state == 'connected')
-			host = connection.connectionManager.host;
-		else if(!options.fallbackHosts)
-			host = restHost;
+		var hosts, connection = realtime.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(realtime.options);
 
 		/* if there is only one host do it */
-		if(host) {
-			tryGet(uri(host), callback);
+		if(hosts.length == 1) {
+			tryGet(uri(hosts[0]), callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var hosts = fallbackHosts.slice().unshift(restHost);
 		tryGet(hosts.shift(), function(err, statusCode, body) {
 			if(err) {
 				var code = err.code;
@@ -77,20 +76,19 @@ this.Http = (function() {
 			return;
 		}
 
-		var host, connection = realtime.connection, options = realtime.options, restHost = options.restHost;
-		if(connection.state == 'connected')
-			host = connection.connectionManager.host;
-		else if(!options.fallbackHosts)
-			host = restHost;
+		var hosts, connection = realtime.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(realtime.options);
 
 		/* if there is only one host do it */
-		if(host) {
-			tryPost(uri(host), callback);
+		if(hosts.length == 1) {
+			tryPost(uri(hosts[0]), callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var hosts = fallbackHosts.slice().unshift(restHost);
 		tryPost(hosts.shift(), function(err, statusCode, body) {
 			if(err) {
 				var code = err.code;

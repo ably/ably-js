@@ -28,8 +28,8 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var host = params.host;
-		var port = options.wsPort;
+		var host = Defaults.getHost(options, params.host);
+		var port = Defaults.getPort(options);
 		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';

@@ -43,9 +43,8 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
-		var options = rest.options, fallbackHosts = options.fallbackHosts, restHost = options.restHost;
-		var hosts = fallbackHosts ? fallbackHosts.slice().unshift(restHost) : restHost;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var hosts = Defaults.getHosts(rest.options);
 
 		var getOptions = {headers:headers, encoding:null}, wrappedCb = handler(callback);
 		if(!headers || headers.accept == 'application/json') getOptions.json = true;
@@ -64,10 +63,7 @@ this.Http = (function() {
 		}
 
 		/* see if we have one or more than one host */
-		if(!Array.isArray(hosts)) {
-			tryGet(uri(hosts), wrappedCb);
-			return;
-		} else if(host.length == 1) {
+		if(hosts.length == 1) {
 			tryGet(uri(hosts[0]), wrappedCb);
 			return;
 		}
@@ -96,9 +92,8 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
-		var options = rest.options, fallbackHosts = options.fallbackHosts, restHost = options.restHost;
-		var hosts = fallbackHosts ? fallbackHosts.slice().unshift(restHost) : restHost;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var hosts = Defaults.getHosts(rest.options);
 
 		var postOptions = {headers:headers, body:body, encoding:null}, wrappedCb = handler(callback);
 		if(!headers || headers.accept == 'application/json') postOptions.json = true;
@@ -117,10 +112,7 @@ this.Http = (function() {
 		}
 
 		/* see if we have one or more than one host */
-		if(!Array.isArray(hosts)) {
-			tryPost(uri(hosts), wrappedCb);
-			return;
-		} else if(host.length == 1) {
+		if(hosts.length == 1) {
 			tryPost(uri(hosts[0]), wrappedCb);
 			return;
 		}

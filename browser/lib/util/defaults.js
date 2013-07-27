@@ -1,6 +1,6 @@
 var Defaults = {
 	protocolVersion:   1,
-	REST_HOST:         'rest.ably.io',
+	HOST:              'rest.ably.io',
 	WS_HOST:           'realtime.ably.io',
 	FALLBACK_HOSTS:    ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
 	PORT:              80,
@@ -14,6 +14,32 @@ var Defaults = {
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
 	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '80'}
 };
+
+Defaults.getHost = function(options, host, ws) {
+	host = host || options.host || Defaults.HOST;
+	if(ws)
+		host = ((host == options.host) && (options.wsHost || host))
+			|| ((host == Defaults.HOST) && (Defaults.WS_HOST || host))
+			|| host;
+	return host;
+};
+
+Defaults.getPort = function(options) {
+	return options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
+};
+
+Defaults.getHosts = function(options) {
+	var hosts;
+	if(options.host) {
+		hosts = [options.host];
+		if(options.fallbackHosts)
+			hosts.concat(options.fallbackHosts);
+	} else {
+		hosts = [options.host].concat(Defaults.FALLBACK_HOSTS);
+	}
+	return hosts;
+};
+
 if (typeof exports !== 'undefined' && this.exports !== exports) {
 	exports.defaults = Defaults;
 }

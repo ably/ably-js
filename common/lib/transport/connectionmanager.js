@@ -85,15 +85,8 @@ var ConnectionManager = (function() {
 		this.httpTransports = Utils.intersect((options.transports || Defaults.httpTransports), ConnectionManager.httpTransports);
 		this.transports = Utils.intersect((options.transports || Defaults.transports), ConnectionManager.transports);
 		this.upgradeTransports = Utils.arrSubtract(this.transports, this.httpTransports);
-		var fallbackHosts = options.fallbackHosts;
-		if(fallbackHosts) {
-			var tmp;
-			this.httpHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.restHost);
-			this.wsHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.wsHost);
-		} else {
-			this.httpHosts = [options.restHost];
-			this.wsHosts = [options.wsHost];
-		}
+
+		this.hosts = Defaults.getHosts(options);
 		this.transport = null;
 		this.pendingTransport = null;
 		this.host = null;
@@ -102,8 +95,7 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available http transports = [' + this.httpTransports + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'ws hosts = [' + this.wsHosts + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.hosts + ']');
 
 		if(!this.transports.length) {
 			var msg = 'no requested transports available';
@@ -145,7 +137,7 @@ var ConnectionManager = (function() {
 		 * falling back to the first host only;
 		 * NOTE: this behaviour will never apply with a default configuration. */
 		if(!this.httpTransports.length) {
-			transportParams.host = this.httpHosts[0];
+			transportParams.host = this.hosts[0];
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
 			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
 			return;
@@ -212,7 +204,7 @@ var ConnectionManager = (function() {
 	 * @param callback
 	 */
 	ConnectionManager.prototype.chooseHttpTransport = function(transportParams, callback) {
-		var candidateHosts = this.httpHosts.slice();
+		var candidateHosts = this.hosts.slice();
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {

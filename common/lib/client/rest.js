@@ -31,9 +31,6 @@ var Rest = (function() {
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
 			options.encrypted = true;
 
-		options.fallbackHosts = options.restHost ? null : Defaults.fallbackHosts;
-		options.restHost = (options.restHost || Defaults.REST_HOST);
-
 		this.serverTimeOffset = null;
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 		this.baseUri = authority;
