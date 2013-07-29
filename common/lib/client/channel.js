@@ -68,9 +68,7 @@ var Channel = (function() {
 		callback = callback || noop;
 		var rest = this.rest;
 		var binary = !rest.options.useTextProtocol;
-		var requestBody = {name:name, data:data};
-binary = false;
-		if(binary) requestBody = Message.encodeTMessageSync(requestBody);
+		var requestBody = Serialize.TMessageArray.encode([{name:name, data:data}], binary);
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
