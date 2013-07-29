@@ -2289,8 +2289,11 @@ TData.prototype.write = function(output) {
 TPresence = function(args) {
   this.state = undefined;
   this.clientId = undefined;
-  this.connectionId = undefined;
   this.clientData = undefined;
+  this.memberId = undefined;
+  this.inheritMemberId = undefined;
+  this.connectionId = undefined;
+  this.instanceId = undefined;
   if (args) {
     if (args.state !== undefined) {
       this.state = args.state;
@@ -2298,11 +2301,20 @@ TPresence = function(args) {
     if (args.clientId !== undefined) {
       this.clientId = args.clientId;
     }
+    if (args.clientData !== undefined) {
+      this.clientData = args.clientData;
+    }
+    if (args.memberId !== undefined) {
+      this.memberId = args.memberId;
+    }
+    if (args.inheritMemberId !== undefined) {
+      this.inheritMemberId = args.inheritMemberId;
+    }
     if (args.connectionId !== undefined) {
       this.connectionId = args.connectionId;
     }
-    if (args.clientData !== undefined) {
-      this.clientData = args.clientData;
+    if (args.instanceId !== undefined) {
+      this.instanceId = args.instanceId;
     }
   }
 };
@@ -2335,16 +2347,37 @@ TPresence.prototype.read = function(input) {
       }
       break;
       case 3:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.clientData = new TData();
+        this.clientData.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRING) {
+        this.memberId = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRING) {
+        this.inheritMemberId = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
       if (ftype == Thrift.Type.STRING) {
         this.connectionId = input.readString();
       } else {
         input.skip(ftype);
       }
       break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.clientData = new TData();
-        this.clientData.read(input);
+      case 7:
+      if (ftype == Thrift.Type.STRING) {
+        this.instanceId = input.readString();
       } else {
         input.skip(ftype);
       }
@@ -2370,14 +2403,29 @@ TPresence.prototype.write = function(output) {
     output.writeString(this.clientId);
     output.writeFieldEnd();
   }
+  if (this.clientData !== undefined) {
+    output.writeFieldBegin('clientData', Thrift.Type.STRUCT, 3);
+    this.clientData.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.memberId !== undefined) {
+    output.writeFieldBegin('memberId', Thrift.Type.STRING, 4);
+    output.writeString(this.memberId);
+    output.writeFieldEnd();
+  }
+  if (this.inheritMemberId !== undefined) {
+    output.writeFieldBegin('inheritMemberId', Thrift.Type.STRING, 5);
+    output.writeString(this.inheritMemberId);
+    output.writeFieldEnd();
+  }
   if (this.connectionId !== undefined) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 3);
+    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
     output.writeString(this.connectionId);
     output.writeFieldEnd();
   }
-  if (this.clientData !== undefined) {
-    output.writeFieldBegin('clientData', Thrift.Type.STRUCT, 4);
-    this.clientData.write(output);
+  if (this.instanceId !== undefined) {
+    output.writeFieldBegin('instanceId', Thrift.Type.STRING, 7);
+    output.writeString(this.instanceId);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -3425,7 +3473,7 @@ SMessageTraffic = function(args) {
   this.all = undefined;
   this.realtime = undefined;
   this.rest = undefined;
-  this.post = undefined;
+  this.push = undefined;
   this.httpStream = undefined;
   if (args) {
     if (args.all !== undefined) {
@@ -3437,8 +3485,8 @@ SMessageTraffic = function(args) {
     if (args.rest !== undefined) {
       this.rest = args.rest;
     }
-    if (args.post !== undefined) {
-      this.post = args.post;
+    if (args.push !== undefined) {
+      this.push = args.push;
     }
     if (args.httpStream !== undefined) {
       this.httpStream = args.httpStream;
@@ -3485,8 +3533,8 @@ SMessageTraffic.prototype.read = function(input) {
       break;
       case 4:
       if (ftype == Thrift.Type.STRUCT) {
-        this.post = new SMessageTypes();
-        this.post.read(input);
+        this.push = new SMessageTypes();
+        this.push.read(input);
       } else {
         input.skip(ftype);
       }
@@ -3525,9 +3573,9 @@ SMessageTraffic.prototype.write = function(output) {
     this.rest.write(output);
     output.writeFieldEnd();
   }
-  if (this.post !== undefined) {
-    output.writeFieldBegin('post', Thrift.Type.STRUCT, 4);
-    this.post.write(output);
+  if (this.push !== undefined) {
+    output.writeFieldBegin('push', Thrift.Type.STRUCT, 4);
+    this.push.write(output);
     output.writeFieldEnd();
   }
   if (this.httpStream !== undefined) {
@@ -3915,7 +3963,7 @@ this.Cookie = (function() {
 })();
 var Defaults = {
 	protocolVersion:   1,
-	REST_HOST:         'rest.ably.io',
+	HOST:              'rest.ably.io',
 	WS_HOST:           'realtime.ably.io',
 	FALLBACK_HOSTS:    ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
 	PORT:              80,
@@ -3929,6 +3977,32 @@ var Defaults = {
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
 	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '80'}
 };
+
+Defaults.getHost = function(options, host, ws) {
+	host = host || options.host || Defaults.HOST;
+	if(ws)
+		host = ((host == options.host) && (options.wsHost || host))
+			|| ((host == Defaults.HOST) && (Defaults.WS_HOST || host))
+			|| host;
+	return host;
+};
+
+Defaults.getPort = function(options) {
+	return options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
+};
+
+Defaults.getHosts = function(options) {
+	var hosts;
+	if(options.host) {
+		hosts = [options.host];
+		if(options.fallbackHosts)
+			hosts.concat(options.fallbackHosts);
+	} else {
+		hosts = [options.host].concat(Defaults.FALLBACK_HOSTS);
+	}
+	return hosts;
+};
+
 if (typeof exports !== 'undefined' && this.exports !== exports) {
 	exports.defaults = Defaults;
 }this.Http = (function() {
@@ -3959,20 +4033,19 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 			return;
 		}
 
-		var host, connection = realtime.connection, options = realtime.options, restHost = options.restHost;
-		if(connection.state == 'connected')
-			host = connection.connectionManager.host;
-		else if(!options.fallbackHosts)
-			host = restHost;
+		var hosts, connection = realtime.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(realtime.options);
 
 		/* if there is only one host do it */
-		if(host) {
-			tryGet(uri(host), callback);
+		if(hosts.length == 1) {
+			tryGet(uri(hosts[0]), callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var hosts = fallbackHosts.slice().unshift(restHost);
 		tryGet(hosts.shift(), function(err, statusCode, body) {
 			if(err) {
 				var code = err.code;
@@ -4010,20 +4083,19 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 			return;
 		}
 
-		var host, connection = realtime.connection, options = realtime.options, restHost = options.restHost;
-		if(connection.state == 'connected')
-			host = connection.connectionManager.host;
-		else if(!options.fallbackHosts)
-			host = restHost;
+		var hosts, connection = realtime.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(realtime.options);
 
 		/* if there is only one host do it */
-		if(host) {
-			tryPost(uri(host), callback);
+		if(hosts.length == 1) {
+			tryPost(uri(hosts[0]), callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var hosts = fallbackHosts.slice().unshift(restHost);
 		tryPost(hosts.shift(), function(err, statusCode, body) {
 			if(err) {
 				var code = err.code;
@@ -4940,15 +5012,8 @@ var ConnectionManager = (function() {
 		this.httpTransports = Utils.intersect((options.transports || Defaults.httpTransports), ConnectionManager.httpTransports);
 		this.transports = Utils.intersect((options.transports || Defaults.transports), ConnectionManager.transports);
 		this.upgradeTransports = Utils.arrSubtract(this.transports, this.httpTransports);
-		var fallbackHosts = options.fallbackHosts;
-		if(fallbackHosts) {
-			var tmp;
-			this.httpHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.restHost);
-			this.wsHosts = (tmp = fallbackHosts.slice()); tmp.unshift(options.wsHost);
-		} else {
-			this.httpHosts = [options.restHost];
-			this.wsHosts = [options.wsHost];
-		}
+
+		this.hosts = Defaults.getHosts(options);
 		this.transport = null;
 		this.pendingTransport = null;
 		this.host = null;
@@ -4957,8 +5022,7 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available http transports = [' + this.httpTransports + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'ws hosts = [' + this.wsHosts + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.hosts + ']');
 
 		if(!this.transports.length) {
 			var msg = 'no requested transports available';
@@ -4993,14 +5057,14 @@ var ConnectionManager = (function() {
 		 * Inherit any connection state */
 		var mode = this.connectionId ? 'resume' : (this.options.recover ? 'recover' : 'clean');
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId));
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId + '; connectionSerial = ' + this.connectionSerial));
 		var self = this;
 
 		/* if there are no http transports, just choose from the available transports,
 		 * falling back to the first host only;
 		 * NOTE: this behaviour will never apply with a default configuration. */
 		if(!this.httpTransports.length) {
-			transportParams.host = this.httpHosts[0];
+			transportParams.host = this.hosts[0];
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
 			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
 			return;
@@ -5067,7 +5131,7 @@ var ConnectionManager = (function() {
 	 * @param callback
 	 */
 	ConnectionManager.prototype.chooseHttpTransport = function(transportParams, callback) {
-		var candidateHosts = this.httpHosts.slice();
+		var candidateHosts = this.hosts.slice();
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {
@@ -5163,13 +5227,16 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
 
 				/* handle activity transition */
-				if(state == 'connected')
+				var notifyState;
+				if(state == 'connected') {
 					self.activateTransport(transport, connectionId);
-				else
-					self.deactivateTransport(transport);
+					notifyState = true;
+				} else {
+					notifyState = self.deactivateTransport(transport);
+				}
 
 				/* if this is the active transport, notify clients */
-				if(self.transport === transport)
+				if(notifyState)
 					self.notifyState({state:state, error:error});
 			};
 		};
@@ -5242,15 +5309,17 @@ var ConnectionManager = (function() {
 	 * @param transport
 	 */
 	ConnectionManager.prototype.deactivateTransport = function(transport) {
+		var wasActive = this.transport === transport;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
 		transport.off('ack');
 		transport.off('nack');
-		if(this.transport === transport)
+		if(wasActive)
 			this.transport = this.host = null;
 		else if(this.pendingTransport === transport)
 			this.pendingTransport = null;
 
 		this.emit('transport.inactive', transport);
+		return wasActive;
 	};
 
 	/**
@@ -5554,6 +5623,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		if(transport === this.transport || transport.connectionId == this.connectionId) {
+			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
 			return;
 		}
@@ -5617,8 +5687,6 @@ var Transport = (function() {
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:
-			this.connectionId = message.connectionId;
-			this.isConnected = true;
 			this.onConnect(message);
 			this.emit('connected', null, this.connectionId, message.flags);
 			break;
@@ -5646,10 +5714,16 @@ var Transport = (function() {
 		}
 	};
 
-	/* if the connected message asks us to sync the time with the server, make the request */
 	Transport.prototype.onConnect = function(message) {
-		if(message.flags && (message.flags & (1 << flags.SYNC_TIME)))
-			this.connectionManager.realtime.time({connection_id:message.connectionId});
+		this.connectionId = message.connectionId;
+		this.isConnected = true;
+		/* if the connected message asks us to sync the time with the server, make the request */
+		if(message.flags && (message.flags & (1 << flags.SYNC_TIME))) {
+			var self = this;
+			Utils.nextTick(function() {
+				self.connectionManager.realtime.time({connection_id:message.connectionId});
+			});
+		}
 	};
 
 	Transport.prototype.onDisconnect = function() {};
@@ -5722,8 +5796,8 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var host = params.host;
-		var port = options.wsPort;
+		var host = Defaults.getHost(options, params.host, true);
+		var port = Defaults.getPort(options);
 		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + host + ':' + port + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
@@ -5834,8 +5908,8 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var host = params.host;
-		var port = options.wsPort;
+		var host = Defaults.getHost(options, params.host);
+		var port = Defaults.getPort(options);
 		var cometScheme = options.encrypted ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
@@ -5881,8 +5955,15 @@ var CometTransport = (function() {
 		}
 	};
 
-	CometTransport.prototype.onConnect = function() {
-		var baseConnectionUri =  this.baseUri + this.connectionId;
+	CometTransport.prototype.onConnect = function(message) {
+		/* the connectionId in a comet connected response is really
+		 * <instId>-<connectionId> */
+		var connectionStr = message.connectionId;
+		message.connectionId = connectionStr.split('-').pop();
+		Transport.prototype.onConnect.call(this, message);
+
+		var baseConnectionUri =  this.baseUri + connectionStr;
+		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = baseConnectionUri + '/close';
@@ -6067,33 +6148,35 @@ this.Data = (function() {
 
 	Data.fromTData = function(tData) {
 		var result = undefined;
-		switch(tData.type) {
-			case 1: /* TRUE */
-				result = true;
-				break;
-			case 2: /* FALSE */
-				result = false;
-				break;
-			case 3: /* INT32 */
-				result = tData.i32Data;
-				break;
-			case 4: /* INT64 */
-				result = tData.i64Data;
-				break;
-			case 5: /* DOUBLE */
-				result = tData.doubleData;
-				break;
-			case 6: /* STRING */
-				result = tData.stringData;
-				break;
-			case 7: /* BUFFER */
-				result = tData.binaryData;
-				break;
-			case 8: /* JSONARRAY */
-			case 9: /* JSONOBJECT */
-				result = JSON.parse(tData.stringData);
-				break;
-			case 0: /* NONE */
+		if(tData) {
+			switch(tData.type) {
+				case 1: /* TRUE */
+					result = true;
+					break;
+				case 2: /* FALSE */
+					result = false;
+					break;
+				case 3: /* INT32 */
+					result = tData.i32Data;
+					break;
+				case 4: /* INT64 */
+					result = tData.i64Data;
+					break;
+				case 5: /* DOUBLE */
+					result = tData.doubleData;
+					break;
+				case 6: /* STRING */
+					result = tData.stringData;
+					break;
+				case 7: /* BUFFER */
+					result = tData.binaryData;
+					break;
+				case 8: /* JSONARRAY */
+				case 9: /* JSONOBJECT */
+					result = JSON.parse(tData.stringData);
+					break;
+				case 0: /* NONE */
+			}
 		}
 		return result;
 	};
@@ -6121,11 +6204,16 @@ var Message = (function() {
 
 	return Message;
 })();
-this.PresenceMessage = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+var PresenceMessage = (function() {
 
-	function PresenceMessage() {}
+	/* public constructor */
+	function PresenceMessage(clientId, clientData, memberId) {
+		this.clientId = clientId;
+		this.clientData = clientData;
+		this.memberId = memberId;
+	}
 
+	return PresenceMessage;
 })();
 this.Serialize = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
@@ -6262,6 +6350,12 @@ this.Serialize = (function() {
 
 	TMessageSet.encode = function(items, binary) {
 		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
+	};
+
+	TMessageArray.encode = function(items, binary) {
+		return binary
+			? ThriftUtil.encodeSync(new messagetypes.TMessageArray({items:items.map(TMessage.fromJSON)}))
+			: JSON.stringify(items);
 	};
 
 	TMessageArray.decode = function(encoded, binary) {
@@ -6768,9 +6862,6 @@ var Rest = (function() {
 		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
 			options.encrypted = true;
 
-		options.fallbackHosts = options.restHost ? null : Defaults.fallbackHosts;
-		options.restHost = (options.restHost || Defaults.REST_HOST);
-
 		this.serverTimeOffset = null;
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 		this.baseUri = authority;
@@ -6846,12 +6937,8 @@ var Rest = (function() {
 
 	function Realtime(options) {
 		Rest.call(this, options);
-		options.wsHost = (options.wsHost || Defaults.WS_HOST);
-		options.wsPort = options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
-
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
-
 		this.connection.connect();
 	}
 	Utils.inherits(Realtime, Rest);
@@ -7028,9 +7115,7 @@ var Channel = (function() {
 		callback = callback || noop;
 		var rest = this.rest;
 		var binary = !rest.options.useTextProtocol;
-		var requestBody = {name:name, data:data};
-binary = false;
-		if(binary) requestBody = Message.encodeTMessageSync(requestBody);
+		var requestBody = Serialize.TMessageArray.encode([{name:name, data:data}], binary);
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -7349,11 +7434,15 @@ var Presence = (function() {
 	var presenceState = messagetypes.TPresenceState;
 	var presenceStateToEvent = ['enter', 'leave', 'update'];
 
+	function memberKey(clientId, memberId) {
+		return clientId + ':' + memberId;
+	}
+
 	function Presence(channel, options) {
 		EventEmitter.call(this);
 		this.channel = channel;
 		this.clientId = options.clientId;
-		this.clients = {};
+		this.members = {};
 	}
 	Utils.inherits(Presence, EventEmitter);
 
@@ -7365,7 +7454,6 @@ var Presence = (function() {
 
 	Presence.prototype.enterClient = function(clientId, clientData, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
-		this.clients[clientId] = clientData;
 		var presence = new messagetypes.TPresence({
 			state : presenceState.ENTER,
 			clientId : clientId,
@@ -7399,7 +7487,6 @@ var Presence = (function() {
 
 	Presence.prototype.leaveClient = function(clientId, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
-		delete this.clients[clientId];
 		var presence = new messagetypes.TPresence({
 			state : presenceState.LEAVE,
 			clientId : clientId
@@ -7431,21 +7518,29 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(clientId) {
-		return this.clients[clientId || this.clientId];
+	Presence.prototype.get = function(key) {
+		return key ? this.members[key] : Utils.valuesArray(this.members, true);
 	};
 
 	Presence.prototype.setPresence = function(presenceSet, broadcast) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
-			var clientData = undefined, clientId = presence.clientId;
-			if(presence.state == presenceState.LEAVE)
-				delete this.clients[clientId];
-			else
-				clientData = this.clients[clientId] = Data.toTData(presence.clientData);
+			var key = memberKey.call(presence.clientId, presence.memberId);
+			var member = new PresenceMessage(presence.clientId, Data.fromTData(presence.clientData), presence.memberId);
+			switch(presence.state) {
+				case presenceState.LEAVE:
+					delete this.members[key];
+					break;
+				case presenceState.UPDATE:
+					if(presence.inheritMemberId)
+						delete this.members[memberKey.call(presence.clientId, presence.inheritMemberId)];
+				case presenceState.ENTER:
+					clientData = this.members[key] = member;
+					break;
+			}
 			if(broadcast)
-				this.emit(presenceStateToEvent[presence.state], clientId, clientData);
+				this.emit(presenceStateToEvent[presence.state], member);
 		}
 	};
 
@@ -7663,17 +7758,17 @@ var XHRTransport = (function() {
 					return;
 				}
 				if(xhr.status == successCode) {
-					var response = null;
+					var responseBody = null;
 					if(binary) {
 						if(xhr.response) {
-							response = new Buffer();
-							response.buf = xhr.response;
-							response.view = new DataView(response.buf);
+							responseBody = new Buffer();
+							responseBody.buf = xhr.response;
+							responseBody.view = new DataView(responseBody.buf);
 						}
 					} else {
-						response = xhr.responseText;
+						responseBody = xhr.responseText;
 					}
-					callback(null, response);
+					callback(null, responseBody);
 					return;
 				}
 				if(xhr.status != 0) {
