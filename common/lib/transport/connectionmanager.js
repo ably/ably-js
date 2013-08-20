@@ -621,17 +621,20 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
 		callback = callback || noop;
-		if(this.state.queueEvents) {
+		var state = this.state;
+
+		if(state.sendEvents) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
+			this.sendImpl(new PendingMessage(msg, callback));
+			return;
+		}
+		if(state.queueEvents) {
 			if(queueEvents) {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
 				callback(this.error);
 			}
-		}
-		if(this.state.sendEvents) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-			this.sendImpl(new PendingMessage(msg, callback));
 		}
 	};
 

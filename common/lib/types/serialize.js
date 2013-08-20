@@ -135,6 +135,12 @@ this.Serialize = (function() {
 		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
 	};
 
+	TMessageArray.encode = function(items, binary) {
+		return binary
+			? ThriftUtil.encodeSync(new messagetypes.TMessageArray({items:items.map(TMessage.fromJSON)}))
+			: JSON.stringify(items);
+	};
+
 	TMessageArray.decode = function(encoded, binary) {
 		var items = null, err;
 		if(encoded) {
