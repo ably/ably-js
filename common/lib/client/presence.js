@@ -73,7 +73,7 @@ var Presence = (function() {
 				break;
 			case 'initialized':
 				/* we're not attached; therefore we let any entered status
-				 * timeout by itself instead of attaching just in order to  leave */
+				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
 				var err = new Error('Unable to enter presence channel (incompatible state)');
 				err.code = 90001;
