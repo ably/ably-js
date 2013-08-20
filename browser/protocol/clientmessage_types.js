@@ -858,12 +858,12 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 13:
-      if (ftype == Thrift.Type.SET) {
+      if (ftype == Thrift.Type.LIST) {
         var _size31 = 0;
         var _rtmp335;
         this.presence = [];
         var _etype34 = 0;
-        _rtmp335 = input.readSetBegin();
+        _rtmp335 = input.readListBegin();
         _etype34 = _rtmp335.etype;
         _size31 = _rtmp335.size;
         for (var _i36 = 0; _i36 < _size31; ++_i36)
@@ -873,7 +873,7 @@ TChannelMessage.prototype.read = function(input) {
           elem37.read(input);
           this.presence.push(elem37);
         }
-        input.readSetEnd();
+        input.readListEnd();
       } else {
         input.skip(ftype);
       }
@@ -959,8 +959,8 @@ TChannelMessage.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.presence !== undefined) {
-    output.writeFieldBegin('presence', Thrift.Type.SET, 13);
-    output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
+    output.writeFieldBegin('presence', Thrift.Type.LIST, 13);
+    output.writeListBegin(Thrift.Type.STRUCT, this.presence.length);
     for (var iter39 in this.presence)
     {
       if (this.presence.hasOwnProperty(iter39))
@@ -969,7 +969,7 @@ TChannelMessage.prototype.write = function(output) {
         iter39.write(output);
       }
     }
-    output.writeSetEnd();
+    output.writeListEnd();
     output.writeFieldEnd();
   }
   output.writeFieldStop();
