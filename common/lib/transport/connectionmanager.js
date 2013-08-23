@@ -38,7 +38,7 @@ var ConnectionManager = (function() {
 		switch(this.mode) {
 			case 'resume':
 				params.resume = this.connectionId;
-				if(this.connectionSerial)
+				if(this.connectionSerial !== undefined)
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
@@ -46,7 +46,7 @@ var ConnectionManager = (function() {
 					params.recover = readCookie(connectionIdCookie);
 					params.connection_serial = readCookie(connectionSerialCookie);
 				} else {
-					var match = options.recover.match(/^([\w|\d]+):([\w|\d]+)$/);
+					var match = options.recover.match(/^(\w+):(\w+)$/);
 					if(match) {
 						params.recover = match[1];
 						params.connection_serial = match[2];
