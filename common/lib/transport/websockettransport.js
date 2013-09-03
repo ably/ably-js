@@ -74,7 +74,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.send = function(message, callback) {
 		try {
-			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary));
+			this.wsConnection.send(Serialize.TProtocolMessage.encode(message, this.params.binary));
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -85,7 +85,7 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
 		try {
-			this.onChannelMessage(Serialize.TChannelMessage.decode(data, binary));
+			this.onChannelMessage(Serialize.TProtocolMessage.decode(data, binary));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}

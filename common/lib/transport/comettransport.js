@@ -176,11 +176,11 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.encodeRequest = function(requestItems) {
-		return Serialize.TMessageSet.encode(requestItems, this.binary);
+		return Serialize.TMessageBundle.encode(requestItems, this.binary);
 	};
 
 	CometTransport.prototype.decodeResponse = function(responseData) {
-		return Serialize.TMessageSet.decode(responseData, this.binary);
+		return Serialize.TMessageBundle.decode(responseData, this.binary);
 	};
 
 	return CometTransport;

@@ -6,9 +6,9 @@ this.Serialize = (function() {
 	var TData = Serialize.TData = {},
 		TMessage = Serialize.TMessage = {},
 		TPresence = Serialize.TPresence = {},
-		TChannelMessage = Serialize.TChannelMessage = {},
+		TProtocolMessage = Serialize.TProtocolMessage = {},
 		TMessageArray = Serialize.TMessageArray = {},
-		TMessageSet = Serialize.TMessageSet = {},
+		TMessageBundle = Serialize.TMessageBundle = {},
 		BUFFER = messagetypes.TType.BUFFER;
 
 	TData.fromREST = function(jsonObject) {
@@ -85,7 +85,7 @@ this.Serialize = (function() {
 		return new messagetypes.TPresence(jsonObject);
 	};
 
-	TChannelMessage.fromJSON = function(jsonObject) {
+	TProtocolMessage.fromJSON = function(jsonObject) {
 		var elements;
 		if(elements = jsonObject.messages) {
 			var count = elements.length;
@@ -97,42 +97,42 @@ this.Serialize = (function() {
 			var presence = jsonObject.presence = new Array(count);
 			for(var i = 0; i < count; i++) presence[i] = TPresence.fromJSON(elements[i]);
 		}
-		return new messagetypes.TChannelMessage(jsonObject);
+		return new messagetypes.TProtocolMessage(jsonObject);
 	};
 
-	TChannelMessage.decode = function(encoded, binary) {
+	TProtocolMessage.decode = function(encoded, binary) {
 		var result, err;
 		if(binary) {
-			if(err = ThriftUtil.decodeSync((result = new messagetypes.TChannelMessage()), encoded)) throw err;
+			if(err = ThriftUtil.decodeSync((result = new messagetypes.TProtocolMessage()), encoded)) throw err;
 		} else {
-			result = TChannelMessage.fromJSON(JSON.parse(encoded));
+			result = TProtocolMessage.fromJSON(JSON.parse(encoded));
 		}
 		return result;
 	};
 
 	/* NOTE: decodes to items */
-	TMessageSet.decode = function(encoded, binary) {
+	TMessageBundle.decode = function(encoded, binary) {
 		var items = null, err;
 		if(encoded) {
 			if(binary) {
 				var ob;
-				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageSet()), encoded)) throw err;
+				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageBundle()), encoded)) throw err;
 				items = ob.items;
 			} else {
 				var elements = JSON.parse(encoded), count = elements.length;
 				items = new Array(count);
-				for(var i = 0; i < count; i++) items[i] = TChannelMessage.fromJSON(elements[i]);
+				for(var i = 0; i < count; i++) items[i] = TProtocolMessage.fromJSON(elements[i]);
 			}
 		}
 		return items;
 	};
 
-	TChannelMessage.encode = function(message, binary) {
+	TProtocolMessage.encode = function(message, binary) {
 		return binary ? ThriftUtil.encodeSync(message) : JSON.stringify(message);
 	};
 
-	TMessageSet.encode = function(items, binary) {
-		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
+	TMessageBundle.encode = function(items, binary) {
+		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageBundle({items:items})) : JSON.stringify(items);
 	};
 
 	TMessageArray.encode = function(items, binary) {
