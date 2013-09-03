@@ -688,7 +688,7 @@ TMessageArray.prototype.write = function(output) {
   return;
 };
 
-TChannelMessage = function(args) {
+TProtocolMessage = function(args) {
   this.action = undefined;
   this.flags = undefined;
   this.count = undefined;
@@ -744,8 +744,8 @@ TChannelMessage = function(args) {
     }
   }
 };
-TChannelMessage.prototype = {};
-TChannelMessage.prototype.read = function(input) {
+TProtocolMessage.prototype = {};
+TProtocolMessage.prototype.read = function(input) {
   input.readStructBegin();
   while (true)
   {
@@ -887,8 +887,8 @@ TChannelMessage.prototype.read = function(input) {
   return;
 };
 
-TChannelMessage.prototype.write = function(output) {
-  output.writeStructBegin('TChannelMessage');
+TProtocolMessage.prototype.write = function(output) {
+  output.writeStructBegin('TProtocolMessage');
   if (this.action !== undefined) {
     output.writeFieldBegin('action', Thrift.Type.I32, 1);
     output.writeI32(this.action);
@@ -977,7 +977,7 @@ TChannelMessage.prototype.write = function(output) {
   return;
 };
 
-TMessageSet = function(args) {
+TMessageBundle = function(args) {
   this.items = undefined;
   if (args) {
     if (args.items !== undefined) {
@@ -985,8 +985,8 @@ TMessageSet = function(args) {
     }
   }
 };
-TMessageSet.prototype = {};
-TMessageSet.prototype.read = function(input) {
+TMessageBundle.prototype = {};
+TMessageBundle.prototype.read = function(input) {
   input.readStructBegin();
   while (true)
   {
@@ -1011,7 +1011,7 @@ TMessageSet.prototype.read = function(input) {
         for (var _i45 = 0; _i45 < _size40; ++_i45)
         {
           var elem46 = undefined;
-          elem46 = new TChannelMessage();
+          elem46 = new TProtocolMessage();
           elem46.read(input);
           this.items.push(elem46);
         }
@@ -1032,8 +1032,8 @@ TMessageSet.prototype.read = function(input) {
   return;
 };
 
-TMessageSet.prototype.write = function(output) {
-  output.writeStructBegin('TMessageSet');
+TMessageBundle.prototype.write = function(output) {
+  output.writeStructBegin('TMessageBundle');
   if (this.items !== undefined) {
     output.writeFieldBegin('items', Thrift.Type.LIST, 1);
     output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
