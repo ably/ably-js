@@ -2722,7 +2722,7 @@ TMessageArray.prototype.write = function(output) {
   return;
 };
 
-TChannelMessage = function(args) {
+TProtocolMessage = function(args) {
   this.action = undefined;
   this.flags = undefined;
   this.count = undefined;
@@ -2778,8 +2778,8 @@ TChannelMessage = function(args) {
     }
   }
 };
-TChannelMessage.prototype = {};
-TChannelMessage.prototype.read = function(input) {
+TProtocolMessage.prototype = {};
+TProtocolMessage.prototype.read = function(input) {
   input.readStructBegin();
   while (true)
   {
@@ -2892,12 +2892,12 @@ TChannelMessage.prototype.read = function(input) {
       }
       break;
       case 13:
-      if (ftype == Thrift.Type.SET) {
+      if (ftype == Thrift.Type.LIST) {
         var _size31 = 0;
         var _rtmp335;
         this.presence = [];
         var _etype34 = 0;
-        _rtmp335 = input.readSetBegin();
+        _rtmp335 = input.readListBegin();
         _etype34 = _rtmp335.etype;
         _size31 = _rtmp335.size;
         for (var _i36 = 0; _i36 < _size31; ++_i36)
@@ -2907,7 +2907,7 @@ TChannelMessage.prototype.read = function(input) {
           elem37.read(input);
           this.presence.push(elem37);
         }
-        input.readSetEnd();
+        input.readListEnd();
       } else {
         input.skip(ftype);
       }
@@ -2921,8 +2921,8 @@ TChannelMessage.prototype.read = function(input) {
   return;
 };
 
-TChannelMessage.prototype.write = function(output) {
-  output.writeStructBegin('TChannelMessage');
+TProtocolMessage.prototype.write = function(output) {
+  output.writeStructBegin('TProtocolMessage');
   if (this.action !== undefined) {
     output.writeFieldBegin('action', Thrift.Type.I32, 1);
     output.writeI32(this.action);
@@ -2993,8 +2993,8 @@ TChannelMessage.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.presence !== undefined) {
-    output.writeFieldBegin('presence', Thrift.Type.SET, 13);
-    output.writeSetBegin(Thrift.Type.STRUCT, this.presence.length);
+    output.writeFieldBegin('presence', Thrift.Type.LIST, 13);
+    output.writeListBegin(Thrift.Type.STRUCT, this.presence.length);
     for (var iter39 in this.presence)
     {
       if (this.presence.hasOwnProperty(iter39))
@@ -3003,7 +3003,7 @@ TChannelMessage.prototype.write = function(output) {
         iter39.write(output);
       }
     }
-    output.writeSetEnd();
+    output.writeListEnd();
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -3011,7 +3011,7 @@ TChannelMessage.prototype.write = function(output) {
   return;
 };
 
-TMessageSet = function(args) {
+TMessageBundle = function(args) {
   this.items = undefined;
   if (args) {
     if (args.items !== undefined) {
@@ -3019,8 +3019,8 @@ TMessageSet = function(args) {
     }
   }
 };
-TMessageSet.prototype = {};
-TMessageSet.prototype.read = function(input) {
+TMessageBundle.prototype = {};
+TMessageBundle.prototype.read = function(input) {
   input.readStructBegin();
   while (true)
   {
@@ -3045,7 +3045,7 @@ TMessageSet.prototype.read = function(input) {
         for (var _i45 = 0; _i45 < _size40; ++_i45)
         {
           var elem46 = undefined;
-          elem46 = new TChannelMessage();
+          elem46 = new TProtocolMessage();
           elem46.read(input);
           this.items.push(elem46);
         }
@@ -3066,8 +3066,8 @@ TMessageSet.prototype.read = function(input) {
   return;
 };
 
-TMessageSet.prototype.write = function(output) {
-  output.writeStructBegin('TMessageSet');
+TMessageBundle.prototype.write = function(output) {
+  output.writeStructBegin('TMessageBundle');
   if (this.items !== undefined) {
     output.writeFieldBegin('items', Thrift.Type.LIST, 1);
     output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
@@ -4965,7 +4965,7 @@ var ConnectionManager = (function() {
 		switch(this.mode) {
 			case 'resume':
 				params.resume = this.connectionId;
-				if(this.connectionSerial)
+				if(this.connectionSerial !== undefined)
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
@@ -4973,7 +4973,7 @@ var ConnectionManager = (function() {
 					params.recover = readCookie(connectionIdCookie);
 					params.connection_serial = readCookie(connectionSerialCookie);
 				} else {
-					var match = options.recover.match(/^([\w|\d]+):([\w|\d]+)$/);
+					var match = options.recover.match(/^(\w+):(\w+)$/);
 					if(match) {
 						params.recover = match[1];
 						params.connection_serial = match[2];
@@ -5548,17 +5548,20 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
 		callback = callback || noop;
-		if(this.state.queueEvents) {
+		var state = this.state;
+
+		if(state.sendEvents) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
+			this.sendImpl(new PendingMessage(msg, callback));
+			return;
+		}
+		if(state.queueEvents) {
 			if(queueEvents) {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
 				callback(this.error);
 			}
-		}
-		if(this.state.sendEvents) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-			this.sendImpl(new PendingMessage(msg, callback));
 		}
 	};
 
@@ -5678,7 +5681,7 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.sendDisconnect = function() {
-		this.send(new messagetypes.TChannelMessage({action: actions.DISCONNECT}), noop);
+		this.send(new messagetypes.TProtocolMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -5822,7 +5825,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.send = function(message, callback) {
 		try {
-			this.wsConnection.send(Serialize.TChannelMessage.encode(message, this.params.binary));
+			this.wsConnection.send(Serialize.TProtocolMessage.encode(message, this.params.binary));
 		} catch (e) {
 			var msg = 'Unexpected send exception: ' + e;
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -5833,7 +5836,7 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
 		try {
-			this.onChannelMessage(Serialize.TChannelMessage.decode(data, binary));
+			this.onChannelMessage(Serialize.TProtocolMessage.decode(data, binary));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
@@ -6056,11 +6059,11 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.encodeRequest = function(requestItems) {
-		return Serialize.TMessageSet.encode(requestItems, this.binary);
+		return Serialize.TMessageBundle.encode(requestItems, this.binary);
 	};
 
 	CometTransport.prototype.decodeResponse = function(responseData) {
-		return Serialize.TMessageSet.decode(responseData, this.binary);
+		return Serialize.TMessageBundle.decode(responseData, this.binary);
 	};
 
 	return CometTransport;
@@ -6223,9 +6226,9 @@ this.Serialize = (function() {
 	var TData = Serialize.TData = {},
 		TMessage = Serialize.TMessage = {},
 		TPresence = Serialize.TPresence = {},
-		TChannelMessage = Serialize.TChannelMessage = {},
+		TProtocolMessage = Serialize.TProtocolMessage = {},
 		TMessageArray = Serialize.TMessageArray = {},
-		TMessageSet = Serialize.TMessageSet = {},
+		TMessageBundle = Serialize.TMessageBundle = {},
 		BUFFER = messagetypes.TType.BUFFER;
 
 	TData.fromREST = function(jsonObject) {
@@ -6302,7 +6305,7 @@ this.Serialize = (function() {
 		return new messagetypes.TPresence(jsonObject);
 	};
 
-	TChannelMessage.fromJSON = function(jsonObject) {
+	TProtocolMessage.fromJSON = function(jsonObject) {
 		var elements;
 		if(elements = jsonObject.messages) {
 			var count = elements.length;
@@ -6314,42 +6317,42 @@ this.Serialize = (function() {
 			var presence = jsonObject.presence = new Array(count);
 			for(var i = 0; i < count; i++) presence[i] = TPresence.fromJSON(elements[i]);
 		}
-		return new messagetypes.TChannelMessage(jsonObject);
+		return new messagetypes.TProtocolMessage(jsonObject);
 	};
 
-	TChannelMessage.decode = function(encoded, binary) {
+	TProtocolMessage.decode = function(encoded, binary) {
 		var result, err;
 		if(binary) {
-			if(err = ThriftUtil.decodeSync((result = new messagetypes.TChannelMessage()), encoded)) throw err;
+			if(err = ThriftUtil.decodeSync((result = new messagetypes.TProtocolMessage()), encoded)) throw err;
 		} else {
-			result = TChannelMessage.fromJSON(JSON.parse(encoded));
+			result = TProtocolMessage.fromJSON(JSON.parse(encoded));
 		}
 		return result;
 	};
 
 	/* NOTE: decodes to items */
-	TMessageSet.decode = function(encoded, binary) {
+	TMessageBundle.decode = function(encoded, binary) {
 		var items = null, err;
 		if(encoded) {
 			if(binary) {
 				var ob;
-				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageSet()), encoded)) throw err;
+				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageBundle()), encoded)) throw err;
 				items = ob.items;
 			} else {
 				var elements = JSON.parse(encoded), count = elements.length;
 				items = new Array(count);
-				for(var i = 0; i < count; i++) items[i] = TChannelMessage.fromJSON(elements[i]);
+				for(var i = 0; i < count; i++) items[i] = TProtocolMessage.fromJSON(elements[i]);
 			}
 		}
 		return items;
 	};
 
-	TChannelMessage.encode = function(message, binary) {
+	TProtocolMessage.encode = function(message, binary) {
 		return binary ? ThriftUtil.encodeSync(message) : JSON.stringify(message);
 	};
 
-	TMessageSet.encode = function(items, binary) {
-		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageSet({items:items})) : JSON.stringify(items);
+	TMessageBundle.encode = function(items, binary) {
+		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageBundle({items:items})) : JSON.stringify(items);
 	};
 
 	TMessageArray.encode = function(items, binary) {
@@ -7165,7 +7168,7 @@ var RealtimeChannel = (function() {
     	message.data = Data.toTData(data);
 		if(this.state == 'attached') {
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-    		var msg = new messagetypes.TChannelMessage();
+    		var msg = new messagetypes.TProtocolMessage();
     		msg.action = messagetypes.TAction.MESSAGE;
     		msg.channel = this.name;
     		msg.messages = [message];
@@ -7220,7 +7223,7 @@ var RealtimeChannel = (function() {
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.state = 'pending';
-    	var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
+    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -7255,7 +7258,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
-    	var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.DETACH, channel: this.name});
+    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -7299,7 +7302,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
-		var msg = new messagetypes.TChannelMessage({
+		var msg = new messagetypes.TProtocolMessage({
 			action: messagetypes.TAction.PRESENCE,
 			channel: this.name,
 			presence: [presence]
@@ -7372,7 +7375,7 @@ var RealtimeChannel = (function() {
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
-				var msg = new messagetypes.TChannelMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
+				var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
 				var multicaster = new Multicaster();
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
@@ -7504,7 +7507,7 @@ var Presence = (function() {
 				break;
 			case 'initialized':
 				/* we're not attached; therefore we let any entered status
-				 * timeout by itself instead of attaching just in order to  leave */
+				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
 				var err = new Error('Unable to enter presence channel (incompatible state)');
 				err.code = 90001;
