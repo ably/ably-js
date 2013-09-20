@@ -133,7 +133,7 @@ var RealtimeChannel = (function() {
     	this.sendMessage(msg, (callback || noop));
 	};
 
-	RealtimeChannel.prototype.subscribe = function() {
+	RealtimeChannel.prototype.subscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -152,7 +152,7 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* event, listener */) {
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
