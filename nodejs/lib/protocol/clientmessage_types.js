@@ -13,13 +13,15 @@ ttypes.TAction = {
 'CONNECTED' : 4,
 'DISCONNECT' : 5,
 'DISCONNECTED' : 6,
-'ERROR' : 7,
-'ATTACH' : 8,
-'ATTACHED' : 9,
-'DETACH' : 10,
-'DETACHED' : 11,
-'PRESENCE' : 12,
-'MESSAGE' : 13
+'CLOSE' : 7,
+'CLOSED' : 8,
+'ERROR' : 9,
+'ATTACH' : 10,
+'ATTACHED' : 11,
+'DETACH' : 12,
+'DETACHED' : 13,
+'PRESENCE' : 14,
+'MESSAGE' : 15
 };
 ttypes.TType = {
 'NONE' : 0,
