@@ -698,12 +698,12 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(transport === this.transport || transport.connectionId == this.connectionId) {
+		if(transport === this.transport) {
 			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
 			return;
 		}
-		/* message was received on connection that is no longer the current connection */
+		/* message was received on connection or transport that is no longer current */
 		this.realtime.channels.retryChannelMessage(message);
 	};
 
