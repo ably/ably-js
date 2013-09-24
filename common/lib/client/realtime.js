@@ -16,6 +16,8 @@ var Realtime = (function() {
 	function Channels(realtime) {
 		this.realtime = realtime;
 		this.attached = {};
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
 
 	Channels.prototype.onChannelMessage = function(msg) {
@@ -30,6 +32,16 @@ var Realtime = (function() {
 			return;
 		}
 		channel.onMessage(msg);
+	};
+
+	/* called when a transport becomes connected; reattempt attach()
+	 * for channels that were pending from a previous transport */
+	Channels.prototype.onTransportActive = function() {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			if(channel.state == 'pending')
+				channel.attachImpl();
+		}
 	};
 
 	/* called when a message response indicates that a particular
