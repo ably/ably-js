@@ -2046,13 +2046,15 @@ TAction = {
 'CONNECTED' : 4,
 'DISCONNECT' : 5,
 'DISCONNECTED' : 6,
-'ERROR' : 7,
-'ATTACH' : 8,
-'ATTACHED' : 9,
-'DETACH' : 10,
-'DETACHED' : 11,
-'PRESENCE' : 12,
-'MESSAGE' : 13
+'CLOSE' : 7,
+'CLOSED' : 8,
+'ERROR' : 9,
+'ATTACH' : 10,
+'ATTACHED' : 11,
+'DETACH' : 12,
+'DETACHED' : 13,
+'PRESENCE' : 14,
+'MESSAGE' : 15
 };
 TType = {
 'NONE' : 0,
@@ -5625,12 +5627,12 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(transport === this.transport || transport.connectionId == this.connectionId) {
+		if(transport === this.transport) {
 			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
 			return;
 		}
-		/* message was received on connection that is no longer the current connection */
+		/* message was received on connection or transport that is no longer current */
 		this.realtime.channels.retryChannelMessage(message);
 	};
 
@@ -5665,23 +5667,18 @@ var Transport = (function() {
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function(sendDisconnect) {
+	Transport.prototype.close = function(closing) {
 		this.isConnected = false;
 		this.emit('closed', ConnectionError.closed);
-		if(sendDisconnect)
-			this.sendDisconnect();
+		this.sendClose(closing);
 		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
 		this.emit('failed', error);
-		this.sendDisconnect();
+		this.sendClose(true);
 		this.dispose();
-	};
-
-	Transport.prototype.sendDisconnect = function() {
-		this.send(new messagetypes.TProtocolMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -5693,6 +5690,7 @@ var Transport = (function() {
 			this.onConnect(message);
 			this.emit('connected', null, this.connectionId, message.flags);
 			break;
+		case actions.CLOSED:
 		case actions.DISCONNECTED:
 			this.isConnected = false;
 			this.onDisconnect();
@@ -5721,12 +5719,14 @@ var Transport = (function() {
 		this.connectionId = message.connectionId;
 		this.isConnected = true;
 		/* if the connected message asks us to sync the time with the server, make the request */
+		/* FIXME: deprecated behaviour? probably remove
 		if(message.flags && (message.flags & (1 << flags.SYNC_TIME))) {
 			var self = this;
 			Utils.nextTick(function() {
 				self.connectionManager.realtime.time({connection_id:message.connectionId});
 			});
 		}
+		*/
 	};
 
 	Transport.prototype.onDisconnect = function() {};
@@ -5751,9 +5751,11 @@ var Transport = (function() {
 })();
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
 //	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
 	var hasBuffer = isBrowser ? false : !!Buffer;
+	var noop = function() {};
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -5831,6 +5833,11 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
 			callback(new Error(msg));
 		}
+	};
+
+	WebSocketTransport.prototype.sendClose = function(closing) {
+		if(closing)
+			this.send(new messagetypes.TProtocolMessage({action: messagetypes.TAction.CLOSE}), noop);
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
@@ -6954,6 +6961,8 @@ var Rest = (function() {
 	function Channels(realtime) {
 		this.realtime = realtime;
 		this.attached = {};
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
 
 	Channels.prototype.onChannelMessage = function(msg) {
@@ -6968,6 +6977,16 @@ var Rest = (function() {
 			return;
 		}
 		channel.onMessage(msg);
+	};
+
+	/* called when a transport becomes connected; reattempt attach()
+	 * for channels that were pending from a previous transport */
+	Channels.prototype.onTransportActive = function() {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			if(channel.state == 'pending')
+				channel.attachImpl();
+		}
 	};
 
 	/* called when a message response indicates that a particular
@@ -7262,7 +7281,7 @@ var RealtimeChannel = (function() {
     	this.sendMessage(msg, (callback || noop));
 	};
 
-	RealtimeChannel.prototype.subscribe = function() {
+	RealtimeChannel.prototype.subscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -7281,7 +7300,7 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* event, listener */) {
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -7368,10 +7387,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setAttached = function(message) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name);
-		this.state = 'attached';
+		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
 
+		/* ensure we don't transition multiple times */
+		if(this.state == 'attached')
+			return;
+
+		this.state = 'attached';
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
@@ -7387,7 +7411,7 @@ var RealtimeChannel = (function() {
 			}
 			this.presence.setAttached();
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
 	};
 
