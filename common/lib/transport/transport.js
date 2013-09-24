@@ -27,23 +27,18 @@ var Transport = (function() {
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function(sendDisconnect) {
+	Transport.prototype.close = function(closing) {
 		this.isConnected = false;
 		this.emit('closed', ConnectionError.closed);
-		if(sendDisconnect)
-			this.sendDisconnect();
+		this.sendClose(closing);
 		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
 		this.emit('failed', error);
-		this.sendDisconnect();
+		this.sendClose(true);
 		this.dispose();
-	};
-
-	Transport.prototype.sendDisconnect = function() {
-		this.send(new messagetypes.TProtocolMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -55,6 +50,7 @@ var Transport = (function() {
 			this.onConnect(message);
 			this.emit('connected', null, this.connectionId, message.flags);
 			break;
+		case actions.CLOSED:
 		case actions.DISCONNECTED:
 			this.isConnected = false;
 			this.onDisconnect();
@@ -83,12 +79,14 @@ var Transport = (function() {
 		this.connectionId = message.connectionId;
 		this.isConnected = true;
 		/* if the connected message asks us to sync the time with the server, make the request */
+		/* FIXME: deprecated behaviour? probably remove
 		if(message.flags && (message.flags & (1 << flags.SYNC_TIME))) {
 			var self = this;
 			Utils.nextTick(function() {
 				self.connectionManager.realtime.time({connection_id:message.connectionId});
 			});
 		}
+		*/
 	};
 
 	Transport.prototype.onDisconnect = function() {};
