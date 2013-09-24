@@ -239,10 +239,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setAttached = function(message) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name);
-		this.state = 'attached';
+		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
 
+		/* ensure we don't transition multiple times */
+		if(this.state == 'attached')
+			return;
+
+		this.state = 'attached';
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
@@ -258,7 +263,7 @@ var RealtimeChannel = (function() {
 			}
 			this.presence.setAttached();
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
 	};
 
