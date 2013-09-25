@@ -15,6 +15,16 @@ var ConnectionError = {
 		statusCode: 408,
 		code: 80000,
 		reason: 'Connection failed or disconnected by server'
+	},
+	unknownConnectionErr: {
+		statusCode: 500,
+		code: 50002,
+		reason: 'Internal connection error'
+	},
+	unknownChannelErr: {
+		statusCode: 500,
+		code: 50001,
+		reason: 'Internal channel error'
 	}
 };
 var inherits = function(constructor, superConstructor, overrides) {
@@ -7253,7 +7263,7 @@ var RealtimeChannel = (function() {
 				break;
 			case 'attached':
 				/* this shouldn't happen ... */
-				callback(UIMessages.FAIL_REASON_UNKNOWN);
+				callback(ConnectionError.unknownChannelErr);
 				break;
 			case 'failed':
 				callback(err || connectionManager.getStateError());
@@ -7347,7 +7357,7 @@ var RealtimeChannel = (function() {
 			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
+			this.connectionManager.abort(ConnectionError.unknownChannelErr);
 		}
 	};
 
@@ -7381,7 +7391,7 @@ var RealtimeChannel = (function() {
 			this.presence.setPresence(message.presence, false);
 
 		/* ensure we don't transition multiple times */
-		if(this.state == 'attached')
+		if(this.state != 'attaching')
 			return;
 
 		this.state = 'attached';
