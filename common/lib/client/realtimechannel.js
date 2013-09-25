@@ -37,20 +37,22 @@ var RealtimeChannel = (function() {
     	var message = new messagetypes.TMessage();
     	message.name = name;
     	message.data = Data.toTData(data);
-		if(this.state == 'attached') {
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-    		var msg = new messagetypes.TProtocolMessage();
-    		msg.action = messagetypes.TAction.MESSAGE;
-    		msg.channel = this.name;
-    		msg.messages = [message];
-    		this.sendMessage(msg, callback);
-    		return;
+		switch(this.state) {
+			case 'attached':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+				var msg = new messagetypes.TProtocolMessage();
+				msg.action = messagetypes.TAction.MESSAGE;
+				msg.channel = this.name;
+				msg.messages = [message];
+				this.sendMessage(msg, callback);
+				break;
+			default:
+				this.attach();
+			case 'attaching':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
+				this.pendingEvents.push({message: message, listener: callback});
+				break;
 		}
-		if(this.state != 'pending') {
-			this.attach();
-		}
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-		this.pendingEvents.push({message: message, listener: callback});
 	};
 
 	RealtimeChannel.prototype.onEvent = function(messages) {
@@ -93,7 +95,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-		this.state = 'pending';
+		this.state = 'attaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -129,6 +131,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -289,21 +292,6 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
-	};
-
-	RealtimeChannel.prototype.retryMessage = function(message) {
-		/* the given message is a response that indicates a given
-		 * operation needs to be retried */
-		switch(message.action) {
-			case actions.ATTACHED:
-				this.attachImpl();
-				break;
-			case actions.DETACHED:
-				this.detachImpl();
-				break;
-			default:
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
-		}
 	};
 
 	return RealtimeChannel;
