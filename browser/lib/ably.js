@@ -5627,13 +5627,13 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
+		/* ignore messages received on transports that are no longer
+		 * the current transport. Pending operations will have been
+		 * retried when the new transport became active */
 		if(transport === this.transport) {
 			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
-			return;
 		}
-		/* message was received on connection or transport that is no longer current */
-		this.realtime.channels.retryChannelMessage(message);
 	};
 
 	return ConnectionManager;
@@ -5946,10 +5946,10 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.sendDisconnect = function() {
+	CometTransport.prototype.sendClose = function(closing) {
 		if(this.closeUri) {
 			var self = this;
-			this.request(this.closeUri, this.authParams, null, false, function(err, response) {
+			this.request(this.closeUri(closing), this.authParams, null, false, function(err, response) {
 				if(err) {
 					self.emit('error', err);
 					return;
@@ -5976,7 +5976,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-		this.closeUri = baseConnectionUri + '/close';
+		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
 		this.recv();
 	};
 
@@ -6984,25 +6984,11 @@ var Rest = (function() {
 	Channels.prototype.onTransportActive = function() {
 		for(var channelId in this.attached) {
 			var channel = this.attached[channelId];
-			if(channel.state == 'pending')
+			if(channel.state == 'attaching')
 				channel.attachImpl();
+			else if(channel.state == 'detaching')
+				channel.detachImpl();
 		}
-	};
-
-	/* called when a message response indicates that a particular
-	 * operation needs, or is likely to need, retrying */
-	Channels.prototype.retryChannelMessage = function(msg) {
-		var channelName = msg.channel;
-		if(!channelName) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-			return;
-		}
-		var channel = this.attached[channelName];
-		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-			return;
-		}
-		channel.retryMessage(msg);
 	};
 
 	Channels.prototype.get = function(name) {
@@ -7185,20 +7171,22 @@ var RealtimeChannel = (function() {
     	var message = new messagetypes.TMessage();
     	message.name = name;
     	message.data = Data.toTData(data);
-		if(this.state == 'attached') {
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-    		var msg = new messagetypes.TProtocolMessage();
-    		msg.action = messagetypes.TAction.MESSAGE;
-    		msg.channel = this.name;
-    		msg.messages = [message];
-    		this.sendMessage(msg, callback);
-    		return;
+		switch(this.state) {
+			case 'attached':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+				var msg = new messagetypes.TProtocolMessage();
+				msg.action = messagetypes.TAction.MESSAGE;
+				msg.channel = this.name;
+				msg.messages = [message];
+				this.sendMessage(msg, callback);
+				break;
+			default:
+				this.attach();
+			case 'attaching':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
+				this.pendingEvents.push({message: message, listener: callback});
+				break;
 		}
-		if(this.state != 'pending') {
-			this.attach();
-		}
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-		this.pendingEvents.push({message: message, listener: callback});
 	};
 
 	RealtimeChannel.prototype.onEvent = function(messages) {
@@ -7241,7 +7229,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-		this.state = 'pending';
+		this.state = 'attaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -7277,6 +7265,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -7439,21 +7428,6 @@ var RealtimeChannel = (function() {
 		this.emit('detached');
 	};
 
-	RealtimeChannel.prototype.retryMessage = function(message) {
-		/* the given message is a response that indicates a given
-		 * operation needs to be retried */
-		switch(message.action) {
-			case actions.ATTACHED:
-				this.attachImpl();
-				break;
-			case actions.DETACHED:
-				this.detachImpl();
-				break;
-			default:
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
-		}
-	};
-
 	return RealtimeChannel;
 })();
 var Presence = (function() {
@@ -7493,7 +7467,7 @@ var Presence = (function() {
 				break;
 			case 'initialized':
 				channel.attach();
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback
@@ -7523,7 +7497,7 @@ var Presence = (function() {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback
