@@ -1648,6 +1648,7 @@ var SStats = module.exports.SStats = function(args) {
   this.channels = undefined;
   this.apiRequests = undefined;
   this.tokenRequests = undefined;
+  this.inProgress = undefined;
   if (args) {
     if (args.all !== undefined) {
       this.all = args.all;
@@ -1672,6 +1673,9 @@ var SStats = module.exports.SStats = function(args) {
     }
     if (args.tokenRequests !== undefined) {
       this.tokenRequests = args.tokenRequests;
+    }
+    if (args.inProgress !== undefined) {
+      this.inProgress = args.inProgress;
     }
   }
 };
@@ -1753,6 +1757,13 @@ SStats.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 10:
+      if (ftype == Thrift.Type.STRING) {
+        this.inProgress = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -1802,6 +1813,11 @@ SStats.prototype.write = function(output) {
   if (this.tokenRequests !== undefined) {
     output.writeFieldBegin('tokenRequests', Thrift.Type.STRUCT, 8);
     this.tokenRequests.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.inProgress !== undefined) {
+    output.writeFieldBegin('inProgress', Thrift.Type.STRING, 10);
+    output.writeString(this.inProgress);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
