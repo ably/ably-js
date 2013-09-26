@@ -15,6 +15,16 @@ var ConnectionError = {
 		statusCode: 408,
 		code: 80000,
 		reason: 'Connection failed or disconnected by server'
+	},
+	unknownConnectionErr: {
+		statusCode: 500,
+		code: 50002,
+		reason: 'Internal connection error'
+	},
+	unknownChannelErr: {
+		statusCode: 500,
+		code: 50001,
+		reason: 'Internal channel error'
 	}
 };
 var inherits = function(constructor, superConstructor, overrides) {
@@ -2046,13 +2056,15 @@ TAction = {
 'CONNECTED' : 4,
 'DISCONNECT' : 5,
 'DISCONNECTED' : 6,
-'ERROR' : 7,
-'ATTACH' : 8,
-'ATTACHED' : 9,
-'DETACH' : 10,
-'DETACHED' : 11,
-'PRESENCE' : 12,
-'MESSAGE' : 13
+'CLOSE' : 7,
+'CLOSED' : 8,
+'ERROR' : 9,
+'ATTACH' : 10,
+'ATTACHED' : 11,
+'DETACH' : 12,
+'DETACHED' : 13,
+'PRESENCE' : 14,
+'MESSAGE' : 15
 };
 TType = {
 'NONE' : 0,
@@ -5625,13 +5637,13 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(transport === this.transport || transport.connectionId == this.connectionId) {
+		/* ignore messages received on transports that are no longer
+		 * the current transport. Pending operations will have been
+		 * retried when the new transport became active */
+		if(transport === this.transport) {
 			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
-			return;
 		}
-		/* message was received on connection that is no longer the current connection */
-		this.realtime.channels.retryChannelMessage(message);
 	};
 
 	return ConnectionManager;
@@ -5665,23 +5677,18 @@ var Transport = (function() {
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function(sendDisconnect) {
+	Transport.prototype.close = function(closing) {
 		this.isConnected = false;
 		this.emit('closed', ConnectionError.closed);
-		if(sendDisconnect)
-			this.sendDisconnect();
+		this.sendClose(closing);
 		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		this.isConnected = false;
 		this.emit('failed', error);
-		this.sendDisconnect();
+		this.sendClose(true);
 		this.dispose();
-	};
-
-	Transport.prototype.sendDisconnect = function() {
-		this.send(new messagetypes.TProtocolMessage({action: actions.DISCONNECT}), noop);
 	};
 
 	Transport.prototype.onChannelMessage = function(message) {
@@ -5693,6 +5700,7 @@ var Transport = (function() {
 			this.onConnect(message);
 			this.emit('connected', null, this.connectionId, message.flags);
 			break;
+		case actions.CLOSED:
 		case actions.DISCONNECTED:
 			this.isConnected = false;
 			this.onDisconnect();
@@ -5721,12 +5729,14 @@ var Transport = (function() {
 		this.connectionId = message.connectionId;
 		this.isConnected = true;
 		/* if the connected message asks us to sync the time with the server, make the request */
+		/* FIXME: deprecated behaviour? probably remove
 		if(message.flags && (message.flags & (1 << flags.SYNC_TIME))) {
 			var self = this;
 			Utils.nextTick(function() {
 				self.connectionManager.realtime.time({connection_id:message.connectionId});
 			});
 		}
+		*/
 	};
 
 	Transport.prototype.onDisconnect = function() {};
@@ -5751,9 +5761,11 @@ var Transport = (function() {
 })();
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
 //	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
 	var hasBuffer = isBrowser ? false : !!Buffer;
+	var noop = function() {};
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -5831,6 +5843,11 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
 			callback(new Error(msg));
 		}
+	};
+
+	WebSocketTransport.prototype.sendClose = function(closing) {
+		if(closing)
+			this.send(new messagetypes.TProtocolMessage({action: messagetypes.TAction.CLOSE}), noop);
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data, binary) {
@@ -5939,10 +5956,10 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.sendDisconnect = function() {
+	CometTransport.prototype.sendClose = function(closing) {
 		if(this.closeUri) {
 			var self = this;
-			this.request(this.closeUri, this.authParams, null, false, function(err, response) {
+			this.request(this.closeUri(closing), this.authParams, null, false, function(err, response) {
 				if(err) {
 					self.emit('error', err);
 					return;
@@ -5969,7 +5986,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-		this.closeUri = baseConnectionUri + '/close';
+		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
 		this.recv();
 	};
 
@@ -6954,6 +6971,8 @@ var Rest = (function() {
 	function Channels(realtime) {
 		this.realtime = realtime;
 		this.attached = {};
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
 
 	Channels.prototype.onChannelMessage = function(msg) {
@@ -6970,20 +6989,16 @@ var Rest = (function() {
 		channel.onMessage(msg);
 	};
 
-	/* called when a message response indicates that a particular
-	 * operation needs, or is likely to need, retrying */
-	Channels.prototype.retryChannelMessage = function(msg) {
-		var channelName = msg.channel;
-		if(!channelName) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-			return;
+	/* called when a transport becomes connected; reattempt attach()
+	 * for channels that were pending from a previous transport */
+	Channels.prototype.onTransportActive = function() {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			if(channel.state == 'attaching')
+				channel.attachImpl();
+			else if(channel.state == 'detaching')
+				channel.detachImpl();
 		}
-		var channel = this.attached[channelName];
-		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-			return;
-		}
-		channel.retryMessage(msg);
 	};
 
 	Channels.prototype.get = function(name) {
@@ -7166,20 +7181,22 @@ var RealtimeChannel = (function() {
     	var message = new messagetypes.TMessage();
     	message.name = name;
     	message.data = Data.toTData(data);
-		if(this.state == 'attached') {
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-    		var msg = new messagetypes.TProtocolMessage();
-    		msg.action = messagetypes.TAction.MESSAGE;
-    		msg.channel = this.name;
-    		msg.messages = [message];
-    		this.sendMessage(msg, callback);
-    		return;
+		switch(this.state) {
+			case 'attached':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+				var msg = new messagetypes.TProtocolMessage();
+				msg.action = messagetypes.TAction.MESSAGE;
+				msg.channel = this.name;
+				msg.messages = [message];
+				this.sendMessage(msg, callback);
+				break;
+			default:
+				this.attach();
+			case 'attaching':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
+				this.pendingEvents.push({message: message, listener: callback});
+				break;
 		}
-		if(this.state != 'pending') {
-			this.attach();
-		}
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-		this.pendingEvents.push({message: message, listener: callback});
 	};
 
 	RealtimeChannel.prototype.onEvent = function(messages) {
@@ -7222,7 +7239,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-		this.state = 'pending';
+		this.state = 'attaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -7246,7 +7263,7 @@ var RealtimeChannel = (function() {
 				break;
 			case 'attached':
 				/* this shouldn't happen ... */
-				callback(UIMessages.FAIL_REASON_UNKNOWN);
+				callback(ConnectionError.unknownChannelErr);
 				break;
 			case 'failed':
 				callback(err || connectionManager.getStateError());
@@ -7258,11 +7275,12 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
-	RealtimeChannel.prototype.subscribe = function() {
+	RealtimeChannel.prototype.subscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -7281,7 +7299,7 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* event, listener */) {
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -7339,7 +7357,7 @@ var RealtimeChannel = (function() {
 			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
+			this.connectionManager.abort(ConnectionError.unknownChannelErr);
 		}
 	};
 
@@ -7368,10 +7386,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setAttached = function(message) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name);
-		this.state = 'attached';
+		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
 
+		/* ensure we don't transition multiple times */
+		if(this.state != 'attaching')
+			return;
+
+		this.state = 'attached';
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
@@ -7387,7 +7410,7 @@ var RealtimeChannel = (function() {
 			}
 			this.presence.setAttached();
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
 	};
 
@@ -7413,21 +7436,6 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
-	};
-
-	RealtimeChannel.prototype.retryMessage = function(message) {
-		/* the given message is a response that indicates a given
-		 * operation needs to be retried */
-		switch(message.action) {
-			case actions.ATTACHED:
-				this.attachImpl();
-				break;
-			case actions.DETACHED:
-				this.detachImpl();
-				break;
-			default:
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
-		}
 	};
 
 	return RealtimeChannel;
@@ -7469,7 +7477,7 @@ var Presence = (function() {
 				break;
 			case 'initialized':
 				channel.attach();
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback
@@ -7499,7 +7507,7 @@ var Presence = (function() {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback

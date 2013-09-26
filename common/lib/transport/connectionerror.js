@@ -13,5 +13,15 @@ var ConnectionError = {
 		statusCode: 408,
 		code: 80000,
 		reason: 'Connection failed or disconnected by server'
+	},
+	unknownConnectionErr: {
+		statusCode: 500,
+		code: 50002,
+		reason: 'Internal connection error'
+	},
+	unknownChannelErr: {
+		statusCode: 500,
+		code: 50001,
+		reason: 'Internal channel error'
 	}
 };

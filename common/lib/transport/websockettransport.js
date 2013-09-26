@@ -1,8 +1,10 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
+	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
 //	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
 	var hasBuffer = isBrowser ? false : !!Buffer;
+	var noop = function() {};
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -80,6 +82,11 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
 			callback(new Error(msg));
 		}
+	};
+
+	WebSocketTransport.prototype.sendClose = function(closing) {
+		if(closing)
+			this.send(new messagetypes.TProtocolMessage({action: messagetypes.TAction.CLOSE}), noop);
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data, binary) {

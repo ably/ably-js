@@ -35,7 +35,7 @@ var Presence = (function() {
 				break;
 			case 'initialized':
 				channel.attach();
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback
@@ -65,7 +65,7 @@ var Presence = (function() {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
-			case 'pending':
+			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
 					callback : callback

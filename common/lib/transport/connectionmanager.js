@@ -698,13 +698,13 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(transport === this.transport || transport.connectionId == this.connectionId) {
+		/* ignore messages received on transports that are no longer
+		 * the current transport. Pending operations will have been
+		 * retried when the new transport became active */
+		if(transport === this.transport) {
 			this.connectionSerial = message.connectionSerial;
 			this.realtime.channels.onChannelMessage(message);
-			return;
 		}
-		/* message was received on connection that is no longer the current connection */
-		this.realtime.channels.retryChannelMessage(message);
 	};
 
 	return ConnectionManager;

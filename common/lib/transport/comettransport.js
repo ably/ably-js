@@ -56,10 +56,10 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.sendDisconnect = function() {
+	CometTransport.prototype.sendClose = function(closing) {
 		if(this.closeUri) {
 			var self = this;
-			this.request(this.closeUri, this.authParams, null, false, function(err, response) {
+			this.request(this.closeUri(closing), this.authParams, null, false, function(err, response) {
 				if(err) {
 					self.emit('error', err);
 					return;
@@ -86,7 +86,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-		this.closeUri = baseConnectionUri + '/close';
+		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
 		this.recv();
 	};
 

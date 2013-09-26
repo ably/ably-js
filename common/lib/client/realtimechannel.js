@@ -37,20 +37,22 @@ var RealtimeChannel = (function() {
     	var message = new messagetypes.TMessage();
     	message.name = name;
     	message.data = Data.toTData(data);
-		if(this.state == 'attached') {
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-    		var msg = new messagetypes.TProtocolMessage();
-    		msg.action = messagetypes.TAction.MESSAGE;
-    		msg.channel = this.name;
-    		msg.messages = [message];
-    		this.sendMessage(msg, callback);
-    		return;
+		switch(this.state) {
+			case 'attached':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+				var msg = new messagetypes.TProtocolMessage();
+				msg.action = messagetypes.TAction.MESSAGE;
+				msg.channel = this.name;
+				msg.messages = [message];
+				this.sendMessage(msg, callback);
+				break;
+			default:
+				this.attach();
+			case 'attaching':
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
+				this.pendingEvents.push({message: message, listener: callback});
+				break;
 		}
-		if(this.state != 'pending') {
-			this.attach();
-		}
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-		this.pendingEvents.push({message: message, listener: callback});
 	};
 
 	RealtimeChannel.prototype.onEvent = function(messages) {
@@ -93,7 +95,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-		this.state = 'pending';
+		this.state = 'attaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -117,7 +119,7 @@ var RealtimeChannel = (function() {
 				break;
 			case 'attached':
 				/* this shouldn't happen ... */
-				callback(UIMessages.FAIL_REASON_UNKNOWN);
+				callback(ConnectionError.unknownChannelErr);
 				break;
 			case 'failed':
 				callback(err || connectionManager.getStateError());
@@ -129,6 +131,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
@@ -210,7 +213,7 @@ var RealtimeChannel = (function() {
 			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.connectionManager.abort(UIMessages.FAIL_REASON_FAILED);
+			this.connectionManager.abort(ConnectionError.unknownChannelErr);
 		}
 	};
 
@@ -239,10 +242,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setAttached = function(message) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name);
-		this.state = 'attached';
+		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
 
+		/* ensure we don't transition multiple times */
+		if(this.state != 'attaching')
+			return;
+
+		this.state = 'attached';
 		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
@@ -258,7 +266,7 @@ var RealtimeChannel = (function() {
 			}
 			this.presence.setAttached();
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setSubscribed()', 'Unexpected exception sending pending messages: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
 	};
 
@@ -284,21 +292,6 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.presence.setSuspended(connectionState);
 		this.emit('detached');
-	};
-
-	RealtimeChannel.prototype.retryMessage = function(message) {
-		/* the given message is a response that indicates a given
-		 * operation needs to be retried */
-		switch(message.action) {
-			case actions.ATTACHED:
-				this.attachImpl();
-				break;
-			case actions.DETACHED:
-				this.detachImpl();
-				break;
-			default:
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.retryMessage()', 'Unable to retry action (' + message.action + '); ignoring');
-		}
 	};
 
 	return RealtimeChannel;

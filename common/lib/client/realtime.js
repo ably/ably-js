@@ -16,6 +16,8 @@ var Realtime = (function() {
 	function Channels(realtime) {
 		this.realtime = realtime;
 		this.attached = {};
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
 
 	Channels.prototype.onChannelMessage = function(msg) {
@@ -32,20 +34,16 @@ var Realtime = (function() {
 		channel.onMessage(msg);
 	};
 
-	/* called when a message response indicates that a particular
-	 * operation needs, or is likely to need, retrying */
-	Channels.prototype.retryChannelMessage = function(msg) {
-		var channelName = msg.channel;
-		if(!channelName) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
-			return;
+	/* called when a transport becomes connected; reattempt attach()
+	 * for channels that were pending from a previous transport */
+	Channels.prototype.onTransportActive = function() {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			if(channel.state == 'attaching')
+				channel.attachImpl();
+			else if(channel.state == 'detaching')
+				channel.detachImpl();
 		}
-		var channel = this.attached[channelName];
-		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
-			return;
-		}
-		channel.retryMessage(msg);
 	};
 
 	Channels.prototype.get = function(name) {
