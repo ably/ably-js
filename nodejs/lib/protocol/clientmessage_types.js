@@ -1649,6 +1649,7 @@ var SStats = module.exports.SStats = function(args) {
   this.apiRequests = undefined;
   this.tokenRequests = undefined;
   this.inProgress = undefined;
+  this.count = undefined;
   if (args) {
     if (args.all !== undefined) {
       this.all = args.all;
@@ -1676,6 +1677,9 @@ var SStats = module.exports.SStats = function(args) {
     }
     if (args.inProgress !== undefined) {
       this.inProgress = args.inProgress;
+    }
+    if (args.count !== undefined) {
+      this.count = args.count;
     }
   }
 };
@@ -1764,6 +1768,13 @@ SStats.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 11:
+      if (ftype == Thrift.Type.I32) {
+        this.count = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -1818,6 +1829,11 @@ SStats.prototype.write = function(output) {
   if (this.inProgress !== undefined) {
     output.writeFieldBegin('inProgress', Thrift.Type.STRING, 10);
     output.writeString(this.inProgress);
+    output.writeFieldEnd();
+  }
+  if (this.count !== undefined) {
+    output.writeFieldBegin('count', Thrift.Type.I32, 11);
+    output.writeI32(this.count);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
