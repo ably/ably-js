@@ -37,6 +37,7 @@ includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
 includeScript('../common/lib/types/serialize.js');
 includeScript('../common/lib/client/resource.js');
+includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/connectionstatechange.js');
 includeScript('../common/lib/client/connection.js');

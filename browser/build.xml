@@ -53,6 +53,7 @@
                 <file name="types/presencemessage.js"/>
                 <file name="types/serialize.js"/>
                 <file name="client/resource.js"/>
+                <file name="client/paginatedresource.js"/>
                 <file name="client/auth.js"/>
                 <file name="client/rest.js"/>
                 <file name="client/realtime.js"/>
