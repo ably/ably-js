@@ -1,5 +1,6 @@
 var Rest = (function() {
 	var noop = function() {};
+	var identity = function(x) { return x; }
 
 	function Rest(options) {
 		/* normalise options */
@@ -52,7 +53,7 @@ var Rest = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Resource.get(this, '/stats', headers, params, callback);
+		(new PaginatedResource(this, '/stats', headers, params, identity)).get(callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {
