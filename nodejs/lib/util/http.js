@@ -28,7 +28,7 @@ this.Http = (function() {
 				callback(body.error || {statusCode: statusCode});
 				return;
 			}
-			callback(null, body);
+			callback(null, body, response.headers);
 		};
 	};
 
