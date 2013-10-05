@@ -32,7 +32,9 @@ TType = {
 'STRING' : 6,
 'BUFFER' : 7,
 'JSONARRAY' : 8,
-'JSONOBJECT' : 9
+'JSONOBJECT' : 9,
+'CIPHER_STRING' : 10,
+'CIPHER_BUFFER' : 11
 };
 TFlags = {
 'SYNC_TIME' : 0
