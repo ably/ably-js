@@ -32,8 +32,7 @@ TType = {
 'STRING' : 6,
 'BUFFER' : 7,
 'JSONARRAY' : 8,
-'JSONOBJECT' : 9,
-'ENCRYPTED' : 16
+'JSONOBJECT' : 9
 };
 TFlags = {
 'SYNC_TIME' : 0
@@ -132,6 +131,7 @@ TData = function(args) {
   this.doubleData = undefined;
   this.stringData = undefined;
   this.binaryData = undefined;
+  this.cipherData = undefined;
   if (args) {
     if (args.type !== undefined) {
       this.type = args.type;
@@ -150,6 +150,9 @@ TData = function(args) {
     }
     if (args.binaryData !== undefined) {
       this.binaryData = args.binaryData;
+    }
+    if (args.cipherData !== undefined) {
+      this.cipherData = args.cipherData;
     }
   }
 };
@@ -209,6 +212,13 @@ TData.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 7:
+      if (ftype == Thrift.Type.STRING) {
+        this.cipherData = input.readBinary();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -248,6 +258,11 @@ TData.prototype.write = function(output) {
   if (this.binaryData !== undefined) {
     output.writeFieldBegin('binaryData', Thrift.Type.STRING, 6);
     output.writeString(this.binaryData);
+    output.writeFieldEnd();
+  }
+  if (this.cipherData !== undefined) {
+    output.writeFieldBegin('cipherData', Thrift.Type.STRING, 7);
+    output.writeString(this.cipherData);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
