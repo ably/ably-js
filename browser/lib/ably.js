@@ -3691,6 +3691,7 @@ SStats = function(args) {
   this.channels = undefined;
   this.apiRequests = undefined;
   this.tokenRequests = undefined;
+  this.inProgress = undefined;
   if (args) {
     if (args.all !== undefined) {
       this.all = args.all;
@@ -3715,6 +3716,9 @@ SStats = function(args) {
     }
     if (args.tokenRequests !== undefined) {
       this.tokenRequests = args.tokenRequests;
+    }
+    if (args.inProgress !== undefined) {
+      this.inProgress = args.inProgress;
     }
   }
 };
@@ -3796,6 +3800,13 @@ SStats.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 10:
+      if (ftype == Thrift.Type.STRING) {
+        this.inProgress = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -3845,6 +3856,11 @@ SStats.prototype.write = function(output) {
   if (this.tokenRequests !== undefined) {
     output.writeFieldBegin('tokenRequests', Thrift.Type.STRUCT, 8);
     this.tokenRequests.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.inProgress !== undefined) {
+    output.writeFieldBegin('inProgress', Thrift.Type.STRING, 10);
+    output.writeString(this.inProgress);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -6407,7 +6423,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res) {
+				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res, headers) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -6420,7 +6436,7 @@ var Resource = (function() {
 						});
 						return;
 					}
-					callback(err, res);
+					callback(err, res, headers);
 				});
 			});
 		}
@@ -6434,7 +6450,7 @@ var Resource = (function() {
 					callback(err);
 					return;
 				}
-				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res) {
+				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res, headers) {
 					if(err && err.code == 40140) {
 						/* token has expired, so get a new one */
 						rest.auth.authorise({force:true}, function(err) {
@@ -6447,7 +6463,7 @@ var Resource = (function() {
 						});
 						return;
 					}
-					callback(err, res);
+					callback(err, res, headers);
 				});
 			});
 		}
@@ -6456,7 +6472,56 @@ var Resource = (function() {
 
 	return Resource;
 })();
-var Auth = (function() {
+var PaginatedResource = (function() {
+	var qs = require('querystring');
+	var url = require('url');
+
+	function PaginatedResource(rest, path, headers, params, bodyHandler) {
+		this.rest = rest;
+		this.path = path;
+		this.headers = headers;
+		this.params = params;
+		this.bodyHandler = bodyHandler;
+		this.current = null;
+	}
+
+	PaginatedResource.prototype.get = function(callback) {
+		var self = this;
+		Resource.get(this.rest, this.path, this.headers, this.params, function(err, body, headers) {
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + err);
+				return;
+			}
+			var current = self.current = self.bodyHandler(body);
+			var linkHeaders, relLinks;
+			if(headers && (linkHeaders = (headers['Link'] || headers['link'])))
+				relLinks = self.parseRelLinks(linkHeaders.split(','));
+
+			callback(null, current, relLinks);
+		});
+	};
+
+	PaginatedResource.prototype.parseRelLinks = function(linkHeaders) {
+		var relLinks = {}, self = this;
+		for(var i = 0; i < linkHeaders.length; i++) {
+			var linkMatch = linkHeaders[i].match(/^\s*<(.+)>;\s*rel="(\w+)"$/);
+			if(linkMatch)
+				relLinks[linkMatch[2]] = self.getRel(linkMatch[1]);
+		}
+		return relLinks;
+	};
+
+	PaginatedResource.prototype.getRel = function(linkUrl) {
+		var relUrl = url.parse(linkUrl, true),
+			relPath = url.resolve(this.path, relUrl.path),
+			self = this;
+		return function(callback) {
+			(new PaginatedResource(self.rest, relPath, self.headers, relUrl.query, self.bodyHandler)).get(callback);
+		};
+	};
+
+	return PaginatedResource;
+})();var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
 	function noop() {}
@@ -6851,6 +6916,7 @@ var Auth = (function() {
 })();
 var Rest = (function() {
 	var noop = function() {};
+	var identity = function(x) { return x; }
 
 	function Rest(options) {
 		/* normalise options */
@@ -6903,7 +6969,7 @@ var Rest = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		Resource.get(this, '/stats', headers, params, callback);
+		(new PaginatedResource(this, '/stats', headers, params, identity)).get(callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {
