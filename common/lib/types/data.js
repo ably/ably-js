@@ -1,5 +1,8 @@
 this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var TData = messagetypes.TData;
+	var TType = messagetypes.TType;
+	var CipherData = Crypto.CipherData;
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -82,6 +85,9 @@ this.Data = (function() {
 	Data.fromTData = function(tData) {
 		var result = undefined;
 		if(tData) {
+			if(tData.cipherData)
+				return new CipherData(tData.cipherData, tData.type);
+
 			switch(tData.type) {
 				case 1: /* TRUE */
 					result = true;
@@ -120,6 +126,66 @@ this.Data = (function() {
 		if(func && func(result, value))
 			return result;
 		throw new Error('Unsupported data type: ' + Object.prototype.toString.call(value));
+	};
+
+	Data.asPlaintext = function(tData) {
+		var result;
+		switch(tData.type) {
+			case TType.STRING:
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+				result = new Buffer(tData.stringData);
+				break;
+			case TType.NONE:
+			case TType.TRUE:
+			case TType.FALSE:
+				break;
+			case TType.INT32:
+				result = new Buffer(4);
+				result.writeInt32BE(tData.i32Data, 0, true);
+				break;
+			case TType.INT64:
+				result = new Buffer(8);
+				result.writeInt64BE(tData.i64Data, 0, true);
+				break;
+			case TType.DOUBLE:
+				result = new Buffer(8);
+				result.writeDouble64BE(tData.doubleData, 0, true);
+				break;
+			case TType.BUFFER:
+				result = tData.binaryData;
+				break;
+		}
+		return result;
+	};
+
+	Data.fromPlaintext = function(plaintext, type) {
+		var result = new TData();
+		result.type = type;
+		switch(type) {
+			case TType.INT32:
+				result.i32Data = plaintext.readInt32BE(0, true);
+				break;
+			case TType.INT64:
+				result.i64Data = plaintext.readInt64BE(0, true);
+				break;
+			case TType.DOUBLE:
+				result.doubleData = plaintext.readDoubleBE(0, true);
+				break;
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+			case TType.STRING:
+				result.stringData = plaintext.toString();
+				break;
+			case TType.BUFFER:
+				result.binaryData = plaintext;
+				break;
+		/*	case TType.NONE:
+			case TType.TRUE:
+			case TType.FALSE: */
+			default:
+		}
+		return result;
 	};
 
 	return Data;

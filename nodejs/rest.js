@@ -26,14 +26,15 @@ includeScript('./lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
+includeScript('./lib/util/crypto.js');
 includeScript('../common/lib/types/data.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
 includeScript('../common/lib/types/serialize.js');
 includeScript('../common/lib/client/resource.js');
-includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/rest.js');
 
-module.exports = context.Rest;
+var Rest = module.exports = context.Rest;
+Rest.Crypto = context.Crypto;

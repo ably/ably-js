@@ -27,6 +27,7 @@ includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
 includeScript('../common/lib/util/multicaster.js');
+includeScript('./lib/util/crypto.js');
 includeScript('../common/lib/transport/connectionerror.js');
 includeScript('../common/lib/transport/connectionmanager.js');
 includeScript('../common/lib/transport/transport.js');
@@ -48,4 +49,5 @@ includeScript('../common/lib/client/rest.js');
 includeScript('../common/lib/client/realtime.js');
 includeScript('./lib/transport/nodecomettransport.js');
 
-module.exports = context.Realtime;
+var Realtime = module.exports = context.Realtime;
+Realtime.Crypto = context.Crypto;

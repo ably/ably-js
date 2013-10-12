@@ -7,8 +7,16 @@ var Channel = (function() {
 		EventEmitter.call(this);
 		this.rest = rest;
     	this.name = name;
+		this.cipher = null;
 	}
 	Utils.inherits(Channel, EventEmitter);
+
+	Channel.prototype.setOptions = function(channelOpts, callback) {
+		if(channelOpts && channelOpts.encrypted)
+			this.cipher = Crypto.getCipher(channelOpts, callback);
+		else
+			callback(null, this.cipher = null);
+	};
 
 	Channel.prototype.presence = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
@@ -46,8 +54,11 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-		var rest = this.rest, binary = !rest.options.useTextProtocol;
-		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
+		var rest = this.rest,
+			binary = !rest.options.useTextProtocol,
+			headers = Utils.copy(Utils.defaultGetHeaders(binary)),
+			cipher = this.cipher;
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, function(err, res) {
@@ -56,7 +67,12 @@ var Channel = (function() {
 				return;
 			}
 			try {
-				callback(null, Serialize.TMessageArray.decode(res, binary));
+				var messages = Serialize.TMessageArray.decode(res, binary);
+				if(cipher)
+					for(var i = 0; i < messages.length; i++)
+						Message.decrypt(messages[i], cipher);
+
+				callback(null, messages);
 			} catch(err) {
 				callback(err);
 			}
@@ -66,9 +82,13 @@ var Channel = (function() {
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
 		callback = callback || noop;
-		var rest = this.rest;
-		var binary = !rest.options.useTextProtocol;
-		var requestBody = Serialize.TMessageArray.encode([{name:name, data:data}], binary);
+		var rest = this.rest,
+			binary = !rest.options.useTextProtocol,
+			msg = {name:name, data:data},
+			cipher = this.cipher;
+		if(cipher)
+			Message.encrypt(msg, cipher);
+		var requestBody = Serialize.TMessageArray.encode([msg], binary);
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);

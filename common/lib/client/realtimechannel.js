@@ -26,6 +26,19 @@ var RealtimeChannel = (function() {
 		reason: 'Channel operation failed (invalid channel state)'
 	};
 
+	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
+		callback = callback || noop;
+		if(channelOpts && channelOpts.encrypted) {
+			var self = this;
+			Crypto.getCipher(channelOpts, function(err, cipher) {
+				self.cipher = cipher;
+				callback(null);
+			});
+		} else {
+			callback(null, this.cipher = null);
+		}
+	};
+
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
 		callback = callback || noop;
@@ -34,9 +47,13 @@ var RealtimeChannel = (function() {
 			callback(connectionManager.getStateError());
 			return;
 		}
-    	var message = new messagetypes.TMessage();
+    	var message = new messagetypes.TMessage(),
+			cipher = this.cipher;
     	message.name = name;
     	message.data = Data.toTData(data);
+		if(cipher)
+			Message.encrypt(message, cipher);
+
 		switch(this.state) {
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
@@ -198,9 +215,11 @@ var RealtimeChannel = (function() {
 		case actions.MESSAGE:
 			var tMessages = message.messages;
 			if(tMessages) {
-				var messages = new Array(tMessages.length);
+				var messages = new Array(tMessages.length),
+					cipher = this.cipher;
 				for(var i = 0; i < messages.length; i++) {
 					var tMessage = tMessages[i];
+					if(cipher) Message.decrypt(tMessage, cipher);
 					messages[i] = new Message(
 						tMessage.channelSerial,
 						tMessage.timestamp,
