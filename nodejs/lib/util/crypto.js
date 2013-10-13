@@ -39,6 +39,15 @@ var Crypto = (function() {
 	for(var i = 1; i <= 16; i++) pkcs5Padding.push(filledBuffer(i, i));
 
 	/**
+	 * Internal: convert a binary string to Buffer (for node 0.8.x)
+	 * @param bufferOrString
+	 * @returns {Buffer}
+	 */
+	function toBuffer(bufferOrString) {
+		return (typeof(bufferOrString) == 'string') ? new Buffer(bufferOrString, 'binary') : bufferOrString;
+	}
+
+	/**
 	 * Utility classes and interfaces for message payload encryption.
 	 *
 	 * This class supports AES/CBC/PKCS5 with a default keylength of 128 bits
@@ -161,8 +170,7 @@ var Crypto = (function() {
 			paddedLength = getPaddedLength(plaintextLength),
 			iv = this.getIv();
 		var cipherOut = this.encryptCipher.update(Buffer.concat([plaintext, pkcs5Padding[paddedLength - plaintextLength]]));
-		if(typeof(cipherOut) == 'string') cipherOut = new Buffer(cipherOut, 'binary');
-		var ciphertext = Buffer.concat([iv, cipherOut]);
+		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
 		console.log('encrypt: ciphertext:');
 		console.log(hexy.hexy(ciphertext));
 		return ciphertext;
@@ -173,12 +181,12 @@ var Crypto = (function() {
 		console.log(hexy.hexy(ciphertext));
 		var blockLength = this.blockLength,
 			decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
-			plaintext = decryptCipher.update(ciphertext.slice(blockLength)),
+			plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
 			final = decryptCipher.final();
 		if(typeof(plaintext) == 'string') plaintext = new Buffer(plaintext, 'binary');
 		if(final && final.length)
 			if(typeof(final) == 'string') final = new Buffer(final, 'binary');
-			plaintext = Buffer.concat([plaintext, final]);
+			plaintext = Buffer.concat([plaintext, toBuffer(final)]);
 		console.log('decrypt: plaintext:');
 		console.log(hexy.hexy(plaintext));
 		return plaintext;
