@@ -11,18 +11,6 @@ this.Serialize = (function() {
 		TMessageBundle = Serialize.TMessageBundle = {},
 		BUFFER = messagetypes.TType.BUFFER;
 
-	TData.fromREST = function(jsonObject) {
-		var tData, jsonData = jsonObject.data, encoding = jsonObject.encoding;
-		if(encoding) {
-			tData = new TData();
-			tData.type = BUFFER;
-			tData.binaryData = new Buffer(jsonData, encoding);
-		} else {
-			tData = Data.toTData(jsonData);
-		}
-		jsonObject.data = jsonData;
-	};
-
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
@@ -34,10 +22,18 @@ this.Serialize = (function() {
 			timestamp: this.timestamp,
 			tags: this.tags
 		};
-		var value = Data.fromTData(tData);
-		if(tData.type == BUFFER) {
-			result.encoding = 'base64'
+
+		var value;
+		if(value = Data.isCipherData(tData)) {
+			result.encoding = 'cipher+base64';
 			value = value.toString('base64');
+			result.type = tData.type;
+		} else {
+			value = Data.fromTData(tData);
+			if(tData.type == BUFFER) {
+				result.encoding = 'base64';
+				value = value.toString('base64');
+			}
 		}
 		result.data = value;
 		return result;
@@ -64,13 +60,20 @@ this.Serialize = (function() {
 	};
 
 	TData.fromREST = function(jsonObject, jsonData) {
-		var tData, jsonData, encoding = jsonObject.encoding;
-		if(encoding) {
-			tData = new TData();
-			tData.type = BUFFER;
-			tData.binaryData = new Buffer(jsonData, encoding);
-		} else {
-			tData = Data.toTData(jsonData);
+		var tData, encoding = jsonObject.encoding;
+		switch(encoding) {
+			case 'cipher+base64':
+				tData = new messagetypes.TData();
+				tData.type = jsonObject.type;
+				tData.cipherData = new Buffer(jsonData, 'base64');
+				break;
+			case 'base64':
+				tData = new messagetypes.TData();
+				tData.type = BUFFER;
+				tData.binaryData = new Buffer(jsonData, 'base64');
+				break;
+			default:
+				tData = Data.toTData(jsonData);
 		}
 		return tData;
 	};

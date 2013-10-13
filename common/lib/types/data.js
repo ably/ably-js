@@ -82,6 +82,10 @@ this.Data = (function() {
 
 	function Data() {}
 
+	Data.isCipherData = function(tData) {
+		return tData.cipherData;
+	};
+
 	Data.fromTData = function(tData) {
 		var result = undefined;
 		if(tData) {
