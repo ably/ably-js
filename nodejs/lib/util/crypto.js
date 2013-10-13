@@ -110,7 +110,7 @@ var Crypto = (function() {
 		}
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM + String(key.length * 8);
+		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.length * 8);
 		params.key = key;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
@@ -155,7 +155,7 @@ var Crypto = (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm;
+		var algorithm = this.algorithm = params.algorithm + '-cbc';
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
@@ -164,37 +164,35 @@ var Crypto = (function() {
 
 	CBCCipher.prototype.encrypt = function(plaintext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-		console.log('encrypt: plaintext:');
-		console.log(hexy.hexy(plaintext));
+		//console.log('encrypt: plaintext:');
+		//console.log(hexy.hexy(plaintext));
 		var plaintextLength = plaintext.length,
 			paddedLength = getPaddedLength(plaintextLength),
 			iv = this.getIv();
 		var cipherOut = this.encryptCipher.update(Buffer.concat([plaintext, pkcs5Padding[paddedLength - plaintextLength]]));
 		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-		console.log('encrypt: ciphertext:');
-		console.log(hexy.hexy(ciphertext));
+		//console.log('encrypt: ciphertext:');
+		//console.log(hexy.hexy(ciphertext));
 		return ciphertext;
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
-		console.log('decrypt: ciphertext:');
-		console.log(hexy.hexy(ciphertext));
+		//console.log('decrypt: ciphertext:');
+		//console.log(hexy.hexy(ciphertext));
 		var blockLength = this.blockLength,
 			decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
 			plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
 			final = decryptCipher.final();
-		if(typeof(plaintext) == 'string') plaintext = new Buffer(plaintext, 'binary');
 		if(final && final.length)
-			if(typeof(final) == 'string') final = new Buffer(final, 'binary');
 			plaintext = Buffer.concat([plaintext, toBuffer(final)]);
-		console.log('decrypt: plaintext:');
-		console.log(hexy.hexy(plaintext));
+		//console.log('decrypt: plaintext:');
+		//console.log(hexy.hexy(plaintext));
 		return plaintext;
 	};
 
 	CBCCipher.prototype.getIv = function() {
 		if(!this.iv)
-			return this.encryptCipher.update(emptyBlock);
+			return toBuffer(this.encryptCipher.update(emptyBlock));
 
 		var result = this.iv;
 		this.iv = null;
