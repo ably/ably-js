@@ -219,7 +219,17 @@ var RealtimeChannel = (function() {
 					cipher = this.cipher;
 				for(var i = 0; i < messages.length; i++) {
 					var tMessage = tMessages[i];
-					if(cipher) Message.decrypt(tMessage, cipher);
+					if(cipher) {
+						try {
+							Message.decrypt(tMessage, cipher);
+						} catch(e) {
+							/* decrypt failed .. the most likely cause is that we have the wrong key */
+							var msg = 'Unexpected error decrypting message; err = ' + e;
+							Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+							var err = new Error(msg);
+							this.emit('error', err);
+						}
+					}
 					messages[i] = new Message(
 						tMessage.channelSerial,
 						tMessage.timestamp,
