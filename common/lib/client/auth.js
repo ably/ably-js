@@ -231,7 +231,7 @@ var Auth = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/authorise'; };
+		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/requestToken'; };
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
 				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
