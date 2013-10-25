@@ -2175,6 +2175,7 @@ TData = function(args) {
   this.doubleData = undefined;
   this.stringData = undefined;
   this.binaryData = undefined;
+  this.cipherData = undefined;
   if (args) {
     if (args.type !== undefined) {
       this.type = args.type;
@@ -2193,6 +2194,9 @@ TData = function(args) {
     }
     if (args.binaryData !== undefined) {
       this.binaryData = args.binaryData;
+    }
+    if (args.cipherData !== undefined) {
+      this.cipherData = args.cipherData;
     }
   }
 };
@@ -2252,6 +2256,13 @@ TData.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 7:
+      if (ftype == Thrift.Type.STRING) {
+        this.cipherData = input.readBinary();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -2291,6 +2302,11 @@ TData.prototype.write = function(output) {
   if (this.binaryData !== undefined) {
     output.writeFieldBegin('binaryData', Thrift.Type.STRING, 6);
     output.writeString(this.binaryData);
+    output.writeFieldEnd();
+  }
+  if (this.cipherData !== undefined) {
+    output.writeFieldBegin('cipherData', Thrift.Type.STRING, 7);
+    output.writeString(this.cipherData);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -3692,6 +3708,7 @@ SStats = function(args) {
   this.apiRequests = undefined;
   this.tokenRequests = undefined;
   this.inProgress = undefined;
+  this.count = undefined;
   if (args) {
     if (args.all !== undefined) {
       this.all = args.all;
@@ -3719,6 +3736,9 @@ SStats = function(args) {
     }
     if (args.inProgress !== undefined) {
       this.inProgress = args.inProgress;
+    }
+    if (args.count !== undefined) {
+      this.count = args.count;
     }
   }
 };
@@ -3807,6 +3827,13 @@ SStats.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 11:
+      if (ftype == Thrift.Type.I32) {
+        this.count = input.readI32();
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -3861,6 +3888,11 @@ SStats.prototype.write = function(output) {
   if (this.inProgress !== undefined) {
     output.writeFieldBegin('inProgress', Thrift.Type.STRING, 10);
     output.writeString(this.inProgress);
+    output.writeFieldEnd();
+  }
+  if (this.count !== undefined) {
+    output.writeFieldBegin('count', Thrift.Type.I32, 11);
+    output.writeI32(this.count);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -6103,6 +6135,9 @@ var CometTransport = (function() {
 })();
 this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var TData = messagetypes.TData;
+	var TType = messagetypes.TType;
+	var CipherData = Crypto.CipherData;
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -6182,9 +6217,16 @@ this.Data = (function() {
 
 	function Data() {}
 
+	Data.isCipherData = function(tData) {
+		return tData.cipherData;
+	};
+
 	Data.fromTData = function(tData) {
 		var result = undefined;
 		if(tData) {
+			if(tData.cipherData)
+				return new CipherData(tData.cipherData, tData.type);
+
 			switch(tData.type) {
 				case 1: /* TRUE */
 					result = true;
@@ -6225,10 +6267,71 @@ this.Data = (function() {
 		throw new Error('Unsupported data type: ' + Object.prototype.toString.call(value));
 	};
 
+	Data.asPlaintext = function(tData) {
+		var result;
+		switch(tData.type) {
+			case TType.STRING:
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+				result = new Buffer(tData.stringData);
+				break;
+			case TType.NONE:
+			case TType.TRUE:
+			case TType.FALSE:
+				break;
+			case TType.INT32:
+				result = new Buffer(4);
+				result.writeInt32BE(tData.i32Data, 0, true);
+				break;
+			case TType.INT64:
+				result = new Buffer(8);
+				result.writeInt64BE(tData.i64Data, 0, true);
+				break;
+			case TType.DOUBLE:
+				result = new Buffer(8);
+				result.writeDouble64BE(tData.doubleData, 0, true);
+				break;
+			case TType.BUFFER:
+				result = tData.binaryData;
+				break;
+		}
+		return result;
+	};
+
+	Data.fromPlaintext = function(plaintext, type) {
+		var result = new TData();
+		result.type = type;
+		switch(type) {
+			case TType.INT32:
+				result.i32Data = plaintext.readInt32BE(0, true);
+				break;
+			case TType.INT64:
+				result.i64Data = plaintext.readInt64BE(0, true);
+				break;
+			case TType.DOUBLE:
+				result.doubleData = plaintext.readDoubleBE(0, true);
+				break;
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+			case TType.STRING:
+				result.stringData = plaintext.toString();
+				break;
+			case TType.BUFFER:
+				result.binaryData = plaintext;
+				break;
+		/*	case TType.NONE:
+			case TType.TRUE:
+			case TType.FALSE: */
+			default:
+		}
+		return result;
+	};
+
 	return Data;
 })();
 var Message = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
+	var TData = messagetypes.TData;
 
 	/* public constructor */
 	function Message(channelSerial, timestamp, name, data) {
@@ -6237,6 +6340,19 @@ var Message = (function() {
 		this.name = name;
 		this.data = data;
 	}
+
+	Message.encrypt = function(msg, cipher) {
+		var cipherData = new TData(), data = msg.data;
+		cipherData.cipherData = cipher.encrypt(Data.asPlaintext(data));
+		cipherData.type = data.type;
+		msg.data = cipherData;
+	};
+
+	Message.decrypt = function(msg, cipher) {
+		var data = msg.data;
+		if(data.cipherData)
+			msg.data = Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
+	};
 
 	return Message;
 })();
@@ -6264,18 +6380,6 @@ this.Serialize = (function() {
 		TMessageBundle = Serialize.TMessageBundle = {},
 		BUFFER = messagetypes.TType.BUFFER;
 
-	TData.fromREST = function(jsonObject) {
-		var tData, jsonData = jsonObject.data, encoding = jsonObject.encoding;
-		if(encoding) {
-			tData = new TData();
-			tData.type = BUFFER;
-			tData.binaryData = new Buffer(jsonData, encoding);
-		} else {
-			tData = Data.toTData(jsonData);
-		}
-		jsonObject.data = jsonData;
-	};
-
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
@@ -6287,10 +6391,18 @@ this.Serialize = (function() {
 			timestamp: this.timestamp,
 			tags: this.tags
 		};
-		var value = Data.fromTData(tData);
-		if(tData.type == BUFFER) {
-			result.encoding = 'base64'
+
+		var value;
+		if(value = Data.isCipherData(tData)) {
+			result.encoding = 'cipher+base64';
 			value = value.toString('base64');
+			result.type = tData.type;
+		} else {
+			value = Data.fromTData(tData);
+			if(tData.type == BUFFER) {
+				result.encoding = 'base64';
+				value = value.toString('base64');
+			}
 		}
 		result.data = value;
 		return result;
@@ -6317,13 +6429,20 @@ this.Serialize = (function() {
 	};
 
 	TData.fromREST = function(jsonObject, jsonData) {
-		var tData, jsonData, encoding = jsonObject.encoding;
-		if(encoding) {
-			tData = new TData();
-			tData.type = BUFFER;
-			tData.binaryData = new Buffer(jsonData, encoding);
-		} else {
-			tData = Data.toTData(jsonData);
+		var tData, encoding = jsonObject.encoding;
+		switch(encoding) {
+			case 'cipher+base64':
+				tData = new messagetypes.TData();
+				tData.type = jsonObject.type;
+				tData.cipherData = new Buffer(jsonData, 'base64');
+				break;
+			case 'base64':
+				tData = new messagetypes.TData();
+				tData.type = BUFFER;
+				tData.binaryData = new Buffer(jsonData, 'base64');
+				break;
+			default:
+				tData = Data.toTData(jsonData);
 		}
 		return tData;
 	};
@@ -6754,7 +6873,7 @@ var PaginatedResource = (function() {
 		if('capability' in options)
 			requestParams.capability = c14n(options.capability);
 
-		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/authorise'; };
+		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/requestToken'; };
 		var tokenRequest = function(ob, tokenCb) {
 			if(Http.post)
 				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
@@ -7138,8 +7257,16 @@ var Channel = (function() {
 		EventEmitter.call(this);
 		this.rest = rest;
     	this.name = name;
+		this.cipher = null;
 	}
 	Utils.inherits(Channel, EventEmitter);
+
+	Channel.prototype.setOptions = function(channelOpts, callback) {
+		if(channelOpts && channelOpts.encrypted)
+			this.cipher = Crypto.getCipher(channelOpts, callback);
+		else
+			callback(null, this.cipher = null);
+	};
 
 	Channel.prototype.presence = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence()', 'channel = ' + this.name);
@@ -7177,8 +7304,11 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-		var rest = this.rest, binary = !rest.options.useTextProtocol;
-		var headers = Utils.copy(Utils.defaultGetHeaders(binary));
+		var rest = this.rest,
+			binary = !rest.options.useTextProtocol,
+			headers = Utils.copy(Utils.defaultGetHeaders(binary)),
+			cipher = this.cipher;
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.get(rest, '/channels/' + this.name + '/history', headers, params, function(err, res) {
@@ -7187,7 +7317,12 @@ var Channel = (function() {
 				return;
 			}
 			try {
-				callback(null, Serialize.TMessageArray.decode(res, binary));
+				var messages = Serialize.TMessageArray.decode(res, binary);
+				if(cipher)
+					for(var i = 0; i < messages.length; i++)
+						Message.decrypt(messages[i], cipher);
+
+				callback(null, messages);
 			} catch(err) {
 				callback(err);
 			}
@@ -7197,9 +7332,13 @@ var Channel = (function() {
 	Channel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
 		callback = callback || noop;
-		var rest = this.rest;
-		var binary = !rest.options.useTextProtocol;
-		var requestBody = Serialize.TMessageArray.encode([{name:name, data:data}], binary);
+		var rest = this.rest,
+			binary = !rest.options.useTextProtocol,
+			msg = {name:name, data:data},
+			cipher = this.cipher;
+		if(cipher)
+			Message.encrypt(msg, cipher);
+		var requestBody = Serialize.TMessageArray.encode([msg], binary);
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -7236,6 +7375,19 @@ var RealtimeChannel = (function() {
 		reason: 'Channel operation failed (invalid channel state)'
 	};
 
+	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
+		callback = callback || noop;
+		if(channelOpts && channelOpts.encrypted) {
+			var self = this;
+			Crypto.getCipher(channelOpts, function(err, cipher) {
+				self.cipher = cipher;
+				callback(null);
+			});
+		} else {
+			callback(null, this.cipher = null);
+		}
+	};
+
 	RealtimeChannel.prototype.publish = function(name, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
 		callback = callback || noop;
@@ -7244,9 +7396,13 @@ var RealtimeChannel = (function() {
 			callback(connectionManager.getStateError());
 			return;
 		}
-    	var message = new messagetypes.TMessage();
+    	var message = new messagetypes.TMessage(),
+			cipher = this.cipher;
     	message.name = name;
     	message.data = Data.toTData(data);
+		if(cipher)
+			Message.encrypt(message, cipher);
+
 		switch(this.state) {
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
@@ -7408,9 +7564,21 @@ var RealtimeChannel = (function() {
 		case actions.MESSAGE:
 			var tMessages = message.messages;
 			if(tMessages) {
-				var messages = new Array(tMessages.length);
+				var messages = new Array(tMessages.length),
+					cipher = this.cipher;
 				for(var i = 0; i < messages.length; i++) {
 					var tMessage = tMessages[i];
+					if(cipher) {
+						try {
+							Message.decrypt(tMessage, cipher);
+						} catch(e) {
+							/* decrypt failed .. the most likely cause is that we have the wrong key */
+							var msg = 'Unexpected error decrypting message; err = ' + e;
+							Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+							var err = new Error(msg);
+							this.emit('error', err);
+						}
+					}
 					messages[i] = new Message(
 						tMessage.channelSerial,
 						tMessage.timestamp,
