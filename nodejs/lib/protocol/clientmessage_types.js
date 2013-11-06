@@ -1933,3 +1933,194 @@ SStatsArray.prototype.write = function(output) {
   return;
 };
 
+var WWebhookMessage = module.exports.WWebhookMessage = function(args) {
+  this.name = undefined;
+  this.webhookId = undefined;
+  this.timestamp = undefined;
+  this.serial = undefined;
+  this.data = undefined;
+  if (args) {
+    if (args.name !== undefined) {
+      this.name = args.name;
+    }
+    if (args.webhookId !== undefined) {
+      this.webhookId = args.webhookId;
+    }
+    if (args.timestamp !== undefined) {
+      this.timestamp = args.timestamp;
+    }
+    if (args.serial !== undefined) {
+      this.serial = args.serial;
+    }
+    if (args.data !== undefined) {
+      this.data = args.data;
+    }
+  }
+};
+WWebhookMessage.prototype = {};
+WWebhookMessage.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.name = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.webhookId = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.I64) {
+        this.timestamp = input.readI64();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRING) {
+        this.serial = input.readString();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.data = new ttypes.TData();
+        this.data.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+WWebhookMessage.prototype.write = function(output) {
+  output.writeStructBegin('WWebhookMessage');
+  if (this.name !== undefined) {
+    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
+    output.writeString(this.name);
+    output.writeFieldEnd();
+  }
+  if (this.webhookId !== undefined) {
+    output.writeFieldBegin('webhookId', Thrift.Type.STRING, 2);
+    output.writeString(this.webhookId);
+    output.writeFieldEnd();
+  }
+  if (this.timestamp !== undefined) {
+    output.writeFieldBegin('timestamp', Thrift.Type.I64, 3);
+    output.writeI64(this.timestamp);
+    output.writeFieldEnd();
+  }
+  if (this.serial !== undefined) {
+    output.writeFieldBegin('serial', Thrift.Type.STRING, 4);
+    output.writeString(this.serial);
+    output.writeFieldEnd();
+  }
+  if (this.data !== undefined) {
+    output.writeFieldBegin('data', Thrift.Type.STRUCT, 5);
+    this.data.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var WWebhookMessageArray = module.exports.WWebhookMessageArray = function(args) {
+  this.items = undefined;
+  if (args) {
+    if (args.items !== undefined) {
+      this.items = args.items;
+    }
+  }
+};
+WWebhookMessageArray.prototype = {};
+WWebhookMessageArray.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true)
+  {
+    var ret = input.readFieldBegin();
+    var fname = ret.fname;
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+      if (ftype == Thrift.Type.LIST) {
+        var _size56 = 0;
+        var _rtmp360;
+        this.items = [];
+        var _etype59 = 0;
+        _rtmp360 = input.readListBegin();
+        _etype59 = _rtmp360.etype;
+        _size56 = _rtmp360.size;
+        for (var _i61 = 0; _i61 < _size56; ++_i61)
+        {
+          var elem62 = undefined;
+          elem62 = new ttypes.WWebhookMessage();
+          elem62.read(input);
+          this.items.push(elem62);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+WWebhookMessageArray.prototype.write = function(output) {
+  output.writeStructBegin('WWebhookMessageArray');
+  if (this.items !== undefined) {
+    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
+    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
+    for (var iter63 in this.items)
+    {
+      if (this.items.hasOwnProperty(iter63))
+      {
+        iter63 = this.items[iter63];
+        iter63.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
