@@ -200,5 +200,16 @@ var Utils = (function() {
 		return arr.splice(Math.floor(Math.random() * arr.length));
 	};
 
+	Utils.parseQueryString = function(query) {
+		var match,
+			search = /([^&=]+)=?([^&]*)/g,
+			result = {};
+
+		while (match = search.exec(query))
+			result[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
+
+ 		return result;
+	};
+
 	return Utils;
 })();

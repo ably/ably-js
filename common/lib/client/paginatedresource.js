@@ -1,6 +1,4 @@
 var PaginatedResource = (function() {
-	var qs = require('querystring');
-	var url = require('url');
 
 	function PaginatedResource(rest, path, headers, params, bodyHandler) {
 		this.rest = rest;
@@ -8,6 +6,7 @@ var PaginatedResource = (function() {
 		this.headers = headers;
 		this.params = params;
 		this.bodyHandler = bodyHandler;
+		this.basePath = path.substr(0, path.lastIndexOf('/') + 1);
 		this.current = null;
 	}
 
@@ -31,18 +30,22 @@ var PaginatedResource = (function() {
 		var relLinks = {}, self = this;
 		for(var i = 0; i < linkHeaders.length; i++) {
 			var linkMatch = linkHeaders[i].match(/^\s*<(.+)>;\s*rel="(\w+)"$/);
-			if(linkMatch)
-				relLinks[linkMatch[2]] = self.getRel(linkMatch[1]);
+			if(linkMatch) {
+				var relLink = self.getRel(linkMatch[1]);
+				if(relLink)
+					relLinks[linkMatch[2]] = relLink;
+			}
 		}
 		return relLinks;
 	};
 
 	PaginatedResource.prototype.getRel = function(linkUrl) {
-		var relUrl = url.parse(linkUrl, true),
-			relPath = url.resolve(this.path, relUrl.path),
-			self = this;
+		var urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
+		if(!urlMatch) return null;
+
+		var self = this;
 		return function(callback) {
-			(new PaginatedResource(self.rest, relPath, self.headers, relUrl.query, self.bodyHandler)).get(callback);
+			(new PaginatedResource(self.rest, self.basePath + urlMatch[1], self.headers, Utils.parseQueryString(urlMatch[2]), self.bodyHandler)).get(callback);
 		};
 	};
 
