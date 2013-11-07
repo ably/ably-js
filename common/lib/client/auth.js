@@ -3,19 +3,22 @@ var Auth = (function() {
 	var crypto = isBrowser ? null : require('crypto');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
-	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
-	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
+	var hmac, toBase64 = undefined;
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64) {
 		hmac = function(text, key) {
 			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
 		};
-	if(!isBrowser)
+		toBase64 = CryptoJS.enc.Base64.stringify;
+	}
+	if(!isBrowser) {
 		hmac = function(text, key) {
 			var inst = crypto.createHmac('SHA256', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+	}
 
 	function c14n(capability) {
 		if(!capability)
