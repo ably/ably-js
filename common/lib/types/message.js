@@ -12,7 +12,7 @@ var Message = (function() {
 
 	Message.encrypt = function(msg, cipher) {
 		var cipherData = new TData(), data = msg.data;
-		cipherData.cipherData = cipher.encrypt(Data.asPlaintext(data));
+		cipherData.cipherData = cipher.encrypt(Crypto.Data.asPlaintext(data));
 		cipherData.type = data.type;
 		msg.data = cipherData;
 	};
@@ -20,7 +20,7 @@ var Message = (function() {
 	Message.decrypt = function(msg, cipher) {
 		var data = msg.data;
 		if(data.cipherData)
-			msg.data = Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
+			msg.data = Crypto.Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
 	};
 
 	return Message;
