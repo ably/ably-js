@@ -4432,17 +4432,52 @@ this.ThriftUtil = (function() {
 
 })();
 var Crypto = (function() {
-	var DEFAULT_ALGORITHM = "aes";
+	var messagetypes = clientmessage_refs;
+	var TData = messagetypes.TData;
+	var TType = messagetypes.TType;
+	var DEFAULT_ALGORITHM = "AES";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
+	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
+	var VAL32 = 0x100000000;
+
+	/* FIXME: there's no fallback support here for browsers that don't support arraybuffer */
+	function DoubleToIEEE(f) {
+		var buf = new ArrayBuffer(8);
+		(new Float64Array(buf))[0] = f;
+		return new Uint32Array(buf);
+	}
+
+	function IEEEToDouble(wordArray) {
+		var buf = new ArrayBuffer(8),
+			intArray = new Uint32Array(buf);
+		intArray[0] = wordArray[0];
+		intArray[1] = wordArray[1];
+		return (new  Float64Array(buf))[0];
+	}
 
 	/**
-	 * Internal: generate a buffer of secure random bytes of the given length
+	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
 	 * @param bytes
 	 * @param callback
 	 */
-	function generateRandom(bytes, callback) {
-		return crypto.randomBytes(bytes, callback);
+	var generateRandom;
+	if(window.Uint32Array && window.crypto && window.crypto.getRandomValues) {
+		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
+		generateRandom = function(bytes, callback) {
+			var words = bytes / 4, array = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
+			window.crypto.getRandomValues(array);
+			callback(null, CryptoJS.lib.WordArray.create(array));
+		};
+	} else {
+		var blockRandomArray = new Array(DEFAULT_BLOCKLENGTH_WORDS);
+		generateRandom = function(bytes, callback) {
+			var words = bytes / 4, array = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Array(words);
+			for(var i = 0; i < words; i++)
+				array[i] = Math.floor(Math.random() * VAL32);
+
+			callback(null, CryptoJS.lib.WordArray.create(array));
+		};
 	}
 
 	/**
@@ -4458,23 +4493,30 @@ var Crypto = (function() {
 	/**
 	 * Internal: a block containing zeros
 	 */
-	var emptyBlock = new Buffer(DEFAULT_BLOCKLENGTH);
+	var emptyBlock = CryptoJS.lib.WordArray.create(DEFAULT_BLOCKLENGTH / 32);
 
 	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
 	 */
-//	function filledBuffer(length, value) { var result = new Buffer(length); result.fill(value); return result; }
-//	var pkcs5Padding = [ filledBuffer(16, 16) ];
-//	for(var i = 1; i <= 16; i++) pkcs5Padding.push(filledBuffer(i, i));
-
-	/**
-	 * Internal: convert a binary string to Buffer (for node 0.8.x)
-	 * @param bufferOrString
-	 * @returns {Buffer}
-	 */
-	function toBuffer(bufferOrString) {
-		return (typeof(bufferOrString) == 'string') ? new Buffer(bufferOrString, 'binary') : bufferOrString;
-	}
+	var pkcs5Padding = [
+		CryptoJS.lib.WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16),
+		CryptoJS.lib.WordArray.create([0x01000000], 1),
+		CryptoJS.lib.WordArray.create([0x02020000], 2),
+		CryptoJS.lib.WordArray.create([0x03030300], 3),
+		CryptoJS.lib.WordArray.create([0x04040404], 4),
+		CryptoJS.lib.WordArray.create([0x05050505,0x05000000], 5),
+		CryptoJS.lib.WordArray.create([0x06060606,0x06060000], 6),
+		CryptoJS.lib.WordArray.create([0x07070707,0x07070700], 7),
+		CryptoJS.lib.WordArray.create([0x08080808,0x08080808], 8),
+		CryptoJS.lib.WordArray.create([0x09090909,0x09090909,0x09000000], 9),
+		CryptoJS.lib.WordArray.create([0x0a0a0a0a,0x0a0a0a0a,0x0a0a0000], 10),
+		CryptoJS.lib.WordArray.create([0x0b0b0b0b,0x0b0b0b0b,0x0b0b0b00], 11),
+		CryptoJS.lib.WordArray.create([0x0c0c0c0c,0x0c0c0c0c,0x0c0c0c0c], 12),
+		CryptoJS.lib.WordArray.create([0x0d0d0d0d,0x0d0d0d0d,0x0d0d0d0d,0x0d000000], 13),
+		CryptoJS.lib.WordArray.create([0x0e0e0e0e,0x0e0e0e0e,0x0e0e0e0e,0x0e0e0000], 14),
+		CryptoJS.lib.WordArray.create([0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f], 15),
+		CryptoJS.lib.WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16)
+	];
 
 	/**
 	 * Utility classes and interfaces for message payload encryption.
@@ -4539,7 +4581,7 @@ var Crypto = (function() {
 		}
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.length * 8);
+		params.algorithm = DEFAULT_ALGORITHM;
 		params.key = key;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
@@ -4584,49 +4626,109 @@ var Crypto = (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm + '-cbc';
+		var algorithm = this.algorithm = params.algorithm.toUpperCase();
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
-		this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
-		this.blockLength = iv.length;
+		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });;
+		this.blockLengthWords = iv.length;
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext) {
-return plaintext;
-//		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-//		console.log('encrypt: plaintext:');
-//		console.log(hexy.hexy(plaintext));
-//		var plaintextLength = plaintext.length,
-//			paddedLength = getPaddedLength(plaintextLength),
-//			iv = this.getIv();
-//		var cipherOut = this.encryptCipher.update(Buffer.concat([plaintext, pkcs5Padding[paddedLength - plaintextLength]]));
-//		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-//		console.log('encrypt: ciphertext:');
-//		console.log(hexy.hexy(ciphertext));
-//		return ciphertext;
+		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+		console.log('encrypt: plaintext:');
+		console.log(CryptoJS.enc.Hex.stringify(plaintext));
+		var plaintextLength = plaintext.length,
+			paddedLength = getPaddedLength(plaintextLength),
+			iv = this.getIv();
+		var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
+		var ciphertext = iv.clone().concat(cipherOut.ciphertext);
+		console.log('encrypt: ciphertext:');
+		console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+		return ciphertext;
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
-return ciphertext;
-//		console.log('decrypt: ciphertext:');
-//		console.log(hexy.hexy(ciphertext));
-//		var blockLength = this.blockLength,
-//			decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
-//			plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
-//			final = decryptCipher.final();
-//		if(final && final.length)
-//			plaintext = Buffer.concat([plaintext, toBuffer(final)]);
-//		console.log('decrypt: plaintext:');
-//		console.log(hexy.hexy(plaintext));
-//		return plaintext;
+		console.log('decrypt: ciphertext:');
+		console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+		var blockLengthWords = this.blockLengthWords,
+			cipherParams = CryptoJS.lib.CipherParams.create({
+				ciphertext:ciphertext.slice(blockLengthWords),
+				iv: ciphertext.slice(0, blockLengthWords)
+			}),
+			plaintext = CryptoJS[this.algorithm].decrypt(cipherParams, this.key);
+		console.log('decrypt: plaintext:');
+		console.log(CryptoJS.enc.Hex.stringify(plaintext));
+		return plaintext;
 	};
 
 	CBCCipher.prototype.getIv = function() {
 		if(!this.iv)
-			return toBuffer(this.encryptCipher.update(emptyBlock));
+			return this.encryptCipher.process(emptyBlock).ciphertext;
 
 		var result = this.iv;
 		this.iv = null;
+		return result;
+	};
+
+	var Data = Crypto.Data = {};
+
+	Data.asPlaintext = function(tData) {
+		var result;
+		switch(tData.type) {
+			case TType.STRING:
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+				result = CryptoJS.enc.Utf8.parse((tData.stringData));
+				break;
+			case TType.NONE:
+			case TType.TRUE:
+			case TType.FALSE:
+				break;
+			case TType.INT32:
+				result = CryptoJS.lib.WordArray.create(1);
+				result[0] = tData.i32Data;
+				break;
+			case TType.INT64:
+				result = CryptoJS.lib.WordArray.create(2);
+				result[0] = tData.i64Data / VAL32;
+				result[1] = tData.i64Data % VAL32;
+				break;
+			case TType.DOUBLE:
+				result = DoubleToIEEE(tData.doubleData);
+				break;
+			case TType.BUFFER:
+				result = tData.binaryData;
+				break;
+		}
+		return result;
+	};
+
+	Data.fromPlaintext = function(plaintext, type) {
+		var result = new TData();
+		result.type = type;
+		switch(type) {
+			case TType.INT32:
+				result.i32Data = plaintext[0];
+				break;
+			case TType.INT64:
+				result.i64Data = plaintext[0] * VAL32 + plaintext[1];
+				break;
+			case TType.DOUBLE:
+				result.doubleData = IEEEToDouble(plaintext);
+				break;
+			case TType.JSONOBJECT:
+			case TType.JSONARRAY:
+			case TType.STRING:
+				result.stringData = CryptoJS.enc.Utf8.stringify(plaintext);
+				break;
+			case TType.BUFFER:
+				result.binaryData = plaintext;
+				break;
+			/*	case TType.NONE:
+			 case TType.TRUE:
+			 case TType.FALSE: */
+			default:
+		}
 		return result;
 	};
 
@@ -6669,66 +6771,6 @@ this.Data = (function() {
 		throw new Error('Unsupported data type: ' + Object.prototype.toString.call(value));
 	};
 
-	Data.asPlaintext = function(tData) {
-		var result;
-		switch(tData.type) {
-			case TType.STRING:
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-				result = new Buffer(tData.stringData);
-				break;
-			case TType.NONE:
-			case TType.TRUE:
-			case TType.FALSE:
-				break;
-			case TType.INT32:
-				result = new Buffer(4);
-				result.writeInt32BE(tData.i32Data, 0, true);
-				break;
-			case TType.INT64:
-				result = new Buffer(8);
-				result.writeInt64BE(tData.i64Data, 0, true);
-				break;
-			case TType.DOUBLE:
-				result = new Buffer(8);
-				result.writeDouble64BE(tData.doubleData, 0, true);
-				break;
-			case TType.BUFFER:
-				result = tData.binaryData;
-				break;
-		}
-		return result;
-	};
-
-	Data.fromPlaintext = function(plaintext, type) {
-		var result = new TData();
-		result.type = type;
-		switch(type) {
-			case TType.INT32:
-				result.i32Data = plaintext.readInt32BE(0, true);
-				break;
-			case TType.INT64:
-				result.i64Data = plaintext.readInt64BE(0, true);
-				break;
-			case TType.DOUBLE:
-				result.doubleData = plaintext.readDoubleBE(0, true);
-				break;
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-			case TType.STRING:
-				result.stringData = plaintext.toString();
-				break;
-			case TType.BUFFER:
-				result.binaryData = plaintext;
-				break;
-		/*	case TType.NONE:
-			case TType.TRUE:
-			case TType.FALSE: */
-			default:
-		}
-		return result;
-	};
-
 	return Data;
 })();
 var Message = (function() {
@@ -6745,7 +6787,7 @@ var Message = (function() {
 
 	Message.encrypt = function(msg, cipher) {
 		var cipherData = new TData(), data = msg.data;
-		cipherData.cipherData = cipher.encrypt(Data.asPlaintext(data));
+		cipherData.cipherData = cipher.encrypt(Crypto.Data.asPlaintext(data));
 		cipherData.type = data.type;
 		msg.data = cipherData;
 	};
@@ -6753,7 +6795,7 @@ var Message = (function() {
 	Message.decrypt = function(msg, cipher) {
 		var data = msg.data;
 		if(data.cipherData)
-			msg.data = Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
+			msg.data = Crypto.Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
 	};
 
 	return Message;
@@ -7050,19 +7092,22 @@ var PaginatedResource = (function() {
 	var crypto = isBrowser ? null : require('crypto');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
-	function toBase64(str) { return (new Buffer(str, 'ascii')).toString('base64'); }
 
-	var hmac = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64)
+	var hmac, toBase64 = undefined;
+	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64) {
 		hmac = function(text, key) {
 			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
 		};
-	if(!isBrowser)
+		toBase64 = CryptoJS.enc.Base64.stringify;
+	}
+	if(!isBrowser) {
 		hmac = function(text, key) {
 			var inst = crypto.createHmac('SHA256', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+	}
 
 	function c14n(capability) {
 		if(!capability)
