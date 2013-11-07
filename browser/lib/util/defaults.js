@@ -35,7 +35,7 @@ Defaults.getHosts = function(options) {
 		if(options.fallbackHosts)
 			hosts.concat(options.fallbackHosts);
 	} else {
-		hosts = [options.host].concat(Defaults.FALLBACK_HOSTS);
+		hosts = [Defaults.HOST].concat(Defaults.FALLBACK_HOSTS);
 	}
 	return hosts;
 };
