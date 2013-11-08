@@ -220,6 +220,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
+		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
 		//console.log('decrypt: ciphertext:');
 		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
