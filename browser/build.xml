@@ -33,6 +33,7 @@
                 <file name="lib/util/defaults.js"/>
                 <file name="lib/util/http.js"/>
                 <file name="lib/util/thriftutil.js"/>
+                <file name="lib/util/base64.js"/>
                 <file name="lib/util/crypto.js"/>
             </filelist>
             <filelist dir="${basedir}/../submodules/web-socket-js">
