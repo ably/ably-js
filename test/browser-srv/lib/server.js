@@ -17,6 +17,7 @@ var external = {
 	'ably.js' : path.normalize(__dirname + '../../../../browser/lib/ably.js'),
 	'nodeunit.js' : path.normalize(__dirname + '../../../../node_modules/nodeunit/examples/browser/nodeunit.js'),
 	'nodeunit.css' : path.normalize(__dirname + '../../../../node_modules/nodeunit/share/nodeunit.css'),
+	'async.js' : path.normalize(__dirname + '../../../../node_modules/async/lib/async.js'),
 	'^(?:test/swf/)WebSocketMainInsecure(.*)\.swf$' : path.normalize(__dirname + '../../../../browser/lib/swf/WebSocketMainInsecure*.swf')
 };
 
