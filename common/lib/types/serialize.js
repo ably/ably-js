@@ -26,7 +26,7 @@ this.Serialize = (function() {
 		var value;
 		if(value = Data.isCipherData(tData)) {
 			result.encoding = 'cipher+base64';
-			value = value.toString('base64');
+			value = Crypto.Data.asBase64(value);
 			result.type = tData.type;
 		} else {
 			value = Data.fromTData(tData);
@@ -65,7 +65,7 @@ this.Serialize = (function() {
 			case 'cipher+base64':
 				tData = new messagetypes.TData();
 				tData.type = jsonObject.type;
-				tData.cipherData = new Buffer(jsonData, 'base64');
+				tData.cipherData = Crypto.Data.fromBase64(jsonData);
 				break;
 			case 'base64':
 				tData = new messagetypes.TData();
