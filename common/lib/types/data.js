@@ -2,7 +2,6 @@ this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
-	var CipherData = Crypto.CipherData;
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -90,7 +89,7 @@ this.Data = (function() {
 		var result = undefined;
 		if(tData) {
 			if(tData.cipherData)
-				return new CipherData(tData.cipherData, tData.type);
+				return new Crypto.CipherData(tData.cipherData, tData.type);
 
 			switch(tData.type) {
 				case 1: /* TRUE */
