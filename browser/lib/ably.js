@@ -4431,7 +4431,227 @@ this.ThriftUtil = (function() {
 	};
 
 })();
-var Crypto = (function() {
+/*
+ Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
+
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal in the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following
+ conditions:
+
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+ */
+this.Base64 = (function() {
+	function StringBuffer()
+	{
+		this.buffer = [];
+	}
+
+	StringBuffer.prototype.append = function append(string)
+	{
+		this.buffer.push(string);
+		return this;
+	};
+
+	StringBuffer.prototype.toString = function toString()
+	{
+		return this.buffer.join("");
+	};
+
+	var Base64 =
+	{
+		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+		encode : function (input)
+		{
+			var output = new StringBuffer();
+			var codex = Base64.codex;
+
+			var enumerator = new Utf8EncodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var chr1 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr2 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr3 = enumerator.current;
+
+				var enc1 = chr1 >> 2;
+				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+				var enc4 = chr3 & 63;
+
+				if (isNaN(chr2))
+				{
+					enc3 = enc4 = 64;
+				}
+				else if (isNaN(chr3))
+				{
+					enc4 = 64;
+				}
+
+				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
+			}
+
+			return output.toString();
+		},
+
+		decode : function (input)
+		{
+			var output = new StringBuffer();
+
+			var enumerator = new Base64DecodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var charCode = enumerator.current;
+
+				if (charCode < 128)
+					output.append(String.fromCharCode(charCode));
+				else if ((charCode > 191) && (charCode < 224))
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
+				}
+				else
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					enumerator.moveNext();
+					var charCode3 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
+				}
+			}
+
+			return output.toString();
+		}
+	};
+
+	function Utf8EncodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Utf8EncodeEnumerator.prototype =
+	{
+		current: Number.NaN,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = Number.NaN;
+				return false;
+			}
+			else
+			{
+				var charCode = this._input.charCodeAt(++this._index);
+
+				// "\r\n" -> "\n"
+				//
+				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
+				{
+					charCode = 10;
+					this._index += 2;
+				}
+
+				if (charCode < 128)
+				{
+					this.current = charCode;
+				}
+				else if ((charCode > 127) && (charCode < 2048))
+				{
+					this.current = (charCode >> 6) | 192;
+					this._buffer.push((charCode & 63) | 128);
+				}
+				else
+				{
+					this.current = (charCode >> 12) | 224;
+					this._buffer.push(((charCode >> 6) & 63) | 128);
+					this._buffer.push((charCode & 63) | 128);
+				}
+
+				return true;
+			}
+		}
+	};
+
+	function Base64DecodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Base64DecodeEnumerator.prototype =
+	{
+		current: 64,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = 64;
+				return false;
+			}
+			else
+			{
+				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
+
+				var chr1 = (enc1 << 2) | (enc2 >> 4);
+				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				var chr3 = ((enc3 & 3) << 6) | enc4;
+
+				this.current = chr1;
+
+				if (enc3 != 64)
+					this._buffer.push(chr2);
+
+				if (enc4 != 64)
+					this._buffer.push(chr3);
+
+				return true;
+			}
+		}
+	};
+
+	return Base64;
+})();
+Ably.Crypto = window.CryptoJS && (function() {
 	var messagetypes = clientmessage_refs;
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
@@ -4465,8 +4685,10 @@ var Crypto = (function() {
 	if(window.Uint32Array && window.crypto && window.crypto.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
-			var words = bytes / 4, array = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
-			window.crypto.getRandomValues(array);
+			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
+			window.crypto.getRandomValues(nativeArray);
+			var array = new Array(words);
+			for(var i = 0; i < words; i++) array[i] = nativeArray[i];
 			callback(null, CryptoJS.lib.WordArray.create(array));
 		};
 	} else {
@@ -4493,7 +4715,7 @@ var Crypto = (function() {
 	/**
 	 * Internal: a block containing zeros
 	 */
-	var emptyBlock = CryptoJS.lib.WordArray.create(DEFAULT_BLOCKLENGTH / 32);
+	var emptyBlock = CryptoJS.lib.WordArray.create([0,0,0,0]);
 
 	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
@@ -4527,15 +4749,17 @@ var Crypto = (function() {
 	 * classes and interfaces here.
 	 *
 	 * Secure random data for creation of Initialisation Vectors (IVs) and keys
-	 * is obtained from the default system SecureRandom. Future extensions of this
-	 * class might make the SecureRandom pluggable or at least seedable with
-	 * client-provided entropy.
+	 * is obtained from window.crypto.getRandomValues if available, or from
+	 * Math.random() if not. Clients who do not want to depend on Math.random()
+	 * should polyfill window.crypto.getRandomValues with a library that seeds
+	 * a PRNG with real entropy.
 	 *
 	 * Each message payload is encrypted with an IV in CBC mode, and the IV is
 	 * concatenated with the resulting raw ciphertext to construct the "ciphertext"
 	 * data passed to the recipient.
 	 */
 	function Crypto() {}
+	Crypto.generateRandom = generateRandom;
 
 	/**
 	 * A class encapsulating the client-specifiable parameters for
@@ -4629,41 +4853,45 @@ var Crypto = (function() {
 		var algorithm = this.algorithm = params.algorithm.toUpperCase();
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
-		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });;
-		this.blockLengthWords = iv.length;
+		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });
+		this.blockLengthWords = iv.words.length;
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-		console.log('encrypt: plaintext:');
-		console.log(CryptoJS.enc.Hex.stringify(plaintext));
-		var plaintextLength = plaintext.length,
+		//console.log('encrypt: plaintext:');
+		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
+		var plaintextLength = plaintext.sigBytes,
 			paddedLength = getPaddedLength(plaintextLength),
-			iv = this.getIv();
+			iv = this.getIv().clone();
 		var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
-		var ciphertext = iv.clone().concat(cipherOut.ciphertext);
-		console.log('encrypt: ciphertext:');
-		console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+		var ciphertext = iv.concat(cipherOut);
+		//console.log('encrypt: ciphertext:');
+		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		return ciphertext;
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
-		console.log('decrypt: ciphertext:');
-		console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+		//console.log('decrypt: ciphertext:');
+		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
-			cipherParams = CryptoJS.lib.CipherParams.create({
-				ciphertext:ciphertext.slice(blockLengthWords),
-				iv: ciphertext.slice(0, blockLengthWords)
-			}),
-			plaintext = CryptoJS[this.algorithm].decrypt(cipherParams, this.key);
-		console.log('decrypt: plaintext:');
-		console.log(CryptoJS.enc.Hex.stringify(plaintext));
+			ciphertextWords = ciphertext.words,
+			iv = CryptoJS.lib.WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
+			ciphertextBody = CryptoJS.lib.WordArray.create(ciphertextWords.slice(blockLengthWords));
+
+		var decryptCipher = CryptoJS.algo[this.algorithm].createDecryptor(this.key, { iv: iv });
+		var plaintext = decryptCipher.process(ciphertextBody);
+		var epilogue = decryptCipher.finalize();
+		decryptCipher.reset();
+		if(epilogue && epilogue.sigBytes) plaintext.concat(epilogue);
+		//console.log('decrypt: plaintext:');
+		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		return plaintext;
 	};
 
 	CBCCipher.prototype.getIv = function() {
 		if(!this.iv)
-			return this.encryptCipher.process(emptyBlock).ciphertext;
+			return this.encryptCipher.process(emptyBlock);
 
 		var result = this.iv;
 		this.iv = null;
@@ -4730,6 +4958,14 @@ var Crypto = (function() {
 			default:
 		}
 		return result;
+	};
+
+	Data.asBase64 = function(ciphertext) {
+		return CryptoJS.enc.Base64.stringify(ciphertext);
+	};
+
+	Data.fromBase64 = function(encoded) {
+		return CryptoJS.enc.Base64.parse(encoded);
 	};
 
 	return Crypto;
@@ -6641,7 +6877,6 @@ this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
-	var CipherData = Crypto.CipherData;
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -6729,7 +6964,7 @@ this.Data = (function() {
 		var result = undefined;
 		if(tData) {
 			if(tData.cipherData)
-				return new CipherData(tData.cipherData, tData.type);
+				return new Crypto.CipherData(tData.cipherData, tData.type);
 
 			switch(tData.type) {
 				case 1: /* TRUE */
@@ -6839,7 +7074,7 @@ this.Serialize = (function() {
 		var value;
 		if(value = Data.isCipherData(tData)) {
 			result.encoding = 'cipher+base64';
-			value = value.toString('base64');
+			value = Crypto.Data.asBase64(value);
 			result.type = tData.type;
 		} else {
 			value = Data.fromTData(tData);
@@ -6878,7 +7113,7 @@ this.Serialize = (function() {
 			case 'cipher+base64':
 				tData = new messagetypes.TData();
 				tData.type = jsonObject.type;
-				tData.cipherData = new Buffer(jsonData, 'base64');
+				tData.cipherData = Crypto.Data.fromBase64(jsonData);
 				break;
 			case 'base64':
 				tData = new messagetypes.TData();
@@ -7094,19 +7329,20 @@ var PaginatedResource = (function() {
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
 	var hmac, toBase64 = undefined;
-	if(isBrowser && window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64) {
-		hmac = function(text, key) {
-			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
-		};
-		toBase64 = CryptoJS.enc.Base64.stringify;
-	}
-	if(!isBrowser) {
+	if(isBrowser) {
+		toBase64 = Base64.encode;
+		if(window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64) {
+			hmac = function(text, key) {
+				return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
+			};
+		}
+	} else {
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
 		hmac = function(text, key) {
 			var inst = crypto.createHmac('SHA256', key);
 			inst.update(text);
 			return inst.digest('base64');
 		};
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
 	}
 
 	function c14n(capability) {
