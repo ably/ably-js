@@ -41,6 +41,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	} else {
 		var blockRandomArray = new Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
+			console.log('Ably.Crypto.generateRandom(): WARNING: using insecure Math.random() to generate key or iv; see http://ably.io/documentation for how to fix this');
 			var words = bytes / 4, array = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Array(words);
 			for(var i = 0; i < words; i++)
 				array[i] = Math.floor(Math.random() * VAL32);
