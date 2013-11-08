@@ -3,7 +3,7 @@ var sharedTests = sharedTestsClass();
 function sharedTestsClass() {
 	function realtimeConnection(transports) {
 		var options = {
-			log: {level: 4},
+			//log: {level: 4},
 			host: testVars.restHost,
 			wsHost: testVars.realtimeHost,
 			port: testVars.realtimePort,
