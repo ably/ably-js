@@ -3,5 +3,6 @@
 	"Ws": "ws.js",
 	"Flash": "flash.js",
 	"Xhr": "xhr.js",
-	"Jsonp": "jsonp.js"
+	"Jsonp": "jsonp.js",
+	"Crypto": "crypto.js"
 }
