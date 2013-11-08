@@ -68,6 +68,7 @@ var Crypto = (function() {
 	 * data passed to the recipient.
 	 */
 	function Crypto() {}
+	Crypto.generateRandom = generateRandom;
 
 	/**
 	 * A class encapsulating the client-specifiable parameters for
@@ -262,6 +263,14 @@ var Crypto = (function() {
 			default:
 		}
 		return result;
+	};
+
+	Data.asBase64 = function(ciphertext) {
+		return ciphertext.toString('base64');
+	};
+
+	Data.fromBase64 = function(encoded) {
+		return new Buffer(encoded, 'base64');
 	};
 
 	return Crypto;
