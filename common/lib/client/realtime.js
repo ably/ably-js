@@ -1,6 +1,7 @@
 var Realtime = (function() {
 
 	function Realtime(options) {
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
