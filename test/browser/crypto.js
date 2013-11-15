@@ -317,7 +317,7 @@ crypto.single_send_key_mismatch = function(test) {
 	async.parallel([
 		Crypto.getDefaultParams,
 		Crypto.getDefaultParams,
-		function(cb) { attachChannels([txChannel, rxChannel], cb)}
+		function(cb) { attachChannels([txChannel, rxChannel], cb); }
 	], function(err, res) {
 		if(err) {
 			test.fail('Unable to get cipher params; err = ' + e);
