@@ -181,10 +181,16 @@ var tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0';
     tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['automated_testing_tunnel_key'],tunnelHosts.join(',')];
 
 tunnelProcess = childProcess.spawn('java', tunnelArgs);
-[tunnelProcess.stdout, tunnelProcess.stderr].forEach(function(stream) {
-  stream.on('readable', function() {
-    tunnelOutput += tunnelProcess.stdout.read();
-  });
+tunnelProcess.stdout.on('data', function(data) {
+  if (tunnelOutput == '') { console.log('Tunnel opened');}
+  tunnelOutput += data
+});
+tunnelProcess.stderr.on('data', function() {
+  console.log ('Tunnelling error! - ' + data);
+  setTimeout(function() {
+    console.log('Exiting because tunnel is broken');
+    process.exit(3);
+  }, 1000);
 });
 tunnelProcess.on('exit', function(code, signal) {
   if (browserQueue.length) {
@@ -193,7 +199,7 @@ tunnelProcess.on('exit', function(code, signal) {
     process.exit(2);
   }
 });
-console.log('Tunnel opened to BrowserStack for ports ' + tunnelPorts.join(', '));
+console.log('Tunnel to BrowserStack for ports ' + tunnelPorts.join(', ') + ' being initialized');
 
 // module async runner for setup & tear down
 function runModule(module, moduleCallback) {
