@@ -143,15 +143,19 @@
           moduleId = moduleId.substr(0, moduleId.length-3);
         moduleSet[module] = window[moduleId];
       }
+      function getErrorsFromNodeUnitUI() {
+        var errors = [];
+        $('ol#nodeunit-tests>li.fail').each(function() {
+          var method = $(this).find('strong').text().replace(/\s*\([^\)]+\)$/,''),
+              methodErrors = $(this).find('ol>li.fail').map(function() { return $(this).text().replace($(this).find('pre').text(),'') });
+          errors.push("Method: " + method + "\nError" + (errors.length != 1 ? 's' : '') + ": " + Array.prototype.join.call(methodErrors, ', '));
+        })
+        return errors;
+      }
       var runOptions = {
         done: function(assertions) {
-          var errors = [];
+          var errors = getErrorsFromNodeUnitUI();
           clearTimeout(testTimeout);
-          $('ol#nodeunit-tests>li.fail').each(function() {
-            var method = $(this).find('strong').text().replace(/\s*\([^\)]+\)$/,''),
-                methodErrors = $(this).find('ol>li.fail').map(function() { return $(this).text().replace($(this).find('pre').text(),'') });
-            errors.push("Method: " + method + "\nError" + (errors.length != 1 ? 's' : '') + ": " + Array.prototype.join.call(methodErrors, ', '));
-          })
 
           var payload = {
             testAccount: JSON.stringify(testVars.testAccount),
@@ -190,8 +194,8 @@
       testTimeout = setTimeout(function() {
         $.post('/tests-complete', {
           testAccount: JSON.stringify(testVars.testAccount),
-          tests: testSet.length,
-          failed: testSet.length,
+          tests: $('ol#nodeunit-tests>li').length,
+          failed: getErrorsFromNodeUnitUI().length,
           errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " seconds so had to abort.  All test are assumed to have failed."]
         });
       }, 1000*TEST_TIMEOUT_SECONDS);
