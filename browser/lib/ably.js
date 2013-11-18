@@ -8556,7 +8556,7 @@ var JSONPTransport = (function() {
 		var id = this.requestId;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });
+		var timer = this.timer = setTimeout(function() { self.abort(); }, timeout);
 
 		params = params || {};
 		params.callback = 'Ably._(' + id + ')';
@@ -8670,7 +8670,7 @@ var XHRTransport = (function() {
 			xhr.responseType = 'arraybuffer';
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = setTimeout(timeout, function() { timedout = true; xhr.abort(); });
+		var timer = setTimeout(function() { timedout = true; xhr.abort(); }, timeout);
 		xhr.open(method, uri, true);
 		xhr.setRequestHeader('Accept', binary ? 'application/x-thrift' : 'application/json');
 		xhr.onerror = function(err) {
