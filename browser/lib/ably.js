@@ -4694,6 +4694,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	} else {
 		var blockRandomArray = new Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
+			console.log('Ably.Crypto.generateRandom(): WARNING: using insecure Math.random() to generate key or iv; see http://ably.io/documentation for how to fix this');
 			var words = bytes / 4, array = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Array(words);
 			for(var i = 0; i < words; i++)
 				array[i] = Math.floor(Math.random() * VAL32);
@@ -4872,6 +4873,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
+		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
 		//console.log('decrypt: ciphertext:');
 		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
@@ -7827,6 +7829,7 @@ var Rest = (function() {
 })();var Realtime = (function() {
 
 	function Realtime(options) {
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
 		this.connection = new Connection(this, options);
 		this.channels = new Channels(this);
