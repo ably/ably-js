@@ -59,7 +59,7 @@ var JSONPTransport = (function() {
 		var id = this.requestId;
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = this.timer = setTimeout(timeout, function() { self.abort(); });
+		var timer = this.timer = setTimeout(function() { self.abort(); }, timeout);
 
 		params = params || {};
 		params.callback = 'Ably._(' + id + ')';

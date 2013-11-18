@@ -67,7 +67,7 @@ var XHRTransport = (function() {
 			xhr.responseType = 'arraybuffer';
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = setTimeout(timeout, function() { timedout = true; xhr.abort(); });
+		var timer = setTimeout(function() { timedout = true; xhr.abort(); }, timeout);
 		xhr.open(method, uri, true);
 		xhr.setRequestHeader('Accept', binary ? 'application/x-thrift' : 'application/json');
 		xhr.onerror = function(err) {
