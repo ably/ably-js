@@ -8075,35 +8075,52 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.publish = function(name, data, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'name = ' + name);
-		callback = callback || noop;
+	RealtimeChannel.prototype.publish = function() {
 		var connectionManager = this.connectionManager;
-    	if(!ConnectionManager.activeState(connectionManager.state)) {
+		if(!ConnectionManager.activeState(connectionManager.state)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
-    	var message = new messagetypes.TMessage(),
-			cipher = this.cipher;
-    	message.name = name;
-    	message.data = Data.toTData(data);
-		if(cipher)
-			Message.encrypt(message, cipher);
+		var argCount = arguments.length,
+			messages = arguments[0],
+			callback = arguments[argCount - 1];
+		if(typeof(callback) !== 'function') {
+			callback = noop;
+			++argCount;
+		}
+		if(argCount == 2) {
+			if(!Utils.isArray(messages))
+				messages = [messages];
+		} else {
+			var message = new messagetypes.TMessage();
+			message.name = arguments[0];
+			message.data = Data.toTData(arguments[1]);
+			messages = [message];
+		}
+		var cipher = this.cipher;
+		if(cipher) {
+			for(var i = 0; i < messages.length; i++)
+				Message.encrypt(messages[i], cipher);
+		}
+		this._publish(messages, callback);
+	};
 
+	RealtimeChannel.prototype._publish = function(messages, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		switch(this.state) {
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
 				var msg = new messagetypes.TProtocolMessage();
 				msg.action = messagetypes.TAction.MESSAGE;
 				msg.channel = this.name;
-				msg.messages = [message];
+				msg.messages = messages;
 				this.sendMessage(msg, callback);
 				break;
 			default:
 				this.attach();
 			case 'attaching':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-				this.pendingEvents.push({message: message, listener: callback});
+				this.pendingEvents.push({messages: messages, listener: callback});
 				break;
 		}
 	};
@@ -8324,7 +8341,7 @@ var RealtimeChannel = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + this.pendingEvents.length + ' queued messages');
 				for(var i = 0; i < this.pendingEvents.length; i++) {
 					var event = this.pendingEvents[i];
-					msg.messages.push(event.message);
+					Array.prototype.push.apply(msg.messages, event.messages);
 					multicaster.push(event.callback);
 				}
 				this.sendMessage(msg, multicaster);
