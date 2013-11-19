@@ -84,7 +84,7 @@ var RealtimeChannel = (function() {
 				this.attach();
 			case 'attaching':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-				this.pendingEvents.push({messages: messages, listener: callback});
+				this.pendingEvents.push({messages: messages, callback: callback});
 				break;
 		}
 	};
