@@ -1,18 +1,18 @@
 /*
  * Base init case
  */
-var _jsonp = {};
-var jsonp = this.jsonp = {};
+var _jsonp_ = {};
+var jsonp_ = {};
 var jsonpTransport = 'jsonp';
 
-jsonp.jsonpbase0 = function (test) {
+jsonp_.jsonpbase0 = function (test) {
 	sharedTests.connectionWithTransport(test, jsonpTransport);
 };
 
 /*
  * Publish and subscribe, json transport
  */
-jsonp.jsonppublish0 = function (test) {
+jsonp_.jsonppublish0 = function (test) {
 	sharedTests.publishWithTransport(test, jsonpTransport);
 };
 
@@ -20,6 +20,6 @@ jsonp.jsonppublish0 = function (test) {
 /*
  * Check heartbeat
  */
-jsonp.jsonpheartbeat0 = function (test) {
+jsonp_.jsonpheartbeat0 = function (test) {
 	sharedTests.heartbeatWithTransport(test, jsonpTransport);
 };

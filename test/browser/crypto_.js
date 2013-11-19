@@ -1,7 +1,7 @@
 var Crypto = Ably.Crypto;
 
-var _crypto = {};
-var crypto = this.crypto = {};
+var _crypto_ = {};
+var crypto_ = {};
 
 function mixin(target, source) {
 	Object.keys(source).forEach(function(key) {
@@ -31,7 +31,7 @@ function attachChannels(channels, callback) {
 /**
  * Publish and subscribe, binary transport
  */
-crypto.single_send_binary = function(test) {
+crypto_.single_send_binary = function(test) {
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -59,7 +59,7 @@ crypto.single_send_binary = function(test) {
 /**
  * Publish and subscribe, text transport
  */
-crypto.single_send_text = function(test) {
+crypto_.single_send_text = function(test) {
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -88,7 +88,7 @@ crypto.single_send_text = function(test) {
 /**
  * Publish and subscribe, binary transport, 256-bit key
  */
-crypto.single_send_binary_256 = function(test) {
+crypto_.single_send_binary_256 = function(test) {
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -119,7 +119,7 @@ crypto.single_send_binary_256 = function(test) {
 /**
  * Publish and subscribe, text transport, 256-bit key
  */
-crypto.single_send_text_256 = function(test) {
+crypto_.single_send_text_256 = function(test) {
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -198,17 +198,17 @@ function _multiple_send(test, text, iterations, delay) {
 	});
 };
 
-crypto.multiple_send_binary_2_200 = function(test) { _multiple_send(test, false, 2, 200); };
-crypto.multiple_send_text_2_200 = function(test) { _multiple_send(test, true, 2, 200); };
-crypto.multiple_send_binary_20_100 = function(test) { _multiple_send(test, false, 20, 100); };
-crypto.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 20, 100); };
+crypto_.multiple_send_binary_2_200 = function(test) { _multiple_send(test, false, 2, 200); };
+crypto_.multiple_send_text_2_200 = function(test) { _multiple_send(test, true, 2, 200); };
+crypto_.multiple_send_binary_20_100 = function(test) { _multiple_send(test, false, 20, 100); };
+crypto_.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 20, 100); };
 
 /**
  * Connect twice to the service, using the default (binary) protocol
  * and the text protocol. Publish an encrypted message on that channel using
  * the default cipher params and verify correct receipt.
  */
-crypto.single_send_binary_text = function(test) {
+crypto_.single_send_binary_text = function(test) {
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -253,7 +253,7 @@ crypto.single_send_binary_text = function(test) {
  * default (binary) protocol. Publish an encrypted message on that channel using
  * the default cipher params and verify correct receipt.
  */
-crypto.single_send_text_binary = function(test) {
+crypto_.single_send_text_binary = function(test) {
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -299,7 +299,7 @@ crypto.single_send_text_binary = function(test) {
  * the default cipher params and verify that the decrypt failure
  * is noticed as bad recovered plaintext.
  */
-crypto.single_send_key_mismatch = function(test) {
+crypto_.single_send_key_mismatch = function(test) {
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -341,7 +341,7 @@ crypto.single_send_key_mismatch = function(test) {
  * Publish an unencrypted message and verify that the receiving connection
  * does not attempt to decrypt it.
  */
-crypto.single_send_unencrypted = function(test) {
+crypto_.single_send_unencrypted = function(test) {
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -383,7 +383,7 @@ crypto.single_send_unencrypted = function(test) {
  * Publish an unencrypted message and verify that the receiving connection
  * does not attempt to decrypt it.
  */
-crypto.single_send_encrypted_unhandled = function(test) {
+crypto_.single_send_encrypted_unhandled = function(test) {
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -426,7 +426,7 @@ crypto.single_send_encrypted_unhandled = function(test) {
  * - publish with an updated key on the tx connection and verify that it is not decrypted by the rx connection;
  * - publish with an updated key on the rx connection and verify connect receipt
  */
-crypto.set_cipher_params = function(test) {
+crypto_.set_cipher_params = function(test) {
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']

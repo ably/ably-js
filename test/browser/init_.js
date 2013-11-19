@@ -2,9 +2,9 @@
  * Base init case
  */
 var _init = {};
-var init = this.init = {};
+var init_ = {};
 
-init.initbase0 = function (test) {
+init_.initbase0 = function (test) {
 	test.expect(1);
 	try {
 		var timeout,
