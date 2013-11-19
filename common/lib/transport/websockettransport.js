@@ -10,6 +10,7 @@ var WebSocketTransport = (function() {
 	function WebSocketTransport(connectionManager, auth, params) {
 		var binary = params.binary = params.binary && hasBuffer;
 		Transport.call(this, connectionManager, auth, params);
+		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
 	Utils.inherits(WebSocketTransport, Transport);
 
@@ -50,10 +51,8 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var host = Defaults.getHost(options, params.host, true);
-		var port = Defaults.getPort(options);
 		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + host + ':' + port + '/';
+		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';

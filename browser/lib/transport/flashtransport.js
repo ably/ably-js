@@ -26,9 +26,9 @@ var FlashTransport = (function() {
 				swfLocation = connectionManager.options.flashTransport.swfLocation;
 		}
 		FlashWebSocket.__initialize(swfLocation);
-		if(policyPort)
-			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + params.host + ':' + policyPort);
 		var transport = new FlashTransport(connectionManager, auth, params);
+		if(policyPort)
+			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + transport.wsHost + ':' + policyPort);
 		errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
