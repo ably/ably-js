@@ -46,10 +46,15 @@ exports.displayError = function(err) {
 	return result;
 };
 
+var setupRefcount = 0;
 var testVars = exports.testVars = {};
 var admin;
 
 exports.setupTest = function(callback) {
+	if (setupRefcount++ != 0) {
+		callback(null);
+		return;
+	}
 	admin = exports.admin();
 	admin.accounts.create({}, function(err, acct) {
 		if(err) {
@@ -191,6 +196,10 @@ exports.setupTest = function(callback) {
 };
 
 exports.clearTest = function(callback) {
+	if (--setupRefcount != 0) {
+		callback(null);
+		return;
+	}
 	testVars.testApp.del(function(err) {
 		if(err) {
 			callback(err);

@@ -16,6 +16,12 @@ var _exports = {};
 var enable_logging = false;
 function log(str) { enable_logging && console.log(str); }
 
+/* Setup underlying accounts, etc, if they aren't already set up */
+exports.localsetup = function(test) {
+	test.expect(0);
+	base.setupTest(function(err, testVars) { test.done(); });
+};
+
 /*
  * Connect to PUBNUB service
  */
@@ -221,3 +227,9 @@ exports.shutdownPubnub = function(test) {
 		test.done();
 	});
 }
+
+/* Clear down underlying accounts, etc, if they were set up locally */
+exports.cleardown = function(test) {
+	test.expect(0);
+	base.clearTest(function(err) { test.done(); });
+};
