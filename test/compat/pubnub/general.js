@@ -25,13 +25,24 @@ exports.time = function(test) {
 	});
 }
 
-// !!TODO!! Test case where callback is passed as a separate parameter rather than as a property of the options object (all functions that can take a 'callback' option in their options)
-
-// !!TODO!! Test presence
-
-// !!TODO!! Simulate error callback
-// !!TODO!! Simulate disconnect, reconnect events
-// !!TODO!! Simulate disconnect, reconnect events
+/* Because the time test on its own doesn't interact with the realtime connection,
+ * it can complete before the authentication has completed (if using token
+ * authentication), and the shutdown process doesn't seem completely robust -
+ * there seem to be some dangling operations pending which cause nodeunit to
+ * never exit if we just drop straight through to shutting down the Ably
+ * realtime connection.
+ * 
+ * Wait for the connection to come up fully before shutting it down...
+ * 
+ * !!TODO!! Look into why this is happening - it shouldn't be necessary
+ */
+exports.waitConnection = function(test) {
+	if (pubnub.ably.connection.state == 'connected') {
+		test.done();
+	} else {
+		pubnub.ably.connection.on('connected', function(s) { test.done(); });
+	}
+}
 
 /* Clear down underlying accounts, etc, if they were set up locally */
 exports.cleardown = base.clearTest;
