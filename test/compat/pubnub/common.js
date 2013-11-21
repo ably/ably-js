@@ -1,5 +1,6 @@
 "use strict";
 var async = require('async');
+var PUBNUB = require('../../../browser/compat/pubnub.js');
 
 function mixin(target, source) {
 	source = source || {};
@@ -20,8 +21,25 @@ var hostname = process.env.ADMIN_ADDRESS || 'localhost';
 var port = process.env.ADMIN_PORT || 8090;
 var scheme = process.env.ADMIN_SCHEME || 'http';
 var uri = scheme + '://' + username + ':' + password + '@' + hostname + ':' + port;
+var pubnubOpts = {
+	origin       : process.env.PUBNUB_ORIGIN || 'localhost:8080',
+	tlsorigin       : process.env.PUBNUB_ORIGIN || 'localhost:8081'
+};
+var setupRefcount = 0;
+var testVars = exports.testVars = {};
+var admin = null;
+var pubnub;
 
+exports.getPubnub = function() { return pubnub; }
 exports.admin = function(opts) {return new Admin(uri, mixin(adminOpts, opts));};
+
+exports.randomid = function randomid(length) {
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for(var i=0; i<length; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    return text;
+};
 
 exports.containsValue = function(ob, value) {
 	for(var key in ob) {
@@ -46,26 +64,40 @@ exports.displayError = function(err) {
 	return result;
 };
 
-var setupRefcount = 0;
-var testVars = exports.testVars = {};
-var admin;
+/*
+ * Call _setupTest in context of a nodeunit test
+ */
+exports.setupTest = function(test) {
+	test.expect(1);
+	_setupTest(function(err, pn) {
+		pubnub = pn;
+		if(err)
+			test.ok(false, displayError(err));
+		else
+			test.ok(true, 'Created test vars');
+		test.done();
+	});
+};
 
-exports.setupTest = function(callback) {
+/*
+ * Set up test accounts, create PUBNUB instance
+ */
+function _setupTest(callback) {
 	if (setupRefcount++ != 0) {
-		callback(null);
+		callback(null, pubnub);
 		return;
 	}
 	admin = exports.admin();
 	admin.accounts.create({}, function(err, acct) {
 		if(err) {
-			callback(err);
+			callback(err, null);
 			return;
 		}
 		testVars.testAcct = acct;
 		testVars.testAcctId = acct.id;
 		acct.apps.create({}, function(err, app) {
 			if(err) {
-				callback(err);
+				callback(err, null);
 				return;
 			}
 			testVars.testApp = app;
@@ -189,13 +221,64 @@ exports.setupTest = function(callback) {
 						testVars.testKey5Id = key.id;
 						key5Cb(null, testVars);
 					});
+				},
+				/*
+				 * set up persistent channel namespace
+				 */
+				function(pchanCb){
+					app.namespaces.create({id:'persisted'}, function(err, ns) {
+						if(err) {
+							pchanCb(err);
+							return;
+						}
+						ns.setPersisted(true, function(err, result) {
+							if (err) {
+								pchanCb(err);
+							} else {
+								pchanCb(null, testVars);
+							}
+						});
+					});
 				}
-			], callback);
+			], function(err, result) {
+				if (err != null) {
+					callback(err, null);
+					return;
+				}
+				pubnub = PUBNUB.init({
+					ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
+					origin        : pubnubOpts.origin,
+					tlsorigin     : pubnubOpts.tlsorigin
+				});
+				if (pubnub == null)
+					callback('Failed to create pubnub instance', null);
+				else if (pubnub !== PUBNUB)
+					callback('Pubnub instance error', null);
+				else
+					callback(null, pubnub);
+			});
 		});
 	});
 };
 
-exports.clearTest = function(callback) {
+/*
+ * Call _clearTest in the context of a nodeunit test
+ */
+exports.clearTest = function(test) {
+	test.expect(1);
+	_clearTest(function(err) {
+		if(err)
+			test.ok(false, displayError(err));
+		else
+			test.ok(true, 'Cleared test vars');
+		test.done();
+	});
+};
+
+/*
+ * Clear down test accounts, shutdown PUBNUB instance
+ */
+function _clearTest(callback) {
 	if (--setupRefcount != 0) {
 		callback(null);
 		return;
@@ -210,7 +293,12 @@ exports.clearTest = function(callback) {
 				callback(err);
 				return;
 			}
-			callback(null);
+			pubnub.shutdown(function(state) {
+				if (state == 'closed')
+					callback(null);
+				else
+					callback('Error: Final pubnub state is not closed');
+			});
 		});
 	});
 };

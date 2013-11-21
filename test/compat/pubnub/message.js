@@ -1,41 +1,15 @@
 "use strict";
 var base = require('./common');
-var PUBNUB = require('../../../browser/compat/pubnub.js');
 var containsValue = base.containsValue;
 var displayError = base.displayError;
-var testVars = base.testVars;
 var pubnub;
-
-var pubnubOpts = {
-	origin       : process.env.PUBNUB_ORIGIN || 'localhost:8080',
-	tlsorigin       : process.env.PUBNUB_ORIGIN || 'localhost:8081'
-};
-
 var _exports = {};
-
 var enable_logging = false;
 function log(str) { enable_logging && console.log(str); }
 
 /* Setup underlying accounts, etc, if they aren't already set up */
-exports.localsetup = function(test) {
-	test.expect(0);
-	base.setupTest(function(err, testVars) { test.done(); });
-};
-
-/*
- * Connect to PUBNUB service
- */
-exports.setupPubnub = function(test) {
-	test.expect(2);
-	pubnub = PUBNUB.init({
-		ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
-		origin        : pubnubOpts.origin,
-		tlsorigin     : pubnubOpts.tlsorigin
-	});
-	test.ok(pubnub != null, 'Pubnub initialised ok');
-	test.ok(pubnub === PUBNUB, 'Pubnub instance error');
-	test.done();
-}
+exports.localsetup = base.setupTest;
+exports.getPubnub = function(test) { pubnub = base.getPubnub(); test.done(); }
 
 /*
  * Set up a subscriber, publish some messages, check that the callbacks look sensible
@@ -67,6 +41,7 @@ exports.messageTest1 = function(test) {
 			pubnub.publish(publishOpts);
 
 		// Wait a while to check that we don't get any subscribe callbacks, then complete
+		console.log('... waiting 5 seconds ...')
 		setTimeout(function() { test.done(); }, 5000);
 	};
 
@@ -210,26 +185,155 @@ exports.messageTest2b = function(test) { _messageTest2(test, true, true); }
 exports.messageTest2c = function(test) { _messageTest2(test, false, true); }
 exports.messageTest2d = function(test) { _messageTest2(test, true, false); }
 
-// !!TODO!! Test presence
+/*
+ * Similar to messageTest1 (a bit simplified), but passing callback functions as separate
+ * parameters instead of as a field in the options object.
+ */
+exports.messageTest3 = function(test) {
+	var testMessage = { obj : "value", obj2 : "other value" };
+	var numPublishes = 4, numReceipts = 0, numUnsubscribes = 0, numSent = 0;
+
+	// Calculate number of expected assertions
+	test.expect(
+		1											// subscribe.connect
+		+ numPublishes								// subscribe.callback
+		+ (numPublishes * 5)						// publish.callback
+		+ 1											// unsubscribe.callback
+	);
+
+	function checkFinished() {
+		if ((numUnsubscribes == 1) && (numSent == numPublishes))
+			test.done();
+	}
+
+	function unsub() {
+		// Unsubscribe
+		pubnub.unsubscribe({ channel: 'test-channel' }, function(data) {
+			log("unsubscribe::callback: "+JSON.stringify(data));
+			test.equal(data.action, "leave", 'unsubscribe callback got unexpected value: '+data.action);
+			numUnsubscribes++;
+			checkFinished();
+		});
+	};
+
+	// Subscribe to test channel
+	var subscribeOpts = {
+		channel: 'test-channel',
+		message: function(data) { test.ok(false, '"message" callback should not be called if "callback" callback is also specified'); },
+		connect: function(data) {
+			log("subscribe::connect: "+JSON.stringify(data));
+			test.equal(data, 'test-channel');
+		},
+		error: function(data) { test.ok(false, '"error" callback of subscribe method should not be called'); },
+		disconnect: function(data) { test.ok(false, '"disconnect" callback should not be called'); },
+		reconnect: function(data) { test.ok(false, '"reconnect" callback should not be called'); },
+		presence: function(data) { }
+	};
+	pubnub.subscribe(subscribeOpts, function(data) {
+		log("subscribe::callback: "+JSON.stringify(data));
+		test.deepEqual(testMessage, data, 'message data not equal to testMessage');
+		if (++numReceipts == numPublishes)	// If we've got enough messages, unsubscribe
+			unsub();
+	});
+
+	// Publish a few messages
+	var publishOpts = {
+		channel: 'test-channel',
+		error: function(data) { test.ok(false, '"error" callback of publish method should not be called'); },
+		message: testMessage
+	};
+	for (var i=0; i<numPublishes; i++)
+		pubnub.publish(publishOpts, function(data) {
+			log("publish::callback: "+JSON.stringify(data));
+			test.ok(data != null, 'Publish callback parameter is null');
+			data && test.equal(data.length, 3, 'Length of publish callback data incorrect');
+			data && test.equal(data[0], 1, 'Success field of publish callback data incorrect');
+			data && test.equal(data[1], "Sent", 'Detail field of publish callback data incorrect');
+			data && test.ok(Number(data[2]) != null, 'Timestamp field of publish callback cannot be parsed as a number');
+			numSent++;
+			checkFinished();
+		});
+
+	// Note: After these messages have been received, the above "unsub" function will unsubscribe
+	// and call test.done()
+}
+
+/*
+ * Similar to messageTest3, but passing 'message' callback function instead of
+ * 'callback'. Should behave the same.
+ */
+exports.messageTest4 = function(test) {
+	var testMessage = { obj : "value", obj2 : "other value" };
+	var numPublishes = 4, numReceipts = 0, numUnsubscribes = 0, numSent = 0;
+
+	// Calculate number of expected assertions
+	test.expect(
+		1											// subscribe.connect
+		+ numPublishes								// subscribe.callback
+		+ (numPublishes * 5)						// publish.callback
+		+ 1											// unsubscribe.callback
+	);
+
+	function checkFinished() {
+		if ((numUnsubscribes == 1) && (numSent == numPublishes))
+			test.done();
+	}
+
+	function unsub() {
+		// Unsubscribe
+		pubnub.unsubscribe({ channel: 'test-channel' }, function(data) {
+			log("unsubscribe::callback: "+JSON.stringify(data));
+			test.equal(data.action, "leave", 'unsubscribe callback got unexpected value: '+data.action);
+			numUnsubscribes++;
+			checkFinished();
+		});
+	};
+
+	// Subscribe to test channel
+	var subscribeOpts = {
+		channel: 'test-channel',
+		message: function(data) {
+			log("subscribe::message: "+JSON.stringify(data));
+			test.deepEqual(testMessage, data, 'message data not equal to testMessage');
+			if (++numReceipts == numPublishes)	// If we've got enough messages, unsubscribe
+				unsub();
+		},
+		connect: function(data) {
+			log("subscribe::connect: "+JSON.stringify(data));
+			test.equal(data, 'test-channel');
+		},
+		error: function(data) { test.ok(false, '"error" callback of subscribe method should not be called'); },
+		disconnect: function(data) { test.ok(false, '"disconnect" callback should not be called'); },
+		reconnect: function(data) { test.ok(false, '"reconnect" callback should not be called'); },
+		presence: function(data) { }
+	};
+	pubnub.subscribe(subscribeOpts);
+
+	// Publish a few messages
+	var publishOpts = {
+		channel: 'test-channel',
+		error: function(data) { test.ok(false, '"error" callback of publish method should not be called'); },
+		message: testMessage
+	};
+	for (var i=0; i<numPublishes; i++)
+		pubnub.publish(publishOpts, function(data) {
+			log("publish::callback: "+JSON.stringify(data));
+			test.ok(data != null, 'Publish callback parameter is null');
+			data && test.equal(data.length, 3, 'Length of publish callback data incorrect');
+			data && test.equal(data[0], 1, 'Success field of publish callback data incorrect');
+			data && test.equal(data[1], "Sent", 'Detail field of publish callback data incorrect');
+			data && test.ok(Number(data[2]) != null, 'Timestamp field of publish callback cannot be parsed as a number');
+			numSent++;
+			checkFinished();
+		});
+
+	// Note: After these messages have been received, the above "unsub" function will unsubscribe
+	// and call test.done()
+}
+
 // !!TODO!! Simulate error callback
 // !!TODO!! Simulate disconnect, reconnect events
 // !!TODO!! Simulate disconnect, reconnect events
-// !!TODO!! Test case where callback is passed as a separate parameter rather than as a property of the options object
-// !!TODO!! Test history
-
-/*
- * Close down PUBNUB
- */
-exports.shutdownPubnub = function(test) {
-	test.expect(1);
-	pubnub.shutdown(function(state) {
-		test.ok(state == 'closed', 'Pubnub initialised ok');
-		test.done();
-	});
-}
 
 /* Clear down underlying accounts, etc, if they were set up locally */
-exports.cleardown = function(test) {
-	test.expect(0);
-	base.clearTest(function(err) { test.done(); });
-};
+exports.cleardown = base.clearTest;
