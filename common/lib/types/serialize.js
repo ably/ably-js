@@ -151,6 +151,7 @@ this.Serialize = (function() {
 				var ob;
 				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
 				items = ob.items;
+				for (var i = 0; i < items.length; i++) items[i].data = Data.fromTData(items[i].data);
 			} else {
 				var elements = JSON.parse(encoded), count = elements.length;
 				items = new Array(count);
