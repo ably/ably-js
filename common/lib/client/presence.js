@@ -16,6 +16,10 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.enter = function(clientData, callback) {
+		if (!callback && (typeof(clientData)==='function')) {
+			callback = clientData;
+			clientData = '';
+		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this.enterClient(this.clientId, clientData, callback);
