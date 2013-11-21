@@ -82,13 +82,16 @@
 		}
 		if (tlsorigin && (tlsorigin.length != 0)) {
 			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
-			var p = origin.split(':');
-			if (p.length > 1)
-				opts.tlsPort = p[1];
+			var p = tlsorigin.split(':');
+			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+		} else {
+			opts.tlsPort = 8081;
 		}
 
 		// Start up Ably connection
 		PUBNUB.ably = new Ably.Realtime(opts);
+		PUBNUB.ablyRest = new Ably.Rest(opts);
+
 		PUBNUB.ably.connection.on(function(stateChange) {
 			switch(stateChange.current) {
 			case 'connected':
@@ -122,20 +125,55 @@
 
 	/**
 	 * Obtain the event history for a given channel
-	 * @param args.callback (optional): function to call with the result;
-	 * @param args.limit (optional): max number of events to return;
+	 * @param args.callback: function to call with the result;
 	 * @param args.channel: the name of the channel
+	 * @param args.count (optional): max number of events to return;
+	 * @param args.reverse (optional, boolean): forward or reverse
+	 * @param args.error (optional): error callback
+	 * @param args.start (optional): start timestamp
+	 * @param args.end (optional): end timestamp
 	 * 
 	 * Compatibility:
 	 * TBD
 	 */
 	PUBNUB.history = function(args, callback) {
 		callback = args.callback || callback;
-		var limit = args.limit || 100;
+		var limit = args.count || 100;
 		var channel = args.channel;
+		var error = args.error || noop;
+		var reverse = args.reverse || false;
 		if (!channel) return log('Missing Channel');
 		if (!callback) return log('Missing Callback');
-		/* FIXME: implement this */
+
+		var ch = PUBNUB.ablyRest.channels.get(channel);
+
+		var hcb = function(err, result) {
+			if (err != null) {
+				if (Object.keys(err).length != 0) {
+					error(err);
+				}
+			} else {
+				var presults = [];
+				var startTime = null, endTime = null;
+				for (var i=0; i<result.length; i++) {
+					var h = result[i];
+					if (!startTime)
+						startTime = endTime = h.timestamp;
+					presults.push(h.data);
+				}
+				callback([presults, startTime, endTime]);
+			}
+		};
+
+		var params = {
+			direction : reverse ? 'backwards' : 'forwards',
+			limit : limit
+		};
+		if (args.start)
+			params.start = Number(args.start) / 10000;
+		if (args.end)
+			params.end = Number(args.end) / 10000;
+		ch.history(params, hcb);
 	};
 
 	/**
@@ -145,7 +183,14 @@
 	 * TBD
 	 */
 	PUBNUB.time = function(callback) {
-		/* FIXME: implement this */
+		PUBNUB.ablyRest.time(function(err, time) {
+			if (err) {
+				callback(0);
+			} else {
+				// Convert to odd unit that pubnub uses
+				callback(Number(time)*10000);
+			}
+		});
 	};
 
 	/**
@@ -197,7 +242,7 @@
 	 * TBD
 	 */
 	PUBNUB.subscribe = function(args, callback) {
-		callback = callback || args.callback;
+		callback = callback || args.callback || args.message;
 		var channel = args.channel;
 		if (!channel) return log('Missing Channel');
 		if (!callback) return log('Missing Callback');
