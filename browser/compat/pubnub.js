@@ -89,6 +89,7 @@
 		}
 
 		// Start up Ably connection
+		PUBNUB.ablyOptions = opts;
 		PUBNUB.ably = new Ably.Realtime(opts);
 		PUBNUB.ablyRest = new Ably.Rest(opts);
 
@@ -225,18 +226,44 @@
 	};
 
 	/**
+	 * Get current presence list for a channel
+	 * @param args.callback (optional): function to call when complete
+	 * @param args.channel: the name of the channel
+	 * @param args.error (optional): function to call on error
+	 * 
+	 * Compatibility: TBD
+	 */
+	PUBNUB.here_now = function(args, callback) {
+		callback = callback || args.callback;
+		var channel = args.channel;
+		if (!channel) return log('Missing Channel');
+		if (!callback) return log('Missing Callback');
+		var s = subscriptions[channel];
+		if (!s) return log('Not subscribed to channel');
+
+		var presence = s.ablyChannel.presence.get();
+		var uuids = new Array(presence.length);
+		for (var i=0; i<presence.length; i++) uuids[i] = presence[i].clientId;
+		callback({
+			uuids : uuids,
+			occupancy : uuids.length
+		});
+	};
+
+	/**
 	 * Subscribe for messages on a given channel
 	 * @param args.callback (optional): function to call with each received message;
 	 * @param args.channel: the name of the channel, or an array or comma-separated list of channels
 	 * @param args.connect (optional): a function to call once the connection is established
-	 * @param args.restore (optional): a function to call once the connection is re-established
+	 * @param args.restore (optional): a boolean saying whether connection should be automatically
+	 * restored if it is dropped
 	 * @param args.reconnect (optional): a function to call once the connection is re-established
-	 * (FIXME: check difference vs restore)
-	 * following a disconnection
 	 * @param args.disconnect (optional): a function to call once an established connection
 	 * is dropped
 	 * @param args.error (optional): a function to call if a permanent failure has occurred on
 	 * the connection
+	 * @param args.presence (optional): a function to call when presence events for the channel
+	 * are received
 	 * 
 	 * Compatibility:
 	 * TBD
@@ -253,19 +280,34 @@
 			if(subscriptions[channel]) return log('Already Connected');
 			var cb = function(message) { callback(message.data); };
 
-			// Create channel and register for message callbacks
+			// Create channel and register for message callbacks and presence events if necessary
 			var ablyChannel = PUBNUB.ably.channels.get(channel);
+			var presenceCb = args.presence;
+			if (presenceCb) {
+				var presenceEventCb = function(data) {
+					if (data.action == 'update')
+						return;
+					presenceCb({
+						action : (data.action == 'enter') ? 'join' : 'leave',
+						uuid : data.clientId,
+						timestamp : Date.now() * 10000,
+						occupancy : ablyChannel.presence.get().length
+					});
+				} 
+				ablyChannel.presence.on('enter', function(data) { data.action = 'enter'; presenceEventCb(data); });
+				ablyChannel.presence.on('leave', function(data) { data.action = 'leave'; presenceEventCb(data); });
+			}
 			ablyChannel.subscribe(cb);
 
 			// Record channel in list of subscribed channels
 			var subscription = {
 				callback: cb,
 				ablyChannel: ablyChannel,
-				restore: args.restore || noop,
 				error: args.error || noop,
 				connect: args.connect || noop,
 				reconnect: args.reconnect || noop,
 				disconnect: args.disconnect || noop,
+				presence: args.presence || noop,
 				hasConnectedOnce: false
 			};
 			subscriptions[channel] = subscription;
@@ -274,6 +316,11 @@
 			if (PUBNUB.ably.connection.state == 'connected') {
 				subscription.hasConnectedOnce = true;
 				subscription.connect && subscription.connect(channel);
+			}
+
+			// Publish a presence event if a UUID was specified on init
+			if (PUBNUB.ablyOptions.clientId) {
+				ablyChannel.presence.enter(function(err) {});
 			}
 		};
 
@@ -317,3 +364,4 @@
 	else
 		window.PUBNUB = PUBNUB;
 })();
+
