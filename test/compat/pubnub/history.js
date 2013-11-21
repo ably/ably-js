@@ -4,7 +4,7 @@ var containsValue = base.containsValue;
 var displayError = base.displayError;
 var pubnub;
 var _exports = {};
-var enable_logging = true;
+var enable_logging = false;
 function log(str) { enable_logging && console.log(str); }
 
 /* Setup underlying accounts, etc, if they aren't already set up */
