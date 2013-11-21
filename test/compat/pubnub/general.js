@@ -25,6 +25,24 @@ exports.time = function(test) {
 	});
 }
 
+/*
+ * Test uuid function
+ */
+exports.uuid = function(test) {
+	test.expect(4);
+	var u1 = pubnub.uuid(function(data) {
+		log('Got uuid: ' +data);
+		test.ok(data.length > 10, 'Randomly generated uuid is too short');
+	});
+	log('Got uuid: ' +u1);
+	test.ok(u1.length > 10, 'Randomly generated uuid is too short');
+	var u2 = pubnub.uuid();
+	log('Got uuid: ' +u2);
+	test.ok(u2.length > 10, 'Randomly generated uuid is too short');
+	test.ok(u1 != u2, 'Randomly generated uuids should not be the same');
+	test.done();
+}
+
 /* Because the time test on its own doesn't interact with the realtime connection,
  * it can complete before the authentication has completed (if using token
  * authentication), and the shutdown process doesn't seem completely robust -

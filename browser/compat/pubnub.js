@@ -251,6 +251,24 @@
 	};
 
 	/**
+	 * Generate a random uuid
+	 * @param callback (optional): function to call with generated uuid
+	 * @return randomly generated uuid. The same value is passed to the callback if specified
+	 */
+	PUBNUB.uuid = function(callback) {
+		function randomid(length) {
+		    var text = "";
+		    var possible = "abcdef0123456789";
+		    for(var i=0; i<length; i++)
+				text += possible.charAt(Math.floor(Math.random() * possible.length));
+		    return text;
+		}
+		var v = randomid(8)+"-"+randomid(4)+"-"+randomid(4)+"-"+randomid(4)+"-"+randomid(12);
+		callback && callback(v);
+		return v;
+	};
+
+	/**
 	 * Subscribe for messages on a given channel
 	 * @param args.callback (optional): function to call with each received message;
 	 * @param args.channel: the name of the channel, or an array or comma-separated list of channels
