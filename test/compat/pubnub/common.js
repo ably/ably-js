@@ -248,7 +248,8 @@ function _setupTest(callback) {
 				pubnub = PUBNUB.init({
 					ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
 					origin        : pubnubOpts.origin,
-					tlsorigin     : pubnubOpts.tlsorigin
+					tlsorigin     : pubnubOpts.tlsorigin,
+					uuid          : 'client-'+exports.randomid(6)
 				});
 				if (pubnub == null)
 					callback('Failed to create pubnub instance', null);
