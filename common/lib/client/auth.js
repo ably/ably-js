@@ -146,7 +146,7 @@ var Auth = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, (self.token = tokenResponse.access_token));
+			callback(null, (self.token = tokenResponse));
 		});
 	};
 

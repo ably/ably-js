@@ -20,7 +20,7 @@ var Connection = (function() {
 
 	/* public instance methods */
 	Connection.prototype.on = function(state, callback) {
-		EventEmitter.prototype.on.call(this, state, callback);
+		EventEmitter.prototype.on.apply(this, arguments);
 		if(this.state == state && callback)
 			try {
 				callback(new ConnectionStateChange(undefined, state));
