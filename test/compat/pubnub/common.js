@@ -30,6 +30,7 @@ var testVars = exports.testVars = {};
 var admin = null;
 var pubnub;
 
+exports.cipherKey = "0000000000000000"
 exports.getPubnub = function() { return pubnub; }
 exports.admin = function(opts) {return new Admin(uri, mixin(adminOpts, opts));};
 
@@ -69,7 +70,22 @@ exports.displayError = function(err) {
  */
 exports.setupTest = function(test) {
 	test.expect(1);
-	_setupTest(function(err, pn) {
+	_setupTest(false, function(err, pn) {
+		pubnub = pn;
+		if(err)
+			test.ok(false, displayError(err));
+		else
+			test.ok(true, 'Created test vars');
+		test.done();
+	});
+};
+
+/*
+ * Call _setupTest in context of a nodeunit test (use secure init for pubnub)
+ */
+exports.setupTestSecure = function(test) {
+	test.expect(1);
+	_setupTest(true, function(err, pn) {
 		pubnub = pn;
 		if(err)
 			test.ok(false, displayError(err));
@@ -82,7 +98,7 @@ exports.setupTest = function(test) {
 /*
  * Set up test accounts, create PUBNUB instance
  */
-function _setupTest(callback) {
+function _setupTest(use_secure, callback) {
 	if (setupRefcount++ != 0) {
 		callback(null, pubnub);
 		return;
@@ -245,12 +261,22 @@ function _setupTest(callback) {
 					callback(err, null);
 					return;
 				}
-				pubnub = PUBNUB.init({
-					ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
-					origin        : pubnubOpts.origin,
-					tlsorigin     : pubnubOpts.tlsorigin,
-					uuid          : 'client-'+exports.randomid(6)
-				});
+				if (use_secure) {
+					pubnub = PUBNUB.secure({
+						ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
+						origin        : pubnubOpts.origin,
+						tlsorigin     : pubnubOpts.tlsorigin,
+						uuid          : 'client-'+exports.randomid(6),
+						cipher_key    : exports.cipherKey
+					});
+				} else {
+					pubnub = PUBNUB.init({
+						ably_key      : testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
+						origin        : pubnubOpts.origin,
+						tlsorigin     : pubnubOpts.tlsorigin,
+						uuid          : 'client-'+exports.randomid(6)
+					});
+				}
 				if (pubnub == null)
 					callback('Failed to create pubnub instance', null);
 				else if (pubnub !== PUBNUB)
@@ -299,7 +325,40 @@ function _clearTest(callback) {
 					callback(null);
 				else
 					callback('Error: Final pubnub state is not closed');
+				pubnub = undefined;
 			});
 		});
 	});
 };
+
+/* Debug: Avoid using JSON.stringify for debug, because it gets overridden */
+exports.printObject = function(o, objects) {
+	if (typeof(o) === 'undefined') return '<undefined>';
+	if (o === null) return "null";
+	if (typeof(o) === 'string') return '"' + o + '"';
+	if (typeof(o) === 'number') return o.toString();
+	if (typeof(o) === 'function') return o.toString();
+	if (o.toString().indexOf('[native code]') > -1) return o.toString();
+	if (typeof(o) !== 'object') return '<unknown:'+typeof(o)+'>';
+
+	try {
+		// Check for circular references
+		if (!objects) objects = [];
+		for (var i=0; i<objects.length; i++) { if (objects[i] === o) { return '<circular>'; } }
+		objects.push(o);
+
+		var keys = Object.keys(o);
+		var result = '{ ';
+		for (var i=0; i<keys.length; i++) {
+			if (i>0)
+				result += ', ';
+			var p = o[keys[i]];
+			result += keys[i]+':'+_printObject(p, objects);
+		}
+		result += '}';
+	} catch (err) {
+		console.log("Caught exception: "+err);
+		console.log(err.stack);
+	}
+	return result;
+}

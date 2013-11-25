@@ -8,14 +8,15 @@ var enable_logging = false;
 function log(str) { enable_logging && console.log(str); }
 
 /* Setup underlying accounts, etc, if they aren't already set up */
-exports.localsetup = base.setupTest;
+exports.localsetup = base.setupTestSecure;
 exports.getPubnub = function(test) { pubnub = base.getPubnub(); test.done(); }
 
 /*
  * Set up a subscriber, publish some messages, check that the callbacks look sensible
  */
 exports.messageTest1 = function(test) {
-	var testMessage = { obj : "value", obj2 : "other value" };
+	var testMessage = 1;
+//	var testMessage = { obj : "value", obj2 : "other value" };
 	var numPublishes = 4, numExtraPublishes = 2, numReceipts = 0;
 
 	// Calculate number of expected assertions
