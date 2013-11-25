@@ -28,11 +28,11 @@ exports.history1 = function(test) {
 	});
 
 	// Publish some messages that we can then check for
-	pubnub.publish({ channel : channel, message : '1' });
-	pubnub.publish({ channel : channel, message : '2' });
-	pubnub.publish({ channel : channel, message : '3' });
-	pubnub.publish({ channel : channel, message : '4' });
-	pubnub.publish({ channel : channel, message : '5' });
+	pubnub.publish({ channel : channel, message : 1 });
+	pubnub.publish({ channel : channel, message : 2 });
+	pubnub.publish({ channel : channel, message : 3 });
+	pubnub.publish({ channel : channel, message : 4 });
+	pubnub.publish({ channel : channel, message : 5 });
 
 	function checkFinished() {
 		if (++histCallbacks == expectedCallbacks)
@@ -47,7 +47,7 @@ exports.history1 = function(test) {
 			channel : channel,
 			callback : function(data) {
 				log('history::callback: '+JSON.stringify(data));
-				test.deepEqual(data[0], ['1', '2', '3', '4', '5'], 'history1 result callback value is incorrect');
+				test.deepEqual(data[0], [1, 2, 3, 4, 5], 'history1 result callback value is incorrect');
 				test.equal(data.length, 3, 'history1 result callback parameter should be a 3 element array');
 				checkFinished();
 			},
@@ -59,7 +59,7 @@ exports.history1 = function(test) {
 			channel : channel,
 			callback : function(data) {
 				log('history::callback: '+JSON.stringify(data));
-				test.deepEqual(data[0], ['5', '4', '3', '2', '1'], 'history1 result callback value is incorrect');
+				test.deepEqual(data[0], [5, 4, 3, 2, 1], 'history1 result callback value is incorrect');
 				test.equal(data.length, 3, 'history1 result callback parameter should be a 3 element array');
 				checkFinished();
 			},
@@ -72,7 +72,7 @@ exports.history1 = function(test) {
 			channel : channel,
 			callback : function(data) {
 				log('history::callback: '+JSON.stringify(data));
-				test.deepEqual(data[0], ['1', '2', '3'], 'history1 result callback value is incorrect');
+				test.deepEqual(data[0], [1, 2, 3], 'history1 result callback value is incorrect');
 				test.equal(data.length, 3, 'history1 result callback parameter should be a 3 element array');
 				checkFinished();
 			},
@@ -85,7 +85,7 @@ exports.history1 = function(test) {
 			channel : channel,
 			callback : function(data) {
 				log('history::callback: '+JSON.stringify(data));
-				test.deepEqual(data[0], ['5', '4', '3'], 'history1 result callback value is incorrect');
+				test.deepEqual(data[0], [5, 4, 3], 'history1 result callback value is incorrect');
 				test.equal(data.length, 3, 'history1 result callback parameter should be a 3 element array');
 				checkFinished();
 			},
@@ -100,7 +100,7 @@ exports.history1 = function(test) {
 			error : function(data) { test.ok(false, 'history1 test callback should not be called'); }
 		}, function(data) {
 				log('history::callback: '+JSON.stringify(data));
-				test.deepEqual(data[0], ['1', '2', '3', '4', '5'], 'history1 result callback value is incorrect');
+				test.deepEqual(data[0], [1, 2, 3, 4, 5], 'history1 result callback value is incorrect');
 				test.equal(data.length, 3, 'history1 result callback parameter should be a 3 element array');
 				checkFinished();
 		});
