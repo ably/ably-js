@@ -332,7 +332,7 @@ function _clearTest(callback) {
 };
 
 /* Debug: Avoid using JSON.stringify for debug, because it gets overridden */
-exports.printObject = function(o, objects) {
+exports.printObject = function printObject(o, objects) {
 	if (typeof(o) === 'undefined') return '<undefined>';
 	if (o === null) return "null";
 	if (typeof(o) === 'string') return '"' + o + '"';
@@ -353,7 +353,7 @@ exports.printObject = function(o, objects) {
 			if (i>0)
 				result += ', ';
 			var p = o[keys[i]];
-			result += keys[i]+':'+_printObject(p, objects);
+			result += keys[i]+':'+printObject(p, objects);
 		}
 		result += '}';
 	} catch (err) {
