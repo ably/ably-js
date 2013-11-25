@@ -349,11 +349,15 @@ exports.printObject = function printObject(o, objects) {
 
 		var keys = Object.keys(o);
 		var result = '{ ';
-		for (var i=0; i<keys.length; i++) {
-			if (i>0)
-				result += ', ';
-			var p = o[keys[i]];
-			result += keys[i]+':'+printObject(p, objects);
+		if (keys.length > 100)  {
+			result += ' ... '+keys.length+' items ...';
+		} else {
+			for (var i=0; i<keys.length; i++) {
+				if (i>0)
+					result += ', ';
+				var p = o[keys[i]];
+				result += keys[i]+':'+printObject(p, objects);
+			}
 		}
 		result += '}';
 	} catch (err) {
