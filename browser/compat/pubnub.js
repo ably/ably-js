@@ -28,56 +28,33 @@
 		var Ably = require('../..');
 	}
 
-	function getChannel(name, use_realtime) {
-		var prefix = use_realtime ? 'realtime-' : 'rest-';
-		var channel = channels[prefix + name];
+	function getChannel(name) {
+		var channel = channels[name];
 		if (!channel) {
-			if (use_realtime) {
-				channel = PUBNUB.ably.channels.get(name);
-				if (PUBNUB.ablyCipherParamsRealtime) {
-					console.log('Setting encryption parameters on channel "'+name+'": '+JSON.stringify(PUBNUB.ablyCipherParamsRealtime));
-					channel.setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParamsRealtime});
-				}
-			} else {
-				channel = PUBNUB.ablyRest.channels.get(name);
-				if (PUBNUB.ablyCipherParamsRest) {
-					console.log('Setting rest encryption parameters on channel "'+name+'": '+JSON.stringify(PUBNUB.ablyCipherParamsRest));
-					channel.setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParamsRest});
-				}
-			}
-			channels[prefix + name] = channel;
+			channel = PUBNUB.ably.channels.get(name);
+			if (PUBNUB.ablyCipherParams)
+				channel.setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
+			channels[name] = channel;
 		}
 		return channel;
 	}
 
-	function cipherParamsResponseRealtime(err, params) {
-		console.log('getDefaultParams response');
-		delete PUBNUB.ablyCipherParamsRealtimePending;
+	function cipherParamsResponse(err, params) {
+		delete PUBNUB.ablyCipherParamsPending;
 
 		if (err) return log('Unable to set up encryption parameters for secure messaging');
-		PUBNUB.ablyCipherParamsRealtime = params;
+		PUBNUB.ablyCipherParams = params;
 
 		// Set up cipher params on any channels that have been created already
-		for (var name in channels) {
-			console.log('Deferred setting encryption parameters on channel "'+name+'": '+JSON.stringify(PUBNUB.ablyCipherParamsRealtime));
-			channels[name].setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParamsRealtime});
-		}
+		for (var name in channels)
+			channels[name].setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
 
 		// Send any messages which were waiting for the cipherParams to be returned
 		for (var i=0; i<cipherParamsPendingMessages.length; i++) {
 			var msg = cipherParamsPendingMessages[i];
-			console.log('Sending pending message: '+JSON.stringify(msg));
 			PUBNUB.publish({ channel: msg.channel, callback: msg.callback, error: msg.error, message: msg.message });
 		}
 		cipherParamsPendingMessages = [];
-	}
-
-	function cipherParamsResponseRest(err, params) {
-		console.log('getDefaultParams response (rest)');
-		delete PUBNUB.ablyCipherParamsRestPending;
-
-		if (err) return log('Unable to set up encryption parameters for secure messaging');
-		PUBNUB.ablyCipherParamsRest = params;
 	}
 
 	var notifyConnectionEvent = function(event, response) {
@@ -155,13 +132,10 @@
 		// Start up Ably connection
 		PUBNUB.ablyOptions = opts;
 		PUBNUB.ably = new Ably.Realtime(opts);
-		PUBNUB.ablyRest = new Ably.Rest(opts);
 
 		if (args.cipher_key) {
-			PUBNUB.ablyCipherParamsRealtimePending = true;
-			PUBNUB.ablyCipherParamsRestPending = true;
-			Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponseRealtime);
-			Ably.Rest.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponseRest);
+			PUBNUB.ablyCipherParamsPending = true;
+			Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);
 		}
 
 		PUBNUB.ably.connection.on(function(stateChange) {
@@ -198,10 +172,8 @@
 
 		// Reset state
 		delete PUBNUB.ably;
-		delete PUBNUB.ablyRest;
 		delete PUBNUB.ablyOptions;
-		delete PUBNUB.ablyCipherParamsRealtime;
-		delete PUBNUB.ablyCipherParamsRest;
+		delete PUBNUB.ablyCipherParams;
 		subscriptions = {};
 		channels = {};
 		cipherParamsPendingMessages = [];
@@ -229,7 +201,7 @@
 		if (!channel) return log('Missing Channel');
 		if (!callback) return log('Missing Callback');
 
-		var ch = getChannel(channel, false);
+		var ch = getChannel(channel);
 
 		var hcb = function(err, result) {
 			if (err != null) {
@@ -267,7 +239,7 @@
 	 * TBD
 	 */
 	PUBNUB.time = function(callback) {
-		PUBNUB.ablyRest.time(function(err, time) {
+		PUBNUB.ably.time(function(err, time) {
 			if (err) {
 				callback(0);
 			} else {
@@ -297,11 +269,10 @@
 		if (!channel) return log('Missing Channel');
 
 		// If waiting for cipherParams, queue the message
-		if (PUBNUB.ablyCipherParamsRealtimePending) {
-			console.log('Waiting for cipherParams, queuing message');
+		if (PUBNUB.ablyCipherParamsPending) {
 			cipherParamsPendingMessages.push({ channel: channel, message: message, error: error, callback: callback });
 		} else {
-			var ablyChannel = getChannel(channel, true);
+			var ablyChannel = getChannel(channel);
 			ablyChannel.publish("", message, function(err) {
 				if (err != null) {
 					error({error : err});
@@ -388,7 +359,7 @@
 			var cb = function(message) { callback(message.data); };
 
 			// Create channel and register for message callbacks and presence events if necessary
-			var ablyChannel = getChannel(channel, true);
+			var ablyChannel = getChannel(channel);
 			var presenceCb = args.presence;
 			if (presenceCb) {
 				var presenceEventCb = function(data) {
