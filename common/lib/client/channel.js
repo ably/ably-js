@@ -74,14 +74,11 @@ var Channel = (function() {
 			}
 			try {
 				var messages = Serialize.TMessageArray.decode(res, binary);
-				if(cipher) {
-					for(var i = 0; i < messages.length; i++) {
+				for(var i = 0; i < messages.length; i++) {
+					if(cipher)
 						Message.decrypt(messages[i], cipher);
-						if (binary)
-							messages[i].data = Data.fromTData(messages[i].data);
-					}
+					messages[i].data = Data.fromTData(messages[i].data);
 				}
-
 				callback(null, messages);
 			} catch(err) {
 				callback(err);
