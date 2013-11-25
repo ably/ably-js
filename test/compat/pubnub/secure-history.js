@@ -4,7 +4,7 @@ var containsValue = base.containsValue;
 var displayError = base.displayError;
 var pubnub;
 var _exports = {};
-var enable_logging = true;
+var enable_logging = false;
 function log(str) { enable_logging && console.log(str); }
 
 /* Setup underlying accounts, etc, if they aren't already set up */
@@ -22,9 +22,7 @@ exports.history1 = function(test) {
 	// Subscribe to test channel (just for debugging)
 	pubnub.subscribe({
 		channel: channel,
-		callback: function(data) {
-			console.log("subscribe::callback: "+JSON.stringify(data));
-		}
+		callback: function(data) { log("subscribe::callback: "+JSON.stringify(data)); }
 	});
 
 	// Publish some messages that we can then check for
