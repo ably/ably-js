@@ -11,7 +11,7 @@
  * args: realtime_host, realtime_port and realtime_tls_port are optional, however they need to be provided unless
  *       you wish to run the tests against staging-realtime.ably.io:80 and staging-realtime.ably.io:443
  *
- *       Note there is a shortcut arg: realtime=<host><port><tls-port>
+ *       Note there is a shortcut arg: realtime=<host>,<port>,<tls-port>
  *
  *       REALTIME_HOST, REALTIME_PORT, REALTIME_TLS_PORT shell environment variables will be used as the default if set
  *
