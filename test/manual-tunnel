@@ -24,8 +24,8 @@ try {
 var tunnelPorts;
 
 if (!process.argv[2]) {
-  console.error('You did not specify any ports, we will default to ports commonly used with a simple farm: 843,8092,8180,8181');
-  tunnelPorts = ['843','8092','8180','8181'];
+  console.warn('You did not specify any ports, we will default to ports commonly used with a simple farm: 843,8092,8080,8081');
+  tunnelPorts = ['843','8092','8080','8081'];
 } else {
   tunnelPorts = process.argv[2].split(',');
 }

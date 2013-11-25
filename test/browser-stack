@@ -264,7 +264,7 @@ function dequeue() {
       var logResultAndProcessQueue = function() {
         currentBrowserClientId = null;
         // payload from AJAX post changes errors to errors[] for some reason, and a single array item becomes a string
-        $.each(['errors[]', 'consoleErrors[]'], function(i, val) {
+        ['errors[]', 'consoleErrors[]'].forEach(function(val) {
           if (result[val]) {
             if (typeof(result[val]) == 'string') {
               result.errors = [result[val]];
