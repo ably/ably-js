@@ -2,6 +2,17 @@ function endsWith(string, substr) {
   return string.substr(string.length - substr.length) == substr;
 }
 
+var consoleErrors = [];
+var oldConsoleErrorFn = window.console.error;
+window.console.error = function(err) {
+  consoleErrors.push(err);
+  return oldConsoleErrorFn.apply(window.console, arguments);
+}
+window.onerror=function(msg, url, line){
+  consoleErrors.push('Error in ' + url + ':' + line + ' - ' + msg);
+  return true;
+}
+
 // monkey patch runModules so that it supports passing of additional callback options
 // as we would like to keep the HTML formatting logic that exists when using nodeunit.run
 nodeunit._runModules = nodeunit.runModules;
@@ -68,10 +79,12 @@ function setupTests() {
 }
 
 function runTests() {
-  $('#nodeunit-header').show();
-  $('#nodeunit-header-path').html(TestsPath);
   var moduleSet = {},
       testTimeout;
+
+  $('#nodeunit-header').show();
+  $('#nodeunit-header-path').html(TestsPath);
+  consoleErrors = [];
 
   for(var module in testDescription) {
     var moduleId = testDescription[module];
@@ -97,7 +110,8 @@ function runTests() {
         testAccount: JSON.stringify(testVars.testAccount),
         tests: $('ol#nodeunit-tests>li').length,
         failed: errors.length,
-        errors: errors
+        errors: errors,
+        consoleErrors: consoleErrors
       };
       console.log(payload);
       $.post('/tests-complete', payload);
@@ -132,7 +146,8 @@ function runTests() {
       testAccount: JSON.stringify(testVars.testAccount),
       tests: $('ol#nodeunit-tests>li').length,
       failed: getErrorsFromNodeUnitUI().length,
-      errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " seconds so had to abort.  All test are assumed to have failed."]
+      errors: ["Browser-side timeout - Tests did not complete in under " + TEST_TIMEOUT_SECONDS + " seconds so had to abort.  All test are assumed to have failed."],
+      consoleErrors: consoleErrors
     });
   }, 1000*TEST_TIMEOUT_SECONDS);
 }

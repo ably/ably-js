@@ -11,6 +11,8 @@ function __populateTests(testDescription) {
 function __setTestvars(testVars) {
   window.testVars = testVars;
 }
-// ensure console messages in older browsers do not cause errors
+
+// ensure console and error messages in older browsers do not cause errors
 if (!window.console) window.console = {};
 if (!window.console.log) window.console.log = function() { };
+if (!window.console.error) window.console.error = function() { };

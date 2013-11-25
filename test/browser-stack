@@ -226,7 +226,7 @@ function dequeue() {
 
     var launchBrowser = function(err) {
       if (err) {
-        testsComplete({ tests: 0, failed: 1, errors: ['Could not execute the test setup so have had to abort', inspect(err)] });
+        testsComplete({ tests: 0, failed: 1, errors: ['Could not execute the test setup so have had to abort', inspect(err)], consoleErrors: [] });
       } else {
         console.log('  .. launching browser `' + browser.id + '`');
         var browserOpts = {
@@ -243,7 +243,7 @@ function dequeue() {
           if (err) {
             console.log('Error: Could not launch browser ' + browser.id);
             console.log('Error message: ' + inspect(err));
-            testsComplete({ tests: 0, failed: 1, errors: ['Could not launch browser', inspect(err)] });
+            testsComplete({ tests: 0, failed: 1, errors: ['Could not launch browser', inspect(err)], consoleErrors: [] });
             return;
           }
 
@@ -251,7 +251,7 @@ function dequeue() {
           console.log('  .. launched browser with worker id `' + worker.id + '`');
 
           testTimeout = setTimeout(function() {
-            testsComplete({ tests: 0, failed: 1, errors: ['Timeout - No response from browser tests received'] });
+            testsComplete({ tests: 0, failed: 1, errors: ['Timeout - No response from browser tests received'], consoleErrors: [] });
           }, (TEST_TIMEOUT + TEST_GRACE) * 1000); // allow 30 seconds more than timeout for browser tests allowing for start up and launch time
         });
       }
@@ -264,13 +264,15 @@ function dequeue() {
       var logResultAndProcessQueue = function() {
         currentBrowserClientId = null;
         // payload from AJAX post changes errors to errors[] for some reason, and a single array item becomes a string
-        if (result['errors[]']) {
-          if (typeof(result['errors[]']) == 'string') {
-            result.errors = [result['errors[]']];
-          } else {
-            result.errors = result['errors[]'];
+        $.each(['errors[]', 'consoleErrors[]'], function(i, val) {
+          if (result[val]) {
+            if (typeof(result[val]) == 'string') {
+              result.errors = [result[val]];
+            } else {
+              result.errors = result[val];
+            }
           }
-        }
+        });
         results.push({
           browser: browser,
           result: result
