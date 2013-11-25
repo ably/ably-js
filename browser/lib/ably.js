@@ -7199,6 +7199,7 @@ this.Serialize = (function() {
 				var ob;
 				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
 				items = ob.items;
+				for (var i = 0; i < items.length; i++) items[i].data = Data.fromTData(items[i].data);
 			} else {
 				var elements = JSON.parse(encoded), count = elements.length;
 				items = new Array(count);
@@ -7470,7 +7471,7 @@ var PaginatedResource = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, (self.token = tokenResponse.access_token));
+			callback(null, (self.token = tokenResponse));
 		});
 	};
 
@@ -7918,7 +7919,7 @@ var Connection = (function() {
 
 	/* public instance methods */
 	Connection.prototype.on = function(state, callback) {
-		EventEmitter.prototype.on.call(this, state, callback);
+		EventEmitter.prototype.on.apply(this, arguments);
 		if(this.state == state && callback)
 			try {
 				callback(new ConnectionStateChange(undefined, state));
@@ -8120,7 +8121,7 @@ var RealtimeChannel = (function() {
 				this.attach();
 			case 'attaching':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-				this.pendingEvents.push({messages: messages, listener: callback});
+				this.pendingEvents.push({messages: messages, callback: callback});
 				break;
 		}
 	};
@@ -8396,6 +8397,10 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.enter = function(clientData, callback) {
+		if (!callback && (typeof(clientData)==='function')) {
+			callback = clientData;
+			clientData = '';
+		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this.enterClient(this.clientId, clientData, callback);
