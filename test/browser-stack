@@ -34,9 +34,10 @@ var fs = require('fs'),
     browsers,
     browserQueue = [],
     results = [],
-    testsCompleteCallback;
+    testsCompleteCallback,
+    cleanedUp = false;
 
-var TEST_TIMEOUT = 90,  // time we allow for the tests to run in an external browser
+var TEST_TIMEOUT = 120,  // time we allow for the tests to run in an external browser
     TEST_GRACE = 10, // time we allow for browser start up to get tests running
     SERVER_HOST = 'localhost',
     SERVER_PORT = 8092,
@@ -179,40 +180,42 @@ if (!doNotLaunchBrowsersAutomatically) {
   }
 }
 
-var tunnelPorts = [[SERVER_HOST, SERVER_PORT, 0]]; // tunnel for test server
+function launchTunnel() {
+  var tunnelPorts = [[SERVER_HOST, SERVER_PORT, 0]]; // tunnel for test server
 
-// tests are running against a local form so set up tunnel to map to local farm
-if (['127.0.0.1','localhost','localhost.ably.io'].indexOf(REALTIME_HOST) !== -1) {
-  tunnelPorts.push([REALTIME_HOST, 843, 0]);
-  tunnelPorts.push([REALTIME_HOST, REALTIME_PORT, 0]); // plain text
-  tunnelPorts.push([REALTIME_HOST, REALTIME_TLS_PORT, 1]); // turn on SSL
-}
-
-var tunnelHosts = tunnelPorts.map(function (e) { return e.join(','); }),
-    tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials'][browserStackTestKey], tunnelHosts.join(',')];
-
-tunnelProcess = childProcess.spawn('java', tunnelArgs);
-tunnelProcess.stdout.on('data', function(data) {
-  if (tunnelOutput == '') { console.log('Tunnel opened');}
-  tunnelOutput += data
-});
-tunnelProcess.stderr.on('data', function() {
-  console.log ('Tunnelling error! - ' + data);
-  setTimeout(function() {
-    console.log('Exiting because tunnel is broken');
-    process.exit(3);
-  }, 1000);
-});
-tunnelProcess.on('exit', function(code, signal) {
-  if (browserQueue.length) {
-    console.error('Tunnel closed prematurely with exit code: ' + code);
-    if (tunnelOutput) console.error('Tunnel log:\n' + tunnelOutput);
-    process.exit(2);
+  // tests are running against a local form so set up tunnel to map to local farm
+  if (['127.0.0.1','localhost','localhost.ably.io'].indexOf(REALTIME_HOST) !== -1) {
+    tunnelPorts.push([REALTIME_HOST, 843, 0]);
+    tunnelPorts.push([REALTIME_HOST, REALTIME_PORT, 0]); // plain text
+    tunnelPorts.push([REALTIME_HOST, REALTIME_TLS_PORT, 1]); // turn on SSL
   }
-});
-console.log('\nTunnel to BrowserStack for ' + tunnelPorts.map(function (e) {
-  return (e[2] ? 'https' : 'http') + '://' + e[0] + ':' + e[1];
-}).join(', ') + ' being initialized');
+
+  var tunnelHosts = tunnelPorts.map(function (e) { return e.join(','); }),
+      tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials'][browserStackTestKey], tunnelHosts.join(',')];
+
+  tunnelProcess = childProcess.spawn('java', tunnelArgs);
+  tunnelProcess.stdout.on('data', function(data) {
+    if (tunnelOutput == '') { console.log('Tunnel opened');}
+    tunnelOutput += data
+  });
+  tunnelProcess.stderr.on('data', function() {
+    console.log ('Tunnelling error! - ' + data);
+    setTimeout(function() {
+      console.log('Exiting because tunnel is broken');
+      process.exit(3);
+    }, 1000);
+  });
+  tunnelProcess.on('exit', function(code, signal) {
+    if (browserQueue.length) {
+      console.error('Tunnel closed prematurely with exit code: ' + code);
+      if (tunnelOutput) console.error('Tunnel log:\n' + tunnelOutput);
+      process.exit(2);
+    }
+  });
+  console.log('\nTunnel to BrowserStack for ' + tunnelPorts.map(function (e) {
+    return (e[2] ? 'https' : 'http') + '://' + e[0] + ':' + e[1];
+  }).join(', ') + ' being initialized');
+}
 
 // module async runner for setup & tear down
 function runModule(module, moduleCallback) {
@@ -364,6 +367,7 @@ if (!doNotLaunchBrowsersAutomatically) {
 
 // ensure we are testing against the correct realtime service, defaults to staging
 testvars.realtimeHost = REALTIME_HOST;
+testvars.restHost = REALTIME_HOST;
 testvars.realtimePort = REALTIME_PORT;
 testvars.realtimeTlsPort = REALTIME_TLS_PORT;
 
@@ -376,12 +380,17 @@ launchServer(serverOpts, function(err) {
     console.log('Test web server started at http://' + SERVER_HOST + ':' + SERVER_PORT);
     console.log('Configured to test against realtime service at ws://' + REALTIME_HOST + ':' + REALTIME_PORT);
     console.log('                                           and wss://' + REALTIME_HOST + ':' + REALTIME_TLS_PORT);
-    if (doNotLaunchBrowsersAutomatically) {
-      console.log('\n\nLog in to http://browserstack.com now and visit http://' + SERVER_HOST + ':' + SERVER_PORT);
-    } else {
-      console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
-      dequeue();
-    }
   }
 });
 
+launchTunnel();
+
+console.log('Waiting 3 seconds for tunnel to be initialized');
+setTimeout(function() {
+  if (doNotLaunchBrowsersAutomatically) {
+    console.log('\n\nLog in to http://browserstack.com now and visit http://' + SERVER_HOST + ':' + SERVER_PORT);
+  } else {
+    console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
+    dequeue();
+  }
+}, 3000);
