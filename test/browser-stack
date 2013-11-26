@@ -371,6 +371,9 @@ testvars.restHost = REALTIME_HOST;
 testvars.realtimePort = REALTIME_PORT;
 testvars.realtimeTlsPort = REALTIME_TLS_PORT;
 
+console.log('Realtime host and port settings used:');
+console.log(inspect(testvars));
+
 launchServer(serverOpts, function(err) {
   if (err) {
     console.error('Fatal error.  Could not launch local test web server');
