@@ -6,6 +6,7 @@
  * browser-stack realtime-host=<host>
  *               realtime-port=<port>
  *               realtime-tls-port=<tls_port>
+ *               --manual-browser-launch (use if you don't want a browser to be launched so that tests can be run manually in browsers \from browserstack.com)
  *               [--all | browser-ids comma/space separated] (defaults to reduced browser list unless -all is specified)
  *
  * args: realtime_host, realtime_port and realtime_tls_port are optional, however they need to be provided unless
@@ -42,7 +43,9 @@ var TEST_TIMEOUT = 90,  // time we allow for the tests to run in an external bro
     REALTIME_HOST = process.env.REALTIME_HOST || 'staging-realtime.ably.io',
     REALTIME_PORT = process.env.REALTIME_PORT || 80,
     REALTIME_TLS_PORT = process.env.REALTIME_TLS_PORT || 443,
-    DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'];
+    DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'],
+    doNotLaunchBrowsersAutomatically = false,
+    browserStackTestKey = 'automated_testing_tunnel_key';
 
 // gracefully handle termination of worker and report error to the console if there was a problem killing the worker at BrowserStack
 function terminateWorker(workerId, callback) {
@@ -145,40 +148,48 @@ for(var i = 2; i < process.argv.length; i++) {
     REALTIME_HOST = realtimeParams[0];
     REALTIME_PORT = realtimeParams[1];
     REALTIME_TLS_PORT = realtimeParams[2];
+  } else if(startsWith(process.argv[i], '--manual-browser-launch')) {
+    doNotLaunchBrowsersAutomatically = true;
+    browserStackTestKey = 'manual_testing_tunnel_key';
   } else {
     chosenBrowsers.push(process.argv[i]);
   }
 }
 
-if (chosenBrowsers.length === 0) chosenBrowsers = DEFAULT_BROWSERS;
-for (var i = 0; i < chosenBrowsers.length; i++) {
-  var args = chosenBrowsers[i].split(',');
-  for (var argI in args) {
-    var browser, arg = args[argI];
-    for (var browserObj in browsers) {
-      if (browsers[browserObj].id == arg) {
-        browser = browsers[browserObj];
-        break;
+if (!doNotLaunchBrowsersAutomatically) {
+  if (chosenBrowsers.length === 0) chosenBrowsers = DEFAULT_BROWSERS;
+  for (var i = 0; i < chosenBrowsers.length; i++) {
+    var args = chosenBrowsers[i].split(',');
+    for (var argI in args) {
+      var browser, arg = args[argI];
+      for (var browserObj in browsers) {
+        if (browsers[browserObj].id == arg) {
+          browser = browsers[browserObj];
+          break;
+        }
       }
-    }
-    if (!browser) {
-      console.error('A browser with id `' + arg + '` could not be found. Aborting browser-stack test.');
-      process.exit(3);
-    } else {
-      if (browserQueue == browsers) incorrectBrowserParams();
-      browserQueue.push(browser);
+      if (!browser) {
+        console.error('A browser with id `' + arg + '` could not be found. Aborting browser-stack test.');
+        process.exit(3);
+      } else {
+        if (browserQueue == browsers) incorrectBrowserParams();
+        browserQueue.push(browser);
+      }
     }
   }
 }
 
-var tunnelPorts = [8092, 843];
+var tunnelPorts = [[SERVER_HOST, SERVER_PORT, 0]]; // tunnel for test server
+
+// tests are running against a local form so set up tunnel to map to local farm
 if (['127.0.0.1','localhost','localhost.ably.io'].indexOf(REALTIME_HOST) !== -1) {
-  tunnelPorts.push(REALTIME_PORT);
-  tunnelPorts.push(REALTIME_TLS_PORT);
+  tunnelPorts.push([REALTIME_HOST, 843, 0]);
+  tunnelPorts.push([REALTIME_HOST, REALTIME_PORT, 0]); // plain text
+  tunnelPorts.push([REALTIME_HOST, REALTIME_TLS_PORT, 1]); // turn on SSL
 }
 
-var tunnelHosts = tunnelPorts.map(function (e) { return 'localhost,' + e + ',0'; }),
-    tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['automated_testing_tunnel_key'],tunnelHosts.join(',')];
+var tunnelHosts = tunnelPorts.map(function (e) { return e.join(','); }),
+    tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials'][browserStackTestKey], tunnelHosts.join(',')];
 
 tunnelProcess = childProcess.spawn('java', tunnelArgs);
 tunnelProcess.stdout.on('data', function(data) {
@@ -199,7 +210,9 @@ tunnelProcess.on('exit', function(code, signal) {
     process.exit(2);
   }
 });
-console.log('Tunnel to BrowserStack for ports ' + tunnelPorts.join(', ') + ' being initialized');
+console.log('\nTunnel to BrowserStack for ' + tunnelPorts.map(function (e) {
+  return (e[2] ? 'https' : 'http') + '://' + e[0] + ':' + e[1];
+}).join(', ') + ' being initialized');
 
 // module async runner for setup & tear down
 function runModule(module, moduleCallback) {
@@ -341,9 +354,13 @@ function presentResults() {
 
 var serverOpts = {
   host: SERVER_HOST,
-  port: SERVER_PORT,
-  onTestResult: testsComplete
+  port: SERVER_PORT
 };
+
+// if automated testing capture results in callback, else results will be sent to console
+if (!doNotLaunchBrowsersAutomatically) {
+  serverOpts.onTestResult = testsComplete;
+}
 
 // ensure we are testing against the correct realtime service, defaults to staging
 testvars.realtimeHost = REALTIME_HOST;
@@ -359,8 +376,12 @@ launchServer(serverOpts, function(err) {
     console.log('Test web server started at http://' + SERVER_HOST + ':' + SERVER_PORT);
     console.log('Configured to test against realtime service at ws://' + REALTIME_HOST + ':' + REALTIME_PORT);
     console.log('                                           and wss://' + REALTIME_HOST + ':' + REALTIME_TLS_PORT);
-    console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
-    dequeue();
+    if (doNotLaunchBrowsersAutomatically) {
+      console.log('\n\nLog in to http://browserstack.com now and visit http://' + SERVER_HOST + ':' + SERVER_PORT);
+    } else {
+      console.log('\n-- Browser-stack testing against ' + browserQueue.length + ' browser(s) starting --');
+      dequeue();
+    }
   }
 });
 
