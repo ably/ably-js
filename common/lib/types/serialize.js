@@ -12,6 +12,19 @@ this.Serialize = (function() {
 		BUFFER = messagetypes.TType.BUFFER;
 
 	/**
+	 * Overload toString() to be useful
+	 * @return {*}
+	 */
+	messagetypes.TError.prototype.toString = function() {
+		var result = '[' + this.constructor.name;
+		if(this.message) result += ': ' + this.message;
+		if(this.statusCode) result += '; statusCode=' + this.statusCode;
+		if(this.code) result += '; code=' + this.code;
+		result += ']';
+		return result;
+	};
+
+	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
