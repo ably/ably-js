@@ -73,7 +73,7 @@ exports.setupTest = function(test) {
 	_setupTest(false, function(err, pn) {
 		pubnub = pn;
 		if(err)
-			test.ok(false, displayError(err));
+			test.ok(false, exports.displayError(err));
 		else
 			test.ok(true, 'Created test vars');
 		test.done();
@@ -88,7 +88,7 @@ exports.setupTestSecure = function(test) {
 	_setupTest(true, function(err, pn) {
 		pubnub = pn;
 		if(err)
-			test.ok(false, displayError(err));
+			test.ok(false, exports.displayError(err));
 		else
 			test.ok(true, 'Created test vars');
 		test.done();
@@ -295,7 +295,7 @@ exports.clearTest = function(test) {
 	test.expect(1);
 	_clearTest(function(err) {
 		if(err)
-			test.ok(false, displayError(err));
+			test.ok(false, exports.displayError(err));
 		else
 			test.ok(true, 'Cleared test vars');
 		test.done();
