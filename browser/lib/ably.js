@@ -2034,8 +2034,9 @@ inherits(TFramedTransport, TTransport, {
   }
 });
 /* declarations to ensure these variables do not go into global scope */
-var TData, TPresence, TMessage, TChannelMessage, TProtocolMessage;
+var TError, TData, TPresence, TMessage, TChannelMessage, TProtocolMessage;
 var clientmessage_types = {
+	TError: TError,
 	TData: TData,
 	TPresence: TPresence,
 	TMessage: TMessage,
@@ -4171,6 +4172,7 @@ var clientmessage_refs = {
 	TAction: TAction,
 	TFlags: TFlags,
 	TType: TType,
+	TError: TError,
 	TData: TData,
 	TPresence: TPresence,
 	TMessage: TMessage,
@@ -7058,6 +7060,19 @@ this.Serialize = (function() {
 		TMessageArray = Serialize.TMessageArray = {},
 		TMessageBundle = Serialize.TMessageBundle = {},
 		BUFFER = messagetypes.TType.BUFFER;
+
+	/**
+	 * Overload toString() to be useful
+	 * @return {*}
+	 */
+	messagetypes.TError.prototype.toString = function() {
+		var result = '[' + this.constructor.name;
+		if(this.message) result += ': ' + this.message;
+		if(this.statusCode) result += '; statusCode=' + this.statusCode;
+		if(this.code) result += '; code=' + this.code;
+		result += ']';
+		return result;
+	};
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
