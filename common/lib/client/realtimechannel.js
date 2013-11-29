@@ -55,6 +55,14 @@ var RealtimeChannel = (function() {
 		if(argCount == 2) {
 			if(!Utils.isArray(messages))
 				messages = [messages];
+			var tMessages = new Array(messages.length);
+			for(var i = 0; i < messages.length; i++) {
+				var message = messages[i];
+				var tMessage = tMessages[i] = new messagetypes.TMessage();
+				tMessage.name = message.name;
+				tMessage.data = Data.toTData(message.data);
+			}
+			messages = tMessages;
 		} else {
 			var message = new messagetypes.TMessage();
 			message.name = arguments[0];
