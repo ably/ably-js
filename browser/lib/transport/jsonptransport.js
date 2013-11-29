@@ -51,7 +51,7 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.Request = function(id) {
-		this.requestId = id || requestId++
+		this.requestId = id || requestId++;
 	};
 
 	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
@@ -73,13 +73,13 @@ var JSONPTransport = (function() {
 		script.onerror = function(e) {  self.abort(); };
 		script.src = CometTransport.paramStr(params, uri);
 
+		var self = this;
 		var _finish = this._finish = function() {
 			clearTimeout(timer);
 			if(script.parentNode) script.parentNode.removeChild(script);
 			delete _[id];
 		}
 
-		var self = this;
 		_[id] = function(message) {
 			_finish();
 			if(!self.aborted)
