@@ -1,7 +1,32 @@
-window.Pusher = window.Pusher || (function() {
+"use strict";
+(function() {
+
+	// Ably library should have been included if running in a browser prior to including this
+	// compatibility library:
+	//
+	//  <script src="http://cdn.ably.io/lib/ably.min.js"></script>
+	//  <script src="compat/pubnub.js"></script>
+	//
+	// If this hasn't happened, assume we're running under node.js, and attempt to include it
+	// and various other necessary things.
+	if (typeof(Ably) === 'undefined') {
+		var Ably = require('../..');
+		var fs   = require('fs');
+		var path = require('path');
+		var vm   = require('vm');
+		var includeScript = function(name) {
+			var filename = path.resolve(__dirname, name);
+			return vm.runInThisContext(fs.readFileSync(filename, 'utf8'), filename);
+		}
+		if (typeof(Utils) === 'undefined') includeScript('../../common/lib/util/utils.js');
+		if (typeof(EventEmitter) === 'undefined') includeScript('../../common/lib/util/eventemitter.js');
+	}
+
+	var enable_logging = false;
+	function log(str) { enable_logging && console.log(str); }
 
 	/**
-	 * Mapping from Ably to Pusher connection state names
+	 * Mapping from Ably to Pusher connection and channel state names
 	 */
 	var connectionStates = {
 		initialized:  'initialized',
@@ -12,32 +37,54 @@ window.Pusher = window.Pusher || (function() {
 		closed:       'disconnected',
 		failed:       'failed'
 	};
+	var channelStates = {
+		attached:     'pusher:subscription_succeeded',
+		failed:       'pusher:subscription_error'
+	};
+	var channelStatesReverse = {
+		'pusher:subscription_succeeded'  : 'attached',
+		'pusher:subscription_error'      : 'failed'
+	};
 
-	function startsWith(string, substr) {
-		return string.substr(0, substr.length) == substr;
-	}
+	function startsWith(string, substr) { return (string.indexOf(substr) == 0); }
 
 	/**
 	 * Create a Pusher instance
-	 * @param applicationKey: the Ably applicationId;
+	 * @param applicationKey: the Ably key;
 	 * @param options: connection options.
 	 * 
 	 * The following Pusher-defined options are supported:
 	 * - encrypted
+	 * - authEndpoint: Maps to Ably authUrl option
+	 * - auth.params: Maps to Ably authParams option
+	 * - auth.headers: Maps to Ably authHeaders option
+	 * - host: Maps to Ably host and wsHost options
 	 *
 	 * The following Ably-defined options are additionally supported:
-	 * - (TBD)
+	 * - ablyClientId: Maps to Ably clientId option
 	 * 
 	 * Compatibility:
 	 * There are differences between Pusher and Ably authentication regimes
 	 * so not all Pusher auth param options are supported.
 	 */
 	function Pusher(applicationKey, options) {
-		var ablyOptions = {
-			applicationId: applicationKey,
-			encrypted: options.encrypted
+		var origin = options.host || '';
+		var encrypted = options.encrypted || false;
+		var opts = {
+			key: applicationKey, encrypted: encrypted //,log:{level:4}
 		};
-		var ably = this.ably = new Ably(ablyOptions);
+		if (options.ablyClientId) opts.clientId = options.ablyClientId;
+		if (options.authEndpoint) opts.authUrl = options.authEndpoint;
+		if (options.auth && options.auth.params) opts.authParams = options.auth.params;
+		if (options.auth && options.auth.headers) opts.authHeaders = options.auth.headers;
+		if (origin && (origin.length != 0)) {
+			var p = origin.split(':');
+			opts.host = opts.wsHost = p[0];
+			if (p.length > 1)
+				opts.port = p[1];
+		}
+
+		var ably = this.ably = new Ably.Realtime(opts);
 		this.connection = new PusherConnection(ably.connection);
 		this.channels = {};
 	}
@@ -46,7 +93,11 @@ window.Pusher = window.Pusher || (function() {
 	 * Disconnect the current connection
 	 */
 	Pusher.prototype.disconnect = function() {
-		this.ably.disconnect();
+		// Close connection
+		this.ably.close();
+
+		// Reset state
+		delete this.ably;
 	};
 
 	/**
@@ -69,7 +120,7 @@ window.Pusher = window.Pusher || (function() {
 	 * for an already-existing channel.
 	 */
 	Pusher.prototype.subscribe = function(channelName) {
-		return (this.channels[channelName] = new PusherChannel(pusher, channelName));
+		return (this.channels[channelName] = new PusherChannel(this, channelName));
 	};
 
 	/**
@@ -78,8 +129,11 @@ window.Pusher = window.Pusher || (function() {
 	 */
 	Pusher.prototype.unsubscribe = function(channelName) {
 		var subscribed = this.channels[channelName];
-		if(subscribed)
+		if (subscribed) {
 			subscribed.channel.detach();
+			subscribed.active = false;
+			delete this.channels[channelName];
+		}
 	};
 
 	/**
@@ -126,6 +180,20 @@ window.Pusher = window.Pusher || (function() {
 	};
 
 	/**
+	 * Unbind from a connection state change event.
+	 * @param state: the name of the connection state
+	 * to be associated with this event handler.
+	 * @param callback: the function to call on the occurrence
+	 * of a state transition ending in the given state.
+	 * 
+	 * Compatibility:
+	 * All Pusher connection state events are emitted.
+	 */
+	PusherConnection.prototype.unbind = function() {
+		this.off.apply(this, arguments);
+	};
+
+	/**
 	 * Internal: a class that wraps an Ably Channel instance,
 	 * and emulates a Pusher Channel object.
 	 * 
@@ -141,7 +209,6 @@ window.Pusher = window.Pusher || (function() {
 	 * error. Other error codes are TBD. (FIXME)
 	 */
 	function PusherChannel(pusher, channelName) {
-		EventEmitter.call(this);
 		if(startsWith(channelName, 'presence-')) {
 			/* FIXME: where to get myId and myInfo? */
 			/* FIXME: enforce authentication */
@@ -149,14 +216,53 @@ window.Pusher = window.Pusher || (function() {
 		}
 
 		var self = this;
-		this.channel = pusher.ably.attach(channelName, function(err) {
-			if(err)
-				self.emit('pusher:subscription_error', 403, err);
-			else
-				self.emit('pusher:subscription_succeeded', self.members);
+		this.active = true;
+		this.channel = pusher.ably.channels.get(channelName);
+		this.channel.subscribe(function(message) {
+			log('PusherChannel::message callback: Event object '+JSON.stringify(this)+', message '+JSON.stringify(message));
+			self.channel.emit(message.name, message.data);
 		});
+		this.bindings = {};
 	}
-	Utils.inherits(PusherChannel, EventEmitter);
+
+	/**
+	 * Bind to all channel events.
+	 * @param callback: the function to call when any event occurs
+	 */
+	 PusherChannel.prototype.bind_all = function(callback) {
+		this.channel.on(function(message) {
+			var event = channelStates[this.event] || this.event;
+			callback(event, message);
+		});
+	 };
+
+	/**
+	 * Unbind from a channel event.
+	 * @param event: the name of the event to be unbound
+	 * @param callback: the function to be removed from the
+	 * list of callbacks for this event
+	 */
+	PusherChannel.prototype.unbind = function(event, callback) {
+		var eventBindings = this.bindings[event];
+		log('PusherChannel::unbind: Unbinding callback from event '+event);
+		if (eventBindings) {
+			for (var i=0; i<eventBindings.length; i++) {
+				if (eventBindings[i] === callback) {
+					// Remove this callback
+					log('PusherChannel::unbind: Found callback record to remove');
+					eventBindings.splice(i, 1);
+					if (eventBindings.length == 0) {
+						// There are no registered bindings left, remove the
+						// underlying callback for this event
+						log('PusherChannel::unbind: All bindings for this event have been removed');
+						this.channel.off(event, this.channelBindCallback);
+						this.bindings.delete(event);
+					}
+					break;
+				}
+			}
+		}
+	}
 
 	/**
 	 * Bind to a channel event.
@@ -166,9 +272,30 @@ window.Pusher = window.Pusher || (function() {
 	 * of the event.
 	 */
 	PusherChannel.prototype.bind = function(event, callback) {
-		this.channel.on(event, function(message) {
-			callback(message.data);
-		});
+		if (!this.channelBindCallback) {
+			var self = this;
+			this.channelBindCallback = function(message) {
+				var event = channelStates[this.event] || this.event;	// Note: 'this' is an event object, not the channel object
+				log('PusherChannel::bind:channelBindCallback: Event '+this.event+' ('+event+'): data '+JSON.stringify(message));
+				var eventBindings = self.bindings[event];
+				if (eventBindings) {
+					log('PusherChannel::bind:channelBindCallback: Found '+eventBindings.length+' callbacks');
+					for (var i=0; i<eventBindings.length; i++)
+						eventBindings[i](message);
+				}
+			};
+		}
+
+		var mappedEvent = channelStatesReverse[event] || event;
+		log('PusherChannel::bind: Binding callback to event '+event+'('+mappedEvent+')');
+		if (!this.bindings[event]) {
+			log('PusherChannel::bind: No existing bindings for this event');
+			this.channel.on(mappedEvent, this.channelBindCallback);
+			this.bindings[event] = [callback];
+		} else {
+			log('PusherChannel::bind: Adding callback to set of bindings for this event');
+			this.bindings[event].push(callback);
+		}
 	};
 
 	/**
@@ -187,6 +314,8 @@ window.Pusher = window.Pusher || (function() {
 	 * whether or not the trigger was successful.
 	 */
 	PusherChannel.prototype.trigger = function(event, data) {
+		log('PusherChannel::trigger: Event '+event+', data '+JSON.stringify(data));
+		if (!this.active) { log('PusherChannel::trigger: Inactive'); return true; }
 		this.channel.publish(event, data);
 		return true;
 	};
@@ -278,5 +407,8 @@ window.Pusher = window.Pusher || (function() {
 		return this.members[userId];
 	};
 
-	return Pusher;
+	if(typeof(window) === 'undefined')
+		module.exports = Pusher;
+	else
+		window.Pusher = Pusher;
 })();
