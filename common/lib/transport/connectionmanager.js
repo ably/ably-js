@@ -678,7 +678,7 @@ var ConnectionManager = (function() {
 				lastQueued.callback = new Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
 			}
-			lastQueued.listener.push(callback);
+			lastQueued.callback.push(callback);
 		} else {
 			this.queuedMessages.push(new PendingMessage(msg, callback));
 		}

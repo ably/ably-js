@@ -10,7 +10,9 @@
 	pDefaults.uuid = (pdiv && pdiv.getAttribute('uuid')) || '';
 	pDefaults.ssl = (pdiv && (pdiv.getAttribute('ssl') == 'on'));
 
+	var channels = {};
 	var subscriptions = {};
+	var cipherParamsPendingMessages = [];
 	var PUBNUB = {};
 	var noop = function() {};
 	var log = (console && console.log) || noop;
@@ -24,6 +26,35 @@
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	if (typeof(Ably) === 'undefined') {
 		var Ably = require('../..');
+	}
+
+	function getChannel(name) {
+		var channel = channels[name];
+		if (!channel) {
+			channel = PUBNUB.ably.channels.get(name);
+			if (PUBNUB.ablyCipherParams)
+				channel.setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
+			channels[name] = channel;
+		}
+		return channel;
+	}
+
+	function cipherParamsResponse(err, params) {
+		delete PUBNUB.ablyCipherParamsPending;
+
+		if (err) return log('Unable to set up encryption parameters for secure messaging');
+		PUBNUB.ablyCipherParams = params;
+
+		// Set up cipher params on any channels that have been created already
+		for (var name in channels)
+			channels[name].setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
+
+		// Send any messages which were waiting for the cipherParams to be returned
+		for (var i=0; i<cipherParamsPendingMessages.length; i++) {
+			var msg = cipherParamsPendingMessages[i];
+			PUBNUB.publish({ channel: msg.channel, callback: msg.callback, error: msg.error, message: msg.message });
+		}
+		cipherParamsPendingMessages = [];
 	}
 
 	var notifyConnectionEvent = function(event, response) {
@@ -44,6 +75,16 @@
 
 	var isArray = function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Array]';
+	};
+
+	/**
+	 * Initialize the pubnub instance (with option to use message encryption)
+	 * @param args: As with init, but with addition of 'cipher_key' option
+	 * @param args.cipher_key: 
+	 */
+	PUBNUB.secure = function(args, callback) {
+		if (!args.cipher_key) return log('Missing cipher_key');
+		return PUBNUB.init(args, callback);
 	};
 
 	/**
@@ -91,7 +132,11 @@
 		// Start up Ably connection
 		PUBNUB.ablyOptions = opts;
 		PUBNUB.ably = new Ably.Realtime(opts);
-		PUBNUB.ablyRest = new Ably.Rest(opts);
+
+		if (args.cipher_key) {
+			PUBNUB.ablyCipherParamsPending = true;
+			Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);
+		}
 
 		PUBNUB.ably.connection.on(function(stateChange) {
 			switch(stateChange.current) {
@@ -116,12 +161,22 @@
 	 * Close down the pubnub instance, dropping any connections to the server. Non-standard
 	 */
 	PUBNUB.shutdown = function(callback) {
+		// Close connection
+		var ablyConnection = PUBNUB.ably.connection;
 		var closeListener = function(stateChange) {
-			PUBNUB.ably.connection.off('closed', closeListener);
+			ablyConnection.off('closed', closeListener);
 			callback(stateChange.current);
 		};
 		PUBNUB.ably.connection.on('closed', closeListener);
 		PUBNUB.ably.close();
+
+		// Reset state
+		delete PUBNUB.ably;
+		delete PUBNUB.ablyOptions;
+		delete PUBNUB.ablyCipherParams;
+		subscriptions = {};
+		channels = {};
+		cipherParamsPendingMessages = [];
 	}
 
 	/**
@@ -146,7 +201,7 @@
 		if (!channel) return log('Missing Channel');
 		if (!callback) return log('Missing Callback');
 
-		var ch = PUBNUB.ablyRest.channels.get(channel);
+		var ch = getChannel(channel);
 
 		var hcb = function(err, result) {
 			if (err != null) {
@@ -184,7 +239,7 @@
 	 * TBD
 	 */
 	PUBNUB.time = function(callback) {
-		PUBNUB.ablyRest.time(function(err, time) {
+		PUBNUB.ably.time(function(err, time) {
 			if (err) {
 				callback(0);
 			} else {
@@ -213,16 +268,21 @@
 		if (!message) return log('Missing Message');
 		if (!channel) return log('Missing Channel');
 
-		var ablyChannel = PUBNUB.ably.channels.get(channel);
-		ablyChannel.publish("", message, function(err) {
-			if (err != null) {
-				error({error : err});
-			} else {
-				// Note: timestamp is not exactly the same as the Ably message timestamp
-				// Note: The pubnub timestamp seems to be in an odd unit - 10ths of a microsecond?
-				callback([1, "Sent", (timestamp*10000).toString()]);
-			}
-		});
+		// If waiting for cipherParams, queue the message
+		if (PUBNUB.ablyCipherParamsPending) {
+			cipherParamsPendingMessages.push({ channel: channel, message: message, error: error, callback: callback });
+		} else {
+			var ablyChannel = getChannel(channel);
+			ablyChannel.publish("", message, function(err) {
+				if (err != null) {
+					error({error : err});
+				} else {
+					// Note: timestamp is not exactly the same as the Ably message timestamp
+					// Note: The pubnub timestamp seems to be in an odd unit - 10ths of a microsecond?
+					callback([1, "Sent", (timestamp*10000).toString()]);
+				}
+			});
+		}
 	};
 
 	/**
@@ -299,7 +359,7 @@
 			var cb = function(message) { callback(message.data); };
 
 			// Create channel and register for message callbacks and presence events if necessary
-			var ablyChannel = PUBNUB.ably.channels.get(channel);
+			var ablyChannel = getChannel(channel);
 			var presenceCb = args.presence;
 			if (presenceCb) {
 				var presenceEventCb = function(data) {
