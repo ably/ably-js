@@ -57,7 +57,7 @@ var NodeCometTransport = (function() {
 
 		var self = this;
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
-		var timer = setTimeout(function() { self.req.abort(); }, timeout);
+		var timer = this.timer = setTimeout(function() { self.req.abort(); }, timeout);
 		this.req = request({
 			uri: uri,
 			method: method,
@@ -66,6 +66,7 @@ var NodeCometTransport = (function() {
 			encoding: encoding
 		}, function(err, response, body) {
 			clearTimeout(timer);
+			self.timer = null;
 			if(err) {
 				callback(err);
 				return;
@@ -80,8 +81,14 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.Request.prototype.abort = function() {
-		if(this.req)
+		if(this.timer) {
+			clearTimeout(this.timer);
+			this.timer = null;
+		}
+		if(this.req) {
 			this.req.abort();
+			this.req = null;
+		}
 	};
 
 	return NodeCometTransport;
