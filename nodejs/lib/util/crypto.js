@@ -227,7 +227,7 @@ var Crypto = (function() {
 				break;
 			case TType.DOUBLE:
 				result = new Buffer(8);
-				result.writeDouble64BE(tData.doubleData, 0, true);
+				result.writeDoubleBE(tData.doubleData, 0, true);
 				break;
 			case TType.BUFFER:
 				result = tData.binaryData;

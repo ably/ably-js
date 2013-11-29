@@ -12,10 +12,16 @@ var Channel = (function() {
 	Utils.inherits(Channel, EventEmitter);
 
 	Channel.prototype.setOptions = function(channelOpts, callback) {
-		if(channelOpts && channelOpts.encrypted)
-			this.cipher = Crypto.getCipher(channelOpts, callback);
-		else
+		callback = callback || noop;
+		if(channelOpts && channelOpts.encrypted) {
+			var self = this;
+			Crypto.getCipher(channelOpts, function(err, cipher) {
+				self.cipher = cipher;
+				callback(null);
+			});
+		} else {
 			callback(null, this.cipher = null);
+		}
 	};
 
 	Channel.prototype.presence = function(params, callback) {
@@ -68,10 +74,11 @@ var Channel = (function() {
 			}
 			try {
 				var messages = Serialize.TMessageArray.decode(res, binary);
-				if(cipher)
-					for(var i = 0; i < messages.length; i++)
+				for(var i = 0; i < messages.length; i++) {
+					if(cipher)
 						Message.decrypt(messages[i], cipher);
-
+					messages[i].data = Data.fromTData(messages[i].data);
+				}
 				callback(null, messages);
 			} catch(err) {
 				callback(err);
