@@ -1,6 +1,7 @@
 "use strict";
 var async = require('async');
 var Pusher = require('../../../browser/compat/pusher.js');
+var Ably = require('../../..');
 
 function mixin(target, source) {
 	source = source || {};
@@ -33,6 +34,28 @@ var pusher;
 exports.cipherKey = "0000000000000000"
 exports.getPusher = function() { return pusher; }
 exports.admin = function(opts) {return new Admin(uri, mixin(adminOpts, opts));};
+exports.getAblyRest = function() {
+	var origin = pusherOpts.origin;
+	var tlsorigin = pusherOpts.tlsorigin;
+	var opts = {
+		key: testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
+		encrypted: false
+	};
+	if (origin && (origin.length != 0)) {
+		var p = origin.split(':');
+		opts.host = opts.wsHost = p[0];
+		if (p.length > 1)
+			opts.port = p[1];
+	}
+	if (tlsorigin && (tlsorigin.length != 0)) {
+		// Note: Only the port number is used here, the hostnames are the same as for non-TLS
+		var p = tlsorigin.split(':');
+		opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+	} else {
+		opts.tlsPort = 8081;
+	}
+	return new Ably.Rest(opts);
+};
 
 exports.randomid = function randomid(length) {
     var text = "";
