@@ -24,8 +24,8 @@ try {
 var httpTunnelPorts, httpsTunnelPorts;
 
 if (!(process.argv[2] || process.argv[3])) {
-  console.warn('You did not specify any ports, we will default to ports commonly used with a simple farm: 843,8092,8080 over HTTP and 8081 over HTTPS');
-  httpTunnelPorts = ['8092','843','8080'];
+  console.warn('You did not specify any ports, we will default to ports commonly used with a simple farm: 8092,8080 over HTTP and 8081 over HTTPS');
+  httpTunnelPorts = ['8092','8080'];
   httpsTunnelPorts = ['8081'];
 } else {
   httpTunnelPorts = (process.argv[2] || '').split(',');
@@ -45,6 +45,6 @@ tunnelProcess.on('exit', function(code, signal) {
 
 console.log('Tunnel opened to BrowserStack for host localhost.ably.io on HTTP ports ' + httpTunnelPorts.join(', ') + ' and HTTPS ports ' + httpsTunnelPorts.join(', '));
 
-if ((httpTunnelPorts.indexOf('8092') == -1) || (httpTunnelPorts.indexOf('843') == -1)) console.warn('\n! The test server runs on port 8092 and serves Flash policies on 843, did you mean to leave those ports out?\n');
+if (httpTunnelPorts.indexOf('8092') == -1) console.warn('\n! The test server runs on port 8092; did you mean to leave that port out?\n');
 
 setInterval(function() {}, 1000);
