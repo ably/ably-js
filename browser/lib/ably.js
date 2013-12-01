@@ -8801,9 +8801,10 @@ var FlashTransport = (function() {
 
 	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
-		var swfLocation = Defaults.flashTransport.swfLocation
-			|| (connectionManager.options.flashTransport
-				&& connectionManager.options.flashTransport.swfLocation);
+		var swfLocation =
+			(connectionManager.options.flashTransport
+				&& connectionManager.options.flashTransport.swfLocation)
+			|| Defaults.flashTransport.swfLocation;
 		FlashWebSocket.__initialize(swfLocation);
 
 		var transport = new FlashTransport(connectionManager, auth, params);
