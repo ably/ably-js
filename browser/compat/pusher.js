@@ -41,10 +41,6 @@
 		attached:     'pusher:subscription_succeeded',
 		failed:       'pusher:subscription_error'
 	};
-	var channelStatesReverse = {
-		'pusher:subscription_succeeded'  : 'attached',
-		'pusher:subscription_error'      : 'failed'
-	};
 
 	function startsWith(string, substr) { return (string.indexOf(substr) == 0); }
 
@@ -62,6 +58,7 @@
 	 *
 	 * The following Ably-defined options are additionally supported:
 	 * - ablyClientId: Maps to Ably clientId option
+	 * - tlshost: Host/port to use for encrypted connection
 	 * 
 	 * Compatibility:
 	 * There are differences between Pusher and Ably authentication regimes
@@ -69,6 +66,7 @@
 	 */
 	function Pusher(applicationKey, options) {
 		var origin = options.host || '';
+		var tlsorigin = options.tlshost || '';
 		var encrypted = options.encrypted || false;
 		var opts = {
 			key: applicationKey, encrypted: encrypted //,log:{level:4}
@@ -83,8 +81,16 @@
 			if (p.length > 1)
 				opts.port = p[1];
 		}
+		if (tlsorigin && (tlsorigin.length != 0)) {
+			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
+			var p = tlsorigin.split(':');
+			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+		} else {
+			opts.tlsPort = 8081;
+		}
 
 		var ably = this.ably = new Ably.Realtime(opts);
+		this.clientId = opts.clientId;
 		this.connection = new PusherConnection(ably.connection);
 		this.channels = {};
 	}
@@ -209,32 +215,82 @@
 	 * error. Other error codes are TBD. (FIXME)
 	 */
 	function PusherChannel(pusher, channelName) {
-		if(startsWith(channelName, 'presence-')) {
-			/* FIXME: where to get myId and myInfo? */
-			/* FIXME: enforce authentication */
-			this.members = new Members(this);
-		}
-
 		var self = this;
 		this.active = true;
 		this.channel = pusher.ably.channels.get(channelName);
+		this.name = channelName;
+		this.isPresence = startsWith(channelName, 'presence-');
+
+		/* FIXME: where to get  myInfo? */
+		/* FIXME: enforce authentication */
+		if (this.isPresence) this.members = new Members(this, pusher.clientId);
+
 		this.channel.subscribe(function(message) {
 			log('PusherChannel::message callback: Event object '+JSON.stringify(this)+', message '+JSON.stringify(message));
 			self.channel.emit(message.name, message.data);
 		});
 		this.bindings = {};
+		this.bind_alls = [];
+
+		if (this.isPresence) {
+			var presence = this.channel.presence;
+			this.entered = false;
+			presence.on('enter', function(id) {
+				if (!self.entered) return;
+				if (id.clientId === self.members.myID) return;
+				var member = self.members.addMember(id.clientId, id.clientInfo);
+				if (member) self.channel.emit('pusher:member_added', member);
+			});
+			presence.on('leave', function(id) {
+				if (!self.entered) return;
+				var member = self.members.removeMember(id.clientId);
+				if (member) self.channel.emit('pusher:member_removed', member);
+			});
+			presence.enter(function(err) {
+				// Record initial presence state
+				var m = presence.get();
+				if (m) {
+					for (var i=0; i<m.length; i++)
+						self.members.addMember(m[i].clientId, m[i].clientData);
+				}
+				self.entered = true;
+				self._sendEvent('pusher:subscription_succeeded', self.members);
+			});
+		}
+
+		// Event handling
+		this.channel.on(function(message) {
+			if ((this.event === 'attached') && self.isPresence)
+				return;	// Don't generate the pusher:subscription_succeeded event here, do it when we get the 'entered' event for the presence channel
+			if (typeof(message) === 'undefined') message = {};		// Pusher callback semantics
+			var event = channelStates[this.event] || this.event;	// Note: 'this' is an event object, not the channel object
+			self._sendEvent(event, message);
+		});
 	}
+
+	/**
+	 * Internal: Send an event to bound listeners
+	 * @param event: the name of the event
+	 * @param message: parameter to pass to the handler
+	 */
+	PusherChannel.prototype._sendEvent = function(event, message) {
+		for (var i=0; i<this.bind_alls.length; i++) {
+			this.bind_alls[i](event, message);
+		}
+		var eventBindings = this.bindings[event];
+		if (eventBindings) {
+			for (var i=0; i<eventBindings.length; i++)
+				eventBindings[i](message);
+		}
+	};
 
 	/**
 	 * Bind to all channel events.
 	 * @param callback: the function to call when any event occurs
 	 */
-	 PusherChannel.prototype.bind_all = function(callback) {
-		this.channel.on(function(message) {
-			var event = channelStates[this.event] || this.event;
-			callback(event, message);
-		});
-	 };
+	PusherChannel.prototype.bind_all = function(callback) {
+		this.bind_alls.push(callback);
+	};
 
 	/**
 	 * Unbind from a channel event.
@@ -272,28 +328,9 @@
 	 * of the event.
 	 */
 	PusherChannel.prototype.bind = function(event, callback) {
-		if (!this.channelBindCallback) {
-			var self = this;
-			this.channelBindCallback = function(message) {
-				var event = channelStates[this.event] || this.event;	// Note: 'this' is an event object, not the channel object
-				log('PusherChannel::bind:channelBindCallback: Event '+this.event+' ('+event+'): data '+JSON.stringify(message));
-				var eventBindings = self.bindings[event];
-				if (eventBindings) {
-					log('PusherChannel::bind:channelBindCallback: Found '+eventBindings.length+' callbacks');
-					for (var i=0; i<eventBindings.length; i++)
-						eventBindings[i](message);
-				}
-			};
-		}
-
-		var mappedEvent = channelStatesReverse[event] || event;
-		log('PusherChannel::bind: Binding callback to event '+event+'('+mappedEvent+')');
 		if (!this.bindings[event]) {
-			log('PusherChannel::bind: No existing bindings for this event');
-			this.channel.on(mappedEvent, this.channelBindCallback);
 			this.bindings[event] = [callback];
 		} else {
-			log('PusherChannel::bind: Adding callback to set of bindings for this event');
 			this.bindings[event].push(callback);
 		}
 	};
@@ -340,24 +377,12 @@
 	 * and whether it is any different from Ably's opaque clientData.
 	 */
 	function Members(channel, myId, myInfo) {
-		this.channel = channel;
 		this.count = 0;
+		this.members = {};
 		if(myId) {
-			this.me = new Member(myId, myInfo);
-			this.addMember(this.me);
+			this.myID = myId;
+			this.me = this.addMember(myId, myInfo);
 		}
-		var presence = channel.channel.presence;
-		var self = this;
-		presence.on('enter', function(id, info) {
-			var member = new Member(id, info);
-			self.addMember(member);
-			channel.emit('pusher:member_added', member);
-		});
-		presence.on('leave', function(id) {
-			var member = self.members[id] || new Member(id);
-			self.removeMember(member);
-			channel.emit('pusher:member_removed', member);
-		});
 	}
 
 	/**
@@ -366,13 +391,15 @@
 	 * is already present, the info of the existing member
 	 * is updated.
 	 */
-	Members.prototype.addMember = function(member) {
-		if(member.id in this.members) {
-			this.members[member.id].info = member.info;
+	Members.prototype.addMember = function(id, info) {
+		if (typeof(info) === 'undefined') info = {};
+		if (id in this.members) {
+			this.members[id] = info;
 		} else {
-			this.members[member.id] = member;
+			this.members[id] = info;
 			this.count++;
 		}
+		return new Member(id, info);
 	};
 
 	/**
@@ -381,11 +408,14 @@
 	 * Any member whose id matches the id of the given member
 	 * will be removed.
 	 */
-	Members.prototype.removeMember = function(member) {
-		if(member.id in this.members) {
-			delete this.members[member.id];
+	Members.prototype.removeMember = function(id) {
+		if (id in this.members) {
+			var info = this.members[id];
+			delete this.members[id];
 			this.count--;
+			return new Member(id, info);
 		}
+		return undefined;
 	};
 
 	/**
@@ -394,8 +424,9 @@
 	 * each Member.
 	 */
 	Members.prototype.each = function(callback) {
-		for(var id in this.members)
-			callback(this.members[id]);
+		for(var id in this.members) {
+			callback(new Member(id, this.members[id]));
+		}
 	};
 
 	/**
