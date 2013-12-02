@@ -125,9 +125,9 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setSuspended = function(connectionState) {
+	Presence.prototype.setSuspended = function() {
 		if(this.pendingPresence) {
-			this.pendingPresence.callback(ConnectionError[connectionState.state]);
+			this.pendingPresence.callback(new Error('Channel is detached'));
 			this.pendingPresence = null;
 		}
 	};

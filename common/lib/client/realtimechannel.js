@@ -154,6 +154,7 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
+		this.setSuspended();
 		this.once(function(err) {
 			switch(this.event) {
 			case 'detached':
@@ -335,21 +336,21 @@ var RealtimeChannel = (function() {
 			this.state = 'failed';
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, reason: msgErr.reason};
 			this.emit('failed', err);
-		} else {
+		} else if (this.state !== 'detached') {
 			this.state = 'detached';
 			this.emit('detached');
 		}
 	};
 
-	RealtimeChannel.prototype.setSuspended = function(connectionState) {
+	RealtimeChannel.prototype.setSuspended = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
 		this.state = 'detached';
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
-				this.pendingEvents[i].callback(connectionState.defaultMessage);
+				this.pendingEvents[i].callback(new Error('Channel is detached'));
 			} catch(e) {}
 		this.pendingEvents = [];
-		this.presence.setSuspended(connectionState);
+		this.presence.setSuspended();
 		this.emit('detached');
 	};
 
