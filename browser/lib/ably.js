@@ -4228,7 +4228,7 @@ var Defaults = {
 	cometSendTimeout:  10000,
 	httpTransports:    ['xhr', 'jsonp'],
 	transports:        ['web_socket', 'flash_socket', 'xhr', 'jsonp'],
-	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf', policyPort: '80'}
+	flashTransport:    {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf'}
 };
 
 Defaults.getHost = function(options, host, ws) {
@@ -6408,7 +6408,7 @@ var ConnectionManager = (function() {
 				lastQueued.callback = new Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
 			}
-			lastQueued.listener.push(callback);
+			lastQueued.callback.push(callback);
 		} else {
 			this.queuedMessages.push(new PendingMessage(msg, callback));
 		}
@@ -7214,7 +7214,6 @@ this.Serialize = (function() {
 				var ob;
 				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
 				items = ob.items;
-				for (var i = 0; i < items.length; i++) items[i].data = Data.fromTData(items[i].data);
 			} else {
 				var elements = JSON.parse(encoded), count = elements.length;
 				items = new Array(count);
@@ -7965,10 +7964,16 @@ var Channel = (function() {
 	Utils.inherits(Channel, EventEmitter);
 
 	Channel.prototype.setOptions = function(channelOpts, callback) {
-		if(channelOpts && channelOpts.encrypted)
-			this.cipher = Crypto.getCipher(channelOpts, callback);
-		else
+		callback = callback || noop;
+		if(channelOpts && channelOpts.encrypted) {
+			var self = this;
+			Crypto.getCipher(channelOpts, function(err, cipher) {
+				self.cipher = cipher;
+				callback(null);
+			});
+		} else {
 			callback(null, this.cipher = null);
+		}
 	};
 
 	Channel.prototype.presence = function(params, callback) {
@@ -8021,10 +8026,11 @@ var Channel = (function() {
 			}
 			try {
 				var messages = Serialize.TMessageArray.decode(res, binary);
-				if(cipher)
-					for(var i = 0; i < messages.length; i++)
+				for(var i = 0; i < messages.length; i++) {
+					if(cipher)
 						Message.decrypt(messages[i], cipher);
-
+					messages[i].data = Data.fromTData(messages[i].data);
+				}
 				callback(null, messages);
 			} catch(err) {
 				callback(err);
@@ -8107,6 +8113,14 @@ var RealtimeChannel = (function() {
 		if(argCount == 2) {
 			if(!Utils.isArray(messages))
 				messages = [messages];
+			var tMessages = new Array(messages.length);
+			for(var i = 0; i < messages.length; i++) {
+				var message = messages[i];
+				var tMessage = tMessages[i] = new messagetypes.TMessage();
+				tMessage.name = message.name;
+				tMessage.data = Data.toTData(message.data);
+			}
+			messages = tMessages;
 		} else {
 			var message = new messagetypes.TMessage();
 			message.name = arguments[0];
@@ -8583,7 +8597,7 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.Request = function(id) {
-		this.requestId = id || requestId++
+		this.requestId = id || requestId++;
 	};
 
 	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
@@ -8605,13 +8619,13 @@ var JSONPTransport = (function() {
 		script.onerror = function(e) {  self.abort(); };
 		script.src = CometTransport.paramStr(params, uri);
 
+		var self = this;
 		var _finish = this._finish = function() {
 			clearTimeout(timer);
 			if(script.parentNode) script.parentNode.removeChild(script);
 			delete _[id];
 		}
 
-		var self = this;
 		_[id] = function(message) {
 			_finish();
 			if(!self.aborted)
@@ -8787,19 +8801,14 @@ var FlashTransport = (function() {
 
 	FlashTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		/* load the swf if not already loaded */
-		var swfLocation = Defaults.flashTransport.swfLocation,
-				policyPort = Defaults.flashTransport.policyPort;
-		if (connectionManager.options.flashTransport) {
-			if (connectionManager.options.flashTransport.swfLocation)
-				swfLocation = connectionManager.options.flashTransport.swfLocation;
-			if (connectionManager.options.flashTransport.policyPort)
-				swfLocation = connectionManager.options.flashTransport.swfLocation;
-		}
+		var swfLocation =
+			(connectionManager.options.flashTransport
+				&& connectionManager.options.flashTransport.swfLocation)
+			|| Defaults.flashTransport.swfLocation;
 		FlashWebSocket.__initialize(swfLocation);
+
 		var transport = new FlashTransport(connectionManager, auth, params);
-		if(policyPort)
-			FlashWebSocket.loadFlashPolicyFile('xmlsocket://' + transport.wsHost + ':' + policyPort);
-		errorCb = function(err) { callback(err); };
+		var errorCb = function(err) { callback(err); };
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'FlashTransport.tryConnect()', 'viable transport ' + transport);

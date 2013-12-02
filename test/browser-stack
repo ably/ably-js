@@ -46,7 +46,8 @@ var TEST_TIMEOUT = 120,  // time we allow for the tests to run in an external br
     REALTIME_TLS_PORT = process.env.REALTIME_TLS_PORT || 443,
     DEFAULT_BROWSERS = ['ie_xp_6','chrome_win7_25','firefox_win8_18','firefox_xp_3.6','safari_leopard_4','chrome_mountain_lion_26','android_lg_nexus_4','ios_5_safari_6','android_htc_wildfire'],
     doNotLaunchBrowsersAutomatically = false,
-    browserStackTestKey = 'automated_testing_tunnel_key';
+    browserStackTestKey = 'automated_testing_tunnel_key',
+    useFlashPolicyServer = false;
 
 // gracefully handle termination of worker and report error to the console if there was a problem killing the worker at BrowserStack
 function terminateWorker(workerId, callback) {
@@ -152,6 +153,8 @@ for(var i = 2; i < process.argv.length; i++) {
   } else if(startsWith(process.argv[i], '--manual-browser-launch')) {
     doNotLaunchBrowsersAutomatically = true;
     browserStackTestKey = 'manual_testing_tunnel_key';
+  } else if(startsWith(process.argv[i], '--use-flash-policy-server')) {
+    useFlashPolicyServer = true;
   } else {
     chosenBrowsers.push(process.argv[i]);
   }
@@ -183,9 +186,10 @@ if (!doNotLaunchBrowsersAutomatically) {
 function launchTunnel() {
   var tunnelPorts = [[SERVER_HOST, SERVER_PORT, 0]]; // tunnel for test server
 
-  // tests are running against a local form so set up tunnel to map to local farm
+  // tests are running against a local farm so set up tunnel to map to local farm
   if (['127.0.0.1','localhost','localhost.ably.io'].indexOf(REALTIME_HOST) !== -1) {
-    tunnelPorts.push([REALTIME_HOST, 843, 0]);
+    if(useFlashPolicyServer)
+      tunnelPorts.push([REALTIME_HOST, 843, 0]);
     tunnelPorts.push([REALTIME_HOST, REALTIME_PORT, 0]); // plain text
     tunnelPorts.push([REALTIME_HOST, REALTIME_TLS_PORT, 1]); // turn on SSL
   }

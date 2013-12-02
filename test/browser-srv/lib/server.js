@@ -74,20 +74,22 @@ exports.start = function(opts, callback) {
 	};
 
 	/* flash policy file server */
-	var policySrv = net.createServer(function(socket) {
-		socket.end(policyText);
-	});
-	policySrv.listen(843, function(err) {
-		if (!err) console2.log('Policy server started on port 843');
-	});
-	policySrv.on('error', function(err) {
-		if (err) {
-			console2.error('Error - Flash policy server was not started on port 843!!!');
-			console2.info('Have you started the server with root privileges?');
-			callback(err, null);
-			return;
-		}
-	});
+	if(opts.flashPolicyServer) {
+		var policySrv = net.createServer(function(socket) {
+			socket.end(policyText);
+		});
+		policySrv.listen(843, function(err) {
+			if (!err) console2.log('Policy server started on port 843');
+		});
+		policySrv.on('error', function(err) {
+			if (err) {
+				console2.error('Error - Flash policy server was not started on port 843!!!');
+				console2.info('Have you started the server with root privileges?');
+				callback(err, null);
+				return;
+			}
+		});
+	}
 
 	/* test server */
 	var testSrv = http.createServer();
