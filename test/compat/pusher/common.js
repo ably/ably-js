@@ -34,6 +34,7 @@ var pusher;
 exports.cipherKey = "0000000000000000"
 exports.getPusher = function() { return pusher; }
 exports.admin = function(opts) {return new Admin(uri, mixin(adminOpts, opts));};
+
 exports.getAblyRest = function() {
 	var origin = pusherOpts.origin;
 	var tlsorigin = pusherOpts.tlsorigin;
@@ -55,6 +56,32 @@ exports.getAblyRest = function() {
 		opts.tlsPort = 8081;
 	}
 	return new Ably.Rest(opts);
+};
+
+exports.getAblyRealtime = function(clientId) {
+	var origin = pusherOpts.origin;
+	var tlsorigin = pusherOpts.tlsorigin;
+	var opts = {
+		key: testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value,
+		encrypted: false
+		//,log:{level:4}
+	};
+	if (origin && (origin.length != 0)) {
+		var p = origin.split(':');
+		opts.host = opts.wsHost = p[0];
+		if (p.length > 1)
+			opts.port = p[1];
+	}
+	if (tlsorigin && (tlsorigin.length != 0)) {
+		// Note: Only the port number is used here, the hostnames are the same as for non-TLS
+		var p = tlsorigin.split(':');
+		opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+	} else {
+		opts.tlsPort = 8081;
+	}
+	if (clientId)
+		opts.clientId = clientId;
+	return new Ably.Realtime(opts);
 };
 
 exports.randomid = function randomid(length) {
@@ -271,13 +298,14 @@ function _setupTest(callback) {
 				}
 				pusher = new Pusher(testVars.testAppId + '.' + testVars.testKey0Id + ':' + testVars.testKey0.value, {
 					encrypted : false,
-					authEndpoint : 'http://angrybadger.net:7462/pusher/auth',
+					//authEndpoint : 'http://angrybadger.net:7462/pusher/auth',
 					authTransport : 'ajax',
 					auth : {
 						params : { CSRFToken: '1234567890' },
 						headers : { 'X-CSRF-Token' : '' }
 					},
-					host : pusherOpts.origin
+					host : pusherOpts.origin,
+					ablyClientId : 'test-user-'+exports.randomid(6)
 				});
 
 				if (pusher == null)
