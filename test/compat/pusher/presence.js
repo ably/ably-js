@@ -13,7 +13,9 @@ exports.getPusher = function(test) { pusher = base.getPusher(); test.done(); }
 
 /*
  * Set up a subscriber on a presence channel, check that the member information is
- * received when the subscription is successful.
+ * received when the subscription is successful. Open up a separate connection to
+ * Ably and connect using a different clientId to ensure that we get presence events
+ * on the pusher channel.
  */
 exports.presenceTest1 = function(test) {
 	var channel, channelName = 'presence-channel-'+base.randomid(8);
