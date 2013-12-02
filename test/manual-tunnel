@@ -28,8 +28,8 @@ if (!(process.argv[2] || process.argv[3])) {
   httpTunnelPorts = ['8092','8080'];
   httpsTunnelPorts = ['8081'];
 } else {
-  httpTunnelPorts = (process.argv[2] || '').split(',');
-  httpsTunnelPorts = (process.argv[3] || '').split(',');
+  httpTunnelPorts = (process.argv[2] || '').split(',').filter(function(elem) { return elem != ''; });
+  httpsTunnelPorts = (process.argv[3] || '').split(',').filter(function(elem) { return elem != ''; });
 }
 
 var tunnelHosts = httpTunnelPorts.map(function (e) { return 'localhost.ably.io,' + e + ',0'; }).concat(httpsTunnelPorts.map(function (e) { return 'localhost.ably.io,' + e + ',1'; }))
