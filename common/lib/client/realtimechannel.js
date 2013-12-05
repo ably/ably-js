@@ -25,6 +25,11 @@ var RealtimeChannel = (function() {
 		code: 90001,
 		reason: 'Channel operation failed (invalid channel state)'
 	};
+	RealtimeChannel.channelDetachedErr = {
+		statusCode: 409,
+		code: 90006,
+		reason: 'Channel is detached'
+	};
 
 	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
 		callback = callback || noop;
@@ -154,7 +159,6 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
-		this.setSuspended();
 		this.once(function(err) {
 			switch(this.event) {
 			case 'detached':
@@ -170,10 +174,11 @@ var RealtimeChannel = (function() {
 			}
 		});
 		this.detachImpl();
+		this.setSuspended(RealtimeChannel.channelDetachedErr);
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
@@ -342,15 +347,14 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setSuspended = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
-		this.state = 'detached';
+	RealtimeChannel.prototype.setSuspended = function(err) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err '+ (err ? err.reason : 'none'));
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
-				this.pendingEvents[i].callback(new Error('Channel is detached'));
+				this.pendingEvents[i].callback(err);
 			} catch(e) {}
 		this.pendingEvents = [];
-		this.presence.setSuspended();
+		this.presence.setSuspended(err);
 		this.emit('detached');
 	};
 
