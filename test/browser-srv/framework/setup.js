@@ -1,7 +1,7 @@
 var http = require('http');
 
 exports.createAccountAppAndKeys = function (testVars, console, callback) {
-	var postData = '{ "keys": [ {} ] }';
+	var postData = '{ "keys": [ {} ], "namespaces": [ {"id": "persisted", "persisted": true } ] }';
 	var postOptions = {
 		host: testVars.realtimeHost,
 		port: testVars.realtimePort,

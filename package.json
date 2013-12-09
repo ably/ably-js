@@ -11,7 +11,8 @@
     "request": "2.x.x",
     "thrift": "git://github.com/ably-forks/thrift-nodejs.git#0.8-ably",
     "ws": "git://github.com/einaros/ws.git",
-    "hexy": "~0.2.5"
+    "hexy": "~0.2.5",
+    "ejs": "0.8.5"
   },
   "engines": {
     "node": ">=0.6.19",
