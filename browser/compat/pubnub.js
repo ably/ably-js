@@ -1,7 +1,6 @@
 "use strict";
 (function() {
 	// Get defaults from pdiv if it can be found
-
 	var pdiv = (typeof(document) === 'undefined') ? null : document.getElementById('pubnub');
 	var pDefaults = {};
 	pDefaults.publish_key = (pdiv && pdiv.getAttribute('publish_key')) || '';
@@ -24,9 +23,12 @@
 	//  <script src="compat/pubnub.js"></script>
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
-	if (typeof(Ably) === 'undefined') {
-		var Ably = require('../..');
-	}
+	if (typeof(window) !== 'undefined')
+		PUBNUB.Ably = window.Ably;
+	else if (typeof(Ably) !== 'undefined')
+		PUBNUB.Ably = Ably;
+	else
+		PUBNUB.Ably = require('../..');
 
 	function getChannel(name) {
 		var channel = channels[name];
@@ -111,7 +113,7 @@
 
 		// Set up options for Ably.Realtime()
 		var opts = {
-			key:ably_key, encrypted: ssl //, log:{level:4}
+			key:ably_key, encrypted: ssl //,log:{level:4}
 		};
 		if (uuid && (uuid.length != 0))
 			opts.clientId = uuid;
@@ -131,11 +133,10 @@
 
 		// Start up Ably connection
 		PUBNUB.ablyOptions = opts;
-		PUBNUB.ably = new Ably.Realtime(opts);
-
+		PUBNUB.ably = new PUBNUB.Ably.Realtime(opts);
 		if (args.cipher_key) {
 			PUBNUB.ablyCipherParamsPending = true;
-			Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);
+			PUBNUB.Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);
 		}
 
 		PUBNUB.ably.connection.on(function(stateChange) {
@@ -241,6 +242,7 @@
 	PUBNUB.time = function(callback) {
 		PUBNUB.ably.time(function(err, time) {
 			if (err) {
+				log('PUBNUB.time: Error: '+err);
 				callback(0);
 			} else {
 				// Convert to odd unit that pubnub uses
@@ -295,13 +297,15 @@
 	 */
 	PUBNUB.here_now = function(args, callback) {
 		callback = callback || args.callback;
+		var error = args.error || noop;
 		var channel = args.channel;
-		if (!channel) return log('Missing Channel');
-		if (!callback) return log('Missing Callback');
+		if (!channel) { error('Missing channel'); return; }
+		if (!callback) { error('Missing callback'); return; }
 		var s = subscriptions[channel];
-		if (!s) return log('Not subscribed to channel');
+		if (!s) { error('Not subscribed to channel'); return; }
 
 		var presence = s.ablyChannel.presence.get();
+		if (!presence) { error('Presence not available for channel'); return; }
 		var uuids = new Array(presence.length);
 		for (var i=0; i<presence.length; i++) uuids[i] = presence[i].clientId;
 		callback({
