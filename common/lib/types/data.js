@@ -38,7 +38,7 @@ this.Data = (function() {
 			return true;
 		},
 		'[object Object]': function(msg, data) {
-			if(typeof(Buffer) !== 'undefined' && Buffer.isBuffer(data)) {
+			if(typeof(Buffer) !== 'undefined' && typeof(Buffer.isBuffer) === 'function' && Buffer.isBuffer(data)) {
 				msg.type = messagetypes.TType.BUFFER;
 				msg.binaryData = data;
 			} else {
