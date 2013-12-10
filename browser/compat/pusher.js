@@ -9,7 +9,7 @@
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	// and various other necessary things.
-	if (typeof(Ably) === 'undefined') {
+	if ((typeof(window) === 'undefined') && (typeof(Ably) === 'undefined')) {
 		var Ably = require('../..');
 		var fs   = require('fs');
 		var path = require('path');
