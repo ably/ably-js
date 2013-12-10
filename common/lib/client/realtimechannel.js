@@ -265,6 +265,10 @@ var RealtimeChannel = (function() {
 				this.onEvent(messages);
 			}
 			break;
+		case actions.ERROR:
+			/* there was a channel-specific error */
+			this.setDetached(message);
+			break;
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
@@ -325,10 +329,11 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
-		if(message.code) {
+		var msgErr = message.error;
+		if(msgErr) {
 			/* this is an error message */
 			this.state = 'failed';
-			var err = {statusCode: message.statusCode, code: message.code, reason: message.reason};
+			var err = {statusCode: msgErr.statusCode, code: msgErr.code, reason: msgErr.reason};
 			this.emit('failed', err);
 		} else {
 			this.state = 'detached';

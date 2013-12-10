@@ -47,7 +47,8 @@ this.Http = (function() {
 		var hosts = Defaults.getHosts(rest.options);
 
 		var getOptions = {headers:headers, encoding:null}, wrappedCb = handler(callback);
-		if(!headers || headers.accept == 'application/json') getOptions.json = true;
+		if(!headers || headers.accept == 'application/json')
+			getOptions.json = true;
 		if(params)
 			getOptions.qs = params;
 
@@ -96,7 +97,8 @@ this.Http = (function() {
 		var hosts = Defaults.getHosts(rest.options);
 
 		var postOptions = {headers:headers, body:body, encoding:null}, wrappedCb = handler(callback);
-		if(!headers || headers.accept == 'application/json') postOptions.json = true;
+		if(!headers || headers.accept == 'application/json')
+			postOptions.json = true;
 		if(params)
 			postOptions.qs = params;
 

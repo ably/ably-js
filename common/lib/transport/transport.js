@@ -63,13 +63,17 @@ var Transport = (function() {
 			this.emit('nack', message.msgSerial, message.count, message.error);
 			break;
 		case actions.ERROR:
-			var err = {
-				statusCode: message.statusCode,
-				code: message.code,
-				reason: message.reason
-			};
-			this.abort(err);
-			break;
+			if(!message.channel) {
+				/* a transport error */
+				var msgErr = message.error,  err = {
+					statusCode: msgErr.statusCode,
+					code: msgErr.code,
+					reason: msgErr.reason
+				};
+				this.abort(err);
+				break;
+			}
+			/* otherwise it's a channel-specific error, so handle it in the channel */
 		default:
 			this.connectionManager.onChannelMessage(message, this);
 		}
