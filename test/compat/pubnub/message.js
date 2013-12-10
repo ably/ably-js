@@ -1,9 +1,4 @@
 "use strict";
 var base = require('./common');
-var path = require('path');
-var vm = require('vm');
-var fs = require('fs');
-var _exports = {};
-
-var filename = path.resolve(__dirname, 'common/message.js');
-eval(fs.readFileSync(filename, 'utf8'));
+var mod = require('./common/message');
+base.addCommonModule(exports, mod);

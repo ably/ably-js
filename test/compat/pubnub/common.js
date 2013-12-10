@@ -17,13 +17,13 @@ var Admin = require('../../../../../admin/nodejs/admin').Admin;
 var adminOpts = {};
 var username = process.env.ADMIN_USERNAME || 'admin';
 var password = process.env.ADMIN_PASSWORD || 'admin';
-var hostname = process.env.ADMIN_ADDRESS || 'localhost';
+var hostname = process.env.ADMIN_ADDRESS || 'localhost.ably.io';
 var port = process.env.ADMIN_PORT || 8090;
 var scheme = process.env.ADMIN_SCHEME || 'http';
 var uri = scheme + '://' + username + ':' + password + '@' + hostname + ':' + port;
 var pubnubOpts = {
-	origin       : process.env.PUBNUB_ORIGIN || 'localhost:8080',
-	tlsorigin       : process.env.PUBNUB_ORIGIN || 'localhost:8081'
+	origin       : process.env.PUBNUB_ORIGIN || 'localhost.ably.io:8080',
+	tlsorigin       : process.env.PUBNUB_ORIGIN || 'localhost.ably.io:8081'
 };
 var setupRefcount = 0;
 var testVars = exports.testVars = {};
@@ -366,3 +366,9 @@ exports.printObject = function printObject(o, objects) {
 	}
 	return result;
 }
+
+exports.addCommonModule = function(addToExports, mod) {
+	var rExports = mod.setup(exports);
+	for (var ex in rExports)
+		addToExports[ex] = rExports[ex];
+};

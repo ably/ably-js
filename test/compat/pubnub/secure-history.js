@@ -1,9 +1,4 @@
 "use strict";
 var base = require('./common');
-var path = require('path');
-var vm = require('vm');
-var fs = require('fs');
-var _exports = {};
-
-var filename = path.resolve(__dirname, 'common/secure-history.js');
-eval(fs.readFileSync(filename, 'utf8'));
+var mod = require('./common/secure-history');
+base.addCommonModule(exports, mod);

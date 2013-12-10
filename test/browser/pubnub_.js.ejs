@@ -1,0 +1,163 @@
+// -----------------------------------
+// From test/compat/pubnub/common.js
+// -----------------------------------
+
+var pubnub_base = function() {
+	var exports = {}, _exports = {};
+	var PUBNUB = window.PUBNUB;
+	var pubnubOpts = {
+		origin       : testVars.realtimeHost + ':' + testVars.realtimePort,
+		tlsorigin    : testVars.realtimeHost + ':' + testVars.realtimeTlsPort
+	};
+	var setupRefcount = 0;
+	var pubnub;
+
+	exports.cipherKey = "0000000000000000"
+	exports.getPubnub = function() { return pubnub; }
+
+	exports.randomid = function randomid(length) {
+		var text = "";
+		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		for(var i=0; i<length; i++)
+			text += possible.charAt(Math.floor(Math.random() * possible.length));
+		return text;
+	};
+
+	exports.containsValue = function(ob, value) {
+		for(var key in ob) {
+			if(ob[key] == value)
+				return true;
+		}
+		return false;
+	};
+
+	exports.displayError = function(err) {
+		if(typeof(err) == 'string')
+			return err;
+
+		var result = '';
+		if(err.statusCode)
+			result += err.statusCode + '; ';
+		if(typeof(err.message) == 'string')
+			result += err.message;
+		if(typeof(err.message) == 'object')
+			result += JSON.stringify(err.message);
+
+		return result;
+	};
+
+	/*
+	 * Call _setupTest in context of a nodeunit test
+	 */
+	exports.setupTest = function(test) {
+		test.expect(1);
+		_setupTest(false, function(err, pn) {
+			pubnub = pn;
+			if(err)
+				test.ok(false, exports.displayError(err));
+			else
+				test.ok(true, 'Created test vars');
+			test.done();
+		});
+	};
+
+	/*
+	 * Call _setupTest in context of a nodeunit test (use secure init for pubnub)
+	 */
+	exports.setupTestSecure = function(test) {
+		test.expect(1);
+		_setupTest(true, function(err, pn) {
+			pubnub = pn;
+			if(err)
+				test.ok(false, exports.displayError(err));
+			else
+				test.ok(true, 'Created test vars');
+			test.done();
+		});
+	};
+
+	/*
+	 * Create PUBNUB instance
+	 */
+	function _setupTest(use_secure, callback) {
+		if (setupRefcount++ != 0) {
+			callback(null, pubnub);
+			return;
+		}
+		if (use_secure) {
+			pubnub = PUBNUB.secure({
+				ably_key      : testVars.key0Str,
+				origin        : pubnubOpts.origin,
+				tlsorigin     : pubnubOpts.tlsorigin,
+				uuid          : 'client-'+exports.randomid(6),
+				cipher_key    : exports.cipherKey
+			});
+		} else {
+			pubnub = PUBNUB.init({
+				//uuid          : 'client-'+exports.randomid(6),
+				ably_key      : testVars.key0Str,
+				origin        : pubnubOpts.origin,
+				tlsorigin     : pubnubOpts.tlsorigin
+			});
+		}
+		if (pubnub == null)
+			callback('Failed to create pubnub instance', null);
+		else if (pubnub !== PUBNUB)
+			callback('Pubnub instance error', null);
+		else
+			callback(null, pubnub);
+	};
+
+	/*
+	 * Call _clearTest in the context of a nodeunit test
+	 */
+	exports.clearTest = function(test) {
+		test.expect(1);
+		_clearTest(function(err) {
+			if(err)
+				test.ok(false, exports.displayError(err));
+			else
+				test.ok(true, 'Cleared test vars');
+			test.done();
+		});
+	};
+
+	/*
+	 * Clear down test accounts, shutdown PUBNUB instance
+	 */
+	function _clearTest(callback) {
+		if (--setupRefcount != 0) {
+			callback(null);
+			return;
+		}
+		pubnub.shutdown(function(state) {
+			if (state == 'closed')
+				callback(null);
+			else
+				callback('Error: Final pubnub state is not closed');
+			pubnub = undefined;
+		});
+	};
+
+	return exports;
+}();
+
+
+var exports = {};
+var pubnub_ = {pubnub:{}};
+pubnub_.pubnub.setup0 = pubnub_base.setupTest;
+<% include ../compat/pubnub/common/general.js %>
+pubnub_.pubnub.general = exports.setup(pubnub_base);
+<% include ../compat/pubnub/common/history.js %>
+pubnub_.pubnub.history = exports.setup(pubnub_base);
+<% include ../compat/pubnub/common/message.js %>
+pubnub_.pubnub.message = exports.setup(pubnub_base);
+<% include ../compat/pubnub/common/presence.js %>
+pubnub_.pubnub.presence = exports.setup(pubnub_base);
+pubnub_.pubnub.clear99 = pubnub_base.clearTest;
+
+//pubnub_.setupSecure0 = base.setupTestSecure;
+//pubnub_.secure_message = require('./secure-message');
+//pubnub_.secure_history = require('./secure-history');
+//pubnub_.secure_presence = require('./secure-presence');
+//pubnub_.clearSecure99 = base.clearTest;
