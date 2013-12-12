@@ -23,7 +23,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, false, function(err, response) {
+		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
@@ -47,14 +47,14 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return (new JSONPTransport.Request()).send(uri, params, body, expectToBlock, false, callback);
+		return (new JSONPTransport.Request()).send(uri, params, null, body, expectToBlock, false, callback);
 	};
 
 	JSONPTransport.Request = function(id) {
 		this.requestId = id || requestId++;
 	};
 
-	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
+	JSONPTransport.Request.prototype.send = function(uri, params, headers /* ignored */, body, expectToBlock, binary /* ignored */, callback) {
 		this.callback = callback;
 		var id = this.requestId;
 
@@ -98,8 +98,8 @@ var JSONPTransport = (function() {
 		this.callback(new Error('JSONPTransport: requestId ' + this.requestId + ' aborted'));
 	};
 
-	Http.Request = function(uri, params, body, binary, callback) {
-		(new JSONPTransport.Request()).send(uri, params, body, false, binary, callback);
+	Http.Request = function(uri, params, headers, body, binary, callback) {
+		(new JSONPTransport.Request()).send(uri, params, headers, body, false, binary, callback);
 	};
 
 	return JSONPTransport;
