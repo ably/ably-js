@@ -123,42 +123,9 @@ exports.setup = function(base) {
 	};
 
 	/*
-	 * Base attach case, comet transport
-	 */
-	rExports.channelattach3 = function(test) {
-		test.expect(1);
-		try {
-			var realtime = base.realtime({
-				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
-				transports: ['comet']
-			});
-			realtime.connection.on('connected', function() {
-				var channel3 = realtime.channels.get('channel3');
-				channel3.attach(function(err) {
-					if(err)
-						test.ok(false, 'Attach failed with error: ' + err);
-					else
-						test.ok(true, 'Attach to channel 3 with no options');
-					test.done();
-					realtime.close();
-				});
-			});
-			['failed', 'suspended'].forEach(function(state) {
-				realtime.connection.on(state, function() {
-					test.ok(false, 'Connection to server failed');
-					test.done();
-				});
-			});
-		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
-		}
-	};
-
-	/*
 	 * Attach then detach, binary transport
 	 */
-	rExports.channelattach4 = function(test) {
+	rExports.channelattach3 = function(test) {
 		test.expect(1);
 		try {
 			var realtime = base.realtime({
@@ -201,14 +168,126 @@ exports.setup = function(base) {
 	};
 
 	/*
-	 * Attach then detach, comet transport
+	 * Base attach case, jsonp transport
 	 */
-	rExports.channelattach5 = function(test) {
+	rExports.channelattachjson1 = function(test) {
 		test.expect(1);
 		try {
 			var realtime = base.realtime({
 				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
-				transports: ['comet']
+				transports: ['jsonp']
+			});
+			realtime.connection.on('connected', function() {
+				var channel3 = realtime.channels.get('channel3');
+				channel3.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + err);
+					else
+						test.ok(true, 'Attach to channel 3 with no options');
+					test.done();
+					realtime.close();
+				});
+			});
+			['failed', 'suspended'].forEach(function(state) {
+				realtime.connection.on(state, function() {
+					test.ok(false, 'Connection to server failed');
+					test.done();
+				});
+			});
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/*
+	 * Attach then detach, jsonp transport
+	 */
+	rExports.channelattachjson2 = function(test) {
+		test.expect(1);
+		try {
+			var realtime = base.realtime({
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['jsonp']
+			});
+			realtime.connection.on('connected', function() {
+				var channel5 = realtime.channels.get('channel5');
+				channel5.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + err);
+						test.done();
+						realtime.close();
+					}
+					/* we can't get a callback on a detach, so set a timeout */
+					channel5.detach(function(err) {
+						if(err) {
+							test.ok(false, 'Attach failed with error: ' + err);
+							test.done();
+							realtime.close();
+						}
+						if(channel5.state == 'detached')
+							test.ok(true, 'Attach then detach to channel 0 with no options');
+						else
+							test.ok(false, 'Detach failed');
+						test.done();
+						realtime.close();
+					});
+				});
+			});
+			['failed', 'suspended'].forEach(function(state) {
+				realtime.connection.on(state, function() {
+					test.ok(false, 'Connection to server failed');
+					test.done();
+				});
+			});
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/*
+	 * Base attach case, xhr transport
+	 */
+	rExports.channelattachxhr1 = function(test) {
+		test.expect(1);
+		try {
+			var realtime = base.realtime({
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['xhr']
+			});
+			realtime.connection.on('connected', function() {
+				var channel3 = realtime.channels.get('channel3');
+				channel3.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + err);
+					else
+						test.ok(true, 'Attach to channel 3 with no options');
+					test.done();
+					realtime.close();
+				});
+			});
+			['failed', 'suspended'].forEach(function(state) {
+				realtime.connection.on(state, function() {
+					test.ok(false, 'Connection to server failed');
+					test.done();
+				});
+			});
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/*
+	 * Attach then detach, xhr transport
+	 */
+	rExports.channelattachxhr2 = function(test) {
+		test.expect(1);
+		try {
+			var realtime = base.realtime({
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['xhr']
 			});
 			realtime.connection.on('connected', function() {
 				var channel5 = realtime.channels.get('channel5');

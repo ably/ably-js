@@ -15,6 +15,8 @@ exports.setup = function() {
 		var messagetypes = rExports.messagetypes = window;   // In the browser these types are defined on the window object
 		var http = null;
 		var Ably = rExports.Ably = window.Ably;
+		var Realtime = Ably.Realtime;
+		var Rest = Ably.Realtime.super_;
 
 		var adminHost = testVars.realtimeHost || 'localhost';
 		var adminPort = testVars.realtimePort || '8080';
@@ -48,6 +50,8 @@ exports.setup = function() {
 		var messagetypes = rExports.messagetypes = require('../../../nodejs/lib/protocol/clientmessage_types.js');
 		var http = require('http');
 		var Ably = rExports.Ably = require('../../..');
+		var Rest = Ably.Rest;
+		var Realtime = Ably.Realtime;
 
 		var adminHost = process.env.ADMIN_ADDRESS || 'localhost';
 		var adminPort = process.env.ADMIN_PORT || '8080';
@@ -95,8 +99,6 @@ exports.setup = function() {
 		return target;
 	}
 
-	var Rest = Ably.Rest;
-	var Realtime = Ably.Realtime;
 	rExports.rest = function(opts) {return new Rest(mixin((opts || {}), restOpts));};
 	rExports.realtime = function(opts) {return new Realtime(mixin((opts || {}), realtimeOpts));};
 
