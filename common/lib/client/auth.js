@@ -254,6 +254,7 @@ var Auth = (function() {
 					callback(err);
 					return;
 				}
+				if (typeof(tokenResponse) === 'string') tokenResponse = JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
 				callback(null, tokenResponse.access_token);
 			});
