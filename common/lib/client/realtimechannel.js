@@ -174,7 +174,7 @@ var RealtimeChannel = (function() {
 			}
 		});
 		this.detachImpl();
-		this.setSuspended(RealtimeChannel.channelDetachedErr);
+		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
@@ -347,7 +347,7 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setSuspended = function(err) {
+	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err '+ (err ? err.reason : 'none'));
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
@@ -355,7 +355,8 @@ var RealtimeChannel = (function() {
 			} catch(e) {}
 		this.pendingEvents = [];
 		this.presence.setSuspended(err);
-		this.emit('detached');
+		if (!suppressEvent)
+			this.emit('detached');
 	};
 
 	return RealtimeChannel;
