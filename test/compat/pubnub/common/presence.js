@@ -1,3 +1,4 @@
+"use strict";
 var _exports = {};
 var pubnub;
 var enable_logging = false;
