@@ -47,7 +47,9 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		(new XHRTransport.Request()).send(uri, params, null, body, expectToBlock, this.binary, callback);
+		var req = new XHRTransport.Request();
+		req.send(uri, params, null, body, expectToBlock, this.binary, callback);
+		return req;
 	};
 
 	XHRTransport.prototype.toString = function() {

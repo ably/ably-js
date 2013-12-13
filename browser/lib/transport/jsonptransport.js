@@ -47,7 +47,9 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return (new JSONPTransport.Request()).send(uri, params, null, body, expectToBlock, false, callback);
+		var req = new JSONPTransport.Request()
+		req.send(uri, params, null, body, expectToBlock, false, callback);
+		return req;
 	};
 
 	JSONPTransport.Request = function(id) {
