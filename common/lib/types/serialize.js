@@ -60,11 +60,13 @@ this.Serialize = (function() {
 		var tData = this.clientData, result = {
 			name: this.name,
 			clientId: this.clientId,
+			memberId: this.memberId,
 			timestamp: this.timestamp,
+			state: this.state,
 			tags: this.tags
 		};
 		var value = Data.fromTData(tData);
-		if(tData.type == BUFFER) {
+		if(tData && (tData.type == BUFFER)) {
 			result.encoding = 'base64'
 			value = value.toString('base64');
 		}
