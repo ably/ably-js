@@ -1,11 +1,10 @@
 "use strict";
 
 exports.setup = function(base) {
-	var rExports = {};
+	var rExports = {}, _rExports = {};
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
-	var _exports = {};
 
 	/**
 	 * Empty resume case, json transport
@@ -44,7 +43,7 @@ exports.setup = function(base) {
 				console.log('received message; serial = ' + msg.connectionSerial);
 				++rxCount;
 			});
-			var txCount = 0
+			var txCount = 0;
 			function ph1TxOnce() {
 				console.log('sending (phase 1): ' + txCount);
 				txChannel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
@@ -55,7 +54,7 @@ exports.setup = function(base) {
 					setTimeout(function() {
 						test.equal(rxCount, count, 'Verify Phase 1 messages all received');
 						callback(null);
-					}, 2000);
+					}, 5000);
 					return;
 				}
 				setTimeout(ph1TxOnce, 1000);
@@ -97,7 +96,7 @@ exports.setup = function(base) {
 					setTimeout(function() {
 						test.equal(rxCount, count, 'Verify Phase 4 messages all received');
 						callback(null);
-					}, 2000);
+					}, 5000);
 					return;
 				}
 				setTimeout(ph4TxOnce, 1000);
@@ -171,6 +170,7 @@ exports.setup = function(base) {
 		function phase1(callback) {
 			/* subscribe to event */
 			rxChannel.subscribe('event0', function(msg) {
+				console.log('received message; serial = ' + msg.connectionSerial);
 				++rxCount;
 			});
 			var txCount = 0
@@ -182,9 +182,9 @@ exports.setup = function(base) {
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() {
-						test.equal(rxCount, count, 'Verify Phase 1 messages all received');
+						test.equal(rxCount, count, 'Verify Phase 1 messages all received ('+rxCount+', '+count+')');
 						callback(null);
-					}, 2000);
+					}, 5000);
 					return;
 				}
 				setTimeout(ph1TxOnce, 800);
@@ -226,7 +226,7 @@ exports.setup = function(base) {
 				setTimeout(function() {
 					test.equal(rxCount, count, 'Verify Phase 2 messages all received');
 					callback(null);
-				}, 2000);
+				}, 5000);
 			});
 		}
 
