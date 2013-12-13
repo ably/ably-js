@@ -23,11 +23,11 @@ realtime_.realtime.upgrade = exports.setup(realtime_base);
 <% include ../realtime/common/message.js %>
 realtime_.realtime.message = exports.setup(realtime_base);
 
-<% include ../realtime/common/presence.js %>
-//realtime_.realtime.presence = exports.setup(realtime_base);             //xxxx
-
 <% include ../realtime/common/resume.js %>
 realtime_.realtime.resume = exports.setup(realtime_base);
+
+<% include ../realtime/common/presence.js %>
+realtime_.realtime.presence = exports.setup(realtime_base);
 
 <% include ../realtime/common/crypto.js %>
 //realtime_.realtime.crypto = exports.setup(realtime_base);               //xxxx
