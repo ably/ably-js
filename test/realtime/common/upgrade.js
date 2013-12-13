@@ -1,12 +1,11 @@
 "use strict";
 
 exports.setup = function(base) {
-	var rExports = {};
+	var rExports = {}, _rExports = {};
 	var rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
 	var actions = base.messagetypes.TAction;
-	var _exports = {};
 
 	rExports.setupupgrade = function(test) {
 		test.expect(1);

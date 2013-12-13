@@ -1,11 +1,10 @@
 "use strict";
 
 exports.setup = function(base) {
-	var rExports = {};
+	var rExports = {}, _rExports = {};
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
-	var _exports = {};
 	var realtime, currentTime;
 
 	rExports.setupauth = function(test) {

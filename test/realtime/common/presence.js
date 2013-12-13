@@ -1,11 +1,10 @@
 "use strict";
 
 exports.setup = function(base) {
-	var rExports = {};
+	var rExports = {}, _rExports = {};
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
-	var _exports = {};
 
 	var rest, realtime, authToken, authToken2;
 	var testClientId = 'testclient', testClientId2 = 'testclient2';
