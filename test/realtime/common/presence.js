@@ -286,7 +286,6 @@ exports.setup = function(base) {
 			/* listen for the enter event, test is complete when received */
 			var presenceHandler = function(presenceMessage) {
 				//console.log('Event received on presence channel: event = ' + this.event + ', clientId = ' + presenceMessage.clientId + ', clientData = ' + presenceMessage.clientData);
-				test.ok(true, 'Presence event received');
 				done();
 				presenceChannel.presence.off(presenceHandler);
 			};
@@ -315,7 +314,6 @@ exports.setup = function(base) {
 							done();
 							return;
 						}
-						test.expect(4);
 						test.ok(true, 'Detached');
 						done();
 					});
