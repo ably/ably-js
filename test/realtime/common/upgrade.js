@@ -46,11 +46,15 @@ exports.setup = function(base) {
 			connectionManager.on('transport.active', function(transport) {
 				if(transport.toString().indexOf('ws://') > -1) {
 					clearTimeout(failTimer);
-					process.nextTick(function() {
+					var closeFn = function() {
 						realtime.close();
 						test.ok(true, 'verify upgrade to ws transport');
 						test.done();
-					});
+					};
+					if (base.isBrowser)
+						setTimeout(closeFn, 0);
+					else
+						process.nextTick(closeFn);
 				}
 			});
 
@@ -334,10 +338,14 @@ exports.setup = function(base) {
 					test.expect(2);
 					test.ok(true, 'Received event0');
 					test.equal(msg.data, testMsg, 'Unexpected msg text received');
-					process.nextTick(function() {
+					var closeFn = function() {
 						realtime.close();
 						test.done();
-					});
+					};
+					if (base.isBrowser)
+						setTimeout(closeFn, 0);
+					else
+						process.nextTick(closeFn);
 				});
 
 				/* publish event */
@@ -389,10 +397,14 @@ exports.setup = function(base) {
 					test.expect(2);
 					test.ok(true, 'Received event0');
 					test.equal(msg.data, testMsg, 'Unexpected msg text received');
-					process.nextTick(function() {
+					var closeFn = function() {
 						realtime.close();
 						test.done();
-					});
+					};
+					if (base.isBrowser)
+						setTimeout(closeFn, 0);
+					else
+						process.nextTick(closeFn);
 				});
 
 				/* publish event */
