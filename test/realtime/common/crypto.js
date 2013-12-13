@@ -5,11 +5,13 @@ exports.setup = function(base) {
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
+	var Crypto = base.Ably.Crypto;
 
-	if (base.isBrowser)
+	if (base.isBrowser) {
 		var async = window.async;
-	else
+	} else {
 		var async = require('async');
+	}
 
 	function attachChannels(channels, callback) {
 		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
@@ -33,7 +35,8 @@ exports.setup = function(base) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'aes-128');
+
+			test.equal(params.algorithm, 'AES');
 			channel.setOptions({encrypted:true, cipherParams: params});
 			channel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
@@ -59,7 +62,7 @@ exports.setup = function(base) {
 			messageText = 'Test message (single_send_text)';
 
 		Crypto.getDefaultParams(function(err, params) {
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'AES');
 			if(err) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
@@ -87,20 +90,21 @@ exports.setup = function(base) {
 		var channel = realtime.channels.get('single_send_binary_256'),
 			messageText = 'Test message (single_send_binary_256)';
 
-		var key = require('crypto').randomBytes(256 / 8);
-		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'aes-256');
-			if(err) {
-				test.fail('Unable to get cipher params; err = ' + e);
-				return;
-			}
-			channel.setOptions({encrypted:true, cipherParams: params});
-			channel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				test.done();
-				realtime.close();
+		Crypto.generateRandom(256 / 8, function(err, key) {
+			Crypto.getDefaultParams(key, function(err, params) {
+				test.equal(params.algorithm, 'AES');
+				if(err) {
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				channel.setOptions({encrypted:true, cipherParams: params});
+				channel.subscribe('event0', function(msg) {
+					test.ok(msg.data == messageText);
+					test.done();
+					realtime.close();
+				});
+				channel.publish('event0', messageText);
 			});
-			channel.publish('event0', messageText);
 		});
 	};
 
@@ -118,20 +122,21 @@ exports.setup = function(base) {
 		var channel = realtime.channels.get('single_send_text_256'),
 			messageText = 'Test message (single_send_text_256)';
 
-		var key = require('crypto').randomBytes(256 / 8);
-		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'aes-256');
-			if(err) {
-				test.fail('Unable to get cipher params; err = ' + e);
-				return;
-			}
-			channel.setOptions({encrypted:true, cipherParams: params});
-			channel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				test.done();
-				realtime.close();
+		Crypto.generateRandom(256 / 8, function(err, key) {
+			Crypto.getDefaultParams(key, function(err, params) {
+				test.equal(params.algorithm, 'AES');
+				if(err) {
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				channel.setOptions({encrypted:true, cipherParams: params});
+				channel.subscribe('event0', function(msg) {
+					test.ok(msg.data == messageText);
+					test.done();
+					realtime.close();
+				});
+				channel.publish('event0', messageText);
 			});
-			channel.publish('event0', messageText);
 		});
 	};
 
@@ -145,44 +150,45 @@ exports.setup = function(base) {
 		test.expect(iterations + 2);
 		var channelName = 'multiple_send_' + iterations + '_' + delay,
 			channel = realtime.channels.get(channelName),
-			messageText = 'Test message (' + channelName + ')',
-			key = require('crypto').randomBytes(128 / 8);
+			messageText = 'Test message (' + channelName + ')';
 
-		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'aes-128');
-			if(err) {
-				test.fail('Unable to get cipher params; err = ' + e);
-				return;
-			}
-			channel.setOptions({encrypted:true, cipherParams: params});
-			function sendAll(sendCb) {
-				var sent = 0;
-				var sendOnce = function() {
-					channel.publish('event0', messageText);
-					if(++sent == iterations) {
-						sendCb(null);
-						return;
-					}
-					setTimeout(sendOnce, delay);
-				};
-				sendOnce();
-			}
-			function recvAll(recvCb) {
-				var received = 0;
-				channel.subscribe('event0', function(msg) {
-					test.ok(msg.data == messageText);
-					if(++received == iterations)
-						recvCb(null);
-				});
-			}
-			async.parallel([sendAll, recvAll], function(err) {
+		Crypto.generateRandom(128 / 8, function(err, key) {
+			Crypto.getDefaultParams(key, function(err, params) {
+				test.equal(params.algorithm, 'AES');
 				if(err) {
-					test.fail('Error sending messages; err = ' + e);
+					test.fail('Unable to get cipher params; err = ' + e);
 					return;
 				}
-				test.ok('Verify all messages received');
-				test.done();
-				realtime.close();
+				channel.setOptions({encrypted:true, cipherParams: params});
+				function sendAll(sendCb) {
+					var sent = 0;
+					var sendOnce = function() {
+						channel.publish('event0', messageText);
+						if(++sent == iterations) {
+							sendCb(null);
+							return;
+						}
+						setTimeout(sendOnce, delay);
+					};
+					sendOnce();
+				}
+				function recvAll(recvCb) {
+					var received = 0;
+					channel.subscribe('event0', function(msg) {
+						test.ok(msg.data == messageText);
+						if(++received == iterations)
+							recvCb(null);
+					});
+				}
+				async.parallel([sendAll, recvAll], function(err) {
+					if(err) {
+						test.fail('Error sending messages; err = ' + e);
+						return;
+					}
+					test.ok('Verify all messages received');
+					test.done();
+					realtime.close();
+				});
 			});
 		});
 	};
@@ -220,7 +226,7 @@ exports.setup = function(base) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'AES');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {
@@ -261,7 +267,7 @@ exports.setup = function(base) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'AES');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {
@@ -449,7 +455,7 @@ exports.setup = function(base) {
 
 		var sendFirstMessage = function(cb) {
 			var handler = function(msg) {
-				test.ok(msg.data == messageText);
+				test.ok(msg.data == messageText, 'Message data not expected value');
 				rxChannel.unsubscribe('event0', handler);
 				cb(null);
 			}
@@ -471,7 +477,7 @@ exports.setup = function(base) {
 
 		var sendSecondMessage = function(cb) {
 			var handler = function(msg) {
-				test.ok(msg.data.cipherData);
+				test.ok(msg.data.cipherData, 'Message does not have cipherData property');
 				rxChannel.unsubscribe('event0', handler);
 				cb(null);
 			}
@@ -486,7 +492,7 @@ exports.setup = function(base) {
 
 		var sendThirdMessage = function(cb) {
 			var handler = function(msg) {
-				test.ok(msg.data == messageText);
+				test.ok(msg.data == messageText, 'Message data not expected (third message)');
 				rxChannel.unsubscribe('event0', handler);
 				cb(null);
 			}
