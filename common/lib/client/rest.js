@@ -13,6 +13,9 @@ var Rest = (function() {
 			options = {key: options};
 		this.options = options;
 
+		if (typeof(this.options.useTextProtocol) === 'undefined')   // Default to text protocol in browser, binary in node.js
+			this.options.useTextProtocol = (typeof(window) === 'object') ? true : false;
+
 		/* process options */
 		if(options.key) {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
