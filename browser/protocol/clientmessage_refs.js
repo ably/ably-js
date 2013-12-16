@@ -7,5 +7,7 @@ var clientmessage_refs = {
 	TPresence: TPresence,
 	TMessage: TMessage,
 	TChannelMessage: TChannelMessage,
-	TProtocolMessage: TProtocolMessage
+	TProtocolMessage: TProtocolMessage,
+	TPresenceState: TPresenceState,
+	TMessageArray: TMessageArray
 };

@@ -1,59 +1,64 @@
 var Resource = (function() {
-
 	function Resource() {}
 
-	Resource.get = function(rest, path, headers, params, callback) {
-		function tryGet() {
+	function withAuthDetails(rest, headers, params, errCallback, opCallback) {
+		if (Http.supportsAuthHeaders) {
 			rest.auth.getAuthHeaders(function(err, authHeaders) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res, headers) {
-					if(err && err.code == 40140) {
-						/* token has expired, so get a new one */
-						rest.auth.authorise({force:true}, function(err) {
-							if(err) {
-								callback(err);
-								return;
-							}
-							/* retry ... */
-							tryGet();
-						});
-						return;
-					}
-					callback(err, res, headers);
-				});
+				if(err)
+					errCallback(err);
+				else
+					opCallback(Utils.mixin(authHeaders, headers), params);
+			});
+		} else {
+			rest.auth.getAuthParams(function(err, authParams) {
+				if(err)
+					errCallback(err);
+				else
+					opCallback(headers, Utils.mixin(authParams, params));
 			});
 		}
-		tryGet();
+	}
+
+	Resource.get = function(rest, path, origheaders, origparams, callback) {
+		function doGet(headers, params) {
+			Http.get(rest, path, headers, params, function(err, res, headers) {
+				if(err && err.code == 40140) {
+					/* token has expired, so get a new one */
+					rest.auth.authorise({force:true}, function(err) {
+						if(err) {
+							callback(err);
+							return;
+						}
+						/* retry ... */
+						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+					});
+					return;
+				}
+				callback(err, res, headers);
+			});
+		}
+		withAuthDetails(rest, origheaders, origparams, callback, doGet);
 	};
 
-	Resource.post = function(rest, path, body, headers, params, callback) {
-		function tryPost() {
-			rest.auth.getAuthHeaders(function(err, authHeaders) {
-				if(err) {
-					callback(err);
+	Resource.post = function(rest, path, body, origheaders, origparams, callback) {
+		function doPost(headers, params) {
+			Http.post(rest, path, headers, body, params, function(err, res, headers) {
+				if(err && err.code == 40140) {
+					/* token has expired, so get a new one */
+					rest.auth.authorise({force:true}, function(err) {
+						if(err) {
+							callback(err);
+							return;
+						}
+						/* retry ... */
+						withAuthDetails(rest, origheaders, origparams, callback, doPost);
+					});
 					return;
 				}
-				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res, headers) {
-					if(err && err.code == 40140) {
-						/* token has expired, so get a new one */
-						rest.auth.authorise({force:true}, function(err) {
-							if(err) {
-								callback(err);
-								return;
-							}
-							/* retry ... */
-							tryPost();
-						});
-						return;
-					}
-					callback(err, res, headers);
-				});
+				callback(err, res, headers);
 			});
 		}
-		tryPost();
+		withAuthDetails(rest, origheaders, origparams, callback, doPost);
 	};
 
 	return Resource;
