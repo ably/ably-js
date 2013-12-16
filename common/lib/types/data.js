@@ -2,6 +2,7 @@ this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
+	var isBrowser = (typeof(window) === 'object');
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -38,7 +39,7 @@ this.Data = (function() {
 			return true;
 		},
 		'[object Object]': function(msg, data) {
-			if(typeof(Buffer) !== 'undefined' && Buffer.isBuffer(data)) {
+			if(!isBrowser && Buffer.isBuffer(data)) {
 				msg.type = messagetypes.TType.BUFFER;
 				msg.binaryData = data;
 			} else {

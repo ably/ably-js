@@ -76,9 +76,10 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
+			if (typeof(res) === 'string') res = JSON.parse(res);
 			var time = res[0];
 			if(!time) {
-				err = new Error('Internal error (unexpected result type from GET /time');
+				err = new Error('Internal error (unexpected result type from GET /time)');
 				err.statusCode = 500;
 				callback(err);
 				return;

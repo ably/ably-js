@@ -4,7 +4,7 @@
 	<!-- tools (gets closure compiler) -->
     <target name="tools">
         <mkdir dir="../tools/closure-compiler" />
-        <get src="http://closure-compiler.googlecode.com/files/compiler-latest.zip" dest="../tools/closure-compiler" />
+        <get src="http://dl.google.com/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
         <unzip src="../tools/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
     </target>
 
