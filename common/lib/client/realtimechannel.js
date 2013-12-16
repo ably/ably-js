@@ -315,7 +315,6 @@ var RealtimeChannel = (function() {
 			return;
 
 		this.state = 'attached';
-		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
 				var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
@@ -332,6 +331,7 @@ var RealtimeChannel = (function() {
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
+		this.emit('attached');
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
