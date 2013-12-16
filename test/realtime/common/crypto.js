@@ -11,6 +11,7 @@ exports.setup = function(base) {
 		var async = window.async;
 	} else {
 		var async = require('async');
+		var Crypto = base.Ably.Realtime.Crypto;
 	}
 
 	function attachChannels(channels, callback) {
