@@ -25,6 +25,11 @@ var RealtimeChannel = (function() {
 		code: 90001,
 		reason: 'Channel operation failed (invalid channel state)'
 	};
+	RealtimeChannel.channelDetachedErr = {
+		statusCode: 409,
+		code: 90006,
+		reason: 'Channel is detached'
+	};
 
 	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
 		callback = callback || noop;
@@ -169,10 +174,11 @@ var RealtimeChannel = (function() {
 			}
 		});
 		this.detachImpl();
+		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
@@ -335,22 +341,22 @@ var RealtimeChannel = (function() {
 			this.state = 'failed';
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, reason: msgErr.reason};
 			this.emit('failed', err);
-		} else {
+		} else if (this.state !== 'detached') {
 			this.state = 'detached';
 			this.emit('detached');
 		}
 	};
 
-	RealtimeChannel.prototype.setSuspended = function(connectionState) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
-		this.state = 'detached';
+	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err '+ (err ? err.reason : 'none'));
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
-				this.pendingEvents[i].callback(connectionState.defaultMessage);
+				this.pendingEvents[i].callback(err);
 			} catch(e) {}
 		this.pendingEvents = [];
-		this.presence.setSuspended(connectionState);
-		this.emit('detached');
+		this.presence.setSuspended(err);
+		if (!suppressEvent)
+			this.emit('detached');
 	};
 
 	return RealtimeChannel;

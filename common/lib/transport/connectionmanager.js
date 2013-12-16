@@ -524,6 +524,8 @@ var ConnectionManager = (function() {
 			this.sendQueuedMessages();
 		else if(this.state.queueEvents)
 			this.queuePendingMessages();
+		else
+			this.realtime.channels.setSuspended(change.reason);
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {

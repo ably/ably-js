@@ -47,6 +47,13 @@ var Realtime = (function() {
 		}
 	};
 
+	Channels.prototype.setSuspended = function(err) {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			channel.setSuspended(err);
+		}
+	};
+
 	Channels.prototype.get = function(name) {
 		name = String(name);
 		var channel = this.attached[name];

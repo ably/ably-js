@@ -5,19 +5,19 @@ this.Http = (function() {
 
 	/**
 	 * Perform an HTTP GET request
-	 * @param realtime
+	 * @param rest
 	 * @param the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 */
-	Http.get = function(realtime, path, headers, params, callback) {
+	Http.get = function(rest, path, headers, params, callback) {
 		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return realtime.baseUri(host) + path; };
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryGet(uri, cb) {
-			Http.Request(uri, params, null, binary, cb);
+			Http.Request(uri, params, headers, null, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */
@@ -26,11 +26,11 @@ this.Http = (function() {
 			return;
 		}
 
-		var hosts, connection = realtime.connection;
+		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
 		else
-			hosts = Defaults.getHosts(realtime.options);
+			hosts = Defaults.getHosts(rest.options);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
@@ -61,13 +61,13 @@ this.Http = (function() {
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 */
-	Http.post = function(realtime, path, headers, body, params, callback) {
+	Http.post = function(rest, path, headers, body, params, callback) {
 		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return realtime.baseUri(host) + path; };
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
 		function tryPost(uri, cb) {
-			Http.Request(uri, params, body, binary, cb);
+			Http.Request(uri, params, headers, body, binary, cb);
 		}
 
 		/* if we have an absolute url, we just try once */
@@ -76,11 +76,11 @@ this.Http = (function() {
 			return;
 		}
 
-		var hosts, connection = realtime.connection;
+		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
 		else
-			hosts = Defaults.getHosts(realtime.options);
+			hosts = Defaults.getHosts(rest.options);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
@@ -102,5 +102,6 @@ this.Http = (function() {
 		});
 	};
 
+	Http.supportsAuthHeaders = false;
 	return Http;
 })();

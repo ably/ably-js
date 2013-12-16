@@ -133,5 +133,6 @@ this.Http = (function() {
 		});
 	};
 
+	Http.supportsAuthHeaders = true;
 	return Http;
 })();
