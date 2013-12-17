@@ -397,7 +397,6 @@ exports.setup = function(base) {
 	 * Check query pagination (backwards)
 	 */
 	rExports.appstats_pagination0 = function(test) {
-		debugger;
 		test.expect(1);
 		try {
 			/* get initial query and page */
