@@ -1,14 +1,13 @@
 "use strict";
-var _exports = {};
-var pubnub;
-var enable_logging = false;
-
-function log(str) { enable_logging && console.log(str); }
 
 exports.setup = function(base) {
-	var rExports = {};
+	var rExports = {}, _rExports = {};
+	var enable_logging = false;
+	var pubnub;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
+
+	function log(str) { enable_logging && console.log(str); }
 
 	/* Setup underlying accounts, etc, if they aren't already set up */
 	rExports.localsetup = base.setupTest;

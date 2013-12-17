@@ -5,7 +5,7 @@
 	"Xhr_": "xhr_.js",
 	"Jsonp_": "jsonp_.js",
 	"Crypto_": "crypto_.js",
-	"Pubnub_": "pubnub_.js",
 	"Realtime_": "realtime_.js",
-	"Rest_": "rest_.js"
+	"Rest_": "rest_.js",
+	"Pubnub_": "pubnub_.js"
 }
