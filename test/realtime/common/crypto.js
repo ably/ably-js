@@ -5,14 +5,12 @@ exports.setup = function(base) {
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
-	var Crypto = base.Ably.Crypto;
+	var Crypto = base.Ably.Realtime.Crypto;
 
-	if (base.isBrowser) {
+	if (base.isBrowser)
 		var async = window.async;
-	} else {
+	else
 		var async = require('async');
-		var Crypto = base.Ably.Realtime.Crypto;
-	}
 
 	function attachChannels(channels, callback) {
 		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
