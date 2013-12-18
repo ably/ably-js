@@ -1,5 +1,5 @@
-"use strict";
 (function() {
+	"use strict";
 
 	// Ably library should have been included if running in a browser prior to including this
 	// compatibility library:
@@ -9,7 +9,11 @@
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	// and various other necessary things.
-	if ((typeof(window) === 'undefined') && (typeof(Ably) === 'undefined')) {
+	if (typeof(window) !== 'undefined') {
+		var Ably = window.Ably;
+	} else if (typeof(Ably) !== 'undefined') {
+		var Ably = Ably;
+	} else {
 		var Ably = require('../..');
 		var fs   = require('fs');
 		var path = require('path');
@@ -312,7 +316,7 @@
 						// underlying callback for this event
 						log('PusherChannel::unbind: All bindings for this event have been removed');
 						this.channel.off(event, this.channelBindCallback);
-						this.bindings.delete(event);
+						delete this.bindings[event];
 					}
 					break;
 				}
