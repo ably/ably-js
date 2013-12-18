@@ -140,7 +140,12 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			callback = key;
 			key = undefined;
 		}
-		if(!key) {
+		if(key) {
+			if (typeof(key) === 'string')
+				key = CryptoJS.enc.Hex.parse(key);
+			else
+				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
+		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
 					callback(err);
