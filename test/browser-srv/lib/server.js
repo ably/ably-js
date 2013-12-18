@@ -20,8 +20,8 @@ var external = {
 	'nodeunit.css' : path.normalize(__dirname + '../../../../node_modules/nodeunit/share/nodeunit.css'),
 	'async.js' : path.normalize(__dirname + '../../../../node_modules/async/lib/async.js'),
 	'^(?:test/swf/)WebSocketMainInsecure(.*)\.swf$' : path.normalize(__dirname + '../../../../browser/lib/swf/WebSocketMainInsecure*.swf'),
-	'pubnub.js' : path.normalize(__dirname + '../../../../browser/compat/pubnub.js'),
-	'pusher.js' : path.normalize(__dirname + '../../../../browser/compat/pusher.js')
+	'compat-pubnub.js' : path.normalize(__dirname + '../../../../browser/lib/compat-pubnub.js'),
+	'compat-pusher.js' : path.normalize(__dirname + '../../../../browser/lib/compat-pusher.js')
 };
 
 var startsWith = function(string, substr) {
