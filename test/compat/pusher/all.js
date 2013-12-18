@@ -1,7 +1,6 @@
 "use strict";
-var base = require('./common');
+var base = require('./common/common').setup();
 var displayError = base.displayError;
-
 var _exports = {};
 
 exports.setup0 = base.setupTest;
