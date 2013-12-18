@@ -33,7 +33,7 @@ function attachChannels(channels, callback) {
  */
 crypto_.single_send_binary = function(test) {
 	var realtime = createRealtime({
-		//log: {level: 4},
+		log: {level: 4},
 		transports: ['web_socket']
 	});
 	test.expect(2);
@@ -45,7 +45,7 @@ crypto_.single_send_binary = function(test) {
 			test.fail('Unable to get cipher params; err = ' + e);
 			return;
 		}
-		test.equal(params.algorithm, 'AES');
+		test.equal(params.algorithm, 'aes-128');
 		channel.setOptions({encrypted:true, cipherParams: params});
 		channel.subscribe('event0', function(msg) {
 			test.ok(msg.data == messageText);
@@ -70,7 +70,7 @@ crypto_.single_send_text = function(test) {
 		messageText = 'Test message (single_send_text)';
 
 	Crypto.getDefaultParams(function(err, params) {
-		test.equal(params.algorithm, 'AES');
+		test.equal(params.algorithm, 'aes-128');
 		if(err) {
 			test.fail('Unable to get cipher params; err = ' + e);
 			return;
@@ -99,7 +99,7 @@ crypto_.single_send_binary_256 = function(test) {
 
 	Crypto.generateRandom(256 / 8, function(err, key) {
 		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-256');
 			if(err) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
@@ -131,7 +131,7 @@ crypto_.single_send_text_256 = function(test) {
 
 	Crypto.generateRandom(256 / 8, function(err, key) {
 		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-256');
 			if(err) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
@@ -160,7 +160,7 @@ function _multiple_send(test, text, iterations, delay) {
 
 	Crypto.generateRandom(128 / 8, function(err, key) {
 		Crypto.getDefaultParams(key, function(err, params) {
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			if(err) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
@@ -234,7 +234,7 @@ crypto_.single_send_binary_text = function(test) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {
@@ -279,7 +279,7 @@ crypto_.single_send_text_binary = function(test) {
 				test.fail('Unable to get cipher params; err = ' + err);
 				return;
 			}
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {
