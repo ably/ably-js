@@ -83,7 +83,7 @@ exports.setup = function() {
 	};
 
 	rExports.setupRefcount = 0;
-	rExports.cipherKey = "0000000000000000"
+	rExports.cipherKey = [0,0,0,0];
 	rExports.getPubnub = function() { return rExports.pubnub; }
 
 	rExports.randomid = function randomid(length) {
