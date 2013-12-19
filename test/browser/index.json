@@ -2,6 +2,8 @@
 	"Init_": "init_.js",
 	"Ws_": "ws_.js",
 	"Flash_": "flash_.js",
+	"Rest_": "rest_.js",
+	"Pubnub_": "pubnub_.js",
 	"Xhr_": "xhr_.js",
 	"Jsonp_": "jsonp_.js",
 	"Crypto_": "crypto_.js",
