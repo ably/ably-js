@@ -1,5 +1,6 @@
-"use strict";
 (function() {
+	"use strict";
+
 	// Get defaults from pdiv if it can be found
 	var pdiv = (typeof(document) === 'undefined') ? null : document.getElementById('pubnub');
 	var pDefaults = {};
