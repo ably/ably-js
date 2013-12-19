@@ -1,4 +1,4 @@
-Ably.Crypto = window.CryptoJS && (function() {
+var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var messagetypes = clientmessage_refs;
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
