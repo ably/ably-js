@@ -4,6 +4,7 @@ var net = require('net');
 var path = require('path');
 var url = require('url');
 var util = require('util');
+var ejs = require('ejs');
 var testvars = require('../framework/testvars');
 var existsSync = fs.existsSync || path.existsSync;
 var console2 = require('../lib/quietconsole');
@@ -18,7 +19,9 @@ var external = {
 	'nodeunit.js' : path.normalize(__dirname + '../../../../node_modules/nodeunit/examples/browser/nodeunit.js'),
 	'nodeunit.css' : path.normalize(__dirname + '../../../../node_modules/nodeunit/share/nodeunit.css'),
 	'async.js' : path.normalize(__dirname + '../../../../node_modules/async/lib/async.js'),
-	'^(?:test/swf/)WebSocketMainInsecure(.*)\.swf$' : path.normalize(__dirname + '../../../../browser/lib/swf/WebSocketMainInsecure*.swf')
+	'^(?:test/swf/)WebSocketMainInsecure(.*)\.swf$' : path.normalize(__dirname + '../../../../browser/lib/swf/WebSocketMainInsecure*.swf'),
+	'compat-pubnub.js' : path.normalize(__dirname + '../../../../browser/lib/compat-pubnub.js'),
+	'compat-pusher.js' : path.normalize(__dirname + '../../../../browser/lib/compat-pusher.js')
 };
 
 var startsWith = function(string, substr) {
@@ -34,6 +37,8 @@ var guessContentType = function(string) {
 	if(endsWith(string, '.css'))
 		contentType = 'text/css';
 	else if(endsWith(string, '.js'))
+		contentType = 'application/javascript';
+	else if(endsWith(string, '.js.ejs'))
 		contentType = 'application/javascript';
 	else if(endsWith(string, '.json'))
 		contentType = 'application/json';
@@ -145,24 +150,30 @@ exports.start = function(opts, callback) {
 		}
 		if(startsWith(req, 'test/')) {
 			/* return test file */
-			var filename = path.normalize(__dirname + '/../../browser/' + req.substr('test/'.length));
-			if(!existsSync(filename)) {
-				res404(response);
+			if (startsWith(req, 'test/compat/'))
+				var filename = path.normalize(__dirname + '/../../compat/' + req.substr('test/compat/'.length));
+			else
+				var filename = path.normalize(__dirname + '/../../browser/' + req.substr('test/'.length));
+			var readFileCallback = function(err, file) {
+				if(err) {
+					res500(response, err);
+					return;
+				}
+				if(endsWith(filename, '.ejs')) file = ejs.render(file.toString(), { filename: filename });
+				var type = guessContentType(filename);
+				if(type == 'application/json' && params.callback) {
+					type = 'application/javascript';
+					file = params.callback + '(' + file + ');';
+				}
+				res200(response, type, file);
+			};
+			if (existsSync(filename) && fs.statSync(filename).isFile()) {
+				fs.readFile(filename, readFileCallback);
 				return;
 			}
-			if(fs.statSync(filename).isFile()) {
-				fs.readFile(filename, function(err, file) {
-					if(err) {
-						res500(response, err);
-						return;
-					}
-					var type = guessContentType(filename);
-					if(type == 'application/json' && params.callback) {
-						type = 'application/javascript';
-						file = params.callback + '(' + file + ');';
-					}
-					res200(response, type, file);
-				});
+			filename = filename + '.ejs';
+			if (existsSync(filename) && fs.statSync(filename).isFile()) {
+				fs.readFile(filename, readFileCallback);
 				return;
 			}
 			res404(response);

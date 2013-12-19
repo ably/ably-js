@@ -19,6 +19,16 @@ var XHRTransport = (function() {
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	function responseHeaders(xhr) {
+		var rh = xhr.getAllResponseHeaders().trim().split('\n');
+		var headers = {};
+		for (var i=0; i<rh.length; i++) {
+			var h = rh[i].split(':');
+			headers[h[0].trim()] = h[1].trim();
+		}
+		return headers;
+	}
+
 	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
@@ -29,7 +39,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -47,7 +57,9 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		(new XHRTransport.Request()).send(uri, params, body, expectToBlock, this.binary, callback);
+		var req = new XHRTransport.Request();
+		req.send(uri, params, null, body, expectToBlock, this.binary, callback);
+		return req;
 	};
 
 	XHRTransport.prototype.toString = function() {
@@ -56,20 +68,34 @@ var XHRTransport = (function() {
 
 	XHRTransport.Request = function() {};
 
-	XHRTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary, callback) {
+	XHRTransport.Request.prototype.send = function(uri, params, headers, body, expectToBlock, binary, callback) {
+		headers = headers || {};
 		uri = CometTransport.paramStr(params, uri);
 		var successCode, method, err, timedout;
 		if(body) method = 'POST', successCode = 201;
 		else method = 'GET', successCode = 200;
 
 		var xhr = this.xhr = createXHR();
-		if(binary)
+		if(binary) {
 			xhr.responseType = 'arraybuffer';
+			body = body.view;
+		}
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = setTimeout(function() { timedout = true; xhr.abort(); }, timeout);
+
 		xhr.open(method, uri, true);
-		xhr.setRequestHeader('Accept', binary ? 'application/x-thrift' : 'application/json');
+
+		if (body && !binary && (typeof(body) === 'object')) {
+			if (!headers['content-type'])
+				headers['content-type'] = 'application/json';
+			body = JSON.stringify(body);
+		}
+		if (!headers['accept'])
+			headers['accept'] = binary ? 'application/x-thrift' : 'application/json';
+		for (var h in headers)
+			xhr.setRequestHeader(h, headers[h]);
+
 		xhr.onerror = function(err) {
 			err = err;
 			err.code = 80000;
@@ -99,7 +125,7 @@ var XHRTransport = (function() {
 					} else {
 						responseBody = xhr.responseText;
 					}
-					callback(null, responseBody);
+					callback(null, responseBody, responseHeaders(xhr));
 					return;
 				}
 				if(xhr.status != 0) {
@@ -123,8 +149,9 @@ var XHRTransport = (function() {
 
 	if(XHRTransport.isAvailable()) {
 		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
-		Http.Request = function(uri, params, body, binary, callback) {
-			(new XHRTransport.Request()).send(uri, params, body, false, binary, callback);
+		Http.supportsAuthHeaders = true;
+		Http.Request = function(uri, params, headers, body, binary, callback) {
+			(new XHRTransport.Request()).send(uri, params, headers, body, false, binary, callback);
 		};
 	}
 

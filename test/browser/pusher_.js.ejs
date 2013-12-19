@@ -1,0 +1,14 @@
+var pusher_base = function() {
+	var exports = {};
+	<% include ../compat/pusher/common/common.js %>
+	return exports.setup();
+}();
+
+var exports = {};
+var pusher_ = {pusher:{}};
+pusher_.pusher.setup0 = pusher_base.setupTest;
+<% include ../compat/pusher/common/message.js %>
+pusher_.pusher.message = exports.setup(pusher_base);
+<% include ../compat/pusher/common/presence.js %>
+pusher_.pusher.presence = exports.setup(pusher_base);
+pusher_.pusher.clear99 = pusher_base.clearTest;

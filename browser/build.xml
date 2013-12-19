@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="ably-script" default="gen-ably">
 
+    <!-- Task for the Google Closure Compiler for JavaScript minification -->
+    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
+        classpath="../tools/closure-compiler/compiler.jar"/>
+
 	<!-- tools (gets closure compiler) -->
     <target name="tools">
         <mkdir dir="../tools/closure-compiler" />
-        <get src="http://closure-compiler.googlecode.com/files/compiler-latest.zip" dest="../tools/closure-compiler" />
+        <get src="http://dl.google.com/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
         <unzip src="../tools/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
     </target>
 
-    <!-- Concat all JavaScript files -->
+    <!-- Concat all JavaScript files for Ably library -->
     <target name="gen-ably-js">
         <concat destfile="lib/ably.js">
             <filelist dir="${basedir}">
@@ -78,10 +82,6 @@
 
     <!-- Use closure compiler to minify JavaScript -->
     <target name="gen-ably-min-js" depends="gen-ably-js">
-	    <!-- Task for the Google Closure Compiler for JavaScript minification -->
-	    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
-	        classpath="../tools/closure-compiler/compiler.jar"/>
-
     	<!-- Available compilation levels: advanced, simple, whitespace -->
         <jscompiler compilationlevel="simple" prettyPrint="true" output="lib/ably.min.js">
             <sources dir="${basedir}">
@@ -90,19 +90,79 @@
         </jscompiler>
     </target>
 
-	<!-- Gzip -->
+  <!-- Concat JavaScript files for Pusher compat library -->
+  <target name="gen-pusher-js">
+    <concat destfile="lib/compat-pusher.js">
+      <filelist dir="${basedir}">
+        <file name="pusher-prologue.js"/>
+      </filelist>
+      <filelist dir="${basedir}/../common/lib">
+        <file name="util/eventemitter.js"/>
+        <file name="util/utils.js"/>
+      </filelist>
+      <filelist dir="${basedir}/compat">
+        <file name="pusher.js"/>
+      </filelist>
+      <filelist dir="${basedir}">
+        <file name="pusher-epilogue.js"/>
+      </filelist>
+    </concat>
+  </target>
+
+  <!-- Use closure compiler to minify JavaScript -->
+  <target name="gen-pusher-min-js" depends="gen-pusher-js">
+    <!-- Available compilation levels: advanced, simple, whitespace -->
+    <jscompiler compilationlevel="simple" prettyPrint="true" output="lib/compat-pusher.min.js">
+      <sources dir="${basedir}">
+        <file name="lib/compat-pusher.js"/>
+      </sources>
+    </jscompiler>
+  </target>
+
+  <!-- Concat JavaScript files for Pubnub compat library -->
+  <target name="gen-pubnub-js">
+    <concat destfile="lib/compat-pubnub.js">
+      <filelist dir="${basedir}/compat">
+        <file name="pubnub.js"/>
+      </filelist>
+    </concat>
+  </target>
+
+  <!-- Use closure compiler to minify JavaScript -->
+  <target name="gen-pubnub-min-js" depends="gen-pubnub-js">
+    <!-- Available compilation levels: advanced, simple, whitespace -->
+    <jscompiler compilationlevel="simple" prettyPrint="true" output="lib/compat-pubnub.min.js">
+      <sources dir="${basedir}">
+        <file name="lib/compat-pubnub.js"/>
+      </sources>
+    </jscompiler>
+  </target>
+
+  <!-- Gzip -->
     <target name="gen-ably-min-js-gz" depends="gen-ably-min-js">
-        <gzip src="lib/ably.min.js" destfile="lib/ably.min.js.gz" /> 
+        <gzip src="lib/ably.min.js" destfile="lib/ably.min.js.gz" />
     </target>
     <target name="gen-ably-js-gz" depends="gen-ably-js">
-        <gzip src="lib/ably.js" destfile="lib/ably.js.gz" /> 
+        <gzip src="lib/ably.js" destfile="lib/ably.js.gz" />
+    </target>
+    <target name="gen-pusher-min-js-gz" depends="gen-pusher-min-js">
+      <gzip src="lib/compat-pusher.min.js" destfile="lib/compat-pusher.min.js.gz" />
+    </target>
+    <target name="gen-pusher-js-gz" depends="gen-pusher-js">
+      <gzip src="lib/compat-pusher.js" destfile="lib/compat-pusher.js.gz" />
+    </target>
+    <target name="gen-pubnub-min-js-gz" depends="gen-pubnub-min-js">
+      <gzip src="lib/compat-pubnub.min.js" destfile="lib/compat-pubnub.min.js.gz" />
+    </target>
+    <target name="gen-pubnub-js-gz" depends="gen-pubnub-js">
+      <gzip src="lib/compat-pubnub.js" destfile="lib/compat-pubnub.js.gz" />
     </target>
     <target name="gen-swf-gz">
         <gzip src="lib/swf/WebSocketMainInsecure-0.9.swf" destfile="lib/swf/WebSocketMainInsecure-0.9.swf.gz" />
     </target>
 
 	<!-- All (default target) -->
-    <target name="gen-ably" depends="gen-ably-js,gen-ably-min-js,gen-ably-js-gz,gen-ably-min-js-gz,gen-swf-gz">
+    <target name="gen-ably" depends="gen-ably-js-gz,gen-ably-min-js-gz,gen-pusher-js-gz,gen-pusher-min-js-gz,gen-pubnub-js-gz,gen-pubnub-min-js-gz,gen-swf-gz">
     </target>
 
 </project>

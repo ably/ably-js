@@ -1,8 +1,8 @@
-Ably.Crypto = window.CryptoJS && (function() {
+var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var messagetypes = clientmessage_refs;
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
-	var DEFAULT_ALGORITHM = "AES";
+	var DEFAULT_ALGORITHM = "aes";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -18,8 +18,8 @@ Ably.Crypto = window.CryptoJS && (function() {
 	function IEEEToDouble(wordArray) {
 		var buf = new ArrayBuffer(8),
 			intArray = new Uint32Array(buf);
-		intArray[0] = wordArray[0];
-		intArray[1] = wordArray[1];
+		intArray[0] = wordArray.words[0];
+		intArray[1] = wordArray.words[1];
 		return (new  Float64Array(buf))[0];
 	}
 
@@ -140,7 +140,12 @@ Ably.Crypto = window.CryptoJS && (function() {
 			callback = key;
 			key = undefined;
 		}
-		if(!key) {
+		if(key) {
+			if (typeof(key) === 'string')
+				key = CryptoJS.enc.Hex.parse(key);
+			else
+				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
+		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
 					callback(err);
@@ -152,7 +157,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 		}
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM;
+		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.words.length * (4 * 8));
 		params.key = key;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
@@ -197,7 +202,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm.toUpperCase();
+		var algorithm = this.algorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });
@@ -261,16 +266,14 @@ Ably.Crypto = window.CryptoJS && (function() {
 			case TType.FALSE:
 				break;
 			case TType.INT32:
-				result = CryptoJS.lib.WordArray.create(1);
-				result[0] = tData.i32Data;
+				result = CryptoJS.lib.WordArray.create([tData.i32Data]);
 				break;
 			case TType.INT64:
-				result = CryptoJS.lib.WordArray.create(2);
-				result[0] = tData.i64Data / VAL32;
-				result[1] = tData.i64Data % VAL32;
+				result = CryptoJS.lib.WordArray.create([tData.i64Data / VAL32, tData.i64Data % VAL32]);
 				break;
 			case TType.DOUBLE:
-				result = DoubleToIEEE(tData.doubleData);
+				var tmpResult = DoubleToIEEE(tData.doubleData);
+				result = CryptoJS.lib.WordArray.create([tmpResult[0], tmpResult[1]]);
 				break;
 			case TType.BUFFER:
 				result = tData.binaryData;

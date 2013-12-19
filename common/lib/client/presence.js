@@ -99,7 +99,7 @@ var Presence = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
-			var key = memberKey.call(presence.clientId, presence.memberId);
+			var key = memberKey(presence.clientId, presence.memberId);
 			var member = new PresenceMessage(presence.clientId, Data.fromTData(presence.clientData), presence.memberId);
 			switch(presence.state) {
 				case presenceState.LEAVE:
@@ -107,7 +107,7 @@ var Presence = (function() {
 					break;
 				case presenceState.UPDATE:
 					if(presence.inheritMemberId)
-						delete this.members[memberKey.call(presence.clientId, presence.inheritMemberId)];
+						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
 				case presenceState.ENTER:
 					clientData = this.members[key] = member;
 					break;
@@ -125,9 +125,9 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setSuspended = function(connectionState) {
+	Presence.prototype.setSuspended = function(err) {
 		if(this.pendingPresence) {
-			this.pendingPresence.callback(ConnectionError[connectionState.state]);
+			this.pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
 	};

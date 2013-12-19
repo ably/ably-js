@@ -66,4 +66,5 @@ this.ThriftUtil = (function() {
 		}
 	};
 
+	return ThriftUtil;
 })();

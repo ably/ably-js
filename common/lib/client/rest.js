@@ -13,6 +13,9 @@ var Rest = (function() {
 			options = {key: options};
 		this.options = options;
 
+		if (typeof(this.options.useTextProtocol) === 'undefined')   // Default to text protocol in browser, binary in node.js
+			this.options.useTextProtocol = (typeof(window) === 'object') ? true : false;
+
 		/* process options */
 		if(options.key) {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
@@ -53,7 +56,9 @@ var Rest = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		(new PaginatedResource(this, '/stats', headers, params, identity)).get(callback);
+		(new PaginatedResource(this, '/stats', headers, params, function(body) {
+			return (typeof(body) === 'string') ? JSON.parse(body) : body;
+		})).get(callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {
@@ -76,9 +81,10 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
+			if (typeof(res) === 'string') res = JSON.parse(res);
 			var time = res[0];
 			if(!time) {
-				err = new Error('Internal error (unexpected result type from GET /time');
+				err = new Error('Internal error (unexpected result type from GET /time)');
 				err.statusCode = 500;
 				callback(err);
 				return;

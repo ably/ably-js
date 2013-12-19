@@ -424,7 +424,7 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current);
 		this.state = states[stateChange.current];
 		if(this.state.terminal)
-			this.error = stateChange.error;
+			this.error = stateChange.reason;
 		this.emit('connectionstate', stateChange, this.transport);
 	};
 
@@ -524,6 +524,8 @@ var ConnectionManager = (function() {
 			this.sendQueuedMessages();
 		else if(this.state.queueEvents)
 			this.queuePendingMessages();
+		else
+			this.realtime.channels.setSuspended(change.reason);
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
@@ -533,7 +535,7 @@ var ConnectionManager = (function() {
 		if(request.state == this.state.state)
 			return; /* silently do nothing */
 		if(this.state.terminal)
-			throw new Error(this.error.reason);
+			throw new Error(this.error);
 		if(request.state == 'connecting') {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
