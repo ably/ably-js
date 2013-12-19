@@ -33,7 +33,7 @@ function attachChannels(channels, callback) {
  */
 crypto_.single_send_binary = function(test) {
 	var realtime = createRealtime({
-		log: {level: 4},
+		//log: {level: 4},
 		transports: ['web_socket']
 	});
 	test.expect(2);
