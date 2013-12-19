@@ -13,6 +13,9 @@
     "ws": "git://github.com/einaros/ws.git",
     "hexy": "~0.2.5"
   },
+  "devDependencies": {
+    "ejs": "0.8.5"
+  },
   "engines": {
     "node": ">=0.6.19",
     "npm": ">= 1.1.0"
