@@ -51,3 +51,4 @@ includeScript('./lib/transport/nodecomettransport.js');
 
 var Realtime = module.exports = context.Realtime;
 Realtime.Crypto = context.Crypto;
+Realtime.Http = context.Http;
