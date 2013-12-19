@@ -19,6 +19,16 @@ var XHRTransport = (function() {
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	function responseHeaders(xhr) {
+		var rh = xhr.getAllResponseHeaders().trim().split('\n');
+		var headers = {};
+		for (var i=0; i<rh.length; i++) {
+			var h = rh[i].split(':');
+			headers[h[0].trim()] = h[1].trim();
+		}
+		return headers;
+	}
+
 	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
@@ -115,7 +125,7 @@ var XHRTransport = (function() {
 					} else {
 						responseBody = xhr.responseText;
 					}
-					callback(null, responseBody);
+					callback(null, responseBody, responseHeaders(xhr));
 					return;
 				}
 				if(xhr.status != 0) {
