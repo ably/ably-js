@@ -1,4 +1,363 @@
 (function() {
+var EventEmitter = (function() {
+
+	/* public constructor */
+	function EventEmitter() {
+		this.any = [];
+		this.events = {};
+		this.anyOnce = [];
+		this.eventsOnce = {};
+	}
+
+	/**
+	 * Add an event listener
+	 * @param event (optional) the name of the event to listen to
+	 *        if not supplied, all events trigger a call to the listener
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.on = function(event, listener) {
+		if(arguments.length == 1 && typeof(event) == 'function') {
+			this.any.push(event);
+		} else if(event === null) {
+			this.any.push(listener);
+		} else {
+			var listeners = this.events[event] = this.events[event] || [];
+			listeners.push(listener);
+		}
+	};
+
+	/**
+	 * Remove one or more event listeners
+	 * @param event (optional) the name of the event whose listener
+	 *        is to be removed. If not supplied, the listener is
+	 *        treated as an 'any' listener
+	 * @param listener (optional) the listener to remove. If not
+	 *        supplied, all listeners are removed.
+	 */
+	EventEmitter.prototype.off = function(event, listener) {
+		if(arguments.length == 0) {
+			this.any = [];
+			this.events = {};
+			this.anyOnce = [];
+			this.eventsOnce = {};
+			return;
+		}
+		if(arguments.length == 1) {
+			if(typeof(event) == 'function') {
+				/* we take this to be the listener and treat the event as "any" .. */
+				listener = event;
+				event = null;
+			}
+			/* ... or we take event to be the actual event name and listener to be all */
+		}
+		var listeners, idx = -1;
+		if(event === null) {
+			/* "any" case */
+			if(listener) {
+				if(!(listeners = this.any) || (idx = listeners.indexOf(listener)) == -1) {
+					if(listeners = this.anyOnce)
+						idx = listeners.indexOf(listener);
+				}
+				if(idx > -1)
+					listeners.splice(idx, 1);
+			} else {
+				this.any = [];
+				this.anyOnce = [];
+			}
+			return;
+		}
+		/* "normal* case where event is an actual event */
+		if(listener) {
+			var listeners, idx = -1;
+			if(!(listeners = this.events[event]) || (idx = listeners.indexOf(listener)) == -1) {
+				if(listeners = this.eventsOnce[event])
+					idx = listeners.indexOf(listener);
+			}
+			if(idx > -1)
+				listeners.splice(idx, 1);
+		} else {
+			delete this.events[event];
+			delete this.eventsOnce[event];
+		}
+	};
+
+	/**
+	 * Get the array of listeners for a given event; excludes once events
+	 * @param event (optional) the name of the event, or none for 'any'
+	 * @return array of events, or null if none
+	 */
+	EventEmitter.prototype.listeners = function(event) {
+		if(event) {
+			var listeners = (this.events[event] || []);
+			if(this.eventsOnce[event])
+				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
+			return listeners.length ? listeners : null;
+		}
+		return this.any.length ? this.any : null;
+	};
+
+	/**
+	 * Emit an event
+	 * @param event the event name
+	 * @param args the arguments to pass to the listener
+	 */
+	EventEmitter.prototype.emit = function(event  /* , args... */) {
+		var args = Array.prototype.slice.call(arguments, 1);
+		var eventThis = {event:event};
+		if(this.anyOnce.length) {
+			var listeners = this.anyOnce;
+			this.anyOnce = [];
+			for(var i = 0; i < listeners.length; i++)
+				listeners[i].apply(eventThis, args);
+		}
+		for(var i = 0; i < this.any.length; i++)
+			this.any[i].apply(eventThis, args);
+		var listeners = this.eventsOnce[event];
+		if(listeners) {
+			delete this.eventsOnce[event];
+			for(var i = 0; i < listeners.length; i++)
+				listeners[i].apply(eventThis, args);
+		}
+		var listeners = this.events[event];
+		if(listeners)
+			for(var i = 0; i < listeners.length; i++)
+				listeners[i].apply(eventThis, args);
+	};
+
+	/**
+	 * Listen for a single occurrence of an event
+	 * @param event the name of the event to listen to
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.once = function(event, listener) {
+		if(arguments.length == 1 && typeof(event) == 'function') {
+			this.anyOnce.push(event);
+		} else if(event === null) {
+			this.anyOnce.push(listener);
+		} else {
+			var listeners = this.eventsOnce[event] = (this.eventsOnce[event] || []);
+			listeners.push(listener);
+		}
+	};
+
+	return EventEmitter;
+})();
+var Utils = (function() {
+	var isBrowser = (typeof(window) == 'object');
+
+	function Utils() {}
+
+	/*
+	 * Add a set of properties to a target object
+	 * target: the target object
+	 * props:  an object whose enumerable properties are
+	 *         added, by reference only
+	 */
+	Utils.addProperties = Utils.mixin = function(target, src) {
+		for(var prop in src)
+			target[prop] = src[prop];
+		return target;
+	};
+
+	/*
+	 * Add a set of properties to a target object
+	 * target: the target object
+	 * props:  an object whose enumerable properties are
+	 *         added, by reference only
+	 */
+	Utils.copy = function(src) {
+		return Utils.mixin({}, src);
+	};
+
+	/*
+	 * Determine whether or not a given object is
+	 * an array.
+	 */
+	Utils.isArray = function(ob) {
+		return Object.prototype.toString.call(ob) == '[object Array]';
+	};
+
+	/*
+	 * Determine whether or not an object contains
+	 * any enumerable properties.
+	 * ob: the object
+	 */
+	Utils.isEmpty = function(ob) {
+		for(var prop in ob)
+			return false;
+		return true;
+	};
+
+	/*
+	 * Perform a simple shallow clone of an object.
+	 * Result is an object irrespective of whether
+	 * the input is an object or array. All
+	 * enumerable properties are copied.
+	 * ob: the object
+	 */
+	Utils.shallowClone = function(ob) {
+		var result = new Object();
+		for(var prop in ob)
+			result[prop] = ob[prop];
+		return result;
+	};
+
+	/*
+	 * Clone an object by creating a new object with the
+	 * given object as its prototype. Optionally
+	 * a set of additional own properties can be
+	 * supplied to be added to the newly created clone.
+	 * ob:            the object to be cloned
+	 * ownProperties: optional object with additional
+	 *                properties to add
+	 */
+	Utils.prototypicalClone = function(ob, ownProperties) {
+		function F() {}
+		F.prototype = ob;
+		var result = new F();
+		if(ownProperties)
+			Utils.mixin(result, ownProperties);
+		return result;
+	};
+
+	/*
+	 * Declare a constructor to represent a subclass
+	 * of another constructor
+	 * See node.js util.inherits
+	 */
+	Utils.inherits = function(ctor, superCtor) {
+		ctor.super_ = superCtor;
+		ctor.prototype = Object.create(superCtor.prototype, {
+			constructor: {
+				value: ctor,
+				enumerable: false,
+				writable: true,
+				configurable: true
+			}
+		});
+	};
+
+	/*
+	 * Determine whether or not an object has an enumerable
+	 * property whose value equals a given value.
+	 * ob:  the object
+	 * val: the value to find
+	 */
+	Utils.containsValue = function(ob, val) {
+		for(var i in ob) {
+			if(ob[i] == val)
+				return true;
+		}
+		return false;
+	};
+
+	Utils.intersect = function(arr, ob) { return Array.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
+
+	Utils.arrIntersect = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var member = arr1[i];
+			if(arr2.indexOf(member) != -1)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrIntersectOb = function(arr, ob) {
+		var result = [];
+		for(var i = 0; i < arr.length; i++) {
+			var member = arr[i];
+			if(member in ob)
+				result.push(member);
+		}
+		return result;
+	};
+
+	Utils.arrSubtract = function(arr1, arr2) {
+		var result = [];
+		for(var i = 0; i < arr1.length; i++) {
+			var element = arr1[i];
+			if(arr2.indexOf(element) == -1)
+				result.push(element);
+		}
+		return result;
+	};
+
+	/*
+	 * Construct an array of the keys of the enumerable
+	 * properties of a given object, optionally limited
+	 * to only the own properties.
+	 * ob:      the object
+	 * ownOnly: boolean, get own properties only
+	 */
+	Utils.keysArray = function(ob, ownOnly) {
+		var result = [];
+		for(var prop in ob) {
+			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			result.push(prop);
+		}
+		return result.length ? result : undefined;
+	};
+
+	/*
+	 * Construct an array of the values of the enumerable
+	 * properties of a given object, optionally limited
+	 * to only the own properties.
+	 * ob:      the object
+	 * ownOnly: boolean, get own properties only
+	 */
+	Utils.valuesArray = function(ob, ownOnly) {
+		var result = [];
+		for(var prop in ob) {
+			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			result.push(ob[prop]);
+		}
+		return result.length ? result : undefined;
+	};
+
+	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
+
+	var contentTypes = {
+		json:   'application/json',
+		jsonp:  'application/javascript',
+		xml:    'application/xml',
+		html:   'text/html',
+		thrift: 'application/x-thrift'
+	};
+
+	Utils.defaultGetHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+		return {
+			accept: accept
+		};
+	};
+
+	Utils.defaultPostHeaders = function(binary) {
+		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+		return {
+			accept: accept,
+			'content-type': binary ? contentTypes.thrift : contentTypes.json
+		};
+	};
+
+	Utils.arrRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length));
+	};
+
+	Utils.parseQueryString = function(query) {
+		var match,
+			search = /([^&=]+)=?([^&]*)/g,
+			result = {};
+
+		while (match = search.exec(query))
+			result[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
+
+ 		return result;
+	};
+
+	return Utils;
+})();
+(function() {
 	"use strict";
 
 	// Ably library should have been included if running in a browser prior to including this
@@ -73,7 +432,7 @@
 		var tlsorigin = options.tlshost || '';
 		var encrypted = options.encrypted || false;
 		var opts = {
-			key: applicationKey, encrypted: encrypted //,log:{level:4}
+			key: applicationKey, encrypted: encrypted ,log:{level:4}
 		};
 		if (options.ablyClientId) opts.clientId = options.ablyClientId;
 		if (options.authEndpoint) opts.authUrl = options.authEndpoint;
@@ -446,4 +805,5 @@
 		module.exports = Pusher;
 	else
 		window.Pusher = Pusher;
+})();
 })();

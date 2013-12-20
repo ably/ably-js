@@ -189,6 +189,9 @@ var Auth = (function() {
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
 	 *
+	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 *                  requestToken request
+	 *
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.requestToken = function(options, callback) {
@@ -237,10 +240,16 @@ var Auth = (function() {
 
 		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/requestToken'; };
 		var tokenRequest = function(ob, tokenCb) {
-			if(Http.post)
-				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
-			else
-				Http.get(rest, tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
+			var requestHeaders;
+			if(Http.post) {
+				requestHeaders = Utils.defaultPostHeaders();
+				if(options.requestHeaders) Utils.mixin(requestHeaders, options.requestHeaders);
+				Http.post(rest, tokenUri, requestHeaders, ob, null, tokenCb);
+			} else {
+				requestHeaders = Utils.defaultGetHeaders();
+				if(options.requestHeaders) Utils.mixin(requestHeaders, options.requestHeaders);
+				Http.get(rest, tokenUri, requestHeaders, ob, tokenCb);
+			}
 		};
 		tokenRequestCallback(requestParams, function(err, signedRequest) {
 			if(err) {

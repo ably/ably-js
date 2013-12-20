@@ -2,7 +2,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var messagetypes = clientmessage_refs;
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
-	var DEFAULT_ALGORITHM = "AES";
+	var DEFAULT_ALGORITHM = "aes";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -140,7 +140,12 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			callback = key;
 			key = undefined;
 		}
-		if(!key) {
+		if(key) {
+			if (typeof(key) === 'string')
+				key = CryptoJS.enc.Hex.parse(key);
+			else
+				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
+		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
 					callback(err);
@@ -152,7 +157,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 		}
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM;
+		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.words.length * (4 * 8));
 		params.key = key;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
@@ -197,7 +202,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm.toUpperCase();
+		var algorithm = this.algorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });

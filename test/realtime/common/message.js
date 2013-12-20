@@ -139,74 +139,109 @@ exports.setup = function(base) {
 		}, 2000);
 	};
 
-	rExports.wsxhrpublish = function(test) {
-		var count = 5;
-		var cbCount = 5;
-		var timer;
-		var checkFinish = function() {
-			if(count <= 0 && cbCount <= 0) {
-				clearInterval(timer);
-				test.done();
-				realtime.close();
-			}
-		};
-		var realtime = base.realtime({
-			//log: {level: 4},
-			transports : ['xhr'],
-			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
-		});
-		test.expect(count);
-		var channel = realtime.channels.get('wspublish');
-		/* subscribe to event */
-		channel.subscribe('event0', function(msg) {
-			test.ok(true, 'Received event0');
-			--count;
-			checkFinish();
-		});
-		timer = setInterval(function() {
-			console.log('sending: ' + count);
-			channel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
-				console.log('publish callback called');
-				--cbCount;
+	if (base.isBrowser) {
+		rExports.wsxhrpublish = function(test) {
+			var count = 5;
+			var cbCount = 5;
+			var timer;
+			var checkFinish = function() {
+				if(count <= 0 && cbCount <= 0) {
+					clearInterval(timer);
+					test.done();
+					realtime.close();
+				}
+			};
+			var realtime = base.realtime({
+				//log: {level: 4},
+				transports : ['xhr'],
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
+			});
+			test.expect(count);
+			var channel = realtime.channels.get('wspublish');
+			/* subscribe to event */
+			channel.subscribe('event0', function(msg) {
+				test.ok(true, 'Received event0');
+				--count;
 				checkFinish();
 			});
-		}, 2000);
-	};
-
-
-	rExports.wsjsonppublish = function(test) {
-		var count = 5;
-		var cbCount = 5;
-		var timer;
-		var checkFinish = function() {
-			if(count <= 0 && cbCount <= 0) {
-				clearInterval(timer);
-				test.done();
-				realtime.close();
-			}
+			timer = setInterval(function() {
+				console.log('sending: ' + count);
+				channel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
+					console.log('publish callback called');
+					--cbCount;
+					checkFinish();
+				});
+			}, 2000);
 		};
-		var realtime = base.realtime({
-			//log: {level: 4},
-			transports : ['jsonp'],
-			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
-		});
-		test.expect(count);
-		var channel = realtime.channels.get('wspublish');
-		/* subscribe to event */
-		channel.subscribe('event0', function(msg) {
-			test.ok(true, 'Received event0');
-			--count;
-			checkFinish();
-		});
-		timer = setInterval(function() {
-			console.log('sending: ' + count);
-			channel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
-				console.log('publish callback called');
-				--cbCount;
+
+		rExports.wsjsonppublish = function(test) {
+			var count = 5;
+			var cbCount = 5;
+			var timer;
+			var checkFinish = function() {
+				if(count <= 0 && cbCount <= 0) {
+					clearInterval(timer);
+					test.done();
+					realtime.close();
+				}
+			};
+			var realtime = base.realtime({
+				//log: {level: 4},
+				transports : ['jsonp'],
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
+			});
+			test.expect(count);
+			var channel = realtime.channels.get('wspublish');
+			/* subscribe to event */
+			channel.subscribe('event0', function(msg) {
+				test.ok(true, 'Received event0');
+				--count;
 				checkFinish();
 			});
-		}, 2000);
-	};
+			timer = setInterval(function() {
+				console.log('sending: ' + count);
+				channel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
+					console.log('publish callback called');
+					--cbCount;
+					checkFinish();
+				});
+			}, 2000);
+		};
+	} else {
+		rExports.wsjsonppublish = function(test) {
+			var count = 5;
+			var cbCount = 5;
+			var timer;
+			var checkFinish = function() {
+				if(count <= 0 && cbCount <= 0) {
+					clearInterval(timer);
+					test.done();
+					realtime.close();
+				}
+			};
+			var realtime = base.realtime({
+				//log: {level: 4},
+				transports : ['comet'],
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
+			});
+			test.expect(count);
+			var channel = realtime.channels.get('wspublish');
+			/* subscribe to event */
+			channel.subscribe('event0', function(msg) {
+				test.ok(true, 'Received event0');
+				--count;
+				checkFinish();
+			});
+			timer = setInterval(function() {
+				console.log('sending: ' + count);
+				channel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
+					console.log('publish callback called');
+					--cbCount;
+					checkFinish();
+				});
+			}, 2000);
+		};
+	}
 
 	return rExports;
 };

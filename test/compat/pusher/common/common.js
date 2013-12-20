@@ -13,7 +13,8 @@ exports.setup = function() {
 
 	if (isBrowser) {
 		var http = null;
-		var PUBNUB = window.PUBNUB;
+		var Pusher = window.Pusher;
+		var Ably = window.Ably;
 
 		var adminHost = testVars.realtimeHost || 'localhost';
 		var adminPort = testVars.realtimePort || '8080';
@@ -45,7 +46,8 @@ exports.setup = function() {
 		var toBase64 = Base64.encode;
 	} else {
 		var http = require('http');
-		var PUBNUB = require('../../../../browser/compat/pubnub.js');
+		var Pusher = require('../../../../browser/compat/pusher.js');
+		var Ably = require('../../../..');
 
 		var adminHost = process.env.ADMIN_ADDRESS || 'localhost';
 		var adminPort = process.env.ADMIN_PORT || '8080';
@@ -77,15 +79,13 @@ exports.setup = function() {
 		var toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
 	}
 
-	var pubnubOpts = {
+	var pusherOpts = {
 		origin       : wsHost + ':' + port,
 		tlsorigin    : wsHost + ':' + tlsPort
 	};
 
 	rExports.setupRefcount = 0;
-	rExports.cipherKey = [0,0,0,0];
-	rExports.getPubnub = function() { return rExports.pubnub; }
-
+	rExports.getPusher = function() { return rExports.pusher; }
 	rExports.randomid = function randomid(length) {
 		var text = "";
 		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -125,6 +125,56 @@ exports.setup = function() {
 		return result;
 	};
 
+	rExports.getAblyRest = function() {
+		var origin = pusherOpts.origin;
+		var tlsorigin = pusherOpts.tlsorigin;
+		var opts = {
+			key: rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0.value,
+			encrypted: false
+		};
+		if (origin && (origin.length != 0)) {
+			var p = origin.split(':');
+			opts.host = opts.wsHost = p[0];
+			if (p.length > 1)
+				opts.port = p[1];
+		}
+		if (tlsorigin && (tlsorigin.length != 0)) {
+			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
+			var p = tlsorigin.split(':');
+			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+		} else {
+			opts.tlsPort = 8081;
+		}
+		var Rest = Ably.Realtime.super_;
+		return new Rest(opts);
+	};
+
+	rExports.getAblyRealtime = function(clientId) {
+		var origin = pusherOpts.origin;
+		var tlsorigin = pusherOpts.tlsorigin;
+		var opts = {
+			key: rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0.value,
+			encrypted: false
+			//,log:{level:4}
+		};
+		if (origin && (origin.length != 0)) {
+			var p = origin.split(':');
+			opts.host = opts.wsHost = p[0];
+			if (p.length > 1)
+				opts.port = p[1];
+		}
+		if (tlsorigin && (tlsorigin.length != 0)) {
+			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
+			var p = tlsorigin.split(':');
+			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
+		} else {
+			opts.tlsPort = 8081;
+		}
+		if (clientId)
+			opts.clientId = clientId;
+		return new Ably.Realtime(opts);
+	};
+
 	rExports.testVars = {};
 
 	var createXHR = function() {
@@ -136,30 +186,24 @@ exports.setup = function() {
 		return null;
 	};
 
-	var _setupTestPubnub = function(use_secure, callback) {
+	var _setupTestPusher = function(callback) {
 		var key = rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0.value;
-		if (use_secure) {
-			rExports.pubnub = PUBNUB.secure({
-				ably_key      : key,
-				origin        : pubnubOpts.origin,
-				tlsorigin     : pubnubOpts.tlsorigin,
-				uuid          : 'client-'+rExports.randomid(6),
-				cipher_key    : rExports.cipherKey
-			});
-		} else {
-			rExports.pubnub = PUBNUB.init({
-				ably_key      : key,
-				origin        : pubnubOpts.origin,
-				tlsorigin     : pubnubOpts.tlsorigin,
-				uuid          : 'client-'+rExports.randomid(6)
-			});
-		}
-		if (rExports.pubnub == null)
-			callback('Failed to create pubnub instance', null);
-		else if (rExports.pubnub !== PUBNUB)
-			callback('Pubnub instance error', null);
+		rExports.pusher = new Pusher(key, {
+			encrypted : false,
+			//authEndpoint : 'http://angrybadger.net:7462/pusher/auth',
+			authTransport : 'ajax',
+			auth : {
+				params : { CSRFToken: '1234567890' },
+				headers : { 'X-CSRF-Token' : '' }
+			},
+			host : pusherOpts.origin,
+			tlshost : pusherOpts.tlsorigin,
+			ablyClientId : 'test-user-'+exports.randomid(6)
+		});
+		if (rExports.pusher == null)
+			callback('Failed to create pusher instance', null);
 		else
-			callback(null, rExports.pubnub);
+			callback(null, rExports.pusher);
 	};
 
 	var _setupTestAccount = function(callback) {
@@ -240,14 +284,10 @@ exports.setup = function() {
 		});
 	};
 
-	var _clearTestPubnub = function(callback) {
-		rExports.pubnub.shutdown(function(state) {
-			if (state == 'closed')
-				callback(null);
-			else
-				callback('Error: Final pubnub state is not closed');
-			rExports.pubnub = undefined;
-		});
+	var _clearTestPusher = function(callback) {
+		rExports.pusher.disconnect();
+		rExports.pusher = undefined;
+		callback(null);
 	};
 
 	var _clearTestAccount = function(callback) {
@@ -260,7 +300,7 @@ exports.setup = function() {
 		httpReq(delOptions, function(err, resp) { callback(err); });
 	};
 
-	var _setupTest = function(test, use_secure) {
+	rExports.setupTest = function(test) {
 		if (rExports.setupRefcount++ != 0) {
 			test.done();
 			return;
@@ -273,7 +313,7 @@ exports.setup = function() {
 				test.done();
 				return;
 			}
-			_setupTestPubnub(use_secure, function(err, pn) {
+			_setupTestPusher(function(err, pn) {
 				if(err) {
 					test.ok(false, displayError(err));
 					test.done();
@@ -284,10 +324,7 @@ exports.setup = function() {
 				test.done();
 			});
 		});
-	};
-
-	rExports.setupTest = function(test) { _setupTest(test, false); }
-	rExports.setupTestSecure = function(test) { _setupTest(test, true); }
+	}
 
 	rExports.clearTest = function(test) {
 		if (--rExports.setupRefcount != 0) {
@@ -303,7 +340,7 @@ exports.setup = function() {
 				test.done();
 				return;
 			}
-			_clearTestPubnub(function(err) {
+			_clearTestPusher(function(err) {
 				if(err) {
 					test.ok(false, displayError(err));
 					test.done();
@@ -360,3 +397,4 @@ exports.setup = function() {
 
 	return rExports;
 };
+
