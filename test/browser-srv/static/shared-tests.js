@@ -9,6 +9,7 @@ function sharedTestsClass() {
 			port: testVars.realtimePort,
 			tlsPort: testVars.realtimeTlsPort,
 			key: testVars.key0Str,
+			encrypted: testVars.useTls,
 			flashTransport: testVars.flashTransport
 		};
 		if (transports) options.transports = transports;
@@ -68,7 +69,9 @@ function sharedTestsClass() {
 				 * listen for the heartbeat event */
 				var connectionManager = ably.connection.connectionManager;
 				connectionManager.on('transport.active', function (transport) {
-					if ((transport.toString().indexOf('ws://') > -1) || (transport.toString().indexOf('/comet/') > -1))
+					if ((transport.toString().indexOf('ws://') > -1)
+						|| (transport.toString().indexOf('/comet/') > -1)
+						|| (transport.toString().indexOf('wss://') > -1))
 						transport.once('heartbeat', function () {
 							heartbeatTimeout.stop();
 							test.ok(true, 'verify ' + transport + ' heartbeat');
