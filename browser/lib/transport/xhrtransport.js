@@ -39,7 +39,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -78,7 +78,7 @@ var XHRTransport = (function() {
 		var xhr = this.xhr = createXHR();
 		if(binary) {
 			xhr.responseType = 'arraybuffer';
-			body = body.view;
+			if (body) body = body.view;
 		}
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
