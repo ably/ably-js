@@ -72,7 +72,7 @@ this.Http = (function() {
 
 		/* if we have an absolute url, we just try once */
 		if(typeof(uri) == 'string') {
-			tryGet(uri, callback);
+			tryPost(uri, callback);
 			return;
 		}
 
@@ -89,12 +89,12 @@ this.Http = (function() {
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		tryPost(hosts.shift(), function(err, statusCode, body) {
+		tryPost(uri(hosts.shift()), function(err, statusCode, body) {
 			if(err) {
 				var code = err.code;
 				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
 					/* we should use a fallback host if available */
-					tryPost(hosts, callback);
+					tryPost(uri(hosts.shift()), callback);
 					return;
 				}
 			}
