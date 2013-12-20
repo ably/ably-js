@@ -15,7 +15,7 @@
 	var cipherParamsPendingMessages = [];
 	var PUBNUB = {};
 	var noop = function() {};
-	var log = (console && console.log) || noop;
+	var log = (console && console.log.bind(console)) || noop;
 
 	// Ably library should have been included if running in a browser prior to including this
 	// compatibility library:
