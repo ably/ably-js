@@ -107,6 +107,11 @@
         <file name="pusher-epilogue.js"/>
       </filelist>
     </concat>
+    <concat destfile="lib/compat-pusher.md">
+      <filelist dir="${basedir}/compat">
+        <file name="pusher.md"/>
+      </filelist>
+    </concat>
   </target>
 
   <!-- Use closure compiler to minify JavaScript -->
@@ -124,6 +129,11 @@
     <concat destfile="lib/compat-pubnub.js">
       <filelist dir="${basedir}/compat">
         <file name="pubnub.js"/>
+      </filelist>
+    </concat>
+    <concat destfile="lib/compat-pubnub.md">
+      <filelist dir="${basedir}/compat">
+        <file name="pubnub.md"/>
       </filelist>
     </concat>
   </target>
