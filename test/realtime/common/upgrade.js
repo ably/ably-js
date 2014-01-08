@@ -6,6 +6,7 @@ exports.setup = function(base) {
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
 	var actions = base.messagetypes.TAction;
+	var wsString = base.useTls ? 'wss://' : 'ws://';
 
 	rExports.setupupgrade = function(test) {
 		test.expect(1);
@@ -43,7 +44,7 @@ exports.setup = function(base) {
 					test.ok(true, 'verify comet transport deactivated');
 			});
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('ws://') > -1) {
+				if(transport.toString().indexOf(wsString) > -1) {
 					clearTimeout(failTimer);
 					var closeFn = function() {
 						realtime.close();
@@ -92,7 +93,7 @@ exports.setup = function(base) {
 			var failTimer;
 	        var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('ws://') > -1)
+				if(transport.toString().indexOf(wsString) > -1)
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
@@ -135,7 +136,7 @@ exports.setup = function(base) {
 			var failTimer;
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('ws://') > -1)
+				if(transport.toString().indexOf(wsString) > -1)
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
@@ -185,7 +186,7 @@ exports.setup = function(base) {
 						test.done();
 						realtime.close();
 					});
-				if(transport.toString().indexOf('ws://') > -1)
+				if(transport.toString().indexOf(wsString) > -1)
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						/* wait a couple of seconds to give it time
@@ -238,7 +239,7 @@ exports.setup = function(base) {
 						test.done();
 						realtime.close();
 					});
-				if(transport.toString().indexOf('ws://') > -1)
+				if(transport.toString().indexOf(wsString) > -1)
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						/* wait a couple of seconds to give it time
@@ -352,7 +353,7 @@ exports.setup = function(base) {
 				var restChannel = rest.channels.get('publishpostupgrade0');
 				var connectionManager = realtime.connection.connectionManager;
 				connectionManager.on('transport.active', function(transport) {
-					if(transport.toString().indexOf('ws://') > -1) {
+					if(transport.toString().indexOf(wsString) > -1) {
 						if(rtChannel.state == 'attached') {
 							console.log('*** publishing (channel attached on transport active) ...');
 							restChannel.publish('event0', testMsg);
@@ -423,7 +424,7 @@ exports.setup = function(base) {
 	                }
 				});
 				connectionManager.on('transport.active', function(transport) {
-					if(transport.toString().indexOf('ws://') > -1) {
+					if(transport.toString().indexOf(wsString) > -1) {
 						if(rtChannel.state == 'attached') {
 							console.log('*** publishing (channel attached on transport active) ...');
 							restChannel.publish('event0', testMsg);

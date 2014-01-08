@@ -15,7 +15,7 @@
 	var cipherParamsPendingMessages = [];
 	var PUBNUB = {};
 	var noop = function() {};
-	var log = (console && console.log) || noop;
+	var log = (console && console.log.bind(console)) || noop;
 
 	// Ably library should have been included if running in a browser prior to including this
 	// compatibility library:
@@ -127,9 +127,8 @@
 		if (tlsorigin && (tlsorigin.length != 0)) {
 			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
 			var p = tlsorigin.split(':');
-			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
-		} else {
-			opts.tlsPort = 8081;
+			if (p.length > 1)
+				opts.tlsPort = p[1];
 		}
 
 		// Start up Ably connection
@@ -158,6 +157,18 @@
 
 		return PUBNUB;
 	}
+
+	/**
+	 * Get the uuid that PUBNUB was initialised with. Implemented in standard PUBNUB library but not documented.
+	 *
+	 * Compatibility:
+	 * TBD
+	 */
+	PUBNUB.get_uuid = function() {
+		if (PUBNUB.ablyOptions)
+			return PUBNUB.ablyOptions.clientId;
+		return null;
+	};
 
 	/**
 	 * Close down the pubnub instance, dropping any connections to the server. Non-standard

@@ -35,7 +35,7 @@ exports.setup = function(base) {
 				return;
 			}
 
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			channel.setOptions({encrypted:true, cipherParams: params});
 			channel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
@@ -61,7 +61,7 @@ exports.setup = function(base) {
 			messageText = 'Test message (single_send_text)';
 
 		Crypto.getDefaultParams(function(err, params) {
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			if(err) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
@@ -91,7 +91,7 @@ exports.setup = function(base) {
 
 		Crypto.generateRandom(256 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'AES');
+				test.equal(params.algorithm, 'aes-256');
 				if(err) {
 					test.fail('Unable to get cipher params; err = ' + e);
 					return;
@@ -123,7 +123,7 @@ exports.setup = function(base) {
 
 		Crypto.generateRandom(256 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'AES');
+				test.equal(params.algorithm, 'aes-256');
 				if(err) {
 					test.fail('Unable to get cipher params; err = ' + e);
 					return;
@@ -153,7 +153,7 @@ exports.setup = function(base) {
 
 		Crypto.generateRandom(128 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'AES');
+				test.equal(params.algorithm, 'aes-128');
 				if(err) {
 					test.fail('Unable to get cipher params; err = ' + e);
 					return;
@@ -225,7 +225,7 @@ exports.setup = function(base) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {
@@ -266,7 +266,7 @@ exports.setup = function(base) {
 				test.fail('Unable to get cipher params; err = ' + e);
 				return;
 			}
-			test.equal(params.algorithm, 'AES');
+			test.equal(params.algorithm, 'aes-128');
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.subscribe('event0', function(msg) {

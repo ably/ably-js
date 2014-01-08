@@ -88,9 +88,8 @@
 		if (tlsorigin && (tlsorigin.length != 0)) {
 			// Note: Only the port number is used here, the hostnames are the same as for non-TLS
 			var p = tlsorigin.split(':');
-			opts.tlsPort = (p.length > 1) ? p[1] : 8081;
-		} else {
-			opts.tlsPort = 8081;
+			if (p.length > 1)
+				opts.tlsPort = p[1];
 		}
 
 		var ably = this.ably = new Ably.Realtime(opts);

@@ -1,10 +1,10 @@
-var http = require('http');
+var https = require('https');
 
 exports.createAccountAppAndKeys = function (testVars, console, callback) {
 	var postData = '{ "keys": [ {} ] }';
 	var postOptions = {
 		host: testVars.realtimeHost,
-		port: testVars.realtimePort,
+		port: testVars.realtimeTlsPort,
 		path: '/apps',
 		method: 'POST',
 		headers: {
@@ -14,7 +14,7 @@ exports.createAccountAppAndKeys = function (testVars, console, callback) {
 	};
 
 	var response = '';
-	var request = http.request(postOptions, function (res) {
+	var request = https.request(postOptions, function (res) {
 		res.setEncoding('utf8');
 		res.on('data', function (chunk) {
 			response += chunk;
