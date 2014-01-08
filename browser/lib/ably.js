@@ -4316,7 +4316,7 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 		callback = callback || noop;
 		var binary = (headers && headers.accept != 'application/json');
 
-		Http.Request(uri, params, headers, null, binary, cb);
+		Http.Request(uri, params, headers, null, binary, callback);
 	};
 
 	/**
@@ -4372,7 +4372,7 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 		callback = callback || noop;
 		var binary = (headers && headers.accept != 'application/json');
 
-		Http.Request(uri, params, headers, body, binary, cb);
+		Http.Request(uri, params, headers, body, binary, callback);
 	};
 
 	Http.supportsAuthHeaders = false;
@@ -4813,7 +4813,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 		if(key) {
 			if (typeof(key) === 'string')
 				key = CryptoJS.enc.Hex.parse(key);
-			else
+			else if (!key.words)
 				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
 		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
@@ -8782,7 +8782,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -8821,7 +8821,7 @@ var XHRTransport = (function() {
 		var xhr = this.xhr = createXHR();
 		if(binary) {
 			xhr.responseType = 'arraybuffer';
-			body = body.view;
+			if (body) body = body.view;
 		}
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
