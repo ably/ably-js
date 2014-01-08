@@ -44,7 +44,7 @@ exports.setup = function(base) {
 		var key1Id = base.testVars.testAppId + '.' + base.testVars.testKey1Id;
 		var testKeyOpts = {keyId: key1Id, keyValue: base.testVars.testKey1.value};
 		var testCapability = JSON.parse(base.testVars.testKey1.capability);
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -62,8 +62,8 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key1Id = base.testVars.testAppId + '.' + base.testVars.testKey1Id;
 		var testKeyOpts = {keyId: key1Id, keyValue: base.testVars.testKey1.value};
-		var testCapability = testKeyOpts.capability = JSON.parse(base.testVars.testKey1.capability);
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		var testCapability = JSON.parse(base.testVars.testKey1.capability);
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -81,8 +81,8 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key1Id = base.testVars.testAppId + '.' + base.testVars.testKey1Id;
 		var testKeyOpts = {keyId: key1Id, keyValue: base.testVars.testKey1.value};
-		var testCapability = testKeyOpts.capability = {testchannel:['subscribe']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		var testCapability = {testchannel:['subscribe']};
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
 				test.done();
@@ -100,8 +100,8 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key4Id = base.testVars.testAppId + '.' + base.testVars.testKey4Id;
 		var testKeyOpts = {keyId: key4Id, keyValue: base.testVars.testKey4.value};
-		var testCapability = testKeyOpts.capability = {channelx:['publish']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		var testCapability = {channelx:['publish']};
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
 				test.done();
@@ -119,9 +119,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key4Id = base.testVars.testAppId + '.' + base.testVars.testKey4Id;
 		var testKeyOpts = {keyId: key4Id, keyValue: base.testVars.testKey4.value};
-		var testCapability = testKeyOpts.capability = {channel2:['presence', 'subscribe']};
+		var testCapability = {channel2:['presence', 'subscribe']};
 		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -139,12 +139,12 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key4Id = base.testVars.testAppId + '.' + base.testVars.testKey4Id;
 		var testKeyOpts = {keyId: key4Id, keyValue: base.testVars.testKey4.value};
-		var testCapability = testKeyOpts.capability = {
+		var testCapability = {
 			channel2:['presence', 'subscribe'],
 			channelx:['presence', 'subscribe']
 		};
 		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -162,9 +162,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key4Id = base.testVars.testAppId + '.' + base.testVars.testKey4Id;
 		var testKeyOpts = {keyId: key4Id, keyValue: base.testVars.testKey4.value};
-		var testCapability = testKeyOpts.capability = {channel2:['*']};
+		var testCapability = {channel2:['*']};
 		var expectedIntersection = {channel2:['publish', 'subscribe']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -178,9 +178,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key4Id = base.testVars.testAppId + '.' + base.testVars.testKey4Id;
 		var testKeyOpts = {keyId: key4Id, keyValue: base.testVars.testKey4.value};
-		var testCapability = testKeyOpts.capability = {channel6:['publish', 'subscribe']};
+		var testCapability = {channel6:['publish', 'subscribe']};
 		var expectedIntersection = {channel6:['publish', 'subscribe']};
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -198,9 +198,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key2Id = base.testVars.testAppId + '.' + base.testVars.testKey2Id;
 		var testKeyOpts = {keyId: key2Id, keyValue: base.testVars.testKey2.value};
-		var testCapability = testKeyOpts.capability = {cansubscribe:['subscribe']};
+		var testCapability = {cansubscribe:['subscribe']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -214,9 +214,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key2Id = base.testVars.testAppId + '.' + base.testVars.testKey2Id;
 		var testKeyOpts = {keyId: key2Id, keyValue: base.testVars.testKey2.value};
-		var testCapability = testKeyOpts.capability = {'canpublish:check':['publish']};
+		var testCapability = {'canpublish:check':['publish']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -230,9 +230,9 @@ exports.setup = function(base) {
 		test.expect(1);
 		var key2Id = base.testVars.testAppId + '.' + base.testVars.testKey2Id;
 		var testKeyOpts = {keyId: key2Id, keyValue: base.testVars.testKey2.value};
-		var testCapability = testKeyOpts.capability = {'cansubscribe:*':['subscribe']};
+		var testCapability = {'cansubscribe:*':['subscribe']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();

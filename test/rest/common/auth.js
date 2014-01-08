@@ -54,7 +54,7 @@ exports.setup = function(base) {
 	 */
 	rExports.authbase1 = function(test) {
 		test.expect(1);
-		rest.auth.requestToken({}, function(err, tokenDetails) {
+		rest.auth.requestToken(null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -137,7 +137,7 @@ exports.setup = function(base) {
 	 */
 	rExports.authtime2 = function(test) {
 		test.expect(1);
-		rest.auth.requestToken({queryTime:true}, function(err, tokenDetails) {
+		rest.auth.requestToken({queryTime:true}, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -182,7 +182,7 @@ exports.setup = function(base) {
 	rExports.authclientid0 = function(test) {
 		test.expect(1);
 		var testClientId = 'test client id';
-		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+		rest.auth.requestToken({client_id:testClientId}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -227,7 +227,7 @@ exports.setup = function(base) {
 		var key1Id = base.testVars.testAppId + '.' + base.testVars.testKey1Id;
 		var testKeyOpts = {keyId: key1Id, keyValue: base.testVars.testKey1.value};
 		var testCapability = JSON.parse(base.testVars.testKey1.capability);
-		rest.auth.requestToken(testKeyOpts, function(err, tokenDetails) {
+		rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -240,6 +240,54 @@ exports.setup = function(base) {
 			test.equal(stripQualifier(tokenDetails.key), base.testVars.testKey1Id, 'Verify token key');
 			test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
 			test.done();
+		});
+	};
+
+	/*
+	 * Token generation with explicit auth
+	 */
+	rExports.authexplicit_simple = function(test) {
+		test.expect(1);
+		rest.auth.getAuthHeaders(function(err, authHeaders) {
+			rest.auth.requestToken({requestHeaders: authHeaders}, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				test.expect(4);
+				test.ok((tokenDetails.id), 'Verify token id');
+				test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
+				test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
+				test.equal(stripQualifier(tokenDetails.key), base.testVars.testKey0Id, 'Verify token key');
+				test.done();
+			});
+		});
+	};
+
+	/*
+	 * Token generation with explicit auth, different key
+	 */
+	rExports.authexplicit_key = function(test) {
+		test.expect(1);
+		rest.auth.getAuthHeaders(function(err, authHeaders) {
+			var key1Id = base.testVars.testAppId + '.' + base.testVars.testKey1Id;
+			var testKeyOpts = {keyId: key1Id, keyValue: base.testVars.testKey1.value, requestHeaders: authHeaders};
+			var testCapability = JSON.parse(base.testVars.testKey1.capability);
+			rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				test.expect(5);
+				test.ok((tokenDetails.id), 'Verify token id');
+				test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
+				test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
+				test.equal(stripQualifier(tokenDetails.key), base.testVars.testKey1Id, 'Verify token key');
+				test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+				test.done();
+			});
 		});
 	};
 
