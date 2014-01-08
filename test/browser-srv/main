@@ -37,7 +37,8 @@ var opts = {
     setHost: function(host) {
       this.realtimeHost = host;
       this.restHost = host;
-    }
+    },
+    useTls: true
   }
 };
 
@@ -68,6 +69,8 @@ for(var i = 2; i < process.argv.length; i++) {
     opts.testVars.realtimePort = '8080';
     opts.testVars.realtimeTlsPort = '8081';
   }
+  if(process.argv[i] == '--no-tls')
+    opts.testVars.useTls = false;
   if(process.argv[i] == '--exit-after-tests-complete')
     opts.exitAfterTests = true;
   if(process.argv[i] == '--pipe-json') {

@@ -1,10 +1,10 @@
-var http = require('http');
+var https = require('https');
 
 exports.deleteAccount = function (testVars, testAccount, console, callback) {
 	var auth = 'Basic ' + new Buffer(testAccount.appId + '.' + testAccount.key0Id + ':' + testAccount.key0Value).toString('base64');
 	var delOptions = {
 		host: testVars.realtimeHost,
-		port: testVars.realtimePort,
+		port: testVars.realtimeTlsPort,
 		path: '/apps/' + testAccount.appId,
 		method: 'DELETE',
 		headers: {
@@ -17,7 +17,7 @@ exports.deleteAccount = function (testVars, testAccount, console, callback) {
 	});
 
 	var response = '';
-	var request = http.request(delOptions, function (res) {
+	var request = https.request(delOptions, function (res) {
 		res.setEncoding('utf8');
 		res.on('data', function (chunk) {
 			response += chunk;

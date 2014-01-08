@@ -17,13 +17,15 @@ exports.setup = function() {
 		var Rest = Ably.Realtime.super_;
 
 		var adminHost = testVars.realtimeHost || 'localhost';
-		var adminPort = testVars.realtimePort || '8080';
+		var adminPort = testVars.useTls ? (testVars.realtimeTlsPort || '8081') : (testVars.realtimePort || '8080');
+		var adminScheme = testVars.useTls ? 'https' : 'http';
 		var restHost = testVars.restHost || 'localhost.ably.io';
 		var port = testVars.realtimePort || '8080';
 		var tlsPort = testVars.realtimeTlsPort || '8081';
+		var useTls = testVars.useTls;
 
 		var httpReq = function(options, callback) {
-			var uri = 'http://' + options.host + ':' + options.port + options.path;
+			var uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
 			var xhr = createXHR();
 			xhr.open(options.method, uri);
 			if (options.headers) {
@@ -44,11 +46,14 @@ exports.setup = function() {
 		var toBase64 = Base64.encode;
 	} else {
 		var http = require('http');
+		var https = require('https');
 		var Ably = rExports.Ably = require('../../..');
 		var Rest = Ably.Rest;
+		var useTls = true;
 
 		var adminHost = process.env.ADMIN_ADDRESS || 'localhost';
-		var adminPort = process.env.ADMIN_PORT || '8080';
+		var adminPort = process.env.ADMIN_PORT || '8081';
+		var adminScheme = process.env.ADMIN_SCHEME || 'https';
 		var restHost = process.env.REST_ADDRESS || 'localhost.ably.io';
 		var port = process.env.WEBSOCKET_PORT || '8080';
 		var tlsPort = process.env.WEBSOCKET_TLS_PORT || '8081';
@@ -57,7 +62,7 @@ exports.setup = function() {
 			var body = options.body;
 			delete options.body;
 			var response = '';
-			var request = http.request(options, function (res) {
+			var request = (options.scheme == 'http' ? http : https).request(options, function (res) {
 				res.setEncoding('utf8');
 				res.on('data', function (chunk) { response += chunk; });
 				res.on('end', function () {
@@ -86,7 +91,7 @@ exports.setup = function() {
 	}
 
 	var restOpts = {
-		host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
+		encrypted: useTls, host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
 	};
 
 	rExports.rest = function(opts) {return new Rest(mixin((opts || {}), restOpts));};
@@ -173,7 +178,7 @@ exports.setup = function() {
 
 		var postData = JSON.stringify(appSpec);
 		var postOptions = {
-			host: adminHost, port: adminPort, path: '/apps', method: 'POST',
+			host: adminHost, port: adminPort, path: '/apps', method: 'POST', scheme: adminScheme,
 			headers: { 'Content-Type': 'application/json', 'Content-Length': postData.length },
 			body: postData
 		};
@@ -208,7 +213,7 @@ exports.setup = function() {
 		var authHeader = toBase64(authKey);
 		var delOptions = {
 			host: adminHost, port: adminPort, method: 'DELETE', path: '/apps/' + rExports.testVars.testAppId,
-			headers: { 'Authorization': 'Basic ' + authHeader }
+			scheme: adminScheme, headers: { 'Authorization': 'Basic ' + authHeader }
 		};
 		httpReq(delOptions, function(err, resp) { callback(err); });
 	};
