@@ -24,7 +24,7 @@ var Resource = (function() {
 			Http.get(rest, path, headers, params, function(err, res, headers) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
-					rest.auth.authorise({force:true}, function(err) {
+					rest.auth.authorise({force:true}, null, function(err) {
 						if(err) {
 							callback(err);
 							return;
@@ -45,7 +45,7 @@ var Resource = (function() {
 			Http.post(rest, path, headers, body, params, function(err, res, headers) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
-					rest.auth.authorise({force:true}, function(err) {
+					rest.auth.authorise({force:true}, null, function(err) {
 						if(err) {
 							callback(err);
 							return;
