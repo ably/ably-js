@@ -4177,7 +4177,9 @@ var clientmessage_refs = {
 	TPresence: TPresence,
 	TMessage: TMessage,
 	TChannelMessage: TChannelMessage,
-	TProtocolMessage: TProtocolMessage
+	TProtocolMessage: TProtocolMessage,
+	TPresenceState: TPresenceState,
+	TMessageArray: TMessageArray
 };
 this.Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
@@ -4264,52 +4266,57 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 	function Http() {}
 
 	/**
-	 * Perform an HTTP GET request
-	 * @param realtime
-	 * @param the full path of the POST request
+	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
+	 * @param rest
+	 * @param path the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 */
-	Http.get = function(realtime, path, headers, params, callback) {
+	Http.get = function(rest, path, headers, params, callback) {
 		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return realtime.baseUri(host) + path; };
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
-		function tryGet(uri, cb) {
-			Http.Request(uri, params, null, binary, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryGet(uri, callback);
-			return;
-		}
-
-		var hosts, connection = realtime.connection;
+		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
 		else
-			hosts = Defaults.getHosts(realtime.options);
+			hosts = Defaults.getHosts(rest.options);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
-			tryGet(uri(hosts[0]), callback);
+			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		tryGet(hosts.shift(), function(err, statusCode, body) {
+		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
 			if(err) {
 				var code = err.code;
 				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
 					/* we should use a fallback host if available */
-					tryGet(hosts, callback);
+					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
 					return;
 				}
 			}
 			callback.apply(null, arguments);
 		});
+	};
+
+	/**
+	 * Perform an HTTP GET request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.getUri = function(rest, uri, headers, params, callback) {
+		callback = callback || noop;
+		var binary = (headers && headers.accept != 'application/json');
+
+		Http.Request(uri, params, headers, null, binary, cb);
 	};
 
 	/**
@@ -4321,40 +4328,30 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 */
-	Http.post = function(realtime, path, headers, body, params, callback) {
+	Http.post = function(rest, path, headers, body, params, callback) {
 		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return realtime.baseUri(host) + path; };
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
-		function tryPost(uri, cb) {
-			Http.Request(uri, params, body, binary, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryGet(uri, callback);
-			return;
-		}
-
-		var hosts, connection = realtime.connection;
+		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
 		else
-			hosts = Defaults.getHosts(realtime.options);
+			hosts = Defaults.getHosts(rest.options);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
-			tryPost(uri(hosts[0]), callback);
+			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		tryPost(hosts.shift(), function(err, statusCode, body) {
+		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
 			if(err) {
 				var code = err.code;
 				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
 					/* we should use a fallback host if available */
-					tryPost(hosts, callback);
+					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
 					return;
 				}
 			}
@@ -4362,6 +4359,23 @@ if (typeof exports !== 'undefined' && this.exports !== exports) {
 		});
 	};
 
+	/**
+	 * Perform an HTTP POST request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param body object or buffer containing request body
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.postUri = function(rest, uri, headers, body, params, callback) {
+		callback = callback || noop;
+		var binary = (headers && headers.accept != 'application/json');
+
+		Http.Request(uri, params, headers, body, binary, cb);
+	};
+
+	Http.supportsAuthHeaders = false;
 	return Http;
 })();
 this.ThriftUtil = (function() {
@@ -4432,6 +4446,7 @@ this.ThriftUtil = (function() {
 		}
 	};
 
+	return ThriftUtil;
 })();
 /*
  Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
@@ -4653,11 +4668,11 @@ this.Base64 = (function() {
 
 	return Base64;
 })();
-Ably.Crypto = window.CryptoJS && (function() {
+var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var messagetypes = clientmessage_refs;
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
-	var DEFAULT_ALGORITHM = "AES";
+	var DEFAULT_ALGORITHM = "aes";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -4673,8 +4688,8 @@ Ably.Crypto = window.CryptoJS && (function() {
 	function IEEEToDouble(wordArray) {
 		var buf = new ArrayBuffer(8),
 			intArray = new Uint32Array(buf);
-		intArray[0] = wordArray[0];
-		intArray[1] = wordArray[1];
+		intArray[0] = wordArray.words[0];
+		intArray[1] = wordArray.words[1];
 		return (new  Float64Array(buf))[0];
 	}
 
@@ -4795,7 +4810,12 @@ Ably.Crypto = window.CryptoJS && (function() {
 			callback = key;
 			key = undefined;
 		}
-		if(!key) {
+		if(key) {
+			if (typeof(key) === 'string')
+				key = CryptoJS.enc.Hex.parse(key);
+			else
+				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
+		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
 					callback(err);
@@ -4807,7 +4827,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 		}
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM;
+		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.words.length * (4 * 8));
 		params.key = key;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
@@ -4852,7 +4872,7 @@ Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm.toUpperCase();
+		var algorithm = this.algorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });
@@ -4916,16 +4936,14 @@ Ably.Crypto = window.CryptoJS && (function() {
 			case TType.FALSE:
 				break;
 			case TType.INT32:
-				result = CryptoJS.lib.WordArray.create(1);
-				result[0] = tData.i32Data;
+				result = CryptoJS.lib.WordArray.create([tData.i32Data]);
 				break;
 			case TType.INT64:
-				result = CryptoJS.lib.WordArray.create(2);
-				result[0] = tData.i64Data / VAL32;
-				result[1] = tData.i64Data % VAL32;
+				result = CryptoJS.lib.WordArray.create([tData.i64Data / VAL32, tData.i64Data % VAL32]);
 				break;
 			case TType.DOUBLE:
-				result = DoubleToIEEE(tData.doubleData);
+				var tmpResult = DoubleToIEEE(tData.doubleData);
+				result = CryptoJS.lib.WordArray.create([tmpResult[0], tmpResult[1]]);
 				break;
 			case TType.BUFFER:
 				result = tData.binaryData;
@@ -6154,7 +6172,7 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current);
 		this.state = states[stateChange.current];
 		if(this.state.terminal)
-			this.error = stateChange.error;
+			this.error = stateChange.reason;
 		this.emit('connectionstate', stateChange, this.transport);
 	};
 
@@ -6254,6 +6272,8 @@ var ConnectionManager = (function() {
 			this.sendQueuedMessages();
 		else if(this.state.queueEvents)
 			this.queuePendingMessages();
+		else
+			this.realtime.channels.setSuspended(change.reason);
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
@@ -6263,7 +6283,7 @@ var ConnectionManager = (function() {
 		if(request.state == this.state.state)
 			return; /* silently do nothing */
 		if(this.state.terminal)
-			throw new Error(this.error.reason);
+			throw new Error(this.error);
 		if(request.state == 'connecting') {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
@@ -6883,6 +6903,7 @@ this.Data = (function() {
 	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var TData = messagetypes.TData;
 	var TType = messagetypes.TType;
+	var isBrowser = (typeof(window) === 'object');
 
 	var resolveObjects = {
 		'[object Null]': function(msg, data) {
@@ -6919,7 +6940,7 @@ this.Data = (function() {
 			return true;
 		},
 		'[object Object]': function(msg, data) {
-			if(typeof(Buffer) !== 'undefined' && Buffer.isBuffer(data)) {
+			if(!isBrowser && Buffer.isBuffer(data)) {
 				msg.type = messagetypes.TType.BUFFER;
 				msg.binaryData = data;
 			} else {
@@ -7114,11 +7135,13 @@ this.Serialize = (function() {
 		var tData = this.clientData, result = {
 			name: this.name,
 			clientId: this.clientId,
+			memberId: this.memberId,
 			timestamp: this.timestamp,
+			state: this.state,
 			tags: this.tags
 		};
 		var value = Data.fromTData(tData);
-		if(tData.type == BUFFER) {
+		if(tData && (tData.type == BUFFER)) {
 			result.encoding = 'base64'
 			value = value.toString('base64');
 		}
@@ -7230,61 +7253,66 @@ this.Serialize = (function() {
 	return Serialize;
 })();
 var Resource = (function() {
-
 	function Resource() {}
 
-	Resource.get = function(rest, path, headers, params, callback) {
-		function tryGet() {
+	function withAuthDetails(rest, headers, params, errCallback, opCallback) {
+		if (Http.supportsAuthHeaders) {
 			rest.auth.getAuthHeaders(function(err, authHeaders) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				Http.get(rest, path, Utils.mixin(authHeaders, headers), params, function(err, res, headers) {
-					if(err && err.code == 40140) {
-						/* token has expired, so get a new one */
-						rest.auth.authorise({force:true}, function(err) {
-							if(err) {
-								callback(err);
-								return;
-							}
-							/* retry ... */
-							tryGet();
-						});
-						return;
-					}
-					callback(err, res, headers);
-				});
+				if(err)
+					errCallback(err);
+				else
+					opCallback(Utils.mixin(authHeaders, headers), params);
+			});
+		} else {
+			rest.auth.getAuthParams(function(err, authParams) {
+				if(err)
+					errCallback(err);
+				else
+					opCallback(headers, Utils.mixin(authParams, params));
 			});
 		}
-		tryGet();
+	}
+
+	Resource.get = function(rest, path, origheaders, origparams, callback) {
+		function doGet(headers, params) {
+			Http.get(rest, path, headers, params, function(err, res, headers) {
+				if(err && err.code == 40140) {
+					/* token has expired, so get a new one */
+					rest.auth.authorise({force:true}, null, function(err) {
+						if(err) {
+							callback(err);
+							return;
+						}
+						/* retry ... */
+						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+					});
+					return;
+				}
+				callback(err, res, headers);
+			});
+		}
+		withAuthDetails(rest, origheaders, origparams, callback, doGet);
 	};
 
-	Resource.post = function(rest, path, body, headers, params, callback) {
-		function tryPost() {
-			rest.auth.getAuthHeaders(function(err, authHeaders) {
-				if(err) {
-					callback(err);
+	Resource.post = function(rest, path, body, origheaders, origparams, callback) {
+		function doPost(headers, params) {
+			Http.post(rest, path, headers, body, params, function(err, res, headers) {
+				if(err && err.code == 40140) {
+					/* token has expired, so get a new one */
+					rest.auth.authorise({force:true}, null, function(err) {
+						if(err) {
+							callback(err);
+							return;
+						}
+						/* retry ... */
+						withAuthDetails(rest, origheaders, origparams, callback, doPost);
+					});
 					return;
 				}
-				Http.post(rest, path, Utils.mixin(authHeaders, headers), body, params, function(err, res, headers) {
-					if(err && err.code == 40140) {
-						/* token has expired, so get a new one */
-						rest.auth.authorise({force:true}, function(err) {
-							if(err) {
-								callback(err);
-								return;
-							}
-							/* retry ... */
-							tryPost();
-						});
-						return;
-					}
-					callback(err, res, headers);
-				});
+				callback(err, res, headers);
 			});
 		}
-		tryPost();
+		withAuthDetails(rest, origheaders, origparams, callback, doPost);
 	};
 
 	return Resource;
@@ -7385,11 +7413,10 @@ var PaginatedResource = (function() {
 	function Auth(rest, options) {
 		this.rest = rest;
 
-		/* tokenOptions contains the parameters that may be used in
+		/* tokenParams contains the parameters that may be used in
 		 * token requests */
-		var tokenOptions = this.tokenOptions = {};
-		if(options.keyId) var keyId = tokenOptions.keyId = options.keyId;
-		if(options.keyValue) tokenOptions.keyValue = options.keyValue;
+		var tokenParams = this.tokenParams = {},
+			keyId = options.keyId;
 
 		/* decide default auth method */
 		if(options.keyValue) {
@@ -7417,10 +7444,8 @@ var PaginatedResource = (function() {
 			this.token = {id: options.authToken};
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
-			tokenOptions.authCallback = options.authCallback;
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
-			tokenOptions.authUrl = options.authUrl;
 		} else if(options.keyValue) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
 		} else if(this.token) {
@@ -7438,13 +7463,22 @@ var PaginatedResource = (function() {
 	 * requested.
 	 * Authorisation will use the parameters supplied on construction except
 	 * where overridden with the options supplied in the call.
-	 * @param params
+	 * @param authOptions
 	 * an object containing the request params:
 	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
 	 *               passed in constructing the Rest interface may be used
 	 *
 	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
 	 *               value passed in constructing the Rest interface may be used
+	 *
+	 * - queryTime   (optional) boolean indicating that the Ably system should be
+	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * - force       (optional) boolean indicating that a new token should be requested,
+	 *               even if a current token is still valid.
+	 *
+	 * @param tokenParams
+	 * an object containing the parameters for the requested token:
 	 *
 	 * - ttl:    (optional) the requested life of any new token in seconds. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
@@ -7455,20 +7489,14 @@ var PaginatedResource = (function() {
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - clientId:   (optional) a client Id to associate with the token
+	 * - client_id:   (optional) a client Id to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
-	 * - queryTime   (optional) boolean indicating that the Ably system should be
-	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * - force       (optional) boolean indicating that a new token should be requested,
-	 *               even if a current token is still valid.
-	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.authorise = function(options, callback) {
+	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
 		var token = this.token;
 		if(token) {
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
@@ -7484,7 +7512,7 @@ var PaginatedResource = (function() {
 			}
 		}
 		var self = this;
-		this.requestToken(options, function(err, tokenResponse) {
+		this.requestToken(authOptions, tokenParams, function(err, tokenResponse) {
 			if(err) {
 				callback(err);
 				return;
@@ -7495,7 +7523,7 @@ var PaginatedResource = (function() {
 
 	/**
 	 * Request an access token
-	 * @param options
+	 * @param authOptions
 	 * an object containing the request options:
 	 * - keyId:         the id of the key to use.
 	 *
@@ -7515,6 +7543,14 @@ var PaginatedResource = (function() {
 	 * - authParams:    (optional) a set of application-specific query params to be added to any
 	 *                  request made to the authUrl.
 	 *
+	 * - queryTime      (optional) boolean indicating that the ably system should be
+	 *                  queried for the current time when none is specified explicitly
+	 *
+	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 *                  requestToken request
+	 *
+	 * @param tokenParams
+	 * an object containing the parameters for the requested token:
 	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
@@ -7523,80 +7559,93 @@ var PaginatedResource = (function() {
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - client_id:      (optional) a client Id to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in seconds since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
-	 * - queryTime      (optional) boolean indicating that the ably system should be
-	 *                  queried for the current time when none is specified explicitly
-	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.requestToken = function(options, callback) {
+	Auth.prototype.requestToken = function(authOptions, tokenParams, callback) {
 		/* shuffle and normalise arguments as necessary */
-		if(typeof(options) == 'function' && !callback) {
-			callback = options;
-			options = {};
+		if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = tokenParams = null;
 		}
-		options = options || {};
-		callback = callback || noop;
+		else if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			tokenParams = authOptions;
+			authOptions = null;
+		}
 
 		/* merge supplied options with the already-known options */
-		options = Utils.mixin(Utils.copy(this.tokenOptions), options);
+		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		tokenParams = tokenParams || Utils.copy(this.tokenParams);
+		callback = callback || noop;
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
 		var tokenRequestCallback, rest = this.rest;
-		if(options.authCallback) {
+		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
-			tokenRequestCallback = options.authCallback;
-		} else if(options.authUrl) {
+			tokenRequestCallback = authOptions.authCallback;
+		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
-				Http.get(rest, options.authUrl, options.authHeaders || {}, Utils.mixin(params, options.authParams), cb);
+				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
+				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), cb);
 			};
-		} else if(options.keyValue) {
+		} else if(authOptions.keyValue) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
-			tokenRequestCallback = function(params, cb) { self.createTokenRequest(Utils.mixin(Utils.copy(options), params), cb); };
+			tokenRequestCallback = function(params, cb) { self.createTokenRequest(authOptions, params, cb); };
 		} else {
-			throw new Error('Auth.requestToken(): options must include valid authentication parameters');
+			throw new Error('Auth.requestToken(): authOptions must include valid authentication parameters');
 		}
 
-		/* now set up the request params */
-		var requestParams = {};
-		var clientId = options.clientId || this.rest.clientId;
-		if(clientId)
-			requestParams.client_id = clientId;
+		/* normalise token params */
+		if('capability' in tokenParams)
+			tokenParams.capability = c14n(tokenParams.capability);
 
-		var ttl = options.ttl || '';
-		if('ttl' in options)
-			requestParams.ttl = ttl;
+		var keyId = tokenParams.id || authOptions.keyId,
+			rest = this.rest,
+			tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
 
-		if('capability' in options)
-			requestParams.capability = c14n(options.capability);
-
-		var rest = this.rest, tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + options.keyId + '/requestToken'; };
 		var tokenRequest = function(ob, tokenCb) {
-			if(Http.post)
-				Http.post(rest, tokenUri, Utils.defaultPostHeaders(), ob, null, tokenCb);
-			else
-				Http.get(rest, tokenUri, Utils.defaultGetHeaders(), ob, tokenCb);
+			var requestHeaders;
+			if(Http.post) {
+				requestHeaders = Utils.defaultPostHeaders();
+				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Http.post(rest, tokenUri, requestHeaders, ob, null, tokenCb);
+			} else {
+				requestHeaders = Utils.defaultGetHeaders();
+				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Http.get(rest, tokenUri, requestHeaders, ob, tokenCb);
+			}
 		};
-		tokenRequestCallback(requestParams, function(err, signedRequest) {
+		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + err);
+				if(!('code' in err))
+					err.code = 40170;
+				if(!('statusCode' in err))
+					err.statusCode = 401;
 				callback(err);
 				return;
 			}
-			tokenRequest(signedRequest, function(err, tokenResponse) {
+			/* the response from the callback might be a signed request or a token details */
+			if('issued_at' in tokenRequestOrDetails) {
+				callback(null, tokenRequestOrDetails);
+				return;
+			}
+			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + err);
 					callback(err);
 					return;
 				}
+				if(typeof(tokenResponse) === 'string') tokenResponse = JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
 				callback(null, tokenResponse.access_token);
 			});
@@ -7609,11 +7658,22 @@ var PaginatedResource = (function() {
 	 * Otherwise, signed token requests must be obtained from the key
 	 * owner (either using the token request callback or url).
 	 *
-	 * Valid token request options are:
+	 * @param authOptions
+	 * an object containing the request options:
 	 * - keyId:         the id of the key to use.
 	 *
-	 * - keyValue:      the secret value of the key to use.
+	 * - keyValue:      (optional) the secret value of the key; if not
+	 *                  specified, a key passed in constructing the Rest interface will be used; or
+	 *                  if no key is available, a token request callback or url will be used.
 	 *
+	 * - queryTime      (optional) boolean indicating that the ably system should be
+	 *                  queried for the current time when none is specified explicitly
+	 *
+	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 *                  requestToken request
+	 *
+	 * @param tokenParams
+	 * an object containing the parameters for the requested token:
 	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
@@ -7628,44 +7688,45 @@ var PaginatedResource = (function() {
 	 * - timestamp:     (optional) the time in seconds since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
-	 * - queryTime      (optional) boolean indicating that the ably system should be
-	 *                  queried for the current time when none is specified explicitly
 	 */
-	Auth.prototype.createTokenRequest = function(options, callback) {
-		var keyId = options.keyId;
-		var keyValue = options.keyValue;
+	Auth.prototype.createTokenRequest = function(authOptions, tokenParams, callback) {
+		authOptions = authOptions || this.rest.options;
+		tokenParams = tokenParams || Utils.copy(this.tokenParams);
+
+		var keyId = authOptions.keyId;
+		var keyValue = authOptions.keyValue;
 		if(!keyId || !keyValue) {
 			callback(new Error('No key specified'));
 			return;
 		}
 		var request = { id: keyId };
-		var clientId = options.clientId || '';
+		var clientId = tokenParams.client_id || '';
 		if(clientId)
-			request.client_id = options.clientId;
+			request.client_id = clientId;
 
-		var ttl = options.ttl || '';
+		var ttl = tokenParams.ttl || '';
 		if(ttl)
 			request.ttl = ttl;
 
-		var capability = options.capability || '';
+		var capability = tokenParams.capability || '';
 		if(capability)
 			request.capability = capability;
 
 		var rest = this.rest, self = this;
 		(function(authoriseCb) {
-			if(options.timestamp) {
+			if(tokenParams.timestamp) {
 				authoriseCb();
 				return;
 			}
-			if(options.queryTime) {
+			if(authOptions.queryTime) {
 				rest.time(function(err, time) {
 					if(err) {callback(err); return;}
-					options.timestamp = Math.floor(time/1000);
+					tokenParams.timestamp = Math.floor(time/1000);
 					authoriseCb();
 				});
 				return;
 			}
-			options.timestamp = self.getTimestamp();
+			tokenParams.timestamp = self.getTimestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -7673,9 +7734,9 @@ var PaginatedResource = (function() {
 			 * specifies the nonce; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			var nonce = request.nonce = (options.nonce || random());
+			var nonce = request.nonce = (tokenParams.nonce || random());
 
-			var timestamp = request.timestamp = options.timestamp;
+			var timestamp = request.timestamp = tokenParams.timestamp;
 
 			var signText
 			=	request.id + '\n'
@@ -7689,7 +7750,7 @@ var PaginatedResource = (function() {
 			 * specifies the mac; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			request.mac = options.mac || hmac(signText, keyValue);
+			request.mac = tokenParams.mac || hmac(signText, keyValue);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
 			callback(null, request);
@@ -7704,7 +7765,7 @@ var PaginatedResource = (function() {
 		if(this.method == 'basic')
 			callback(null, {key_id: this.keyId, key_value: this.keyValue});
 		else
-			this.authorise({}, function(err, token) {
+			this.authorise(null, null, function(err, token) {
 				if(err) {
 					callback(err);
 					return;
@@ -7721,7 +7782,7 @@ var PaginatedResource = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this.authorise({}, function(err, token) {
+			this.authorise(null, null, function(err, token) {
 				if(err) {
 					callback(err);
 					return;
@@ -7752,6 +7813,9 @@ var Rest = (function() {
 		if(typeof(options) == 'string')
 			options = {key: options};
 		this.options = options;
+
+		if (typeof(this.options.useTextProtocol) === 'undefined')   // Default to text protocol in browser, binary in node.js
+			this.options.useTextProtocol = (typeof(window) === 'object') ? true : false;
 
 		/* process options */
 		if(options.key) {
@@ -7793,7 +7857,9 @@ var Rest = (function() {
 		var headers = Utils.copy(Utils.defaultGetHeaders());
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		(new PaginatedResource(this, '/stats', headers, params, identity)).get(callback);
+		(new PaginatedResource(this, '/stats', headers, params, function(body) {
+			return (typeof(body) === 'string') ? JSON.parse(body) : body;
+		})).get(callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {
@@ -7816,9 +7882,10 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
+			if (typeof(res) === 'string') res = JSON.parse(res);
 			var time = res[0];
 			if(!time) {
-				err = new Error('Internal error (unexpected result type from GET /time');
+				err = new Error('Internal error (unexpected result type from GET /time)');
 				err.statusCode = 500;
 				callback(err);
 				return;
@@ -7889,6 +7956,13 @@ var Rest = (function() {
 				channel.attachImpl();
 			else if(channel.state == 'detaching')
 				channel.detachImpl();
+		}
+	};
+
+	Channels.prototype.setSuspended = function(err) {
+		for(var channelId in this.attached) {
+			var channel = this.attached[channelId];
+			channel.setSuspended(err);
 		}
 	};
 
@@ -8087,6 +8161,11 @@ var RealtimeChannel = (function() {
 		code: 90001,
 		reason: 'Channel operation failed (invalid channel state)'
 	};
+	RealtimeChannel.channelDetachedErr = {
+		statusCode: 409,
+		code: 90006,
+		reason: 'Channel is detached'
+	};
 
 	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
 		callback = callback || noop;
@@ -8231,10 +8310,11 @@ var RealtimeChannel = (function() {
 			}
 		});
 		this.detachImpl();
+		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attach()', 'sending DETACH message');
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.state = 'detaching';
     	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
@@ -8371,7 +8451,6 @@ var RealtimeChannel = (function() {
 			return;
 
 		this.state = 'attached';
-		this.emit('attached');
 		try {
 			if(this.pendingEvents.length) {
 				var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
@@ -8388,6 +8467,7 @@ var RealtimeChannel = (function() {
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setAttached()', 'Unexpected exception sending pending messages: ' + e.stack);
 		}
+		this.emit('attached');
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -8397,22 +8477,22 @@ var RealtimeChannel = (function() {
 			this.state = 'failed';
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, reason: msgErr.reason};
 			this.emit('failed', err);
-		} else {
+		} else if (this.state !== 'detached') {
 			this.state = 'detached';
 			this.emit('detached');
 		}
 	};
 
-	RealtimeChannel.prototype.setSuspended = function(connectionState) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name);
-		this.state = 'detached';
+	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err '+ (err ? err.reason : 'none'));
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
-				this.pendingEvents[i].callback(connectionState.defaultMessage);
+				this.pendingEvents[i].callback(err);
 			} catch(e) {}
 		this.pendingEvents = [];
-		this.presence.setSuspended(connectionState);
-		this.emit('detached');
+		this.presence.setSuspended(err);
+		if (!suppressEvent)
+			this.emit('detached');
 	};
 
 	return RealtimeChannel;
@@ -8518,7 +8598,7 @@ var Presence = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
-			var key = memberKey.call(presence.clientId, presence.memberId);
+			var key = memberKey(presence.clientId, presence.memberId);
 			var member = new PresenceMessage(presence.clientId, Data.fromTData(presence.clientData), presence.memberId);
 			switch(presence.state) {
 				case presenceState.LEAVE:
@@ -8526,7 +8606,7 @@ var Presence = (function() {
 					break;
 				case presenceState.UPDATE:
 					if(presence.inheritMemberId)
-						delete this.members[memberKey.call(presence.clientId, presence.inheritMemberId)];
+						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
 				case presenceState.ENTER:
 					clientData = this.members[key] = member;
 					break;
@@ -8544,9 +8624,9 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setSuspended = function(connectionState) {
+	Presence.prototype.setSuspended = function(err) {
 		if(this.pendingPresence) {
-			this.pendingPresence.callback(ConnectionError[connectionState.state]);
+			this.pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
 	};
@@ -8578,7 +8658,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, false, false, function(err, response) {
+		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
@@ -8602,14 +8682,16 @@ var JSONPTransport = (function() {
 	};
 
 	JSONPTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		return (new JSONPTransport.Request()).send(uri, params, body, expectToBlock, false, callback);
+		var req = new JSONPTransport.Request()
+		req.send(uri, params, null, body, expectToBlock, false, callback);
+		return req;
 	};
 
 	JSONPTransport.Request = function(id) {
 		this.requestId = id || requestId++;
 	};
 
-	JSONPTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary /* ignored */, callback) {
+	JSONPTransport.Request.prototype.send = function(uri, params, headers /* ignored */, body, expectToBlock, binary /* ignored */, callback) {
 		this.callback = callback;
 		var id = this.requestId;
 
@@ -8653,8 +8735,8 @@ var JSONPTransport = (function() {
 		this.callback(new Error('JSONPTransport: requestId ' + this.requestId + ' aborted'));
 	};
 
-	Http.Request = function(uri, params, body, binary, callback) {
-		(new JSONPTransport.Request()).send(uri, params, body, false, binary, callback);
+	Http.Request = function(uri, params, headers, body, binary, callback) {
+		(new JSONPTransport.Request()).send(uri, params, headers, body, false, binary, callback);
 	};
 
 	return JSONPTransport;
@@ -8680,6 +8762,16 @@ var XHRTransport = (function() {
 	}
 	Utils.inherits(XHRTransport, CometTransport);
 
+	function responseHeaders(xhr) {
+		var rh = xhr.getAllResponseHeaders().trim().split('\n');
+		var headers = {};
+		for (var i=0; i<rh.length; i++) {
+			var h = rh[i].split(':');
+			headers[h[0].trim()] = h[1].trim();
+		}
+		return headers;
+	}
+
 	var isAvailable;
 	XHRTransport.isAvailable = function() {
 		var xhr = createXHR();
@@ -8690,7 +8782,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
@@ -8708,7 +8800,9 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.prototype.request = function(uri, params, body, expectToBlock, callback) {
-		(new XHRTransport.Request()).send(uri, params, body, expectToBlock, this.binary, callback);
+		var req = new XHRTransport.Request();
+		req.send(uri, params, null, body, expectToBlock, this.binary, callback);
+		return req;
 	};
 
 	XHRTransport.prototype.toString = function() {
@@ -8717,20 +8811,34 @@ var XHRTransport = (function() {
 
 	XHRTransport.Request = function() {};
 
-	XHRTransport.Request.prototype.send = function(uri, params, body, expectToBlock, binary, callback) {
+	XHRTransport.Request.prototype.send = function(uri, params, headers, body, expectToBlock, binary, callback) {
+		headers = headers || {};
 		uri = CometTransport.paramStr(params, uri);
 		var successCode, method, err, timedout;
 		if(body) method = 'POST', successCode = 201;
 		else method = 'GET', successCode = 200;
 
 		var xhr = this.xhr = createXHR();
-		if(binary)
+		if(binary) {
 			xhr.responseType = 'arraybuffer';
+			body = body.view;
+		}
 
 		var timeout = expectToBlock ? Defaults.cometRecvTimeout : Defaults.cometSendTimeout;
 		var timer = setTimeout(function() { timedout = true; xhr.abort(); }, timeout);
+
 		xhr.open(method, uri, true);
-		xhr.setRequestHeader('Accept', binary ? 'application/x-thrift' : 'application/json');
+
+		if (body && !binary && (typeof(body) === 'object')) {
+			if (!headers['content-type'])
+				headers['content-type'] = 'application/json';
+			body = JSON.stringify(body);
+		}
+		if (!headers['accept'])
+			headers['accept'] = binary ? 'application/x-thrift' : 'application/json';
+		for (var h in headers)
+			xhr.setRequestHeader(h, headers[h]);
+
 		xhr.onerror = function(err) {
 			err = err;
 			err.code = 80000;
@@ -8760,7 +8868,7 @@ var XHRTransport = (function() {
 					} else {
 						responseBody = xhr.responseText;
 					}
-					callback(null, responseBody);
+					callback(null, responseBody, responseHeaders(xhr));
 					return;
 				}
 				if(xhr.status != 0) {
@@ -8784,8 +8892,9 @@ var XHRTransport = (function() {
 
 	if(XHRTransport.isAvailable()) {
 		ConnectionManager.httpTransports.xhr = ConnectionManager.transports.xhr = XHRTransport;
-		Http.Request = function(uri, params, body, binary, callback) {
-			(new XHRTransport.Request()).send(uri, params, body, false, binary, callback);
+		Http.supportsAuthHeaders = true;
+		Http.Request = function(uri, params, headers, body, binary, callback) {
+			(new XHRTransport.Request()).send(uri, params, headers, body, false, binary, callback);
 		};
 	}
 
@@ -8845,4 +8954,6 @@ var FlashTransport = (function() {
 	return FlashTransport;
 })();
 window.Ably.Realtime = Realtime;
+Realtime.Crypto = Crypto;
+Rest.Crypto = Crypto;
 })();
