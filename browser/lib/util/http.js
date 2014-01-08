@@ -54,7 +54,7 @@ this.Http = (function() {
 		callback = callback || noop;
 		var binary = (headers && headers.accept != 'application/json');
 
-		Http.Request(uri, params, headers, null, binary, cb);
+		Http.Request(uri, params, headers, null, binary, callback);
 	};
 
 	/**
@@ -110,7 +110,7 @@ this.Http = (function() {
 		callback = callback || noop;
 		var binary = (headers && headers.accept != 'application/json');
 
-		Http.Request(uri, params, headers, body, binary, cb);
+		Http.Request(uri, params, headers, body, binary, callback);
 	};
 
 	Http.supportsAuthHeaders = false;
