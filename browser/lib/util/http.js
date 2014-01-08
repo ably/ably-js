@@ -4,9 +4,9 @@ this.Http = (function() {
 	function Http() {}
 
 	/**
-	 * Perform an HTTP GET request
+	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
-	 * @param the full path of the POST request
+	 * @param path the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param params optional hash of params
 	 * @param callback (err, response)
@@ -16,16 +16,6 @@ this.Http = (function() {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
-		function tryGet(uri, cb) {
-			Http.Request(uri, params, headers, null, binary, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryGet(uri, callback);
-			return;
-		}
-
 		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
@@ -34,22 +24,37 @@ this.Http = (function() {
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
-			tryGet(uri(hosts[0]), callback);
+			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		tryGet(hosts.shift(), function(err, statusCode, body) {
+		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
 			if(err) {
 				var code = err.code;
 				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
 					/* we should use a fallback host if available */
-					tryGet(hosts, callback);
+					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
 					return;
 				}
 			}
 			callback.apply(null, arguments);
 		});
+	};
+
+	/**
+	 * Perform an HTTP GET request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.getUri = function(rest, uri, headers, params, callback) {
+		callback = callback || noop;
+		var binary = (headers && headers.accept != 'application/json');
+
+		Http.Request(uri, params, headers, null, binary, cb);
 	};
 
 	/**
@@ -66,16 +71,6 @@ this.Http = (function() {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
 
-		function tryPost(uri, cb) {
-			Http.Request(uri, params, headers, body, binary, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryGet(uri, callback);
-			return;
-		}
-
 		var hosts, connection = rest.connection;
 		if(connection && connection.state == 'connected')
 			hosts = [connection.connectionManager.host];
@@ -84,22 +79,38 @@ this.Http = (function() {
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
-			tryPost(uri(hosts[0]), callback);
+			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		tryPost(hosts.shift(), function(err, statusCode, body) {
+		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
 			if(err) {
 				var code = err.code;
 				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
 					/* we should use a fallback host if available */
-					tryPost(hosts, callback);
+					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
 					return;
 				}
 			}
 			callback.apply(null, arguments);
 		});
+	};
+
+	/**
+	 * Perform an HTTP POST request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param body object or buffer containing request body
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.postUri = function(rest, uri, headers, body, params, callback) {
+		callback = callback || noop;
+		var binary = (headers && headers.accept != 'application/json');
+
+		Http.Request(uri, params, headers, body, binary, cb);
 	};
 
 	Http.supportsAuthHeaders = false;

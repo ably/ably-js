@@ -23,21 +23,21 @@ this.Http = (function() {
 				callback(err);
 				return;
 			}
-			var statusCode = response.statusCode;
+			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
 				callback(body.error || {statusCode: statusCode});
 				return;
 			}
-			callback(null, body, response.headers);
+			callback(null, body, headers);
 		};
 	};
 
 	function Http() {}
 
 	/**
-	 * Perform an HTTP GET request
+	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
-	 * @param the full path of the POST request
+	 * @param path the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param params optional hash of params
 	 * @param callback (err, response)
@@ -46,45 +46,47 @@ this.Http = (function() {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var hosts = Defaults.getHosts(rest.options);
 
-		var getOptions = {headers:headers, encoding:null}, wrappedCb = handler(callback);
+		/* see if we have one or more than one host */
+		if(hosts.length == 1) {
+			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
+			return;
+		}
+
+		/* so host is an array with preferred host plus at least one fallback */
+		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
+			if(err) {
+				var code = err.code;
+				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
+					/* we should use a fallback host if available */
+					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
+					return;
+				}
+			}
+			callback.apply(null, arguments);
+		});
+	};
+
+	/**
+	 * Perform an HTTP GET request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.getUri = function(rest, uri, headers, params, callback) {
+		var getOptions = {headers:headers, encoding:null};
 		if(!headers || headers.accept == 'application/json')
 			getOptions.json = true;
 		if(params)
 			getOptions.qs = params;
 
-		function tryGet(resolvedUri, cb) {
-			getOptions.uri = resolvedUri;
-			request.get(getOptions, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryGet(uri, wrappedCb);
-			return;
-		}
-
-		/* see if we have one or more than one host */
-		if(hosts.length == 1) {
-			tryGet(uri(hosts[0]), wrappedCb);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		tryGet(hosts.shift(), function(err, response, body) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					tryGet(hosts, wrappedCb);
-					return;
-				}
-			}
-			wrappedCb.apply(null, arguments);
-		});
+		getOptions.uri = uri;
+		request.get(getOptions, handler(callback));
 	};
 
 	/**
-	 * Perform an HTTP POST request
+	 * Perform an HTTP POST request for a given path against prime and fallback Ably hosts
 	 * @param rest
 	 * @param the full path of the POST request
 	 * @param headers optional hash of headers
@@ -96,41 +98,44 @@ this.Http = (function() {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var hosts = Defaults.getHosts(rest.options);
 
-		var postOptions = {headers:headers, body:body, encoding:null}, wrappedCb = handler(callback);
+		/* see if we have one or more than one host */
+		if(hosts.length == 1) {
+			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
+			return;
+		}
+
+		/* so host is an array with preferred host plus at least one fallback */
+		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
+			if(err) {
+				var code = err.code;
+				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
+					/* we should use a fallback host if available */
+					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
+					return;
+				}
+			}
+			callback.apply(null, arguments);
+		});
+	};
+
+	/**
+	 * Perform an HTTP POST request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param body object or buffer containing request body
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.postUri = function(rest, uri, headers, body, params, callback) {
+		var postOptions = {headers:headers, body:body, encoding:null};
 		if(!headers || headers.accept == 'application/json')
 			postOptions.json = true;
 		if(params)
 			postOptions.qs = params;
 
-		function tryPost(uri, cb) {
-			postOptions.uri = uri;
-			request.post(postOptions, cb);
-		}
-
-		/* if we have an absolute url, we just try once */
-		if(typeof(uri) == 'string') {
-			tryPost(uri, wrappedCb);
-			return;
-		}
-
-		/* see if we have one or more than one host */
-		if(hosts.length == 1) {
-			tryPost(uri(hosts[0]), wrappedCb);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		tryPost(hosts.shift(), function(err, response, body) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					tryPost(hosts, wrappedCb);
-					return;
-				}
-			}
-			wrappedCb.apply(null, arguments);
-		});
+		postOptions.uri = uri;
+		request.post(postOptions, handler(callback));
 	};
 
 	Http.supportsAuthHeaders = true;
