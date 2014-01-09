@@ -37,7 +37,7 @@ exports.setup = function(base) {
 							//log: {level: 4},
 							key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value
 						});
-						rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+						rest.auth.requestToken({client_id:testClientId}, function(err, tokenDetails) {
 							if(err) {
 								test.ok(false, displayError(err));
 								cb(err);
@@ -46,7 +46,7 @@ exports.setup = function(base) {
 							authToken = tokenDetails.id;
 							test.equal(tokenDetails.client_id, testClientId, 'Verify client id');
 							test.expect(++expects);
-							rest.auth.requestToken({clientId:testClientId2}, function(err, tokenDetails) {
+							rest.auth.requestToken({client_id:testClientId2}, function(err, tokenDetails) {
 								if(err) {
 									test.ok(false, displayError(err));
 									cb(err);
