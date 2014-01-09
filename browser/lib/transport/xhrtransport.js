@@ -39,7 +39,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
