@@ -1,7 +1,7 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = function(id) { var f = _[id]; return f ? f : noop; };
-	var requestId = 0;
+	var _ = window.Ably._ = function(id) { return _[id] || noop; };
+	var requestId = 1;
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
@@ -23,7 +23,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
+		(new JSONPTransport.Request(0)).send('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
