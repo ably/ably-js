@@ -140,7 +140,7 @@ function runTests() {
   nodeunit.run(moduleSet, runOptions);
 
   // if tests don't complete in TEST_TIMEOUT_SECONDS seconds, send a notice of failure
-  var TEST_TIMEOUT_SECONDS = 60;
+  var TEST_TIMEOUT_SECONDS = 600;
   testTimeout = setTimeout(function() {
     $.post('/tests-complete', {
       testAccount: JSON.stringify(testVars.testAccount),
