@@ -129,7 +129,7 @@ var Auth = (function() {
 		var token = this.token;
 		if(token) {
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
-				if(!options.force) {
+				if(!(authOptions && authOptions.force)) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
 					callback(null, token);
 					return;
