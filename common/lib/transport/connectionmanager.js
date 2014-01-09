@@ -608,7 +608,7 @@ var ConnectionManager = (function() {
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.authorise(false, function(err) {
+			auth.authorise(null, null, function(err) {
 				if(err)
 					connectErr(err);
 				else
