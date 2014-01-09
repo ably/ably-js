@@ -6356,7 +6356,7 @@ var ConnectionManager = (function() {
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.authorise(false, function(err) {
+			auth.authorise(null, null, function(err) {
 				if(err)
 					connectErr(err);
 				else
@@ -7500,7 +7500,7 @@ var PaginatedResource = (function() {
 		var token = this.token;
 		if(token) {
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
-				if(!options.force) {
+				if(!(authOptions && authOptions.force)) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
 					callback(null, token);
 					return;
@@ -8635,8 +8635,8 @@ var Presence = (function() {
 })();
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = function(id) { var f = _[id]; return f ? f : noop; };
-	var requestId = 0;
+	var _ = window.Ably._ = function(id) { return _[id] || noop; };
+	var requestId = 1;
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
@@ -8658,7 +8658,7 @@ var JSONPTransport = (function() {
 			return;
 		}
 		checksInProgress = [callback];
-		(new JSONPTransport.Request('isTheInternetUp')).send('http://live.cdn.ably-realtime.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
+		(new JSONPTransport.Request(0)).send('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js', null, null, null, false, false, function(err, response) {
 			var result = !err && response;
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
@@ -8782,7 +8782,7 @@ var XHRTransport = (function() {
 	};
 
 	XHRTransport.checkConnectivity = function(callback) {
-		(new XHRTransport.Request()).send('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
+		(new XHRTransport.Request()).send('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt', null, null, null, false, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
