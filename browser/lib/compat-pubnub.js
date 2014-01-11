@@ -114,7 +114,7 @@
 
 		// Set up options for Ably.Realtime()
 		var opts = {
-			key:ably_key, encrypted: ssl //,log:{level:4}
+			key:ably_key, tls: ssl //,log:{level:4}
 		};
 		if (uuid && (uuid.length != 0))
 			opts.clientId = uuid;

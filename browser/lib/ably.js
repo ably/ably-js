@@ -4243,7 +4243,7 @@ Defaults.getHost = function(options, host, ws) {
 };
 
 Defaults.getPort = function(options) {
-	return options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
+	return options.tls ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
 };
 
 Defaults.getHosts = function(options) {
@@ -6627,7 +6627,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
+		var wsScheme = options.tls ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
@@ -6744,7 +6744,7 @@ var CometTransport = (function() {
 		var self = this, params = this.params, options = params.options;
 		var host = Defaults.getHost(options, params.host);
 		var port = Defaults.getPort(options);
-		var cometScheme = options.encrypted ? 'https://' : 'http://';
+		var cometScheme = options.tls ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
 		var connectUri = this.baseUri + 'connect';
@@ -7608,20 +7608,19 @@ var PaginatedResource = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var keyId = tokenParams.id || authOptions.keyId,
-			rest = this.rest,
-			tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
+		var rest = this.rest;
+		var tokenRequest = function(signedTokenParams, tokenCb) {
+			var requestHeaders,
+				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + signedTokenParams.id + '/requestToken';};
 
-		var tokenRequest = function(ob, tokenCb) {
-			var requestHeaders;
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Http.post(rest, tokenUri, requestHeaders, ob, null, tokenCb);
+				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Http.get(rest, tokenUri, requestHeaders, ob, tokenCb);
+				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
@@ -7833,8 +7832,8 @@ var Rest = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 		this.clientId = options.clientId;
 
-		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
-			options.encrypted = true;
+		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('tls' in options))
+			options.tls = true;
 
 		this.serverTimeOffset = null;
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };

@@ -432,7 +432,7 @@ var Utils = (function() {
 		var tlsorigin = options.tlshost || '';
 		var encrypted = options.encrypted || false;
 		var opts = {
-			key: applicationKey, encrypted: encrypted //,log:{level:4}
+			key: applicationKey, tls: encrypted //,log:{level:4}
 		};
 		if (options.ablyClientId) opts.clientId = options.ablyClientId;
 		if (options.authEndpoint) opts.authUrl = options.authEndpoint;
