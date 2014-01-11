@@ -237,20 +237,19 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var keyId = tokenParams.id || authOptions.keyId,
-			rest = this.rest,
-			tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
+		var rest = this.rest;
+		var tokenRequest = function(signedTokenParams, tokenCb) {
+			var requestHeaders,
+				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + signedTokenParams.id + '/requestToken';};
 
-		var tokenRequest = function(ob, tokenCb) {
-			var requestHeaders;
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Http.post(rest, tokenUri, requestHeaders, ob, null, tokenCb);
+				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Http.get(rest, tokenUri, requestHeaders, ob, tokenCb);
+				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
