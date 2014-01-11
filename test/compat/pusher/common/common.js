@@ -134,7 +134,7 @@ exports.setup = function() {
 		var tlsorigin = pusherOpts.tlsorigin;
 		var opts = {
 			key: rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0.value,
-			encrypted: false
+			tls: false
 		};
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
@@ -158,7 +158,7 @@ exports.setup = function() {
 		var tlsorigin = pusherOpts.tlsorigin;
 		var opts = {
 			key: rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0.value,
-			encrypted: false
+			tls: false
 			//,log:{level:4}
 		};
 		if (origin && (origin.length != 0)) {

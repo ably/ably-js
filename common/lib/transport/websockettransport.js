@@ -51,7 +51,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var wsScheme = options.encrypted ? 'wss://' : 'ws://';
+		var wsScheme = options.tls ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {

@@ -87,10 +87,10 @@ exports.setup = function() {
 	}
 
 	var restOpts = {
-		encrypted: useTls, host: restHost, tlsPort: tlsPort //,log:{level:4}
+		tls: useTls, host: restHost, tlsPort: tlsPort //,log:{level:4}
 	};
 	var realtimeOpts = {
-		encrypted: useTls, wsHost: wsHost, host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
+		tls: useTls, wsHost: wsHost, host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
 	};
 
 	function mixin(target, source) {

@@ -32,8 +32,8 @@ var Rest = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 		this.clientId = options.clientId;
 
-		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('encrypted' in options))
-			options.encrypted = true;
+		if((typeof(window) == 'object') && (window.location.protocol == 'https:') && !('tls' in options))
+			options.tls = true;
 
 		this.serverTimeOffset = null;
 		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };

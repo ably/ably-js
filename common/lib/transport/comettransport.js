@@ -30,7 +30,7 @@ var CometTransport = (function() {
 		var self = this, params = this.params, options = params.options;
 		var host = Defaults.getHost(options, params.host);
 		var port = Defaults.getPort(options);
-		var cometScheme = options.encrypted ? 'https://' : 'http://';
+		var cometScheme = options.tls ? 'https://' : 'http://';
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
 		var connectUri = this.baseUri + 'connect';

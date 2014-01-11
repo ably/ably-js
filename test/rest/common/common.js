@@ -91,7 +91,7 @@ exports.setup = function() {
 	}
 
 	var restOpts = {
-		encrypted: useTls, host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
+		tls: useTls, host: restHost, port: port, tlsPort: tlsPort //,log:{level:4}
 	};
 
 	rExports.rest = function(opts) {return new Rest(mixin((opts || {}), restOpts));};

@@ -25,7 +25,7 @@ Defaults.getHost = function(options, host, ws) {
 };
 
 Defaults.getPort = function(options) {
-	return options.encrypted ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
+	return options.tls ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
 };
 
 Defaults.getHosts = function(options) {

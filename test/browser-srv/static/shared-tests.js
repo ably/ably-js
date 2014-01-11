@@ -9,7 +9,7 @@ function sharedTestsClass() {
 			port: testVars.realtimePort,
 			tlsPort: testVars.realtimeTlsPort,
 			key: testVars.key0Str,
-			encrypted: testVars.useTls,
+			tls: testVars.useTls,
 			flashTransport: testVars.flashTransport
 		};
 		if (transports) options.transports = transports;
