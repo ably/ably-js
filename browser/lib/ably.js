@@ -8035,7 +8035,8 @@ var Channel = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
 		EventEmitter.call(this);
 		this.rest = rest;
-    	this.name = name;
+		this.name = name;
+		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.cipher = null;
 		this.presence = new Presence();
 	}
@@ -8072,7 +8073,7 @@ var Channel = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
-		Resource.get(rest, '/channels/' + this.name + '/messages', headers, params, function(err, res) {
+		Resource.get(rest, this.basePath + '/messages', headers, params, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
@@ -8104,15 +8105,16 @@ var Channel = (function() {
 		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
-		Resource.post(rest, '/channels/' + this.name + '/messages', requestBody, headers, null, callback);
+		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, callback);
 	};
 
 	function Presence(channel) {
 		this.channel = channel;
+		this.basePath = channel.basePath + '/presence';
 	}
 
 	Presence.prototype.get = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.get()', 'channel = ' + this.name);
+		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.get()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -8122,15 +8124,14 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-		var channel = this.channel,
-			rest = channel.rest,
+		var rest = this.channel.rest,
 			binary = !rest.options.useTextProtocol,
 			headers = Utils.copy(Utils.defaultGetHeaders(binary));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.get(rest, '/channels/' + channel.name + '/presence', headers, params, function(err, res) {
+		Resource.get(rest, this.basePath, headers, params, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
@@ -8141,7 +8142,7 @@ var Channel = (function() {
 	};
 
 	Presence.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.history()', 'channel = ' + this.name);
+		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.history()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -8151,15 +8152,14 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-		var channel = this.channel,
-			rest = channel.rest,
+		var rest = this.channel.rest,
 			binary = !rest.options.useTextProtocol,
 			headers = Utils.copy(Utils.defaultGetHeaders(binary));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.get(rest, '/channels/' + channel.name + '/presence/history', headers, params, function(err, res) {
+		Resource.get(rest, this.basePath + '/history', headers, params, function(err, res) {
 			if(err) {
 				callback(err);
 				return;
