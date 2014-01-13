@@ -55,6 +55,8 @@ var ConnectionManager = (function() {
 				break;
 			default:
 		}
+		if(options.echoMessages === false)
+			params.echoMessages = 'false';
 		params.binary = this.binary;
 		params.timestamp = Date.now();
 		return params;
