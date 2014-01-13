@@ -5803,6 +5803,8 @@ var ConnectionManager = (function() {
 				break;
 			default:
 		}
+		if(options.echoMessages === false)
+			params.echoMessages = 'false';
 		params.binary = this.binary;
 		params.timestamp = Date.now();
 		return params;
@@ -8038,7 +8040,7 @@ var Channel = (function() {
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.cipher = null;
-		this.presence = new Presence();
+		this.presence = new Presence(this);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
