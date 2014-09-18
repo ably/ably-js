@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ably-script" default="gen-ably">
+
+    <!-- Task for the Google Closure Compiler for JavaScript minification -->
+    <taskdef name="jscompiler" classname="com.google.javascript.jscomp.ant.CompileTask"
+        classpath="../tools/closure-compiler/compiler.jar"/>
+
+	<!-- tools (gets closure compiler) -->
+    <target name="tools">
+        <mkdir dir="../tools/closure-compiler" />
+        <get src="http://dl.google.com/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
+        <unzip src="../tools/closure-compiler/compiler-latest.zip" dest="../tools/closure-compiler" />
+    </target>
+
+    <property name="builddir" location="static" />
+
+    <!-- Concat all JavaScript files for Ably library -->
+    <target name="gen-ably-js">
+        <concat destfile="${builddir}/ably.js">
+            <filelist dir="${basedir}">
+                <file name="ably-prologue.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../common/lib">
+                <file name="transport/connectionerror.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../submodules/thrift-js">
+                <file name="util.js"/>
+                <file name="int64.js"/>
+                <file name="thrift.js"/>
+                <file name="buffer.js"/>
+                <file name="protocol.js"/>
+                <file name="transport.js"/>
+            </filelist>
+            <filelist dir="${basedir}">
+                <file name="protocol/clientmessage_decls.js"/>
+                <file name="protocol/clientmessage_types.js"/>
+                <file name="protocol/clientmessage_refs.js"/>
+                <file name="lib/util/cookie.js"/>
+                <file name="lib/util/defaults.js"/>
+                <file name="lib/util/http.js"/>
+                <file name="lib/util/thriftutil.js"/>
+                <file name="lib/util/base64.js"/>
+                <file name="lib/util/crypto.js"/>
+                <file name="lib/util/domevent.js"/>
+            </filelist>
+            <!--<filelist dir="${basedir}/../submodules/web-socket-js">-->
+                <!--&lt;!&ndash; flash support &ndash;&gt;-->
+                <!--<file name="swfobject.js"/>-->
+                <!--<file name="web_socket.js"/>-->
+            <!--</filelist>-->
+            <filelist dir="${basedir}/../common/lib">
+                <file name="util/eventemitter.js"/>
+                <file name="util/logger.js"/>
+                <file name="util/utils.js"/>
+                <file name="util/multicaster.js"/>
+                <file name="transport/connectionmanager.js"/>
+                <file name="transport/transport.js"/>
+                <file name="transport/websockettransport.js"/>
+                <file name="transport/comettransport.js"/>
+                <file name="types/data.js"/>
+                <file name="types/message.js"/>
+                <file name="types/presencemessage.js"/>
+                <file name="types/serialize.js"/>
+                <file name="client/resource.js"/>
+                <file name="client/paginatedresource.js"/>
+                <file name="client/auth.js"/>
+                <file name="client/rest.js"/>
+                <file name="client/realtime.js"/>
+                <file name="client/connectionstatechange.js"/>
+                <file name="client/connection.js"/>
+                <file name="client/channel.js"/>
+                <file name="client/realtimechannel.js"/>
+                <file name="client/presence.js"/>
+            </filelist>
+            <filelist dir="${basedir}/lib">
+                <file name="transport/jsonptransport.js"/>
+                <file name="transport/xhrrequest.js"/>
+                <file name="transport/xhrtransport.js"/>
+                <file name="transport/iframetransport.js"/>
+                <!--<file name="transport/flashtransport.js"/>-->
+            </filelist>
+            <filelist dir="${basedir}">
+                <file name="ably-epilogue.js"/>
+            </filelist>
+        </concat>
+    </target>
+
+    <!-- Use closure compiler to minify JavaScript -->
+    <target name="gen-ably-min-js" depends="gen-ably-js">
+        <!-- Available compilation levels: advanced, simple, whitespace -->
+        <jscompiler compilationlevel="simple" prettyPrint="false" output="${builddir}/ably.min.js">
+            <sources dir="${builddir}">
+                <file name="ably.js"/>
+            </sources>
+        </jscompiler>
+    </target>
+
+    <!-- Concat all JavaScript files for iframe.js -->
+    <target name="gen-iframe-js">
+        <concat destfile="${builddir}/iframe.js">
+            <filelist dir="${basedir}">
+                <file name="prologue.js"/>
+                <file name="protocol/clientmessage_decls.js"/>
+                <file name="protocol/clientmessage_types.js"/>
+                <file name="protocol/clientmessage_refs.js"/>
+            </filelist>
+            <filelist dir="${basedir}/../common">
+                <file name="lib/util/eventemitter.js"/>
+                <file name="lib/util/logger.js"/>
+                <file name="lib/util/multicaster.js"/>
+                <file name="lib/util/utils.js"/>
+            </filelist>
+            <filelist dir="${basedir}">
+                <file name="lib/util/defaults.js"/>
+                <file name="lib/util/domevent.js"/>
+                <file name="lib/transport/xhrrequest.js"/>
+                <file name="lib/transport/iframeagent.js"/>
+                <file name="epilogue.js"/>
+            </filelist>
+        </concat>
+    </target>
+
+    <!-- Use closure compiler to minify JavaScript -->
+    <target name="gen-iframe-min-js" depends="gen-iframe-js">
+        <!-- Available compilation levels: advanced, simple, whitespace -->
+        <jscompiler compilationlevel="simple" prettyPrint="false" output="${builddir}/iframe.min.js">
+            <sources dir="${builddir}">
+                <file name="iframe.js"/>
+            </sources>
+        </jscompiler>
+    </target>
+
+    <!-- Concat JavaScript files for Pusher compat library -->
+  <target name="gen-pusher-js">
+    <concat destfile="${builddir}/compat-pusher.js">
+      <filelist dir="${basedir}">
+        <file name="prologue.js"/>
+      </filelist>
+      <filelist dir="${basedir}/../common/lib">
+        <file name="util/eventemitter.js"/>
+        <file name="util/utils.js"/>
+      </filelist>
+      <filelist dir="${basedir}/compat">
+        <file name="pusher.js"/>
+      </filelist>
+      <filelist dir="${basedir}">
+        <file name="epilogue.js"/>
+      </filelist>
+    </concat>
+    <concat destfile="${builddir}/compat-pusher.md">
+      <filelist dir="${basedir}/compat">
+        <file name="pusher.md"/>
+      </filelist>
+    </concat>
+  </target>
+
+  <!-- Use closure compiler to minify JavaScript -->
+  <target name="gen-pusher-min-js" depends="gen-pusher-js">
+    <!-- Available compilation levels: advanced, simple, whitespace -->
+    <jscompiler compilationlevel="simple" prettyPrint="false" output="${builddir}/compat-pusher.min.js">
+      <sources dir="${builddir}">
+        <file name="compat-pusher.js"/>
+      </sources>
+    </jscompiler>
+  </target>
+
+  <!-- Concat JavaScript files for Pubnub compat library -->
+  <target name="gen-pubnub-js">
+    <concat destfile="${builddir}/compat-pubnub.js">
+      <filelist dir="${basedir}/compat">
+        <file name="pubnub.js"/>
+      </filelist>
+    </concat>
+    <concat destfile="${builddir}/compat-pubnub.md">
+      <filelist dir="${basedir}/compat">
+        <file name="pubnub.md"/>
+      </filelist>
+    </concat>
+  </target>
+
+  <!-- Use closure compiler to minify JavaScript -->
+  <target name="gen-pubnub-min-js" depends="gen-pubnub-js">
+    <!-- Available compilation levels: advanced, simple, whitespace -->
+    <jscompiler compilationlevel="simple" prettyPrint="false" output="${builddir}/compat-pubnub.min.js">
+      <sources dir="${builddir}">
+        <file name="compat-pubnub.js"/>
+      </sources>
+    </jscompiler>
+  </target>
+
+  <!-- Gzip -->
+    <target name="gen-ably-min-js-gz" depends="gen-ably-min-js">
+        <gzip src="${builddir}/ably.min.js" destfile="${builddir}/ably.min.js.gz" />
+    </target>
+    <target name="gen-ably-js-gz" depends="gen-ably-js">
+        <gzip src="${builddir}/ably.js" destfile="${builddir}/ably.js.gz" />
+    </target>
+    <target name="gen-iframe-min-js-gz" depends="gen-iframe-min-js">
+        <gzip src="${builddir}/iframe.min.js" destfile="${builddir}/iframe.min.js.gz" />
+    </target>
+    <target name="gen-iframe-js-gz" depends="gen-iframe-js">
+        <gzip src="${builddir}/iframe.js" destfile="${builddir}/iframe.js.gz" />
+    </target>
+    <target name="gen-iframe-html-gz">
+        <gzip src="${builddir}/iframe.html" destfile="${builddir}/iframe.html.gz" />
+    </target>
+    <target name="gen-pusher-min-js-gz" depends="gen-pusher-min-js">
+      <gzip src="${builddir}/compat-pusher.min.js" destfile="${builddir}/compat-pusher.min.js.gz" />
+    </target>
+    <target name="gen-pusher-js-gz" depends="gen-pusher-js">
+      <gzip src="${builddir}/compat-pusher.js" destfile="${builddir}/compat-pusher.js.gz" />
+    </target>
+    <target name="gen-pubnub-min-js-gz" depends="gen-pubnub-min-js">
+      <gzip src="${builddir}/compat-pubnub.min.js" destfile="${builddir}/compat-pubnub.min.js.gz" />
+    </target>
+    <target name="gen-pubnub-js-gz" depends="gen-pubnub-js">
+      <gzip src="${builddir}/compat-pubnub.js" destfile="${builddir}/compat-pubnub.js.gz" />
+    </target>
+    <target name="gen-swf-gz">
+        <gzip src="${builddir}/swf/WebSocketMainInsecure-0.9.swf" destfile="${builddir}/swf/WebSocketMainInsecure-0.9.swf.gz" />
+    </target>
+
+	<!-- All (default target) -->
+    <target name="gen-ably"
+        depends="gen-ably-js-gz,gen-ably-min-js-gz,
+            gen-iframe-js-gz,gen-iframe-min-js-gz,gen-iframe-html-gz,
+            gen-pusher-js-gz,gen-pusher-min-js-gz,
+            gen-pubnub-js-gz,gen-pubnub-min-js-gz,
+            gen-swf-gz" />
+
+</project>

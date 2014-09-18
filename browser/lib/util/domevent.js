@@ -1,0 +1,33 @@
+var DomEvent = (function() {
+	function DomEvent() {}
+
+	DomEvent.addListener = function(target, event, listener) {
+		if(target.addEventListener) {
+			target.addEventListener(event, listener, false);
+		} else {
+			target.attachEvent('on'+event, listener);
+		}
+	};
+
+	DomEvent.removeListener = function(target, event, listener) {
+		if(target.removeEventListener) {
+			target.removeEventListener(event, listener, false);
+		} else {
+			target.detachEvent('on'+event, listener);
+		}
+	};
+
+	DomEvent.addMessageListener = function(target, listener) {
+		DomEvent.addListener(target, 'message', listener);
+	};
+
+	DomEvent.removeMessageListener = function(target, listener) {
+		DomEvent.removeListener(target, 'message', listener);
+	};
+
+	DomEvent.addUnloadListener = function(listener) {
+		DomEvent.addListener(window, 'unload', listener);
+	};
+
+	return DomEvent;
+})();

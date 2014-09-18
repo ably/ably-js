@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+
+/**********************************
+ * Usage
+ *
+ * main server-host=<test server host>
+ *      server-port=<test server port>
+ *      server-tls=<test server is tls>
+ *      realtime-host=<realtime and rest server host address>
+ *      realtime-port=<realtime and rest server standard unencrypted port>
+ *      realtime-tls-port=<realtime and rest server TLS port>
+ *      realtime=<host>,<port>,<tls port> (shortcut method to provide 3 params in one)
+ *      --local (shortcut method for generic local ably farm config of realtime=localhost.ably.io,8080,8081)
+ *      [--disable-autostart | -d] (do not automatically start the browser tests, wait for user interaction)
+ *      [--exit-after-tests-complete] (used for automated tests where the process should exit when done)
+ *      [--pipe-json] (only pipe JSON result from tests to stdout)
+ **********************************/
+
+var console2 = require('./lib/quietconsole.js');
+
+process.on('exit', function() {
+	console2.log('browser-srv: exiting');
+});
+
+process.on('uncaughtException', function (err) {
+	console2.error('browser-src: exception caught by event loop: ' + err + '; ' + err.stack);
+});
+
+function startsWith(string, substr) {
+	return string.substr(0, substr.length) == substr;
+}
+
+/* trivial args processing */
+var opts = {
+  host:'localhost',
+  port:8092,
+  testVars: {
+    setHost: function(host) {
+      this.realtimeHost = host;
+      this.restHost = host;
+    },
+    useTls: true
+  }
+};
+
+if (process.env.WEBSOCKET_ADDRESS) opts.testVars.realtimeHost = process.env.WEBSOCKET_ADDRESS;
+if (process.env.REST_ADDRES) opts.testVars.restHost = process.env.REST_ADDRES;
+if (process.env.WEBSOCKET_PORT) opts.testVars.realtimePort = process.env.WEBSOCKET_PORT;
+if (process.env.WEBSOCKET_TLS_PORT) opts.testVars.realtimeTlsPort = process.env.WEBSOCKET_TLS_PORT;
+
+for(var i = 2; i < process.argv.length; i++) {
+	if(startsWith(process.argv[i], 'server-host='))
+		opts.host = process.argv[i].substr('server-host='.length);
+	if(startsWith(process.argv[i], 'server-port='))
+		opts.port = process.argv[i].substr('server-port='.length);
+	if(startsWith(process.argv[i], 'server-tls='))
+		opts.tls = process.argv[i].substr('server-tls='.length);
+  if(startsWith(process.argv[i], 'realtime-host='))
+    opts.testVars.setHost(process.argv[i].substr('realtime-host='.length));
+  if(startsWith(process.argv[i], 'realtime-port='))
+    opts.testVars.realtimePort = process.argv[i].substr('realtime-port='.length);
+  if(startsWith(process.argv[i], 'realtime-tls-port='))
+    opts.testVars.realtimeTlsPort = process.argv[i].substr('realtime-tls-port='.length);
+  if(startsWith(process.argv[i], 'realtime=')) {
+    var realtimeParams = process.argv[i].substr('realtime='.length).split(',');
+    opts.testVars.setHost(realtimeParams[0]);
+    opts.testVars.realtimePort = realtimeParams[1];
+    opts.testVars.realtimeTlsPort = realtimeParams[2];
+  }
+  if(startsWith(process.argv[i], '--local')) {
+    opts.testVars.setHost('localhost.ably.io');
+    opts.testVars.realtimePort = '8080';
+    opts.testVars.realtimeTlsPort = '8081';
+  }
+  if(process.argv[i] == '--no-tls')
+    opts.testVars.useTls = false;
+  if(process.argv[i] == '--exit-after-tests-complete')
+    opts.exitAfterTests = true;
+  if(process.argv[i] == '--pipe-json') {
+    console2.quiet(true);
+    opts.pipeJSON = true;
+  }
+  if(['--disable-autostart','-d'].indexOf(process.argv[i]) !== -1)
+    opts.testVars.disableAutostart = true;
+  if(process.argv[i] == '--flash-policy-server')
+    opts.flashPolicyServer = true;
+}
+
+/* load and run module */
+require('./index').start(opts);

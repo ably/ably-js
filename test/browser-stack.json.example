@@ -1,0 +1,8 @@
+{
+  "credentials": {
+    "username": "<your email>",
+    "password": "<your password>",
+    "automated_testing_tunnel_key": "<go to http://www.browserstack.com/automated-browser-testing-api#automated-local-testing>",
+    "manual_testing_tunnel_key": "<go to http://www.browserstack.com/start, click Test an intenral URL, press Command Line>"
+  }
+}

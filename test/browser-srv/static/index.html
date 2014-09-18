@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Ably Browser Client Test Suite</title>
+  <link rel="stylesheet" href="/nodeunit.css" type="text/css" />
+  <style>
+    body {
+      font-family: Arial, Helvetica;
+      font-size: 13px;
+    }
+    .parallel-toggle {
+      font-size: 80%;
+      float: right;
+    }
+    #nodeunit-banner {
+      font-size: 90%;
+      padding: 10px;
+    }
+    #nodeunit-banner a {
+      color: white;
+    }
+    #nodeunit-banner a:hover {
+      color: yellow;
+    }
+  </style>
+  <script src="aes.js"></script>
+  <script src="hmac-sha256.js"></script>
+  <script src="json2.js"></script>
+  <script src="base64.js"></script>
+  <script src="ably.js"></script>
+  <script src="async.js"></script>
+  <script src="nodeunit.js"></script>
+  <script src="nodeunit.sync.patch.js"></script>
+  <script src="jquery.min.js"></script>
+  <script src="compat-pubnub.js"></script>
+  <script src="compat-pusher.js"></script>
+
+  <script src="test-prep.js"></script>
+  <script src="testvars?callback=__setTestvars"></script>
+    <script src="test/simple.js"></script>
+    <script src="test/index.json?callback=__populateTests"></script>
+</head>
+<body>
+  <button id="manual-start" style="font-size: 15px; font-weight: bold; margin: 0 0 1em 0; padding: 0.5em;">Run the tests</button>
+  <div id="test-setup" style="color: red; display: none;">
+    Please wait, setting up account and app before the tests begin...
+  </div>
+  <h1 id="nodeunit-header" style="display: none">
+    Running tests: <span id="nodeunit-header-path"></span>
+    <div class="parallel-toggle"><input type="checkbox" id="parallel-toggle"><label for="parallel-toggle">run test modules in parallel</label></input></div>
+  </h1>
+  <div id="old-tests" style="display: none; padding-top: 15px; border-top: 1px solid #CCC; margin-top: 15px">Previous tests: <ol></ol></div>
+  <script src="/test-runner.js"></script>
+  <div id="log" style="padding-top: 15px; border-top: 1px solid #CCC; margin-top: 15px"></div>
+</body>
+</html>

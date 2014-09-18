@@ -1,0 +1,36 @@
+{
+  "name": "ably-js",
+  "description": "Realtime messaging client",
+  "version": "0.0.1",
+  "main": "./nodejs/index.js",
+  "dependencies": {
+    "async": ">=0.2.10",
+    "buffertools": "git://github.com/bnoordhuis/node-buffertools.git",
+    "node-int64": ">=0.3.1",
+    "request": ">=2.34.0",
+    "thrift": "git://github.com/ably-forks/thrift-nodejs.git#0.8-ably",
+    "ws": "git://github.com/einaros/ws.git",
+    "hexy": ">=0.2.5"
+  },
+  "devDependencies": {
+    "browserstack": "git://github.com/ably-forks/node-browserstack.git",
+    "ejs": ">=0.8.5",
+    "grunt": ">=0.4.4",
+    "grunt-closure-compiler": ">=0.0.21",
+    "grunt-curl": ">=1.4.0",
+    "grunt-zip": ">=0.13.0",
+    "grunt-contrib-concat": ">=0.3.0",
+    "grunt-contrib-compress": ">=0.7.0",
+    "grunt-contrib-copy": ">=0.5.0",
+    "grunt-shell": ">=0.6.4",
+    "nodeunit": ">=0.8.6"
+  },
+  "engines": {
+    "node": ">=0.8.22",
+    "npm": ">= 1.2.14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@bitbucket.org:ably/ably-js.git"
+  }
+}

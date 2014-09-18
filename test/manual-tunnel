@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+/**********************************
+ * Provides a simple tool to open a tunnel to BrowserStack when running browser-srv manually and wanting to do manual testing
+ *
+ * Usage:
+ * manual-tunnel [http ports,split,by,commas] [https ports,split,by,commas]
+ *
+ **********************************/
+
+var fs = require('fs'),
+    childProcess = require('child_process'),
+    path = require('path'),
+    config;
+
+try {
+  config = JSON.parse(fs.readFileSync(path.normalize(__dirname + '/browser-stack.json')));
+} catch (e) {
+  console.error('Could not load browser-stack.json configuration.  Please ensure the file exists and follows the format in browser-stack.json.example');
+  console.error('Error: ' + e.message);
+  process.exit(1);
+}
+
+var httpTunnelPorts, httpsTunnelPorts;
+
+if (!(process.argv[2] || process.argv[3])) {
+  console.warn('You did not specify any ports, we will default to ports commonly used with a simple farm: 8092,8080 over HTTP and 8081 over HTTPS');
+  httpTunnelPorts = ['8092','8080'];
+  httpsTunnelPorts = ['8081'];
+} else {
+  httpTunnelPorts = (process.argv[2] || '').split(',').filter(function(elem) { return elem != ''; });
+  httpsTunnelPorts = (process.argv[3] || '').split(',').filter(function(elem) { return elem != ''; });
+}
+
+var tunnelHosts = httpTunnelPorts.map(function (e) { return 'localhost.ably.io,' + e + ',0'; }).concat(httpsTunnelPorts.map(function (e) { return 'localhost.ably.io,' + e + ',1'; }))
+    tunnelArgs = ['-jar', path.normalize(__dirname + '/bin/BrowserStackTunnel.jar'), config['credentials']['manual_testing_tunnel_key'],tunnelHosts.join(',')];
+
+tunnelProcess = childProcess.spawn('java', tunnelArgs);
+tunnelProcess.stdout.pipe(process.stdout);
+tunnelProcess.stderr.pipe(process.stderr);
+tunnelProcess.on('exit', function(code, signal) {
+  console.error('Tunnel has closed: ' + code + ', ' + signal);
+  process.exit();
+});
+
+console.log('Tunnel opened to BrowserStack for host localhost.ably.io on HTTP ports ' + httpTunnelPorts.join(', ') + ' and HTTPS ports ' + httpsTunnelPorts.join(', '));
+
+if (httpTunnelPorts.indexOf('8092') == -1) console.warn('\n! The test server runs on port 8092; did you mean to leave that port out?\n');
+
+setInterval(function() {}, 1000);
