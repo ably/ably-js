@@ -1,8 +1,6 @@
 var Transport = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
-	var closeMessage = new messagetypes.TProtocolMessage({action: actions.CLOSE});
+	var actions = ProtocolMessage.Action;
+	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -20,6 +18,7 @@ var Transport = (function() {
 		this.connectionManager = connectionManager;
 		this.auth = auth;
 		this.params = params;
+		this.format = params.format;
 		this.isConnected = false;
 	}
 	Utils.inherits(Transport, EventEmitter);

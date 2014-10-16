@@ -13,8 +13,8 @@ var Rest = (function() {
 			options = {key: options};
 		this.options = options;
 
-		if (typeof(this.options.useTextProtocol) === 'undefined')   // Default to text protocol in browser, binary in node.js
-			this.options.useTextProtocol = (typeof(window) === 'object') ? true : false;
+		if (typeof(this.options.useBinaryProtocol) === 'undefined')
+			this.options.useBinaryProtocol = BufferUtils.supportsBinary;
 
 		/* process options */
 		if(options.key) {

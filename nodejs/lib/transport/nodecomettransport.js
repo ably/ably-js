@@ -38,7 +38,7 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.toString = function() {
-		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected + '; binary=' + this.binary + '; stream=' + this.stream;
+		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected + '; format=' + this.format + '; stream=' + this.stream;
 	};
 
 	/* valid in non-streaming mode only, or data only contains last update */
@@ -50,10 +50,10 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(uri, headers, params, body, requestMode, this.binary);
+		return new Request(uri, headers, params, body, requestMode, this.format);
 	};
 
-	function Request(uri, headers, params, body, requestMode, binary) {
+	function Request(uri, headers, params, body, requestMode, format) {
 		EventEmitter.call(this);
 		if(typeof(uri) == 'string') uri = url.parse(uri);
 		this.client = (uri.protocol == 'http:') ? http : https;
@@ -62,7 +62,7 @@ var NodeCometTransport = (function() {
 		this.req = this.res = null;
 
 		var method = 'GET',
-			contentType = binary ? 'application/x-thrift' : 'application/json';
+			contentType = (format == 'msgpack') ? 'application/x-msgpack' : 'application/json';
 
 		headers = headers ? Utils.mixin({}, headers) : {};
 		headers['accept'] = contentType;
@@ -132,46 +132,44 @@ var NodeCometTransport = (function() {
 		var res = this.res,
 			headers = res.headers,
 			contentType = headers && headers['content-type'],
-			binary = (contentType == 'application/x-thrift'),
 			self = this;
 
 		this.chunks = [];
 		this.streamComplete = false;
 
 		res.on('data', (this.ondata = function(chunk) {
-			/* we don't interpret or delimit binary data */
 			//console.log('******* chunk: ' + String(chunk));
-			if(!binary) {
-				/* see if this chunk contains the end of a message */
-				var chunks = self.chunks,
-					length = chunk.length,
-					finalChar = chunk[length - 1],
-					idx;
+			/* see if this chunk contains the end of a message */
+			var chunks = self.chunks,
+				length = chunk.length,
+				finalChar = chunk[length - 1],
+				idx;
 
-				/* expected and simplest case, is when the message ends
-				 * at the end of the chunk */
-				if(finalChar == '\n') {
-					chunks.push(chunk);
-					self.chunks = [];
-				} else if((idx = buffertools.indexOf(chunk, '\n')) > -1) {
-					++idx;
-					var residualSlice = chunk.slice(idx);
-					chunks.push(chunk.slice(0, idx));
-					self.chunks = [residualSlice];
-				} else {
-					/* just keep this chunk for later */
-					chunks.push(chunk);
-					return;
-				}
+			/* expected and simplest case, is when the message ends
+			 * at the end of the chunk */
+			if(finalChar == '\n') {
+				chunks.push(chunk);
+				self.chunks = [];
+			} else if((idx = buffertools.indexOf(chunk, '\n')) > -1) {
+				++idx;
+				var residualSlice = chunk.slice(idx);
+				chunks.push(chunk.slice(0, idx));
+				self.chunks = [residualSlice];
+			} else {
+				/* just keep this chunk for later */
+				chunks.push(chunk);
+				return;
+			}
 
-				try {
-					chunk = JSON.parse(String(Buffer.concat(chunks)));
-				} catch(e) {
-					var err = new Error('Malformed response body from server: ' + e.message);
-					err.statusCode = 400;
-					self.complete(err);
-					return;
-				}
+			try {
+				chunk = JSON.parse(String(Buffer.concat(chunks)));
+			} catch(e) {
+				var msg = 'Malformed response body from server: ' + e.message;
+				var err = new Error(msg);
+				Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
+				err.statusCode = 400;
+				self.complete(err);
+				return;
 			}
 			//console.log('******* data: ' + JSON.stringify(chunk));
 			self.emit('data', chunk);
@@ -189,7 +187,6 @@ var NodeCometTransport = (function() {
 		var res = this.res,
 			headers = res.headers,
 			contentType = headers && headers['content-type'],
-			binary = (contentType == 'application/x-thrift'),
 			self = this;
 
 		var chunks = [];
@@ -203,16 +200,15 @@ var NodeCometTransport = (function() {
 				var body = Buffer.concat(chunks),
 					statusCode = res.statusCode;
 
-				/* we don't interpret or delimit binary data */
-				if(!binary) {
-					try {
-						body = JSON.parse(String(body));
-					} catch(e) {
-						err = new Error('Malformed response body from server: ' + e.message);
-						err.statusCode = 400;
-						self.complete(err);
-						return;
-					}
+				try {
+					body = JSON.parse(String(body));
+				} catch(e) {
+					var msg = 'Malformed response body from server: ' + e.message;
+					var err = new Error(msg);
+					Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
+					err.statusCode = 400;
+					self.complete(err);
+					return;
 				}
 
 				if(statusCode < 400) {

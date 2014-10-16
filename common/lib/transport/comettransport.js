@@ -9,10 +9,11 @@ var CometTransport = (function() {
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
+		/* binary not supported for comet */
+		params.format = 'json';
 		Transport.call(this, connectionManager, auth, params);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
-		this.binary = params.binary = false;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
@@ -200,11 +201,13 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.encodeRequest = function(requestItems) {
-		return Serialize.TMessageBundle.encode(requestItems, this.binary);
+		return JSON.stringify(requestItems);
 	};
 
 	CometTransport.prototype.decodeResponse = function(responseData) {
-		return Serialize.TMessageBundle.decode(responseData, this.binary);
+		if(typeof(responseData) == 'string')
+			responseData = JSON.parse(responseData);
+		return responseData;
 	};
 
 	return CometTransport;

@@ -1,7 +1,4 @@
 var Crypto = Ably.Crypto = window.CryptoJS && (function() {
-	var messagetypes = clientmessage_refs;
-	var TData = messagetypes.TData;
-	var TType = messagetypes.TType;
 	var DEFAULT_ALGORITHM = "aes";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes

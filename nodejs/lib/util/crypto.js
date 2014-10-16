@@ -1,13 +1,10 @@
 "use strict";
 var Crypto = (function() {
-	var messagetypes = require('../nodejs/lib/protocol/clientmessage_types');
-	var TData = messagetypes.TData;
-	var TType = messagetypes.TType;
 	var crypto = require('crypto');
 	var hexy = require('hexy');
 	var util = require('util');
 
-	var DEFAULT_ALGORITHM = "aes";
+	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 

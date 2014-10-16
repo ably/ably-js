@@ -1,13 +1,10 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
-	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-//	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
-	var hasBuffer = isBrowser ? false : !!Buffer;
+	var msgpack = isBrowser ? window.msgpack : require('msgpack');
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
-		params.binary = (params.binary && hasBuffer);
 		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
@@ -66,20 +63,20 @@ var WebSocketTransport = (function() {
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
-				wsConnection.onmessage = function(ev) { self.onWsData(ev.data, typeof(ev.data) != 'string'); };
+				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) { self.onWsError(e); }
 		});
 	};
 
 	WebSocketTransport.prototype.send = function(message) {
-		this.wsConnection.send(Serialize.TProtocolMessage.encode(message, this.params.binary));
+		this.wsConnection.send(ProtocolMessage.encode(message, this.params.format));
 	};
 
-	WebSocketTransport.prototype.onWsData = function(data, binary) {
-		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
+	WebSocketTransport.prototype.onWsData = function(data) {
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
-			this.onChannelMessage(Serialize.TProtocolMessage.decode(data, binary));
+			this.onChannelMessage(ProtocolMessage.decode(data, this.format));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}

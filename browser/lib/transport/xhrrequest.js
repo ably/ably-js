@@ -407,7 +407,7 @@ var XHRRequest = (function() {
 		DomEvent.addUnloadListener(clearPendingRequests);
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, binary, callback) {
+			Http.Request = function(uri, headers, params, body, format, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND);
 				req.once('complete', callback);
 				req.exec();

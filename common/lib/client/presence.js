@@ -1,7 +1,6 @@
 var Presence = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var presenceState = messagetypes.TPresenceState;
-	var presenceStateToEvent = ['enter', 'leave', 'update'];
+	var presenceAction = PresenceMessage.Action;
+	var presenceActionToEvent = ['enter', 'leave', 'update'];
 
 	function memberKey(clientId, memberId) {
 		return clientId + ':' + memberId;
@@ -27,10 +26,10 @@ var Presence = (function() {
 
 	Presence.prototype.enterClient = function(clientId, clientData, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
-		var presence = new messagetypes.TPresence({
-			state : presenceState.ENTER,
+		var presence = PresenceMessage.fromValues({
+			action : presenceAction.ENTER,
 			clientId : clientId,
-			clientData: Data.toTData(clientData)
+			clientData: Data.toData(clientData)
 		});
 		var channel = this.channel;
 		switch(channel.state) {
@@ -60,8 +59,8 @@ var Presence = (function() {
 
 	Presence.prototype.leaveClient = function(clientId, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
-		var presence = new messagetypes.TPresence({
-			state : presenceState.LEAVE,
+		var presence = PresenceMessage.fromValues({
+			action : presenceAction.LEAVE,
 			clientId : clientId
 		});
 		var channel = this.channel;
@@ -100,34 +99,36 @@ var Presence = (function() {
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
 			var key = memberKey(presence.clientId, presence.memberId);
-			var member = new PresenceMessage(presence.clientId, Data.fromTData(presence.clientData), presence.memberId);
-			switch(presence.state) {
-				case presenceState.LEAVE:
+			switch(presence.action) {
+				case presenceAction.LEAVE:
 					delete this.members[key];
 					break;
-				case presenceState.UPDATE:
+				case presenceAction.UPDATE:
 					if(presence.inheritMemberId)
 						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
-				case presenceState.ENTER:
-					clientData = this.members[key] = member;
+				case presenceAction.ENTER:
+					this.members[key] = presence;
 					break;
 			}
 			if(broadcast)
-				this.emit(presenceStateToEvent[presence.state], member);
+				this.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
 	Presence.prototype.setAttached = function() {
-		if(this.pendingPresence) {
-			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; state = ' + this.state);
-			this.channel.sendPresence(this.pendingPresence.presence, this.pendingPresence.callback);
+		var pendingPresence = this.pendingPresence;
+		if(pendingPresence) {
+			var presence = pendingPresence.presence, callback = pendingPresence.callback;
+			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; action = ' + presence.action);
+			this.channel.sendPresence(presence, callback);
 			this.pendingPresence = null;
 		}
 	};
 
 	Presence.prototype.setSuspended = function(err) {
-		if(this.pendingPresence) {
-			this.pendingPresence.callback(err);
+		var pendingPresence = this.pendingPresence;
+		if(pendingPresence) {
+			pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
 	};

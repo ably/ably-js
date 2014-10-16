@@ -5,8 +5,7 @@
 	delete connectParams.origin;
 	var authParams = ('access_token' in connectParams) ? {access_token: connectParams.access_token} : {key_id: connectParams.key_id, key_value:connectParams.key_value};
 	var parentWindow = window.parent;
-	var messagetypes = clientmessage_refs;
-	var actions = messagetypes.TAction;
+	var actions = ProtocolMessage.Action;
 
 	//Logger.setLog(4);
 
@@ -28,7 +27,7 @@
 	}
 
 	function errorMessage(err) {
-		return new messagetypes.TProtocolMessage({
+		return new ProtocolMessage.fromValues({
 			action: actions.ERROR,
 			error: err
 		});

@@ -6,7 +6,6 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-contrib-compress');
-	grunt.loadNpmTasks('grunt-shell');
 
 	var dirs = {
 		common: 'common',
@@ -14,7 +13,6 @@ module.exports = function (grunt) {
 		static: 'browser/static',
 		dest: 'browser/static',
 		compat: 'browser/compat',
-		thrift: 'submodules/thrift-js',
 		ws_js: 'submodules/web-socket-js',
 		ably_common: 'submodules/ably-common',
 		tools_compiler: __dirname + '/tools/closure-compiler'
@@ -33,14 +31,6 @@ module.exports = function (grunt) {
 
 	grunt.initConfig({
 		dirs: dirs,
-		shell: {
-			'thrift-js': {
-				command: 'thrift --gen js -out <%= dirs.browser %>/protocol <%= dirs.ably_common %>/protocol/clientmessage.thrift'
-			},
-			'thrift-nodejs': {
-				command: 'thrift --gen js:node -out nodejs/lib/protocol <%= dirs.ably_common %>/protocol/clientmessage.thrift'
-			}
-		},
 		curl: {
 			'compiler': {
 				src: 'http://dl.google.com/closure-compiler/compiler-latest.zip',
@@ -78,24 +68,12 @@ module.exports = function (grunt) {
 
 					'<%= dirs.common %>/lib/transport/connectionerror.js',
 
-					'<%= dirs.thrift %>/util.js',
-					'<%= dirs.thrift %>/int64.js',
-					'<%= dirs.thrift %>/thrift.js',
-					'<%= dirs.thrift %>/buffer.js',
-					'<%= dirs.thrift %>/protocol.js',
-					'<%= dirs.thrift %>/transport.js',
-
-					'<%= dirs.browser %>/protocol/clientmessage_decls.js',
-					'<%= dirs.browser %>/protocol/clientmessage_types.js',
-					'<%= dirs.browser %>/protocol/clientmessage_refs.js',
-
 					'<%= dirs.browser %>/lib/util/cookie.js',
 					'<%= dirs.browser %>/lib/util/defaults.js',
 					'<%= dirs.browser %>/lib/util/http.js',
-					'<%= dirs.browser %>/lib/util/thriftutil.js',
-					'<%= dirs.browser %>/lib/util/base64.js',
 					'<%= dirs.browser %>/lib/util/crypto.js',
 					'<%= dirs.browser %>/lib/util/domevent.js',
+					'<%= dirs.browser %>/lib/util/msgpack.js',
 
 //					'<%= dirs.ws_js %>/swfobject.js',
 //					'<%= dirs.ws_js %>/web_socket.js',
@@ -113,7 +91,7 @@ module.exports = function (grunt) {
 					'<%= dirs.common %>/lib/types/data.js',
 					'<%= dirs.common %>/lib/types/message.js',
 					'<%= dirs.common %>/lib/types/presencemessage.js',
-					'<%= dirs.common %>/lib/types/serialize.js',
+					'<%= dirs.common %>/lib/types/protocolmessage.js',
 
 					'<%= dirs.common %>/lib/client/resource.js',
 					'<%= dirs.common %>/lib/client/paginatedresource.js',
@@ -140,9 +118,6 @@ module.exports = function (grunt) {
 			iframe: {
 				src: [
 					'<%= dirs.browser %>/prologue.js',
-					'<%= dirs.browser %>/protocol/clientmessage_decls.js',
-					'<%= dirs.browser %>/protocol/clientmessage_types.js',
-					'<%= dirs.browser %>/protocol/clientmessage_refs.js',
 					'<%= dirs.common %>/lib/util/eventemitter.js',
 					'<%= dirs.common %>/lib/util/logger.js',
 					'<%= dirs.common %>/lib/util/multicaster.js',
@@ -187,7 +162,6 @@ module.exports = function (grunt) {
 		}
 	});
 
-	grunt.registerTask('thrift', ['shell:thrift-js', 'shell:thrift-nodejs']);
 	grunt.registerTask('compiler', ['curl:compiler', 'unzip:compiler']);
 	grunt.registerTask('all', ['copy', 'concat', 'closure-compiler', 'compress']);
 	grunt.registerTask('default', 'all');

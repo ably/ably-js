@@ -2,7 +2,6 @@ var XHRTransport = (function() {
 
 	/* public constructor */
 	function XHRTransport(connectionManager, auth, params) {
-		params.binary = false;
 		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(XHRTransport, CometTransport);

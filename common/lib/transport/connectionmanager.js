@@ -3,8 +3,8 @@ var ConnectionManager = (function() {
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
+	var supportsBinary = BufferUtils.supportsBinary;
+	var actions = ProtocolMessage.Action;
 
 	var noop = function() {};
 
@@ -29,7 +29,7 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionId = connectionId;
 		this.connectionSerial = connectionSerial;
-		this.binary = !options.useTextProtocol;
+		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -68,7 +68,7 @@ var ConnectionManager = (function() {
 		}
 		if(options.echoMessages === false)
 			params.echo = 'false';
-		params.binary = this.binary;
+		params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
 		return params;

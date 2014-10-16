@@ -1,6 +1,5 @@
 var RealtimeChannel = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
+	var actions = ProtocolMessage.Action;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -25,6 +24,7 @@ var RealtimeChannel = (function() {
 		code: 90001,
 		message: 'Channel operation failed (invalid channel state)'
 	};
+
 	RealtimeChannel.channelDetachedErr = {
 		statusCode: 409,
 		code: 90006,
@@ -48,6 +48,7 @@ var RealtimeChannel = (function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
 			callback = arguments[argCount - 1];
+
 		if(typeof(callback) !== 'function') {
 			callback = noop;
 			++argCount;
@@ -60,19 +61,9 @@ var RealtimeChannel = (function() {
 		if(argCount == 2) {
 			if(!Utils.isArray(messages))
 				messages = [messages];
-			var tMessages = new Array(messages.length);
-			for(var i = 0; i < messages.length; i++) {
-				var message = messages[i];
-				var tMessage = tMessages[i] = new messagetypes.TMessage();
-				tMessage.name = message.name;
-				tMessage.data = Data.toTData(message.data);
-			}
-			messages = tMessages;
+			messages = Message.fromValuesArray(messages);
 		} else {
-			var message = new messagetypes.TMessage();
-			message.name = arguments[0];
-			message.data = Data.toTData(arguments[1]);
-			messages = [message];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 		var cipher = this.cipher;
 		if(cipher) {
@@ -87,8 +78,8 @@ var RealtimeChannel = (function() {
 		switch(this.state) {
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-				var msg = new messagetypes.TProtocolMessage();
-				msg.action = messagetypes.TAction.MESSAGE;
+				var msg = new ProtocolMessage();
+				msg.action = actions.MESSAGE;
 				msg.channel = this.name;
 				msg.messages = messages;
 				this.sendMessage(msg, callback);
@@ -142,7 +133,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
+    	var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -178,7 +169,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
+    	var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -222,10 +213,10 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
-		var msg = new messagetypes.TProtocolMessage({
-			action: messagetypes.TAction.PRESENCE,
+		var msg = ProtocolMessage.fromValues({
+			action: actions.PRESENCE,
 			channel: this.name,
-			presence: [presence]
+			presence: [PresenceMessage.fromValues(presence)]
 		});
 		this.sendMessage(msg, callback);
 	};
@@ -242,16 +233,14 @@ var RealtimeChannel = (function() {
 			this.presence.setPresence(message.presence, true);
 			break;
 		case actions.MESSAGE:
-			var tMessages = message.messages;
-			if(tMessages) {
-				var messages = new Array(tMessages.length),
-					cipher = this.cipher;
-				for(var i = 0; i < messages.length; i++) {
-					var tMessage = tMessages[i];
-					if(cipher) {
+			var messages = message.messages;
+			if(messages) {
+				var cipher = this.cipher;
+				if(cipher) {
+					for(var i = 0; i < messages.length; i++) {
 						try {
-							Message.decrypt(tMessage, cipher);
-						} catch(e) {
+							Message.decrypt(messages[i], cipher);
+						} catch (e) {
 							/* decrypt failed .. the most likely cause is that we have the wrong key */
 							var msg = 'Unexpected error decrypting message; err = ' + e;
 							Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
@@ -259,12 +248,6 @@ var RealtimeChannel = (function() {
 							this.emit('error', err);
 						}
 					}
-					messages[i] = new Message(
-						tMessage.channelSerial,
-						tMessage.timestamp,
-						tMessage.name,
-						Data.fromTData(tMessage.data)
-					);
 				}
 				this.onEvent(messages);
 			}
@@ -324,7 +307,7 @@ var RealtimeChannel = (function() {
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
 			this.pendingEvents = [];
-			var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
+			var msg = ProtocolMessage.fromValues({action: actions.MESSAGE, channel: this.name, messages: []});
 			var multicaster = Multicaster();
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + pendingCount + ' queued messages');
 			for(var i = 0; i < pendingCount; i++) {

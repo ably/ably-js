@@ -39,19 +39,19 @@ var Channel = (function() {
 		}
 		var rest = this.rest,
 			envelope = !Http.supportsLinkHeaders,
-			binary = !(rest.options.useTextProtocol || envelope),
-			headers = Utils.copy(Utils.defaultGetHeaders(binary)),
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			cipher = this.cipher;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body) {
-			var messages = Serialize.TMessageArray.decode(body, binary);
-			for(var i = 0; i < messages.length; i++) {
-				if(cipher)
-					Message.decrypt(messages[i], cipher);
-				messages[i].data = Data.fromTData(messages[i].data);
+			var messages = Message.decodeArray(body, format);
+			if(cipher) {
+				for(var i = 0; i < messages.length; i++) {
+						Message.decrypt(messages[i], cipher);
+				}
 			}
 			return messages;
 		})).get(callback);
@@ -61,13 +61,14 @@ var Channel = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
 		callback = callback || noop;
 		var rest = this.rest,
-			binary = !rest.options.useTextProtocol,
-			msg = {name:name, data:data, timestamp: Date.now()},
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			msg = Message.fromValues({name:name, data:data}),
 			cipher = this.cipher;
+
 		if(cipher)
 			Message.encrypt(msg, cipher);
-		var requestBody = Serialize.TMessageArray.encode([msg], binary);
-		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
+		var requestBody = Message.encodeArray([msg], format);
+		var headers = Utils.copy(Utils.defaultPostHeaders(format));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
@@ -90,8 +91,8 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
-			binary = !rest.options.useTextProtocol,
-			headers = Utils.copy(Utils.defaultGetHeaders(binary));
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -101,8 +102,7 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			if(binary) PresenceMessage.decodeTPresenceArray(res, callback);
-			else callback(null, res);
+			callback(null, PresenceMessage.decodeArray(res, format));
 		});
 	};
 
@@ -119,18 +119,14 @@ var Channel = (function() {
 		}
 		var rest = this.channel.rest,
 			envelope = !Http.supportsLinkHeaders,
-			binary = !(rest.options.useTextProtocol || envelope),
-			headers = Utils.copy(Utils.defaultGetHeaders(binary));
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body) {
-			var messages = Serialize.TMessageArray.decode(body, binary);
-			for(var i = 0; i < messages.length; i++) {
-				messages[i].data = Data.fromTData(messages[i].data);
-			}
-			return messages;
+			return PresenceMessage.decodeArray(body, format);
 		})).get(callback);
 	};
 

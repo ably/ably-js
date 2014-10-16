@@ -116,7 +116,7 @@ var IframeTransport = (function() {
 	IframeTransport.prototype.onData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'IframeTransport.onData()', 'length = ' + data.length);
 		try {
-			var items = Serialize.TMessageBundle.decode(data, false);
+			var items = JSON.parse(String(data));
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
 					this.onChannelMessage(items[i]);

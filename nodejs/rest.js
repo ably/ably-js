@@ -21,8 +21,8 @@ var includeScript = function(name) {
 };
 
 /* include libraries */
+includeScript('./lib/util/bufferutils.js');
 includeScript('./lib/util/http.js');
-includeScript('./lib/util/thriftutil.js');
 includeScript('./lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
@@ -31,7 +31,6 @@ includeScript('./lib/util/crypto.js');
 includeScript('../common/lib/types/data.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
-includeScript('../common/lib/types/serialize.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');

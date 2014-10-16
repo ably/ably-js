@@ -6,9 +6,7 @@
   "dependencies": {
     "async": ">=0.2.10",
     "buffertools": "git://github.com/bnoordhuis/node-buffertools.git",
-    "node-int64": ">=0.3.1",
     "request": ">=2.34.0",
-    "thrift": "git://github.com/ably-forks/thrift-nodejs.git#0.8-ably",
     "ws": "git://github.com/einaros/ws.git",
     "hexy": ">=0.2.5"
   },

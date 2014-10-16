@@ -6,7 +6,7 @@ var JSONPTransport = (function() {
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
-		params.binary = params.stream = false;
+		params.stream = false;
 		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
@@ -120,7 +120,7 @@ var JSONPTransport = (function() {
 		delete _[this.id];
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, binary, callback) {
+	var request = Http.Request = function(uri, headers, params, body, format, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
 		req.exec();
