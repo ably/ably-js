@@ -5,7 +5,6 @@ exports.setup = function(base) {
 	var rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
-	var actions = base.messagetypes.TAction;
 	var wsString = base.useTls ? 'wss://' : 'ws://';
 
 	rExports.setupupgrade = function(test) {
@@ -460,7 +459,7 @@ exports.setup = function(base) {
 					 * NOTE: this relies on knowledge of the internal implementation
 					 * of the transport */
 					transport.onChannelMessage = function(message) {
-						if(message.action == actions.MESSAGE)
+						if(message.messages)
 							test.ok(false, 'Message received on comet transport');
 					};
 				}
