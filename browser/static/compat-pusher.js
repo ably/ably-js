@@ -162,7 +162,7 @@ var Utils = (function() {
 	 * props:  an object whose enumerable properties are
 	 *         added, by reference only
 	 */
-	Utils.addProperties = Utils.mixin = function(target, src) {
+	Utils.mixin = function(target, src) {
 		for(var prop in src)
 			target[prop] = src[prop];
 		return target;
@@ -341,21 +341,23 @@ var Utils = (function() {
 		jsonp:  'application/javascript',
 		xml:    'application/xml',
 		html:   'text/html',
-		thrift: 'application/x-thrift'
+		msgpack: 'application/x-msgpack'
 	};
 
-	Utils.defaultGetHeaders = function(binary) {
-		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
-		return {
-			accept: accept
-		};
+	Utils.defaultGetHeaders = function(format) {
+		format = format || 'json';
+		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
+		return { accept: accept };
 	};
 
-	Utils.defaultPostHeaders = function(binary) {
-		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+	Utils.defaultPostHeaders = function(format) {
+		format = format || 'json';
+		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json,
+			contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
+
 		return {
 			accept: accept,
-			'content-type': binary ? contentTypes.thrift : contentTypes.json
+			'content-type': contentType
 		};
 	};
 

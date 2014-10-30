@@ -29,4184 +29,6 @@ var ConnectionError = {
 	}
 };
 
-var inherits = function(constructor, superConstructor, overrides) {
-  function F() {}
-  F.prototype = superConstructor.prototype;
-  constructor.prototype = new F();
-  if(overrides) {
-    for(var prop in overrides)
-      constructor.prototype[prop] = overrides[prop];
-  }
-};
-
-/**
- * Support for handling 64-bit int numbers in Javascript (node.js)
- *
- * JS Numbers are IEEE-754 binary double-precision floats, which limits the
- * range of values that can be represented with integer precision to:
- *
- * 2^^53 <= N <= 2^53
- *
- * Int64 objects wrap a node Buffer that holds the 8-bytes of int64 data.  These
- * objects operate directly on the buffer which means that if they are created
- * using an existing buffer then setting the value will modify the Buffer, and
- * vice-versa.
- *
- * Internal Representation
- *
- * The internal buffer format is Big Endian.  I.e. the most-significant byte is
- * at buffer[0], the least-significant at buffer[7].  For the purposes of
- * converting to/from JS native numbers, the value is assumed to be a signed
- * integer stored in 2's complement form.
- *
- * For details about IEEE-754 see:
- * http://en.wikipedia.org/wiki/Double_precision_floating-point_format
- */
-
-// Useful masks and values for bit twiddling
-var MASK31 =  0x7fffffff, VAL31 = 0x80000000;
-var MASK32 =  0xffffffff, VAL32 = 0x100000000;
-
-// Map for converting hex octets to strings
-var _HEX = [];
-for (var i = 0; i < 256; i++) {
-  _HEX[i] = (i > 0xF ? '' : '0') + i.toString(16);
-}
-
-//
-// Int64
-//
-
-/**
- * Constructor accepts any of the following argument types:
- *
- * new Int64(buffer[, offset=0]) - Existing Array or Uint8Array with element offset
- * new Int64(string)             - Hex string (throws if n is outside int64 range)
- * new Int64(number)             - Number (throws if n is outside int64 range)
- * new Int64(hi, lo)             - Raw bits as two 32-bit values
- */
-var Int64 = function(a1, a2) {
-  if (a1 instanceof Array) {
-    this.buffer = a1;
-    this.offset = a2 || 0;
-  } else {
-    this.buffer = this.buffer || new Array(8);
-    this.offset = 0;
-    this.setValue.apply(this, arguments);
-  }
-};
-
-
-// Max integer value that JS can accurately represent
-Int64.MAX_INT = Math.pow(2, 53);
-
-// Min integer value that JS can accurately represent
-Int64.MIN_INT = -Math.pow(2, 53);
-
-Int64.prototype = {
-  /**
-   * Do in-place 2's compliment.  See
-   * http://en.wikipedia.org/wiki/Two's_complement
-   */
-  _2scomp: function() {
-    var b = this.buffer, o = this.offset, carry = 1;
-    for (var i = o + 7; i >= o; i--) {
-      var v = (b[i] ^ 0xff) + carry;
-      b[i] = v & 0xff;
-      carry = v >> 8;
-    }
-  },
-
-  /**
-   * Set the value. Takes any of the following arguments:
-   *
-   * setValue(string) - A hexidecimal string
-   * setValue(number) - Number (throws if n is outside int64 range)
-   * setValue(hi, lo) - Raw bits as two 32-bit values
-   */
-  setValue: function(hi, lo) {
-    var negate = false;
-    if (arguments.length == 1) {
-      if (typeof(hi) == 'number') {
-        // Simplify bitfield retrieval by using abs() value.  We restore sign
-        // later
-        negate = hi < 0;
-        hi = Math.abs(hi);
-        lo = hi % VAL32;
-        hi = hi / VAL32;
-        if (hi > VAL32) throw new RangeError(hi  + ' is outside Int64 range');
-        hi = hi | 0;
-      } else if (typeof(hi) == 'string') {
-        hi = (hi + '').replace(/^0x/, '');
-        lo = hi.substr(-8);
-        hi = hi.length > 8 ? hi.substr(0, hi.length - 8) : '';
-        hi = parseInt(hi, 16);
-        lo = parseInt(lo, 16);
-      } else {
-        throw new Error(hi + ' must be a Number or String');
-      }
-    }
-
-    // Technically we should throw if hi or lo is outside int32 range here, but
-    // it's not worth the effort. Anything past the 32'nd bit is ignored.
-
-    // Copy bytes to buffer
-    var b = this.buffer, o = this.offset;
-    for (var i = 7; i >= 0; i--) {
-      b[o+i] = lo & 0xff;
-      lo = i == 4 ? hi : lo >>> 8;
-    }
-
-    // Restore sign of passed argument
-    if (negate) this._2scomp();
-  },
-
-  /**
-   * Convert to a native JS number.
-   *
-   * WARNING: Do not expect this value to be accurate to integer precision for
-   * large (positive or negative) numbers!
-   *
-   * @param allowImprecise If true, no check is performed to verify the
-   * returned value is accurate to integer precision.  If false, imprecise
-   * numbers (very large positive or negative numbers) will be forced to +/-
-   * Infinity.
-   */
-  toNumber: function(allowImprecise) {
-    var b = this.buffer, o = this.offset;
-
-    // Running sum of octets, doing a 2's complement
-    var negate = b[0] & 0x80, x = 0, carry = 1;
-    for (var i = 7, m = 1; i >= 0; i--, m *= 256) {
-      var v = b[o+i];
-
-      // 2's complement for negative numbers
-      if (negate) {
-        v = (v ^ 0xff) + carry;
-        carry = v >> 8;
-        v = v & 0xff;
-      }
-
-      x += v * m;
-    }
-
-    // Return Infinity if we've lost integer precision
-    if (!allowImprecise && x >= Int64.MAX_INT) {
-      return negate ? -Infinity : Infinity;
-    }
-
-    return negate ? -x : x;
-  },
-
-  /**
-   * Convert to a JS Number. Returns +/-Infinity for values that can't be
-   * represented to integer precision.
-   */
-  valueOf: function() {
-    return this.toNumber(false);
-  },
-
-  /**
-   * Return string value
-   *
-   * @param radix Just like Number#toString()'s radix
-   */
-  toString: function(radix) {
-    return this.valueOf().toString(radix || 10);
-  },
-
-  /**
-   * Return a string showing the buffer octets, with MSB on the left.
-   *
-   * @param sep separator string. default is '' (empty string)
-   */
-  toOctetString: function(sep) {
-    var out = new Array(8);
-    var b = this.buffer, o = this.offset;
-    for (var i = 0; i < 8; i++) {
-      out[i] = _HEX[b[o+i]];
-    }
-    return out.join(sep || '');
-  },
-
-  /**
-   * Pretty output in console.log
-   */
-  inspect: function() {
-    return '[Int64 value:' + this + ' octets:' + this.toOctetString(' ') + ']';
-  }
-};
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-var Thrift = {
-    Version: '0.8.0',
-/*
-    Description: 'JavaScript bindings for the Apache Thrift RPC system',
-    License: 'http://www.apache.org/licenses/LICENSE-2.0',
-    Homepage: 'http://thrift.apache.org',
-    BugReports: 'https://issues.apache.org/jira/browse/THRIFT',
-    Maintainer: 'dev@thrift.apache.org',
-*/
-
-    Type: {
-        'STOP' : 0,
-        'VOID' : 1,
-        'BOOL' : 2,
-        'BYTE' : 3,
-        'I08' : 3,
-        'DOUBLE' : 4,
-        'I16' : 6,
-        'I32' : 8,
-        'I64' : 10,
-        'STRING' : 11,
-        'UTF7' : 11,
-        'STRUCT' : 12,
-        'MAP' : 13,
-        'SET' : 14,
-        'LIST' : 15,
-        'UTF8' : 16,
-        'UTF16' : 17
-    },
-
-    MessageType: {
-        'CALL' : 1,
-        'REPLY' : 2,
-        'EXCEPTION' : 3
-    },
-
-    objectLength: function(obj) {
-        var length = 0;
-        for (var k in obj) {
-            if (obj.hasOwnProperty(k)) {
-                length++;
-            }
-        }
-
-        return length;
-    },
-
-    inherits: function(constructor, superConstructor) {
-      //Prototypal Inheritance http://javascript.crockford.com/prototypal.html
-      function F() {}
-      F.prototype = superConstructor.prototype;
-      constructor.prototype = new F();
-    }
-};
-
-
-
-Thrift.TException = function(message) {
-    this.message = message;
-};
-Thrift.inherits(Thrift.TException, Error);
-Thrift.TException.prototype.name = 'TException';
-
-Thrift.TApplicationExceptionType = {
-    'UNKNOWN' : 0,
-    'UNKNOWN_METHOD' : 1,
-    'INVALID_MESSAGE_TYPE' : 2,
-    'WRONG_METHOD_NAME' : 3,
-    'BAD_SEQUENCE_ID' : 4,
-    'MISSING_RESULT' : 5,
-    'INTERNAL_ERROR' : 6,
-    'PROTOCOL_ERROR' : 7
-};
-
-Thrift.TApplicationException = function(message, code) {
-    this.message = message;
-    this.code = (code === null) ? 0 : code;
-};
-Thrift.inherits(Thrift.TApplicationException, Thrift.TException);
-Thrift.TApplicationException.prototype.name = 'TApplicationException';
-
-Thrift.TApplicationException.prototype.read = function(input) {
-    while (1) {
-        var ret = input.readFieldBegin();
-
-        if (ret.ftype == Thrift.Type.STOP) {
-            break;
-        }
-
-        var fid = ret.fid;
-
-        switch (fid) {
-            case 1:
-                if (ret.ftype == Thrift.Type.STRING) {
-                    ret = input.readString();
-                    this.message = ret.value;
-                } else {
-                    ret = input.skip(ret.ftype);
-                }
-                break;
-            case 2:
-                if (ret.ftype == Thrift.Type.I32) {
-                    ret = input.readI32();
-                    this.code = ret.value;
-                } else {
-                    ret = input.skip(ret.ftype);
-                }
-                break;
-           default:
-                ret = input.skip(ret.ftype);
-                break;
-        }
-
-        input.readFieldEnd();
-    }
-
-    input.readStructEnd();
-};
-
-Thrift.TApplicationException.prototype.write = function(output) {
-    var xfer = 0;
-
-    output.writeStructBegin('TApplicationException');
-
-    if (this.message) {
-        output.writeFieldBegin('message', Thrift.Type.STRING, 1);
-        output.writeString(this.getMessage());
-        output.writeFieldEnd();
-    }
-
-    if (this.code) {
-        output.writeFieldBegin('type', Thrift.Type.I32, 2);
-        output.writeI32(this.code);
-        output.writeFieldEnd();
-    }
-
-    output.writeFieldStop();
-    output.writeStructEnd();
-};
-
-Thrift.TApplicationException.prototype.getCode = function() {
-    return this.code;
-};
-
-Thrift.TApplicationException.prototype.getMessage = function() {
-    return this.message;
-};
-
-/**
- *If you do not specify a url then you must handle ajax on your own.
- *This is how to use js bindings in a async fashion.
- */
-Thrift.TXHRTransport = function(url) {
-    this.url = url;
-    this.wpos = 0;
-    this.rpos = 0;
-
-    this.send_buf = '';
-    this.recv_buf = '';
-};
-
-Thrift.TXHRTransport.prototype = {
-
-    //Gets the browser specific XmlHttpRequest Object
-    getXmlHttpRequestObject: function() {
-        try { return new XMLHttpRequest(); } catch (e1) { }
-        try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch (e2) { }
-        try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch (e3) { }
-
-        throw "Your browser doesn't support the XmlHttpRequest object.";
-    },
-
-    flush: function(async) {
-        //async mode
-        if (async || this.url === undefined || this.url === '') {
-            return this.send_buf;
-        }
-
-        var xreq = this.getXmlHttpRequestObject();
-
-        if (xreq.overrideMimeType) {
-            xreq.overrideMimeType('application/json');
-        }
-
-        xreq.open('POST', this.url, false);
-        xreq.send(this.send_buf);
-
-        if (xreq.readyState != 4) {
-            throw 'encountered an unknown ajax ready state: ' + xreq.readyState;
-        }
-
-        if (xreq.status != 200) {
-            throw 'encountered a unknown request status: ' + xreq.status;
-        }
-
-        this.recv_buf = xreq.responseText;
-        this.recv_buf_sz = this.recv_buf.length;
-        this.wpos = this.recv_buf.length;
-        this.rpos = 0;
-    },
-
-    jqRequest: function(client, postData, args, recv_method) {
-        if (typeof jQuery === 'undefined' ||
-            typeof jQuery.Deferred === 'undefined') {
-            throw 'Thrift.js requires jQuery 1.5+ to use asynchronous requests';
-        }
-
-        // Deferreds
-        var deferred = jQuery.Deferred();
-        var completeDfd = jQuery._Deferred();
-        var dfd = deferred.promise();
-        dfd.success = dfd.done;
-        dfd.error = dfd.fail;
-        dfd.complete = completeDfd.done;
-
-        var jqXHR = jQuery.ajax({
-            url: this.url,
-            data: postData,
-            type: 'POST',
-            cache: false,
-            dataType: 'text',
-            context: this,
-            success: this.jqResponse,
-            error: function(xhr, status, e) {
-                deferred.rejectWith(client, jQuery.merge([e], xhr.tArgs));
-            },
-            complete: function(xhr, status) {
-                completeDfd.resolveWith(client, [xhr, status]);
-            }
-        });
-
-        deferred.done(jQuery.makeArray(args).pop()); //pop callback from args
-        jqXHR.tArgs = args;
-        jqXHR.tClient = client;
-        jqXHR.tRecvFn = recv_method;
-        jqXHR.tDfd = deferred;
-        return dfd;
-    },
-
-    jqResponse: function(responseData, textStatus, jqXHR) {
-      this.setRecvBuffer(responseData);
-      try {
-          var value = jqXHR.tRecvFn.call(jqXHR.tClient);
-          jqXHR.tDfd.resolveWith(jqXHR, jQuery.merge([value], jqXHR.tArgs));
-      } catch (ex) {
-          jqXHR.tDfd.rejectWith(jqXHR, jQuery.merge([ex], jqXHR.tArgs));
-      }
-    },
-
-    setRecvBuffer: function(buf) {
-        this.recv_buf = buf;
-        this.recv_buf_sz = this.recv_buf.length;
-        this.wpos = this.recv_buf.length;
-        this.rpos = 0;
-    },
-
-    isOpen: function() {
-        return true;
-    },
-
-    open: function() {},
-
-    close: function() {},
-
-    read: function(len) {
-        var avail = this.wpos - this.rpos;
-
-        if (avail === 0) {
-            return '';
-        }
-
-        var give = len;
-
-        if (avail < len) {
-            give = avail;
-        }
-
-        var ret = this.read_buf.substr(this.rpos, give);
-        this.rpos += give;
-
-        //clear buf when complete?
-        return ret;
-    },
-
-    readAll: function() {
-        return this.recv_buf;
-    },
-
-    write: function(buf) {
-        this.send_buf = buf;
-    },
-
-    getSendBuffer: function() {
-        return this.send_buf;
-    }
-
-};
-
-Thrift.TStringTransport = function(recv_buf, callback) {
-    this.send_buf = '';
-    this.recv_buf = recv_buf || '';
-    this.onFlush = callback;
-};
-
-Thrift.TStringTransport.prototype = {
-
-    flush: function() {
-      if(this.onFlush)
-        this.onFlush(this.send_buf);
-    },
-
-    isOpen: function() {
-        return true;
-    },
-
-    open: function() {},
-
-    close: function() {},
-
-    read: function(len) {
-        return this.recv_buf;
-    },
-
-    readAll: function() {
-        return this.recv_buf;
-    },
-
-    write: function(buf) {
-        this.send_buf = buf;
-    }
-
-};
-
-Thrift.Protocol = function(transport) {
-    this.transport = transport;
-};
-
-Thrift.Protocol.Type = {};
-Thrift.Protocol.Type[Thrift.Type.BOOL] = '"tf"';
-Thrift.Protocol.Type[Thrift.Type.BYTE] = '"i8"';
-Thrift.Protocol.Type[Thrift.Type.I16] = '"i16"';
-Thrift.Protocol.Type[Thrift.Type.I32] = '"i32"';
-Thrift.Protocol.Type[Thrift.Type.I64] = '"i64"';
-Thrift.Protocol.Type[Thrift.Type.DOUBLE] = '"dbl"';
-Thrift.Protocol.Type[Thrift.Type.STRUCT] = '"rec"';
-Thrift.Protocol.Type[Thrift.Type.STRING] = '"str"';
-Thrift.Protocol.Type[Thrift.Type.MAP] = '"map"';
-Thrift.Protocol.Type[Thrift.Type.LIST] = '"lst"';
-Thrift.Protocol.Type[Thrift.Type.SET] = '"set"';
-
-
-Thrift.Protocol.RType = {};
-Thrift.Protocol.RType.tf = Thrift.Type.BOOL;
-Thrift.Protocol.RType.i8 = Thrift.Type.BYTE;
-Thrift.Protocol.RType.i16 = Thrift.Type.I16;
-Thrift.Protocol.RType.i32 = Thrift.Type.I32;
-Thrift.Protocol.RType.i64 = Thrift.Type.I64;
-Thrift.Protocol.RType.dbl = Thrift.Type.DOUBLE;
-Thrift.Protocol.RType.rec = Thrift.Type.STRUCT;
-Thrift.Protocol.RType.str = Thrift.Type.STRING;
-Thrift.Protocol.RType.map = Thrift.Type.MAP;
-Thrift.Protocol.RType.lst = Thrift.Type.LIST;
-Thrift.Protocol.RType.set = Thrift.Type.SET;
-
-Thrift.Protocol.Version = 1;
-
-Thrift.Protocol.prototype = {
-
-    getTransport: function() {
-        return this.transport;
-    },
-
-    //Write functions
-    writeMessageBegin: function(name, messageType, seqid) {
-        this.tstack = [];
-        this.tpos = [];
-
-        this.tstack.push([Thrift.Protocol.Version, '"' +
-            name + '"', messageType, seqid]);
-    },
-
-    writeMessageEnd: function() {
-        var obj = this.tstack.pop();
-
-        this.wobj = this.tstack.pop();
-        this.wobj.push(obj);
-
-        this.wbuf = '[' + this.wobj.join(',') + ']';
-
-        this.transport.write(this.wbuf);
-     },
-
-
-    writeStructBegin: function(name) {
-        this.tpos.push(this.tstack.length);
-        this.tstack.push({});
-    },
-
-    writeStructEnd: function() {
-
-        var p = this.tpos.pop();
-        var struct = this.tstack[p];
-        var str = '{';
-        var first = true;
-        for (var key in struct) {
-            if (first) {
-                first = false;
-            } else {
-                str += ',';
-            }
-
-            str += key + ':' + struct[key];
-        }
-
-        str += '}';
-        this.tstack[p] = str;
-    },
-
-    writeFieldBegin: function(name, fieldType, fieldId) {
-        this.tpos.push(this.tstack.length);
-        this.tstack.push({ 'fieldId': '"' +
-            fieldId + '"', 'fieldType': Thrift.Protocol.Type[fieldType]
-        });
-
-    },
-
-    writeFieldEnd: function() {
-        var value = this.tstack.pop();
-        var fieldInfo = this.tstack.pop();
-
-        this.tstack[this.tstack.length - 1][fieldInfo.fieldId] = '{' +
-            fieldInfo.fieldType + ':' + value + '}';
-        this.tpos.pop();
-    },
-
-    writeFieldStop: function() {
-        //na
-    },
-
-    writeMapBegin: function(keyType, valType, size) {
-        //size is invalid, we'll set it on end.
-        this.tpos.push(this.tstack.length);
-        this.tstack.push([Thrift.Protocol.Type[keyType],
-            Thrift.Protocol.Type[valType], 0]);
-    },
-
-    writeMapEnd: function() {
-        var p = this.tpos.pop();
-
-        if (p == this.tstack.length) {
-            return;
-        }
-
-        if ((this.tstack.length - p - 1) % 2 !== 0) {
-            this.tstack.push('');
-        }
-
-        var size = (this.tstack.length - p - 1) / 2;
-
-        this.tstack[p][this.tstack[p].length - 1] = size;
-
-        var map = '}';
-        var first = true;
-        while (this.tstack.length > p + 1) {
-            var v = this.tstack.pop();
-            var k = this.tstack.pop();
-            if (first) {
-                first = false;
-            } else {
-                map = ',' + map;
-            }
-
-            if (! isNaN(k)) { k = '"' + k + '"'; } //json "keys" need to be strings
-            map = k + ':' + v + map;
-        }
-        map = '{' + map;
-
-        this.tstack[p].push(map);
-        this.tstack[p] = '[' + this.tstack[p].join(',') + ']';
-    },
-
-    writeListBegin: function(elemType, size) {
-        this.tpos.push(this.tstack.length);
-        this.tstack.push([Thrift.Protocol.Type[elemType], size]);
-    },
-
-    writeListEnd: function() {
-        var p = this.tpos.pop();
-
-        while (this.tstack.length > p + 1) {
-            var tmpVal = this.tstack[p + 1];
-            this.tstack.splice(p + 1, 1);
-            this.tstack[p].push(tmpVal);
-        }
-
-        this.tstack[p] = '[' + this.tstack[p].join(',') + ']';
-    },
-
-    writeSetBegin: function(elemType, size) {
-        this.tpos.push(this.tstack.length);
-        this.tstack.push([Thrift.Protocol.Type[elemType], size]);
-    },
-
-    writeSetEnd: function() {
-        var p = this.tpos.pop();
-
-        while (this.tstack.length > p + 1) {
-            var tmpVal = this.tstack[p + 1];
-            this.tstack.splice(p + 1, 1);
-            this.tstack[p].push(tmpVal);
-        }
-
-        this.tstack[p] = '[' + this.tstack[p].join(',') + ']';
-    },
-
-    writeBool: function(value) {
-        this.tstack.push(value ? 1 : 0);
-    },
-
-    writeByte: function(i8) {
-        this.tstack.push(i8);
-    },
-
-    writeI16: function(i16) {
-        this.tstack.push(i16);
-    },
-
-    writeI32: function(i32) {
-        this.tstack.push(i32);
-    },
-
-    writeI64: function(i64) {
-        this.tstack.push(i64);
-    },
-
-    writeDouble: function(dbl) {
-        this.tstack.push(dbl);
-    },
-
-    writeString: function(str) {
-        // We do not encode uri components for wire transfer:
-        if (str === null) {
-            this.tstack.push(null);
-        } else {
-            // concat may be slower than building a byte buffer
-            var escapedString = '';
-            for (var i = 0; i < str.length; i++) {
-                var ch = str.charAt(i);      // a single double quote: "
-                if (ch === '\"') {
-                    escapedString += '\\\"'; // write out as: \"
-                } else if (ch === '\\') {    // a single backslash: \
-                    escapedString += '\\\\'; // write out as: \\
-                /* Currently escaped forward slashes break TJSONProtocol.
-                 * As it stands, we can simply pass forward slashes into
-                 * our strings across the wire without being escaped.
-                 * I think this is the protocol's bug, not thrift.js
-                 * } else if(ch === '/') {   // a single forward slash: /
-                 *  escapedString += '\\/';  // write out as \/
-                 * }
-                 */
-                } else if (ch === '\b') {    // a single backspace: invisible
-                    escapedString += '\\b';  // write out as: \b"
-                } else if (ch === '\f') {    // a single formfeed: invisible
-                    escapedString += '\\f';  // write out as: \f"
-                } else if (ch === '\n') {    // a single newline: invisible
-                    escapedString += '\\n';  // write out as: \n"
-                } else if (ch === '\r') {    // a single return: invisible
-                    escapedString += '\\r';  // write out as: \r"
-                } else if (ch === '\t') {    // a single tab: invisible
-                    escapedString += '\\t';  // write out as: \t"
-                } else {
-                    escapedString += ch;     // Else it need not be escaped
-                }
-            }
-            this.tstack.push('"' + escapedString + '"');
-        }
-    },
-
-    writeBinary: function(str) {
-        this.writeString(str);
-    },
-
-
-
-    // Reading functions
-    readMessageBegin: function(name, messageType, seqid) {
-        this.rstack = [];
-        this.rpos = [];
-
-        if (typeof jQuery !== 'undefined') {
-            this.robj = jQuery.parseJSON(this.transport.readAll());
-        } else {
-            this.robj = eval(this.transport.readAll());
-        }
-
-        var r = {};
-        var version = this.robj.shift();
-
-        if (version != Thrift.Protocol.Version) {
-            throw 'Wrong thrift protocol version: ' + version;
-        }
-
-        r.fname = this.robj.shift();
-        r.mtype = this.robj.shift();
-        r.rseqid = this.robj.shift();
-
-
-        //get to the main obj
-        this.rstack.push(this.robj.shift());
-
-        return r;
-    },
-
-    readMessageEnd: function() {
-    },
-
-    readStructBegin: function(name) {
-        var r = {};
-        r.fname = '';
-
-        //incase this is an array of structs
-        if (this.rstack[this.rstack.length - 1] instanceof Array) {
-            this.rstack.push(this.rstack[this.rstack.length - 1].shift());
-        }
-
-        return r;
-    },
-
-    readStructEnd: function() {
-        if (this.rstack[this.rstack.length - 2] instanceof Array) {
-            this.rstack.pop();
-        }
-    },
-
-    readFieldBegin: function() {
-        var r = {};
-
-        var fid = -1;
-        var ftype = Thrift.Type.STOP;
-
-        //get a fieldId
-        for (var f in (this.rstack[this.rstack.length - 1])) {
-            if (f === null) {
-              continue;
-            }
-
-            fid = parseInt(f, 10);
-            this.rpos.push(this.rstack.length);
-
-            var field = this.rstack[this.rstack.length - 1][fid];
-
-            //remove so we don't see it again
-            delete this.rstack[this.rstack.length - 1][fid];
-
-            this.rstack.push(field);
-
-            break;
-        }
-
-        if (fid != -1) {
-
-            //should only be 1 of these but this is the only
-            //way to match a key
-            for (var i in (this.rstack[this.rstack.length - 1])) {
-                if (Thrift.Protocol.RType[i] === null) {
-                    continue;
-                }
-
-                ftype = Thrift.Protocol.RType[i];
-                this.rstack[this.rstack.length - 1] =
-                    this.rstack[this.rstack.length - 1][i];
-            }
-        }
-
-        r.fname = '';
-        r.ftype = ftype;
-        r.fid = fid;
-
-        return r;
-    },
-
-    readFieldEnd: function() {
-        var pos = this.rpos.pop();
-
-        //get back to the right place in the stack
-        while (this.rstack.length > pos) {
-            this.rstack.pop();
-        }
-
-    },
-
-    readMapBegin: function(keyType, valType, size) {
-        var map = this.rstack.pop();
-
-        var r = {};
-        r.ktype = Thrift.Protocol.RType[map.shift()];
-        r.vtype = Thrift.Protocol.RType[map.shift()];
-        r.size = map.shift();
-
-
-        this.rpos.push(this.rstack.length);
-        this.rstack.push(map.shift());
-
-        return r;
-    },
-
-    readMapEnd: function() {
-        this.readFieldEnd();
-    },
-
-    readListBegin: function(elemType, size) {
-        var list = this.rstack[this.rstack.length - 1];
-
-        var r = {};
-        r.etype = Thrift.Protocol.RType[list.shift()];
-        r.size = list.shift();
-
-        this.rpos.push(this.rstack.length);
-        this.rstack.push(list);
-
-        return r;
-    },
-
-    readListEnd: function() {
-        this.readFieldEnd();
-    },
-
-    readSetBegin: function(elemType, size) {
-        return this.readListBegin(elemType, size);
-    },
-
-    readSetEnd: function() {
-        return this.readListEnd();
-    },
-
-    readBool: function() {
-        var r = this.readI32();
-
-        if (r !== null && r.value == '1') {
-            r.value = true;
-        } else {
-            r.value = false;
-        }
-
-        return r;
-    },
-
-    readByte: function() {
-        return this.readI32();
-    },
-
-    readI16: function() {
-        return this.readI32();
-    },
-
-    readI32: function(f) {
-        if (f === undefined) {
-            f = this.rstack[this.rstack.length - 1];
-        }
-
-        var r = {};
-
-        if (f instanceof Array) {
-            if (f.length === 0) {
-                r.value = undefined;
-            } else {
-                r.value = f.shift();
-            }
-        } else if (f instanceof Object) {
-           for (var i in f) {
-                if (i === null) {
-                  continue;
-                }
-                this.rstack.push(f[i]);
-                delete f[i];
-
-                r.value = i;
-                break;
-           }
-        } else {
-            r.value = f;
-            this.rstack.pop();
-        }
-
-        return r;
-    },
-
-    readI64: function() {
-        return this.readI32();
-    },
-
-    readDouble: function() {
-        return this.readI32();
-    },
-
-    readString: function() {
-        var r = this.readI32();
-        return r;
-    },
-
-    readBinary: function() {
-        return this.readString();
-    },
-
-
-    //Method to arbitrarily skip over data.
-    skip: function(type) {
-        throw 'skip not supported yet';
-    }
-};
-
-Thrift.TJSONProtocol = function(transport) {
-    this.transport = transport;
-    this.reset();
-};
-
-Thrift.TJSONProtocol.Type = {};
-Thrift.TJSONProtocol.Type[Thrift.Type.BOOL] = 'tf';
-Thrift.TJSONProtocol.Type[Thrift.Type.BYTE] = 'i8';
-Thrift.TJSONProtocol.Type[Thrift.Type.I16] = 'i16';
-Thrift.TJSONProtocol.Type[Thrift.Type.I32] = 'i32';
-Thrift.TJSONProtocol.Type[Thrift.Type.I64] = 'i64';
-Thrift.TJSONProtocol.Type[Thrift.Type.DOUBLE] = 'dbl';
-Thrift.TJSONProtocol.Type[Thrift.Type.STRUCT] = 'rec';
-Thrift.TJSONProtocol.Type[Thrift.Type.STRING] = 'str';
-Thrift.TJSONProtocol.Type[Thrift.Type.MAP] = 'map';
-Thrift.TJSONProtocol.Type[Thrift.Type.LIST] = 'lst';
-Thrift.TJSONProtocol.Type[Thrift.Type.SET] = 'set';
-
-Thrift.TJSONProtocol.getValueFromScope = function(scope) {
-  var listvalue = scope.listvalue;
-  return listvalue ? listvalue.shift() : scope.value;
-};
-
-Thrift.TJSONProtocol.getScopeFromScope = function(scope) {
-  var listvalue = scope.listvalue;
-  if(listvalue)
-    scope = {value:listvalue.shift()};
-  return scope;
-};
-
-Thrift.TJSONProtocol.prototype = {
-
-    reset: function() {
-      this.elementStack = [];
-    },
-
-    //Write functions
-    writeMessageBegin: function(name, messageType, seqid) {
-      throw new Error("TJSONProtocol: Message not supported");
-    },
-
-    writeMessageEnd: function() {
-    },
-
-    writeStructBegin: function(name) {
-      var container = {};
-      this.elementStack.unshift(container);
-    },
-
-    writeStructEnd: function() {
-      var container = this.elementStack.shift();
-      if(this.elementStack.length == 0)
-        this.transport.write(JSON.stringify(container));
-      else
-        this.elementStack[0].value.push(container);
-    },
-
-    writeFieldBegin: function(name, fieldType, fieldId) {
-      var field = {name:name, fieldType:Thrift.TJSONProtocol.Type[fieldType], fieldId:fieldId, value:[]};
-      this.elementStack.unshift(field);
-    },
-
-    writeFieldEnd: function() {
-      var field = this.elementStack.shift();
-      var fieldValue = {};
-      fieldValue[field.fieldType] = field.value[0];
-      this.elementStack[0][field.fieldId] = fieldValue;
-    },
-
-    writeFieldStop: function() {
-        //na
-    },
-
-    writeMapBegin: function(keyType, valType, size) {
-      var map = {value:[
-        Thrift.TJSONProtocol.Type[keyType],
-        Thrift.TJSONProtocol.Type[valType],
-        size
-      ]};
-      this.elementStack.unshift(map);
-    },
-
-    writeMapEnd: function() {
-      var map = this.elementStack.shift();
-      this.elementStack[0].value.push(map.value);
-    },
-
-    writeListBegin: function(elemType, size) {
-      var list = {name:name, value:[
-        Thrift.TJSONProtocol.Type[elemType],
-        size
-      ]};
-      this.elementStack.unshift(list);
-    },
-
-    writeListEnd: function() {
-      var list = this.elementStack.shift();
-      this.elementStack[0].value.push(list.value);
-    },
-
-    writeSetBegin: function(elemType, size) {
-      var set = {name:name, value:[
-        Thrift.TJSONProtocol.Type[elemType],
-        size
-      ]};
-      this.elementStack.unshift(set);
-    },
-
-    writeSetEnd: function() {
-      var set = this.elementStack.shift();
-      this.elementStack[0].value.push(set.value);
-    },
-
-    writeBool: function(value) {
-      this.elementStack[0].value.push(value ? 1 : 0);
-    },
-
-    writeByte: function(i8) {
-      this.elementStack[0].value.push(i8);
-    },
-
-    writeI16: function(i16) {
-      this.elementStack[0].value.push(i16);
-    },
-
-    writeI32: function(i32) {
-      this.elementStack[0].value.push(i32);
-    },
-
-    writeI64: function(i64) {
-      this.elementStack[0].value.push(i64);
-    },
-
-    writeDouble: function(dbl) {
-      this.elementStack[0].value.push(dbl);
-    },
-
-    writeString: function(str) {
-      this.elementStack[0].value.push(str);
-    },
-
-    writeBinary: function(str) {
-      this.elementStack[0].value.push(str);
-    },
-
-    // Reading functions
-    readMessageBegin: function(name, messageType, seqid) {
-      throw new Error("TJSONProtocol: Message not supported");
-    },
-
-    readMessageEnd: function() {
-    },
-
-    readStructBegin: function(name) {
-      var value;
-      if(this.elementStack.length == 0)
-        value = JSON.parse(this.transport.readAll());
-      else
-        value = Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-        
-      var fields = [];
-      for(var field in value)
-        fields.push(field);
-      this.elementStack.unshift({
-        fields:fields,
-        value:value
-      });
-      return {
-        fname:''
-      }
-    },
-
-    readStructEnd: function() {
-      this.elementStack.shift();
-    },
-
-    readFieldBegin: function() {
-      var scope = this.elementStack[0];
-      var scopeValue = Thrift.TJSONProtocol.getValueFromScope(scope);
-      var fid = scope.fields.shift();
-      if(!fid)
-        return {fname:'', ftype:Thrift.Type.STOP};
-
-      var fieldValue = scopeValue[fid];
-      for(var soleMember in fieldValue) {
-        this.elementStack.unshift({value:fieldValue[soleMember]});
-        return {
-          fname:'',
-          fid:Number(fid),
-          ftype:Thrift.Protocol.RType[soleMember]
-        };
-      }
-      /* there are no members, which is a format error */
-      throw new Error("TJSONProtocol: parse error reading field value");
-    },
-
-    readFieldEnd: function() {
-      this.elementStack.shift();
-    },
-
-    readMapBegin: function(keyType, valType, size) {
-      var scope = this.elementStack[0];
-      var value = Thrift.TJSONProtocol.getValueFromScope(scope);
-      var result = {
-        ktype:Thrift.Protocol.RType[value.shift()],
-        vtype:Thrift.Protocol.RType[value.shift()],
-        size:value.shift()
-      };
-      this.elementStack.unshift({listvalue:value});
-      return result;
-    },
-
-    readMapEnd: function() {
-      this.elementStack.shift();
-    },
-
-    readListBegin: function(elemType, size) {
-      var scope = this.elementStack[0];
-      var value = Thrift.TJSONProtocol.getValueFromScope(scope);
-      var result = {
-        etype:Thrift.Protocol.RType[value.shift()],
-        size:value.shift()
-      };
-      this.elementStack.unshift({listvalue:value});
-      return result;
-    },
-
-    readListEnd: function() {
-      this.elementStack.shift();
-    },
-
-    readSetBegin: function(elemType, size) {
-      var scope = this.elementStack[0];
-      var value = Thrift.TJSONProtocol.getValueFromScope(scope);
-      var result = {
-        etype:Thrift.Protocol.RType[value.shift()],
-        size:value.shift()
-      };
-      this.elementStack.unshift({listvalue:value});
-      return result;
-    },
-
-    readSetEnd: function() {
-      this.elementStack.shift();
-    },
-
-    readBool: function() {
-      return !!Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readByte: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readI16: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readI32: function(f) {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readI64: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readDouble: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readString: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    readBinary: function() {
-      return Thrift.TJSONProtocol.getValueFromScope(this.elementStack[0]);
-    },
-
-    flush: function() {
-      this.transport.flush();
-    }
-};
-
-var Utf8 = {
-  encode: function(string, view, off) {
-    var pos = off;
-    for(var n = 0; n < string.length; n++) {
-      var c = string.charCodeAt(n);
-      if (c < 128) {
-        view.setInt8(pos++, c);
-      } else if((c > 127) && (c < 2048)) {
-        view.setInt8(pos++, (c >> 6) | 192);
-        view.setInt8(pos++, (c & 63) | 128);
-      } else {
-        view.setInt8(pos++, (c >> 12) | 224);
-        view.setInt8(pos++, ((c >> 6) & 63) | 128);
-        view.setInt8(pos++, (c & 63) | 128);
-      }
-    }
-    return (pos - off);
-  },
-  decode : function(view, off, length) {
-    var string = "";
-    var i = off;
-    length += off;
-    var c = c1 = c2 = 0;
-    while ( i < length ) {
-      c = view.getInt8(i++);
-      if (c < 128) {
-        string += String.fromCharCode(c);
-      } else if((c > 191) && (c < 224)) {
-        c2 = view.getInt8(i++);
-        string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-      } else {
-        c2 = view.getInt8(i++);
-        c3 = view.getInt8(i++);
-        string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-      }
-    }
-    return string;
-  }
-}
-
-/* constructor simply creates a buffer of a specified length */
-var Buffer = function(length) {
-  this.offset = 0;
-  this.length = length;
-  if(length) {
-    var buf = this.buf = new ArrayBuffer(length);
-    this.view = new DataView(buf);
-  }
-};
-
-Buffer.prototype = {
-  getArray: function() {
-    if(!this.array)
-      this.array = new Uint8Array(this.buf, this.offset, this.length);
-    return this.array;
-  },
-  slice: function(start, end) {
-    start = start || 0;
-    end = end || this.length;
-    var result = new Buffer();
-    var length = result.length = end - start;
-    var offset = result.offset = this.offset + start;
-    var buf = result.buf = this.buf;
-    result.view = new DataView(buf, offset, length);
-    return result;
-  },
-  getInt8: function(off) {
-    return this.view.getInt8(off);
-  },
-  getInt16: function(off) {
-    return this.view.getInt16(off, false);
-  },
-  getInt32: function(off) {
-    return this.view.getInt32(off, false);
-  },
-  getInt64: function(off) {
-    var hi = this.view.getInt32(off, false);
-    var lo = this.view.getUint32(off + 4, false);
-    return new Int64(hi, lo);
-  },
-  getFloat64: function(off) {
-    return this.view.getFloat64(off, false);
-  },
-  getUtf8String: function(off, utflen) {
-    return Utf8.decode(this.view, off, utflen);
-  },
-  setInt8: function(off, v) {
-    this.view.setInt8(off, v);
-  },
-  setInt16: function(off, v) {
-    this.view.setInt16(off, v, false);
-  },
-  setInt32: function(off, v) {
-    this.view.setInt32(off, v, false);
-  },
-  setInt64: function(off, v) {
-    this.getArray().set(v.buffer, off);
-  },
-  setFloat64: function(off, v) {
-    this.view.setFloat64(off, v, false);
-  },
-  setBuffer: function(off, v) {
-    this.getArray().set(v.getArray(), off);
-  },
-  setUtf8String: function(off, v) {
-    return Utf8.encode(v, this.view, off);
-  },
-  inspect: function() {
-    var result = 'length: ' + this.length + '\n';
-    var idx = 0;
-    while(idx < this.length) {
-      for(var i = 0; (idx < this.length) && (i < 32); i++)
-        result += this.view.getInt8(idx++).toString(16) + ' ';
-      result += '\n';
-    }
-    return result;
-  }
-};
-
-var CheckedBuffer = Thrift.CheckedBuffer = function(length) {
-  Buffer.call(this, length);
-};
-inherits(CheckedBuffer, Buffer, {
-  grow: function(extra) {
-    extra = extra || 0;
-    var len = this.length + Math.max(extra, this.length*0.41);
-    var src = getArray();
-    this.buf = new ArrayBuffer(len);
-    this.view = new DataView(this.buf);
-    this.getArray().set(src);
-    this.offset = 0;
-    this.length = len;
-  },
-  checkAvailable: function(off, extra) {
-    if(off + extra >= this.length)
-      this.grow(extra);
-  },
-  setInt8: function(off, v) {
-    this.checkAvailable(1);
-    this.view.setInt8(off, v);
-  },
-  setInt16: function(off, v) {
-    this.checkAvailable(2);
-    this.view.setInt16(off, v, false);
-  },
-  setInt32: function(off, v) {
-    this.checkAvailable(4);
-    this.view.setInt32(off, v, false);
-  },
-  setInt64: function(off, v) {
-    this.checkAvailable(8);
-    this.getArray().set(v.buffer, off);
-  },
-  setFloat64: function(off, v) {
-    this.checkAvailable(8);
-    this.view.setFloat64(off, v, false);
-  },
-  setBuffer: function(off, v) {
-    this.checkAvailable(v.length);
-    this.getArray().set(v.getArray(), off);
-  },
-  setUtf8String: function(off, v) {
-    while(true) {
-      try {
-        return Utf8.encode(v, this.view, off);
-      } catch(e) {
-        this.grow();
-      }
-    }
-  }
-});
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-var Type = Thrift.Type;
-
-var UNKNOWN = 0,
-    INVALID_DATA = 1,
-    NEGATIVE_SIZE = 2,
-    SIZE_LIMIT = 3,
-    BAD_VERSION = 4;
-
-var TProtocolException = function(type, message) {
-  Error.call(this, message);
-  this.name = 'TProtocolException';
-  this.type = type;
-};
-inherits(TProtocolException, Error);
-
-var TBinaryProtocol = Thrift.TBinaryProtocol = function(trans, strictRead, strictWrite) {
-  this.trans = trans;
-  this.strictRead = (strictRead !== undefined ? strictRead : false);
-  this.strictWrite = (strictWrite !== undefined ? strictWrite : true);
-};
-
-TBinaryProtocol.prototype.flush = function() {
-  return this.trans.flush();
-};
-
-// NastyHaxx. JavaScript forces hex constants to be
-// positive, converting this into a long. If we hardcode the int value
-// instead it'll stay in 32 bit-land.
-
-var VERSION_MASK = -65536, // 0xffff0000
-    VERSION_1 = -2147418112, // 0x80010000
-    TYPE_MASK = 0x000000ff;
-
-TBinaryProtocol.prototype.writeMessageBegin = function(name, type, seqid) {
-    if (this.strictWrite) {
-      this.writeI32(VERSION_1 | type);
-      this.writeString(name);
-      this.writeI32(seqid);
-    } else {
-      this.writeString(name);
-      this.writeByte(type);
-      this.writeI32(seqid);
-    }
-};
-
-TBinaryProtocol.prototype.writeMessageEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeStructBegin = function(name) {
-};
-
-TBinaryProtocol.prototype.writeStructEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeFieldBegin = function(name, type, id) {
-  this.writeByte(type);
-  this.writeI16(id);
-};
-
-TBinaryProtocol.prototype.writeFieldEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeFieldStop = function() {
-  this.writeByte(Type.STOP);
-};
-
-TBinaryProtocol.prototype.writeMapBegin = function(ktype, vtype, size) {
-  this.writeByte(ktype);
-  this.writeByte(vtype);
-  this.writeI32(size);
-};
-
-TBinaryProtocol.prototype.writeMapEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeListBegin = function(etype, size) {
-  this.writeByte(etype);
-  this.writeI32(size);
-};
-
-TBinaryProtocol.prototype.writeListEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeSetBegin = function(etype, size) {
-  this.writeByte(etype);
-  this.writeI32(size);
-};
-
-TBinaryProtocol.prototype.writeSetEnd = function() {
-};
-
-TBinaryProtocol.prototype.writeBool = function(bool) {
-  this.writeByte(bool ? 1 : 0);
-};
-
-TBinaryProtocol.prototype.writeByte = function(i8) {
-  this.trans.writeByte(i8);
-};
-
-TBinaryProtocol.prototype.writeI16 = function(i16) {
-  this.trans.writeI16(i16);
-};
-
-TBinaryProtocol.prototype.writeI32 = function(i32) {
-  this.trans.writeI32(i32);
-};
-
-TBinaryProtocol.prototype.writeI64 = function(i64) {
-  if (i64.buffer) {
-    this.trans.writeI64(i64);
-  } else {
-    this.trans.writeI64(new Int64(i64))
-  }
-};
-
-TBinaryProtocol.prototype.writeDouble = function(dub) {
-  this.trans.writeDouble(dub);
-};
-
-TBinaryProtocol.prototype.writeString = function(arg) {
-  this.trans.writeWithLength(arg);
-};
-
-TBinaryProtocol.prototype.writeBinary = function(arg) {
-  this.trans.writeWithLength(arg);
-};
-
-TBinaryProtocol.prototype.readMessageBegin = function() {
-  var sz = this.readI32();
-  var type, name, seqid;
-
-  if (sz < 0) {
-    var version = sz & VERSION_MASK;
-    if (version != VERSION_1) {
-      console.log("BAD: " + version);
-      throw TProtocolException(BAD_VERSION, "Bad version in readMessageBegin: " + sz);
-    }
-    type = sz & TYPE_MASK;
-    name = this.readString();
-    seqid = this.readI32();
-  } else {
-    if (this.strictRead) {
-      throw TProtocolException(BAD_VERSION, "No protocol version header");
-    }
-    name = this.trans.read(sz);
-    type = this.readByte();
-    seqid = this.readI32();
-  }
-  return {fname: name, mtype: type, rseqid: seqid};
-};
-
-TBinaryProtocol.prototype.readMessageEnd = function() {
-};
-
-TBinaryProtocol.prototype.readStructBegin = function() {
-  return {fname: ''}
-};
-
-TBinaryProtocol.prototype.readStructEnd = function() {
-};
-
-TBinaryProtocol.prototype.readFieldBegin = function() {
-  var type = this.readByte();
-  if (type == Type.STOP) {
-    return {fname: null, ftype: type, fid: 0};
-  }
-  var id = this.readI16();
-  return {fname: null, ftype: type, fid: id};
-};
-
-TBinaryProtocol.prototype.readFieldEnd = function() {
-};
-
-TBinaryProtocol.prototype.readMapBegin = function() {
-  var ktype = this.readByte();
-  var vtype = this.readByte();
-  var size = this.readI32();
-  return {ktype: ktype, vtype: vtype, size: size};
-};
-
-TBinaryProtocol.prototype.readMapEnd = function() {
-};
-
-TBinaryProtocol.prototype.readListBegin = function() {
-  var etype = this.readByte();
-  var size = this.readI32();
-  return {etype: etype, size: size};
-};
-
-TBinaryProtocol.prototype.readListEnd = function() {
-};
-
-TBinaryProtocol.prototype.readSetBegin = function() {
-  var etype = this.readByte();
-  var size = this.readI32();
-  return {etype: etype, size: size};
-};
-
-TBinaryProtocol.prototype.readSetEnd = function() {
-};
-
-TBinaryProtocol.prototype.readBool = function() {
-  var i8 = this.readByte();
-  if (i8 == 0) {
-    return false;
-  }
-  return true;
-};
-
-TBinaryProtocol.prototype.readByte = function() {
-  return this.trans.readByte();
-};
-
-TBinaryProtocol.prototype.readI16 = function() {
-  return this.trans.readI16();
-};
-
-TBinaryProtocol.prototype.readI32 = function() {
-  return this.trans.readI32();
-};
-
-TBinaryProtocol.prototype.readI64 = function() {
-  return this.trans.readI64();
-};
-
-TBinaryProtocol.prototype.readDouble = function() {
-  return this.trans.readDouble();
-};
-
-TBinaryProtocol.prototype.readBinary = function() {
-  var len = this.readI32();
-  return this.trans.read(len);
-};
-
-TBinaryProtocol.prototype.readString = function() {
-  var len = this.readI32();
-  return this.trans.readString(len);
-};
-
-TBinaryProtocol.prototype.getTransport = function() {
-  return this.trans;
-};
-
-TBinaryProtocol.prototype.skip = function(type) {
-  // console.log("skip: " + type);
-  switch (type) {
-    case Type.STOP:
-      return;
-    case Type.BOOL:
-      this.readBool();
-      break;
-    case Type.BYTE:
-      this.readByte();
-      break;
-    case Type.I16:
-      this.readI16();
-      break;
-    case Type.I32:
-      this.readI32();
-      break;
-    case Type.I64:
-      this.readI64();
-      break;
-    case Type.DOUBLE:
-      this.readDouble();
-      break;
-    case Type.STRING:
-      this.readString();
-      break;
-    case Type.STRUCT:
-      this.readStructBegin();
-      while (true) {
-        var r = this.readFieldBegin();
-        if (r.ftype === Type.STOP) {
-          break;
-        }
-        this.skip(r.ftype);
-        this.readFieldEnd();
-      }
-      this.readStructEnd();
-      break;
-    case Type.MAP:
-      var r = this.readMapBegin();
-      for (var i = 0; i < r.size; ++i) {
-        this.skip(r.ktype);
-        this.skip(r.vtype);
-      }
-      this.readMapEnd();
-      break;
-    case Type.SET:
-      var r = this.readSetBegin();
-      for (var i = 0; i < r.size; ++i) {
-        this.skip(r.etype);
-      }
-      this.readSetEnd();
-      break;
-    case Type.LIST:
-      var r = this.readListBegin();
-      for (var i = 0; i < r.size; ++i) {
-        this.skip(r.etype);
-      }
-      this.readListEnd();
-      break;
-    default:
-      throw Error("Invalid type: " + type);
-  }
-};
-
-var emptyBuf = new Buffer(0);
-
-var InputBufferUnderrunError = function() {
-};
-
-var TTransport = Thrift.TTransport = function(buffer, callback) {
-  this.buf = buffer || emptyBuf;
-  this.onFlush = callback;
-  this.reset();
-};
-
-TTransport.receiver = function(callback) {
-  return function(data) {
-    callback(new TTransport(data));
-  };
-};
-
-TTransport.prototype = {
-  commitPosition: function(){},
-  rollbackPosition: function(){},
-
-  reset: function() {
-    this.pos = 0;
-  },
-
-  // TODO: Implement open/close support
-  isOpen: function() {return true;},
-  open: function() {},
-  close: function() {},
-
-  read: function(len) { // this function will be used for each frames.
-    var end = this.pos + len;
-
-    if (this.buf.length < end) {
-      throw new Error('read(' + len + ') failed - not enough data');
-    }
-
-    var buf = this.buf.slice(this.pos, end);
-    this.pos = end;
-    return buf;
-  },
-
-  readByte: function() {
-    return this.buf.getInt8(this.pos++);
-  },
-
-  readI16: function() {
-    var i16 = this.buf.getInt16(this.pos);
-    this.pos += 2;
-    return i16;
-  },
-
-  readI32: function() {
-    var i32 = this.buf.getInt32(this.pos);
-    this.pos += 4;
-    return i32;
-  },
-
-  readDouble: function() {
-    var d = this.buf.getFloat64(this.pos);
-    this.pos += 8;
-    return d;
-  },
-
-  readString: function(len) {
-    var str = this.buf.getUtf8String(this.pos, len);
-    this.pos += len;
-    return str;
-  },
-
-  readAll: function() {
-    return this.buf;
-  },
-  
-  writeByte: function(v) {
-    this.buf.setInt8(this.pos++, v);
-  },
-
-  writeI16: function(v) {
-    this.buf.setInt16(this.pos, v);
-    this.pos += 2;
-  },
-
-  writeI32: function(v) {
-    this.buf.setInt32(this.pos, v);
-    this.pos += 4;
-  },
-
-  writeI64: function(v) {
-    this.buf.setInt64(this.pos, v);
-    this.pos += 8;
-  },
-
-  writeDouble: function(v) {
-    this.buf.setFloat64(this.pos, v);
-    this.pos += 8;
-  },
-
-  write: function(buf) {
-    if (typeof(buf) === 'string') {
-      this.pos += this.setUtf8String(this.pos, buf);
-    } else {
-      this.setBuffer(this.pos, buf);
-      this.pos += buf.length;
-    }
-  },
-
-  writeWithLength: function(buf) {
-    var len;
-    if (typeof(buf) === 'string') {
-      len = this.buf.setUtf8String(this.pos + 4, buf);
-    } else {
-      this.setBuffer(this.pos + 4, buf);
-      len = buf.length;
-    }
-    this.buf.setInt32(this.pos, len);
-    this.pos += len + 4;
-  },
-
-  flush: function(flushCallback) {
-    flushCallback = flushCallback || this.onFlush;
-    if(flushCallback) {
-      var out = this.buf.slice(0, this.pos);
-      flushCallback(out);
-    }
-  }
-};
-
-var TFramedTransport = Thrift.TFramedTransport = function(buffer, callback) {
-  TTransport.call(this, buffer, callback);
-};
-
-TFramedTransport.receiver = function(callback) {
-  var frameLeft = 0,
-      framePos = 0,
-      frame = null;
-  var residual = null;
-
-  return function(data) {
-    // Prepend any residual data from our previous read
-    if (residual) {
-      var dat = new Buffer(data.length + residual.length);
-      residual.copy(dat, 0, 0);
-      data.copy(dat, residual.length, 0);
-      residual = null;
-    }
-
-    // framed transport
-    while (data.length) {
-      if (frameLeft === 0) {
-        // TODO assumes we have all 4 bytes
-        if (data.length < 4) {
-          console.log("Expecting > 4 bytes, found only " + data.length);
-          residual = data;
-          break;
-          //throw Error("Expecting > 4 bytes, found only " + data.length);
-        }
-        frameLeft = binary.readI32(data, 0);
-        frame = new Buffer(frameLeft);
-        framePos = 0;
-        data = data.slice(4, data.length);
-      }
-
-      if (data.length >= frameLeft) {
-        data.copy(frame, framePos, 0, frameLeft);
-        data = data.slice(frameLeft, data.length);
-
-        frameLeft = 0;
-        callback(new TFramedTransport(frame));
-      } else if (data.length) {
-        data.copy(frame, framePos, 0, data.length);
-        frameLeft -= data.length;
-        framePos += data.length;
-        data = data.slice(data.length, data.length);
-      }
-    }
-  };
-};
-
-inherits(TFramedTransport, TTransport, {
-  flush: function() {
-    var that = this;
-    // TODO: optimize this better, allocate one buffer instead of both:
-    var framedBuffer = function(out) {
-      if(that.onFlush) {
-        var msg = new Buffer(out.length + 4);
-        binary.writeI32(msg, out.length);
-        out.copy(msg, 4, 0, out.length);
-        that.onFlush(msg);
-      }
-    };
-    TTransport.prototype.flush.call(this, framedBuffer);
-  }
-});
-
-/* declarations to ensure these variables do not go into global scope */
-var TError, TData, TPresence, TMessage, TChannelMessage, TProtocolMessage;
-var clientmessage_types = {
-	TError: TError,
-	TData: TData,
-	TPresence: TPresence,
-	TMessage: TMessage,
-	TChannelMessage: TChannelMessage,
-	TProtocolMessage: TProtocolMessage
-};
-
-//
-// Autogenerated by Thrift Compiler (0.9.1)
-//
-// DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
-//
-
-
-TAction = {
-'HEARTBEAT' : 0,
-'ACK' : 1,
-'NACK' : 2,
-'CONNECT' : 3,
-'CONNECTED' : 4,
-'DISCONNECT' : 5,
-'DISCONNECTED' : 6,
-'CLOSE' : 7,
-'CLOSED' : 8,
-'ERROR' : 9,
-'ATTACH' : 10,
-'ATTACHED' : 11,
-'DETACH' : 12,
-'DETACHED' : 13,
-'PRESENCE' : 14,
-'MESSAGE' : 15
-};
-TType = {
-'NONE' : 0,
-'TRUE' : 1,
-'FALSE' : 2,
-'INT32' : 3,
-'INT64' : 4,
-'DOUBLE' : 5,
-'STRING' : 6,
-'BUFFER' : 7,
-'JSONARRAY' : 8,
-'JSONOBJECT' : 9
-};
-TFlags = {
-'SYNC_TIME' : 0
-};
-TPresenceState = {
-'ENTER' : 0,
-'LEAVE' : 1,
-'UPDATE' : 2
-};
-TError = function(args) {
-  this.statusCode = undefined;
-  this.code = undefined;
-  this.message = undefined;
-  if (args) {
-    if (args.statusCode !== undefined) {
-      this.statusCode = args.statusCode;
-    }
-    if (args.code !== undefined) {
-      this.code = args.code;
-    }
-    if (args.message !== undefined) {
-      this.message = args.message;
-    }
-  }
-};
-TError.prototype = {};
-TError.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.I16) {
-        this.statusCode = input.readI16();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.code = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRING) {
-        this.message = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TError.prototype.write = function(output) {
-  output.writeStructBegin('TError');
-  if (this.statusCode !== undefined) {
-    output.writeFieldBegin('statusCode', Thrift.Type.I16, 1);
-    output.writeI16(this.statusCode);
-    output.writeFieldEnd();
-  }
-  if (this.code !== undefined) {
-    output.writeFieldBegin('code', Thrift.Type.I32, 2);
-    output.writeI32(this.code);
-    output.writeFieldEnd();
-  }
-  if (this.message !== undefined) {
-    output.writeFieldBegin('message', Thrift.Type.STRING, 3);
-    output.writeString(this.message);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TData = function(args) {
-  this.type = undefined;
-  this.i32Data = undefined;
-  this.i64Data = undefined;
-  this.doubleData = undefined;
-  this.stringData = undefined;
-  this.binaryData = undefined;
-  this.cipherData = undefined;
-  if (args) {
-    if (args.type !== undefined) {
-      this.type = args.type;
-    }
-    if (args.i32Data !== undefined) {
-      this.i32Data = args.i32Data;
-    }
-    if (args.i64Data !== undefined) {
-      this.i64Data = args.i64Data;
-    }
-    if (args.doubleData !== undefined) {
-      this.doubleData = args.doubleData;
-    }
-    if (args.stringData !== undefined) {
-      this.stringData = args.stringData;
-    }
-    if (args.binaryData !== undefined) {
-      this.binaryData = args.binaryData;
-    }
-    if (args.cipherData !== undefined) {
-      this.cipherData = args.cipherData;
-    }
-  }
-};
-TData.prototype = {};
-TData.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.type = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.I32) {
-        this.i32Data = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.I64) {
-        this.i64Data = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.doubleData = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRING) {
-        this.stringData = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 6:
-      if (ftype == Thrift.Type.STRING) {
-        this.binaryData = input.readBinary();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRING) {
-        this.cipherData = input.readBinary();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TData.prototype.write = function(output) {
-  output.writeStructBegin('TData');
-  if (this.type !== undefined) {
-    output.writeFieldBegin('type', Thrift.Type.I32, 1);
-    output.writeI32(this.type);
-    output.writeFieldEnd();
-  }
-  if (this.i32Data !== undefined) {
-    output.writeFieldBegin('i32Data', Thrift.Type.I32, 2);
-    output.writeI32(this.i32Data);
-    output.writeFieldEnd();
-  }
-  if (this.i64Data !== undefined) {
-    output.writeFieldBegin('i64Data', Thrift.Type.I64, 3);
-    output.writeI64(this.i64Data);
-    output.writeFieldEnd();
-  }
-  if (this.doubleData !== undefined) {
-    output.writeFieldBegin('doubleData', Thrift.Type.DOUBLE, 4);
-    output.writeDouble(this.doubleData);
-    output.writeFieldEnd();
-  }
-  if (this.stringData !== undefined) {
-    output.writeFieldBegin('stringData', Thrift.Type.STRING, 5);
-    output.writeString(this.stringData);
-    output.writeFieldEnd();
-  }
-  if (this.binaryData !== undefined) {
-    output.writeFieldBegin('binaryData', Thrift.Type.STRING, 6);
-    output.writeBinary(this.binaryData);
-    output.writeFieldEnd();
-  }
-  if (this.cipherData !== undefined) {
-    output.writeFieldBegin('cipherData', Thrift.Type.STRING, 7);
-    output.writeBinary(this.cipherData);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TPresence = function(args) {
-  this.state = undefined;
-  this.clientId = undefined;
-  this.clientData = undefined;
-  this.memberId = undefined;
-  this.inheritMemberId = undefined;
-  this.connectionId = undefined;
-  this.instanceId = undefined;
-  if (args) {
-    if (args.state !== undefined) {
-      this.state = args.state;
-    }
-    if (args.clientId !== undefined) {
-      this.clientId = args.clientId;
-    }
-    if (args.clientData !== undefined) {
-      this.clientData = args.clientData;
-    }
-    if (args.memberId !== undefined) {
-      this.memberId = args.memberId;
-    }
-    if (args.inheritMemberId !== undefined) {
-      this.inheritMemberId = args.inheritMemberId;
-    }
-    if (args.connectionId !== undefined) {
-      this.connectionId = args.connectionId;
-    }
-    if (args.instanceId !== undefined) {
-      this.instanceId = args.instanceId;
-    }
-  }
-};
-TPresence.prototype = {};
-TPresence.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.state = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRING) {
-        this.clientId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.clientData = new TData();
-        this.clientData.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.memberId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRING) {
-        this.inheritMemberId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 6:
-      if (ftype == Thrift.Type.STRING) {
-        this.connectionId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRING) {
-        this.instanceId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TPresence.prototype.write = function(output) {
-  output.writeStructBegin('TPresence');
-  if (this.state !== undefined) {
-    output.writeFieldBegin('state', Thrift.Type.I32, 1);
-    output.writeI32(this.state);
-    output.writeFieldEnd();
-  }
-  if (this.clientId !== undefined) {
-    output.writeFieldBegin('clientId', Thrift.Type.STRING, 2);
-    output.writeString(this.clientId);
-    output.writeFieldEnd();
-  }
-  if (this.clientData !== undefined) {
-    output.writeFieldBegin('clientData', Thrift.Type.STRUCT, 3);
-    this.clientData.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.memberId !== undefined) {
-    output.writeFieldBegin('memberId', Thrift.Type.STRING, 4);
-    output.writeString(this.memberId);
-    output.writeFieldEnd();
-  }
-  if (this.inheritMemberId !== undefined) {
-    output.writeFieldBegin('inheritMemberId', Thrift.Type.STRING, 5);
-    output.writeString(this.inheritMemberId);
-    output.writeFieldEnd();
-  }
-  if (this.connectionId !== undefined) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
-    output.writeString(this.connectionId);
-    output.writeFieldEnd();
-  }
-  if (this.instanceId !== undefined) {
-    output.writeFieldBegin('instanceId', Thrift.Type.STRING, 7);
-    output.writeString(this.instanceId);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TPresenceArray = function(args) {
-  this.items = undefined;
-  if (args) {
-    if (args.items !== undefined) {
-      this.items = args.items;
-    }
-  }
-};
-TPresenceArray.prototype = {};
-TPresenceArray.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.LIST) {
-        var _size0 = 0;
-        var _rtmp34;
-        this.items = [];
-        var _etype3 = 0;
-        _rtmp34 = input.readListBegin();
-        _etype3 = _rtmp34.etype;
-        _size0 = _rtmp34.size;
-        for (var _i5 = 0; _i5 < _size0; ++_i5)
-        {
-          var elem6 = null;
-          elem6 = new TPresence();
-          elem6.read(input);
-          this.items.push(elem6);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TPresenceArray.prototype.write = function(output) {
-  output.writeStructBegin('TPresenceArray');
-  if (this.items !== undefined) {
-    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
-    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter7 in this.items)
-    {
-      if (this.items.hasOwnProperty(iter7))
-      {
-        iter7 = this.items[iter7];
-        iter7.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TMessage = function(args) {
-  this.name = undefined;
-  this.clientId = undefined;
-  this.timestamp = undefined;
-  this.data = undefined;
-  this.tags = undefined;
-  if (args) {
-    if (args.name !== undefined) {
-      this.name = args.name;
-    }
-    if (args.clientId !== undefined) {
-      this.clientId = args.clientId;
-    }
-    if (args.timestamp !== undefined) {
-      this.timestamp = args.timestamp;
-    }
-    if (args.data !== undefined) {
-      this.data = args.data;
-    }
-    if (args.tags !== undefined) {
-      this.tags = args.tags;
-    }
-  }
-};
-TMessage.prototype = {};
-TMessage.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRING) {
-        this.name = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRING) {
-        this.clientId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.I64) {
-        this.timestamp = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.data = new TData();
-        this.data.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.LIST) {
-        var _size8 = 0;
-        var _rtmp312;
-        this.tags = [];
-        var _etype11 = 0;
-        _rtmp312 = input.readListBegin();
-        _etype11 = _rtmp312.etype;
-        _size8 = _rtmp312.size;
-        for (var _i13 = 0; _i13 < _size8; ++_i13)
-        {
-          var elem14 = null;
-          elem14 = input.readString();
-          this.tags.push(elem14);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TMessage.prototype.write = function(output) {
-  output.writeStructBegin('TMessage');
-  if (this.name !== undefined) {
-    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
-    output.writeString(this.name);
-    output.writeFieldEnd();
-  }
-  if (this.clientId !== undefined) {
-    output.writeFieldBegin('clientId', Thrift.Type.STRING, 2);
-    output.writeString(this.clientId);
-    output.writeFieldEnd();
-  }
-  if (this.timestamp !== undefined) {
-    output.writeFieldBegin('timestamp', Thrift.Type.I64, 3);
-    output.writeI64(this.timestamp);
-    output.writeFieldEnd();
-  }
-  if (this.data !== undefined) {
-    output.writeFieldBegin('data', Thrift.Type.STRUCT, 4);
-    this.data.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.tags !== undefined) {
-    output.writeFieldBegin('tags', Thrift.Type.LIST, 5);
-    output.writeListBegin(Thrift.Type.STRING, this.tags.length);
-    for (var iter15 in this.tags)
-    {
-      if (this.tags.hasOwnProperty(iter15))
-      {
-        iter15 = this.tags[iter15];
-        output.writeString(iter15);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TMessageArray = function(args) {
-  this.items = undefined;
-  if (args) {
-    if (args.items !== undefined) {
-      this.items = args.items;
-    }
-  }
-};
-TMessageArray.prototype = {};
-TMessageArray.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.LIST) {
-        var _size16 = 0;
-        var _rtmp320;
-        this.items = [];
-        var _etype19 = 0;
-        _rtmp320 = input.readListBegin();
-        _etype19 = _rtmp320.etype;
-        _size16 = _rtmp320.size;
-        for (var _i21 = 0; _i21 < _size16; ++_i21)
-        {
-          var elem22 = null;
-          elem22 = new TMessage();
-          elem22.read(input);
-          this.items.push(elem22);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TMessageArray.prototype.write = function(output) {
-  output.writeStructBegin('TMessageArray');
-  if (this.items !== undefined) {
-    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
-    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter23 in this.items)
-    {
-      if (this.items.hasOwnProperty(iter23))
-      {
-        iter23 = this.items[iter23];
-        iter23.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TProtocolMessage = function(args) {
-  this.action = undefined;
-  this.flags = undefined;
-  this.count = undefined;
-  this.error = undefined;
-  this.applicationId = undefined;
-  this.connectionId = undefined;
-  this.connectionSerial = undefined;
-  this.channel = undefined;
-  this.channelSerial = undefined;
-  this.msgSerial = undefined;
-  this.timestamp = undefined;
-  this.messages = undefined;
-  this.presence = undefined;
-  if (args) {
-    if (args.action !== undefined) {
-      this.action = args.action;
-    }
-    if (args.flags !== undefined) {
-      this.flags = args.flags;
-    }
-    if (args.count !== undefined) {
-      this.count = args.count;
-    }
-    if (args.error !== undefined) {
-      this.error = args.error;
-    }
-    if (args.applicationId !== undefined) {
-      this.applicationId = args.applicationId;
-    }
-    if (args.connectionId !== undefined) {
-      this.connectionId = args.connectionId;
-    }
-    if (args.connectionSerial !== undefined) {
-      this.connectionSerial = args.connectionSerial;
-    }
-    if (args.channel !== undefined) {
-      this.channel = args.channel;
-    }
-    if (args.channelSerial !== undefined) {
-      this.channelSerial = args.channelSerial;
-    }
-    if (args.msgSerial !== undefined) {
-      this.msgSerial = args.msgSerial;
-    }
-    if (args.timestamp !== undefined) {
-      this.timestamp = args.timestamp;
-    }
-    if (args.messages !== undefined) {
-      this.messages = args.messages;
-    }
-    if (args.presence !== undefined) {
-      this.presence = args.presence;
-    }
-  }
-};
-TProtocolMessage.prototype = {};
-TProtocolMessage.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.I32) {
-        this.action = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.BYTE) {
-        this.flags = input.readByte();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.I32) {
-        this.count = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.error = new TError();
-        this.error.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRING) {
-        this.applicationId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 6:
-      if (ftype == Thrift.Type.STRING) {
-        this.connectionId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.I64) {
-        this.connectionSerial = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 8:
-      if (ftype == Thrift.Type.STRING) {
-        this.channel = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 9:
-      if (ftype == Thrift.Type.STRING) {
-        this.channelSerial = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 10:
-      if (ftype == Thrift.Type.I64) {
-        this.msgSerial = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 11:
-      if (ftype == Thrift.Type.I64) {
-        this.timestamp = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 12:
-      if (ftype == Thrift.Type.LIST) {
-        var _size24 = 0;
-        var _rtmp328;
-        this.messages = [];
-        var _etype27 = 0;
-        _rtmp328 = input.readListBegin();
-        _etype27 = _rtmp328.etype;
-        _size24 = _rtmp328.size;
-        for (var _i29 = 0; _i29 < _size24; ++_i29)
-        {
-          var elem30 = null;
-          elem30 = new TMessage();
-          elem30.read(input);
-          this.messages.push(elem30);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 13:
-      if (ftype == Thrift.Type.LIST) {
-        var _size31 = 0;
-        var _rtmp335;
-        this.presence = [];
-        var _etype34 = 0;
-        _rtmp335 = input.readListBegin();
-        _etype34 = _rtmp335.etype;
-        _size31 = _rtmp335.size;
-        for (var _i36 = 0; _i36 < _size31; ++_i36)
-        {
-          var elem37 = null;
-          elem37 = new TPresence();
-          elem37.read(input);
-          this.presence.push(elem37);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TProtocolMessage.prototype.write = function(output) {
-  output.writeStructBegin('TProtocolMessage');
-  if (this.action !== undefined) {
-    output.writeFieldBegin('action', Thrift.Type.I32, 1);
-    output.writeI32(this.action);
-    output.writeFieldEnd();
-  }
-  if (this.flags !== undefined) {
-    output.writeFieldBegin('flags', Thrift.Type.BYTE, 2);
-    output.writeByte(this.flags);
-    output.writeFieldEnd();
-  }
-  if (this.count !== undefined) {
-    output.writeFieldBegin('count', Thrift.Type.I32, 3);
-    output.writeI32(this.count);
-    output.writeFieldEnd();
-  }
-  if (this.error !== undefined) {
-    output.writeFieldBegin('error', Thrift.Type.STRUCT, 4);
-    this.error.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.applicationId !== undefined) {
-    output.writeFieldBegin('applicationId', Thrift.Type.STRING, 5);
-    output.writeString(this.applicationId);
-    output.writeFieldEnd();
-  }
-  if (this.connectionId !== undefined) {
-    output.writeFieldBegin('connectionId', Thrift.Type.STRING, 6);
-    output.writeString(this.connectionId);
-    output.writeFieldEnd();
-  }
-  if (this.connectionSerial !== undefined) {
-    output.writeFieldBegin('connectionSerial', Thrift.Type.I64, 7);
-    output.writeI64(this.connectionSerial);
-    output.writeFieldEnd();
-  }
-  if (this.channel !== undefined) {
-    output.writeFieldBegin('channel', Thrift.Type.STRING, 8);
-    output.writeString(this.channel);
-    output.writeFieldEnd();
-  }
-  if (this.channelSerial !== undefined) {
-    output.writeFieldBegin('channelSerial', Thrift.Type.STRING, 9);
-    output.writeString(this.channelSerial);
-    output.writeFieldEnd();
-  }
-  if (this.msgSerial !== undefined) {
-    output.writeFieldBegin('msgSerial', Thrift.Type.I64, 10);
-    output.writeI64(this.msgSerial);
-    output.writeFieldEnd();
-  }
-  if (this.timestamp !== undefined) {
-    output.writeFieldBegin('timestamp', Thrift.Type.I64, 11);
-    output.writeI64(this.timestamp);
-    output.writeFieldEnd();
-  }
-  if (this.messages !== undefined) {
-    output.writeFieldBegin('messages', Thrift.Type.LIST, 12);
-    output.writeListBegin(Thrift.Type.STRUCT, this.messages.length);
-    for (var iter38 in this.messages)
-    {
-      if (this.messages.hasOwnProperty(iter38))
-      {
-        iter38 = this.messages[iter38];
-        iter38.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  if (this.presence !== undefined) {
-    output.writeFieldBegin('presence', Thrift.Type.LIST, 13);
-    output.writeListBegin(Thrift.Type.STRUCT, this.presence.length);
-    for (var iter39 in this.presence)
-    {
-      if (this.presence.hasOwnProperty(iter39))
-      {
-        iter39 = this.presence[iter39];
-        iter39.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-TMessageBundle = function(args) {
-  this.items = undefined;
-  if (args) {
-    if (args.items !== undefined) {
-      this.items = args.items;
-    }
-  }
-};
-TMessageBundle.prototype = {};
-TMessageBundle.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.LIST) {
-        var _size40 = 0;
-        var _rtmp344;
-        this.items = [];
-        var _etype43 = 0;
-        _rtmp344 = input.readListBegin();
-        _etype43 = _rtmp344.etype;
-        _size40 = _rtmp344.size;
-        for (var _i45 = 0; _i45 < _size40; ++_i45)
-        {
-          var elem46 = null;
-          elem46 = new TProtocolMessage();
-          elem46.read(input);
-          this.items.push(elem46);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-TMessageBundle.prototype.write = function(output) {
-  output.writeStructBegin('TMessageBundle');
-  if (this.items !== undefined) {
-    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
-    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter47 in this.items)
-    {
-      if (this.items.hasOwnProperty(iter47))
-      {
-        iter47 = this.items[iter47];
-        iter47.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SMessageCount = function(args) {
-  this.count = undefined;
-  this.data = undefined;
-  if (args) {
-    if (args.count !== undefined) {
-      this.count = args.count;
-    }
-    if (args.data !== undefined) {
-      this.data = args.data;
-    }
-  }
-};
-SMessageCount.prototype = {};
-SMessageCount.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.count = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.data = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SMessageCount.prototype.write = function(output) {
-  output.writeStructBegin('SMessageCount');
-  if (this.count !== undefined) {
-    output.writeFieldBegin('count', Thrift.Type.DOUBLE, 1);
-    output.writeDouble(this.count);
-    output.writeFieldEnd();
-  }
-  if (this.data !== undefined) {
-    output.writeFieldBegin('data', Thrift.Type.DOUBLE, 2);
-    output.writeDouble(this.data);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SMessageTypes = function(args) {
-  this.all = undefined;
-  this.messages = undefined;
-  this.presence = undefined;
-  if (args) {
-    if (args.all !== undefined) {
-      this.all = args.all;
-    }
-    if (args.messages !== undefined) {
-      this.messages = args.messages;
-    }
-    if (args.presence !== undefined) {
-      this.presence = args.presence;
-    }
-  }
-};
-SMessageTypes.prototype = {};
-SMessageTypes.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.all = new SMessageCount();
-        this.all.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.messages = new SMessageCount();
-        this.messages.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.presence = new SMessageCount();
-        this.presence.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SMessageTypes.prototype.write = function(output) {
-  output.writeStructBegin('SMessageTypes');
-  if (this.all !== undefined) {
-    output.writeFieldBegin('all', Thrift.Type.STRUCT, 1);
-    this.all.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.messages !== undefined) {
-    output.writeFieldBegin('messages', Thrift.Type.STRUCT, 2);
-    this.messages.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.presence !== undefined) {
-    output.writeFieldBegin('presence', Thrift.Type.STRUCT, 3);
-    this.presence.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SResourceCount = function(args) {
-  this.opened = undefined;
-  this.peak = undefined;
-  this.mean = undefined;
-  this.min = undefined;
-  this.refused = undefined;
-  this.sample_count = undefined;
-  this.sample_sum = undefined;
-  if (args) {
-    if (args.opened !== undefined) {
-      this.opened = args.opened;
-    }
-    if (args.peak !== undefined) {
-      this.peak = args.peak;
-    }
-    if (args.mean !== undefined) {
-      this.mean = args.mean;
-    }
-    if (args.min !== undefined) {
-      this.min = args.min;
-    }
-    if (args.refused !== undefined) {
-      this.refused = args.refused;
-    }
-    if (args.sample_count !== undefined) {
-      this.sample_count = args.sample_count;
-    }
-    if (args.sample_sum !== undefined) {
-      this.sample_sum = args.sample_sum;
-    }
-  }
-};
-SResourceCount.prototype = {};
-SResourceCount.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.opened = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.peak = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.mean = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.min = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.refused = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 10:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.sample_count = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 11:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.sample_sum = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SResourceCount.prototype.write = function(output) {
-  output.writeStructBegin('SResourceCount');
-  if (this.opened !== undefined) {
-    output.writeFieldBegin('opened', Thrift.Type.DOUBLE, 1);
-    output.writeDouble(this.opened);
-    output.writeFieldEnd();
-  }
-  if (this.peak !== undefined) {
-    output.writeFieldBegin('peak', Thrift.Type.DOUBLE, 2);
-    output.writeDouble(this.peak);
-    output.writeFieldEnd();
-  }
-  if (this.mean !== undefined) {
-    output.writeFieldBegin('mean', Thrift.Type.DOUBLE, 3);
-    output.writeDouble(this.mean);
-    output.writeFieldEnd();
-  }
-  if (this.min !== undefined) {
-    output.writeFieldBegin('min', Thrift.Type.DOUBLE, 4);
-    output.writeDouble(this.min);
-    output.writeFieldEnd();
-  }
-  if (this.refused !== undefined) {
-    output.writeFieldBegin('refused', Thrift.Type.DOUBLE, 5);
-    output.writeDouble(this.refused);
-    output.writeFieldEnd();
-  }
-  if (this.sample_count !== undefined) {
-    output.writeFieldBegin('sample_count', Thrift.Type.DOUBLE, 10);
-    output.writeDouble(this.sample_count);
-    output.writeFieldEnd();
-  }
-  if (this.sample_sum !== undefined) {
-    output.writeFieldBegin('sample_sum', Thrift.Type.DOUBLE, 11);
-    output.writeDouble(this.sample_sum);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SConnectionTypes = function(args) {
-  this.all = undefined;
-  this.plain = undefined;
-  this.tls = undefined;
-  if (args) {
-    if (args.all !== undefined) {
-      this.all = args.all;
-    }
-    if (args.plain !== undefined) {
-      this.plain = args.plain;
-    }
-    if (args.tls !== undefined) {
-      this.tls = args.tls;
-    }
-  }
-};
-SConnectionTypes.prototype = {};
-SConnectionTypes.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.all = new SResourceCount();
-        this.all.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.plain = new SResourceCount();
-        this.plain.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.tls = new SResourceCount();
-        this.tls.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SConnectionTypes.prototype.write = function(output) {
-  output.writeStructBegin('SConnectionTypes');
-  if (this.all !== undefined) {
-    output.writeFieldBegin('all', Thrift.Type.STRUCT, 1);
-    this.all.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.plain !== undefined) {
-    output.writeFieldBegin('plain', Thrift.Type.STRUCT, 2);
-    this.plain.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.tls !== undefined) {
-    output.writeFieldBegin('tls', Thrift.Type.STRUCT, 3);
-    this.tls.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SMessageTraffic = function(args) {
-  this.all = undefined;
-  this.realtime = undefined;
-  this.rest = undefined;
-  this.push = undefined;
-  this.httpStream = undefined;
-  if (args) {
-    if (args.all !== undefined) {
-      this.all = args.all;
-    }
-    if (args.realtime !== undefined) {
-      this.realtime = args.realtime;
-    }
-    if (args.rest !== undefined) {
-      this.rest = args.rest;
-    }
-    if (args.push !== undefined) {
-      this.push = args.push;
-    }
-    if (args.httpStream !== undefined) {
-      this.httpStream = args.httpStream;
-    }
-  }
-};
-SMessageTraffic.prototype = {};
-SMessageTraffic.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.all = new SMessageTypes();
-        this.all.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.realtime = new SMessageTypes();
-        this.realtime.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.rest = new SMessageTypes();
-        this.rest.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.push = new SMessageTypes();
-        this.push.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.httpStream = new SMessageTypes();
-        this.httpStream.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SMessageTraffic.prototype.write = function(output) {
-  output.writeStructBegin('SMessageTraffic');
-  if (this.all !== undefined) {
-    output.writeFieldBegin('all', Thrift.Type.STRUCT, 1);
-    this.all.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.realtime !== undefined) {
-    output.writeFieldBegin('realtime', Thrift.Type.STRUCT, 2);
-    this.realtime.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.rest !== undefined) {
-    output.writeFieldBegin('rest', Thrift.Type.STRUCT, 3);
-    this.rest.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.push !== undefined) {
-    output.writeFieldBegin('push', Thrift.Type.STRUCT, 4);
-    this.push.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.httpStream !== undefined) {
-    output.writeFieldBegin('httpStream', Thrift.Type.STRUCT, 5);
-    this.httpStream.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SRequestCount = function(args) {
-  this.succeeded = undefined;
-  this.failed = undefined;
-  this.refused = undefined;
-  if (args) {
-    if (args.succeeded !== undefined) {
-      this.succeeded = args.succeeded;
-    }
-    if (args.failed !== undefined) {
-      this.failed = args.failed;
-    }
-    if (args.refused !== undefined) {
-      this.refused = args.refused;
-    }
-  }
-};
-SRequestCount.prototype = {};
-SRequestCount.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.succeeded = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.failed = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.DOUBLE) {
-        this.refused = input.readDouble();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SRequestCount.prototype.write = function(output) {
-  output.writeStructBegin('SRequestCount');
-  if (this.succeeded !== undefined) {
-    output.writeFieldBegin('succeeded', Thrift.Type.DOUBLE, 1);
-    output.writeDouble(this.succeeded);
-    output.writeFieldEnd();
-  }
-  if (this.failed !== undefined) {
-    output.writeFieldBegin('failed', Thrift.Type.DOUBLE, 2);
-    output.writeDouble(this.failed);
-    output.writeFieldEnd();
-  }
-  if (this.refused !== undefined) {
-    output.writeFieldBegin('refused', Thrift.Type.DOUBLE, 3);
-    output.writeDouble(this.refused);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SStats = function(args) {
-  this.all = undefined;
-  this.inbound = undefined;
-  this.outbound = undefined;
-  this.persisted = undefined;
-  this.connections = undefined;
-  this.channels = undefined;
-  this.apiRequests = undefined;
-  this.tokenRequests = undefined;
-  this.inProgress = undefined;
-  this.count = undefined;
-  if (args) {
-    if (args.all !== undefined) {
-      this.all = args.all;
-    }
-    if (args.inbound !== undefined) {
-      this.inbound = args.inbound;
-    }
-    if (args.outbound !== undefined) {
-      this.outbound = args.outbound;
-    }
-    if (args.persisted !== undefined) {
-      this.persisted = args.persisted;
-    }
-    if (args.connections !== undefined) {
-      this.connections = args.connections;
-    }
-    if (args.channels !== undefined) {
-      this.channels = args.channels;
-    }
-    if (args.apiRequests !== undefined) {
-      this.apiRequests = args.apiRequests;
-    }
-    if (args.tokenRequests !== undefined) {
-      this.tokenRequests = args.tokenRequests;
-    }
-    if (args.inProgress !== undefined) {
-      this.inProgress = args.inProgress;
-    }
-    if (args.count !== undefined) {
-      this.count = args.count;
-    }
-  }
-};
-SStats.prototype = {};
-SStats.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.all = new SMessageTypes();
-        this.all.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.inbound = new SMessageTraffic();
-        this.inbound.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.outbound = new SMessageTraffic();
-        this.outbound.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.persisted = new SMessageTypes();
-        this.persisted.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.connections = new SConnectionTypes();
-        this.connections.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 6:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.channels = new SResourceCount();
-        this.channels.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.apiRequests = new SRequestCount();
-        this.apiRequests.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 8:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.tokenRequests = new SRequestCount();
-        this.tokenRequests.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 10:
-      if (ftype == Thrift.Type.STRING) {
-        this.inProgress = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 11:
-      if (ftype == Thrift.Type.I32) {
-        this.count = input.readI32();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SStats.prototype.write = function(output) {
-  output.writeStructBegin('SStats');
-  if (this.all !== undefined) {
-    output.writeFieldBegin('all', Thrift.Type.STRUCT, 1);
-    this.all.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.inbound !== undefined) {
-    output.writeFieldBegin('inbound', Thrift.Type.STRUCT, 2);
-    this.inbound.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.outbound !== undefined) {
-    output.writeFieldBegin('outbound', Thrift.Type.STRUCT, 3);
-    this.outbound.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.persisted !== undefined) {
-    output.writeFieldBegin('persisted', Thrift.Type.STRUCT, 4);
-    this.persisted.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.connections !== undefined) {
-    output.writeFieldBegin('connections', Thrift.Type.STRUCT, 5);
-    this.connections.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.channels !== undefined) {
-    output.writeFieldBegin('channels', Thrift.Type.STRUCT, 6);
-    this.channels.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.apiRequests !== undefined) {
-    output.writeFieldBegin('apiRequests', Thrift.Type.STRUCT, 7);
-    this.apiRequests.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.tokenRequests !== undefined) {
-    output.writeFieldBegin('tokenRequests', Thrift.Type.STRUCT, 8);
-    this.tokenRequests.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.inProgress !== undefined) {
-    output.writeFieldBegin('inProgress', Thrift.Type.STRING, 10);
-    output.writeString(this.inProgress);
-    output.writeFieldEnd();
-  }
-  if (this.count !== undefined) {
-    output.writeFieldBegin('count', Thrift.Type.I32, 11);
-    output.writeI32(this.count);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-SStatsArray = function(args) {
-  this.items = undefined;
-  if (args) {
-    if (args.items !== undefined) {
-      this.items = args.items;
-    }
-  }
-};
-SStatsArray.prototype = {};
-SStatsArray.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.LIST) {
-        var _size48 = 0;
-        var _rtmp352;
-        this.items = [];
-        var _etype51 = 0;
-        _rtmp352 = input.readListBegin();
-        _etype51 = _rtmp352.etype;
-        _size48 = _rtmp352.size;
-        for (var _i53 = 0; _i53 < _size48; ++_i53)
-        {
-          var elem54 = null;
-          elem54 = new SStats();
-          elem54.read(input);
-          this.items.push(elem54);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-SStatsArray.prototype.write = function(output) {
-  output.writeStructBegin('SStatsArray');
-  if (this.items !== undefined) {
-    output.writeFieldBegin('items', Thrift.Type.LIST, 1);
-    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter55 in this.items)
-    {
-      if (this.items.hasOwnProperty(iter55))
-      {
-        iter55 = this.items[iter55];
-        iter55.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-WWebhookMessage = function(args) {
-  this.name = undefined;
-  this.webhookId = undefined;
-  this.timestamp = undefined;
-  this.serial = undefined;
-  this.data = undefined;
-  if (args) {
-    if (args.name !== undefined) {
-      this.name = args.name;
-    }
-    if (args.webhookId !== undefined) {
-      this.webhookId = args.webhookId;
-    }
-    if (args.timestamp !== undefined) {
-      this.timestamp = args.timestamp;
-    }
-    if (args.serial !== undefined) {
-      this.serial = args.serial;
-    }
-    if (args.data !== undefined) {
-      this.data = args.data;
-    }
-  }
-};
-WWebhookMessage.prototype = {};
-WWebhookMessage.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRING) {
-        this.name = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRING) {
-        this.webhookId = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.I64) {
-        this.timestamp = input.readI64();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.serial = input.readString();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.data = new TData();
-        this.data.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-WWebhookMessage.prototype.write = function(output) {
-  output.writeStructBegin('WWebhookMessage');
-  if (this.name !== undefined) {
-    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
-    output.writeString(this.name);
-    output.writeFieldEnd();
-  }
-  if (this.webhookId !== undefined) {
-    output.writeFieldBegin('webhookId', Thrift.Type.STRING, 2);
-    output.writeString(this.webhookId);
-    output.writeFieldEnd();
-  }
-  if (this.timestamp !== undefined) {
-    output.writeFieldBegin('timestamp', Thrift.Type.I64, 3);
-    output.writeI64(this.timestamp);
-    output.writeFieldEnd();
-  }
-  if (this.serial !== undefined) {
-    output.writeFieldBegin('serial', Thrift.Type.STRING, 4);
-    output.writeString(this.serial);
-    output.writeFieldEnd();
-  }
-  if (this.data !== undefined) {
-    output.writeFieldBegin('data', Thrift.Type.STRUCT, 5);
-    this.data.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-WWebhookEnvelope = function(args) {
-  this.error = undefined;
-  this.items = undefined;
-  if (args) {
-    if (args.error !== undefined) {
-      this.error = args.error;
-    }
-    if (args.items !== undefined) {
-      this.items = args.items;
-    }
-  }
-};
-WWebhookEnvelope.prototype = {};
-WWebhookEnvelope.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true)
-  {
-    var ret = input.readFieldBegin();
-    var fname = ret.fname;
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.error = new TError();
-        this.error.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.LIST) {
-        var _size56 = 0;
-        var _rtmp360;
-        this.items = [];
-        var _etype59 = 0;
-        _rtmp360 = input.readListBegin();
-        _etype59 = _rtmp360.etype;
-        _size56 = _rtmp360.size;
-        for (var _i61 = 0; _i61 < _size56; ++_i61)
-        {
-          var elem62 = null;
-          elem62 = new WWebhookMessage();
-          elem62.read(input);
-          this.items.push(elem62);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-WWebhookEnvelope.prototype.write = function(output) {
-  output.writeStructBegin('WWebhookEnvelope');
-  if (this.error !== undefined) {
-    output.writeFieldBegin('error', Thrift.Type.STRUCT, 1);
-    this.error.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.items !== undefined) {
-    output.writeFieldBegin('items', Thrift.Type.LIST, 2);
-    output.writeListBegin(Thrift.Type.STRUCT, this.items.length);
-    for (var iter63 in this.items)
-    {
-      if (this.items.hasOwnProperty(iter63))
-      {
-        iter63 = this.items[iter63];
-        iter63.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-
-var clientmessage_refs = {
-	TAction: TAction,
-	TFlags: TFlags,
-	TType: TType,
-	TError: TError,
-	TData: TData,
-	TPresence: TPresence,
-	TMessage: TMessage,
-	TChannelMessage: TChannelMessage,
-	TProtocolMessage: TProtocolMessage,
-	TPresenceState: TPresenceState,
-	TMessageArray: TMessageArray
-};
-
 this.Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	function noop() {}
@@ -4409,322 +231,12 @@ var Http = (function() {
 	return Http;
 })();
 
-this.ThriftUtil = (function() {
-	var thriftTransport = new Thrift.TTransport();
-	var thriftProtocol = new Thrift.TBinaryProtocol(thriftTransport);
-	var defaultBufferSize = 16384;
-
-	var buffers = [];
-
-	function createBuffer(len) { return new Buffer(len || defaultBufferSize); }
-	function getBuffer(len) {
-		var len = len || 0;
-		if(buffers.length) {
-			var buf = buffers.shift();
-			if(buf.length >= len)
-				return buf;
-		}
-		return createBuffer(len);
-	}
-
-	function releaseBuffer(buf) { buffers.unshift(buf); }
-
-	function ThriftUtil() {}
-
-	ThriftUtil.encode = function(ob, callback) {
-		try {
-			callback(null, ThriftUtil.encodeSync(ob));
-		} catch(e) {
-			var msg = 'Unexpected exception encoding Thrift; exception = ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'ThriftUtil.encode()', msg, e);
-			var err = new Error(msg);
-			err.statusCode = 400;
-			callback(err);
-		}
-	};
-
-	ThriftUtil.encodeSync = function(ob) {
-		var result = undefined;
-		if(ob) {
-			var buf = getBuffer();
-			thriftTransport.reset(buf, function(encoded) {
-				result = encoded;
-			});
-			ob.write(thriftProtocol);
-			thriftProtocol.flush();
-			releaseBuffer(buf);
-		}
-		return result;
-	};
-
-	ThriftUtil.decode = function(ob, encoded, callback) {
-		var err = ThriftUtil.decodeSync(ob, encoded);
-		if(err) callback(err);
-		else callback(null, ob, encoded);
-	};
-
-	ThriftUtil.decodeSync = function(ob, encoded) {
-		try {
-			thriftTransport.reset(encoded);
-			ob.read(thriftProtocol);
-			return ob;
-		} catch(e) {
-			var msg = 'Unexpected exception decoding thrift message; exception = ' + e;
-			Logger.logAction(Logger.LOG_ERROR, 'ThriftUtil.decode()', msg, e);
-			var err = new Error(msg);
-			err.statusCode = 400;
-			throw err;
-		}
-	};
-
-	return ThriftUtil;
-})();
-
-/*
- Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
-
- Permission is hereby granted, free of charge, to any person
- obtaining a copy of this software and associated documentation
- files (the "Software"), to deal in the Software without
- restriction, including without limitation the rights to use,
- copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following
- conditions:
-
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
- */
-var Base64 = (function() {
-	function StringBuffer()
-	{
-		this.buffer = [];
-	}
-
-	StringBuffer.prototype.append = function append(string)
-	{
-		this.buffer.push(string);
-		return this;
-	};
-
-	StringBuffer.prototype.toString = function toString()
-	{
-		return this.buffer.join("");
-	};
-
-	var Base64 =
-	{
-		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-		encode : function (input)
-		{
-			var output = new StringBuffer();
-			var codex = Base64.codex;
-
-			var enumerator = new Utf8EncodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var chr1 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr2 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr3 = enumerator.current;
-
-				var enc1 = chr1 >> 2;
-				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-				var enc4 = chr3 & 63;
-
-				if (isNaN(chr2))
-				{
-					enc3 = enc4 = 64;
-				}
-				else if (isNaN(chr3))
-				{
-					enc4 = 64;
-				}
-
-				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
-			}
-
-			return output.toString();
-		},
-
-		decode : function (input)
-		{
-			var output = new StringBuffer();
-
-			var enumerator = new Base64DecodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var charCode = enumerator.current;
-
-				if (charCode < 128)
-					output.append(String.fromCharCode(charCode));
-				else if ((charCode > 191) && (charCode < 224))
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
-				}
-				else
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					enumerator.moveNext();
-					var charCode3 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
-				}
-			}
-
-			return output.toString();
-		}
-	};
-
-	function Utf8EncodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Utf8EncodeEnumerator.prototype =
-	{
-		current: Number.NaN,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = Number.NaN;
-				return false;
-			}
-			else
-			{
-				var charCode = this._input.charCodeAt(++this._index);
-
-				// "\r\n" -> "\n"
-				//
-				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
-				{
-					charCode = 10;
-					this._index += 2;
-				}
-
-				if (charCode < 128)
-				{
-					this.current = charCode;
-				}
-				else if ((charCode > 127) && (charCode < 2048))
-				{
-					this.current = (charCode >> 6) | 192;
-					this._buffer.push((charCode & 63) | 128);
-				}
-				else
-				{
-					this.current = (charCode >> 12) | 224;
-					this._buffer.push(((charCode >> 6) & 63) | 128);
-					this._buffer.push((charCode & 63) | 128);
-				}
-
-				return true;
-			}
-		}
-	};
-
-	function Base64DecodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Base64DecodeEnumerator.prototype =
-	{
-		current: 64,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = 64;
-				return false;
-			}
-			else
-			{
-				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
-
-				var chr1 = (enc1 << 2) | (enc2 >> 4);
-				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-				var chr3 = ((enc3 & 3) << 6) | enc4;
-
-				this.current = chr1;
-
-				if (enc3 != 64)
-					this._buffer.push(chr2);
-
-				if (enc4 != 64)
-					this._buffer.push(chr3);
-
-				return true;
-			}
-		}
-	};
-
-	return Base64;
-})();
-
 var Crypto = Ably.Crypto = window.CryptoJS && (function() {
-	var messagetypes = clientmessage_refs;
-	var TData = messagetypes.TData;
-	var TType = messagetypes.TType;
 	var DEFAULT_ALGORITHM = "aes";
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
-
-	/* FIXME: there's no fallback support here for browsers that don't support arraybuffer */
-	function DoubleToIEEE(f) {
-		var buf = new ArrayBuffer(8);
-		(new Float64Array(buf))[0] = f;
-		return new Uint32Array(buf);
-	}
-
-	function IEEEToDouble(wordArray) {
-		var buf = new ArrayBuffer(8),
-			intArray = new Uint32Array(buf);
-		intArray[0] = wordArray.words[0];
-		intArray[1] = wordArray.words[1];
-		return (new  Float64Array(buf))[0];
-	}
 
 	/**
 	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
@@ -4956,70 +468,20 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 
 	var Data = Crypto.Data = {};
 
-	Data.asPlaintext = function(tData) {
-		var result;
-		switch(tData.type) {
-			case TType.STRING:
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-				result = CryptoJS.enc.Utf8.parse((tData.stringData));
-				break;
-			case TType.NONE:
-			case TType.TRUE:
-			case TType.FALSE:
-				break;
-			case TType.INT32:
-				result = CryptoJS.lib.WordArray.create([tData.i32Data]);
-				break;
-			case TType.INT64:
-				result = CryptoJS.lib.WordArray.create([tData.i64Data / VAL32, tData.i64Data % VAL32]);
-				break;
-			case TType.DOUBLE:
-				var tmpResult = DoubleToIEEE(tData.doubleData);
-				result = CryptoJS.lib.WordArray.create([tmpResult[0], tmpResult[1]]);
-				break;
-			case TType.BUFFER:
-				result = tData.binaryData;
-				break;
-		}
-		return result;
-	};
-
-	Data.fromPlaintext = function(plaintext, type) {
-		var result = new TData();
-		result.type = type;
-		switch(type) {
-			case TType.INT32:
-				result.i32Data = plaintext[0];
-				break;
-			case TType.INT64:
-				result.i64Data = plaintext[0] * VAL32 + plaintext[1];
-				break;
-			case TType.DOUBLE:
-				result.doubleData = IEEEToDouble(plaintext);
-				break;
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-			case TType.STRING:
-				result.stringData = CryptoJS.enc.Utf8.stringify(plaintext);
-				break;
-			case TType.BUFFER:
-				result.binaryData = plaintext;
-				break;
-			/*	case TType.NONE:
-			 case TType.TRUE:
-			 case TType.FALSE: */
-			default:
-		}
-		return result;
-	};
-
 	Data.asBase64 = function(ciphertext) {
 		return CryptoJS.enc.Base64.stringify(ciphertext);
 	};
 
 	Data.fromBase64 = function(encoded) {
 		return CryptoJS.enc.Base64.parse(encoded);
+	};
+
+	Data.utf8Encode = function(string) {
+		return CryptoJS.enc.Utf8.stringify(string);
+	};
+
+	Data.utf8Decode = function(buf) {
+		return CryptoJS.enc.Utf8.parse(buf);
 	};
 
 	return Crypto;
@@ -5057,6 +519,606 @@ var DomEvent = (function() {
 
 	return DomEvent;
 })();
+( // Module boilerplate to support browser globals and browserify and AMD.
+		typeof define === "function" ? function (m) { define("msgpack-js", m); } :
+		typeof exports === "object" ? function (m) { module.exports = m(); } :
+	function(m){ this.msgpack = m(); }
+	)(function () {
+	"use strict";
+
+	var exports = {};
+
+	exports.inspect = inspect;
+	function inspect(buffer) {
+		if (buffer === undefined) return "undefined";
+		var view;
+		var type;
+		if (buffer instanceof ArrayBuffer) {
+			type = "ArrayBuffer";
+			view = new DataView(buffer);
+		}
+		else if (buffer instanceof DataView) {
+			type = "DataView";
+			view = buffer;
+		}
+		if (!view) return JSON.stringify(buffer);
+		var bytes = [];
+		for (var i = 0; i < buffer.byteLength; i++) {
+			if (i > 20) {
+				bytes.push("...");
+				break;
+			}
+			var byte_ = view.getUint8(i).toString(16);
+			if (byte_.length === 1) byte_ = "0" + byte_;
+			bytes.push(byte_);
+		}
+		return "<" + type + " " + bytes.join(" ") + ">";
+	}
+
+// Encode string as utf8 into dataview at offset
+	exports.utf8Write = utf8Write;
+	function utf8Write(view, offset, string) {
+		var byteLength = view.byteLength;
+		for(var i = 0, l = string.length; i < l; i++) {
+			var codePoint = string.charCodeAt(i);
+
+			// One byte of UTF-8
+			if (codePoint < 0x80) {
+				view.setUint8(offset++, codePoint >>> 0 & 0x7f | 0x00);
+				continue;
+			}
+
+			// Two bytes of UTF-8
+			if (codePoint < 0x800) {
+				view.setUint8(offset++, codePoint >>> 6 & 0x1f | 0xc0);
+				view.setUint8(offset++, codePoint >>> 0 & 0x3f | 0x80);
+				continue;
+			}
+
+			// Three bytes of UTF-8.
+			if (codePoint < 0x10000) {
+				view.setUint8(offset++, codePoint >>> 12 & 0x0f | 0xe0);
+				view.setUint8(offset++, codePoint >>> 6  & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 0  & 0x3f | 0x80);
+				continue;
+			}
+
+			// Four bytes of UTF-8
+			if (codePoint < 0x110000) {
+				view.setUint8(offset++, codePoint >>> 18 & 0x07 | 0xf0);
+				view.setUint8(offset++, codePoint >>> 12 & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 6  & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 0  & 0x3f | 0x80);
+				continue;
+			}
+			throw new Error("bad codepoint " + codePoint);
+		}
+	}
+
+	exports.utf8Read = utf8Read;
+	function utf8Read(view, offset, length) {
+		var string = "";
+		for (var i = offset, end = offset + length; i < end; i++) {
+			var byte_ = view.getUint8(i);
+			// One byte character
+			if ((byte_ & 0x80) === 0x00) {
+				string += String.fromCharCode(byte_);
+				continue;
+			}
+			// Two byte character
+			if ((byte_ & 0xe0) === 0xc0) {
+				string += String.fromCharCode(
+						((byte_ & 0x0f) << 6) |
+						(view.getUint8(++i) & 0x3f)
+				);
+				continue;
+			}
+			// Three byte character
+			if ((byte_ & 0xf0) === 0xe0) {
+				string += String.fromCharCode(
+						((byte_ & 0x0f) << 12) |
+						((view.getUint8(++i) & 0x3f) << 6) |
+						((view.getUint8(++i) & 0x3f) << 0)
+				);
+				continue;
+			}
+			// Four byte character
+			if ((byte_ & 0xf8) === 0xf0) {
+				string += String.fromCharCode(
+						((byte_ & 0x07) << 18) |
+						((view.getUint8(++i) & 0x3f) << 12) |
+						((view.getUint8(++i) & 0x3f) << 6) |
+						((view.getUint8(++i) & 0x3f) << 0)
+				);
+				continue;
+			}
+			throw new Error("Invalid byte " + byte_.toString(16));
+		}
+		return string;
+	}
+
+	exports.utf8ByteCount = utf8ByteCount;
+	function utf8ByteCount(string) {
+		var count = 0;
+		for(var i = 0, l = string.length; i < l; i++) {
+			var codePoint = string.charCodeAt(i);
+			if (codePoint < 0x80) {
+				count += 1;
+				continue;
+			}
+			if (codePoint < 0x800) {
+				count += 2;
+				continue;
+			}
+			if (codePoint < 0x10000) {
+				count += 3;
+				continue;
+			}
+			if (codePoint < 0x110000) {
+				count += 4;
+				continue;
+			}
+			throw new Error("bad codepoint " + codePoint);
+		}
+		return count;
+	}
+
+	exports.encode = function (value) {
+		var buffer = new ArrayBuffer(sizeof(value));
+		var view = new DataView(buffer);
+		encode(value, view, 0);
+		return buffer;
+	}
+
+	exports.decode = decode;
+
+// http://wiki.msgpack.org/display/MSGPACK/Format+specification
+// I've extended the protocol to have two new types that were previously reserved.
+//   buffer 16  11011000  0xd8
+//   buffer 32  11011001  0xd9
+// These work just like raw16 and raw32 except they are node buffers instead of strings.
+//
+// Also I've added a type for `undefined`
+//   undefined  11000100  0xc4
+
+	function Decoder(view, offset) {
+		this.offset = offset || 0;
+		this.view = view;
+	}
+	Decoder.prototype.map = function (length) {
+		var value = {};
+		for (var i = 0; i < length; i++) {
+			var key = this.parse();
+			value[key] = this.parse();
+		}
+		return value;
+	};
+	Decoder.prototype.buf = function (length) {
+		var value = new ArrayBuffer(length);
+		(new Uint8Array(value)).set(new Uint8Array(this.view.buffer, this.offset, length), 0);
+		this.offset += length;
+		return value;
+	};
+	Decoder.prototype.raw = function (length) {
+		var value = utf8Read(this.view, this.offset, length);
+		this.offset += length;
+		return value;
+	};
+	Decoder.prototype.array = function (length) {
+		var value = new Array(length);
+		for (var i = 0; i < length; i++) {
+			value[i] = this.parse();
+		}
+		return value;
+	};
+	Decoder.prototype.parse = function () {
+		var type = this.view.getUint8(this.offset);
+		var value, length;
+		// FixRaw
+		if ((type & 0xe0) === 0xa0) {
+			length = type & 0x1f;
+			this.offset++;
+			return this.raw(length);
+		}
+		// FixMap
+		if ((type & 0xf0) === 0x80) {
+			length = type & 0x0f;
+			this.offset++;
+			return this.map(length);
+		}
+		// FixArray
+		if ((type & 0xf0) === 0x90) {
+			length = type & 0x0f;
+			this.offset++;
+			return this.array(length);
+		}
+		// Positive FixNum
+		if ((type & 0x80) === 0x00) {
+			this.offset++;
+			return type;
+		}
+		// Negative Fixnum
+		if ((type & 0xe0) === 0xe0) {
+			value = this.view.getInt8(this.offset);
+			this.offset++;
+			return value;
+		}
+		switch (type) {
+			// raw 16
+			case 0xda:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.raw(length);
+			// raw 32
+			case 0xdb:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.raw(length);
+			// nil
+			case 0xc0:
+				this.offset++;
+				return null;
+			// false
+			case 0xc2:
+				this.offset++;
+				return false;
+			// true
+			case 0xc3:
+				this.offset++;
+				return true;
+			// undefined
+			case 0xc4:
+				this.offset++;
+				return undefined;
+			// uint8
+			case 0xcc:
+				value = this.view.getUint8(this.offset + 1);
+				this.offset += 2;
+				return value;
+			// uint 16
+			case 0xcd:
+				value = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return value;
+			// uint 32
+			case 0xce:
+				value = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return value;
+			// int 8
+			case 0xd0:
+				value = this.view.getInt8(this.offset + 1);
+				this.offset += 2;
+				return value;
+			// int 16
+			case 0xd1:
+				value = this.view.getInt16(this.offset + 1);
+				this.offset += 3;
+				return value;
+			// int 32
+			case 0xd2:
+				value = this.view.getInt32(this.offset + 1);
+				this.offset += 5;
+				return value;
+			// map 16
+			case 0xde:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.map(length);
+			// map 32
+			case 0xdf:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.map(length);
+			// array 16
+			case 0xdc:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.array(length);
+			// array 32
+			case 0xdd:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.array(length);
+			// buffer 16
+			case 0xd8:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.buf(length);
+			// buffer 32
+			case 0xd9:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.buf(length);
+			// float
+			case 0xca:
+				value = this.view.getFloat32(this.offset + 1);
+				this.offset += 5;
+				return value;
+			// double
+			case 0xcb:
+				value = this.view.getFloat64(this.offset + 1);
+				this.offset += 9;
+				return value;
+		}
+		throw new Error("Unknown type 0x" + type.toString(16));
+	};
+	function decode(buffer) {
+		var view = new DataView(buffer);
+		var decoder = new Decoder(view);
+		var value = decoder.parse();
+		if (decoder.offset !== buffer.byteLength) throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
+		return value;
+	}
+
+	function encode(value, view, offset) {
+		var type = typeof value;
+
+		// Strings Bytes
+		if (type === "string") {
+			var length = utf8ByteCount(value);
+			// fix raw
+			if (length < 0x20) {
+				view.setUint8(offset, length | 0xa0);
+				utf8Write(view, offset + 1, value);
+				return 1 + length;
+			}
+			// raw 16
+			if (length < 0x10000) {
+				view.setUint8(offset, 0xda);
+				view.setUint16(offset + 1, length);
+				utf8Write(view, offset + 3, value);
+				return 3 + length;
+			}
+			// raw 32
+			if (length < 0x100000000) {
+				view.setUint8(offset, 0xdb);
+				view.setUint32(offset + 1, length);
+				utf8Write(view, offset + 5, value);
+				return 5 + length;
+			}
+		}
+
+		if (value instanceof ArrayBuffer) {
+			var length = value.byteLength;
+			// buffer 16
+			if (length < 0x10000) {
+				view.setUint8(offset, 0xd8);
+				view.setUint16(offset + 1, length);
+				(new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 3);
+				return 3 + length;
+			}
+			// buffer 32
+			if (length < 0x100000000) {
+				view.setUint8(offset, 0xd9);
+				view.setUint32(offset + 1, length);
+				(new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 5);
+				return 5 + length;
+			}
+		}
+
+		if (type === "number") {
+			// Floating Point
+			if ((value << 0) !== value) {
+				view.setUint8(offset, 0xcb);
+				view.setFloat64(offset + 1, value);
+				return 9;
+			}
+
+			// Integers
+			if (value >=0) {
+				// positive fixnum
+				if (value < 0x80) {
+					view.setUint8(offset, value);
+					return 1;
+				}
+				// uint 8
+				if (value < 0x100) {
+					view.setUint8(offset, 0xcc);
+					view.setUint8(offset + 1, value);
+					return 2;
+				}
+				// uint 16
+				if (value < 0x10000) {
+					view.setUint8(offset, 0xcd);
+					view.setUint16(offset + 1, value);
+					return 3;
+				}
+				// uint 32
+				if (value < 0x100000000) {
+					view.setUint8(offset, 0xce);
+					view.setUint32(offset + 1, value);
+					return 5;
+				}
+				throw new Error("Number too big 0x" + value.toString(16));
+			}
+			// negative fixnum
+			if (value >= -0x20) {
+				view.setInt8(offset, value);
+				return 1;
+			}
+			// int 8
+			if (value >= -0x80) {
+				view.setUint8(offset, 0xd0);
+				view.setInt8(offset + 1, value);
+				return 2;
+			}
+			// int 16
+			if (value >= -0x8000) {
+				view.setUint8(offset, 0xd1);
+				view.setInt16(offset + 1, value);
+				return 3;
+			}
+			// int 32
+			if (value >= -0x80000000) {
+				view.setUint8(offset, 0xd2);
+				view.setInt32(offset + 1, value);
+				return 5;
+			}
+			throw new Error("Number too small -0x" + (-value).toString(16).substr(1));
+		}
+
+		// undefined
+		if (type === "undefined") {
+			view.setUint8(offset, 0xc4);
+			return 1;
+		}
+
+		// null
+		if (value === null) {
+			view.setUint8(offset, 0xc0);
+			return 1;
+		}
+
+		// Boolean
+		if (type === "boolean") {
+			view.setUint8(offset, value ? 0xc3 : 0xc2);
+			return 1;
+		}
+
+		// Container Types
+		if (type === "object") {
+			var length, size = 0;
+			var isArray = Array.isArray(value);
+
+			if (isArray) {
+				length = value.length;
+			}
+			else {
+				var keys = Object.keys(value);
+				length = keys.length;
+			}
+
+			var size;
+			if (length < 0x10) {
+				view.setUint8(offset, length | (isArray ? 0x90 : 0x80));
+				size = 1;
+			}
+			else if (length < 0x10000) {
+				view.setUint8(offset, isArray ? 0xdc : 0xde);
+				view.setUint16(offset + 1, length);
+				size = 3;
+			}
+			else if (length < 0x100000000) {
+				view.setUint8(offset, isArray ? 0xdd : 0xdf);
+				view.setUint32(offset + 1, length);
+				size = 5;
+			}
+
+			if (isArray) {
+				for (var i = 0; i < length; i++) {
+					size += encode(value[i], view, offset + size);
+				}
+			}
+			else {
+				for (var i = 0; i < length; i++) {
+					var key = keys[i];
+					size += encode(key, view, offset + size);
+					size += encode(value[key], view, offset + size);
+				}
+			}
+
+			return size;
+		}
+		throw new Error("Unknown type " + type);
+	}
+
+	function sizeof(value) {
+		var type = typeof value;
+
+		// Raw Bytes
+		if (type === "string") {
+			var length = utf8ByteCount(value);
+			if (length < 0x20) {
+				return 1 + length;
+			}
+			if (length < 0x10000) {
+				return 3 + length;
+			}
+			if (length < 0x100000000) {
+				return 5 + length;
+			}
+		}
+
+		if (value instanceof ArrayBuffer) {
+			var length = value.byteLength;
+			if (length < 0x10000) {
+				return 3 + length;
+			}
+			if (length < 0x100000000) {
+				return 5 + length;
+			}
+		}
+
+		if (type === "number") {
+			// Floating Point
+			// double
+			if (value << 0 !== value) return 9;
+
+			// Integers
+			if (value >=0) {
+				// positive fixnum
+				if (value < 0x80) return 1;
+				// uint 8
+				if (value < 0x100) return 2;
+				// uint 16
+				if (value < 0x10000) return 3;
+				// uint 32
+				if (value < 0x100000000) return 5;
+				// uint 64
+				if (value < 0x10000000000000000) return 9;
+				throw new Error("Number too big 0x" + value.toString(16));
+			}
+			// negative fixnum
+			if (value >= -0x20) return 1;
+			// int 8
+			if (value >= -0x80) return 2;
+			// int 16
+			if (value >= -0x8000) return 3;
+			// int 32
+			if (value >= -0x80000000) return 5;
+			// int 64
+			if (value >= -0x8000000000000000) return 9;
+			throw new Error("Number too small -0x" + value.toString(16).substr(1));
+		}
+
+		// Boolean, null, undefined
+		if (type === "boolean" || type === "undefined" || value === null) return 1;
+
+		// Container Types
+		if (type === "object") {
+			var length, size = 0;
+			if (Array.isArray(value)) {
+				length = value.length;
+				for (var i = 0; i < length; i++) {
+					size += sizeof(value[i]);
+				}
+			}
+			else {
+				var keys = Object.keys(value);
+				length = keys.length;
+				for (var i = 0; i < length; i++) {
+					var key = keys[i];
+					size += sizeof(key) + sizeof(value[key]);
+				}
+			}
+			if (length < 0x10) {
+				return 1 + size;
+			}
+			if (length < 0x10000) {
+				return 3 + size;
+			}
+			if (length < 0x100000000) {
+				return 5 + size;
+			}
+			throw new Error("Array or object too long 0x" + length.toString(16));
+		}
+		throw new Error("Unknown type " + type);
+	}
+
+	return exports;
+
+});
 var EventEmitter = (function() {
 
 	/* public constructor */
@@ -5262,7 +1324,7 @@ var Utils = (function() {
 	 * props:  an object whose enumerable properties are
 	 *         added, by reference only
 	 */
-	Utils.addProperties = Utils.mixin = function(target, src) {
+	Utils.mixin = function(target, src) {
 		for(var prop in src)
 			target[prop] = src[prop];
 		return target;
@@ -5441,21 +1503,23 @@ var Utils = (function() {
 		jsonp:  'application/javascript',
 		xml:    'application/xml',
 		html:   'text/html',
-		thrift: 'application/x-thrift'
+		msgpack: 'application/x-msgpack'
 	};
 
-	Utils.defaultGetHeaders = function(binary) {
-		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
-		return {
-			accept: accept
-		};
+	Utils.defaultGetHeaders = function(format) {
+		format = format || 'json';
+		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
+		return { accept: accept };
 	};
 
-	Utils.defaultPostHeaders = function(binary) {
-		var accept = binary ? contentTypes.thrift + ',' + contentTypes.json : contentTypes.json;
+	Utils.defaultPostHeaders = function(format) {
+		format = format || 'json';
+		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json,
+			contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
+
 		return {
 			accept: accept,
-			'content-type': binary ? contentTypes.thrift : contentTypes.json
+			'content-type': contentType
 		};
 	};
 
@@ -5511,8 +1575,8 @@ var ConnectionManager = (function() {
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
+	var supportsBinary = BufferUtils.supportsBinary;
+	var actions = ProtocolMessage.Action;
 
 	var noop = function() {};
 
@@ -5537,7 +1601,7 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionId = connectionId;
 		this.connectionSerial = connectionSerial;
-		this.binary = !options.useTextProtocol;
+		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -5576,7 +1640,7 @@ var ConnectionManager = (function() {
 		}
 		if(options.echoMessages === false)
 			params.echo = 'false';
-		params.binary = this.binary;
+		params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
 		return params;
@@ -6164,7 +2228,8 @@ var ConnectionManager = (function() {
 			if(queueEvents) {
 				this.queue(msg, callback);
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
+console.log('send: ' + (new Error()).stack);
 				callback(this.error);
 			}
 		}
@@ -6244,10 +2309,8 @@ var ConnectionManager = (function() {
 })();
 
 var Transport = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
-	var closeMessage = new messagetypes.TProtocolMessage({action: actions.CLOSE});
+	var actions = ProtocolMessage.Action;
+	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -6265,6 +2328,7 @@ var Transport = (function() {
 		this.connectionManager = connectionManager;
 		this.auth = auth;
 		this.params = params;
+		this.format = params.format;
 		this.isConnected = false;
 	}
 	Utils.inherits(Transport, EventEmitter);
@@ -6365,14 +2429,10 @@ var Transport = (function() {
 
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
-	var messagetypes = isBrowser ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-//	var hasBuffer = isBrowser ? !!window.ArrayBuffer : !!Buffer;
-	var hasBuffer = isBrowser ? false : !!Buffer;
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
-		params.binary = (params.binary && hasBuffer);
 		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
@@ -6431,20 +2491,20 @@ var WebSocketTransport = (function() {
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
-				wsConnection.onmessage = function(ev) { self.onWsData(ev.data, typeof(ev.data) != 'string'); };
+				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) { self.onWsError(e); }
 		});
 	};
 
 	WebSocketTransport.prototype.send = function(message) {
-		this.wsConnection.send(Serialize.TProtocolMessage.encode(message, this.params.binary));
+		this.wsConnection.send(ProtocolMessage.encode(message, this.params.format));
 	};
 
-	WebSocketTransport.prototype.onWsData = function(data, binary) {
-		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data) + '; binary = ' + binary);
+	WebSocketTransport.prototype.onWsData = function(data) {
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
-			this.onChannelMessage(Serialize.TProtocolMessage.decode(data, binary));
+			this.onChannelMessage(ProtocolMessage.decode(data, this.format));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
@@ -6501,10 +2561,11 @@ var CometTransport = (function() {
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
+		/* binary not supported for comet */
+		params.format = 'json';
 		Transport.call(this, connectionManager, auth, params);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
-		this.binary = params.binary = false;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
@@ -6692,375 +2753,340 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.encodeRequest = function(requestItems) {
-		return Serialize.TMessageBundle.encode(requestItems, this.binary);
+		return JSON.stringify(requestItems);
 	};
 
 	CometTransport.prototype.decodeResponse = function(responseData) {
-		return Serialize.TMessageBundle.decode(responseData, this.binary);
+		if(typeof(responseData) == 'string')
+			responseData = JSON.parse(responseData);
+		return responseData;
 	};
 
 	return CometTransport;
 })();
 
 this.Data = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var TData = messagetypes.TData;
-	var TType = messagetypes.TType;
-	var isBrowser = (typeof(window) === 'object');
-
-	var resolveObjects = {
-		'[object Null]': function(msg, data) {
-			msg.type = messagetypes.TType.NONE;
-			return true;
-		},
-		'[object Buffer]': function(msg, data) {
-			msg.type = messagetypes.TType.BUFFER;
-			msg.binaryData = data;
-			return true;
-		},
-		'[object ArrayBuffer]': function(msg, data) {
-			msg.type = messagetypes.TType.BUFFER;
-			msg.binaryData = data;
-			return true;
-		},
-		'[object Array]': function(msg, data) {
-			msg.type = messagetypes.TType.JSONARRAY;
-			msg.stringData = JSON.stringify(data);
-			return true;
-		},
-		'[object String]': function(msg, data) {
-			msg.type = messagetypes.TType.STRING;
-			msg.stringData = data.valueOf();
-			return true;
-		},
-		'[object Number]': function(msg, data) {
-			msg.type = messagetypes.TType.DOUBLE;
-			msg.doubleData = data.valueOf();
-			return true;
-		},
-		'[object Boolean]': function(msg, data) {
-			msg.type = data.valueOf() ? messagetypes.TType.TRUE : messagetypes.TType.FALSE;
-			return true;
-		},
-		'[object Object]': function(msg, data) {
-			if(!isBrowser && Buffer.isBuffer(data)) {
-				msg.type = messagetypes.TType.BUFFER;
-				msg.binaryData = data;
-			} else {
-				msg.type = messagetypes.TType.JSONOBJECT;
-				msg.stringData = JSON.stringify(data);
-			}
-			return true;
-		},
-		'[object Function]': function(msg, data) {
-			msg.type = messagetypes.TType.JSONOBJECT;
-			msg.stringData = JSON.stringify(data);
-			return true;
-		}
-	};
-
-	var resolveTypes = {
-		'undefined': function(msg, data) {
-			msg.type = messagetypes.TType.NONE;
-			return true;
-		},
-		'boolean': function(msg, data) {
-			msg.type = data ? messagetypes.TType.TRUE : messagetypes.TType.FALSE;
-			return true;
-		},
-		'string': function(msg, data) {
-			msg.type = messagetypes.TType.STRING;
-			msg.stringData = data;
-			return true;
-		},
-		'number': function(msg, data) {
-			msg.type = messagetypes.TType.DOUBLE;
-			msg.doubleData = data;
-			return true;
-		},
-		'object': function(msg, data) {
-			var func = resolveObjects[Object.prototype.toString.call(data)];
-			return (func && func(msg, data));
-		}
-	};
 
 	function Data() {}
 
-	Data.isCipherData = function(tData) {
-		return tData.cipherData;
+	/* ensure a user-supplied data value has appropriate (string or buffer) type */
+	Data.toData = function(data) {
+		return BufferUtils.isBuffer(data) ? data : String(data);
 	};
 
-	Data.fromTData = function(tData) {
-		var result = undefined;
-		if(tData) {
-			if(tData.cipherData)
-				return new Crypto.CipherData(tData.cipherData, tData.type);
-
-			switch(tData.type) {
-				case 1: /* TRUE */
-					result = true;
-					break;
-				case 2: /* FALSE */
-					result = false;
-					break;
-				case 3: /* INT32 */
-					result = tData.i32Data;
-					break;
-				case 4: /* INT64 */
-					result = tData.i64Data;
-					break;
-				case 5: /* DOUBLE */
-					result = tData.doubleData;
-					break;
-				case 6: /* STRING */
-					result = tData.stringData;
-					break;
-				case 7: /* BUFFER */
-					result = tData.binaryData;
-					break;
-				case 8: /* JSONARRAY */
-				case 9: /* JSONOBJECT */
-					result = JSON.parse(tData.stringData);
-					break;
-				case 0: /* NONE */
+	/* get a data value from the value received inbound */
+	Data.fromEncoded = function(data, msg) {
+		if(typeof(data) == 'string') {
+			var xform = msg.xform, match;
+			if(xform && (match = xform.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
+				data = BufferUtils.decodeBase64(data);
+				msg.xform = match[2];
 			}
 		}
-		return result;
-	};
-
-	Data.toTData = function(value) {
-		var result = new messagetypes.TData();
-		var func = resolveTypes[typeof(value)];
-		if(func && func(result, value))
-			return result;
-		throw new Error('Unsupported data type: ' + Object.prototype.toString.call(value));
+		return data;
 	};
 
 	return Data;
 })();
 
 var Message = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var TData = messagetypes.TData;
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
-	/* public constructor */
-	function Message(channelSerial, timestamp, name, data) {
-		this.channelSerial = channelSerial;
-		this.timestamp = timestamp;
-		this.name = name;
-		this.data = data;
+	function Message() {
+		this.name = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.clientId = undefined;
+		this.data = undefined;
+		this.xform = undefined;
 	}
 
-	Message.encrypt = function(msg, cipher) {
-		var cipherData = new TData(), data = msg.data;
-		cipherData.cipherData = cipher.encrypt(Crypto.Data.asPlaintext(data));
-		cipherData.type = data.type;
-		msg.data = cipherData;
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	Message.prototype.toJSON = function() {
+		var result = {
+			name: this.name,
+			clientId: this.clientId,
+			timestamp: this.timestamp,
+			xform: this.xform
+		};
+
+		/* encode to base64 if we're returning real JSON;
+		 * although msgpack calls toJSON(), we know it is a stringify()
+		 * call if it passes on the stringify arguments */
+		var data = this.data;
+		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
+			data = BufferUtils.base64Encode(data);
+		}
+		result.data = data;
+		return result;
 	};
 
-	Message.decrypt = function(msg, cipher) {
-		var data = msg.data;
-		if(data.cipherData)
-			msg.data = Crypto.Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
+	Message.encrypt = function(msg, options) {
+		var data = msg.data, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
+		}
+		msg.data = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
+	};
+
+	Message.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			Message.encrypt(msg, options);
+	};
+
+	Message.toRequestBody = function(messages, options, format) {
+		for (var i = 0; i < messages.length; i++)
+			Message.encode(messages[i], options);
+
+		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
+	};
+
+	Message.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.data;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				message.xform = (i <= 0) ? null : xform.substring(0, i);
+				message.data = data;
+			}
+		}
+	};
+
+	Message.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
+			Message.decode(msg, options);
+		}
+	};
+
+	Message.fromDecoded = function(values) {
+		return Utils.mixin(new Message(), values);
+	};
+
+	Message.fromValues = function(values) {
+		var result = Utils.mixin(new Message(), values);
+		result.data = Data.toData(result.data);
+		result.timestamp = result.timestamp || Date.now();
+		return result;
+	};
+
+	Message.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
+		return result;
 	};
 
 	return Message;
 })();
 
 var PresenceMessage = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
-	/* public constructor */
-	function PresenceMessage(clientId, clientData, memberId) {
-		this.clientId = clientId;
-		this.clientData = clientData;
-		this.memberId = memberId;
+	function PresenceMessage() {
+		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.clientId = undefined;
+		this.clientData = undefined;
+		this.xform = undefined;
+		this.memberId = undefined;
+		this.inheritMemberId = undefined;
 	}
 
-	return PresenceMessage;
-})();
-
-this.Serialize = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-
-	function Serialize() {}
-
-	var TData = Serialize.TData = {},
-		TMessage = Serialize.TMessage = {},
-		TPresence = Serialize.TPresence = {},
-		TProtocolMessage = Serialize.TProtocolMessage = {},
-		TMessageArray = Serialize.TMessageArray = {},
-		TMessageBundle = Serialize.TMessageBundle = {},
-		BUFFER = messagetypes.TType.BUFFER;
-
-	/**
-	 * Overload toString() to be useful
-	 * @return {*}
-	 */
-	messagetypes.TError.prototype.toString = function() {
-		var result = '[' + this.constructor.name;
-		if(this.message) result += ': ' + this.message;
-		if(this.statusCode) result += '; statusCode=' + this.statusCode;
-		if(this.code) result += '; code=' + this.code;
-		result += ']';
-		return result;
+	PresenceMessage.Action = {
+		'ENTER' : 0,
+		'LEAVE' : 1,
+		'UPDATE' : 2
 	};
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
-	messagetypes.TMessage.prototype.toJSON = function() {
-		var tData = this.data, result = {
-			name: this.name,
-			clientId: this.clientId,
-			timestamp: this.timestamp,
-			tags: this.tags
-		};
-
-		var value;
-		if(value = Data.isCipherData(tData)) {
-			result.encoding = 'cipher+base64';
-			value = Crypto.Data.asBase64(value);
-			result.type = tData.type;
-		} else {
-			value = Data.fromTData(tData);
-			if(tData.type == BUFFER) {
-				result.encoding = 'base64';
-				value = value.toString('base64');
-			}
-		}
-		result.data = value;
-		return result;
-	};
-
-	/**
-	 * Overload toJSON() to intercept JSON.stringify()
-	 * @return {*}
-	 */
-	messagetypes.TPresence.prototype.toJSON = function() {
-		var tData = this.clientData, result = {
+	PresenceMessage.prototype.toJSON = function() {
+		var result = {
 			name: this.name,
 			clientId: this.clientId,
 			memberId: this.memberId,
 			timestamp: this.timestamp,
-			state: this.state,
-			tags: this.tags
+			action: this.action,
+			xform: this.xform
 		};
-		var value = Data.fromTData(tData);
-		if(tData && (tData.type == BUFFER)) {
-			result.encoding = 'base64'
-			value = value.toString('base64');
+
+		/* encode to base64 if we're returning real JSON;
+		 * although msgpack calls toJSON(), we know it is a stringify()
+		 * call if it passes on the stringify arguments */
+		var clientData = this.clientData;
+		if(arguments.length > 0 && BufferUtils.isBuffer(clientData)) {
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
+			clientData = clientData.toString('base64');
 		}
-		result.clientData = value;
+		result.clientData = clientData;
 		return result;
 	};
 
-	TData.fromREST = function(jsonObject, jsonData) {
-		var tData, encoding = jsonObject.encoding;
-		switch(encoding) {
-			case 'cipher+base64':
-				tData = new messagetypes.TData();
-				tData.type = jsonObject.type;
-				tData.cipherData = Crypto.Data.fromBase64(jsonData);
-				break;
-			case 'base64':
-				tData = new messagetypes.TData();
-				tData.type = BUFFER;
-				tData.binaryData = new Buffer(jsonData, 'base64');
-				break;
-			default:
-				tData = Data.toTData(jsonData);
+	PresenceMessage.encrypt = function(msg, options) {
+		var data = msg.clientData, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
 		}
-		return tData;
+		msg.clientData = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
 	};
 
-	TMessage.fromJSON = function(jsonObject) {
-		jsonObject.data = TData.fromREST(jsonObject, jsonObject.data);
-		return new messagetypes.TMessage(jsonObject);
+	PresenceMessage.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			PresenceMessage.encrypt(msg, options);
 	};
 
-	TPresence.fromJSON = function(jsonObject) {
-		jsonObject.clientData = TData.fromREST(jsonObject, jsonObject.clientData);
-		return new messagetypes.TPresence(jsonObject);
+	PresenceMessage.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.clientData;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				this.xform = (i <= 0) ? null : xform.substring(0, i);
+				this.clientData = data;
+			}
+		}
 	};
 
-	TProtocolMessage.fromJSON = function(jsonObject) {
-		var elements;
-		if(elements = jsonObject.messages) {
-			var count = elements.length;
-			var messages = jsonObject.messages = new Array(count);
-			for(var i = 0; i < count; i++) messages[i] = TMessage.fromJSON(elements[i]);
+	PresenceMessage.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
+			PresenceMessage.decode(msg, options);
 		}
-		if(elements = jsonObject.presence) {
-			var count = elements.length;
-			var presence = jsonObject.presence = new Array(count);
-			for(var i = 0; i < count; i++) presence[i] = TPresence.fromJSON(elements[i]);
-		}
-		return new messagetypes.TProtocolMessage(jsonObject);
 	};
 
-	TProtocolMessage.decode = function(encoded, binary) {
-		var result, err;
-		if(binary) {
-			if(err = ThriftUtil.decodeSync((result = new messagetypes.TProtocolMessage()), encoded)) throw err;
-		} else {
-			result = TProtocolMessage.fromJSON(JSON.parse(encoded));
-		}
+	PresenceMessage.fromDecoded = function(values) {
+		return Utils.mixin(new PresenceMessage(), values);
+	};
+
+	PresenceMessage.fromValues = function(values) {
+		var result = Utils.mixin(new PresenceMessage(), values);
+		result.clientData = Data.toData(result.clientData);
+		result.timestamp = result.timestamp || Date.now();
 		return result;
 	};
 
-	/* NOTE: decodes to items */
-	TMessageBundle.decode = function(encoded, binary) {
-		var items = null, err;
-		if(encoded) {
-			if(binary) {
-				var ob;
-				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageBundle()), encoded)) throw err;
-				items = ob.items;
-			} else {
-				if(!Utils.isArray(encoded))
-					encoded = JSON.parse(String(encoded));
-				var count = encoded.length;
-				items = new Array(count);
-				for(var i = 0; i < count; i++) items[i] = TProtocolMessage.fromJSON(encoded[i]);
-			}
-		}
-		return items;
+	PresenceMessage.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
+		return result;
 	};
 
-	TProtocolMessage.encode = function(message, binary) {
-		return binary ? ThriftUtil.encodeSync(message) : JSON.stringify(message);
+	return PresenceMessage;
+})();
+
+var ProtocolMessage = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+
+	function ProtocolMessage() {
+		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.count = undefined;
+		this.error = undefined;
+		this.connectionId = undefined;
+		this.connectionSerial = undefined;
+		this.channel = undefined;
+		this.channelSerial = undefined;
+		this.msgSerial = undefined;
+		this.messages = undefined;
+		this.presence = undefined;
+	}
+
+	ProtocolMessage.Action = {
+		'HEARTBEAT' : 0,
+		'ACK' : 1,
+		'NACK' : 2,
+		'CONNECT' : 3,
+		'CONNECTED' : 4,
+		'DISCONNECT' : 5,
+		'DISCONNECTED' : 6,
+		'CLOSE' : 7,
+		'CLOSED' : 8,
+		'ERROR' : 9,
+		'ATTACH' : 10,
+		'ATTACHED' : 11,
+		'DETACH' : 12,
+		'DETACHED' : 13,
+		'PRESENCE' : 14,
+		'MESSAGE' : 15
 	};
 
-	TMessageBundle.encode = function(items, binary) {
-		return binary ? ThriftUtil.encodeSync(new messagetypes.TMessageBundle({items:items})) : JSON.stringify(items);
+	ProtocolMessage.encode = function(msg, format) {
+		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
-	TMessageArray.encode = function(items, binary) {
-		return binary
-			? ThriftUtil.encodeSync(new messagetypes.TMessageArray({items:items.map(TMessage.fromJSON)}))
-			: JSON.stringify(items);
+	ProtocolMessage.decode = function(encoded, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		return ProtocolMessage.fromDecoded(decoded);
 	};
 
-	TMessageArray.decode = function(encoded, binary) {
-		var items = null, err;
-		if(encoded) {
-			if(binary) {
-				var ob;
-				if(err = ThriftUtil.decodeSync((ob = new messagetypes.TMessageArray()), encoded)) throw err;
-				items = ob.items;
-			} else {
-				if(!Utils.isArray(encoded))
-					encoded = JSON.parse(String(encoded));
-				var count = encoded.length;
-				items = new Array(count);
-				for(var i = 0; i < count; i++) items[i] = TMessage.fromJSON(encoded[i]);
-			}
-		}
-		return items;
+	ProtocolMessage.fromDecoded = function(decoded) {
+		var error = decoded.error;
+		if(error) decoded.error = ErrorInfo.fromValues(error);
+		var messages = decoded.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
+		var presence = decoded.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
+		return Utils.mixin(new ProtocolMessage(), decoded);
 	};
 
-	return Serialize;
+	ProtocolMessage.fromValues = function(values) {
+		return Utils.mixin(new ProtocolMessage(), values);
+	};
+
+	return ProtocolMessage;
 })();
 
 var Resource = (function() {
@@ -7666,8 +3692,8 @@ var Rest = (function() {
 			options = {key: options};
 		this.options = options;
 
-		if (typeof(this.options.useTextProtocol) === 'undefined')   // Default to text protocol in browser, binary in node.js
-			this.options.useTextProtocol = (typeof(window) === 'object') ? true : false;
+		if (typeof(this.options.useBinaryProtocol) === 'undefined')
+			this.options.useBinaryProtocol = BufferUtils.supportsBinary;
 
 		/* process options */
 		if(options.key) {
@@ -7887,6 +3913,8 @@ var Connection = (function() {
 var Channel = (function() {
 	function noop() {}
 
+	var defaultOptions = {};
+
 	/* public constructor */
 	function Channel(rest, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
@@ -7894,21 +3922,21 @@ var Channel = (function() {
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
-		this.cipher = null;
 		this.presence = new Presence(this);
+		this.setOptions(options);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
-	Channel.prototype.setOptions = function(channelOpts, callback) {
+	Channel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		if(channelOpts && channelOpts.encrypted) {
-			var self = this;
-			Crypto.getCipher(channelOpts, function(err, cipher) {
-				self.cipher = cipher;
+		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		if(options.encrypted) {
+			Crypto.getCipher(options, function(err, cipher) {
+				options.cipher = cipher;
 				callback(null);
 			});
 		} else {
-			callback(null, this.cipher = null);
+			callback(null, (options.cipher = null));
 		}
 	};
 
@@ -7925,21 +3953,15 @@ var Channel = (function() {
 		}
 		var rest = this.rest,
 			envelope = !Http.supportsLinkHeaders,
-			binary = !(rest.options.useTextProtocol || envelope),
-			headers = Utils.copy(Utils.defaultGetHeaders(binary)),
-			cipher = this.cipher;
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body) {
-			var messages = Serialize.TMessageArray.decode(body, binary);
-			for(var i = 0; i < messages.length; i++) {
-				if(cipher)
-					Message.decrypt(messages[i], cipher);
-				messages[i].data = Data.fromTData(messages[i].data);
-			}
-			return messages;
+			return Message.fromResponseBody(body, options, format);
 		})).get(callback);
 	};
 
@@ -7947,13 +3969,12 @@ var Channel = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
 		callback = callback || noop;
 		var rest = this.rest,
-			binary = !rest.options.useTextProtocol,
-			msg = {name:name, data:data, timestamp: Date.now()},
-			cipher = this.cipher;
-		if(cipher)
-			Message.encrypt(msg, cipher);
-		var requestBody = Serialize.TMessageArray.encode([msg], binary);
-		var headers = Utils.copy(Utils.defaultPostHeaders(binary));
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			msg = Message.fromValues({name:name, data:data}),
+			options = this.options;
+
+		var requestBody = Message.toRequestBody([msg], options, format);
+		var headers = Utils.copy(Utils.defaultPostHeaders(format));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
@@ -7976,8 +3997,9 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
-			binary = !rest.options.useTextProtocol,
-			headers = Utils.copy(Utils.defaultGetHeaders(binary));
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.channel.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -7987,8 +4009,7 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			if(binary) PresenceMessage.decodeTPresenceArray(res, callback);
-			else callback(null, res);
+			callback(null, PresenceMessage.fromResponseBody(res, options, format));
 		});
 	};
 
@@ -8005,18 +4026,15 @@ var Channel = (function() {
 		}
 		var rest = this.channel.rest,
 			envelope = !Http.supportsLinkHeaders,
-			binary = !(rest.options.useTextProtocol || envelope),
-			headers = Utils.copy(Utils.defaultGetHeaders(binary));
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.channel.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body) {
-			var messages = Serialize.TMessageArray.decode(body, binary);
-			for(var i = 0; i < messages.length; i++) {
-				messages[i].data = Data.fromTData(messages[i].data);
-			}
-			return messages;
+			return PresenceMessage.fromResponseBody(body, options, format);
 		})).get(callback);
 	};
 
@@ -8024,8 +4042,7 @@ var Channel = (function() {
 })();
 
 var RealtimeChannel = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var actions = messagetypes.TAction;
+	var actions = ProtocolMessage.Action;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -8038,10 +4055,10 @@ var RealtimeChannel = (function() {
 		Channel.call(this, realtime, name, options);
     	this.presence = new Presence(this, options);
     	this.connectionManager = realtime.connection.connectionManager;
-    	this.options = Utils.prototypicalClone(defaultOptions, options);
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
+		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -8050,29 +4067,32 @@ var RealtimeChannel = (function() {
 		code: 90001,
 		message: 'Channel operation failed (invalid channel state)'
 	};
+
 	RealtimeChannel.channelDetachedErr = {
 		statusCode: 409,
 		code: 90006,
 		message: 'Channel is detached'
 	};
 
-	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
+	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		if(channelOpts && channelOpts.encrypted) {
-			var self = this;
-			Crypto.getCipher(channelOpts, function(err, cipher) {
-				self.cipher = cipher;
+		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		if(options.encrypted) {
+			Crypto.getCipher(options, function(err, cipher) {
+				options.cipher = cipher;
 				callback(null);
 			});
 		} else {
-			callback(null, this.cipher = null);
+			callback(null, (options.cipher = null));
 		}
 	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1];
+			callback = arguments[argCount - 1],
+			options = this.options;
+
 		if(typeof(callback) !== 'function') {
 			callback = noop;
 			++argCount;
@@ -8085,25 +4105,13 @@ var RealtimeChannel = (function() {
 		if(argCount == 2) {
 			if(!Utils.isArray(messages))
 				messages = [messages];
-			var tMessages = new Array(messages.length);
-			for(var i = 0; i < messages.length; i++) {
-				var message = messages[i];
-				var tMessage = tMessages[i] = new messagetypes.TMessage();
-				tMessage.name = message.name;
-				tMessage.data = Data.toTData(message.data);
-			}
-			messages = tMessages;
+			messages = Message.fromValuesArray(messages);
 		} else {
-			var message = new messagetypes.TMessage();
-			message.name = arguments[0];
-			message.data = Data.toTData(arguments[1]);
-			messages = [message];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
-		var cipher = this.cipher;
-		if(cipher) {
-			for(var i = 0; i < messages.length; i++)
-				Message.encrypt(messages[i], cipher);
-		}
+		for(var i = 0; i < messages.length; i++)
+			Message.encode(messages[i], options);
+
 		this._publish(messages, callback);
 	};
 
@@ -8112,8 +4120,8 @@ var RealtimeChannel = (function() {
 		switch(this.state) {
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-				var msg = new messagetypes.TProtocolMessage();
-				msg.action = messagetypes.TAction.MESSAGE;
+				var msg = new ProtocolMessage();
+				msg.action = actions.MESSAGE;
 				msg.channel = this.name;
 				msg.messages = messages;
 				this.sendMessage(msg, callback);
@@ -8167,7 +4175,7 @@ var RealtimeChannel = (function() {
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.ATTACH, channel: this.name});
+    	var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -8203,7 +4211,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    	var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.DETACH, channel: this.name});
+    	var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
     	this.sendMessage(msg, (callback || noop));
 	};
 
@@ -8247,10 +4255,10 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
-		var msg = new messagetypes.TProtocolMessage({
-			action: messagetypes.TAction.PRESENCE,
+		var msg = ProtocolMessage.fromValues({
+			action: actions.PRESENCE,
 			channel: this.name,
-			presence: [presence]
+			presence: [PresenceMessage.fromValues(presence)]
 		});
 		this.sendMessage(msg, callback);
 	};
@@ -8260,40 +4268,57 @@ var RealtimeChannel = (function() {
 		case actions.ATTACHED:
 			this.setAttached(message);
 			break;
+
 		case actions.DETACHED:
 			this.setDetached(message);
 			break;
+
 		case actions.PRESENCE:
-			this.presence.setPresence(message.presence, true);
-			break;
-		case actions.MESSAGE:
-			var tMessages = message.messages;
-			if(tMessages) {
-				var messages = new Array(tMessages.length),
-					cipher = this.cipher;
-				for(var i = 0; i < messages.length; i++) {
-					var tMessage = tMessages[i];
-					if(cipher) {
-						try {
-							Message.decrypt(tMessage, cipher);
-						} catch(e) {
-							/* decrypt failed .. the most likely cause is that we have the wrong key */
-							var msg = 'Unexpected error decrypting message; err = ' + e;
-							Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
-							var err = new Error(msg);
-							this.emit('error', err);
-						}
-					}
-					messages[i] = new Message(
-						tMessage.channelSerial,
-						tMessage.timestamp,
-						tMessage.name,
-						Data.fromTData(tMessage.data)
-					);
+			var presence = message.presence,
+				id = message.id,
+				timestamp = message.timestamp,
+				options = this.options;
+
+			for(var i = 0; i < presence.length; i++) {
+				try {
+					var presenceMsg = presence[i];
+					PresenceMessage.decode(presenceMsg, options);
+				} catch (e) {
+					/* decrypt failed .. the most likely cause is that we have the wrong key */
+					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
+					var err = new Error(errmsg);
+					this.emit('error', err);
 				}
-				this.onEvent(messages);
+				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 			}
+			this.presence.setPresence(presence, true);
 			break;
+
+		case actions.MESSAGE:
+			var messages = message.messages,
+				id = message.id,
+				timestamp = message.timestamp,
+				options = this.options;
+
+			for(var i = 0; i < messages.length; i++) {
+				try {
+					var msg = messages[i];
+					Message.decode(msg, options);
+				} catch (e) {
+					/* decrypt failed .. the most likely cause is that we have the wrong key */
+					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
+					var err = new Error(errmsg);
+					this.emit('error', err);
+				}
+				if(!msg.id) msg.id = id + ':' + i;
+				if(!msg.timestamp) msg.timestamp = timestamp;
+			}
+			this.onEvent(messages);
+			break;
+
 		case actions.ERROR:
 			/* there was a channel-specific error */
 			var err = message.error;
@@ -8304,6 +4329,7 @@ var RealtimeChannel = (function() {
 				this.setDetached(message);
 			}
 			break;
+
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
@@ -8349,7 +4375,7 @@ var RealtimeChannel = (function() {
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
 			this.pendingEvents = [];
-			var msg = new messagetypes.TProtocolMessage({action: messagetypes.TAction.MESSAGE, channel: this.name, messages: []});
+			var msg = ProtocolMessage.fromValues({action: actions.MESSAGE, channel: this.name, messages: []});
 			var multicaster = Multicaster();
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + pendingCount + ' queued messages');
 			for(var i = 0; i < pendingCount; i++) {
@@ -8453,9 +4479,8 @@ var RealtimeChannel = (function() {
 })();
 
 var Presence = (function() {
-	var messagetypes = (typeof(clientmessage_refs) == 'object') ? clientmessage_refs : require('../nodejs/lib/protocol/clientmessage_types');
-	var presenceState = messagetypes.TPresenceState;
-	var presenceStateToEvent = ['enter', 'leave', 'update'];
+	var presenceAction = PresenceMessage.Action;
+	var presenceActionToEvent = ['enter', 'leave', 'update'];
 
 	function memberKey(clientId, memberId) {
 		return clientId + ':' + memberId;
@@ -8481,10 +4506,10 @@ var Presence = (function() {
 
 	Presence.prototype.enterClient = function(clientId, clientData, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
-		var presence = new messagetypes.TPresence({
-			state : presenceState.ENTER,
+		var presence = PresenceMessage.fromValues({
+			action : presenceAction.ENTER,
 			clientId : clientId,
-			clientData: Data.toTData(clientData)
+			clientData: Data.toData(clientData)
 		});
 		var channel = this.channel;
 		switch(channel.state) {
@@ -8514,8 +4539,8 @@ var Presence = (function() {
 
 	Presence.prototype.leaveClient = function(clientId, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
-		var presence = new messagetypes.TPresence({
-			state : presenceState.LEAVE,
+		var presence = PresenceMessage.fromValues({
+			action : presenceAction.LEAVE,
 			clientId : clientId
 		});
 		var channel = this.channel;
@@ -8554,34 +4579,36 @@ var Presence = (function() {
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
 			var key = memberKey(presence.clientId, presence.memberId);
-			var member = new PresenceMessage(presence.clientId, Data.fromTData(presence.clientData), presence.memberId);
-			switch(presence.state) {
-				case presenceState.LEAVE:
+			switch(presence.action) {
+				case presenceAction.LEAVE:
 					delete this.members[key];
 					break;
-				case presenceState.UPDATE:
+				case presenceAction.UPDATE:
 					if(presence.inheritMemberId)
 						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
-				case presenceState.ENTER:
-					clientData = this.members[key] = member;
+				case presenceAction.ENTER:
+					this.members[key] = presence;
 					break;
 			}
 			if(broadcast)
-				this.emit(presenceStateToEvent[presence.state], member);
+				this.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
 	Presence.prototype.setAttached = function() {
-		if(this.pendingPresence) {
-			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; state = ' + this.state);
-			this.channel.sendPresence(this.pendingPresence.presence, this.pendingPresence.callback);
+		var pendingPresence = this.pendingPresence;
+		if(pendingPresence) {
+			var presence = pendingPresence.presence, callback = pendingPresence.callback;
+			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; action = ' + presence.action);
+			this.channel.sendPresence(presence, callback);
 			this.pendingPresence = null;
 		}
 	};
 
 	Presence.prototype.setSuspended = function(err) {
-		if(this.pendingPresence) {
-			this.pendingPresence.callback(err);
+		var pendingPresence = this.pendingPresence;
+		if(pendingPresence) {
+			pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
 	};
@@ -8597,7 +4624,7 @@ var JSONPTransport = (function() {
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
-		params.binary = params.stream = false;
+		params.stream = false;
 		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
@@ -8711,7 +4738,7 @@ var JSONPTransport = (function() {
 		delete _[this.id];
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, binary, callback) {
+	var request = Http.Request = function(uri, headers, params, body, format, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
 		req.exec();
@@ -9130,7 +5157,7 @@ var XHRRequest = (function() {
 		DomEvent.addUnloadListener(clearPendingRequests);
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, binary, callback) {
+			Http.Request = function(uri, headers, params, body, format, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND);
 				req.once('complete', callback);
 				req.exec();
@@ -9146,7 +5173,6 @@ var XHRTransport = (function() {
 
 	/* public constructor */
 	function XHRTransport(connectionManager, auth, params) {
-		params.binary = false;
 		CometTransport.call(this, connectionManager, auth, params);
 	}
 	Utils.inherits(XHRTransport, CometTransport);
@@ -9302,7 +5328,7 @@ var IframeTransport = (function() {
 	IframeTransport.prototype.onData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'IframeTransport.onData()', 'length = ' + data.length);
 		try {
-			var items = Serialize.TMessageBundle.decode(data, false);
+			var items = JSON.parse(String(data));
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
 					this.onChannelMessage(items[i]);
