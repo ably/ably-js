@@ -6,6 +6,7 @@
   "dependencies": {
     "async": ">=0.2.10",
     "buffertools": "git://github.com/bnoordhuis/node-buffertools.git",
+    "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
     "request": ">=2.34.0",
     "ws": "git://github.com/einaros/ws.git",
     "hexy": ">=0.2.5"
