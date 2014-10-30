@@ -134,35 +134,13 @@ var NodeCometTransport = (function() {
 			contentType = headers && headers['content-type'],
 			self = this;
 
+		/* an array of text blocks to concatenate and parse once complete */
 		this.chunks = [];
 		this.streamComplete = false;
 
-		res.on('data', (this.ondata = function(chunk) {
-			//console.log('******* chunk: ' + String(chunk));
-			/* see if this chunk contains the end of a message */
-			var chunks = self.chunks,
-				length = chunk.length,
-				finalChar = chunk[length - 1],
-				idx;
-
-			/* expected and simplest case, is when the message ends
-			 * at the end of the chunk */
-			if(finalChar == '\n') {
-				chunks.push(chunk);
-				self.chunks = [];
-			} else if((idx = buffertools.indexOf(chunk, '\n')) > -1) {
-				++idx;
-				var residualSlice = chunk.slice(idx);
-				chunks.push(chunk.slice(0, idx));
-				self.chunks = [residualSlice];
-			} else {
-				/* just keep this chunk for later */
-				chunks.push(chunk);
-				return;
-			}
-
+		function onChunk(chunk) {
 			try {
-				chunk = JSON.parse(String(Buffer.concat(chunks)));
+				chunk = JSON.parse(chunk);
 			} catch(e) {
 				var msg = 'Malformed response body from server: ' + e.message;
 				var err = new Error(msg);
@@ -171,12 +149,32 @@ var NodeCometTransport = (function() {
 				self.complete(err);
 				return;
 			}
-			//console.log('******* data: ' + JSON.stringify(chunk));
 			self.emit('data', chunk);
+		}
+
+		res.on('data', (this.ondata = function(data) {
+			var newChunks = String(data).split('\n'),
+				chunks = self.chunks;
+
+			if(newChunks.length > 1 && chunks.length > 0) {
+				/* there is a \n in this chunk, so it completes the partial chunks we had */
+				chunks.push(newChunks.shift());
+				self.chunks = [];
+				onChunk(chunks.join(''));
+			}
+
+			/* if the trailing chunk wasn't empty, it's a new fragment */
+			var trailingNewChunk = newChunks.pop();
+			if(trailingNewChunk.length) {
+				self.chunks = [trailingNewChunk];
+			}
+
+			/* the remaining new chunks are complete */
+			newChunks.map(onChunk);
 		}));
 
 		res.on('end', function () {
-			this.streamComplete = true;
+			self.streamComplete = true;
 			process.nextTick(function() {
 				self.complete();
 			});
