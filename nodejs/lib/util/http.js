@@ -18,8 +18,8 @@ this.Http = (function() {
 	 ***************************************************/
 
 	var handler = function(callback) {
+		callback = callback || noop;
 		return function(err, response, body) {
-			callback = callback || noop;
 			if(err) {
 				callback(err);
 				return;
