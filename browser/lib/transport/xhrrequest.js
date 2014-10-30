@@ -169,7 +169,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				err = new Error('Malformed response body from server: ' + e.message);
+				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
 				self.complete(err);
 				return;
