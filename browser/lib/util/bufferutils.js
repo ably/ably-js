@@ -63,7 +63,7 @@ var BufferUtils = (function() {
 		}
 		return bytes.buffer;
 	}
-	
+
 	function BufferUtils() {}
 
 	BufferUtils.supportsBuffer = ('ArrayBuffer' in window);
@@ -72,9 +72,9 @@ var BufferUtils = (function() {
 
 	BufferUtils.isBuffer = function(buf) { return Object.prototype.toString.call(buf) == '[object ArrayBuffer]'; };
 
-	BufferUtils.base64Encode = function(buf) { return arrayBufferToBase64(buf); };
+	BufferUtils.base64Encode = arrayBufferToBase64;
 
-	BufferUtils.base64Decode = function(string) { return base64ToArrayBuffer(string); };
+	BufferUtils.base64Decode = base64ToArrayBuffer;
 
 	return BufferUtils;
 })();
