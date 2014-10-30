@@ -38,7 +38,6 @@ exports.setup = function(base) {
 				var testMsg = 'Hello world';
 				var rtChannel = realtime.channels.get('publishonce');
 				rtChannel.attach(function(err) {
-					console.log('3: '+err);
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
 						test.done();
@@ -48,7 +47,6 @@ exports.setup = function(base) {
 
 					/* subscribe to event */
 					rtChannel.subscribe('event0', function(msg) {
-						console.log('4');
 						test.expect(2);
 						test.ok(true, 'Received event0');
 						test.equal(msg.data, testMsg, 'Unexpected msg text received');
@@ -57,10 +55,8 @@ exports.setup = function(base) {
 					});
 
 					/* publish event */
-					console.log('5');
 					var restChannel = rest.channels.get('publishonce');
 					restChannel.publish('event0', testMsg);
-					console.log('6');
 				});
 			});
 			var exitOnState = function(state) {

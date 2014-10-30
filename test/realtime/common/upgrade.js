@@ -85,7 +85,7 @@ exports.setup = function(base) {
 			var realtime = base.realtime({
 				//log: {level: 4},
 				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
-				useTextProtocol: true
+				useBinaryProtocol: false
 			});
 
 			/* when we see the transport we're interested in get activated,
@@ -178,7 +178,7 @@ exports.setup = function(base) {
 			var realtime = base.realtime({
 				//log: {level: 4},
 				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
-				useTextProtocol: true
+				useBinaryProtocol: false
 			});
 
 			/* when we see the transport we're interested in get activated,
@@ -510,7 +510,7 @@ exports.setup = function(base) {
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
-			useTextProtocol: true
+			useBinaryProtocol: false
 		});
 		test.expect(count);
 		var channel = realtime.channels.get('upgradepublish0');

@@ -55,7 +55,7 @@ exports.setup = function(base) {
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
 			transports: ['web_socket'],
-			useTextProtocol: true
+			useBinaryProtocol: false
 		});
 		test.expect(2);
 		var channel = realtime.channels.get('single_send_text'),
@@ -118,7 +118,7 @@ exports.setup = function(base) {
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
 			transports: ['web_socket'],
-			useTextProtocol: true
+			useBinaryProtocol: false
 		});
 		test.expect(2);
 		var channel = realtime.channels.get('single_send_text_256'),
@@ -218,7 +218,7 @@ exports.setup = function(base) {
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
 			transports: ['web_socket'],
-			useTextProtocol: true
+			useBinaryProtocol: false
 		});
 		test.expect(2);
 		var channelName = 'single_send_binary_text',
@@ -256,7 +256,7 @@ exports.setup = function(base) {
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
 			transports: ['web_socket'],
-			useTextProtocol: true
+			useBinaryProtocol: false
 		});
 		var rxRealtime = base.realtime({
 			//log: {level: 4},
