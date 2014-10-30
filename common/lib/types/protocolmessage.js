@@ -1,8 +1,10 @@
 var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack');
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
 		this.count = undefined;
 		this.error = undefined;
 		this.connectionId = undefined;
@@ -10,7 +12,6 @@ var ProtocolMessage = (function() {
 		this.channel = undefined;
 		this.channelSerial = undefined;
 		this.msgSerial = undefined;
-		this.timestamp = undefined;
 		this.messages = undefined;
 		this.presence = undefined;
 	}
@@ -35,11 +36,11 @@ var ProtocolMessage = (function() {
 	};
 
 	ProtocolMessage.encode = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.pack(msg): JSON.stringify(msg);
+		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
 	ProtocolMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.unpack(encoded) : JSON.parse(String(encoded));
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
 		return ProtocolMessage.fromDecoded(decoded);
 	};
 

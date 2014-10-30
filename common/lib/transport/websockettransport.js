@@ -1,7 +1,6 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-	var msgpack = isBrowser ? window.msgpack : require('msgpack');
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {

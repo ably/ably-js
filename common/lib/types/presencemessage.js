@@ -1,10 +1,13 @@
 var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack');
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
 	function PresenceMessage() {
 		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
 		this.clientId = undefined;
 		this.clientData = undefined;
+		this.xform = undefined;
 		this.memberId = undefined;
 		this.inheritMemberId = undefined;
 	}
@@ -20,44 +23,83 @@ var PresenceMessage = (function() {
 	 * @return {*}
 	 */
 	PresenceMessage.prototype.toJSON = function() {
-		var clientData = this.clientData, result = {
+		var result = {
 			name: this.name,
 			clientId: this.clientId,
 			memberId: this.memberId,
 			timestamp: this.timestamp,
-			action: this.action
+			action: this.action,
+			xform: this.xform
 		};
 
 		/* encode to base64 if we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it passes on the stringify arguments */
+		var clientData = this.clientData;
 		if(arguments.length > 0 && BufferUtils.isBuffer(clientData)) {
-			result.encoding = 'base64';
-			clientData = BufferUtils.encodeBase64(clientData);
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
+			clientData = clientData.toString('base64');
 		}
 		result.clientData = clientData;
 		return result;
 	};
 
-	PresenceMessage.encode = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.pack(msg): JSON.stringify(msg);
+	PresenceMessage.encrypt = function(msg, options) {
+		var data = msg.clientData, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
+		}
+		msg.clientData = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
 	};
 
-	PresenceMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.unpack(encoded) : JSON.parse(String(encoded));
-		return PresenceMessage.fromDecoded(decoded);
+	PresenceMessage.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			PresenceMessage.encrypt(msg, options);
 	};
 
-	PresenceMessage.decodeArray = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.unpack(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
-		return decoded;
+	PresenceMessage.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.clientData;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				this.xform = (i <= 0) ? null : xform.substring(0, i);
+				this.clientData = data;
+			}
+		}
+	};
+
+	PresenceMessage.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
+			PresenceMessage.decode(msg, options);
+		}
 	};
 
 	PresenceMessage.fromDecoded = function(values) {
-		var result = Utils.mixin(new PresenceMessage(), values);
-		result.clientData = Data.fromEncoded(result.clientData, values);
-		return result;
+		return Utils.mixin(new PresenceMessage(), values);
 	};
 
 	PresenceMessage.fromValues = function(values) {

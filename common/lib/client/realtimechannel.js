@@ -12,10 +12,10 @@ var RealtimeChannel = (function() {
 		Channel.call(this, realtime, name, options);
     	this.presence = new Presence(this, options);
     	this.connectionManager = realtime.connection.connectionManager;
-    	this.options = Utils.prototypicalClone(defaultOptions, options);
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
+		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -31,23 +31,24 @@ var RealtimeChannel = (function() {
 		message: 'Channel is detached'
 	};
 
-	RealtimeChannel.prototype.setOptions = function(channelOpts, callback) {
+	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		if(channelOpts && channelOpts.encrypted) {
-			var self = this;
-			Crypto.getCipher(channelOpts, function(err, cipher) {
-				self.cipher = cipher;
+		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		if(options.encrypted) {
+			Crypto.getCipher(options, function(err, cipher) {
+				options.cipher = cipher;
 				callback(null);
 			});
 		} else {
-			callback(null, this.cipher = null);
+			callback(null, (options.cipher = null));
 		}
 	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1];
+			callback = arguments[argCount - 1],
+			options = this.options;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -65,11 +66,9 @@ var RealtimeChannel = (function() {
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
-		var cipher = this.cipher;
-		if(cipher) {
-			for(var i = 0; i < messages.length; i++)
-				Message.encrypt(messages[i], cipher);
-		}
+		for(var i = 0; i < messages.length; i++)
+			Message.encode(messages[i], options);
+
 		this._publish(messages, callback);
 	};
 
@@ -226,32 +225,57 @@ var RealtimeChannel = (function() {
 		case actions.ATTACHED:
 			this.setAttached(message);
 			break;
+
 		case actions.DETACHED:
 			this.setDetached(message);
 			break;
+
 		case actions.PRESENCE:
-			this.presence.setPresence(message.presence, true);
-			break;
-		case actions.MESSAGE:
-			var messages = message.messages;
-			if(messages) {
-				var cipher = this.cipher;
-				if(cipher) {
-					for(var i = 0; i < messages.length; i++) {
-						try {
-							Message.decrypt(messages[i], cipher);
-						} catch (e) {
-							/* decrypt failed .. the most likely cause is that we have the wrong key */
-							var msg = 'Unexpected error decrypting message; err = ' + e;
-							Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
-							var err = new Error(msg);
-							this.emit('error', err);
-						}
-					}
+			var presence = message.presence,
+				id = message.id,
+				timestamp = message.timestamp,
+				options = this.options;
+
+			for(var i = 0; i < presence.length; i++) {
+				try {
+					var presenceMsg = presence[i];
+					PresenceMessage.decode(presenceMsg, options);
+				} catch (e) {
+					/* decrypt failed .. the most likely cause is that we have the wrong key */
+					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
+					var err = new Error(errmsg);
+					this.emit('error', err);
 				}
-				this.onEvent(messages);
+				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 			}
+			this.presence.setPresence(presence, true);
 			break;
+
+		case actions.MESSAGE:
+			var messages = message.messages,
+				id = message.id,
+				timestamp = message.timestamp,
+				options = this.options;
+
+			for(var i = 0; i < messages.length; i++) {
+				try {
+					var msg = messages[i];
+					Message.decode(msg, options);
+				} catch (e) {
+					/* decrypt failed .. the most likely cause is that we have the wrong key */
+					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
+					var err = new Error(errmsg);
+					this.emit('error', err);
+				}
+				if(!msg.id) msg.id = id + ':' + i;
+				if(!msg.timestamp) msg.timestamp = timestamp;
+			}
+			this.onEvent(messages);
+			break;
+
 		case actions.ERROR:
 			/* there was a channel-specific error */
 			var err = message.error;
@@ -262,6 +286,7 @@ var RealtimeChannel = (function() {
 				this.setDetached(message);
 			}
 			break;
+
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);

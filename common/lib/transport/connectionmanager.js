@@ -656,7 +656,8 @@ var ConnectionManager = (function() {
 			if(queueEvents) {
 				this.queue(msg, callback);
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event');
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
+console.log('send: ' + (new Error()).stack);
 				callback(this.error);
 			}
 		}

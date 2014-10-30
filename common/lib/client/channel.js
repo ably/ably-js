@@ -1,6 +1,8 @@
 var Channel = (function() {
 	function noop() {}
 
+	var defaultOptions = {};
+
 	/* public constructor */
 	function Channel(rest, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
@@ -8,21 +10,21 @@ var Channel = (function() {
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
-		this.cipher = null;
 		this.presence = new Presence(this);
+		this.setOptions(options);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
-	Channel.prototype.setOptions = function(channelOpts, callback) {
+	Channel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		if(channelOpts && channelOpts.encrypted) {
-			var self = this;
-			Crypto.getCipher(channelOpts, function(err, cipher) {
-				self.cipher = cipher;
+		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		if(options.encrypted) {
+			Crypto.getCipher(options, function(err, cipher) {
+				options.cipher = cipher;
 				callback(null);
 			});
 		} else {
-			callback(null, this.cipher = null);
+			callback(null, (options.cipher = null));
 		}
 	};
 
@@ -41,19 +43,13 @@ var Channel = (function() {
 			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			cipher = this.cipher;
+			options = this.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body) {
-			var messages = Message.decodeArray(body, format);
-			if(cipher) {
-				for(var i = 0; i < messages.length; i++) {
-						Message.decrypt(messages[i], cipher);
-				}
-			}
-			return messages;
+			return Message.fromResponseBody(body, options, format);
 		})).get(callback);
 	};
 
@@ -63,11 +59,9 @@ var Channel = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			msg = Message.fromValues({name:name, data:data}),
-			cipher = this.cipher;
+			options = this.options;
 
-		if(cipher)
-			Message.encrypt(msg, cipher);
-		var requestBody = Message.encodeArray([msg], format);
+		var requestBody = Message.toRequestBody([msg], options, format);
 		var headers = Utils.copy(Utils.defaultPostHeaders(format));
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -92,7 +86,8 @@ var Channel = (function() {
 		}
 		var rest = this.channel.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.channel.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -102,7 +97,7 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, PresenceMessage.decodeArray(res, format));
+			callback(null, PresenceMessage.fromResponseBody(res, options, format));
 		});
 	};
 
@@ -120,13 +115,14 @@ var Channel = (function() {
 		var rest = this.channel.rest,
 			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.channel.options;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body) {
-			return PresenceMessage.decodeArray(body, format);
+			return PresenceMessage.fromResponseBody(body, options, format);
 		})).get(callback);
 	};
 

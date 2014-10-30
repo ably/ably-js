@@ -1,70 +1,102 @@
 var Message = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack');
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;
-		this.clientId = undefined;
+		this.id = undefined;
 		this.timestamp = undefined;
+		this.clientId = undefined;
 		this.data = undefined;
+		this.xform = undefined;
 	}
-
-	Message.encrypt = function(msg, cipher) {
-		var cipherData = new TData(), data = msg.data;
-		cipherData.cipherData = cipher.encrypt(Crypto.Data.asPlaintext(data));
-		cipherData.type = data.type;
-		msg.data = cipherData;
-	};
-
-	Message.decrypt = function(msg, cipher) {
-		var data = msg.data;
-		if(data.cipherData)
-			msg.data = Crypto.Data.fromPlaintext(cipher.decrypt(data.cipherData), data.type);
-	};
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
 	Message.prototype.toJSON = function() {
-		var data = this.data, result = {
+		var result = {
 			name: this.name,
 			clientId: this.clientId,
-			timestamp: this.timestamp
+			timestamp: this.timestamp,
+			xform: this.xform
 		};
 
 		/* encode to base64 if we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it passes on the stringify arguments */
+		var data = this.data;
 		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			result.encoding = 'base64';
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
 			data = BufferUtils.base64Encode(data);
 		}
 		result.data = data;
 		return result;
 	};
 
-	Message.encode = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.pack(msg): JSON.stringify(msg);
+	Message.encrypt = function(msg, options) {
+		var data = msg.data, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
+		}
+		msg.data = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
 	};
 
-	Message.encodeArray = function(messages, format) {
-		return (format == 'msgpack') ? msgpack.pack(messages): JSON.stringify(messages);
+	Message.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			Message.encrypt(msg, options);
 	};
 
-	Message.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.unpack(encoded) : JSON.parse(String(encoded));
-		return Message.fromDecoded(decoded);
+	Message.toRequestBody = function(messages, options, format) {
+		for (var i = 0; i < messages.length; i++)
+			Message.encode(messages[i], options);
+
+		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
 	};
 
-	Message.decodeArray = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.unpack(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) decoded[i] = Message.fromDecoded(decoded[i]);
+	Message.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.data;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				message.xform = (i <= 0) ? null : xform.substring(0, i);
+				message.data = data;
+			}
+		}
+	};
+
+	Message.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
+			Message.decode(msg, options);
+		}
 	};
 
 	Message.fromDecoded = function(values) {
-		var result = Utils.mixin(new Message(), values);
-		result.data = Data.fromEncoded(result.data, values);
-		return result;
+		return Utils.mixin(new Message(), values);
 	};
 
 	Message.fromValues = function(values) {
