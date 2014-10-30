@@ -5,21 +5,6 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
 
-	/* FIXME: there's no fallback support here for browsers that don't support arraybuffer */
-	function DoubleToIEEE(f) {
-		var buf = new ArrayBuffer(8);
-		(new Float64Array(buf))[0] = f;
-		return new Uint32Array(buf);
-	}
-
-	function IEEEToDouble(wordArray) {
-		var buf = new ArrayBuffer(8),
-			intArray = new Uint32Array(buf);
-		intArray[0] = wordArray.words[0];
-		intArray[1] = wordArray.words[1];
-		return (new  Float64Array(buf))[0];
-	}
-
 	/**
 	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
 	 * @param bytes
@@ -250,70 +235,20 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 
 	var Data = Crypto.Data = {};
 
-	Data.asPlaintext = function(tData) {
-		var result;
-		switch(tData.type) {
-			case TType.STRING:
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-				result = CryptoJS.enc.Utf8.parse((tData.stringData));
-				break;
-			case TType.NONE:
-			case TType.TRUE:
-			case TType.FALSE:
-				break;
-			case TType.INT32:
-				result = CryptoJS.lib.WordArray.create([tData.i32Data]);
-				break;
-			case TType.INT64:
-				result = CryptoJS.lib.WordArray.create([tData.i64Data / VAL32, tData.i64Data % VAL32]);
-				break;
-			case TType.DOUBLE:
-				var tmpResult = DoubleToIEEE(tData.doubleData);
-				result = CryptoJS.lib.WordArray.create([tmpResult[0], tmpResult[1]]);
-				break;
-			case TType.BUFFER:
-				result = tData.binaryData;
-				break;
-		}
-		return result;
-	};
-
-	Data.fromPlaintext = function(plaintext, type) {
-		var result = new TData();
-		result.type = type;
-		switch(type) {
-			case TType.INT32:
-				result.i32Data = plaintext[0];
-				break;
-			case TType.INT64:
-				result.i64Data = plaintext[0] * VAL32 + plaintext[1];
-				break;
-			case TType.DOUBLE:
-				result.doubleData = IEEEToDouble(plaintext);
-				break;
-			case TType.JSONOBJECT:
-			case TType.JSONARRAY:
-			case TType.STRING:
-				result.stringData = CryptoJS.enc.Utf8.stringify(plaintext);
-				break;
-			case TType.BUFFER:
-				result.binaryData = plaintext;
-				break;
-			/*	case TType.NONE:
-			 case TType.TRUE:
-			 case TType.FALSE: */
-			default:
-		}
-		return result;
-	};
-
 	Data.asBase64 = function(ciphertext) {
 		return CryptoJS.enc.Base64.stringify(ciphertext);
 	};
 
 	Data.fromBase64 = function(encoded) {
 		return CryptoJS.enc.Base64.parse(encoded);
+	};
+
+	Data.utf8Encode = function(string) {
+		return CryptoJS.enc.Utf8.stringify(string);
+	};
+
+	Data.utf8Decode = function(buf) {
+		return CryptoJS.enc.Utf8.parse(buf);
 	};
 
 	return Crypto;
