@@ -12,7 +12,6 @@ exports.setup = function() {
 	var isBrowser = rExports.isBrowser = (typeof(window) === 'object');
 
 	if (isBrowser) {
-		var messagetypes = rExports.messagetypes = window;   // In the browser these types are defined on the window object
 		var http = null;
 		var Ably = rExports.Ably = window.Ably;
 		var Realtime = Ably.Realtime;
@@ -45,7 +44,6 @@ exports.setup = function() {
 		};
 		var toBase64 = Base64.encode;
 	} else {
-		var messagetypes = rExports.messagetypes = require('../../../nodejs/lib/protocol/clientmessage_types.js');
 		var http = require('http');
 		var https = require('https');
 		var Ably = rExports.Ably = require('../../..');
