@@ -157,17 +157,17 @@ exports.setup = function(base) {
 	rExports.resume_inactive_ws_text = function(test) {
 		resume_inactive(test, 'resume_inactive_ws_text', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		});
 	};
 
 	rExports.resume_inactive_ws_binary = function(test) {
 		resume_inactive(test, 'resume_inactive_ws_binary', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
 			transports:['web_socket']
 		});
@@ -176,19 +176,19 @@ exports.setup = function(base) {
 	rExports.resume_inactive_comet_text = function(test) {
 		resume_inactive(test, 'resume_inactive_comet_text', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
-			transports:['xhr', 'iframe', 'jsonp'],
-			useTextProtocol:true
+			transports:['xhr', 'iframe', 'jsonp', 'comet'],
+			useBinaryProtocol:false
 		});
 	};
 
 	_rExports.resume_inactive_comet_binary = function(test) {
 		resume_inactive(test, 'resume_inactive_comet_binary', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
-			transports:['xhr', 'iframe', 'jsonp']
+			transports:['xhr', 'iframe', 'jsonp', 'comet']
 		});
 	};
 
@@ -321,17 +321,17 @@ exports.setup = function(base) {
 	rExports.resume_active_ws_text = function(test) {
 		resume_active(test, 'resume_active_ws_text', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		});
 	};
 
 	rExports.resume_active_ws_binary = function(test) {
 		resume_active(test, 'resume_active_ws_binary', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
 			transports:['web_socket']
 		});
@@ -340,19 +340,19 @@ exports.setup = function(base) {
 	rExports.resume_active_comet_text = function(test) {
 		resume_active(test, 'resume_active_comet_text', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
-			transports:['xhr', 'jsonp'],
-			useTextProtocol:true
+			transports:['xhr', 'jsonp', 'comet'],
+			useBinaryProtocol:false
 		});
 	};
 
 	_rExports.resume_active_comet_binary = function(test) {
 		resume_active(test, 'resume_active_comet_binary', {
 			transports:['web_socket'],
-			useTextProtocol:true
+			useBinaryProtocol:false
 		}, {
-			transports:['xhr', 'jsonp']
+			transports:['xhr', 'jsonp', 'comet']
 		});
 	};
 
