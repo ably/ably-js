@@ -29,7 +29,8 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionId = connectionId;
 		this.connectionSerial = connectionSerial;
-		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
+		if(options.useBinaryProtocol !== undefined)
+			this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -68,7 +69,8 @@ var ConnectionManager = (function() {
 		}
 		if(options.echoMessages === false)
 			params.echo = 'false';
-		params.format = this.format;
+		if(this.format !== undefined)
+			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
 		return params;
@@ -657,7 +659,6 @@ var ConnectionManager = (function() {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-console.log('send: ' + (new Error()).stack);
 				callback(this.error);
 			}
 		}
