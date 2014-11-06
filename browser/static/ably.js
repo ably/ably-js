@@ -29,6 +29,86 @@ var ConnectionError = {
 	}
 };
 
+var BufferUtils = (function() {
+
+	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
+	function arrayBufferToBase64(arrayBuffer) {
+		var base64    = ''
+		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+		var bytes         = new Uint8Array(arrayBuffer)
+		var byteLength    = bytes.byteLength
+		var byteRemainder = byteLength % 3
+		var mainLength    = byteLength - byteRemainder
+
+		var a, b, c, d
+		var chunk
+
+		// Main loop deals with bytes in chunks of 3
+		for (var i = 0; i < mainLength; i = i + 3) {
+			// Combine the three bytes into a single integer
+			chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+
+			// Use bitmasks to extract 6-bit segments from the triplet
+			a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
+			b = (chunk & 258048)   >> 12 // 258048   = (2^6 - 1) << 12
+			c = (chunk & 4032)     >>  6 // 4032     = (2^6 - 1) << 6
+			d = chunk & 63               // 63       = 2^6 - 1
+
+			// Convert the raw binary segments to the appropriate ASCII encoding
+			base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+		}
+
+		// Deal with the remaining bytes and padding
+		if (byteRemainder == 1) {
+			chunk = bytes[mainLength]
+
+			a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
+
+			// Set the 4 least significant bits to zero
+			b = (chunk & 3)   << 4 // 3   = 2^2 - 1
+
+			base64 += encodings[a] + encodings[b] + '=='
+		} else if (byteRemainder == 2) {
+			chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+
+			a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
+			b = (chunk & 1008)  >>  4 // 1008  = (2^6 - 1) << 4
+
+			// Set the 2 least significant bits to zero
+			c = (chunk & 15)    <<  2 // 15    = 2^4 - 1
+
+			base64 += encodings[a] + encodings[b] + encodings[c] + '='
+		}
+
+		return base64
+	}
+
+	function base64ToArrayBuffer(base64) {
+		var binary_string =  window.atob(base64);
+		var len = binary_string.length;
+		var bytes = new Uint8Array( len );
+		for (var i = 0; i < len; i++)        {
+			var ascii = binary_string.charCodeAt(i);
+			bytes[i] = ascii;
+		}
+		return bytes.buffer;
+	}
+
+	function BufferUtils() {}
+
+	BufferUtils.supportsBuffer = ('ArrayBuffer' in window);
+
+	BufferUtils.supportsBinary = ('TextDecoder' in window);
+
+	BufferUtils.isBuffer = function(buf) { return Object.prototype.toString.call(buf) == '[object ArrayBuffer]'; };
+
+	BufferUtils.base64Encode = arrayBufferToBase64;
+
+	BufferUtils.base64Decode = base64ToArrayBuffer;
+
+	return BufferUtils;
+})();
 this.Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	function noop() {}
@@ -1570,6 +1650,330 @@ var Multicaster = (function() {
 	return Multicaster;
 })();
 
+this.Data = (function() {
+
+	function Data() {}
+
+	/* ensure a user-supplied data value has appropriate (string or buffer) type */
+	Data.toData = function(data) {
+		return BufferUtils.isBuffer(data) ? data : String(data);
+	};
+
+	/* get a data value from the value received inbound */
+	Data.fromEncoded = function(data, msg) {
+		if(typeof(data) == 'string') {
+			var xform = msg.xform, match;
+			if(xform && (match = xform.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
+				data = BufferUtils.decodeBase64(data);
+				msg.xform = match[2];
+			}
+		}
+		return data;
+	};
+
+	return Data;
+})();
+
+var Message = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+
+	function Message() {
+		this.name = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.clientId = undefined;
+		this.data = undefined;
+		this.xform = undefined;
+	}
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	Message.prototype.toJSON = function() {
+		var result = {
+			name: this.name,
+			clientId: this.clientId,
+			timestamp: this.timestamp,
+			xform: this.xform
+		};
+
+		/* encode to base64 if we're returning real JSON;
+		 * although msgpack calls toJSON(), we know it is a stringify()
+		 * call if it passes on the stringify arguments */
+		var data = this.data;
+		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
+			data = BufferUtils.base64Encode(data);
+		}
+		result.data = data;
+		return result;
+	};
+
+	Message.encrypt = function(msg, options) {
+		var data = msg.data, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
+		}
+		msg.data = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
+	};
+
+	Message.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			Message.encrypt(msg, options);
+	};
+
+	Message.toRequestBody = function(messages, options, format) {
+		for (var i = 0; i < messages.length; i++)
+			Message.encode(messages[i], options);
+
+		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
+	};
+
+	Message.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.data;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				message.xform = (i <= 0) ? null : xform.substring(0, i);
+				message.data = data;
+			}
+		}
+	};
+
+	Message.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
+			Message.decode(msg, options);
+		}
+	};
+
+	Message.fromDecoded = function(values) {
+		return Utils.mixin(new Message(), values);
+	};
+
+	Message.fromValues = function(values) {
+		var result = Utils.mixin(new Message(), values);
+		result.data = Data.toData(result.data);
+		result.timestamp = result.timestamp || Date.now();
+		return result;
+	};
+
+	Message.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
+		return result;
+	};
+
+	return Message;
+})();
+
+var PresenceMessage = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+
+	function PresenceMessage() {
+		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.clientId = undefined;
+		this.clientData = undefined;
+		this.xform = undefined;
+		this.memberId = undefined;
+		this.inheritMemberId = undefined;
+	}
+
+	PresenceMessage.Action = {
+		'ENTER' : 0,
+		'LEAVE' : 1,
+		'UPDATE' : 2
+	};
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	PresenceMessage.prototype.toJSON = function() {
+		var result = {
+			name: this.name,
+			clientId: this.clientId,
+			memberId: this.memberId,
+			timestamp: this.timestamp,
+			action: this.action,
+			xform: this.xform
+		};
+
+		/* encode to base64 if we're returning real JSON;
+		 * although msgpack calls toJSON(), we know it is a stringify()
+		 * call if it passes on the stringify arguments */
+		var clientData = this.clientData;
+		if(arguments.length > 0 && BufferUtils.isBuffer(clientData)) {
+			var xform = this.xform;
+			result.xform = xform ? (xform + '/base64') : 'base64';
+			clientData = clientData.toString('base64');
+		}
+		result.clientData = clientData;
+		return result;
+	};
+
+	PresenceMessage.encrypt = function(msg, options) {
+		var data = msg.clientData, xform = msg.xform;
+		if(!BufferUtils.isBuffer(data)) {
+			data = Crypto.Data.utf8Encode(String(data));
+			xform = xform ? (xform + '/utf-8') : 'utf-8';
+		}
+		msg.clientData = options.cipher.encrypt(data);
+		msg.xform = xform ? (xform + '/cipher') : 'cipher';
+	};
+
+	PresenceMessage.encode = function(msg, options) {
+		if(options != null && options.encrypted)
+			PresenceMessage.encrypt(msg, options);
+	};
+
+	PresenceMessage.decode = function(message, options) {
+		var xform = message.xform;
+		if(xform) {
+			var i = 0, j = xform.length, data = message.clientData;
+			try {
+				while((i = j) >= 0) {
+					j = xform.lastIndexOf('/', i - 1);
+					var subXform = xform.substring(j + 1, i);
+					if(subXform == 'base64') {
+						data = BufferUtils.base64Decode(String(data));
+						continue;
+					}
+					if(subXform == 'utf-8') {
+						data = Crypto.Data.utf8Decode(data);
+						continue;
+					}
+					if(subXform == 'cipher' && options != null && options.encrypted) {
+						data = options.cipher.decrypt(data);
+						continue;
+					}
+					/* FIXME: can we do anything generically with msgpack here? */
+					break;
+				}
+			} finally {
+				this.xform = (i <= 0) ? null : xform.substring(0, i);
+				this.clientData = data;
+			}
+		}
+	};
+
+	PresenceMessage.fromResponseBody = function(encoded, options, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		for(var i = 0; i < decoded.length; i++) {
+			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
+			PresenceMessage.decode(msg, options);
+		}
+	};
+
+	PresenceMessage.fromDecoded = function(values) {
+		return Utils.mixin(new PresenceMessage(), values);
+	};
+
+	PresenceMessage.fromValues = function(values) {
+		var result = Utils.mixin(new PresenceMessage(), values);
+		result.clientData = Data.toData(result.clientData);
+		result.timestamp = result.timestamp || Date.now();
+		return result;
+	};
+
+	PresenceMessage.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
+		return result;
+	};
+
+	return PresenceMessage;
+})();
+
+var ProtocolMessage = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+
+	function ProtocolMessage() {
+		this.action = undefined;
+		this.id = undefined;
+		this.timestamp = undefined;
+		this.count = undefined;
+		this.error = undefined;
+		this.connectionId = undefined;
+		this.connectionSerial = undefined;
+		this.channel = undefined;
+		this.channelSerial = undefined;
+		this.msgSerial = undefined;
+		this.messages = undefined;
+		this.presence = undefined;
+	}
+
+	ProtocolMessage.Action = {
+		'HEARTBEAT' : 0,
+		'ACK' : 1,
+		'NACK' : 2,
+		'CONNECT' : 3,
+		'CONNECTED' : 4,
+		'DISCONNECT' : 5,
+		'DISCONNECTED' : 6,
+		'CLOSE' : 7,
+		'CLOSED' : 8,
+		'ERROR' : 9,
+		'ATTACH' : 10,
+		'ATTACHED' : 11,
+		'DETACH' : 12,
+		'DETACHED' : 13,
+		'PRESENCE' : 14,
+		'MESSAGE' : 15
+	};
+
+	ProtocolMessage.encode = function(msg, format) {
+		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
+	};
+
+	ProtocolMessage.decode = function(encoded, format) {
+		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
+		return ProtocolMessage.fromDecoded(decoded);
+	};
+
+	ProtocolMessage.fromDecoded = function(decoded) {
+		var error = decoded.error;
+		if(error) decoded.error = ErrorInfo.fromValues(error);
+		var messages = decoded.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
+		var presence = decoded.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
+		return Utils.mixin(new ProtocolMessage(), decoded);
+	};
+
+	ProtocolMessage.fromValues = function(values) {
+		return Utils.mixin(new ProtocolMessage(), values);
+	};
+
+	return ProtocolMessage;
+})();
+
 var ConnectionManager = (function() {
 	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
@@ -1601,7 +2005,8 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionId = connectionId;
 		this.connectionSerial = connectionSerial;
-		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
+		if(options.useBinaryProtocol !== undefined)
+			this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -1640,7 +2045,8 @@ var ConnectionManager = (function() {
 		}
 		if(options.echoMessages === false)
 			params.echo = 'false';
-		params.format = this.format;
+		if(this.format !== undefined)
+			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
 		return params;
@@ -2229,7 +2635,6 @@ var ConnectionManager = (function() {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-console.log('send: ' + (new Error()).stack);
 				callback(this.error);
 			}
 		}
@@ -2561,8 +2966,8 @@ var CometTransport = (function() {
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
-		/* binary not supported for comet */
-		params.format = 'json';
+		/* binary not supported for comet, so just fall back to default */
+		params.format = undefined;
 		Transport.call(this, connectionManager, auth, params);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
@@ -2763,330 +3168,6 @@ var CometTransport = (function() {
 	};
 
 	return CometTransport;
-})();
-
-this.Data = (function() {
-
-	function Data() {}
-
-	/* ensure a user-supplied data value has appropriate (string or buffer) type */
-	Data.toData = function(data) {
-		return BufferUtils.isBuffer(data) ? data : String(data);
-	};
-
-	/* get a data value from the value received inbound */
-	Data.fromEncoded = function(data, msg) {
-		if(typeof(data) == 'string') {
-			var xform = msg.xform, match;
-			if(xform && (match = xform.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
-				data = BufferUtils.decodeBase64(data);
-				msg.xform = match[2];
-			}
-		}
-		return data;
-	};
-
-	return Data;
-})();
-
-var Message = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
-
-	function Message() {
-		this.name = undefined;
-		this.id = undefined;
-		this.timestamp = undefined;
-		this.clientId = undefined;
-		this.data = undefined;
-		this.xform = undefined;
-	}
-
-	/**
-	 * Overload toJSON() to intercept JSON.stringify()
-	 * @return {*}
-	 */
-	Message.prototype.toJSON = function() {
-		var result = {
-			name: this.name,
-			clientId: this.clientId,
-			timestamp: this.timestamp,
-			xform: this.xform
-		};
-
-		/* encode to base64 if we're returning real JSON;
-		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
-		var data = this.data;
-		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var xform = this.xform;
-			result.xform = xform ? (xform + '/base64') : 'base64';
-			data = BufferUtils.base64Encode(data);
-		}
-		result.data = data;
-		return result;
-	};
-
-	Message.encrypt = function(msg, options) {
-		var data = msg.data, xform = msg.xform;
-		if(!BufferUtils.isBuffer(data)) {
-			data = Crypto.Data.utf8Encode(String(data));
-			xform = xform ? (xform + '/utf-8') : 'utf-8';
-		}
-		msg.data = options.cipher.encrypt(data);
-		msg.xform = xform ? (xform + '/cipher') : 'cipher';
-	};
-
-	Message.encode = function(msg, options) {
-		if(options != null && options.encrypted)
-			Message.encrypt(msg, options);
-	};
-
-	Message.toRequestBody = function(messages, options, format) {
-		for (var i = 0; i < messages.length; i++)
-			Message.encode(messages[i], options);
-
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
-	};
-
-	Message.decode = function(message, options) {
-		var xform = message.xform;
-		if(xform) {
-			var i = 0, j = xform.length, data = message.data;
-			try {
-				while((i = j) >= 0) {
-					j = xform.lastIndexOf('/', i - 1);
-					var subXform = xform.substring(j + 1, i);
-					if(subXform == 'base64') {
-						data = BufferUtils.base64Decode(String(data));
-						continue;
-					}
-					if(subXform == 'utf-8') {
-						data = Crypto.Data.utf8Decode(data);
-						continue;
-					}
-					if(subXform == 'cipher' && options != null && options.encrypted) {
-						data = options.cipher.decrypt(data);
-						continue;
-					}
-					/* FIXME: can we do anything generically with msgpack here? */
-					break;
-				}
-			} finally {
-				message.xform = (i <= 0) ? null : xform.substring(0, i);
-				message.data = data;
-			}
-		}
-	};
-
-	Message.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
-			Message.decode(msg, options);
-		}
-	};
-
-	Message.fromDecoded = function(values) {
-		return Utils.mixin(new Message(), values);
-	};
-
-	Message.fromValues = function(values) {
-		var result = Utils.mixin(new Message(), values);
-		result.data = Data.toData(result.data);
-		result.timestamp = result.timestamp || Date.now();
-		return result;
-	};
-
-	Message.fromValuesArray = function(values) {
-		var count = values.length, result = new Array(count);
-		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
-		return result;
-	};
-
-	return Message;
-})();
-
-var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
-
-	function PresenceMessage() {
-		this.action = undefined;
-		this.id = undefined;
-		this.timestamp = undefined;
-		this.clientId = undefined;
-		this.clientData = undefined;
-		this.xform = undefined;
-		this.memberId = undefined;
-		this.inheritMemberId = undefined;
-	}
-
-	PresenceMessage.Action = {
-		'ENTER' : 0,
-		'LEAVE' : 1,
-		'UPDATE' : 2
-	};
-
-	/**
-	 * Overload toJSON() to intercept JSON.stringify()
-	 * @return {*}
-	 */
-	PresenceMessage.prototype.toJSON = function() {
-		var result = {
-			name: this.name,
-			clientId: this.clientId,
-			memberId: this.memberId,
-			timestamp: this.timestamp,
-			action: this.action,
-			xform: this.xform
-		};
-
-		/* encode to base64 if we're returning real JSON;
-		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
-		var clientData = this.clientData;
-		if(arguments.length > 0 && BufferUtils.isBuffer(clientData)) {
-			var xform = this.xform;
-			result.xform = xform ? (xform + '/base64') : 'base64';
-			clientData = clientData.toString('base64');
-		}
-		result.clientData = clientData;
-		return result;
-	};
-
-	PresenceMessage.encrypt = function(msg, options) {
-		var data = msg.clientData, xform = msg.xform;
-		if(!BufferUtils.isBuffer(data)) {
-			data = Crypto.Data.utf8Encode(String(data));
-			xform = xform ? (xform + '/utf-8') : 'utf-8';
-		}
-		msg.clientData = options.cipher.encrypt(data);
-		msg.xform = xform ? (xform + '/cipher') : 'cipher';
-	};
-
-	PresenceMessage.encode = function(msg, options) {
-		if(options != null && options.encrypted)
-			PresenceMessage.encrypt(msg, options);
-	};
-
-	PresenceMessage.decode = function(message, options) {
-		var xform = message.xform;
-		if(xform) {
-			var i = 0, j = xform.length, data = message.clientData;
-			try {
-				while((i = j) >= 0) {
-					j = xform.lastIndexOf('/', i - 1);
-					var subXform = xform.substring(j + 1, i);
-					if(subXform == 'base64') {
-						data = BufferUtils.base64Decode(String(data));
-						continue;
-					}
-					if(subXform == 'utf-8') {
-						data = Crypto.Data.utf8Decode(data);
-						continue;
-					}
-					if(subXform == 'cipher' && options != null && options.encrypted) {
-						data = options.cipher.decrypt(data);
-						continue;
-					}
-					/* FIXME: can we do anything generically with msgpack here? */
-					break;
-				}
-			} finally {
-				this.xform = (i <= 0) ? null : xform.substring(0, i);
-				this.clientData = data;
-			}
-		}
-	};
-
-	PresenceMessage.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
-			PresenceMessage.decode(msg, options);
-		}
-	};
-
-	PresenceMessage.fromDecoded = function(values) {
-		return Utils.mixin(new PresenceMessage(), values);
-	};
-
-	PresenceMessage.fromValues = function(values) {
-		var result = Utils.mixin(new PresenceMessage(), values);
-		result.clientData = Data.toData(result.clientData);
-		result.timestamp = result.timestamp || Date.now();
-		return result;
-	};
-
-	PresenceMessage.fromValuesArray = function(values) {
-		var count = values.length, result = new Array(count);
-		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
-		return result;
-	};
-
-	return PresenceMessage;
-})();
-
-var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
-
-	function ProtocolMessage() {
-		this.action = undefined;
-		this.id = undefined;
-		this.timestamp = undefined;
-		this.count = undefined;
-		this.error = undefined;
-		this.connectionId = undefined;
-		this.connectionSerial = undefined;
-		this.channel = undefined;
-		this.channelSerial = undefined;
-		this.msgSerial = undefined;
-		this.messages = undefined;
-		this.presence = undefined;
-	}
-
-	ProtocolMessage.Action = {
-		'HEARTBEAT' : 0,
-		'ACK' : 1,
-		'NACK' : 2,
-		'CONNECT' : 3,
-		'CONNECTED' : 4,
-		'DISCONNECT' : 5,
-		'DISCONNECTED' : 6,
-		'CLOSE' : 7,
-		'CLOSED' : 8,
-		'ERROR' : 9,
-		'ATTACH' : 10,
-		'ATTACHED' : 11,
-		'DETACH' : 12,
-		'DETACHED' : 13,
-		'PRESENCE' : 14,
-		'MESSAGE' : 15
-	};
-
-	ProtocolMessage.encode = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
-	};
-
-	ProtocolMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		return ProtocolMessage.fromDecoded(decoded);
-	};
-
-	ProtocolMessage.fromDecoded = function(decoded) {
-		var error = decoded.error;
-		if(error) decoded.error = ErrorInfo.fromValues(error);
-		var messages = decoded.messages;
-		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
-		var presence = decoded.presence;
-		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
-		return Utils.mixin(new ProtocolMessage(), decoded);
-	};
-
-	ProtocolMessage.fromValues = function(values) {
-		return Utils.mixin(new ProtocolMessage(), values);
-	};
-
-	return ProtocolMessage;
 })();
 
 var Resource = (function() {
@@ -4690,7 +4771,7 @@ var JSONPTransport = (function() {
 
 		params.callback = 'Ably._(' + id + ')';
 		if(body)
-			params.body = encodeURIComponent(body);
+			params.body = body;
 		else
 			delete params.body;
 
@@ -4919,7 +5000,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				err = new Error('Malformed response body from server: ' + e.message);
+				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
 				self.complete(err);
 				return;
