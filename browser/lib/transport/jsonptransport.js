@@ -72,7 +72,7 @@ var JSONPTransport = (function() {
 
 		params.callback = 'Ably._(' + id + ')';
 		if(body)
-			params.body = encodeURIComponent(body);
+			params.body = body;
 		else
 			delete params.body;
 
