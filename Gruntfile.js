@@ -68,6 +68,7 @@ module.exports = function (grunt) {
 
 					'<%= dirs.common %>/lib/transport/connectionerror.js',
 
+					'<%= dirs.browser %>/lib/util/bufferutils.js',
 					'<%= dirs.browser %>/lib/util/cookie.js',
 					'<%= dirs.browser %>/lib/util/defaults.js',
 					'<%= dirs.browser %>/lib/util/http.js',
@@ -83,15 +84,15 @@ module.exports = function (grunt) {
 					'<%= dirs.common %>/lib/util/utils.js',
 					'<%= dirs.common %>/lib/util/multicaster.js',
 
-					'<%= dirs.common %>/lib/transport/connectionmanager.js',
-					'<%= dirs.common %>/lib/transport/transport.js',
-					'<%= dirs.common %>/lib/transport/websockettransport.js',
-					'<%= dirs.common %>/lib/transport/comettransport.js',
-
 					'<%= dirs.common %>/lib/types/data.js',
 					'<%= dirs.common %>/lib/types/message.js',
 					'<%= dirs.common %>/lib/types/presencemessage.js',
 					'<%= dirs.common %>/lib/types/protocolmessage.js',
+
+					'<%= dirs.common %>/lib/transport/connectionmanager.js',
+					'<%= dirs.common %>/lib/transport/transport.js',
+					'<%= dirs.common %>/lib/transport/websockettransport.js',
+					'<%= dirs.common %>/lib/transport/comettransport.js',
 
 					'<%= dirs.common %>/lib/client/resource.js',
 					'<%= dirs.common %>/lib/client/paginatedresource.js',
@@ -122,6 +123,7 @@ module.exports = function (grunt) {
 					'<%= dirs.common %>/lib/util/logger.js',
 					'<%= dirs.common %>/lib/util/multicaster.js',
 					'<%= dirs.common %>/lib/util/utils.js',
+					'<%= dirs.common %>/lib/types/protocolmessage.js',
 					'<%= dirs.browser %>/lib/util/defaults.js',
 					'<%= dirs.browser %>/lib/util/domevent.js',
 					'<%= dirs.browser %>/lib/transport/xhrrequest.js',
