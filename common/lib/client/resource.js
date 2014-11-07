@@ -41,7 +41,7 @@ var Resource = (function() {
 				return;
 			}
 
-			callback(null, response, headers);
+			callback(null, response, headers, true);
 		};
 	}
 
@@ -52,7 +52,7 @@ var Resource = (function() {
 		}
 
 		function doGet(headers, params) {
-			Http.get(rest, path, headers, params, function(err, res, headers) {
+			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise({force:true}, null, function(err) {
@@ -65,7 +65,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers);
+				callback(err, res, headers, unpacked);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doGet);
@@ -78,7 +78,7 @@ var Resource = (function() {
 		}
 
 		function doPost(headers, params) {
-			Http.post(rest, path, headers, body, params, function(err, res, headers) {
+			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise({force:true}, null, function(err) {
@@ -91,7 +91,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers);
+				callback(err, res, headers, unpacked);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doPost);

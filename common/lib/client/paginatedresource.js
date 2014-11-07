@@ -32,14 +32,14 @@ var PaginatedResource = (function() {
 
 	PaginatedResource.prototype.get = function(callback) {
 		var self = this;
-		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers) {
+		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
 				return;
 			}
 			var current, linkHeader, relLinks;
 			try {
-				current = self.bodyHandler(body);
+				current = self.bodyHandler(body, headers, unpacked);
 			} catch(e) {
 				callback(e);
 				return;

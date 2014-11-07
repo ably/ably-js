@@ -48,8 +48,8 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body) {
-			return Message.fromResponseBody(body, options, format);
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body, headers, unpacked) {
+			return Message.fromResponseBody(body, options, !unpacked && format);
 		})).get(callback);
 	};
 
@@ -85,6 +85,7 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
+			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			options = this.channel.options;
@@ -92,13 +93,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.get(rest, this.basePath, headers, params, false, function(err, res) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, PresenceMessage.fromResponseBody(res, options, format));
-		});
+		(new PaginatedResource(rest, this.basePath, headers, params, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+		})).get(callback);
 	};
 
 	Presence.prototype.history = function(params, callback) {
@@ -121,8 +118,8 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body) {
-			return PresenceMessage.fromResponseBody(body, options, format);
+		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(callback);
 	};
 

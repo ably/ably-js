@@ -59,8 +59,8 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 
-		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body) {
-			return (typeof(body) === 'string') ? JSON.parse(body) : body;
+		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
+			return unpacked ? body : JSON.parse(body);
 		})).get(callback);
 	};
 
