@@ -51,10 +51,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		callback = callback || noop;
-		var binary = (headers && headers.accept != 'application/json');
-
-		Http.Request(uri, headers, params, null, binary, callback);
+		Http.Request(uri, headers, params, null, callback || noop);
 	};
 
 	/**
@@ -107,10 +104,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		callback = callback || noop;
-		var binary = (headers && headers.accept != 'application/json');
-
-		Http.Request(uri, headers, params, body, binary, callback);
+		Http.Request(uri, headers, params, body, callback || noop);
 	};
 
 	Http.supportsAuthHeaders = false;
