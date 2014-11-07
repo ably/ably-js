@@ -100,7 +100,8 @@ var JSONPTransport = (function() {
 			this.requestComplete = true;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body);
+
+			this.emit('complete', err, body, true);
 			this.dispose();
 		}
 	};
@@ -120,7 +121,7 @@ var JSONPTransport = (function() {
 		delete _[this.id];
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, format, callback) {
+	var request = Http.Request = function(uri, headers, params, body, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
 		req.exec();
