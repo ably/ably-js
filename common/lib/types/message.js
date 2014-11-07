@@ -87,12 +87,15 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
+	Message.fromResponseBody = function(body, options, format) {
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		for(var i = 0; i < body.length; i++) {
+			var msg = body[i] = Message.fromDecoded(body[i]);
 			Message.decode(msg, options);
 		}
+		return body;
 	};
 
 	Message.fromDecoded = function(values) {
