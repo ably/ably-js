@@ -25,19 +25,15 @@ exports.setup = function(base) {
 		/* first, send a number of events to this channel */
 		var testEvents = [
 			{ name: 'event0',
-			  data: true },
+				data: 'message0' },
 			{ name: 'event1',
-			  data: false },
+				data: 'message1' },
 			{ name: 'event2',
-			  data: 24 },
+				data: 'message2' },
 			{ name: 'event3',
-			  data: 'this is a string' },
+				data: 'message3' },
 			{ name: 'event4',
-			  data: [1,2,3] },
-			{ name: 'event5',
-			  data: {one: 1, two: 2, three: 3} },
-			{ name: 'event6',
-			  data: Date.now() }
+				data: 'message4' }
 		];
 		var publishTasks = testEvents.map(function(event) {
 			return function(publishCb) {
