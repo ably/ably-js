@@ -183,11 +183,8 @@ var NodeCometTransport = (function() {
 
 	Request.prototype.readFully = function() {
 		var res = this.res,
-			headers = res.headers,
-			contentType = headers && headers['content-type'],
+			chunks = [],
 			self = this;
-
-		var chunks = [];
 
 		res.on('data', function(chunk) {
 			chunks.push(chunk);
