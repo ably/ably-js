@@ -91,11 +91,14 @@ var PresenceMessage = (function() {
 	};
 
 	PresenceMessage.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		for(var i = 0; i < body.length; i++) {
+			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
 			PresenceMessage.decode(msg, options);
 		}
+		return body;
 	};
 
 	PresenceMessage.fromDecoded = function(values) {
