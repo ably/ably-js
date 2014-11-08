@@ -108,7 +108,6 @@ var PresenceMessage = (function() {
 	PresenceMessage.fromValues = function(values) {
 		var result = Utils.mixin(new PresenceMessage(), values);
 		result.clientData = Data.toData(result.clientData);
-		result.timestamp = result.timestamp || Date.now();
 		return result;
 	};
 
