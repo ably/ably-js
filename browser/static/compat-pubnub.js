@@ -234,7 +234,7 @@
 					var h = result[i];
 					if (!startTime)
 						startTime = endTime = h.timestamp;
-					presults.push(h.data);
+					presults.push(JSON.parse(h.data));
 				}
 				callback([presults, startTime, endTime]);
 			}
@@ -281,7 +281,7 @@
 	 */
 	PUBNUB.publish = function(args, callback) {
 		callback = callback || args.callback || noop;
-		var message = args.message;
+		var message = JSON.stringify(args.message);
 		var channel = args.channel;
 		var error = args.error || noop;
 		var timestamp = Date.now();
@@ -371,7 +371,16 @@
 
 		var subscr = function(channel, callback, args) {
 			if(subscriptions[channel]) return log('Already Connected');
-			var cb = function(message) { callback(message.data); };
+			var cb = function(message) {
+				var data;
+				try {
+					data = JSON.parse(message.data);
+				} catch(e) {
+					log('PUBNUB.subscribe: Error: '+e);
+					return;
+				}
+				callback(data);
+			};
 
 			// Create channel and register for message callbacks and presence events if necessary
 			var ablyChannel = getChannel(channel);

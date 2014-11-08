@@ -244,10 +244,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		callback = callback || noop;
-		var binary = (headers && headers.accept != 'application/json');
-
-		Http.Request(uri, headers, params, null, binary, callback);
+		Http.Request(uri, headers, params, null, callback || noop);
 	};
 
 	/**
@@ -300,10 +297,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		callback = callback || noop;
-		var binary = (headers && headers.accept != 'application/json');
-
-		Http.Request(uri, headers, params, body, binary, callback);
+		Http.Request(uri, headers, params, body, callback || noop);
 	};
 
 	Http.supportsAuthHeaders = false;
@@ -312,7 +306,7 @@ var Http = (function() {
 })();
 
 var Crypto = Ably.Crypto = window.CryptoJS && (function() {
-	var DEFAULT_ALGORITHM = "aes";
+	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -557,11 +551,11 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	Data.utf8Encode = function(string) {
-		return CryptoJS.enc.Utf8.stringify(string);
+		return CryptoJS.enc.Utf8.parse(string);
 	};
 
 	Data.utf8Decode = function(buf) {
-		return CryptoJS.enc.Utf8.parse(buf);
+		return CryptoJS.enc.Utf8.stringify(buf);
 	};
 
 	return Crypto;
@@ -599,29 +593,33 @@ var DomEvent = (function() {
 
 	return DomEvent;
 })();
-( // Module boilerplate to support browser globals and browserify and AMD.
-		typeof define === "function" ? function (m) { define("msgpack-js", m); } :
-		typeof exports === "object" ? function (m) { module.exports = m(); } :
-	function(m){ this.msgpack = m(); }
-	)(function () {
-	"use strict";
+(// Module boilerplate to support browser globals and browserify and AMD.
+		typeof define === "function" ? function(m) {
+	define("msgpack-js", m);
+} : typeof exports === "object" ? function(m) {
+	module.exports = m();
+} : function(m) {
+	this.msgpack = m();
+}
+	)(function() {"use strict";
 
 	var exports = {};
 
 	exports.inspect = inspect;
 	function inspect(buffer) {
-		if (buffer === undefined) return "undefined";
+		if (buffer === undefined)
+			return "undefined";
 		var view;
 		var type;
-		if (buffer instanceof ArrayBuffer) {
+		if ( buffer instanceof ArrayBuffer) {
 			type = "ArrayBuffer";
 			view = new DataView(buffer);
-		}
-		else if (buffer instanceof DataView) {
+		} else if ( buffer instanceof DataView) {
 			type = "DataView";
 			view = buffer;
 		}
-		if (!view) return JSON.stringify(buffer);
+		if (!view)
+			return JSON.stringify(buffer);
 		var bytes = [];
 		for (var i = 0; i < buffer.byteLength; i++) {
 			if (i > 20) {
@@ -629,17 +627,18 @@ var DomEvent = (function() {
 				break;
 			}
 			var byte_ = view.getUint8(i).toString(16);
-			if (byte_.length === 1) byte_ = "0" + byte_;
+			if (byte_.length === 1)
+				byte_ = "0" + byte_;
 			bytes.push(byte_);
 		}
 		return "<" + type + " " + bytes.join(" ") + ">";
 	}
 
-// Encode string as utf8 into dataview at offset
+	// Encode string as utf8 into dataview at offset
 	exports.utf8Write = utf8Write;
 	function utf8Write(view, offset, string) {
 		var byteLength = view.byteLength;
-		for(var i = 0, l = string.length; i < l; i++) {
+		for (var i = 0, l = string.length; i < l; i++) {
 			var codePoint = string.charCodeAt(i);
 
 			// One byte of UTF-8
@@ -658,8 +657,8 @@ var DomEvent = (function() {
 			// Three bytes of UTF-8.
 			if (codePoint < 0x10000) {
 				view.setUint8(offset++, codePoint >>> 12 & 0x0f | 0xe0);
-				view.setUint8(offset++, codePoint >>> 6  & 0x3f | 0x80);
-				view.setUint8(offset++, codePoint >>> 0  & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 6 & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 0 & 0x3f | 0x80);
 				continue;
 			}
 
@@ -667,13 +666,14 @@ var DomEvent = (function() {
 			if (codePoint < 0x110000) {
 				view.setUint8(offset++, codePoint >>> 18 & 0x07 | 0xf0);
 				view.setUint8(offset++, codePoint >>> 12 & 0x3f | 0x80);
-				view.setUint8(offset++, codePoint >>> 6  & 0x3f | 0x80);
-				view.setUint8(offset++, codePoint >>> 0  & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 6 & 0x3f | 0x80);
+				view.setUint8(offset++, codePoint >>> 0 & 0x3f | 0x80);
 				continue;
 			}
 			throw new Error("bad codepoint " + codePoint);
 		}
 	}
+
 
 	exports.utf8Read = utf8Read;
 	function utf8Read(view, offset, length) {
@@ -687,29 +687,17 @@ var DomEvent = (function() {
 			}
 			// Two byte character
 			if ((byte_ & 0xe0) === 0xc0) {
-				string += String.fromCharCode(
-						((byte_ & 0x0f) << 6) |
-						(view.getUint8(++i) & 0x3f)
-				);
+				string += String.fromCharCode(((byte_ & 0x0f) << 6) | (view.getUint8(++i) & 0x3f));
 				continue;
 			}
 			// Three byte character
 			if ((byte_ & 0xf0) === 0xe0) {
-				string += String.fromCharCode(
-						((byte_ & 0x0f) << 12) |
-						((view.getUint8(++i) & 0x3f) << 6) |
-						((view.getUint8(++i) & 0x3f) << 0)
-				);
+				string += String.fromCharCode(((byte_ & 0x0f) << 12) | ((view.getUint8(++i) & 0x3f) << 6) | ((view.getUint8(++i) & 0x3f) << 0));
 				continue;
 			}
 			// Four byte character
 			if ((byte_ & 0xf8) === 0xf0) {
-				string += String.fromCharCode(
-						((byte_ & 0x07) << 18) |
-						((view.getUint8(++i) & 0x3f) << 12) |
-						((view.getUint8(++i) & 0x3f) << 6) |
-						((view.getUint8(++i) & 0x3f) << 0)
-				);
+				string += String.fromCharCode(((byte_ & 0x07) << 18) | ((view.getUint8(++i) & 0x3f) << 12) | ((view.getUint8(++i) & 0x3f) << 6) | ((view.getUint8(++i) & 0x3f) << 0));
 				continue;
 			}
 			throw new Error("Invalid byte " + byte_.toString(16));
@@ -717,10 +705,11 @@ var DomEvent = (function() {
 		return string;
 	}
 
+
 	exports.utf8ByteCount = utf8ByteCount;
 	function utf8ByteCount(string) {
 		var count = 0;
-		for(var i = 0, l = string.length; i < l; i++) {
+		for (var i = 0, l = string.length; i < l; i++) {
 			var codePoint = string.charCodeAt(i);
 			if (codePoint < 0x80) {
 				count += 1;
@@ -743,29 +732,69 @@ var DomEvent = (function() {
 		return count;
 	}
 
-	exports.encode = function (value) {
-		var buffer = new ArrayBuffer(sizeof(value));
+
+	exports.encode = function(value, sparse) {
+		var size = sizeof(value, sparse);
+		if(size == 0)
+			return undefined;
+		var buffer = new ArrayBuffer(size);
 		var view = new DataView(buffer);
-		encode(value, view, 0);
+		encode(value, view, 0, sparse);
 		return buffer;
-	}
+	};
 
 	exports.decode = decode;
 
-// http://wiki.msgpack.org/display/MSGPACK/Format+specification
-// I've extended the protocol to have two new types that were previously reserved.
-//   buffer 16  11011000  0xd8
-//   buffer 32  11011001  0xd9
-// These work just like raw16 and raw32 except they are node buffers instead of strings.
+	var SH_L_32 = (1 << 16) * (1 << 16), SH_R_32 = 1 / SH_L_32;
+	function getInt64(view, offset) {
+		offset = offset || 0;
+		return view.getInt32(offset) * SH_L_32 + view.getUint32(offset + 4);
+	}
+
+	function getUint64(view, offset) {
+		offset = offset || 0;
+		return view.getUint32(offset) * SH_L_32 + view.getUint32(offset + 4);
+	}
+
+	function setInt64(view, offset, val) {
+		if (val < 0x8000000000000000) {
+			view.setInt32(offset, Math.floor(val * SH_R_32));
+			view.setInt32(offset + 4, val & -1);
+		} else {
+			view.setUint32(offset, 0x7fffffff);
+			view.setUint32(offset + 4, 0x7fffffff);
+		}
+	}
+
+	function setUint64(view, offset, val) {
+		if (val < 0x10000000000000000) {
+			view.setUint32(offset, Math.floor(val * SH_R_32));
+			view.setInt32(offset + 4, val & -1);
+		} else {
+			view.setUint32(offset, 0xffffffff);
+			view.setUint32(offset + 4, 0xffffffff);
+		}
+	}
+
+// https://gist.github.com/frsyuki/5432559 - v5 spec
 //
-// Also I've added a type for `undefined`
-//   undefined  11000100  0xc4
+// I've used one extension point from `fixext 1` to store `undefined`. On the wire this
+// should translate to exactly 0xd40000
+//
+// +--------+--------+--------+
+// |  0xd4  |  0x00  |  0x00  |
+// +--------+--------+--------+
+//    ^ fixext |        ^ value part unused (fixed to be 0)
+//             ^ indicates undefined value
+//
 
 	function Decoder(view, offset) {
 		this.offset = offset || 0;
 		this.view = view;
 	}
-	Decoder.prototype.map = function (length) {
+
+
+	Decoder.prototype.map = function(length) {
 		var value = {};
 		for (var i = 0; i < length; i++) {
 			var key = this.parse();
@@ -773,184 +802,319 @@ var DomEvent = (function() {
 		}
 		return value;
 	};
-	Decoder.prototype.buf = function (length) {
+
+	Decoder.prototype.bin = Decoder.prototype.buf = function(length) {
 		var value = new ArrayBuffer(length);
 		(new Uint8Array(value)).set(new Uint8Array(this.view.buffer, this.offset, length), 0);
 		this.offset += length;
 		return value;
 	};
-	Decoder.prototype.raw = function (length) {
+
+	Decoder.prototype.str = function(length) {
 		var value = utf8Read(this.view, this.offset, length);
 		this.offset += length;
 		return value;
 	};
-	Decoder.prototype.array = function (length) {
+
+	Decoder.prototype.array = function(length) {
 		var value = new Array(length);
 		for (var i = 0; i < length; i++) {
 			value[i] = this.parse();
 		}
 		return value;
 	};
-	Decoder.prototype.parse = function () {
+
+	Decoder.prototype.ext = function(length) {
+		var value = {};
+		// Get the type byte
+		value['type'] = this.view.getInt8(this.offset);
+		this.offset++;
+		// Get the data array (length)
+		value['data'] = this.buf(length);
+		this.offset += length;
+		return value;
+	};
+
+	Decoder.prototype.parse = function() {
 		var type = this.view.getUint8(this.offset);
 		var value, length;
-		// FixRaw
-		if ((type & 0xe0) === 0xa0) {
-			length = type & 0x1f;
+
+		// Positive FixInt - 0xxxxxxx
+		if ((type & 0x80) === 0x00) {
 			this.offset++;
-			return this.raw(length);
+			return type;
 		}
-		// FixMap
+
+		// FixMap - 1000xxxx
 		if ((type & 0xf0) === 0x80) {
 			length = type & 0x0f;
 			this.offset++;
 			return this.map(length);
 		}
-		// FixArray
+
+		// FixArray - 1001xxxx
 		if ((type & 0xf0) === 0x90) {
 			length = type & 0x0f;
 			this.offset++;
 			return this.array(length);
 		}
-		// Positive FixNum
-		if ((type & 0x80) === 0x00) {
+
+		// FixStr - 101xxxxx
+		if ((type & 0xe0) === 0xa0) {
+			length = type & 0x1f;
 			this.offset++;
-			return type;
+			return this.str(length);
 		}
-		// Negative Fixnum
+
+		// Negative FixInt - 111xxxxx
 		if ((type & 0xe0) === 0xe0) {
 			value = this.view.getInt8(this.offset);
 			this.offset++;
 			return value;
 		}
+
 		switch (type) {
-			// raw 16
-			case 0xda:
-				length = this.view.getUint16(this.offset + 1);
-				this.offset += 3;
-				return this.raw(length);
-			// raw 32
-			case 0xdb:
-				length = this.view.getUint32(this.offset + 1);
-				this.offset += 5;
-				return this.raw(length);
+
 			// nil
 			case 0xc0:
 				this.offset++;
 				return null;
+
+			// 0xc1 never used - use for undefined (NON-STANDARD)
+			case 0xc1:
+				this.offset++;
+				return undefined;
+
 			// false
 			case 0xc2:
 				this.offset++;
 				return false;
+
 			// true
 			case 0xc3:
 				this.offset++;
 				return true;
-			// undefined
+
+			// bin 8
 			case 0xc4:
-				this.offset++;
-				return undefined;
+				length = this.view.getUint8(this.offset + 1);
+				this.offset += 2;
+				return this.bin(length);
+
+			// bin 16
+			case 0xc5:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.bin(length);
+
+			// bin 32
+			case 0xc6:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.bin(length);
+
+			// ext 8
+			case 0xc7:
+				length = this.view.getUint8(this.offset + 1);
+				this.offset += 2;
+				return this.ext(length);
+
+			// ext 16
+			case 0xc8:
+				length = this.view.getUint16(this.offset + 1);
+				this.offset += 3;
+				return this.ext(length);
+
+			// ext 32
+			case 0xc9:
+				length = this.view.getUint32(this.offset + 1);
+				this.offset += 5;
+				return this.ext(length);
+
+			// float 32
+			case 0xca:
+				value = this.view.getFloat32(this.offset + 1);
+				this.offset += 5;
+				return value;
+
+			// float 64
+			case 0xcb:
+				value = this.view.getFloat64(this.offset + 1);
+				this.offset += 9;
+				return value;
+
 			// uint8
 			case 0xcc:
 				value = this.view.getUint8(this.offset + 1);
 				this.offset += 2;
 				return value;
+
 			// uint 16
 			case 0xcd:
 				value = this.view.getUint16(this.offset + 1);
 				this.offset += 3;
 				return value;
+
 			// uint 32
 			case 0xce:
 				value = this.view.getUint32(this.offset + 1);
 				this.offset += 5;
 				return value;
+
+			// uint 64
+			case 0xcf:
+				value = getUint64(this.view, this.offset + 1);
+				value = 0;
+				this.offset += 9;
+				return value;
+
 			// int 8
 			case 0xd0:
 				value = this.view.getInt8(this.offset + 1);
 				this.offset += 2;
 				return value;
+
 			// int 16
 			case 0xd1:
 				value = this.view.getInt16(this.offset + 1);
 				this.offset += 3;
 				return value;
+
 			// int 32
 			case 0xd2:
 				value = this.view.getInt32(this.offset + 1);
 				this.offset += 5;
 				return value;
-			// map 16
-			case 0xde:
+
+			// int 64
+			case 0xd3:
+				value = getInt64(this.view, this.offset + 1);
+				value = 0;
+				this.offset += 9;
+				return value;
+
+			// fixext 1
+			case 0xd4:
+				length = 1;
+				this.offset++;
+				return this.ext(length);
+
+			// fixext 2
+			case 0xd5:
+				length = 2;
+				this.offset++;
+				return this.ext(length);
+
+			// fixext 4
+			case 0xd6:
+				length = 4;
+				this.offset++;
+				return this.ext(length);
+
+			// fixext 8
+			case 0xd7:
+				length = 8;
+				this.offset++;
+				return this.ext(length);
+
+			// fixext 16
+			case 0xd8:
+				length = 16;
+				this.offset++;
+				return this.ext(length);
+
+			// str8
+			case 0xd9:
+				length = this.view.getUint8(this.offset + 1);
+				this.offset += 2;
+				return this.str(length);
+
+			// str 16
+			case 0xda:
 				length = this.view.getUint16(this.offset + 1);
 				this.offset += 3;
-				return this.map(length);
-			// map 32
-			case 0xdf:
+				return this.str(length);
+
+			// str 32
+			case 0xdb:
 				length = this.view.getUint32(this.offset + 1);
 				this.offset += 5;
-				return this.map(length);
+				return this.str(length);
+
 			// array 16
 			case 0xdc:
 				length = this.view.getUint16(this.offset + 1);
 				this.offset += 3;
 				return this.array(length);
+
 			// array 32
 			case 0xdd:
 				length = this.view.getUint32(this.offset + 1);
 				this.offset += 5;
 				return this.array(length);
-			// buffer 16
-			case 0xd8:
+
+			// map 16
+			case 0xde:
 				length = this.view.getUint16(this.offset + 1);
 				this.offset += 3;
-				return this.buf(length);
-			// buffer 32
-			case 0xd9:
+				return this.map(length);
+
+			// map 32
+			case 0xdf:
 				length = this.view.getUint32(this.offset + 1);
 				this.offset += 5;
-				return this.buf(length);
-			// float
-			case 0xca:
-				value = this.view.getFloat32(this.offset + 1);
-				this.offset += 5;
-				return value;
-			// double
-			case 0xcb:
-				value = this.view.getFloat64(this.offset + 1);
-				this.offset += 9;
-				return value;
+				return this.map(length);
 		}
 		throw new Error("Unknown type 0x" + type.toString(16));
 	};
+
 	function decode(buffer) {
 		var view = new DataView(buffer);
 		var decoder = new Decoder(view);
 		var value = decoder.parse();
-		if (decoder.offset !== buffer.byteLength) throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
+		if (decoder.offset !== buffer.byteLength)
+			throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
 		return value;
 	}
 
-	function encode(value, view, offset) {
+	function encodeableKeys(value, sparse) {
+		return Object.keys(value).filter(function (e) {
+			var val = value[e], type = typeof(val);
+			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!val.toJSON);
+		})
+	}
+
+	function encode(value, view, offset, sparse) {
 		var type = typeof value;
 
 		// Strings Bytes
+		// There are four string types: fixstr/str8/str16/str32
 		if (type === "string") {
 			var length = utf8ByteCount(value);
-			// fix raw
+
+			// fixstr
 			if (length < 0x20) {
 				view.setUint8(offset, length | 0xa0);
 				utf8Write(view, offset + 1, value);
 				return 1 + length;
 			}
-			// raw 16
+
+			// str8
+			if (length < 0x100) {
+				view.setUint8(offset, 0xd9);
+				view.setUint8(offset + 1, length);
+				utf8Write(view, offset + 2, value);
+				return 2 + length;
+			}
+
+			// str16
 			if (length < 0x10000) {
 				view.setUint8(offset, 0xda);
 				view.setUint16(offset + 1, length);
 				utf8Write(view, offset + 3, value);
 				return 3 + length;
 			}
-			// raw 32
+			// str32
 			if (length < 0x100000000) {
 				view.setUint8(offset, 0xdb);
 				view.setUint32(offset + 1, length);
@@ -959,18 +1123,29 @@ var DomEvent = (function() {
 			}
 		}
 
+		// There are three bin types: bin8/bin16/bin32
 		if (value instanceof ArrayBuffer) {
 			var length = value.byteLength;
-			// buffer 16
+
+			// bin8
+			if (length < 0x100) {
+				view.setUint8(offset, 0xc4);
+				view.setUint8(offset + 1, length);
+				(new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 2);
+				return 2 + length;
+			}
+
+			// bin16
 			if (length < 0x10000) {
-				view.setUint8(offset, 0xd8);
+				view.setUint8(offset, 0xc5);
 				view.setUint16(offset + 1, length);
 				(new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 3);
 				return 3 + length;
 			}
-			// buffer 32
+
+			// bin 32
 			if (length < 0x100000000) {
-				view.setUint8(offset, 0xd9);
+				view.setUint8(offset, 0xc6);
 				view.setUint32(offset + 1, length);
 				(new Uint8Array(view.buffer)).set(new Uint8Array(value), offset + 5);
 				return 5 + length;
@@ -978,15 +1153,17 @@ var DomEvent = (function() {
 		}
 
 		if (type === "number") {
+
 			// Floating Point
-			if ((value << 0) !== value) {
+			// NOTE: We're always using float64
+			if (Math.floor(value) !== value) {
 				view.setUint8(offset, 0xcb);
 				view.setFloat64(offset + 1, value);
 				return 9;
 			}
 
 			// Integers
-			if (value >=0) {
+			if (value >= 0) {
 				// positive fixnum
 				if (value < 0x80) {
 					view.setUint8(offset, value);
@@ -1010,8 +1187,15 @@ var DomEvent = (function() {
 					view.setUint32(offset + 1, value);
 					return 5;
 				}
+				// uint 64
+				if (value < 0x10000000000000000) {
+					view.setUint8(offset, 0xcf);
+					setUint64(view, offset + 1, value);
+					return 9;
+				}
 				throw new Error("Number too big 0x" + value.toString(16));
 			}
+
 			// negative fixnum
 			if (value >= -0x20) {
 				view.setInt8(offset, value);
@@ -1035,17 +1219,27 @@ var DomEvent = (function() {
 				view.setInt32(offset + 1, value);
 				return 5;
 			}
+			// int 64
+			if (value >= -0x8000000000000000) {
+				view.setUint8(offset, 0xd3);
+				setInt64(view, offset + 1, value);
+				return 9;
+			}
 			throw new Error("Number too small -0x" + (-value).toString(16).substr(1));
 		}
 
-		// undefined
+		// undefined - use d4 (NON-STANDARD)
 		if (type === "undefined") {
-			view.setUint8(offset, 0xc4);
-			return 1;
+			if(sparse) return 0;
+			view.setUint8(offset, 0xd4);
+			view.setUint8(offset + 1, 0x00);
+			view.setUint8(offset + 2, 0x00);
+			return 3;
 		}
 
 		// null
 		if (value === null) {
+			if(sparse) return 0;
 			view.setUint8(offset, 0xc0);
 			return 1;
 		}
@@ -1056,6 +1250,9 @@ var DomEvent = (function() {
 			return 1;
 		}
 
+		if('function' === typeof value.toJSON)
+			return encode(value.toJSON(), view, offset, sparse);
+
 		// Container Types
 		if (type === "object") {
 			var length, size = 0;
@@ -1063,23 +1260,20 @@ var DomEvent = (function() {
 
 			if (isArray) {
 				length = value.length;
-			}
-			else {
-				var keys = Object.keys(value);
+			} else {
+				var keys = encodeableKeys(value, sparse);
 				length = keys.length;
 			}
 
 			var size;
 			if (length < 0x10) {
-				view.setUint8(offset, length | (isArray ? 0x90 : 0x80));
+				view.setUint8(offset, length | ( isArray ? 0x90 : 0x80));
 				size = 1;
-			}
-			else if (length < 0x10000) {
+			} else if (length < 0x10000) {
 				view.setUint8(offset, isArray ? 0xdc : 0xde);
 				view.setUint16(offset + 1, length);
 				size = 3;
-			}
-			else if (length < 0x100000000) {
+			} else if (length < 0x100000000) {
 				view.setUint8(offset, isArray ? 0xdd : 0xdf);
 				view.setUint32(offset + 1, length);
 				size = 5;
@@ -1087,30 +1281,35 @@ var DomEvent = (function() {
 
 			if (isArray) {
 				for (var i = 0; i < length; i++) {
-					size += encode(value[i], view, offset + size);
+					size += encode(value[i], view, offset + size, sparse);
 				}
-			}
-			else {
+			} else {
 				for (var i = 0; i < length; i++) {
 					var key = keys[i];
 					size += encode(key, view, offset + size);
-					size += encode(value[key], view, offset + size);
+					size += encode(value[key], view, offset + size, sparse);
 				}
 			}
 
 			return size;
 		}
+		if(type === "function")
+			return 0;
+
 		throw new Error("Unknown type " + type);
 	}
 
-	function sizeof(value) {
+	function sizeof(value, sparse) {
 		var type = typeof value;
 
-		// Raw Bytes
+		// fixstr or str8 or str16 or str32
 		if (type === "string") {
 			var length = utf8ByteCount(value);
 			if (length < 0x20) {
 				return 1 + length;
+			}
+			if (length < 0x100) {
+				return 2 + length;
 			}
 			if (length < 0x10000) {
 				return 3 + length;
@@ -1120,8 +1319,12 @@ var DomEvent = (function() {
 			}
 		}
 
+		// bin8 or bin16 or bin32
 		if (value instanceof ArrayBuffer) {
 			var length = value.byteLength;
+			if (length < 0x100) {
+				return 2 + length;
+			}
 			if (length < 0x10000) {
 				return 3 + length;
 			}
@@ -1131,39 +1334,59 @@ var DomEvent = (function() {
 		}
 
 		if (type === "number") {
-			// Floating Point
+			// Floating Point (32 bits)
 			// double
-			if (value << 0 !== value) return 9;
+			if (Math.floor(value) !== value)
+				return 9;
 
 			// Integers
-			if (value >=0) {
-				// positive fixnum
-				if (value < 0x80) return 1;
+			if (value >= 0) {
+				// positive fixint
+				if (value < 0x80)
+					return 1;
 				// uint 8
-				if (value < 0x100) return 2;
+				if (value < 0x100)
+					return 2;
 				// uint 16
-				if (value < 0x10000) return 3;
+				if (value < 0x10000)
+					return 3;
 				// uint 32
-				if (value < 0x100000000) return 5;
+				if (value < 0x100000000)
+					return 5;
 				// uint 64
-				if (value < 0x10000000000000000) return 9;
+				if (value < 0x10000000000000000)
+					return 9;
+				// Too big
 				throw new Error("Number too big 0x" + value.toString(16));
 			}
-			// negative fixnum
-			if (value >= -0x20) return 1;
+			// negative fixint
+			if (value >= -0x20)
+				return 1;
 			// int 8
-			if (value >= -0x80) return 2;
+			if (value >= -0x80)
+				return 2;
 			// int 16
-			if (value >= -0x8000) return 3;
+			if (value >= -0x8000)
+				return 3;
 			// int 32
-			if (value >= -0x80000000) return 5;
+			if (value >= -0x80000000)
+				return 5;
 			// int 64
-			if (value >= -0x8000000000000000) return 9;
+			if (value >= -0x8000000000000000)
+				return 9;
+			// Too small
 			throw new Error("Number too small -0x" + value.toString(16).substr(1));
 		}
 
-		// Boolean, null, undefined
-		if (type === "boolean" || type === "undefined" || value === null) return 1;
+		// Boolean
+		if (type === "boolean") return 1;
+
+		// undefined, null
+		if (value === null) return sparse ? 0 : 1;
+		if (value === undefined) return sparse ? 0 : 3;
+
+		if('function' === typeof value.toJSON)
+			return sizeof(value.toJSON(), sparse);
 
 		// Container Types
 		if (type === "object") {
@@ -1171,15 +1394,14 @@ var DomEvent = (function() {
 			if (Array.isArray(value)) {
 				length = value.length;
 				for (var i = 0; i < length; i++) {
-					size += sizeof(value[i]);
+					size += sizeof(value[i], sparse);
 				}
-			}
-			else {
-				var keys = Object.keys(value);
+			} else {
+				var keys = encodeableKeys(value, sparse)
 				length = keys.length;
 				for (var i = 0; i < length; i++) {
 					var key = keys[i];
-					size += sizeof(key) + sizeof(value[key]);
+					size += sizeof(key) + sizeof(value[key], sparse);
 				}
 			}
 			if (length < 0x10) {
@@ -1193,11 +1415,13 @@ var DomEvent = (function() {
 			}
 			throw new Error("Array or object too long 0x" + length.toString(16));
 		}
+		if(type === "function")
+			return 0;
+
 		throw new Error("Unknown type " + type);
 	}
 
 	return exports;
-
 });
 var EventEmitter = (function() {
 
@@ -1763,12 +1987,15 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = Message.fromDecoded(decoded[i]);
+	Message.fromResponseBody = function(body, options, format) {
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		for(var i = 0; i < body.length; i++) {
+			var msg = body[i] = Message.fromDecoded(body[i]);
 			Message.decode(msg, options);
 		}
+		return body;
 	};
 
 	Message.fromDecoded = function(values) {
@@ -1778,7 +2005,6 @@ var Message = (function() {
 	Message.fromValues = function(values) {
 		var result = Utils.mixin(new Message(), values);
 		result.data = Data.toData(result.data);
-		result.timestamp = result.timestamp || Date.now();
 		return result;
 	};
 
@@ -1884,11 +2110,14 @@ var PresenceMessage = (function() {
 	};
 
 	PresenceMessage.fromResponseBody = function(encoded, options, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		for(var i = 0; i < decoded.length; i++) {
-			var msg = decoded[i] = PresenceMessage.fromDecoded(decoded[i]);
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		for(var i = 0; i < body.length; i++) {
+			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
 			PresenceMessage.decode(msg, options);
 		}
+		return body;
 	};
 
 	PresenceMessage.fromDecoded = function(values) {
@@ -1898,7 +2127,6 @@ var PresenceMessage = (function() {
 	PresenceMessage.fromValues = function(values) {
 		var result = Utils.mixin(new PresenceMessage(), values);
 		result.clientData = Data.toData(result.clientData);
-		result.timestamp = result.timestamp || Date.now();
 		return result;
 	};
 
@@ -3213,7 +3441,7 @@ var Resource = (function() {
 				return;
 			}
 
-			callback(null, response, headers);
+			callback(null, response, headers, true);
 		};
 	}
 
@@ -3224,7 +3452,7 @@ var Resource = (function() {
 		}
 
 		function doGet(headers, params) {
-			Http.get(rest, path, headers, params, function(err, res, headers) {
+			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise({force:true}, null, function(err) {
@@ -3237,7 +3465,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers);
+				callback(err, res, headers, unpacked);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doGet);
@@ -3250,7 +3478,7 @@ var Resource = (function() {
 		}
 
 		function doPost(headers, params) {
-			Http.post(rest, path, headers, body, params, function(err, res, headers) {
+			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise({force:true}, null, function(err) {
@@ -3263,7 +3491,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers);
+				callback(err, res, headers, unpacked);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doPost);
@@ -3306,14 +3534,14 @@ var PaginatedResource = (function() {
 
 	PaginatedResource.prototype.get = function(callback) {
 		var self = this;
-		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers) {
+		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
 				return;
 			}
 			var current, linkHeader, relLinks;
 			try {
-				current = self.bodyHandler(body);
+				current = self.bodyHandler(body, headers, unpacked);
 			} catch(e) {
 				callback(e);
 				return;
@@ -3819,8 +4047,8 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 
-		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body) {
-			return (typeof(body) === 'string') ? JSON.parse(body) : body;
+		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
+			return unpacked ? body : JSON.parse(body);
 		})).get(callback);
 	};
 
@@ -4041,8 +4269,8 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body) {
-			return Message.fromResponseBody(body, options, format);
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body, headers, unpacked) {
+			return Message.fromResponseBody(body, options, !unpacked && format);
 		})).get(callback);
 	};
 
@@ -4078,6 +4306,7 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
+			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			options = this.channel.options;
@@ -4085,13 +4314,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.get(rest, this.basePath, headers, params, false, function(err, res) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, PresenceMessage.fromResponseBody(res, options, format));
-		});
+		(new PaginatedResource(rest, this.basePath, headers, params, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+		})).get(callback);
 	};
 
 	Presence.prototype.history = function(params, callback) {
@@ -4114,8 +4339,8 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body) {
-			return PresenceMessage.fromResponseBody(body, options, format);
+		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(callback);
 	};
 
@@ -4799,7 +5024,8 @@ var JSONPTransport = (function() {
 			this.requestComplete = true;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body);
+
+			this.emit('complete', err, body, true);
 			this.dispose();
 		}
 	};
@@ -4819,7 +5045,7 @@ var JSONPTransport = (function() {
 		delete _[this.id];
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, format, callback) {
+	var request = Http.Request = function(uri, headers, params, body, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
 		req.exec();
@@ -4859,14 +5085,8 @@ var XHRRequest = (function() {
 		return false;
 	};
 
-	function responseHeaders(xhr) {
-		var headers = {};
-		if(xhr.getResponseHeader) {
-			var contentType = xhr.getResponseHeader('Content-Type');
-			if(contentType)
-				headers['Content-Type'] = contentType;
-		}
-		return headers;
+	function getContentType(xhr) {
+		return xhr.getResponseHeader && xhr.getResponseHeader('Content-Type');
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
@@ -4887,13 +5107,12 @@ var XHRRequest = (function() {
 		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode) : new XDRRequest(uri, headers, params, body, requestMode);
 	};
 
-	XHRRequest.prototype.complete = function(err, body) {
+	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			var xhr = this.xhr;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body, (xhr && responseHeaders(xhr)));
+			this.emit('complete', err, body, headers, unpacked);
 			this.dispose();
 		}
 	};
@@ -4941,8 +5160,10 @@ var XHRRequest = (function() {
 		var streaming,
 			statusCode,
 			responseBody,
+			contentType,
 			successResponse,
-			streamPos = 0;
+			streamPos = 0,
+			unpacked = false;
 
 		function onResponse() {
 			clearTimeout(timer);
@@ -4965,7 +5186,12 @@ var XHRRequest = (function() {
 					}
 					return;
 				}
-				responseBody = JSON.parse(String(responseBody));
+
+				var json = ((contentType = getContentType(xhr)) == 'application/json');
+				if(json) {
+					responseBody = JSON.parse(String(responseBody));
+					unpacked = true;
+				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
@@ -4974,7 +5200,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody);
+				self.complete(null, responseBody, (contentType && {'Content-Type': contentType}), unpacked);
 				return;
 			}
 
@@ -5155,7 +5381,7 @@ var XHRRequest = (function() {
 				self.complete(err);
 				return;
 			}
-			self.complete(null, responseBody);
+			self.complete(null, responseBody, {'Content-Type': 'application/json'}, true);
 		}
 
 		function onProgress() {
@@ -5238,7 +5464,7 @@ var XHRRequest = (function() {
 		DomEvent.addUnloadListener(clearPendingRequests);
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, format, callback) {
+			Http.Request = function(uri, headers, params, body, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND);
 				req.once('complete', callback);
 				req.exec();

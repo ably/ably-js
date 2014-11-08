@@ -623,14 +623,8 @@ var XHRRequest = (function() {
 		return false;
 	};
 
-	function responseHeaders(xhr) {
-		var headers = {};
-		if(xhr.getResponseHeader) {
-			var contentType = xhr.getResponseHeader('Content-Type');
-			if(contentType)
-				headers['Content-Type'] = contentType;
-		}
-		return headers;
+	function getContentType(xhr) {
+		return xhr.getResponseHeader && xhr.getResponseHeader('Content-Type');
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
@@ -651,13 +645,12 @@ var XHRRequest = (function() {
 		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode) : new XDRRequest(uri, headers, params, body, requestMode);
 	};
 
-	XHRRequest.prototype.complete = function(err, body) {
+	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			var xhr = this.xhr;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body, (xhr && responseHeaders(xhr)));
+			this.emit('complete', err, body, headers, unpacked);
 			this.dispose();
 		}
 	};
@@ -705,8 +698,10 @@ var XHRRequest = (function() {
 		var streaming,
 			statusCode,
 			responseBody,
+			contentType,
 			successResponse,
-			streamPos = 0;
+			streamPos = 0,
+			unpacked = false;
 
 		function onResponse() {
 			clearTimeout(timer);
@@ -729,7 +724,12 @@ var XHRRequest = (function() {
 					}
 					return;
 				}
-				responseBody = JSON.parse(String(responseBody));
+
+				var json = ((contentType = getContentType(xhr)) == 'application/json');
+				if(json) {
+					responseBody = JSON.parse(String(responseBody));
+					unpacked = true;
+				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
@@ -738,7 +738,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody);
+				self.complete(null, responseBody, (contentType && {'Content-Type': contentType}), unpacked);
 				return;
 			}
 
@@ -919,7 +919,7 @@ var XHRRequest = (function() {
 				self.complete(err);
 				return;
 			}
-			self.complete(null, responseBody);
+			self.complete(null, responseBody, {'Content-Type': 'application/json'}, true);
 		}
 
 		function onProgress() {
@@ -1002,7 +1002,7 @@ var XHRRequest = (function() {
 		DomEvent.addUnloadListener(clearPendingRequests);
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, format, callback) {
+			Http.Request = function(uri, headers, params, body, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND);
 				req.once('complete', callback);
 				req.exec();
