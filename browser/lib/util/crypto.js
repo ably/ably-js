@@ -1,5 +1,5 @@
 var Crypto = Ably.Crypto = window.CryptoJS && (function() {
-	var DEFAULT_ALGORITHM = "aes";
+	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -244,11 +244,11 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	Data.utf8Encode = function(string) {
-		return CryptoJS.enc.Utf8.stringify(string);
+		return CryptoJS.enc.Utf8.parse(string);
 	};
 
 	Data.utf8Decode = function(buf) {
-		return CryptoJS.enc.Utf8.parse(buf);
+		return CryptoJS.enc.Utf8.stringify(buf);
 	};
 
 	return Crypto;
