@@ -230,7 +230,7 @@
 
 		this.channel.subscribe(function(message) {
 			log('PusherChannel::message callback: Event object '+JSON.stringify(this)+', message '+JSON.stringify(message));
-			self.channel.emit(message.name, message.data);
+			self.channel.emit(message.name, JSON.parse(message.data));
 		});
 		this.bindings = {};
 		this.bind_alls = [];
@@ -354,7 +354,8 @@
 	 * whether or not the trigger was successful.
 	 */
 	PusherChannel.prototype.trigger = function(event, data) {
-		log('PusherChannel::trigger: Event '+event+', data '+JSON.stringify(data));
+		data = JSON.stringify(data);
+		log('PusherChannel::trigger: Event '+event+', data '+ data);
 		if (!this.active) { log('PusherChannel::trigger: Inactive'); return true; }
 		this.channel.publish(event, data);
 		return true;
