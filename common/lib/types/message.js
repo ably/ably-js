@@ -105,7 +105,6 @@ var Message = (function() {
 	Message.fromValues = function(values) {
 		var result = Utils.mixin(new Message(), values);
 		result.data = Data.toData(result.data);
-		result.timestamp = result.timestamp || Date.now();
 		return result;
 	};
 
