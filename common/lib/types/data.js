@@ -10,10 +10,10 @@ this.Data = (function() {
 	/* get a data value from the value received inbound */
 	Data.fromEncoded = function(data, msg) {
 		if(typeof(data) == 'string') {
-			var xform = msg.xform, match;
-			if(xform && (match = xform.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
+			var encoding = msg.encoding, match;
+			if(encoding && (match = encoding.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
 				data = BufferUtils.decodeBase64(data);
-				msg.xform = match[2];
+				msg.encoding = match[2];
 			}
 		}
 		return data;

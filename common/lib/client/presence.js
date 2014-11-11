@@ -14,22 +14,22 @@ var Presence = (function() {
 	}
 	Utils.inherits(Presence, EventEmitter);
 
-	Presence.prototype.enter = function(clientData, callback) {
-		if (!callback && (typeof(clientData)==='function')) {
-			callback = clientData;
-			clientData = '';
+	Presence.prototype.enter = function(data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
 		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this.enterClient(this.clientId, clientData, callback);
+		this.enterClient(this.clientId, data, callback);
 	};
 
-	Presence.prototype.enterClient = function(clientId, clientData, callback) {
+	Presence.prototype.enterClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
 			clientId : clientId,
-			clientData: Data.toData(clientData)
+			data: data
 		});
 		var channel = this.channel;
 		switch(channel.state) {

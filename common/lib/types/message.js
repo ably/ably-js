@@ -7,7 +7,7 @@ var Message = (function() {
 		this.timestamp = undefined;
 		this.clientId = undefined;
 		this.data = undefined;
-		this.xform = undefined;
+		this.encoding = undefined;
 	}
 
 	/**
@@ -19,7 +19,7 @@ var Message = (function() {
 			name: this.name,
 			clientId: this.clientId,
 			timestamp: this.timestamp,
-			xform: this.xform
+			encoding: this.encoding
 		};
 
 		/* encode to base64 if we're returning real JSON;
@@ -27,8 +27,8 @@ var Message = (function() {
 		 * call if it passes on the stringify arguments */
 		var data = this.data;
 		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var xform = this.xform;
-			result.xform = xform ? (xform + '/base64') : 'base64';
+			var encoding = this.encoding;
+			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = BufferUtils.base64Encode(data);
 		}
 		result.data = data;
@@ -36,16 +36,21 @@ var Message = (function() {
 	};
 
 	Message.encrypt = function(msg, options) {
-		var data = msg.data, xform = msg.xform;
+		var data = msg.data, encoding = msg.encoding;
 		if(!BufferUtils.isBuffer(data)) {
 			data = Crypto.Data.utf8Encode(String(data));
-			xform = xform ? (xform + '/utf-8') : 'utf-8';
+			encoding = encoding ? (encoding + '/utf-8') : 'utf-8';
 		}
 		msg.data = options.cipher.encrypt(data);
-		msg.xform = xform ? (xform + '/cipher') : 'cipher';
+		msg.encoding = encoding ? (encoding + '/cipher') : 'cipher';
 	};
 
 	Message.encode = function(msg, options) {
+		var data = msg.data, encoding;
+		if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+			msg.data = JSON.stringify(data);
+			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		}
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);
 	};
@@ -58,30 +63,38 @@ var Message = (function() {
 	};
 
 	Message.decode = function(message, options) {
-		var xform = message.xform;
-		if(xform) {
-			var i = 0, j = xform.length, data = message.data;
+		var encoding = message.encoding;
+		if(encoding) {
+			var xforms = encoding.split('/'),
+				i, j = xforms.length,
+				data = message.data;
+
 			try {
-				while((i = j) >= 0) {
-					j = xform.lastIndexOf('/', i - 1);
-					var subXform = xform.substring(j + 1, i);
-					if(subXform == 'base64') {
-						data = BufferUtils.base64Decode(String(data));
-						continue;
+				while((i = j) > 0) {
+					var match = xforms[--j].match(/([\-\w]+)(\+(\w+))?/);
+					if(!match) break;
+					var xform = match[1];
+					switch(xform) {
+						case 'base64':
+							data = BufferUtils.base64Decode(String(data));
+							continue;
+						case 'utf-8':
+							data = Crypto.Data.utf8Decode(data);
+							continue;
+						case 'json':
+							data = JSON.parse(data);
+							continue;
+						case 'cipher':
+							if(options != null && options.encrypted) {
+								data = options.cipher.decrypt(data);
+								continue;
+							}
+						default:
 					}
-					if(subXform == 'utf-8') {
-						data = Crypto.Data.utf8Decode(data);
-						continue;
-					}
-					if(subXform == 'cipher' && options != null && options.encrypted) {
-						data = options.cipher.decrypt(data);
-						continue;
-					}
-					/* FIXME: can we do anything generically with msgpack here? */
 					break;
 				}
 			} finally {
-				message.xform = (i <= 0) ? null : xform.substring(0, i);
+				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
 				message.data = data;
 			}
 		}
@@ -103,9 +116,7 @@ var Message = (function() {
 	};
 
 	Message.fromValues = function(values) {
-		var result = Utils.mixin(new Message(), values);
-		result.data = Data.toData(result.data);
-		return result;
+		return Utils.mixin(new Message(), values);
 	};
 
 	Message.fromValuesArray = function(values) {

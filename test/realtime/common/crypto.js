@@ -424,7 +424,7 @@ exports.setup = function(base) {
 				}
 				txChannel.setOptions({encrypted:true, cipherParams: txParams});
 				rxChannel.subscribe('event0', function(msg) {
-					test.ok(msg.xform.indexOf('cipher') > -1);
+					test.ok(msg.encoding.indexOf('cipher') > -1);
 					rxRealtime.close();
 					txRealtime.close();
 					test.done();
@@ -501,7 +501,7 @@ exports.setup = function(base) {
 
 		var sendSecondMessage = function(cb) {
 			var handler = function(msg) {
-				test.ok(msg.xform.indexOf('cipher') > -1, 'Message does not have cipher transform');
+				test.ok(msg.encoding.indexOf('cipher') > -1, 'Message does not have cipher transform');
 				rxChannel.unsubscribe('event0', handler);
 				cb(null);
 			}

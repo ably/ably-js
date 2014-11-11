@@ -437,7 +437,7 @@ crypto_.single_send_encrypted_unhandled = function(test) {
 			}
 			txChannel.setOptions({encrypted:true, cipherParams: txParams});
 			rxChannel.subscribe('event0', function(msg) {
-				test.ok(msg.xform.indexOf('cipher') > -1);
+				test.ok(msg.encoding.indexOf('cipher') > -1);
 				rxRealtime.close();
 				txRealtime.close();
 				test.done();
