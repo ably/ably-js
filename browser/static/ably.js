@@ -1874,30 +1874,6 @@ var Multicaster = (function() {
 	return Multicaster;
 })();
 
-this.Data = (function() {
-
-	function Data() {}
-
-	/* ensure a user-supplied data value has appropriate (string or buffer) type */
-	Data.toData = function(data) {
-		return BufferUtils.isBuffer(data) ? data : String(data);
-	};
-
-	/* get a data value from the value received inbound */
-	Data.fromEncoded = function(data, msg) {
-		if(typeof(data) == 'string') {
-			var xform = msg.xform, match;
-			if(xform && (match = xform.match(/((.+)\/)?(\w+)$/)) && (match[3] == 'base64')) {
-				data = BufferUtils.decodeBase64(data);
-				msg.xform = match[2];
-			}
-		}
-		return data;
-	};
-
-	return Data;
-})();
-
 var Message = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
@@ -1907,7 +1883,7 @@ var Message = (function() {
 		this.timestamp = undefined;
 		this.clientId = undefined;
 		this.data = undefined;
-		this.xform = undefined;
+		this.encoding = undefined;
 	}
 
 	/**
@@ -1919,7 +1895,7 @@ var Message = (function() {
 			name: this.name,
 			clientId: this.clientId,
 			timestamp: this.timestamp,
-			xform: this.xform
+			encoding: this.encoding
 		};
 
 		/* encode to base64 if we're returning real JSON;
@@ -1927,8 +1903,8 @@ var Message = (function() {
 		 * call if it passes on the stringify arguments */
 		var data = this.data;
 		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var xform = this.xform;
-			result.xform = xform ? (xform + '/base64') : 'base64';
+			var encoding = this.encoding;
+			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = BufferUtils.base64Encode(data);
 		}
 		result.data = data;
@@ -1936,16 +1912,21 @@ var Message = (function() {
 	};
 
 	Message.encrypt = function(msg, options) {
-		var data = msg.data, xform = msg.xform;
+		var data = msg.data, encoding = msg.encoding;
 		if(!BufferUtils.isBuffer(data)) {
 			data = Crypto.Data.utf8Encode(String(data));
-			xform = xform ? (xform + '/utf-8') : 'utf-8';
+			encoding = encoding ? (encoding + '/utf-8') : 'utf-8';
 		}
 		msg.data = options.cipher.encrypt(data);
-		msg.xform = xform ? (xform + '/cipher') : 'cipher';
+		msg.encoding = encoding ? (encoding + '/cipher') : 'cipher';
 	};
 
 	Message.encode = function(msg, options) {
+		var data = msg.data, encoding;
+		if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+			msg.data = JSON.stringify(data);
+			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		}
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);
 	};
@@ -1958,30 +1939,38 @@ var Message = (function() {
 	};
 
 	Message.decode = function(message, options) {
-		var xform = message.xform;
-		if(xform) {
-			var i = 0, j = xform.length, data = message.data;
+		var encoding = message.encoding;
+		if(encoding) {
+			var xforms = encoding.split('/'),
+				i, j = xforms.length,
+				data = message.data;
+
 			try {
-				while((i = j) >= 0) {
-					j = xform.lastIndexOf('/', i - 1);
-					var subXform = xform.substring(j + 1, i);
-					if(subXform == 'base64') {
-						data = BufferUtils.base64Decode(String(data));
-						continue;
+				while((i = j) > 0) {
+					var match = xforms[--j].match(/([\-\w]+)(\+(\w+))?/);
+					if(!match) break;
+					var xform = match[1];
+					switch(xform) {
+						case 'base64':
+							data = BufferUtils.base64Decode(String(data));
+							continue;
+						case 'utf-8':
+							data = Crypto.Data.utf8Decode(data);
+							continue;
+						case 'json':
+							data = JSON.parse(data);
+							continue;
+						case 'cipher':
+							if(options != null && options.encrypted) {
+								data = options.cipher.decrypt(data);
+								continue;
+							}
+						default:
 					}
-					if(subXform == 'utf-8') {
-						data = Crypto.Data.utf8Decode(data);
-						continue;
-					}
-					if(subXform == 'cipher' && options != null && options.encrypted) {
-						data = options.cipher.decrypt(data);
-						continue;
-					}
-					/* FIXME: can we do anything generically with msgpack here? */
 					break;
 				}
 			} finally {
-				message.xform = (i <= 0) ? null : xform.substring(0, i);
+				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
 				message.data = data;
 			}
 		}
@@ -2003,9 +1992,7 @@ var Message = (function() {
 	};
 
 	Message.fromValues = function(values) {
-		var result = Utils.mixin(new Message(), values);
-		result.data = Data.toData(result.data);
-		return result;
+		return Utils.mixin(new Message(), values);
 	};
 
 	Message.fromValuesArray = function(values) {
@@ -2025,8 +2012,8 @@ var PresenceMessage = (function() {
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.clientId = undefined;
-		this.clientData = undefined;
-		this.xform = undefined;
+		this.data = undefined;
+		this.encoding = undefined;
 		this.memberId = undefined;
 		this.inheritMemberId = undefined;
 	}
@@ -2048,66 +2035,24 @@ var PresenceMessage = (function() {
 			memberId: this.memberId,
 			timestamp: this.timestamp,
 			action: this.action,
-			xform: this.xform
+			encoding: this.encoding
 		};
 
 		/* encode to base64 if we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it passes on the stringify arguments */
-		var clientData = this.clientData;
-		if(arguments.length > 0 && BufferUtils.isBuffer(clientData)) {
-			var xform = this.xform;
-			result.xform = xform ? (xform + '/base64') : 'base64';
-			clientData = clientData.toString('base64');
+		var data = this.data;
+		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+			var encoding = this.encoding;
+			result.encoding = encoding ? (encoding + '/base64') : 'base64';
+			data = data.toString('base64');
 		}
-		result.clientData = clientData;
+		result.data = data;
 		return result;
 	};
 
-	PresenceMessage.encrypt = function(msg, options) {
-		var data = msg.clientData, xform = msg.xform;
-		if(!BufferUtils.isBuffer(data)) {
-			data = Crypto.Data.utf8Encode(String(data));
-			xform = xform ? (xform + '/utf-8') : 'utf-8';
-		}
-		msg.clientData = options.cipher.encrypt(data);
-		msg.xform = xform ? (xform + '/cipher') : 'cipher';
-	};
-
-	PresenceMessage.encode = function(msg, options) {
-		if(options != null && options.encrypted)
-			PresenceMessage.encrypt(msg, options);
-	};
-
-	PresenceMessage.decode = function(message, options) {
-		var xform = message.xform;
-		if(xform) {
-			var i = 0, j = xform.length, data = message.clientData;
-			try {
-				while((i = j) >= 0) {
-					j = xform.lastIndexOf('/', i - 1);
-					var subXform = xform.substring(j + 1, i);
-					if(subXform == 'base64') {
-						data = BufferUtils.base64Decode(String(data));
-						continue;
-					}
-					if(subXform == 'utf-8') {
-						data = Crypto.Data.utf8Decode(data);
-						continue;
-					}
-					if(subXform == 'cipher' && options != null && options.encrypted) {
-						data = options.cipher.decrypt(data);
-						continue;
-					}
-					/* FIXME: can we do anything generically with msgpack here? */
-					break;
-				}
-			} finally {
-				this.xform = (i <= 0) ? null : xform.substring(0, i);
-				this.clientData = data;
-			}
-		}
-	};
+	PresenceMessage.encode = Message.encode;
+	PresenceMessage.decode = Message.decode;
 
 	PresenceMessage.fromResponseBody = function(encoded, options, format) {
 		if(format)
@@ -2125,9 +2070,7 @@ var PresenceMessage = (function() {
 	};
 
 	PresenceMessage.fromValues = function(values) {
-		var result = Utils.mixin(new PresenceMessage(), values);
-		result.clientData = Data.toData(result.clientData);
-		return result;
+		return Utils.mixin(new PresenceMessage(), values);
 	};
 
 	PresenceMessage.fromValuesArray = function(values) {
@@ -4800,22 +4743,22 @@ var Presence = (function() {
 	}
 	Utils.inherits(Presence, EventEmitter);
 
-	Presence.prototype.enter = function(clientData, callback) {
-		if (!callback && (typeof(clientData)==='function')) {
-			callback = clientData;
-			clientData = '';
+	Presence.prototype.enter = function(data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
 		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this.enterClient(this.clientId, clientData, callback);
+		this.enterClient(this.clientId, data, callback);
 	};
 
-	Presence.prototype.enterClient = function(clientId, clientData, callback) {
+	Presence.prototype.enterClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
 			clientId : clientId,
-			clientData: Data.toData(clientData)
+			data: data
 		});
 		var channel = this.channel;
 		switch(channel.state) {
