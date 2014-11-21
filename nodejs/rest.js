@@ -28,7 +28,7 @@ includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
 includeScript('./lib/util/crypto.js');
-includeScript('../common/lib/types/data.js');
+includeScript('../common/lib/types/errorinfo.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
 includeScript('../common/lib/client/resource.js');
