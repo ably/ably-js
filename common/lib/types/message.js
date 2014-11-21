@@ -36,13 +36,17 @@ var Message = (function() {
 	};
 
 	Message.encrypt = function(msg, options) {
-		var data = msg.data, encoding = msg.encoding;
+		var data = msg.data,
+			encoding = msg.encoding,
+			cipher = options.cipher;
+
+		encoding = encoding ? (encoding + '/') : '';
 		if(!BufferUtils.isBuffer(data)) {
 			data = Crypto.Data.utf8Encode(String(data));
-			encoding = encoding ? (encoding + '/utf-8') : 'utf-8';
+			encoding = encoding + 'utf-8/';
 		}
-		msg.data = options.cipher.encrypt(data);
-		msg.encoding = encoding ? (encoding + '/cipher') : 'cipher';
+		msg.data = cipher.encrypt(data);
+		msg.encoding = encoding + 'cipher+' + cipher.algorithm;
 	};
 
 	Message.encode = function(msg, options) {
@@ -71,7 +75,7 @@ var Message = (function() {
 
 			try {
 				while((i = j) > 0) {
-					var match = xforms[--j].match(/([\-\w]+)(\+(\w+))?/);
+					var match = xforms[--j].match(/([\-\w]+)(\+([\w\-]+))?/);
 					if(!match) break;
 					var xform = match[1];
 					switch(xform) {
@@ -86,7 +90,13 @@ var Message = (function() {
 							continue;
 						case 'cipher':
 							if(options != null && options.encrypted) {
-								data = options.cipher.decrypt(data);
+								var xformAlgorithm = match[3], cipher = options.cipher;
+								/* don't attempt to decrypt unless the cipher params are compatible */
+								if(xformAlgorithm != cipher.algorithm) {
+									Logger.logAction(Logger.LOG_ERROR, 'Message.decode()', 'Unable to decrypt message with given cipher; incompatible cipher params');
+									break;
+								}
+								data = cipher.decrypt(data);
 								continue;
 							}
 						default:
