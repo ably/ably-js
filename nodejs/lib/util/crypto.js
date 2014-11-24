@@ -121,19 +121,6 @@ var Crypto = (function() {
 	};
 
 	/**
-	 * A class that encapsulates the payload of an encrypted message. The
-	 * message payload is a combination of the ciphertext (including prepended
-	 * IV) and a type, used when reconstructing a payload value from recovered
-	 * plaintext.
-	 *
-	 */
-	function CipherData(cipherData, type) {
-		this.cipherData = cipherData;
-		this.type = type;
-	}
-	Crypto.CipherData = CipherData;
-
-	/**
 	 * Internal; get a ChannelCipher instance based on the given ChannelOptions
 	 * @param channelOpts a ChannelOptions instance
 	 * @param callback (err, cipher)
