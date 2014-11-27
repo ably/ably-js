@@ -38,7 +38,8 @@ var Resource = (function() {
 			}
 
 			var statusCode = body.statusCode,
-				response = body.response;
+				response = body.response,
+				headers = body.headers;
 
 			if(statusCode < 200 || statusCode >= 300) {
 				/* handle wrapped errors */
