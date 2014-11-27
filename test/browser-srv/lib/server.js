@@ -30,7 +30,7 @@ var external = {
 };
 
 var startsWith = function(string, substr) {
-	return string.substr(0, substr.length) == substr;
+	return string.indexOf(substr) == 0;
 };
 
 var endsWith = function(string, substr) {
@@ -103,7 +103,11 @@ exports.start = function(opts, callback) {
 		res.writeHead(404, corsResponseHeaders());
 		res.end('404 - file missing');
 	};
-	var res200 = function(res, type, text) {
+	var res200 = function(res, type, text, params) {
+		if(type == 'application/json' && params && params.callback) {
+			type = 'application/javascript';
+			text = params.callback + '(' + text + ')';
+		}
 		res.writeHead(200, mixin({'Content-Type': type}, corsResponseHeaders()));
 		res.end(text);
 	};
@@ -154,7 +158,6 @@ exports.start = function(opts, callback) {
 			resOptions(response);
 			return;
 		}
-
 		if(req == 'exit') {
 			res200(response, 'text/plain', 'exiting...');
 			process.nextTick(function() {
@@ -165,10 +168,7 @@ exports.start = function(opts, callback) {
 			return;
 		}
 		if(req == 'testvars') {
-			if(params.callback)
-				res200(response, 'application/javascript', params.callback + '(' + JSON.stringify(testvars) + ');');
-			else
-				res200(response, 'application/json', JSON.stringify(testvars, null, '\t'));
+			res200(response, 'application/json', JSON.stringify(testvars), params);
 			return;
 		}
 		for (var externalFileId in external) {
@@ -195,29 +195,28 @@ exports.start = function(opts, callback) {
 				} else {
 					testAccount.startedAt = new Date().getTime();
 					testAccounts[testAccount.acctId] = testAccount;
-					res200(response, 'application/json', JSON.stringify(testAccount));
+					res200(response, 'application/json', JSON.stringify(testAccount), params);
 				}
 			});
 			return;
 		}
 		if(startsWith(req, 'test/')) {
 			/* return test file */
-			if (startsWith(req, 'test/compat/'))
-				var filename = path.normalize(__dirname + '/../../compat/' + req.substr('test/compat/'.length));
-			else
-				var filename = path.normalize(__dirname + '/../../browser/' + req.substr('test/'.length));
+			var filename;
+			['test/compat/', 'test/rest/', 'test/realtime/'].forEach(function(dir) {
+				if (startsWith(req, dir))
+					filename = path.normalize(__dirname + '/../../../' + req);
+			});
+			if(!filename)
+				filename = path.normalize(__dirname + '/../../browser/' + req.substr('test/'.length));
+
 			var readFileCallback = function(err, file) {
 				if(err) {
 					res500(response, err);
 					return;
 				}
 				if(endsWith(filename, '.ejs')) file = ejs.render(file.toString(), { filename: filename });
-				var type = guessContentType(filename);
-				if(type == 'application/json' && params.callback) {
-					type = 'application/javascript';
-					file = params.callback + '(' + file + ');';
-				}
-				res200(response, type, file);
+				res200(response, guessContentType(filename), file, params);
 			};
 			if (existsSync(filename) && fs.statSync(filename).isFile()) {
 				fs.readFile(filename, readFileCallback);
