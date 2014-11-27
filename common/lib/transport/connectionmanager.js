@@ -3,7 +3,6 @@ var ConnectionManager = (function() {
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
-	var supportsBinary = BufferUtils.supportsBinary;
 	var actions = ProtocolMessage.Action;
 
 	var noop = function() {};
