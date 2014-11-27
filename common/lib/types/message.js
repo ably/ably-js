@@ -24,7 +24,7 @@ var Message = (function() {
 
 		/* encode to base64 if we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
+		 * call if it has a non-empty arguments list */
 		var data = this.data;
 		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
@@ -35,6 +35,30 @@ var Message = (function() {
 		return result;
 	};
 
+	Message.prototype.toString = function() {
+		var result = '[Message';
+		if(this.name)
+			result += '; name=' + this.name;
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.timestamp)
+			result += '; timestamp=' + this.timestamp;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.encoding)
+			result += '; encoding=' + this.encoding;
+		if(this.data) {
+			if (typeof(data) == 'string')
+				result += '; data=' + this.data;
+			else if (BufferUtils.isBuffer(this.data))
+				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+			else
+				result += '; data (json)=' + JSON.stringify(this.data);
+		}
+		result += ']';
+		return result;
+	};
+
 	Message.encrypt = function(msg, options) {
 		var data = msg.data,
 			encoding = msg.encoding,
@@ -42,7 +66,7 @@ var Message = (function() {
 
 		encoding = encoding ? (encoding + '/') : '';
 		if(!BufferUtils.isBuffer(data)) {
-			data = Crypto.Data.utf8Encode(String(data));
+			data = BufferUtils.utf8Encode(String(data));
 			encoding = encoding + 'utf-8/';
 		}
 		msg.data = cipher.encrypt(data);
@@ -83,7 +107,7 @@ var Message = (function() {
 							data = BufferUtils.base64Decode(String(data));
 							continue;
 						case 'utf-8':
-							data = Crypto.Data.utf8Decode(data);
+							data = BufferUtils.utf8Decode(data);
 							continue;
 						case 'json':
 							data = JSON.parse(data);
