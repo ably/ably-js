@@ -1,4 +1,6 @@
 var Resource = (function() {
+	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+
 	function Resource() {}
 
 	function withAuthDetails(rest, headers, params, errCallback, opCallback) {
@@ -19,16 +21,24 @@ var Resource = (function() {
 		}
 	}
 
-	function unenvelope(callback) {
-		return function(err, res) {
+	function unenvelope(callback, format) {
+		return function(err, body, headers, unpacked) {
 			if(err) {
 				callback(err);
 				return;
 			}
 
-			var statusCode = res.statusCode,
-				response = res.response,
-				headers = res.headers;
+			if(!unpacked) {
+				try {
+					body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(body);
+				} catch(e) {
+					callback(e);
+					return;
+				}
+			}
+
+			var statusCode = body.statusCode,
+				response = body.response;
 
 			if(statusCode < 200 || statusCode >= 300) {
 				/* handle wrapped errors */
@@ -47,8 +57,8 @@ var Resource = (function() {
 
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
 		if(envelope) {
-			callback = (callback && unenvelope(callback));
-			(origparams = (origparams || {}))['envelope'] = 'true';
+			callback = (callback && unenvelope(callback, envelope));
+			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
 		function doGet(headers, params) {
@@ -73,8 +83,8 @@ var Resource = (function() {
 
 	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
 		if(envelope) {
-			callback = unenvelope(callback);
-			origparams['envelope'] = 'true';
+			callback = unenvelope(callback, envelope);
+			origparams['envelope'] = envelope;
 		}
 
 		function doPost(headers, params) {
