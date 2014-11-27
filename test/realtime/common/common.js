@@ -43,9 +43,33 @@ exports.setup = function() {
 			xhr.send(options.body);
 		};
 		var toBase64 = Base64.encode;
+
+		var loadTestData = rExports.loadTestData = function(dataPath, callback) {
+			var getOptions = {
+				host: window.location.hostname,
+				port: window.location.port,
+				path: '/' + dataPath,
+				method: 'GET',
+				scheme: window.location.protocol.slice(0, -1),
+				headers: { 'Content-Type': 'application/json' }
+			};
+			httpReq(getOptions, function(err, data) {
+				try {
+					data = JSON.parse(data);
+				} catch(e) {
+					callback(e);
+					return;
+				}
+				callback(null, data);
+			});
+		};
+
 	} else {
+		var fs = require('fs');
 		var http = require('http');
 		var https = require('https');
+		var path = require('path');
+		var util = require('util');
 		var Ably = rExports.Ably = require('../../..');
 		var Rest = Ably.Rest;
 		var Realtime = Ably.Realtime;
@@ -74,8 +98,25 @@ exports.setup = function() {
 			});
 			request.on('error', function (err) { callback(err); });
 			request.end(body);
-		}
+		};
 		var toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+
+		var loadTestData = rExports.loadTestData = function(dataPath, callback) {
+			var resolvedPath = path.resolve(__dirname, '../../..', dataPath);
+			fs.readFile(resolvedPath, function(err, data) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				try {
+					data = JSON.parse(data);
+				} catch(e) {
+					callback(e);
+					return;
+				}
+				callback(null, data);
+			});
+		};
 	}
 
 	var restOpts = {
