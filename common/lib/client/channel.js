@@ -40,8 +40,8 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.rest,
-			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			options = this.options;
 
@@ -85,8 +85,8 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
-			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			options = this.channel.options;
 
@@ -110,8 +110,8 @@ var Channel = (function() {
 			}
 		}
 		var rest = this.channel.rest,
-			envelope = !Http.supportsLinkHeaders,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
 			options = this.channel.options;
 
