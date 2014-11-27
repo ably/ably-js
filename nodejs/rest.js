@@ -38,5 +38,6 @@ includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/rest.js');
 
 var Rest = module.exports = context.Rest;
+Rest.BufferUtils = context.BufferUtils;
 Rest.Crypto = context.Crypto;
 Rest.Http = context.Http;

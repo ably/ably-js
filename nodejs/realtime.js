@@ -51,6 +51,7 @@ includeScript('../common/lib/client/realtime.js');
 includeScript('./lib/transport/nodecomettransport.js');
 
 var Realtime = module.exports = context.Realtime;
+Realtime.BufferUtils = context.BufferUtils;
 Realtime.Crypto = context.Crypto;
 Realtime.Http = context.Http;
 Realtime.Message = context.Message;
