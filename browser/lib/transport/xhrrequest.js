@@ -128,7 +128,9 @@ var XHRRequest = (function() {
 
 		function onEnd() {
 			try {
-				var json = (xhr.responseType == 'text');
+				var contentType = getContentType(xhr),
+					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
+
 				responseBody = json ? xhr.responseText : xhr.response;
 				if(!responseBody) {
 					if(status != 204) {
