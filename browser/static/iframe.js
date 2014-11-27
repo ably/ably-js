@@ -664,15 +664,17 @@ var XHRRequest = (function() {
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
-			contentType = 'application/json',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			self = this;
 
-		headers['accept'] = (headers['accept'] || contentType);
+		if(!headers['accept']) {
+			headers['accept'] = 'application/json';
+		}
 		if(body) {
-			if(typeof(body) == 'object') body = JSON.stringify(body);
-			headers['content-type'] = (headers['content-type'] || contentType);
+			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
+			if(contentType == 'application/json' && typeof(body) != 'string')
+				body = JSON.stringify(body);
 		}
 
 		xhr.open(method, this.uri, true);

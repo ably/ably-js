@@ -30,13 +30,20 @@ var ConnectionError = {
 };
 
 var BufferUtils = (function() {
+	var CryptoJS = window.CryptoJS;
+	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
+	var ArrayBuffer = window.ArrayBuffer;
+	var TextDecoder = window.TextDecoder;
+
+	function isWordArray(ob) { return ob.sigBytes !== undefined; }
+	function isArrayBuffer(ob) { return ob.constructor === ArrayBuffer; }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
-	function arrayBufferToBase64(arrayBuffer) {
+	function arrayBufferToBase64(ArrayBuffer) {
 		var base64    = ''
 		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-		var bytes         = new Uint8Array(arrayBuffer)
+		var bytes         = new Uint8Array(ArrayBuffer)
 		var byteLength    = bytes.byteLength
 		var byteRemainder = byteLength % 3
 		var mainLength    = byteLength - byteRemainder
@@ -97,15 +104,57 @@ var BufferUtils = (function() {
 
 	function BufferUtils() {}
 
-	BufferUtils.supportsBuffer = ('ArrayBuffer' in window);
+	BufferUtils.supportsBinary = !!TextDecoder;
 
-	BufferUtils.supportsBinary = ('TextDecoder' in window);
+	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
-	BufferUtils.isBuffer = function(buf) { return Object.prototype.toString.call(buf) == '[object ArrayBuffer]'; };
+	BufferUtils.toWordArray = function(buf) {
+		if(isArrayBuffer(buf))
+			buf = WordArray.create(buf);
+		return buf;
+	};
 
-	BufferUtils.base64Encode = arrayBufferToBase64;
+	BufferUtils.base64Encode = function(buf) {
+		if(isArrayBuffer(buf))
+			return arrayBufferToBase64(buf);
+		if(isWordArray(buf))
+			return CryptoJS.enc.Base64.stringify(buf);
+	};
 
-	BufferUtils.base64Decode = base64ToArrayBuffer;
+	BufferUtils.base64Decode = function(str) {
+		if(ArrayBuffer)
+			return base64ToArrayBuffer(str);
+
+		if(CryptoJS)
+			return CryptoJS.enc.Base64.parse(str);
+	};
+
+	BufferUtils.utf8Encode = function(string) {
+		if(CryptoJS)
+			return CryptoJS.enc.Utf8.parse(string);
+	};
+
+	BufferUtils.utf8Decode = function(buf) {
+		if(CryptoJS)
+			return CryptoJS.enc.Utf8.stringify(buf);
+	};
+
+	BufferUtils.bufferCompare = function(buf1, buf2) {
+		if(!buf1) return -1;
+		if(!buf2) return 1;
+		buf1 = BufferUtils.toWordArray(buf1);
+		buf2 = BufferUtils.toWordArray(buf2);
+		buf1.clamp(); buf2.clamp();
+
+		var cmp = buf1.sigBytes - buf2.sigBytes;
+		if(cmp != 0) return cmp;
+		buf1 = buf1.words; buf2 = buf2.words;
+		for(var i = 0; i < buf1.length; i++) {
+			cmp = buf1[i] - buf2[i];
+			if(cmp != 0) return cmp;
+		}
+		return 0;
+	};
 
 	return BufferUtils;
 })();
@@ -311,6 +360,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
+	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
 
 	/**
 	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
@@ -455,19 +505,6 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	/**
-	 * A class that encapsulates the payload of an encrypted message. The
-	 * message payload is a combination of the ciphertext (including prepended
-	 * IV) and a type, used when reconstructing a payload value from recovered
-	 * plaintext.
-	 *
-	 */
-	function CipherData(cipherData, type) {
-		this.cipherData = cipherData;
-		this.type = type;
-	}
-	Crypto.CipherData = CipherData;
-
-	/**
 	 * Internal; get a ChannelCipher instance based on the given ChannelOptions
 	 * @param channelOpts a ChannelOptions instance
 	 * @param callback (err, cipher)
@@ -491,15 +528,17 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
-		var key = this.key = params.key;
-		var iv = this.iv = params.iv;
-		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });
+		this.algorithm = params.algorithm + '-cbc';
+		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
+		var key = this.key = BufferUtils.toWordArray(params.key);
+		var iv = this.iv = BufferUtils.toWordArray(params.iv);
+		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
 		this.blockLengthWords = iv.words.length;
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+		plaintext = BufferUtils.toWordArray(plaintext);
 		//console.log('encrypt: plaintext:');
 		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
@@ -514,6 +553,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
+		ciphertext = BufferUtils.toWordArray(ciphertext);
 		//console.log('decrypt: ciphertext:');
 		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
@@ -521,7 +561,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			iv = CryptoJS.lib.WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
 			ciphertextBody = CryptoJS.lib.WordArray.create(ciphertextWords.slice(blockLengthWords));
 
-		var decryptCipher = CryptoJS.algo[this.algorithm].createDecryptor(this.key, { iv: iv });
+		var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
 		var plaintext = decryptCipher.process(ciphertextBody);
 		var epilogue = decryptCipher.finalize();
 		decryptCipher.reset();
@@ -538,24 +578,6 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 		var result = this.iv;
 		this.iv = null;
 		return result;
-	};
-
-	var Data = Crypto.Data = {};
-
-	Data.asBase64 = function(ciphertext) {
-		return CryptoJS.enc.Base64.stringify(ciphertext);
-	};
-
-	Data.fromBase64 = function(encoded) {
-		return CryptoJS.enc.Base64.parse(encoded);
-	};
-
-	Data.utf8Encode = function(string) {
-		return CryptoJS.enc.Utf8.parse(string);
-	};
-
-	Data.utf8Decode = function(buf) {
-		return CryptoJS.enc.Utf8.stringify(buf);
 	};
 
 	return Crypto;
@@ -1900,7 +1922,7 @@ var Message = (function() {
 
 		/* encode to base64 if we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
+		 * call if it has a non-empty arguments list */
 		var data = this.data;
 		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
@@ -1911,14 +1933,42 @@ var Message = (function() {
 		return result;
 	};
 
-	Message.encrypt = function(msg, options) {
-		var data = msg.data, encoding = msg.encoding;
-		if(!BufferUtils.isBuffer(data)) {
-			data = Crypto.Data.utf8Encode(String(data));
-			encoding = encoding ? (encoding + '/utf-8') : 'utf-8';
+	Message.prototype.toString = function() {
+		var result = '[Message';
+		if(this.name)
+			result += '; name=' + this.name;
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.timestamp)
+			result += '; timestamp=' + this.timestamp;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.encoding)
+			result += '; encoding=' + this.encoding;
+		if(this.data) {
+			if (typeof(data) == 'string')
+				result += '; data=' + this.data;
+			else if (BufferUtils.isBuffer(this.data))
+				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+			else
+				result += '; data (json)=' + JSON.stringify(this.data);
 		}
-		msg.data = options.cipher.encrypt(data);
-		msg.encoding = encoding ? (encoding + '/cipher') : 'cipher';
+		result += ']';
+		return result;
+	};
+
+	Message.encrypt = function(msg, options) {
+		var data = msg.data,
+			encoding = msg.encoding,
+			cipher = options.cipher;
+
+		encoding = encoding ? (encoding + '/') : '';
+		if(!BufferUtils.isBuffer(data)) {
+			data = BufferUtils.utf8Encode(String(data));
+			encoding = encoding + 'utf-8/';
+		}
+		msg.data = cipher.encrypt(data);
+		msg.encoding = encoding + 'cipher+' + cipher.algorithm;
 	};
 
 	Message.encode = function(msg, options) {
@@ -1947,7 +1997,7 @@ var Message = (function() {
 
 			try {
 				while((i = j) > 0) {
-					var match = xforms[--j].match(/([\-\w]+)(\+(\w+))?/);
+					var match = xforms[--j].match(/([\-\w]+)(\+([\w\-]+))?/);
 					if(!match) break;
 					var xform = match[1];
 					switch(xform) {
@@ -1955,14 +2005,20 @@ var Message = (function() {
 							data = BufferUtils.base64Decode(String(data));
 							continue;
 						case 'utf-8':
-							data = Crypto.Data.utf8Decode(data);
+							data = BufferUtils.utf8Decode(data);
 							continue;
 						case 'json':
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
 							if(options != null && options.encrypted) {
-								data = options.cipher.decrypt(data);
+								var xformAlgorithm = match[3], cipher = options.cipher;
+								/* don't attempt to decrypt unless the cipher params are compatible */
+								if(xformAlgorithm != cipher.algorithm) {
+									Logger.logAction(Logger.LOG_ERROR, 'Message.decode()', 'Unable to decrypt message with given cipher; incompatible cipher params');
+									break;
+								}
+								data = cipher.decrypt(data);
 								continue;
 							}
 						default:
@@ -2051,6 +2107,28 @@ var PresenceMessage = (function() {
 		return result;
 	};
 
+	PresenceMessage.prototype.toString = function() {
+		var result = '[PresenceMessage';
+		result += '; action=' + this.action;
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.timestamp)
+			result += '; timestamp=' + this.timestamp;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.encoding)
+			result += '; encoding=' + this.encoding;
+		if(this.data) {
+			if (typeof(data) == 'string')
+				result += '; data=' + this.data;
+			else if (BufferUtils.isBuffer(this.data))
+				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+			else
+				result += '; data (json)=' + JSON.stringify(this.data);
+		}
+		result += ']';
+		return result;
+	};
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
@@ -2150,7 +2228,6 @@ var ConnectionManager = (function() {
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
-	var supportsBinary = BufferUtils.supportsBinary;
 	var actions = ProtocolMessage.Action;
 
 	var noop = function() {};
@@ -5069,15 +5146,17 @@ var XHRRequest = (function() {
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
-			contentType = 'application/json',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			self = this;
 
-		headers['accept'] = (headers['accept'] || contentType);
+		if(!headers['accept']) {
+			headers['accept'] = 'application/json';
+		}
 		if(body) {
-			if(typeof(body) == 'object') body = JSON.stringify(body);
-			headers['content-type'] = (headers['content-type'] || contentType);
+			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
+			if(contentType == 'application/json' && typeof(body) != 'string')
+				body = JSON.stringify(body);
 		}
 
 		xhr.open(method, this.uri, true);
@@ -5636,6 +5715,8 @@ var IframeTransport = (function() {
 
 window.Ably.Realtime = Realtime;
 Realtime.ConnectionManager = ConnectionManager;
-Realtime.Crypto = Crypto;
-Rest.Crypto = Crypto;
+Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
+Realtime.Crypto = Rest.Crypto = Crypto;
+Realtime.Message = Rest.Message = Message;
+Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 })();
