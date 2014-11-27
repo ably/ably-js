@@ -4,6 +4,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
+	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
 
 	/**
 	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
@@ -171,15 +172,17 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	};
 
 	function CBCCipher(params) {
-		var algorithm = this.algorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
-		var key = this.key = params.key;
-		var iv = this.iv = params.iv;
-		this.encryptCipher = CryptoJS.algo[algorithm].createEncryptor(key, { iv: iv });
+		this.algorithm = params.algorithm + '-cbc';
+		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
+		var key = this.key = BufferUtils.toWordArray(params.key);
+		var iv = this.iv = BufferUtils.toWordArray(params.iv);
+		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
 		this.blockLengthWords = iv.words.length;
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+		plaintext = BufferUtils.toWordArray(plaintext);
 		//console.log('encrypt: plaintext:');
 		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
@@ -194,6 +197,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
+		ciphertext = BufferUtils.toWordArray(ciphertext);
 		//console.log('decrypt: ciphertext:');
 		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
@@ -201,7 +205,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			iv = CryptoJS.lib.WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
 			ciphertextBody = CryptoJS.lib.WordArray.create(ciphertextWords.slice(blockLengthWords));
 
-		var decryptCipher = CryptoJS.algo[this.algorithm].createDecryptor(this.key, { iv: iv });
+		var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
 		var plaintext = decryptCipher.process(ciphertextBody);
 		var epilogue = decryptCipher.finalize();
 		decryptCipher.reset();
@@ -218,24 +222,6 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 		var result = this.iv;
 		this.iv = null;
 		return result;
-	};
-
-	var Data = Crypto.Data = {};
-
-	Data.asBase64 = function(ciphertext) {
-		return CryptoJS.enc.Base64.stringify(ciphertext);
-	};
-
-	Data.fromBase64 = function(encoded) {
-		return CryptoJS.enc.Base64.parse(encoded);
-	};
-
-	Data.utf8Encode = function(string) {
-		return CryptoJS.enc.Utf8.parse(string);
-	};
-
-	Data.utf8Decode = function(buf) {
-		return CryptoJS.enc.Utf8.stringify(buf);
 	};
 
 	return Crypto;

@@ -1,11 +1,18 @@
 var BufferUtils = (function() {
+	var CryptoJS = window.CryptoJS;
+	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
+	var ArrayBuffer = window.ArrayBuffer;
+	var TextDecoder = window.TextDecoder;
+
+	function isWordArray(ob) { return ob.sigBytes !== undefined; }
+	function isArrayBuffer(ob) { return ob.constructor === ArrayBuffer; }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
-	function arrayBufferToBase64(arrayBuffer) {
+	function arrayBufferToBase64(ArrayBuffer) {
 		var base64    = ''
 		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-		var bytes         = new Uint8Array(arrayBuffer)
+		var bytes         = new Uint8Array(ArrayBuffer)
 		var byteLength    = bytes.byteLength
 		var byteRemainder = byteLength % 3
 		var mainLength    = byteLength - byteRemainder
@@ -66,15 +73,57 @@ var BufferUtils = (function() {
 
 	function BufferUtils() {}
 
-	BufferUtils.supportsBuffer = ('ArrayBuffer' in window);
+	BufferUtils.supportsBinary = !!TextDecoder;
 
-	BufferUtils.supportsBinary = ('TextDecoder' in window);
+	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
-	BufferUtils.isBuffer = function(buf) { return Object.prototype.toString.call(buf) == '[object ArrayBuffer]'; };
+	BufferUtils.toWordArray = function(buf) {
+		if(isArrayBuffer(buf))
+			buf = WordArray.create(buf);
+		return buf;
+	};
 
-	BufferUtils.base64Encode = arrayBufferToBase64;
+	BufferUtils.base64Encode = function(buf) {
+		if(isArrayBuffer(buf))
+			return arrayBufferToBase64(buf);
+		if(isWordArray(buf))
+			return CryptoJS.enc.Base64.stringify(buf);
+	};
 
-	BufferUtils.base64Decode = base64ToArrayBuffer;
+	BufferUtils.base64Decode = function(str) {
+		if(ArrayBuffer)
+			return base64ToArrayBuffer(str);
+
+		if(CryptoJS)
+			return CryptoJS.enc.Base64.parse(str);
+	};
+
+	BufferUtils.utf8Encode = function(string) {
+		if(CryptoJS)
+			return CryptoJS.enc.Utf8.parse(string);
+	};
+
+	BufferUtils.utf8Decode = function(buf) {
+		if(CryptoJS)
+			return CryptoJS.enc.Utf8.stringify(buf);
+	};
+
+	BufferUtils.bufferCompare = function(buf1, buf2) {
+		if(!buf1) return -1;
+		if(!buf2) return 1;
+		buf1 = BufferUtils.toWordArray(buf1);
+		buf2 = BufferUtils.toWordArray(buf2);
+		buf1.clamp(); buf2.clamp();
+
+		var cmp = buf1.sigBytes - buf2.sigBytes;
+		if(cmp != 0) return cmp;
+		buf1 = buf1.words; buf2 = buf2.words;
+		for(var i = 0; i < buf1.length; i++) {
+			cmp = buf1[i] - buf2[i];
+			if(cmp != 0) return cmp;
+		}
+		return 0;
+	};
 
 	return BufferUtils;
 })();

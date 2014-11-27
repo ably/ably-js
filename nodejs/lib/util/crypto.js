@@ -188,23 +188,5 @@ var Crypto = (function() {
 		return result;
 	};
 
-	var Data = Crypto.Data = {};
-
-	Data.asBase64 = function(ciphertext) {
-		return ciphertext.toString('base64');
-	};
-
-	Data.fromBase64 = function(encoded) {
-		return new Buffer(encoded, 'base64');
-	};
-
-	Data.utf8Encode = function(string) {
-		return new Buffer(string, 'utf8');
-	};
-
-	Data.utf8Decode = function(buf) {
-		return buf.toString('utf8');
-	};
-
 	return Crypto;
 })();
