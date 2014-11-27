@@ -54,7 +54,7 @@ var Rest = (function() {
 			}
 		}
 		var headers = Utils.copy(Utils.defaultGetHeaders()),
-			envelope = !Http.supportsLinkHeaders;
+			envelope = Http.supportsLinkHeaders ? undefined : 'json';
 
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
