@@ -666,19 +666,25 @@ var XHRRequest = (function() {
 			method = body ? 'POST' : 'GET',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
-			self = this;
+			self = this,
+			accept = headers['accept'],
+			responseType = 'text';
 
-		if(!headers['accept']) {
+		if(!accept)
 			headers['accept'] = 'application/json';
-		}
+		else if(accept != 'application/json')
+			responseType = 'arraybuffer';
+
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
 			if(contentType == 'application/json' && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
 
+		xhr.responseType = responseType;
 		xhr.open(method, this.uri, true);
 		xhr.withCredentials = 'true';
+
 		for(var h in headers)
 			xhr.setRequestHeader(h, headers[h]);
 
@@ -717,8 +723,11 @@ var XHRRequest = (function() {
 
 		function onEnd() {
 			try {
-				responseBody = xhr.responseText;
-				if(!responseBody || !responseBody.length) {
+				var contentType = getContentType(xhr),
+					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
+
+				responseBody = json ? xhr.responseText : xhr.response;
+				if(!responseBody) {
 					if(status != 204) {
 						err = new Error('Incomplete response body from server');
 						err.statusCode = 400;
@@ -727,7 +736,6 @@ var XHRRequest = (function() {
 					return;
 				}
 
-				var json = ((contentType = getContentType(xhr)) == 'application/json');
 				if(json) {
 					responseBody = JSON.parse(String(responseBody));
 					unpacked = true;
