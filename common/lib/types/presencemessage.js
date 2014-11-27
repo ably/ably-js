@@ -45,6 +45,28 @@ var PresenceMessage = (function() {
 		return result;
 	};
 
+	PresenceMessage.prototype.toString = function() {
+		var result = '[PresenceMessage';
+		result += '; action=' + this.action;
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.timestamp)
+			result += '; timestamp=' + this.timestamp;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.encoding)
+			result += '; encoding=' + this.encoding;
+		if(this.data) {
+			if (typeof(data) == 'string')
+				result += '; data=' + this.data;
+			else if (BufferUtils.isBuffer(this.data))
+				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+			else
+				result += '; data (json)=' + JSON.stringify(this.data);
+		}
+		result += ']';
+		return result;
+	};
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
