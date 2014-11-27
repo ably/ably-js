@@ -5,7 +5,9 @@ exports.setup = function(base) {
 	var rest = base.rest;
 	var containsValue = base.containsValue;
 	var displayError = base.displayError;
+	var BufferUtils = base.Ably.Realtime.BufferUtils;
 	var Crypto = base.Ably.Realtime.Crypto;
+	var Message = base.Ably.Realtime.Message;
 
 	if (base.isBrowser)
 		var async = window.async;
@@ -15,6 +17,197 @@ exports.setup = function(base) {
 	function attachChannels(channels, callback) {
 		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
 	}
+
+	function compareMessage(one, two) {
+		if(one.encoding != two.encoding) return false;
+		if(typeof(one.data) == 'string' && typeof(two.data) == 'string') {
+			return one.data == two.data;
+		}
+		if(BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+			return (BufferUtils.bufferCompare(one.data, two.data) == 0);
+		}
+		return JSON.stringify(one.data) == JSON.stringify(two.data);
+	}
+
+	rExports.encrypt_message_128 = function(test) {
+		base.loadTestData('test/realtime/common/assets/crypto-data-128.json', function(err, testData) {
+			if(err) {
+				test.fail('Unable to get test assets; err = ' + err);
+				return;
+			}
+			var realtime = base.realtime({
+				//log: {level: 4},
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['web_socket']
+			});
+			var channel = realtime.channels.get('encrypt_message_128');
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			Crypto.getDefaultParams(key, function(err, params) {
+				if(err) {
+					realtime.close();
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				params.iv = iv;
+
+				test.expect(testData.items.length);
+				for(var i = 0; i < testData.items.length; i++) {
+					var item = testData.items[i];
+
+					/* read messages from test data */
+					var testMessage = Message.fromValues(item.encoded);
+					var encryptedMessage = Message.fromValues(item.encrypted);
+					/* decode (ie remove any base64 encoding) */
+					Message.decode(testMessage);
+					Message.decode(encryptedMessage);
+					/* reset channel cipher, to ensure it uses the given iv */
+					channel.setOptions({encrypted:true, cipherParams: params});
+					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+					Message.encode(testMessage, channel.options);
+					/* compare */
+					test.ok(compareMessage(testMessage, encryptedMessage));
+				}
+				test.done();
+				realtime.close();
+			});
+		});
+	};
+
+	rExports.encrypt_message_256 = function(test) {
+		base.loadTestData('test/realtime/common/assets/crypto-data-256.json', function(err, testData) {
+			if(err) {
+				test.fail('Unable to get test assets; err = ' + err);
+				return;
+			}
+			var realtime = base.realtime({
+				//log: {level: 4},
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['web_socket']
+			});
+			var channel = realtime.channels.get('encrypt_message_256');
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			Crypto.getDefaultParams(key, function(err, params) {
+				if(err) {
+					realtime.close();
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				params.iv = iv;
+
+				test.expect(testData.items.length);
+				for(var i = 0; i < testData.items.length; i++) {
+					var item = testData.items[i];
+
+					/* read messages from test data */
+					var testMessage = Message.fromValues(item.encoded);
+					var encryptedMessage = Message.fromValues(item.encrypted);
+					/* decode (ie remove any base64 encoding) */
+					Message.decode(testMessage);
+					Message.decode(encryptedMessage);
+					/* reset channel cipher, to ensure it uses the given iv */
+					channel.setOptions({encrypted:true, cipherParams: params});
+					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+					Message.encode(testMessage, channel.options);
+					/* compare */
+					test.ok(compareMessage(testMessage, encryptedMessage));
+				}
+				test.done();
+				realtime.close();
+			});
+		});
+	};
+
+	rExports.decrypt_message_128 = function(test) {
+		base.loadTestData('test/realtime/common/assets/crypto-data-128.json', function(err, testData) {
+			if(err) {
+				test.fail('Unable to get test assets; err = ' + err);
+				return;
+			}
+			var realtime = base.realtime({
+				//log: {level: 4},
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['web_socket']
+			});
+			var channel = realtime.channels.get('decrypt_message_128');
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			Crypto.getDefaultParams(key, function(err, params) {
+				if(err) {
+					realtime.close();
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				channel.setOptions({encrypted:true, cipherParams: params});
+
+				test.expect(testData.items.length);
+				for(var i = 0; i < testData.items.length; i++) {
+					var item = testData.items[i];
+
+					/* read messages from test data */
+					var testMessage = Message.fromValues(item.encoded);
+					var encryptedMessage = Message.fromValues(item.encrypted);
+					/* decode (ie remove any base64 encoding) */
+					Message.decode(testMessage);
+					Message.decode(encryptedMessage);
+					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+					Message.decode(encryptedMessage, channel.options);
+					/* compare */
+					test.ok(compareMessage(testMessage, encryptedMessage));
+				}
+				test.done();
+				realtime.close();
+			});
+		});
+	};
+
+	rExports.decrypt_message_256 = function(test) {
+		base.loadTestData('test/realtime/common/assets/crypto-data-256.json', function(err, testData) {
+			if(err) {
+				test.fail('Unable to get test assets; err = ' + err);
+				return;
+			}
+			var realtime = base.realtime({
+				//log: {level: 4},
+				key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
+				transports: ['web_socket']
+			});
+			var channel = realtime.channels.get('decrypt_message_256');
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			Crypto.getDefaultParams(key, function(err, params) {
+				if(err) {
+					realtime.close();
+					test.fail('Unable to get cipher params; err = ' + e);
+					return;
+				}
+				channel.setOptions({encrypted:true, cipherParams: params});
+
+				test.expect(testData.items.length);
+				for(var i = 0; i < testData.items.length; i++) {
+					var item = testData.items[i];
+
+					/* read messages from test data */
+					var testMessage = Message.fromValues(item.encoded);
+					var encryptedMessage = Message.fromValues(item.encrypted);
+					/* decode (ie remove any base64 encoding) */
+					Message.decode(testMessage);
+					Message.decode(encryptedMessage);
+					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+					Message.decode(encryptedMessage, channel.options);
+					/* compare */
+					test.ok(compareMessage(testMessage, encryptedMessage));
+				}
+				test.done();
+				realtime.close();
+			});
+		});
+	};
 
 	/**
 	 * Publish and subscribe, binary transport
