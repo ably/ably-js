@@ -88,6 +88,7 @@
 
 			ably.connection.on('connected', function () {
 				connectionTimeout.stop();
+				connectionManager.send(Ably.Realtime.ProtocolMessage.fromValues({action: Ably.Realtime.ProtocolMessage.Action.HEARTBEAT}));
 				heartbeatTimeout = failWithin(25, test, ably, 'wait for heartbeat');
 			});
 			function exitOnState(state) {
