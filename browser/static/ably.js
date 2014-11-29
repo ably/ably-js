@@ -5738,4 +5738,5 @@ Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 Realtime.Crypto = Rest.Crypto = Crypto;
 Realtime.Message = Rest.Message = Message;
 Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
+Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
 })();
