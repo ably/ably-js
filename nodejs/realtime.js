@@ -56,3 +56,4 @@ Realtime.Crypto = context.Crypto;
 Realtime.Http = context.Http;
 Realtime.Message = context.Message;
 Realtime.PresenceMessage = context.PresenceMessage;
+Realtime.ProtocolMessage = context.ProtocolMessage;
