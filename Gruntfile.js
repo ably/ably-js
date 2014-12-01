@@ -5,7 +5,6 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-closure-compiler');
-	grunt.loadNpmTasks('grunt-contrib-compress');
 
 	var dirs = {
 		common: 'common',
@@ -149,22 +148,11 @@ module.exports = function (grunt) {
 			'iframe-js': compilerSpec('<%= dirs.static %>/iframe.js'),
 			'pubnub-js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
 			'pusher-js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
-		},
-		compress: {
-			main: {
-				options: {
-					mode: 'gzip'
-				},
-				expand: true,
-				cwd: dirs.static,
-				src: '*.{js,html}',
-				dest: dirs.static
-			}
 		}
 	});
 
 	grunt.registerTask('compiler', ['curl:compiler', 'unzip:compiler']);
-	grunt.registerTask('all', ['copy', 'concat', 'closure-compiler', 'compress']);
+	grunt.registerTask('all', ['copy', 'concat', 'closure-compiler']);
 	grunt.registerTask('default', 'all');
 };
 
