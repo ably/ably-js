@@ -53,18 +53,32 @@ var Channel = (function() {
 		})).get(callback);
 	};
 
-	Channel.prototype.publish = function(name, data, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Channel.publish()', 'channel = ' + this.name + '; name = ' + name);
-		callback = callback || noop;
-		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			msg = Message.fromValues({name:name, data:data}),
+	Channel.prototype.publish = function() {
+		var argCount = arguments.length,
+			messages = arguments[0],
+			callback = arguments[argCount - 1],
 			options = this.options;
 
-		var requestBody = Message.toRequestBody([msg], options, format);
-		var headers = Utils.copy(Utils.defaultPostHeaders(format));
+		if(typeof(callback) !== 'function') {
+			callback = noop;
+			++argCount;
+		}
+		if(argCount == 2) {
+			if(!Utils.isArray(messages))
+				messages = [messages];
+			messages = Message.fromValuesArray(messages);
+		} else {
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
+		}
+
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			requestBody = Message.toRequestBody(messages, this.options, format),
+			headers = Utils.copy(Utils.defaultPostHeaders(format));
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
 		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
 	};
 
