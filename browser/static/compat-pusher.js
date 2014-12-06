@@ -463,7 +463,7 @@ var Utils = (function() {
 		var tlsorigin = options.tlshost || '';
 		var encrypted = options.encrypted || false;
 		var opts = {
-			key: applicationKey, tls: encrypted//, log: {level:4}
+			key: applicationKey, tls: encrypted, log: {level:4}
 		};
 		if (options.ablyClientId) opts.clientId = options.ablyClientId;
 		if (options.authEndpoint) opts.authUrl = options.authEndpoint;
@@ -620,7 +620,7 @@ var Utils = (function() {
 
 		this.channel.subscribe(function(message) {
 			log('PusherChannel::message callback: Event object '+JSON.stringify(this)+', message '+JSON.stringify(message));
-			self.channel.emit(message.name, JSON.parse(message.data));
+			self.channel.emit(message.name, message.data);
 		});
 		this.bindings = {};
 		this.bind_alls = [];
@@ -744,8 +744,7 @@ var Utils = (function() {
 	 * whether or not the trigger was successful.
 	 */
 	PusherChannel.prototype.trigger = function(event, data) {
-		data = JSON.stringify(data);
-		log('PusherChannel::trigger: Event '+event+', data '+ data);
+		log('PusherChannel::trigger: Event '+event+', data '+JSON.stringify(data));
 		if (!this.active) { log('PusherChannel::trigger: Inactive'); return true; }
 		this.channel.publish(event, data);
 		return true;
