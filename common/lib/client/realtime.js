@@ -24,12 +24,12 @@ var Realtime = (function() {
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
 		if(!channelName) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event unspecified channel: ' + channelName);
+			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
 		var channel = this.attached[channelName];
 		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(channelmessage)', 'received event for non-existent channel: ' + channelName);
+			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
 			return;
 		}
 		channel.onMessage(msg);
