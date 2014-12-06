@@ -71,6 +71,7 @@ module.exports = function (grunt) {
 					'<%= dirs.browser %>/lib/util/cookie.js',
 					'<%= dirs.browser %>/lib/util/defaults.js',
 					'<%= dirs.browser %>/lib/util/http.js',
+					'<%= dirs.browser %>/lib/util/base64.js',
 					'<%= dirs.browser %>/lib/util/crypto.js',
 					'<%= dirs.browser %>/lib/util/domevent.js',
 					'<%= dirs.browser %>/lib/util/msgpack.js',
