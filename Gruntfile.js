@@ -13,7 +13,7 @@ module.exports = function (grunt) {
 		dest: 'browser/static',
 		compat: 'browser/compat',
 		ws_js: 'submodules/web-socket-js',
-		ably_common: 'submodules/ably-common',
+		crypto_js: 'node_modules/crypto-js',
 		tools_compiler: __dirname + '/tools/closure-compiler'
 	};
 
@@ -28,7 +28,7 @@ module.exports = function (grunt) {
 		};
 	}
 
-	grunt.initConfig({
+	var gruntConfig ={
 		dirs: dirs,
 		curl: {
 			'compiler': {
@@ -62,95 +62,129 @@ module.exports = function (grunt) {
 		},
 		concat: {
 			ably: {
-				src: [
-					'<%= dirs.browser %>/ably-prologue.js',
-
-					'<%= dirs.common %>/lib/transport/connectionerror.js',
-
-					'<%= dirs.browser %>/lib/util/bufferutils.js',
-					'<%= dirs.browser %>/lib/util/cookie.js',
-					'<%= dirs.browser %>/lib/util/defaults.js',
-					'<%= dirs.browser %>/lib/util/http.js',
-					'<%= dirs.browser %>/lib/util/base64.js',
-					'<%= dirs.browser %>/lib/util/crypto.js',
-					'<%= dirs.browser %>/lib/util/domevent.js',
-					'<%= dirs.browser %>/lib/util/msgpack.js',
-
-//					'<%= dirs.ws_js %>/swfobject.js',
-//					'<%= dirs.ws_js %>/web_socket.js',
-
-					'<%= dirs.common %>/lib/util/eventemitter.js',
-					'<%= dirs.common %>/lib/util/logger.js',
-					'<%= dirs.common %>/lib/util/utils.js',
-					'<%= dirs.common %>/lib/util/multicaster.js',
-
-					'<%= dirs.common %>/lib/types/message.js',
-					'<%= dirs.common %>/lib/types/presencemessage.js',
-					'<%= dirs.common %>/lib/types/protocolmessage.js',
-
-					'<%= dirs.common %>/lib/transport/connectionmanager.js',
-					'<%= dirs.common %>/lib/transport/transport.js',
-					'<%= dirs.common %>/lib/transport/websockettransport.js',
-					'<%= dirs.common %>/lib/transport/comettransport.js',
-
-					'<%= dirs.common %>/lib/client/resource.js',
-					'<%= dirs.common %>/lib/client/paginatedresource.js',
-					'<%= dirs.common %>/lib/client/auth.js',
-					'<%= dirs.common %>/lib/client/rest.js',
-					'<%= dirs.common %>/lib/client/realtime.js',
-					'<%= dirs.common %>/lib/client/connectionstatechange.js',
-					'<%= dirs.common %>/lib/client/connection.js',
-					'<%= dirs.common %>/lib/client/channel.js',
-					'<%= dirs.common %>/lib/client/realtimechannel.js',
-					'<%= dirs.common %>/lib/client/presence.js',
-
-					'<%= dirs.browser %>/lib/transport/jsonptransport.js',
-					'<%= dirs.browser %>/lib/transport/xhrrequest.js',
-					'<%= dirs.browser %>/lib/transport/xhrtransport.js',
-					'<%= dirs.browser %>/lib/transport/iframetransport.js',
-//					'<%= dirs.browser %>/lib/transport/flashtransport.js',
-
-					'<%= dirs.browser %>/ably-epilogue.js'
-				],
 				dest: '<%= dirs.dest %>/ably.js',
 				nonull: true
 			},
+			'ably.encryption': {
+				dest: '<%= dirs.dest %>/ably.encryption.js',
+				nonull: true
+			},
 			iframe: {
-				src: [
-					'<%= dirs.browser %>/prologue.js',
-					'<%= dirs.common %>/lib/util/eventemitter.js',
-					'<%= dirs.common %>/lib/util/logger.js',
-					'<%= dirs.common %>/lib/util/multicaster.js',
-					'<%= dirs.common %>/lib/util/utils.js',
-					'<%= dirs.common %>/lib/types/protocolmessage.js',
-					'<%= dirs.browser %>/lib/util/defaults.js',
-					'<%= dirs.browser %>/lib/util/domevent.js',
-					'<%= dirs.browser %>/lib/transport/xhrrequest.js',
-					'<%= dirs.browser %>/lib/transport/iframeagent.js',
-					'<%= dirs.browser %>/epilogue.js'
-				],
 				dest: '<%= dirs.dest %>/iframe.js',
 				nonull: true
 			},
 			pusher: {
-				src: [
-					'<%= dirs.browser %>/prologue.js',
-					'<%= dirs.common %>/lib/util/eventemitter.js',
-					'<%= dirs.common %>/lib/util/utils.js',
-					'<%= dirs.browser %>/compat/pusher.js',
-					'<%= dirs.browser %>/epilogue.js'
-				],
 				dest: '<%= dirs.dest %>/compat-pusher.js',
 				nonull: true
 			}
 		},
 		'closure-compiler': {
 			'ably-js': compilerSpec('<%= dirs.static %>/ably.js'),
+			'ably.encryption-js': compilerSpec('<%= dirs.static %>/ably.encryption.js'),
 			'iframe-js': compilerSpec('<%= dirs.static %>/iframe.js'),
 			'pubnub-js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
 			'pusher-js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
 		}
-	});
+	};
+
+	var ablyFiles = [
+		'<%= dirs.browser %>/lib/util/bufferutils.js',
+		'<%= dirs.browser %>/lib/util/cookie.js',
+		'<%= dirs.browser %>/lib/util/defaults.js',
+		'<%= dirs.browser %>/lib/util/http.js',
+		'<%= dirs.browser %>/lib/util/base64.js',
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+//		'<%= dirs.ws_js %>/swfobject.js',
+//		'<%= dirs.ws_js %>/web_socket.js',
+
+		'<%= dirs.common %>/lib/util/eventemitter.js',
+		'<%= dirs.common %>/lib/util/logger.js',
+		'<%= dirs.common %>/lib/util/utils.js',
+		'<%= dirs.common %>/lib/util/multicaster.js',
+
+		'<%= dirs.common %>/lib/types/message.js',
+		'<%= dirs.common %>/lib/types/presencemessage.js',
+		'<%= dirs.common %>/lib/types/protocolmessage.js',
+
+		'<%= dirs.common %>/lib/transport/connectionerror.js',
+		'<%= dirs.common %>/lib/transport/connectionmanager.js',
+		'<%= dirs.common %>/lib/transport/transport.js',
+		'<%= dirs.common %>/lib/transport/websockettransport.js',
+		'<%= dirs.common %>/lib/transport/comettransport.js',
+
+		'<%= dirs.common %>/lib/client/resource.js',
+		'<%= dirs.common %>/lib/client/paginatedresource.js',
+		'<%= dirs.common %>/lib/client/auth.js',
+		'<%= dirs.common %>/lib/client/rest.js',
+		'<%= dirs.common %>/lib/client/realtime.js',
+		'<%= dirs.common %>/lib/client/connectionstatechange.js',
+		'<%= dirs.common %>/lib/client/connection.js',
+		'<%= dirs.common %>/lib/client/channel.js',
+		'<%= dirs.common %>/lib/client/realtimechannel.js',
+		'<%= dirs.common %>/lib/client/presence.js',
+
+		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
+		'<%= dirs.browser %>/lib/transport/xhrtransport.js',
+		'<%= dirs.browser %>/lib/transport/iframetransport.js',
+//		'<%= dirs.browser %>/lib/transport/flashtransport.js',
+	];
+
+	gruntConfig.concat['ably'].src = [].concat(
+		'<%= dirs.browser %>/ably-prologue.js',
+
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+
+		ablyFiles,
+
+		'<%= dirs.browser %>/ably-epilogue.js'
+	);
+
+	gruntConfig.concat['ably.encryption'].src = [].concat(
+		'<%= dirs.browser %>/ably-prologue.js',
+
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		'<%= dirs.browser %>/lib/util/crypto.js',
+		ablyFiles,
+
+		'<%= dirs.browser %>/ably-epilogue.js'
+	);
+
+	gruntConfig.concat['iframe'].src = [
+		'<%= dirs.browser %>/prologue.js',
+		'<%= dirs.common %>/lib/util/eventemitter.js',
+		'<%= dirs.common %>/lib/util/logger.js',
+		'<%= dirs.common %>/lib/util/multicaster.js',
+		'<%= dirs.common %>/lib/util/utils.js',
+		'<%= dirs.common %>/lib/types/protocolmessage.js',
+		'<%= dirs.browser %>/lib/util/defaults.js',
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
+		'<%= dirs.browser %>/lib/transport/iframeagent.js',
+		'<%= dirs.browser %>/epilogue.js'
+	];
+
+	gruntConfig.concat['pusher'].src = [
+		'<%= dirs.browser %>/prologue.js',
+		'<%= dirs.common %>/lib/util/eventemitter.js',
+		'<%= dirs.common %>/lib/util/utils.js',
+		'<%= dirs.browser %>/compat/pusher.js',
+		'<%= dirs.browser %>/epilogue.js'
+	];
+
+	grunt.initConfig(gruntConfig);
 
 	grunt.registerTask('compiler', ['curl:compiler', 'unzip:compiler']);
 	grunt.registerTask('all', ['copy', 'concat', 'closure-compiler']);
