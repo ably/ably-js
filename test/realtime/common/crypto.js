@@ -30,9 +30,15 @@ exports.setup = function(base) {
 	}
 
 	rExports.encrypt_message_128 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		base.loadTestData('test/realtime/common/assets/crypto-data-128.json', function(err, testData) {
 			if(err) {
-				test.fail('Unable to get test assets; err = ' + err);
+				test.ok(false, 'Unable to get test assets; err = ' + err);
 				return;
 			}
 			var realtime = base.realtime({
@@ -47,7 +53,7 @@ exports.setup = function(base) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				params.iv = iv;
@@ -76,9 +82,15 @@ exports.setup = function(base) {
 	};
 
 	rExports.encrypt_message_256 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		base.loadTestData('test/realtime/common/assets/crypto-data-256.json', function(err, testData) {
 			if(err) {
-				test.fail('Unable to get test assets; err = ' + err);
+				test.ok(false, 'Unable to get test assets; err = ' + err);
 				return;
 			}
 			var realtime = base.realtime({
@@ -93,7 +105,7 @@ exports.setup = function(base) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				params.iv = iv;
@@ -122,9 +134,15 @@ exports.setup = function(base) {
 	};
 
 	rExports.decrypt_message_128 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		base.loadTestData('test/realtime/common/assets/crypto-data-128.json', function(err, testData) {
 			if(err) {
-				test.fail('Unable to get test assets; err = ' + err);
+				test.ok(false, 'Unable to get test assets; err = ' + err);
 				return;
 			}
 			var realtime = base.realtime({
@@ -139,7 +157,7 @@ exports.setup = function(base) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -166,9 +184,15 @@ exports.setup = function(base) {
 	};
 
 	rExports.decrypt_message_256 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		base.loadTestData('test/realtime/common/assets/crypto-data-256.json', function(err, testData) {
 			if(err) {
-				test.fail('Unable to get test assets; err = ' + err);
+				test.ok(false, 'Unable to get test assets; err = ' + err);
 				return;
 			}
 			var realtime = base.realtime({
@@ -183,7 +207,7 @@ exports.setup = function(base) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -213,6 +237,12 @@ exports.setup = function(base) {
 	 * Publish and subscribe, binary transport
 	 */
 	rExports.single_send_binary = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -225,7 +255,7 @@ exports.setup = function(base) {
 		Crypto.getDefaultParams(function(err, params) {
 			if(err) {
 				realtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 
@@ -244,6 +274,12 @@ exports.setup = function(base) {
 	 * Publish and subscribe, text transport
 	 */
 	rExports.single_send_text = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -258,7 +294,7 @@ exports.setup = function(base) {
 			test.equal(params.algorithm, 'aes-128');
 			if(err) {
 				realtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			channel.setOptions({encrypted:true, cipherParams: params});
@@ -275,6 +311,12 @@ exports.setup = function(base) {
 	 * Publish and subscribe, binary transport, 256-bit key
 	 */
 	rExports.single_send_binary_256 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -289,7 +331,7 @@ exports.setup = function(base) {
 				test.equal(params.algorithm, 'aes-256');
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -307,6 +349,12 @@ exports.setup = function(base) {
 	 * Publish and subscribe, text transport, 256-bit key
 	 */
 	rExports.single_send_text_256 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -322,7 +370,7 @@ exports.setup = function(base) {
 				test.equal(params.algorithm, 'aes-256');
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -337,6 +385,12 @@ exports.setup = function(base) {
 	};
 
 	function _multiple_send(test, text, iterations, delay) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var realtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -353,7 +407,7 @@ exports.setup = function(base) {
 				test.equal(params.algorithm, 'aes-128');
 				if(err) {
 					realtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -380,7 +434,7 @@ exports.setup = function(base) {
 				async.parallel([sendAll, recvAll], function(err) {
 					if(err) {
 						realtime.close();
-						test.fail('Error sending messages; err = ' + e);
+						test.ok(false, 'Error sending messages; err = ' + e);
 						return;
 					}
 					test.ok('Verify all messages received');
@@ -389,7 +443,7 @@ exports.setup = function(base) {
 				});
 			});
 		});
-	};
+	}
 
 	rExports.multiple_send_binary_2_200 = function(test) { _multiple_send(test, false, 2, 200); };
 	rExports.multiple_send_text_2_200 = function(test) { _multiple_send(test, true, 2, 200); };
@@ -402,6 +456,12 @@ exports.setup = function(base) {
 	 * the default cipher params and verify correct receipt.
 	 */
 	rExports.single_send_binary_text = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -423,7 +483,7 @@ exports.setup = function(base) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			test.equal(params.algorithm, 'aes-128');
@@ -445,6 +505,12 @@ exports.setup = function(base) {
 	 * the default cipher params and verify correct receipt.
 	 */
 	rExports.single_send_text_binary = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -466,7 +532,7 @@ exports.setup = function(base) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			test.equal(params.algorithm, 'aes-128');
@@ -489,6 +555,12 @@ exports.setup = function(base) {
 	 * is noticed as bad recovered plaintext.
 	 */
 	rExports.single_send_key_mismatch = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -513,7 +585,7 @@ exports.setup = function(base) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			var txParams = res[0],
@@ -537,6 +609,12 @@ exports.setup = function(base) {
 	 * does not attempt to decrypt it.
 	 */
 	rExports.single_send_unencrypted = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			log: {level: 1},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -557,14 +635,14 @@ exports.setup = function(base) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get attach channels; err = ' + err);
+				test.ok(false, 'Unable to get attach channels; err = ' + err);
 				return;
 			}
 			Crypto.getDefaultParams(function(err, rxParams) {
 				if(err) {
 					rxRealtime.close();
 					txRealtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
@@ -585,6 +663,12 @@ exports.setup = function(base) {
 	 * does not attempt to decrypt it.
 	 */
 	rExports.single_send_encrypted_unhandled = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -605,14 +689,14 @@ exports.setup = function(base) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get attach channels; err = ' + err);
+				test.ok(false, 'Unable to get attach channels; err = ' + err);
 				return;
 			}
 			Crypto.getDefaultParams(function(err, txParams) {
 				if(err) {
 					rxRealtime.close();
 					txRealtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				txChannel.setOptions({encrypted:true, cipherParams: txParams});
@@ -634,6 +718,12 @@ exports.setup = function(base) {
 	 * - publish with an updated key on the rx connection and verify connect receipt
 	 */
 	rExports.set_cipher_params = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
 		var txRealtime = base.realtime({
 			//log: {level: 4},
 			key: base.testVars.testAppId + '.' + base.testVars.testKey0Id + ':' + base.testVars.testKey0.value,
@@ -657,7 +747,7 @@ exports.setup = function(base) {
 				if(err) {
 					rxRealtime.close();
 					txRealtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				firstParams = params;
@@ -682,7 +772,7 @@ exports.setup = function(base) {
 				if(err) {
 					rxRealtime.close();
 					txRealtime.close();
-					test.fail('Unable to get cipher params; err = ' + e);
+					test.ok(false, 'Unable to get cipher params; err = ' + e);
 					return;
 				}
 				secondParams = params;
@@ -727,7 +817,7 @@ exports.setup = function(base) {
 			sendThirdMessage
 		], function(err) {
 			if(err) {
-				test.fail('Unexpected error running test; err = ' + e);
+				test.ok(false, 'Unexpected error running test; err = ' + e);
 				rxRealtime.close();
 				txRealtime.close();
 				test.done();

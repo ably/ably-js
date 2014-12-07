@@ -1,4 +1,4 @@
-var Crypto = Ably.Crypto;
+var Crypto = Ably.Realtime.Crypto;
 
 var _crypto_ = {};
 var crypto_ = {};
@@ -33,6 +33,12 @@ function attachChannels(channels, callback) {
  * Publish and subscribe, binary transport
  */
 crypto_.single_send_binary = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -44,7 +50,7 @@ crypto_.single_send_binary = function(test) {
 	Crypto.getDefaultParams(function(err, params) {
 		if(err) {
 			realtime.close();
-			test.fail('Unable to get cipher params; err = ' + e);
+			test.ok(false, 'Unable to get cipher params; err = ' + e);
 			return;
 		}
 		test.equal(params.algorithm, 'aes-128');
@@ -62,6 +68,12 @@ crypto_.single_send_binary = function(test) {
  * Publish and subscribe, text transport
  */
 crypto_.single_send_text = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -75,7 +87,7 @@ crypto_.single_send_text = function(test) {
 		test.equal(params.algorithm, 'aes-128');
 		if(err) {
 			realtime.close();
-			test.fail('Unable to get cipher params; err = ' + e);
+			test.ok(false, 'Unable to get cipher params; err = ' + e);
 			return;
 		}
 		channel.setOptions({encrypted:true, cipherParams: params});
@@ -92,6 +104,12 @@ crypto_.single_send_text = function(test) {
  * Publish and subscribe, binary transport, 256-bit key
  */
 crypto_.single_send_binary_256 = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -105,7 +123,7 @@ crypto_.single_send_binary_256 = function(test) {
 			test.equal(params.algorithm, 'aes-256');
 			if(err) {
 				realtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			channel.setOptions({encrypted:true, cipherParams: params});
@@ -117,13 +135,18 @@ crypto_.single_send_binary_256 = function(test) {
 			channel.publish('event0', messageText);
 		});
 	});
-
 };
 
 /**
  * Publish and subscribe, text transport, 256-bit key
  */
 crypto_.single_send_text_256 = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -138,7 +161,7 @@ crypto_.single_send_text_256 = function(test) {
 			test.equal(params.algorithm, 'aes-256');
 			if(err) {
 				realtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			channel.setOptions({encrypted:true, cipherParams: params});
@@ -153,6 +176,12 @@ crypto_.single_send_text_256 = function(test) {
 };
 
 function _multiple_send(test, text, iterations, delay) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var realtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -167,7 +196,7 @@ function _multiple_send(test, text, iterations, delay) {
 		Crypto.getDefaultParams(key, function(err, params) {
 			test.equal(params.algorithm, 'aes-128');
 			if(err) {
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			channel.setOptions({encrypted:true, cipherParams: params});
@@ -194,7 +223,7 @@ function _multiple_send(test, text, iterations, delay) {
 			async.parallel([sendAll, recvAll], function(err) {
 				if(err) {
 					realtime.close();
-					test.fail('Error sending messages; err = ' + e);
+					test.ok(false, 'Error sending messages; err = ' + e);
 					return;
 				}
 				test.ok('Verify all messages received');
@@ -216,6 +245,12 @@ crypto_.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 
  * the default cipher params and verify correct receipt.
  */
 crypto_.single_send_binary_text = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -235,14 +270,14 @@ crypto_.single_send_binary_text = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unable to get attach channels; err = ' + err);
+			test.ok(false, 'Unable to get attach channels; err = ' + err);
 			return;
 		}
 		Crypto.getDefaultParams(function(err, params) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			test.equal(params.algorithm, 'aes-128');
@@ -265,6 +300,12 @@ crypto_.single_send_binary_text = function(test) {
  * the default cipher params and verify correct receipt.
  */
 crypto_.single_send_text_binary = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket'],
@@ -284,14 +325,14 @@ crypto_.single_send_text_binary = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unable to get attach channels; err = ' + err);
+			test.ok(false, 'Unable to get attach channels; err = ' + err);
 			return;
 		}
 		Crypto.getDefaultParams(function(err, params) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + err);
+				test.ok(false, 'Unable to get cipher params; err = ' + err);
 				return;
 			}
 			test.equal(params.algorithm, 'aes-128');
@@ -315,6 +356,12 @@ crypto_.single_send_text_binary = function(test) {
  * is noticed as bad recovered plaintext.
  */
 crypto_.single_send_key_mismatch = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var rxRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -337,7 +384,7 @@ crypto_.single_send_key_mismatch = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unable to get cipher params; err = ' + e);
+			test.ok(false, 'Unable to get cipher params; err = ' + e);
 			return;
 		}
 		var txParams = res[0],
@@ -361,6 +408,12 @@ crypto_.single_send_key_mismatch = function(test) {
  * does not attempt to decrypt it.
  */
 crypto_.single_send_unencrypted = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -379,14 +432,14 @@ crypto_.single_send_unencrypted = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unable to get attach channels; err = ' + err);
+			test.ok(false, 'Unable to get attach channels; err = ' + err);
 			return;
 		}
 		Crypto.getDefaultParams(function(err, rxParams) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
@@ -407,6 +460,12 @@ crypto_.single_send_unencrypted = function(test) {
  * does not attempt to decrypt it.
  */
 crypto_.single_send_encrypted_unhandled = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -425,14 +484,14 @@ crypto_.single_send_encrypted_unhandled = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unable to get attach channels; err = ' + err);
+			test.ok(false, 'Unable to get attach channels; err = ' + err);
 			return;
 		}
 		Crypto.getDefaultParams(function(err, txParams) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			txChannel.setOptions({encrypted:true, cipherParams: txParams});
@@ -454,6 +513,12 @@ crypto_.single_send_encrypted_unhandled = function(test) {
  * - publish with an updated key on the rx connection and verify connect receipt
  */
 crypto_.set_cipher_params = function(test) {
+	if(!Crypto) {
+		test.ok(false, 'Encryption not supported');
+		test.done();
+		return;
+	}
+
 	var txRealtime = createRealtime({
 		//log: {level: 4},
 		transports: ['web_socket']
@@ -475,7 +540,7 @@ crypto_.set_cipher_params = function(test) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			firstParams = params;
@@ -500,7 +565,7 @@ crypto_.set_cipher_params = function(test) {
 			if(err) {
 				rxRealtime.close();
 				txRealtime.close();
-				test.fail('Unable to get cipher params; err = ' + e);
+				test.ok(false, 'Unable to get cipher params; err = ' + e);
 				return;
 			}
 			secondParams = params;
@@ -546,7 +611,7 @@ crypto_.set_cipher_params = function(test) {
 		if(err) {
 			rxRealtime.close();
 			txRealtime.close();
-			test.fail('Unexpected error running test; err = ' + e);
+			test.ok(false, 'Unexpected error running test; err = ' + e);
 			test.done();
 			return;
 		}
