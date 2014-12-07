@@ -19,6 +19,7 @@ var Channel = (function() {
 		callback = callback || noop;
 		options = this.options = Utils.prototypicalClone(defaultOptions, options);
 		if(options.encrypted) {
+			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
 				options.cipher = cipher;
 				callback(null);
