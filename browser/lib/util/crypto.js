@@ -1,10 +1,10 @@
-var Crypto = Ably.Crypto = window.CryptoJS && (function() {
+var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 128; // bits
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
-	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
+	var WordArray = CryptoJS.lib.WordArray;
 
 	/**
 	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
@@ -19,7 +19,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			window.crypto.getRandomValues(nativeArray);
 			var array = new Array(words);
 			for(var i = 0; i < words; i++) array[i] = nativeArray[i];
-			callback(null, CryptoJS.lib.WordArray.create(array));
+			callback(null, WordArray.create(array));
 		};
 	} else {
 		generateRandom = function(bytes, callback) {
@@ -28,7 +28,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			for(var i = 0; i < words; i++)
 				array[i] = Math.floor(Math.random() * VAL32);
 
-			callback(null, CryptoJS.lib.WordArray.create(array));
+			callback(null, WordArray.create(array));
 		};
 	}
 
@@ -45,29 +45,29 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 	/**
 	 * Internal: a block containing zeros
 	 */
-	var emptyBlock = CryptoJS.lib.WordArray.create([0,0,0,0]);
+	var emptyBlock = WordArray.create([0,0,0,0]);
 
 	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
 	 */
 	var pkcs5Padding = [
-		CryptoJS.lib.WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16),
-		CryptoJS.lib.WordArray.create([0x01000000], 1),
-		CryptoJS.lib.WordArray.create([0x02020000], 2),
-		CryptoJS.lib.WordArray.create([0x03030300], 3),
-		CryptoJS.lib.WordArray.create([0x04040404], 4),
-		CryptoJS.lib.WordArray.create([0x05050505,0x05000000], 5),
-		CryptoJS.lib.WordArray.create([0x06060606,0x06060000], 6),
-		CryptoJS.lib.WordArray.create([0x07070707,0x07070700], 7),
-		CryptoJS.lib.WordArray.create([0x08080808,0x08080808], 8),
-		CryptoJS.lib.WordArray.create([0x09090909,0x09090909,0x09000000], 9),
-		CryptoJS.lib.WordArray.create([0x0a0a0a0a,0x0a0a0a0a,0x0a0a0000], 10),
-		CryptoJS.lib.WordArray.create([0x0b0b0b0b,0x0b0b0b0b,0x0b0b0b00], 11),
-		CryptoJS.lib.WordArray.create([0x0c0c0c0c,0x0c0c0c0c,0x0c0c0c0c], 12),
-		CryptoJS.lib.WordArray.create([0x0d0d0d0d,0x0d0d0d0d,0x0d0d0d0d,0x0d000000], 13),
-		CryptoJS.lib.WordArray.create([0x0e0e0e0e,0x0e0e0e0e,0x0e0e0e0e,0x0e0e0000], 14),
-		CryptoJS.lib.WordArray.create([0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f], 15),
-		CryptoJS.lib.WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16)
+		WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16),
+		WordArray.create([0x01000000], 1),
+		WordArray.create([0x02020000], 2),
+		WordArray.create([0x03030300], 3),
+		WordArray.create([0x04040404], 4),
+		WordArray.create([0x05050505,0x05000000], 5),
+		WordArray.create([0x06060606,0x06060000], 6),
+		WordArray.create([0x07070707,0x07070700], 7),
+		WordArray.create([0x08080808,0x08080808], 8),
+		WordArray.create([0x09090909,0x09090909,0x09000000], 9),
+		WordArray.create([0x0a0a0a0a,0x0a0a0a0a,0x0a0a0000], 10),
+		WordArray.create([0x0b0b0b0b,0x0b0b0b0b,0x0b0b0b00], 11),
+		WordArray.create([0x0c0c0c0c,0x0c0c0c0c,0x0c0c0c0c], 12),
+		WordArray.create([0x0d0d0d0d,0x0d0d0d0d,0x0d0d0d0d,0x0d000000], 13),
+		WordArray.create([0x0e0e0e0e,0x0e0e0e0e,0x0e0e0e0e,0x0e0e0000], 14),
+		WordArray.create([0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f,0x0f0f0f0f], 15),
+		WordArray.create([0x10101010,0x10101010,0x10101010,0x10101010], 16)
 	];
 
 	/**
@@ -127,7 +127,7 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 			if (typeof(key) === 'string')
 				key = CryptoJS.enc.Hex.parse(key);
 			else if (!key.words)
-				key = CryptoJS.lib.WordArray.create(key);   // Expect key to be an array at this point
+				key = WordArray.create(key);   // Expect key to be an array at this point
 		} else {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
@@ -202,8 +202,8 @@ var Crypto = Ably.Crypto = window.CryptoJS && (function() {
 		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
 			ciphertextWords = ciphertext.words,
-			iv = CryptoJS.lib.WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
-			ciphertextBody = CryptoJS.lib.WordArray.create(ciphertextWords.slice(blockLengthWords));
+			iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
+			ciphertextBody = WordArray.create(ciphertextWords.slice(blockLengthWords));
 
 		var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
 		var plaintext = decryptCipher.process(ciphertextBody);
