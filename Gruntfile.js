@@ -65,8 +65,8 @@ module.exports = function (grunt) {
 				dest: '<%= dirs.dest %>/ably.js',
 				nonull: true
 			},
-			'ably.encryption': {
-				dest: '<%= dirs.dest %>/ably.encryption.js',
+			'ably.noencryption': {
+				dest: '<%= dirs.dest %>/ably.noencryption.js',
 				nonull: true
 			},
 			iframe: {
@@ -80,7 +80,7 @@ module.exports = function (grunt) {
 		},
 		'closure-compiler': {
 			'ably-js': compilerSpec('<%= dirs.static %>/ably.js'),
-			'ably.encryption-js': compilerSpec('<%= dirs.static %>/ably.encryption.js'),
+			'ably.noencryption-js': compilerSpec('<%= dirs.static %>/ably.noencryption.js'),
 			'iframe-js': compilerSpec('<%= dirs.static %>/iframe.js'),
 			'pubnub-js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
 			'pusher-js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
@@ -139,24 +139,24 @@ module.exports = function (grunt) {
 		'<%= dirs.crypto_js %>/sha256.js',
 		'<%= dirs.crypto_js %>/hmac.js',
 		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
 
+		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
 
 		'<%= dirs.browser %>/ably-epilogue.js'
 	);
 
-	gruntConfig.concat['ably.encryption'].src = [].concat(
+	gruntConfig.concat['ably.noencryption'].src = [].concat(
 		'<%= dirs.browser %>/ably-prologue.js',
 
 		'<%= dirs.crypto_js %>/core.js',
 		'<%= dirs.crypto_js %>/sha256.js',
 		'<%= dirs.crypto_js %>/hmac.js',
 		'<%= dirs.crypto_js %>/enc-base64.js',
-		'<%= dirs.crypto_js %>/cipher-core.js',
-		'<%= dirs.crypto_js %>/aes.js',
-		'<%= dirs.crypto_js %>/lib-typedarrays.js',
 
-		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
 
 		'<%= dirs.browser %>/ably-epilogue.js'
