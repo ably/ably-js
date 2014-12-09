@@ -43,16 +43,16 @@ To run the test suite:
 
 ## To build
 
-    cd </path/to/this/repo>/browser
+    cd </path/to/this/repo>
 
 To build the first time, it is necessary to download the Google closure compiler.
-This is done with the `tools` target:
+This is done with the `compiler` target:
 
-    ant tools
+    grunt compiler
 
 To build the browser library and its variants:
 
-    ant
+    grunt
 
 
 ## Usage
