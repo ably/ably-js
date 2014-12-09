@@ -48,9 +48,6 @@ exports.setup = function() {
 		var Pusher = require('../../../../browser/compat/pusher.js');
 		var Ably = require('../../../..');
 
-		var adminHost = process.env.ADMIN_ADDRESS || 'localhost';
-		var adminPort = process.env.ADMIN_PORT || '8081';
-		var adminScheme = process.env.ADMIN_SCHEME || 'https';
 		var wsHost = process.env.WEBSOCKET_ADDRESS || 'sandbox-rest.ably.io';
 		var restHost = process.env.REST_ADDRESS || 'sandbox-rest.ably.io';
 		var port = process.env.WEBSOCKET_PORT || '80';

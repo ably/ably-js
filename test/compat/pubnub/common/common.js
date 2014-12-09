@@ -15,9 +15,6 @@ exports.setup = function() {
 		var http = null;
 		var PUBNUB = window.PUBNUB;
 
-		var adminHost = testVars.realtimeHost || 'sandbox-rest';
-		var adminPort = testVars.useTls ? (testVars.realtimeTlsPort || '8081') : (testVars.realtimePort || '8080');
-		var adminScheme = testVars.useTls ? 'https' : 'http';
 		var wsHost = testVars.realtimeHost || 'sandbox-rest.ably.io';
 		var restHost = testVars.restHost || 'sandbox-rest.ably.io';
 		var port = testVars.realtimePort || '80';
