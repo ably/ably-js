@@ -1,11 +1,5 @@
 {
-	"Init_": "init_.js",
-	"Ws_": "ws_.js",
-//	"Flash_": "flash_.js",
-	"Xhr_": "xhr_.js",
-	"Iframe_": "iframe_.js",
-	"Jsonp_": "jsonp_.js",
-	"Auto_transport_": "auto_transport_.js",
+	"Simple_": "simple_.js",
 	"Rest_": "rest_.js",
 	"Pubnub_": "pubnub_.js",
 	"Pusher_": "pusher_.js",
