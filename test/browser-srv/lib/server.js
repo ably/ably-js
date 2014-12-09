@@ -21,8 +21,8 @@ var ably_realtime = path.resolve(ably_js, '../..');
 var external = {
 	'ably.js' : path.resolve(ably_js, 'browser/static/ably.js'),
 	'ably.min.js' : path.resolve(ably_js, 'browser/static/ably.min.js'),
-	'ably.encryption.js' : path.resolve(ably_js, 'browser/static/ably.encryption.js'),
-	'ably.encryption.min.js' : path.resolve(ably_js, 'browser/static/ably.encryption.min.js'),
+	'ably.noencryption.js' : path.resolve(ably_js, 'browser/static/ably.noencryption.js'),
+	'ably.noencryption.min.js' : path.resolve(ably_js, 'browser/static/ably.noencryption.min.js'),
 	'nodeunit.js' : path.resolve(ably_js, 'node_modules/nodeunit/examples/browser/nodeunit.js'),
 	'nodeunit.css' : path.resolve(ably_js, 'node_modules/nodeunit/share/nodeunit.css'),
 	'async.js' : path.resolve(ably_js, 'node_modules/async/lib/async.js'),
