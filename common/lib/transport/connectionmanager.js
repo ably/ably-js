@@ -573,7 +573,7 @@ var ConnectionManager = (function() {
 					this.transport.abort(request.reason);
 					this.transport = null;
 				}
-			} else if(request.state = 'closed') {
+			} else if(request.state == 'closed') {
 				this.cancelConnectTimer();
 				this.cancelRetryTimer();
 				this.cancelSuspendTimer();
