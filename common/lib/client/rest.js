@@ -79,12 +79,12 @@ var Rest = (function() {
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
 		var timeUri = function(host) { return self.authority(host) + '/time' };
-		Http.get(this, timeUri, headers, params, function(err, res) {
+		Http.get(this, timeUri, headers, params, function(err, res, headers, unpacked) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			if (typeof(res) === 'string') res = JSON.parse(res);
+			if(!unpacked) res = JSON.parse(res);
 			var time = res[0];
 			if(!time) {
 				err = new Error('Internal error (unexpected result type from GET /time)');
