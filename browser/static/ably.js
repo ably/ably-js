@@ -4477,6 +4477,30 @@ var Multicaster = (function() {
 	return Multicaster;
 })();
 
+var ErrorInfo = (function() {
+
+	function ErrorInfo(message, code, statusCode) {
+		this.message = message;
+		this.code = code;
+		this.statusCode = statusCode;
+	}
+
+	ErrorInfo.prototype.toString = function() {
+		var result = '[' + this.constructor.name;
+		if(this.message) result += ': ' + this.message;
+		if(this.statusCode) result += '; statusCode=' + this.statusCode;
+		if(this.code) result += '; code=' + this.code;
+		result += ']';
+		return result;
+	};
+
+	ErrorInfo.fromValues = function(values) {
+		return Utils.mixin(new ErrorInfo(), values);
+	};
+
+	return ErrorInfo;
+})();
+
 var Message = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
 
@@ -4838,7 +4862,6 @@ var ConnectionManager = (function() {
 	var connectionIdCookie = 'ably-connection-id';
 	var connectionSerialCookie = 'ably-connection-serial';
 	var actions = ProtocolMessage.Action;
-
 	var noop = function() {};
 
 	var states = {
@@ -5565,6 +5588,60 @@ var ConnectionManager = (function() {
 				this.connectionSerial = connectionSerial;
 		}
 		this.realtime.channels.onChannelMessage(message);
+	};
+
+	ConnectionManager.prototype.ping = function(transport, callback) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
+
+		/* if transport is specified, try that */
+		if(transport) {
+			var onTimeout = function () {
+				transport.off('heartbeat', onHeartbeat);
+				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
+			};
+
+			var onHeartbeat = function () {
+				clearTimeout(timer);
+				callback(null);
+			};
+
+			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+			transport.once('heartbeat', onHeartbeat);
+			transport.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), noop);
+			return;
+		}
+
+		/* if we're not connected, don't attempt */
+		if(this.state.state !== 'connected') {
+			callback(new ErrorInfo('Unable to ping service; not connected', 40000, 400));
+			return;
+		}
+
+		/* no transport was specified, so use the current (connected) one
+		 * but ensure that we retry if the transport is superseded before we complete */
+		var completed = false, self = this;
+
+		var onPingComplete = function(err) {
+			self.off('transport.active', onTransportActive);
+			if(!completed) {
+				completed = true;
+				callback(err);
+			}
+		};
+
+		var onTransportActive = function() {
+			if(!completed) {
+				/* ensure that no callback happens for the currently outstanding operation */
+				completed = true;
+				/* repeat but picking up the new transport */
+				Utils.nextTick(function() {
+					self.ping(null, callback);
+				});
+			}
+		};
+
+		this.on('transport.active', onTransportActive);
+		this.ping(this.transport, onPingComplete);
 	};
 
 	return ConnectionManager;
@@ -6849,6 +6926,11 @@ var Connection = (function() {
 	Connection.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.connect()', '');
 		this.connectionManager.requestState({state: 'connecting'});
+	};
+
+	Connection.prototype.ping = function(callback) {
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+		this.connectionManager.ping(null, callback);
 	};
 
 	Connection.prototype.close = function() {
