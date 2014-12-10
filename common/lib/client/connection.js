@@ -32,6 +32,11 @@ var Connection = (function() {
 		this.connectionManager.requestState({state: 'connecting'});
 	};
 
+	Connection.prototype.ping = function(callback) {
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+		this.connectionManager.ping(null, callback);
+	};
+
 	Connection.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionId = ' + this.id);
 		this.connectionManager.requestState({state: 'closed'});
