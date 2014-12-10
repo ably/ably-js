@@ -104,6 +104,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
 
+		'<%= dirs.common %>/lib/types/errorinfo.js',
 		'<%= dirs.common %>/lib/types/message.js',
 		'<%= dirs.common %>/lib/types/presencemessage.js',
 		'<%= dirs.common %>/lib/types/protocolmessage.js',
