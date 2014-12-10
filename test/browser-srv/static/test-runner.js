@@ -106,7 +106,12 @@ function setupTests() {
 						testVars[needle] = testAccount[needle];
 					}
 					var ablyScript = confParams.noencrypt ? 'ably.noencryption.js' : 'ably.js';
-					$.getScript(ablyScript)
+					$.ajax({
+						url: ablyScript,
+						crossDomain: true,
+						dataType: 'script',
+						cache: true
+					})
 						.fail(function (_xhr, _stg, err) {
 							alert('Error: Could not load ably library.\n\n' + err);
 							setupFail();
@@ -120,7 +125,13 @@ function setupTests() {
 								.done(function (testModules) {
 									var scripts = [];
 									for (var name in testModules)
-										scripts.push($.getScript(TestsPath + testModules[name]));
+										scripts.push($.ajax({
+											url: TestsPath + testModules[name],
+											crossDomain: true,
+											dataType: 'script',
+											cache: true
+										}));
+										//scripts.push($.getScript(TestsPath + testModules[name]));
 									$.when.apply($, scripts)
 										.fail(function (err) {
 											alert('Error: Could not get load test modules.\n\n' + err);
