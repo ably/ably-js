@@ -4870,17 +4870,16 @@ var PaginatedResource = (function() {
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
+	var msgpack = isBrowser ? window.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
-	var hmac, toBase64 = undefined;
+	var hmac, toBase64;
 	if(isBrowser) {
 		toBase64 = Base64.encode;
-		if(window.CryptoJS && CryptoJS.HmacSHA256 && CryptoJS.enc.Base64) {
-			hmac = function(text, key) {
-				return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
-			};
-		}
+		hmac = function(text, key) {
+			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
+		};
 	} else {
 		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
 		hmac = function(text, key) {
@@ -5081,6 +5080,7 @@ var Auth = (function() {
 		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
+		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
@@ -5092,7 +5092,11 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
-				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), cb);
+				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
+					if(err) return cb(err);
+					if(!unpacked) body = JSON.parse(body);
+					cb(null, body);
+				});
 			};
 		} else if(authOptions.keyValue) {
 			var self = this;
@@ -5109,11 +5113,13 @@ var Auth = (function() {
 		var rest = this.rest;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + signedTokenParams.id + '/requestToken';};
+				keyId = signedTokenParams.id,
+				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
 
 			if(Http.post) {
-				requestHeaders = Utils.defaultPostHeaders();
+				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
 				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
@@ -5136,13 +5142,13 @@ var Auth = (function() {
 				callback(null, tokenRequestOrDetails);
 				return;
 			}
-			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse) {
+			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + err);
 					callback(err);
 					return;
 				}
-				if(typeof(tokenResponse) === 'string') tokenResponse = JSON.parse(tokenResponse);
+				if(!unpacked) tokenResponse = (format == 'msgpack') ? msgpack.decode(tokenResponse) : JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
 				callback(null, tokenResponse.access_token);
 			});
@@ -5378,12 +5384,12 @@ var Rest = (function() {
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
 		var timeUri = function(host) { return self.authority(host) + '/time' };
-		Http.get(this, timeUri, headers, params, function(err, res) {
+		Http.get(this, timeUri, headers, params, function(err, res, headers, unpacked) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			if (typeof(res) === 'string') res = JSON.parse(res);
+			if(!unpacked) res = JSON.parse(res);
 			var time = res[0];
 			if(!time) {
 				err = new Error('Internal error (unexpected result type from GET /time)');
