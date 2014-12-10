@@ -71,22 +71,16 @@ function heartbeatWithTransport(test, transport) {
 		var ably = realtimeConnection(transport && [transport]),
 			connectionTimeout = failWithin(10, test, ably, 'connect'),
 			heartbeatTimeout;
-		/* when we see the transport we're interested in get activated,
-		 * listen for the heartbeat event */
-		var connectionManager = ably.connection.connectionManager;
-		connectionManager.on('transport.active', function (transport) {
-			transport.once('heartbeat', function () {
-				heartbeatTimeout.stop();
-				test.ok(true, 'verify ' + transport + ' heartbeat');
-				test.done();
-				ably.close();
-			});
-		});
 
 		ably.connection.on('connected', function () {
 			connectionTimeout.stop();
-			connectionManager.send(Ably.Realtime.ProtocolMessage.fromValues({action: Ably.Realtime.ProtocolMessage.Action.HEARTBEAT}));
 			heartbeatTimeout = failWithin(25, test, ably, 'wait for heartbeat');
+			ably.connection.ping(function(err) {
+				heartbeatTimeout.stop();
+				test.ok(!err, 'verify ' + transport + ' heartbeat');
+				test.done();
+				ably.close();
+			});
 		});
 		function exitOnState(state) {
 			ably.connection.on(state, function () {
@@ -133,7 +127,7 @@ function publishWithTransport(test, transport) {
 				checkFinish();
 			});
 			if (sentCount === count) clearInterval(timer);
-		}, 1000);
+		}, 500);
 	});
 
 	test.expect(count);
