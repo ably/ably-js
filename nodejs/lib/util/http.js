@@ -26,10 +26,11 @@ this.Http = (function() {
 			}
 			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
+				if(headers['content-type'] == 'application/json') body = JSON.parse(body);
 				callback(body.error || {statusCode: statusCode});
 				return;
 			}
-			callback(null, body, headers);
+			callback(null, body, headers, false);
 		};
 	};
 
@@ -77,8 +78,6 @@ this.Http = (function() {
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
 		var getOptions = {headers:headers, encoding:null};
-		if(!headers || headers.accept == 'application/json')
-			getOptions.json = true;
 		if(params)
 			getOptions.qs = params;
 
@@ -130,8 +129,6 @@ this.Http = (function() {
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
 		var postOptions = {headers:headers, body:body, encoding:null};
-		if(!headers || headers.accept == 'application/json')
-			postOptions.json = true;
 		if(params)
 			postOptions.qs = params;
 
@@ -141,5 +138,6 @@ this.Http = (function() {
 
 	Http.supportsAuthHeaders = true;
 	Http.supportsLinkHeaders = true;
+
 	return Http;
 })();
