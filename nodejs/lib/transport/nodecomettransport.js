@@ -20,7 +20,7 @@ var NodeCometTransport = (function() {
 	ConnectionManager.httpTransports['comet'] = ConnectionManager.transports['comet'] = NodeCometTransport;
 
 	NodeCometTransport.checkConnectivity = function(callback) {
-		new NodeCometTransport.Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, CometTransport.REQ_RECV, false, function(err, responseText) {
+		new Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, CometTransport.REQ_RECV, false, function(err, responseText) {
 			callback(null, (!err && responseText == 'yes'));
 		});
 	};
