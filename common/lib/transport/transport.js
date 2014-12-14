@@ -25,19 +25,26 @@ var Transport = (function() {
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function(closing) {
+	Transport.prototype.close = function() {
+		if(this.isConnected) {
+			this.sendClose();
+		}
+		this.emit('closed');
+		this.dispose();
+	};
+
+	Transport.prototype.disconnect = function() {
 		if(this.isConnected) {
 			this.isConnected = false;
-			this.sendClose(closing);
 		}
-		this.emit('closed', ConnectionError.closed);
+		this.emit('disconnected', ConnectionError.disconnected);
 		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
 			this.isConnected = false;
-			this.sendClose(true);
+			this.sendClose();
 		}
 		this.emit('failed', error);
 		this.dispose();
@@ -54,10 +61,12 @@ var Transport = (function() {
 			this.emit('connected', null, message.connectionId, message.connectionSerial);
 			break;
 		case actions.CLOSED:
+			this.isConnected = false;
+			this.onClose(message);
+			break;
 		case actions.DISCONNECTED:
 			this.isConnected = false;
 			this.onDisconnect();
-			/* FIXME: do we need to emit an event here? */
 			break;
 		case actions.ACK:
 			this.emit('ack', message.msgSerial, message.count);
@@ -91,23 +100,20 @@ var Transport = (function() {
 		this.isConnected = true;
 	};
 
-	Transport.prototype.onDisconnect = function() {};
-
-	Transport.prototype.onClose = function(wasClean, message) {
-		/* if the connectionmanager already thinks we're closed
-		 * then we probably initiated it */
-		if(this.connectionManager.state.state == 'closed')
-			return;
-		var newState = wasClean ?  'disconnected' : 'failed';
+	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
-		var error = Utils.copy(ConnectionError[newState]);
-		if(message) error.message = message;
-		this.emit(newState, error);
+		var err = message && message.error;
+		this.emit('disconnected', err);
 	};
 
-	Transport.prototype.sendClose = function(closing) {
-		if(closing)
-			this.send(closeMessage);
+	Transport.prototype.onClose = function(message) {
+		this.isConnected = false;
+		var err = message && message.error;
+		this.emit('closed', err);
+	};
+
+	Transport.prototype.sendClose = function() {
+		this.send(closeMessage);
 	};
 
 	Transport.prototype.dispose = function() {

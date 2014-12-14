@@ -61,7 +61,7 @@ var WebSocketTransport = (function() {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
-				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
+				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) { self.onWsError(e); }
@@ -86,22 +86,21 @@ var WebSocketTransport = (function() {
 		this.emit('wsopen');
 	};
 
-	WebSocketTransport.prototype.onWsClose = function(ev, wsReason) {
+	WebSocketTransport.prototype.onWsClose = function(ev) {
 		var wasClean, code, reason;
 		if(typeof(ev) == 'object') {
 			/* W3C spec-compatible */
 			wasClean = ev.wasClean;
 			code = ev.code;
-			reason = ev.reason;
 		} else /*if(typeof(ev) == 'number')*/ {
 			/* ws in node */
 			code = ev;
-			reason = wsReason || '';
 			wasClean = (code == 1000);
 		}
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'closed WebSocket; wasClean = ' + wasClean + '; code = ' + code);
 		delete this.wsConnection;
-		Transport.prototype.onClose.call(this, wasClean, reason);
+		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
+		Transport.prototype.onDisconnect.call(this, err);
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {

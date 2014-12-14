@@ -12,7 +12,8 @@ var ConnectionManager = (function() {
 		connected:    {state: 'connected',    terminal: false, queueEvents: false, sendEvents: true, failState: 'disconnected'},
 		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
 		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false},
+		closing:      {state: 'closing',      terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+		closed:       {state: 'closed',       terminal: true,  queueEvents: false, sendEvents: false},
 		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
 	};
 
@@ -293,15 +294,15 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		if(this.state == states.closed) {
+		if(this.state == states.closing || this.state == states.closed) {
 			/* the connection was closed when we were away
 			 * attempting this transport so close */
-			transport.close(true);
+			transport.close();
 			return;
  		}
 		/* if there was already a pending transport, abandon it */
 		if(this.pendingTransport)
-			this.pendingTransport.close(false);
+			this.pendingTransport.disconnect();
 
 		/* this is now the pending transport */
 		this.pendingTransport = transport;
@@ -351,20 +352,23 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionId = ' + connectionId + '; connectionSerial = ' + connectionSerial);
-		/* if the connectionmanager moved to the closed state before this
+		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		if(this.state == states.closed)
+		if(this.state == states.closing || this.state == states.closed)
 			return;
 
  		/* Terminate any existing transport */
 		var existingTransport = this.transport;
  		if(existingTransport) {
 			 this.transport = null;
-			 existingTransport.close(false);
+			 existingTransport.disconnect();
 		}
 		existingTransport = this.pendingTransport;
-		if(existingTransport)
+		if(existingTransport) {
 			this.pendingTransport = null;
+			if(existingTransport !== transport)
+				existingTransport.disconnect();
+		}
 
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
@@ -454,20 +458,21 @@ var ConnectionManager = (function() {
 	 * ConnectionManager connection lifecycle
 	 ****************************************/
 
-	ConnectionManager.prototype.startConnectTimer = function() {
+	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
 		var self = this;
-		this.connectTimer = setTimeout(function() {
-			if(self.connectTimer) {
+		this.transitionTimer = setTimeout(function() {
+			if(self.transitionTimer) {
+				self.transitionTimer = null;
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + states.connecting.failState);
-				self.notifyState({state: states.connecting.failState});
+				self.notifyState({state: transitionState.failState});
 			}
 		}, Defaults.connectTimeout);
 	};
 
-	ConnectionManager.prototype.cancelConnectTimer = function() {
-		if(this.connectTimer) {
-			clearTimeout(this.connectTimer);
-			this.connectTimer = undefined;
+	ConnectionManager.prototype.cancelTransitionTimer = function() {
+		if(this.transitionTimer) {
+			clearTimeout(this.transitionTimer);
+			this.transitionTimer = null;
 		}
 	};
 
@@ -477,6 +482,7 @@ var ConnectionManager = (function() {
 			return;
 		this.suspendTimer = setTimeout(function() {
 			if(self.suspendTimer) {
+				self.suspendTimer = null;
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager suspend timer expired', 'requesting new state: suspended');
 				states.connecting.failState = 'suspended';
 				states.connecting.queueEvents = false;
@@ -485,12 +491,17 @@ var ConnectionManager = (function() {
 		}, Defaults.suspendedTimeout);
 	};
 
+	ConnectionManager.prototype.checkSuspendTimer = function(state) {
+		if(state !== 'disconnected' && state !== 'suspended')
+			this.cancelSuspendTimer();
+	};
+
 	ConnectionManager.prototype.cancelSuspendTimer = function() {
 		states.connecting.failState = 'disconnected';
 		states.connecting.queueEvents = true;
 		if(this.suspendTimer) {
 			clearTimeout(this.suspendTimer);
-			delete this.suspendTimer;
+			this.suspendTimer = null;
 		}
 	};
 
@@ -498,6 +509,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		this.retryTimer = setTimeout(function() {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
+			self.retryTimer = null;
 			self.requestState({state: 'connecting'});
 		}, interval);
 	};
@@ -505,38 +517,30 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.cancelRetryTimer = function() {
 		if(this.retryTimer) {
 			clearTimeout(this.retryTimer);
-			delete this.retryTimer;
+			this.retryTimer = null;
 		}
 	};
 
 	ConnectionManager.prototype.notifyState = function(indicated) {
-		/* do nothing if we're already in the indicated state
-		 * or we're unable to move from the current state*/
-		if(this.state.terminal || indicated.state == this.state.state)
-			return; /* silently do nothing */
+		var state = indicated.state;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
+		/* do nothing if we're already in the indicated state */
+		if(state == this.state.state)
+			return;
 
-		/* if we consider the transport to have failed
-		 * (perhaps temporarily) then remove it, so we
-		 * can re-select when we re-attempt connection */
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + indicated.state);
-		var newState = states[indicated.state];
-		if(!newState.sendEvents) {
-			if(this.transport) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'deleting transport ' + this.transport);
-				this.transport.dispose();
-				delete this.transport;
-			}
-		}
-
-		/* kill running timers, including suspend if connected */
-		this.cancelConnectTimer();
+		/* kill timers (possibly excepting suspend timer, as these are superseded by this notification */
+		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		if(indicated.state == 'connected') {
-			this.cancelSuspendTimer();
-		}
+		this.checkSuspendTimer();
 
-		/* set up retry and suspended timers */
-		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
+		/* do nothing if we're unable to move from the current state */
+		if(this.state.terminal)
+			return;
+
+		/* process new state */
+		var newState = states[indicated.state],
+			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
+
 		if(newState.retryDelay)
 			this.startRetryTimer(newState.retryDelay);
 
@@ -551,48 +555,36 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
-		/* kill running timers, as this request supersedes them */
-		this.cancelConnectTimer();
-		this.cancelRetryTimer();
-		if(request.state == this.state.state)
+		var state = request.state, self = this;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state);
+		if(state == this.state.state)
 			return; /* silently do nothing */
-		if(this.state.terminal)
-			throw new Error(this.error.message);
-		if(request.state == 'connecting') {
+
+		/* kill running timers, as this request supersedes them */
+		this.cancelTransitionTimer();
+		this.cancelRetryTimer();
+		this.cancelSuspendTimer();
+
+		if(state == 'connecting') {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
-			this.connectImpl();
-		} else {
-			if(this.pendingTransport) {
-				this.pendingTransport.close(true);
-				this.pendingTransport = null;
-			}
-			if(request.state == 'failed') {
-				if(this.transport) {
-					this.transport.abort(request.reason);
-					this.transport = null;
-				}
-			} else if(request.state == 'closed') {
-				this.cancelConnectTimer();
-				this.cancelRetryTimer();
-				this.cancelSuspendTimer();
-				if(this.transport) {
-					this.transport.close(true);
-					this.transport = null;
-				}
-			}
+			Utils.nextTick(function() { self.connectImpl(); });
+		} else if(state == 'closing') {
+			if(this.state.state == 'closed')
+				return; /* silently do nothing */
+			Utils.nextTick(function() { self.closeImpl(); });
 		}
-		if(request.state != this.state.state) {
-			var newState = states[request.state];
-			var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
-			this.enactStateChange(change);
-		}
+
+		var newState = states[state],
+			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+
+		this.enactStateChange(change);
 	};
 
 	ConnectionManager.prototype.connectImpl = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'starting connection');
 		this.startSuspendTimer();
-		this.startConnectTimer();
+		this.startTransitionTimer(states.connecting);
 
 		var self = this;
 		var auth = this.realtime.auth;
@@ -637,6 +629,27 @@ var ConnectionManager = (function() {
 					tryConnect();
 			});
 		}
+	};
+
+	ConnectionManager.prototype.closeImpl = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
+		this.cancelSuspendTimer();
+		this.startTransitionTimer(states.closing);
+
+		/* if transport exists, send close message */
+		var transport = this.transport;
+		if(transport) {
+			try {
+				transport.close();
+			} catch(e) {
+				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
+				var err = new ErrorInfo(msg, 50000, 500);
+				transport.abort(err);
+			}
+			return;
+		}
+		this.notifyState({state: 'closed'});
 	};
 
 	/******************

@@ -69,23 +69,37 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.sendClose = function(closing) {
-		var closeUri = this.closeUri,
-			self = this;
+	CometTransport.prototype.disconnect = function() {
+		this.requestClose(false);
+		this.emit('disconnected');
+		this.dispose();
+	};
 
-		if(!closeUri) {
-			callback({message:'Unable to close; not connected', code:80000, statusCode:400});
-			return;
+	CometTransport.prototype.close = function() {
+		this.requestClose(true);
+		this.emit('closed');
+		this.dispose();
+	};
+
+	CometTransport.prototype.abort = function() {
+		this.requestClose(true);
+		this.emit('failed');
+		this.dispose();
+	};
+
+	CometTransport.prototype.requestClose = function(closing) {
+		var closeUri = this.closeUri;
+		if(closeUri) {
+			var self = this,
+				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
+
+			closeRequest.on('complete', function (err) {
+				if (err) {
+					self.emit('error', err);
+				}
+			});
+			closeRequest.exec();
 		}
-
-		var closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
-		closeRequest.on('complete', function(err) {
-			if(err) {
-				self.emit('error', err);
-				return;
-			}
-		});
-		closeRequest.exec();
 	};
 
 	CometTransport.prototype.dispose = function() {

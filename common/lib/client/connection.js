@@ -39,7 +39,7 @@ var Connection = (function() {
 
 	Connection.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionId = ' + this.id);
-		this.connectionManager.requestState({state: 'closed'});
+		this.connectionManager.requestState({state: 'closing'});
 	};
 
 	return Connection;
