@@ -309,7 +309,7 @@ var ConnectionManager = (function() {
 
 		var self = this;
 		var handleTransportEvent = function(state) {
-			return function(error, connectionId, connectionSerial) {
+			return function(error, connectionId, connectionSerial, memberId) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
 				if(error && error.message)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
@@ -317,11 +317,13 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
 				if(connectionSerial !== undefined)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
+				if(memberId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'memberId =  ' + memberId);
 
 				/* handle activity transition */
 				var notifyState;
 				if(state == 'connected') {
-					self.activateTransport(transport, connectionId, connectionSerial);
+					self.activateTransport(transport, connectionId, connectionSerial, memberId);
 					notifyState = true;
 				} else {
 					notifyState = self.deactivateTransport(transport);
@@ -350,7 +352,7 @@ var ConnectionManager = (function() {
 	 *   'recover': new connection with recoverable messages;
 	 *   'resume': uninterrupted resumption of connection without loss of messages
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial) {
+	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial, memberId) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionId = ' + connectionId + '; connectionSerial = ' + connectionSerial);
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
@@ -375,6 +377,7 @@ var ConnectionManager = (function() {
 		this.transport = transport;
 		this.host = transport.params.host;
 		if(connectionId && this.connectionId != connectionId)  {
+			this.realtime.connection.memberId = memberId;
 			this.realtime.connection.id = this.connectionId = connectionId;
 			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 			if(createCookie && this.options.recover === true)

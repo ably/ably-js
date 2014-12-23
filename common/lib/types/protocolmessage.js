@@ -3,10 +3,12 @@ var ProtocolMessage = (function() {
 
 	function ProtocolMessage() {
 		this.action = undefined;
+		this.flags = undefined;
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.count = undefined;
 		this.error = undefined;
+		this.memberId = undefined;
 		this.connectionId = undefined;
 		this.connectionSerial = undefined;
 		this.channel = undefined;
@@ -32,7 +34,13 @@ var ProtocolMessage = (function() {
 		'DETACH' : 12,
 		'DETACHED' : 13,
 		'PRESENCE' : 14,
-		'MESSAGE' : 15
+		'MESSAGE' : 15,
+		'SYNC' : 16
+	};
+
+	ProtocolMessage.Flag = {
+		'HAS_PRESENCE': 0,
+		'HAS_BACKLOG': 1
 	};
 
 	ProtocolMessage.encode = function(msg, format) {

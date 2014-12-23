@@ -7,6 +7,7 @@ var Connection = (function() {
 		this.connectionManager = new ConnectionManager(ably, options);
 		this.state = this.connectionManager.state.state;
 		this.id = undefined;
+		this.memberId = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {

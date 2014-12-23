@@ -13,9 +13,10 @@ var PresenceMessage = (function() {
 	}
 
 	PresenceMessage.Action = {
-		'ENTER' : 0,
-		'LEAVE' : 1,
-		'UPDATE' : 2
+		'PRESENT' : 1,
+		'ENTER' : 2,
+		'LEAVE' : 3,
+		'UPDATE' : 4
 	};
 
 	/**

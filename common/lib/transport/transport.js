@@ -58,7 +58,7 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionId, message.connectionSerial);
+			this.emit('connected', null, message.connectionId, message.connectionSerial, message.memberId);
 			break;
 		case actions.CLOSED:
 			this.isConnected = false;
