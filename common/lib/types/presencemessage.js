@@ -9,10 +9,10 @@ var PresenceMessage = (function() {
 		this.data = undefined;
 		this.encoding = undefined;
 		this.memberId = undefined;
-		this.inheritMemberId = undefined;
 	}
 
 	PresenceMessage.Action = {
+		'ABSENT' : 0,
 		'PRESENT' : 1,
 		'ENTER' : 2,
 		'LEAVE' : 3,
