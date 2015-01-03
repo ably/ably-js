@@ -1,5 +1,6 @@
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
+	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -15,6 +16,7 @@ var RealtimeChannel = (function() {
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
+		this.syncChannelSerial = undefined;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -222,6 +224,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onMessage = function(message) {
+		var syncChannelSerial;
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.setAttached(message);
@@ -231,6 +234,8 @@ var RealtimeChannel = (function() {
 			this.setDetached(message);
 			break;
 
+		case actions.SYNC:
+			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
@@ -251,7 +256,7 @@ var RealtimeChannel = (function() {
 				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 			}
-			this.presence.setPresence(presence, true);
+			this.presence.setPresence(presence, true, syncChannelSerial);
 			break;
 
 		case actions.MESSAGE:
@@ -343,6 +348,8 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
+		if((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0)
+			this.presence.awaitSync();
 		this.presence.setAttached();
 		this.emit('attached');
 	};
@@ -410,6 +417,9 @@ var RealtimeChannel = (function() {
 				this.detachImpl();
 				result = true;
 				break;
+			case 'attached':
+				/* resume any sync operation that was in progress */
+				this.sync();
 			default:
 				break;
 		}

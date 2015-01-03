@@ -1,16 +1,16 @@
 var Presence = (function() {
 	var presenceAction = PresenceMessage.Action;
-	var presenceActionToEvent = ['enter', 'leave', 'update'];
+	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 
-	function memberKey(clientId, memberId) {
-		return clientId + ':' + memberId;
+	function memberKey(item) {
+		return item.clientId + ':' + item.memberId;
 	}
 
 	function Presence(channel, options) {
 		EventEmitter.call(this);
 		this.channel = channel;
 		this.clientId = options.clientId;
-		this.members = {};
+		this.members = new PresenceMap(this);
 	}
 	Utils.inherits(Presence, EventEmitter);
 
@@ -90,28 +90,51 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(key) {
-		return key ? this.members[key] : Utils.valuesArray(this.members, true);
+	Presence.prototype.get = function(/* clientId, callback */) {
+		var args = Array.prototype.slice.call(arguments);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
+
+		var clientId = args[0],
+			callback = args[1] || noop,
+			members = this.members;
+
+		members.waitSync(function() {
+			callback(null, clientId ? members.getClient(clientId) : members.values());
+		});
 	};
 
-	Presence.prototype.setPresence = function(presenceSet, broadcast) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
+	Presence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
+		var syncCursor, match, members = this.members;
+		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
+			this.members.startSync();
+
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
-			var key = memberKey(presence.clientId, presence.memberId);
 			switch(presence.action) {
 				case presenceAction.LEAVE:
-					delete this.members[key];
+					broadcast &= members.remove(presence);
 					break;
 				case presenceAction.UPDATE:
-					if(presence.inheritMemberId)
-						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
 				case presenceAction.ENTER:
-					this.members[key] = presence;
+					presence = PresenceMessage.fromValues(presence);
+					presence.action = presenceAction.PRESENT;
+				case presenceAction.PRESENT:
+					broadcast &= members.put(presence);
 					break;
 			}
-			if(broadcast)
+		}
+		/* if this is the last message in a sequence of sync updates, end the sync */
+		if(!syncCursor)
+			members.endSync();
+
+		/* broadcast to listeners */
+		if(broadcast) {
+			for(var i = 0; i < presenceSet.length; i++) {
+				var presence = presenceSet[i];
 				this.emit(presenceActionToEvent[presence.action], presence);
+			}
 		}
 	};
 
@@ -131,6 +154,114 @@ var Presence = (function() {
 			pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
+	};
+
+	Presence.prototype.awaitSync = function() {
+		this.members.startSync();
+	};
+
+	function PresenceMap(presence) {
+		EventEmitter.call(this);
+		this.presence = presence;
+		this.map = {};
+		this.syncInProgress = false;
+		this.residualMembers = null;
+	}
+	Utils.inherits(PresenceMap, EventEmitter);
+
+	PresenceMap.prototype.get = function(key) {
+		return this.map[key];
+	};
+
+	PresenceMap.prototype.getClient = function(clientId) {
+		var map = this.map, result = [];
+		for(var key in map) {
+			var item = map[key];
+			if(item.clientId == clientId && item.action != presenceAction.ABSENT)
+				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.put = function(item) {
+		var map = this.map, key = memberKey(item);
+		/* we've seen this member, so do not remove it at the end of sync */
+		if(this.residualMembers)
+			delete this.residualMembers[key];
+
+		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
+		var existingItem = map[key];
+		if(existingItem && item.timestamp < existingItem.timestamp) {
+			/* no item supersedes a newer item with the same key */
+			return false;
+		}
+		map[key] = item;
+		return true;
+
+	};
+
+	PresenceMap.prototype.values = function() {
+		var map = this.map, result = [];
+		for(var key in map) {
+			var item = map[key];
+			if(item.action != presenceAction.ABSENT)
+				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.remove = function(item) {
+		var map = this.map, key = memberKey(item);
+		var existingItem = map[key];
+		if(existingItem) {
+			delete map[key];
+			if(existingItem.action == PresenceMessage.Action.ABSENT)
+				return false;
+		}
+		return true;
+	};
+
+	PresenceMap.prototype.startSync = function() {
+		var map = this.map, syncInProgress = this.syncInProgress;
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		/* we might be called multiple times while a sync is in progress */
+		if(!this.syncInProgress) {
+			this.residualMembers = Utils.copy(map);
+			this.syncInProgress = true;
+		}
+	};
+
+	PresenceMap.prototype.endSync = function() {
+		var map = this.map, syncInProgress = this.syncInProgress;
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		if(syncInProgress) {
+			/* we can now strip out the ABSENT members, as we have
+			 * received all of the out-of-order sync messages */
+			for(var memberKey in map) {
+				var entry = map[memberKey];
+				if(entry.action == presenceAction.ABSENT) {
+					delete map[memberKey];
+				}
+			}
+			/* any members that were present at the start of the sync,
+			 * and have not been seen in sync, can be removed */
+			for(var memberKey in this.residualMembers) {
+				delete map[memberKey];
+			}
+			this.residualMembers = null;
+
+			/* finish, notifying any waiters */
+			this.syncInProgress = false;
+		}
+		this.emit('sync');
+	};
+
+	PresenceMap.prototype.waitSync = function(callback) {
+		if(!this.syncInProgress) {
+			callback();
+			return;
+		}
+		this.once('sync', callback);
 	};
 
 	return Presence;
