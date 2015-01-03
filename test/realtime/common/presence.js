@@ -455,15 +455,21 @@ exports.setup = function(base) {
 			/* listen for the enter event, test is complete when received */
 			var presenceHandler = function(presenceMessage) {
 				//console.log('Event received on presence channel: event = ' + this.event + ', clientId = ' + presenceMessage.clientId + ', clientData = ' + presenceMessage.clientData);
-				var presenceMembers = presenceChannel.presence.get();
-				var testClientPresent = false;
-				if(presenceMembers)
-					for(var i = 0; i < presenceMembers.length; i++)
-						if(presenceMembers[i].clientId == testClientId)
-							testClientPresent = true;
-				test.ok(testClientPresent, 'Expected test client in set of members');
-				done();
-				presenceChannel.presence.off(presenceHandler);
+				presenceChannel.presence.get(function(err, presenceMembers) {
+					if(err) {
+						test.ok(false, 'Presence get() failed with error: ' + err);
+						done();
+						return;
+					}
+					var testClientPresent = false;
+					if(presenceMembers)
+						for(var i = 0; i < presenceMembers.length; i++)
+							if(presenceMembers[i].clientId == testClientId)
+								testClientPresent = true;
+					test.ok(testClientPresent, 'Expected test client in set of members');
+					done();
+					presenceChannel.presence.off(presenceHandler);
+				});
 			};
 			presenceChannel.presence.on(presenceHandler);
 
@@ -528,17 +534,24 @@ exports.setup = function(base) {
 				//console.log('Event received on presence channel: event = ' + this.event + ', clientId = ' + presenceMessage.clientId + ', clientData = ' + presenceMessage.clientData);
 				//console.log(require('util').inspect(presenceMessage));
 				if(this.event == 'leave') {
-					var presenceMembers = presenceChannel.presence.get();
-					//console.log(require('util').inspect(presenceMembers));
-					var testClientPresent = false;
-					if(presenceMembers) {
-						for(var i = 0; i < presenceMembers.length; i++)
-							if(presenceMembers[i].clientId == testClientId && presenceMembers[i].clientData == testClientData)
-								testClientPresent = true;
-					}
-					test.ok(!testClientPresent, 'Expected test client to be absent from set of members');
-					done();
-					presenceChannel.presence.off(presenceHandler);
+					presenceChannel.presence.get(function(err, presenceMembers) {
+						if(err) {
+							test.ok(false, 'Presence get() failed with error: ' + err);
+							done();
+							return;
+						}
+						//console.log(require('util').inspect(presenceMembers));
+						var testClientPresent = false;
+						if(presenceMembers) {
+							for(var i = 0; i < presenceMembers.length; i++)
+								if(presenceMembers[i].clientId == testClientId && presenceMembers[i].clientData == testClientData)
+									testClientPresent = true;
+						}
+						test.ok(!testClientPresent, 'Expected test client to be absent from set of members');
+						done();
+						presenceChannel.presence.off(presenceHandler);
+
+					});
 				}
 			};
 			presenceChannel.presence.on(presenceHandler);
@@ -630,39 +643,54 @@ exports.setup = function(base) {
 							return;
 						}
 						test.ok(true, 'Presence event sent');
-						test.equal(clientChannel1.presence.get().length, 1, 'Member present');
-						/* now set up second connection and attach */
-						/* set up authenticated connection */
-						clientRealtime2 = base.realtime({
-							//log: {level: 4},
-							clientId: testClientId2,
-							authToken: authToken2,
-							transports: ['web_socket']
-						});
-						clientRealtime2.connection.on('connected', function() {
-							/* get channel, attach */
-							var clientChannel2 = clientRealtime2.channels.get('presence1');
-							clientChannel2.attach(function(err) {
-								if(err) {
-									test.ok(false, 'Attach failed with error: ' + err);
-									done();
-									return;
-								}
-								clientChannel2.presence.on('enter', function() {
-									/* get the channel members and verify testclient is there */
-									test.deepEqual(clientChannel1.presence.get(), clientChannel2.presence.get(), 'Verify member presence is indicated after attach');
-									done();
+						clientChannel1.presence.get(function(err, presenceMembers1) {
+							if(err) {
+								test.ok(false, 'Presence get() failed with error: ' + err);
+								done();
+								return;
+							}
+							test.equal(presenceMembers1.length, 1, 'Member present');
+							/* now set up second connection and attach */
+							/* set up authenticated connection */
+							clientRealtime2 = base.realtime({
+								//log: {level: 4},
+								clientId: testClientId2,
+								authToken: authToken2,
+								transports: ['web_socket']
+							});
+							clientRealtime2.connection.on('connected', function() {
+								/* get channel, attach */
+								var clientChannel2 = clientRealtime2.channels.get('presence1');
+								clientChannel2.attach(function(err) {
+									if(err) {
+										test.ok(false, 'Attach failed with error: ' + err);
+										done();
+										return;
+									}
+									clientChannel2.presence.on('enter', function() {
+										/* get the channel members and verify testclient is there */
+										clientChannel2.presence.get(function(err, presenceMembers2) {
+											if(err) {
+												test.ok(false, 'Presence get() failed with error: ' + err);
+												done();
+												return;
+											}
+											test.deepEqual(presenceMembers1, presenceMembers2, 'Verify member presence is indicated after attach');
+											done();
+										});
+									});
 								});
 							});
+							var exitOnState = function(state) {
+								clientRealtime2.connection.on(state, function () {
+									test.ok(false, transport + ' connection to server failed');
+									done();
+								});
+							}
+							exitOnState('failed');
+							exitOnState('suspended');
+
 						});
-						var exitOnState = function(state) {
-							clientRealtime2.connection.on(state, function () {
-								test.ok(false, transport + ' connection to server failed');
-								done();
-							});
-						}
-						exitOnState('failed');
-						exitOnState('suspended');
 					});
 				});
 			});
@@ -771,10 +799,16 @@ exports.setup = function(base) {
 					exitOnState('suspended');
 				}
 			], function(err) {
-				var members = clientChannel2.presence.get();
-				test.equal(members.length, 2, 'Verify both members present');
-				test.notEqual(members[0].memberId, members[1].memberId, 'Verify members have distinct memberIds');
-				done();
+				clientChannel2.presence.get(function(err, members) {
+					if(err) {
+						test.ok(false, 'Presence.get() failed with error: ' + err);
+						test.done()
+						return;
+					}
+					test.equal(members.length, 2, 'Verify both members present');
+					test.notEqual(members[0].memberId, members[1].memberId, 'Verify members have distinct memberIds');
+					done();
+				});
 			});
 		} catch(e) {
 			test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
