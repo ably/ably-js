@@ -54,7 +54,7 @@ exports.setup = function(base) {
 				//console.log('received message; serial = ' + msg.connectionSerial);
 				++rxCount;
 			});
-			var txCount = 0
+			var txCount = 0;
 			function ph1TxOnce() {
 				console.log('sending (phase 1): ' + txCount);
 				txChannel.publish('event0', 'Hello world at: ' + new Date(), function(err) {
