@@ -78,7 +78,7 @@ exports.setup = function(base) {
 			 * NOTE: this uses knowledge of the internal operation
 			 * of the client library to simulate a dropped connection
 			 * without explicitly closing the connection */
-			lastActiveRxTransport.close(false);
+			lastActiveRxTransport.disconnect();
 			/* continue in 5 seconds */
 			setTimeout(callback, 5000);
 		}
@@ -243,7 +243,7 @@ exports.setup = function(base) {
 			 * NOTE: this uses knowledge of the internal operation
 			 * of the client library to simulate a dropped connection
 			 * without explicitly closing the connection */
-			lastActiveRxTransport.close(false);
+			lastActiveRxTransport.disconnect();
 			var txCount = 0
 
 			function ph2TxOnce() {
