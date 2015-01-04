@@ -667,7 +667,7 @@ exports.setup = function(base) {
 										done();
 										return;
 									}
-									clientChannel2.presence.on('enter', function() {
+									clientChannel2.presence.on('present', function() {
 										/* get the channel members and verify testclient is there */
 										clientChannel2.presence.get(function(err, presenceMembers2) {
 											if(err) {
