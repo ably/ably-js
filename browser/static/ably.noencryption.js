@@ -2161,7 +2161,6 @@ var DomEvent = (function() {
 			// uint 64
 			case 0xcf:
 				value = getUint64(this.view, this.offset + 1);
-				value = 0;
 				this.offset += 9;
 				return value;
 
@@ -2186,7 +2185,6 @@ var DomEvent = (function() {
 			// int 64
 			case 0xd3:
 				value = getInt64(this.view, this.offset + 1);
-				value = 0;
 				this.offset += 9;
 				return value;
 
@@ -2826,8 +2824,10 @@ var Utils = (function() {
 	 *         added, by reference only
 	 */
 	Utils.mixin = function(target, src) {
-		for(var prop in src)
-			target[prop] = src[prop];
+		for(var prop in src) {
+			if(src.hasOwnProperty(prop))
+				target[prop] = src[prop];
+		}
 		return target;
 	};
 
@@ -3270,13 +3270,14 @@ var PresenceMessage = (function() {
 		this.data = undefined;
 		this.encoding = undefined;
 		this.memberId = undefined;
-		this.inheritMemberId = undefined;
 	}
 
 	PresenceMessage.Action = {
-		'ENTER' : 0,
-		'LEAVE' : 1,
-		'UPDATE' : 2
+		'ABSENT' : 0,
+		'PRESENT' : 1,
+		'ENTER' : 2,
+		'LEAVE' : 3,
+		'UPDATE' : 4
 	};
 
 	/**
@@ -3364,10 +3365,12 @@ var ProtocolMessage = (function() {
 
 	function ProtocolMessage() {
 		this.action = undefined;
+		this.flags = undefined;
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.count = undefined;
 		this.error = undefined;
+		this.memberId = undefined;
 		this.connectionId = undefined;
 		this.connectionSerial = undefined;
 		this.channel = undefined;
@@ -3393,7 +3396,13 @@ var ProtocolMessage = (function() {
 		'DETACH' : 12,
 		'DETACHED' : 13,
 		'PRESENCE' : 14,
-		'MESSAGE' : 15
+		'MESSAGE' : 15,
+		'SYNC' : 16
+	};
+
+	ProtocolMessage.Flag = {
+		'HAS_PRESENCE': 0,
+		'HAS_BACKLOG': 1
 	};
 
 	ProtocolMessage.encode = function(msg, format) {
@@ -3464,7 +3473,8 @@ var ConnectionManager = (function() {
 		connected:    {state: 'connected',    terminal: false, queueEvents: false, sendEvents: true, failState: 'disconnected'},
 		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
 		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closed:       {state: 'closed',       terminal: false, queueEvents: false, sendEvents: false},
+		closing:      {state: 'closing',      terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+		closed:       {state: 'closed',       terminal: true,  queueEvents: false, sendEvents: false},
 		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
 	};
 
@@ -3745,22 +3755,22 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		if(this.state == states.closed) {
+		if(this.state == states.closing || this.state == states.closed) {
 			/* the connection was closed when we were away
 			 * attempting this transport so close */
-			transport.close(true);
+			transport.close();
 			return;
  		}
 		/* if there was already a pending transport, abandon it */
 		if(this.pendingTransport)
-			this.pendingTransport.close(false);
+			this.pendingTransport.disconnect();
 
 		/* this is now the pending transport */
 		this.pendingTransport = transport;
 
 		var self = this;
 		var handleTransportEvent = function(state) {
-			return function(error, connectionId, connectionSerial) {
+			return function(error, connectionId, connectionSerial, memberId) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
 				if(error && error.message)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
@@ -3768,11 +3778,13 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
 				if(connectionSerial !== undefined)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
+				if(memberId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'memberId =  ' + memberId);
 
 				/* handle activity transition */
 				var notifyState;
 				if(state == 'connected') {
-					self.activateTransport(transport, connectionId, connectionSerial);
+					self.activateTransport(transport, connectionId, connectionSerial, memberId);
 					notifyState = true;
 				} else {
 					notifyState = self.deactivateTransport(transport);
@@ -3801,28 +3813,32 @@ var ConnectionManager = (function() {
 	 *   'recover': new connection with recoverable messages;
 	 *   'resume': uninterrupted resumption of connection without loss of messages
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial) {
+	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial, memberId) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionId = ' + connectionId + '; connectionSerial = ' + connectionSerial);
-		/* if the connectionmanager moved to the closed state before this
+		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		if(this.state == states.closed)
+		if(this.state == states.closing || this.state == states.closed)
 			return;
 
  		/* Terminate any existing transport */
 		var existingTransport = this.transport;
  		if(existingTransport) {
 			 this.transport = null;
-			 existingTransport.close(false);
+			 existingTransport.disconnect();
 		}
 		existingTransport = this.pendingTransport;
-		if(existingTransport)
+		if(existingTransport) {
 			this.pendingTransport = null;
+			if(existingTransport !== transport)
+				existingTransport.disconnect();
+		}
 
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
 		this.transport = transport;
 		this.host = transport.params.host;
 		if(connectionId && this.connectionId != connectionId)  {
+			this.realtime.connection.memberId = memberId;
 			this.realtime.connection.id = this.connectionId = connectionId;
 			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 			if(createCookie && this.options.recover === true)
@@ -3906,20 +3922,21 @@ var ConnectionManager = (function() {
 	 * ConnectionManager connection lifecycle
 	 ****************************************/
 
-	ConnectionManager.prototype.startConnectTimer = function() {
+	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
 		var self = this;
-		this.connectTimer = setTimeout(function() {
-			if(self.connectTimer) {
+		this.transitionTimer = setTimeout(function() {
+			if(self.transitionTimer) {
+				self.transitionTimer = null;
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + states.connecting.failState);
-				self.notifyState({state: states.connecting.failState});
+				self.notifyState({state: transitionState.failState});
 			}
 		}, Defaults.connectTimeout);
 	};
 
-	ConnectionManager.prototype.cancelConnectTimer = function() {
-		if(this.connectTimer) {
-			clearTimeout(this.connectTimer);
-			this.connectTimer = undefined;
+	ConnectionManager.prototype.cancelTransitionTimer = function() {
+		if(this.transitionTimer) {
+			clearTimeout(this.transitionTimer);
+			this.transitionTimer = null;
 		}
 	};
 
@@ -3929,6 +3946,7 @@ var ConnectionManager = (function() {
 			return;
 		this.suspendTimer = setTimeout(function() {
 			if(self.suspendTimer) {
+				self.suspendTimer = null;
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager suspend timer expired', 'requesting new state: suspended');
 				states.connecting.failState = 'suspended';
 				states.connecting.queueEvents = false;
@@ -3937,12 +3955,17 @@ var ConnectionManager = (function() {
 		}, Defaults.suspendedTimeout);
 	};
 
+	ConnectionManager.prototype.checkSuspendTimer = function(state) {
+		if(state !== 'disconnected' && state !== 'suspended')
+			this.cancelSuspendTimer();
+	};
+
 	ConnectionManager.prototype.cancelSuspendTimer = function() {
 		states.connecting.failState = 'disconnected';
 		states.connecting.queueEvents = true;
 		if(this.suspendTimer) {
 			clearTimeout(this.suspendTimer);
-			delete this.suspendTimer;
+			this.suspendTimer = null;
 		}
 	};
 
@@ -3950,6 +3973,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		this.retryTimer = setTimeout(function() {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
+			self.retryTimer = null;
 			self.requestState({state: 'connecting'});
 		}, interval);
 	};
@@ -3957,38 +3981,30 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.cancelRetryTimer = function() {
 		if(this.retryTimer) {
 			clearTimeout(this.retryTimer);
-			delete this.retryTimer;
+			this.retryTimer = null;
 		}
 	};
 
 	ConnectionManager.prototype.notifyState = function(indicated) {
-		/* do nothing if we're already in the indicated state
-		 * or we're unable to move from the current state*/
-		if(this.state.terminal || indicated.state == this.state.state)
-			return; /* silently do nothing */
+		var state = indicated.state;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
+		/* do nothing if we're already in the indicated state */
+		if(state == this.state.state)
+			return;
 
-		/* if we consider the transport to have failed
-		 * (perhaps temporarily) then remove it, so we
-		 * can re-select when we re-attempt connection */
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + indicated.state);
-		var newState = states[indicated.state];
-		if(!newState.sendEvents) {
-			if(this.transport) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'deleting transport ' + this.transport);
-				this.transport.dispose();
-				delete this.transport;
-			}
-		}
-
-		/* kill running timers, including suspend if connected */
-		this.cancelConnectTimer();
+		/* kill timers (possibly excepting suspend timer, as these are superseded by this notification */
+		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		if(indicated.state == 'connected') {
-			this.cancelSuspendTimer();
-		}
+		this.checkSuspendTimer();
 
-		/* set up retry and suspended timers */
-		var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
+		/* do nothing if we're unable to move from the current state */
+		if(this.state.terminal)
+			return;
+
+		/* process new state */
+		var newState = states[indicated.state],
+			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
+
 		if(newState.retryDelay)
 			this.startRetryTimer(newState.retryDelay);
 
@@ -4003,48 +4019,36 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
-		/* kill running timers, as this request supersedes them */
-		this.cancelConnectTimer();
-		this.cancelRetryTimer();
-		if(request.state == this.state.state)
+		var state = request.state, self = this;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state);
+		if(state == this.state.state)
 			return; /* silently do nothing */
-		if(this.state.terminal)
-			throw new Error(this.error.message);
-		if(request.state == 'connecting') {
+
+		/* kill running timers, as this request supersedes them */
+		this.cancelTransitionTimer();
+		this.cancelRetryTimer();
+		this.cancelSuspendTimer();
+
+		if(state == 'connecting') {
 			if(this.state.state == 'connected')
 				return; /* silently do nothing */
-			this.connectImpl();
-		} else {
-			if(this.pendingTransport) {
-				this.pendingTransport.close(true);
-				this.pendingTransport = null;
-			}
-			if(request.state == 'failed') {
-				if(this.transport) {
-					this.transport.abort(request.reason);
-					this.transport = null;
-				}
-			} else if(request.state == 'closed') {
-				this.cancelConnectTimer();
-				this.cancelRetryTimer();
-				this.cancelSuspendTimer();
-				if(this.transport) {
-					this.transport.close(true);
-					this.transport = null;
-				}
-			}
+			Utils.nextTick(function() { self.connectImpl(); });
+		} else if(state == 'closing') {
+			if(this.state.state == 'closed')
+				return; /* silently do nothing */
+			Utils.nextTick(function() { self.closeImpl(); });
 		}
-		if(request.state != this.state.state) {
-			var newState = states[request.state];
-			var change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
-			this.enactStateChange(change);
-		}
+
+		var newState = states[state],
+			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+
+		this.enactStateChange(change);
 	};
 
 	ConnectionManager.prototype.connectImpl = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'starting connection');
 		this.startSuspendTimer();
-		this.startConnectTimer();
+		this.startTransitionTimer(states.connecting);
 
 		var self = this;
 		var auth = this.realtime.auth;
@@ -4089,6 +4093,27 @@ var ConnectionManager = (function() {
 					tryConnect();
 			});
 		}
+	};
+
+	ConnectionManager.prototype.closeImpl = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
+		this.cancelSuspendTimer();
+		this.startTransitionTimer(states.closing);
+
+		/* if transport exists, send close message */
+		var transport = this.transport;
+		if(transport) {
+			try {
+				transport.close();
+			} catch(e) {
+				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
+				var err = new ErrorInfo(msg, 50000, 500);
+				transport.abort(err);
+			}
+			return;
+		}
+		this.notifyState({state: 'closed'});
 	};
 
 	/******************
@@ -4268,19 +4293,26 @@ var Transport = (function() {
 
 	Transport.prototype.connect = function() {};
 
-	Transport.prototype.close = function(closing) {
+	Transport.prototype.close = function() {
+		if(this.isConnected) {
+			this.sendClose();
+		}
+		this.emit('closed');
+		this.dispose();
+	};
+
+	Transport.prototype.disconnect = function() {
 		if(this.isConnected) {
 			this.isConnected = false;
-			this.sendClose(closing);
 		}
-		this.emit('closed', ConnectionError.closed);
+		this.emit('disconnected', ConnectionError.disconnected);
 		this.dispose();
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
 			this.isConnected = false;
-			this.sendClose(true);
+			this.sendClose();
 		}
 		this.emit('failed', error);
 		this.dispose();
@@ -4294,13 +4326,15 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionId, message.connectionSerial);
+			this.emit('connected', null, message.connectionId, message.connectionSerial, message.memberId);
 			break;
 		case actions.CLOSED:
+			this.isConnected = false;
+			this.onClose(message);
+			break;
 		case actions.DISCONNECTED:
 			this.isConnected = false;
 			this.onDisconnect();
-			/* FIXME: do we need to emit an event here? */
 			break;
 		case actions.ACK:
 			this.emit('ack', message.msgSerial, message.count);
@@ -4334,23 +4368,20 @@ var Transport = (function() {
 		this.isConnected = true;
 	};
 
-	Transport.prototype.onDisconnect = function() {};
-
-	Transport.prototype.onClose = function(wasClean, message) {
-		/* if the connectionmanager already thinks we're closed
-		 * then we probably initiated it */
-		if(this.connectionManager.state.state == 'closed')
-			return;
-		var newState = wasClean ?  'disconnected' : 'failed';
+	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
-		var error = Utils.copy(ConnectionError[newState]);
-		if(message) error.message = message;
-		this.emit(newState, error);
+		var err = message && message.error;
+		this.emit('disconnected', err);
 	};
 
-	Transport.prototype.sendClose = function(closing) {
-		if(closing)
-			this.send(closeMessage);
+	Transport.prototype.onClose = function(message) {
+		this.isConnected = false;
+		var err = message && message.error;
+		this.emit('closed', err);
+	};
+
+	Transport.prototype.sendClose = function() {
+		this.send(closeMessage);
 	};
 
 	Transport.prototype.dispose = function() {
@@ -4423,7 +4454,7 @@ var WebSocketTransport = (function() {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = 'arraybuffer';
 				wsConnection.onopen = function() { self.onWsOpen(); };
-				wsConnection.onclose = function(ev, wsReason) { self.onWsClose(ev, wsReason); };
+				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) { self.onWsError(e); }
@@ -4448,22 +4479,21 @@ var WebSocketTransport = (function() {
 		this.emit('wsopen');
 	};
 
-	WebSocketTransport.prototype.onWsClose = function(ev, wsReason) {
+	WebSocketTransport.prototype.onWsClose = function(ev) {
 		var wasClean, code, reason;
 		if(typeof(ev) == 'object') {
 			/* W3C spec-compatible */
 			wasClean = ev.wasClean;
 			code = ev.code;
-			reason = ev.reason;
 		} else /*if(typeof(ev) == 'number')*/ {
 			/* ws in node */
 			code = ev;
-			reason = wsReason || '';
 			wasClean = (code == 1000);
 		}
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'closed WebSocket; wasClean = ' + wasClean + '; code = ' + code);
 		delete this.wsConnection;
-		Transport.prototype.onClose.call(this, wasClean, reason);
+		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
+		Transport.prototype.onDisconnect.call(this, err);
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
@@ -4554,23 +4584,37 @@ var CometTransport = (function() {
 		});
 	};
 
-	CometTransport.prototype.sendClose = function(closing) {
-		var closeUri = this.closeUri,
-			self = this;
+	CometTransport.prototype.disconnect = function() {
+		this.requestClose(false);
+		this.emit('disconnected');
+		this.dispose();
+	};
 
-		if(!closeUri) {
-			callback({message:'Unable to close; not connected', code:80000, statusCode:400});
-			return;
+	CometTransport.prototype.close = function() {
+		this.requestClose(true);
+		this.emit('closed');
+		this.dispose();
+	};
+
+	CometTransport.prototype.abort = function() {
+		this.requestClose(true);
+		this.emit('failed');
+		this.dispose();
+	};
+
+	CometTransport.prototype.requestClose = function(closing) {
+		var closeUri = this.closeUri;
+		if(closeUri) {
+			var self = this,
+				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
+
+			closeRequest.on('complete', function (err) {
+				if (err) {
+					self.emit('error', err);
+				}
+			});
+			closeRequest.exec();
 		}
-
-		var closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
-		closeRequest.on('complete', function(err) {
-			if(err) {
-				self.emit('error', err);
-				return;
-			}
-		});
-		closeRequest.exec();
 	};
 
 	CometTransport.prototype.dispose = function() {
@@ -5503,6 +5547,7 @@ var Connection = (function() {
 		this.connectionManager = new ConnectionManager(ably, options);
 		this.state = this.connectionManager.state.state;
 		this.id = undefined;
+		this.memberId = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -5535,7 +5580,7 @@ var Connection = (function() {
 
 	Connection.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionId = ' + this.id);
-		this.connectionManager.requestState({state: 'closed'});
+		this.connectionManager.requestState({state: 'closing'});
 	};
 
 	return Connection;
@@ -5686,6 +5731,7 @@ var Channel = (function() {
 
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
+	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 
 	var defaultOptions = {
@@ -5701,6 +5747,7 @@ var RealtimeChannel = (function() {
     	this.state = 'initialized';
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
+		this.syncChannelSerial = undefined;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -5894,6 +5941,25 @@ var RealtimeChannel = (function() {
 				subscriptions.off(event[i], listener);
 	};
 
+	RealtimeChannel.prototype.sync = function() {
+		/* check preconditions */
+		switch(this.state) {
+			case 'initialised':
+			case 'detaching':
+			case 'detached':
+				throw new ErrorInfo("Unable to sync to channel; not attached", 40000);
+			default:
+		}
+		var connectionManager = this.connectionManager;
+		if(!ConnectionManager.activeState(connectionManager.state))
+			throw connectionManager.getStateError();
+
+		/* send sync request */
+		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, name: this.name});
+		syncMessage.channelSerial = this.syncChannelSerial;
+		connectionManager.sendImpl(syncMessage);
+	};
+
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
 		this.connectionManager.send(msg, this.options.queueEvents, callback);
 	};
@@ -5908,6 +5974,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onMessage = function(message) {
+		var syncChannelSerial;
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.setAttached(message);
@@ -5917,6 +5984,8 @@ var RealtimeChannel = (function() {
 			this.setDetached(message);
 			break;
 
+		case actions.SYNC:
+			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
@@ -5937,7 +6006,7 @@ var RealtimeChannel = (function() {
 				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 			}
-			this.presence.setPresence(presence, true);
+			this.presence.setPresence(presence, true, syncChannelSerial);
 			break;
 
 		case actions.MESSAGE:
@@ -6029,6 +6098,8 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
+		if((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0)
+			this.presence.awaitSync();
 		this.presence.setAttached();
 		this.emit('attached');
 	};
@@ -6096,6 +6167,9 @@ var RealtimeChannel = (function() {
 				this.detachImpl();
 				result = true;
 				break;
+			case 'attached':
+				/* resume any sync operation that was in progress */
+				this.sync();
 			default:
 				break;
 		}
@@ -6124,17 +6198,17 @@ var RealtimeChannel = (function() {
 
 var Presence = (function() {
 	var presenceAction = PresenceMessage.Action;
-	var presenceActionToEvent = ['enter', 'leave', 'update'];
+	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 
-	function memberKey(clientId, memberId) {
-		return clientId + ':' + memberId;
+	function memberKey(item) {
+		return item.clientId + ':' + item.memberId;
 	}
 
 	function Presence(channel, options) {
 		EventEmitter.call(this);
 		this.channel = channel;
 		this.clientId = options.clientId;
-		this.members = {};
+		this.members = new PresenceMap(this);
 	}
 	Utils.inherits(Presence, EventEmitter);
 
@@ -6214,28 +6288,51 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(key) {
-		return key ? this.members[key] : Utils.valuesArray(this.members, true);
+	Presence.prototype.get = function(/* clientId, callback */) {
+		var args = Array.prototype.slice.call(arguments);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
+
+		var clientId = args[0],
+			callback = args[1] || noop,
+			members = this.members;
+
+		members.waitSync(function() {
+			callback(null, clientId ? members.getClient(clientId) : members.values());
+		});
 	};
 
-	Presence.prototype.setPresence = function(presenceSet, broadcast) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants');
+	Presence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
+		var syncCursor, match, members = this.members;
+		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
+			this.members.startSync();
+
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = presenceSet[i];
-			var key = memberKey(presence.clientId, presence.memberId);
 			switch(presence.action) {
 				case presenceAction.LEAVE:
-					delete this.members[key];
+					broadcast &= members.remove(presence);
 					break;
 				case presenceAction.UPDATE:
-					if(presence.inheritMemberId)
-						delete this.members[memberKey(presence.clientId, presence.inheritMemberId)];
 				case presenceAction.ENTER:
-					this.members[key] = presence;
+					presence = PresenceMessage.fromValues(presence);
+					presence.action = presenceAction.PRESENT;
+				case presenceAction.PRESENT:
+					broadcast &= members.put(presence);
 					break;
 			}
-			if(broadcast)
+		}
+		/* if this is the last message in a sequence of sync updates, end the sync */
+		if(!syncCursor)
+			members.endSync();
+
+		/* broadcast to listeners */
+		if(broadcast) {
+			for(var i = 0; i < presenceSet.length; i++) {
+				var presence = presenceSet[i];
 				this.emit(presenceActionToEvent[presence.action], presence);
+			}
 		}
 	};
 
@@ -6255,6 +6352,114 @@ var Presence = (function() {
 			pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
+	};
+
+	Presence.prototype.awaitSync = function() {
+		this.members.startSync();
+	};
+
+	function PresenceMap(presence) {
+		EventEmitter.call(this);
+		this.presence = presence;
+		this.map = {};
+		this.syncInProgress = false;
+		this.residualMembers = null;
+	}
+	Utils.inherits(PresenceMap, EventEmitter);
+
+	PresenceMap.prototype.get = function(key) {
+		return this.map[key];
+	};
+
+	PresenceMap.prototype.getClient = function(clientId) {
+		var map = this.map, result = [];
+		for(var key in map) {
+			var item = map[key];
+			if(item.clientId == clientId && item.action != presenceAction.ABSENT)
+				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.put = function(item) {
+		var map = this.map, key = memberKey(item);
+		/* we've seen this member, so do not remove it at the end of sync */
+		if(this.residualMembers)
+			delete this.residualMembers[key];
+
+		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
+		var existingItem = map[key];
+		if(existingItem && item.timestamp < existingItem.timestamp) {
+			/* no item supersedes a newer item with the same key */
+			return false;
+		}
+		map[key] = item;
+		return true;
+
+	};
+
+	PresenceMap.prototype.values = function() {
+		var map = this.map, result = [];
+		for(var key in map) {
+			var item = map[key];
+			if(item.action != presenceAction.ABSENT)
+				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.remove = function(item) {
+		var map = this.map, key = memberKey(item);
+		var existingItem = map[key];
+		if(existingItem) {
+			delete map[key];
+			if(existingItem.action == PresenceMessage.Action.ABSENT)
+				return false;
+		}
+		return true;
+	};
+
+	PresenceMap.prototype.startSync = function() {
+		var map = this.map, syncInProgress = this.syncInProgress;
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		/* we might be called multiple times while a sync is in progress */
+		if(!this.syncInProgress) {
+			this.residualMembers = Utils.copy(map);
+			this.syncInProgress = true;
+		}
+	};
+
+	PresenceMap.prototype.endSync = function() {
+		var map = this.map, syncInProgress = this.syncInProgress;
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		if(syncInProgress) {
+			/* we can now strip out the ABSENT members, as we have
+			 * received all of the out-of-order sync messages */
+			for(var memberKey in map) {
+				var entry = map[memberKey];
+				if(entry.action == presenceAction.ABSENT) {
+					delete map[memberKey];
+				}
+			}
+			/* any members that were present at the start of the sync,
+			 * and have not been seen in sync, can be removed */
+			for(var memberKey in this.residualMembers) {
+				delete map[memberKey];
+			}
+			this.residualMembers = null;
+
+			/* finish, notifying any waiters */
+			this.syncInProgress = false;
+		}
+		this.emit('sync');
+	};
+
+	PresenceMap.prototype.waitSync = function(callback) {
+		if(!this.syncInProgress) {
+			callback();
+			return;
+		}
+		this.once('sync', callback);
 	};
 
 	return Presence;

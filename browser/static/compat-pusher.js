@@ -163,8 +163,10 @@ var Utils = (function() {
 	 *         added, by reference only
 	 */
 	Utils.mixin = function(target, src) {
-		for(var prop in src)
-			target[prop] = src[prop];
+		for(var prop in src) {
+			if(src.hasOwnProperty(prop))
+				target[prop] = src[prop];
+		}
 		return target;
 	};
 
