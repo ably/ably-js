@@ -369,7 +369,6 @@
 			// uint 64
 			case 0xcf:
 				value = getUint64(this.view, this.offset + 1);
-				value = 0;
 				this.offset += 9;
 				return value;
 
@@ -394,7 +393,6 @@
 			// int 64
 			case 0xd3:
 				value = getInt64(this.view, this.offset + 1);
-				value = 0;
 				this.offset += 9;
 				return value;
 
