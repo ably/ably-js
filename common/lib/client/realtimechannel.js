@@ -210,6 +210,25 @@ var RealtimeChannel = (function() {
 				subscriptions.off(event[i], listener);
 	};
 
+	RealtimeChannel.prototype.sync = function() {
+		/* check preconditions */
+		switch(this.state) {
+			case 'initialised':
+			case 'detaching':
+			case 'detached':
+				throw new ErrorInfo("Unable to sync to channel; not attached", 40000);
+			default:
+		}
+		var connectionManager = this.connectionManager;
+		if(!ConnectionManager.activeState(connectionManager.state))
+			throw connectionManager.getStateError();
+
+		/* send sync request */
+		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, name: this.name});
+		syncMessage.channelSerial = this.syncChannelSerial;
+		connectionManager.sendImpl(syncMessage);
+	};
+
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
 		this.connectionManager.send(msg, this.options.queueEvents, callback);
 	};
