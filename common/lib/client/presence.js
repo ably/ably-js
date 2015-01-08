@@ -51,17 +51,22 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.leave = function(callback) {
+	Presence.prototype.leave = function(data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
+		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
-		this.leaveClient(this.clientId, callback);
+		this.leaveClient(this.clientId, data, callback);
 	};
 
-	Presence.prototype.leaveClient = function(clientId, callback) {
+	Presence.prototype.leaveClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
-			clientId : clientId
+			clientId : clientId,
+			data: data
 		});
 		var channel = this.channel;
 		switch(channel.state) {
@@ -81,7 +86,7 @@ var Presence = (function() {
 				var err = new Error('Unable to enter presence channel (incompatible state)');
 				err.code = 90001;
 				callback(err);
-				break
+				break;
 			default:
 				/* there is no connection; therefore we let
 				 * any entered status will timeout by itself */
