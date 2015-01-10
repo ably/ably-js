@@ -96,6 +96,15 @@ var Transport = (function() {
 	Transport.prototype.onConnect = function(message) {
 		/* the connectionId in a comet connected response is really
 		 * <instId>-<connectionId>; handle generically here */
+		var connectionId = message.connectionId = message.connectionId.split('-').pop();
+
+		/* if there was a (non-fatal) connection error
+		 * that invalidates an existing connection id, then
+		 * remove all channels attached to the previous id */
+		var error = message.error, connectionManager = this.connectionManager;
+		if(error && message.connectionId !== connectionManager.connectionId)
+			connectionManager.realtime.channels.setSuspended(error);
+
 		this.connectionId = message.connectionId = message.connectionId.split('-').pop();
 		this.isConnected = true;
 	};
