@@ -463,8 +463,8 @@ var ProtocolMessage = (function() {
 		this.timestamp = undefined;
 		this.count = undefined;
 		this.error = undefined;
-		this.memberId = undefined;
 		this.connectionId = undefined;
+		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 		this.channel = undefined;
 		this.channelSerial = undefined;
@@ -1103,7 +1103,7 @@ var XHRRequest = (function() {
 		var connectRequest = this.recvRequest = XHRRequest.createRequest(connectUri, null, connectParams, null, (this.stream ? REQ_RECV_STREAM : REQ_RECV));
 
 		connectRequest.on('data', function(data) {
-			/* intercept initial responses until connectionId obtained */
+			/* intercept initial responses until connectionKey obtained */
 			if(self.sendUri == null)
 				self.checkConnectResponse(data);
 			self.onData(data);
@@ -1142,7 +1142,7 @@ var XHRRequest = (function() {
 	};
 
 	IframeAgent.prototype.onConnect = function(message) {
-		var baseConnectionUri =  this.baseUri + message.connectionId;
+		var baseConnectionUri =  this.baseUri + message.connectionKey;
 		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.onConnect()', 'baseUri = ' + baseConnectionUri);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';

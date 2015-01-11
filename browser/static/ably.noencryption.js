@@ -3103,6 +3103,7 @@ var Message = (function() {
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.clientId = undefined;
+		this.connectionId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
 	}
@@ -3115,6 +3116,7 @@ var Message = (function() {
 		var result = {
 			name: this.name,
 			clientId: this.clientId,
+			connectionId: this.connectionId,
 			timestamp: this.timestamp,
 			encoding: this.encoding
 		};
@@ -3142,6 +3144,8 @@ var Message = (function() {
 			result += '; timestamp=' + this.timestamp;
 		if(this.clientId)
 			result += '; clientId=' + this.clientId;
+		if(this.connectionId)
+			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {
@@ -3267,9 +3271,9 @@ var PresenceMessage = (function() {
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.clientId = undefined;
+		this.connectionId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
-		this.memberId = undefined;
 	}
 
 	PresenceMessage.Action = {
@@ -3288,7 +3292,7 @@ var PresenceMessage = (function() {
 		var result = {
 			name: this.name,
 			clientId: this.clientId,
-			memberId: this.memberId,
+			connectionId: this.connectionId,
 			timestamp: this.timestamp,
 			action: this.action,
 			encoding: this.encoding
@@ -3370,8 +3374,8 @@ var ProtocolMessage = (function() {
 		this.timestamp = undefined;
 		this.count = undefined;
 		this.error = undefined;
-		this.memberId = undefined;
 		this.connectionId = undefined;
+		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 		this.channel = undefined;
 		this.channelSerial = undefined;
@@ -3462,7 +3466,7 @@ var ConnectionError = {
 var ConnectionManager = (function() {
 	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
-	var connectionIdCookie = 'ably-connection-id';
+	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
 	var actions = ProtocolMessage.Action;
 	var noop = function() {};
@@ -3483,11 +3487,11 @@ var ConnectionManager = (function() {
 		return (action == actions.MESSAGE || action == actions.PRESENCE);
 	};
 
-	function TransportParams(options, host, mode, connectionId, connectionSerial) {
+	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
 		this.host = host;
 		this.mode = mode;
-		this.connectionId = connectionId;
+		this.connectionKey = connectionKey;
 		this.connectionSerial = connectionSerial;
 		if(options.useBinaryProtocol !== undefined)
 			this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
@@ -3500,21 +3504,21 @@ var ConnectionManager = (function() {
 		var options = this.options;
 		switch(this.mode) {
 			case 'upgrade':
-				params.upgrade = this.connectionId;
+				params.upgrade = this.connectionKey;
 				if(this.connectionSerial !== undefined)
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'resume':
-				params.resume = this.connectionId;
+				params.resume = this.connectionKey;
 				if(this.connectionSerial !== undefined)
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
 				if(options.recover === true) {
-					var connectionId = readCookie(connectionIdCookie),
+					var connectionKey = readCookie(connectionKeyCookie),
 						connectionSerial = readCookie(connectionSerialCookie);
-					if(connectionId !== null && connectionSerial !== null) {
-						params.recover = connectionId;
+					if(connectionKey !== null && connectionSerial !== null) {
+						params.recover = connectionKey;
 						params.connection_serial = connectionSerial;
 					}
 				} else {
@@ -3554,7 +3558,7 @@ var ConnectionManager = (function() {
 		this.queuedMessages = [];
 		this.pendingMessages = [];
 		this.msgSerial = 0;
-		this.connectionId = undefined;
+		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 
 		this.httpTransports = Utils.intersect((options.transports || Defaults.httpTransports), ConnectionManager.httpTransports);
@@ -3603,9 +3607,9 @@ var ConnectionManager = (function() {
 		/* set up the transport params */
 		/* first attempt the main host; no need to check for general connectivity first.
 		 * Inherit any connection state */
-		var mode = this.connectionId ? 'resume' : (this.options.recover ? 'recover' : 'clean');
-		var transportParams = new TransportParams(this.options, null, mode, this.connectionId, this.connectionSerial);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionId = ' + this.connectionId + '; connectionSerial = ' + this.connectionSerial));
+		var mode = this.connectionKey ? 'resume' : (this.options.recover ? 'recover' : 'clean');
+		var transportParams = new TransportParams(this.options, null, mode, this.connectionKey, this.connectionSerial);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + this.connectionKey + '; connectionSerial = ' + this.connectionSerial));
 		var self = this;
 
 		/* if there are no http transports, just choose from the available transports,
@@ -3633,12 +3637,12 @@ var ConnectionManager = (function() {
 			  * be trying any fallback hosts, so we know the host to use */
 			if(self.upgradeTransports.length) {
 				/* we can't initiate the selection of the upgrade transport until we have
-				 * the actual connection, since we need the connectionId */
-				httpTransport.once('connected', function(error, connectionId) {
+				 * the actual connection, since we need the connectionKey */
+				httpTransport.once('connected', function(error, connectionKey) {
 					/* we allow other event handlers, including activating the transport, to run first */
 					Utils.nextTick(function() {
-						Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionId = ' + connectionId);
-						transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionId);
+						Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
+						transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
 						self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
 					});
 				});
@@ -3770,21 +3774,21 @@ var ConnectionManager = (function() {
 
 		var self = this;
 		var handleTransportEvent = function(state) {
-			return function(error, connectionId, connectionSerial, memberId) {
+			return function(error, connectionKey, connectionSerial, connectionId) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
 				if(error && error.message)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
-				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
+				if(connectionKey)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionKey =  ' + connectionKey);
 				if(connectionSerial !== undefined)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
-				if(memberId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'memberId =  ' + memberId);
+				if(connectionId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
 
 				/* handle activity transition */
 				var notifyState;
 				if(state == 'connected') {
-					self.activateTransport(transport, connectionId, connectionSerial, memberId);
+					self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
 					notifyState = true;
 				} else {
 					notifyState = self.deactivateTransport(transport);
@@ -3807,14 +3811,14 @@ var ConnectionManager = (function() {
 	 * Called when a transport is connected, and the connectionmanager decides that
 	 * it will now be the active transport.
 	 * @param transport the transport instance
-	 * @param connectionId the id of the new active connection
+	 * @param connectionKey the id of the new active connection
 	 * @param mode the nature of the activation:
 	 *   'clean': new connection;
 	 *   'recover': new connection with recoverable messages;
 	 *   'resume': uninterrupted resumption of connection without loss of messages
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionId, connectionSerial, memberId) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionId = ' + connectionId + '; connectionSerial = ' + connectionSerial);
+	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionKey = ' + connectionKey + '; connectionSerial = ' + connectionSerial);
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
 		if(this.state == states.closing || this.state == states.closed)
@@ -3837,9 +3841,9 @@ var ConnectionManager = (function() {
 		 * take over as the active transport */
 		this.transport = transport;
 		this.host = transport.params.host;
-		if(connectionId && this.connectionId != connectionId)  {
-			this.realtime.connection.memberId = memberId;
-			this.realtime.connection.id = this.connectionId = connectionId;
+		if(connectionKey && this.connectionKey != connectionKey)  {
+			this.realtime.connection.id = connectionId;
+			this.realtime.connection.key = this.connectionKey = connectionKey;
 			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 			if(createCookie && this.options.recover === true)
 				this.persistConnection();
@@ -3862,7 +3866,7 @@ var ConnectionManager = (function() {
 			}
 			self.ackMessage(serial, count, err);
 		});
-		this.emit('transport.active', transport, connectionId, transport.params);
+		this.emit('transport.active', transport, connectionKey, transport.params);
 	};
 
 	/**
@@ -3891,8 +3895,8 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
 		if(createCookie) {
-			if(this.connectionId && this.connectionSerial !== undefined) {
-				createCookie(connectionIdCookie, this.connectionId, Defaults.connectionPersistTimeout);
+			if(this.connectionKey && this.connectionSerial !== undefined) {
+				createCookie(connectionKeyCookie, this.connectionKey, Defaults.connectionPersistTimeout);
 				createCookie(connectionSerialCookie, this.connectionSerial, Defaults.connectionPersistTimeout);
 			}
 		}
@@ -4276,7 +4280,7 @@ var Transport = (function() {
 	 * event name       data
 	 * closed           error
 	 * failed           error
-	 * connected        null error, connectionId
+	 * connected        null error, connectionKey
 	 * event            channel message object
 	 */
 
@@ -4321,12 +4325,12 @@ var Transport = (function() {
 	Transport.prototype.onChannelMessage = function(message) {
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onChannelMessage()', 'heartbeat; connectionId = ' + this.connectionManager.connectionId);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onChannelMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionId, message.connectionSerial, message.memberId);
+			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId);
 			break;
 		case actions.CLOSED:
 			this.isConnected = false;
@@ -4344,7 +4348,7 @@ var Transport = (function() {
 			break;
 		case actions.ERROR:
 			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionId = ' + this.connectionManager.connectionId + '; err = ' + JSON.stringify(msgErr));
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
 			if(!message.channel) {
 				/* a transport error */
 				var err = {
@@ -4362,9 +4366,18 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onConnect = function(message) {
-		/* the connectionId in a comet connected response is really
-		 * <instId>-<connectionId>; handle generically here */
-		this.connectionId = message.connectionId = message.connectionId.split('-').pop();
+		/* the connectionKey in a comet connected response is really
+		 * <instId>!<connectionKey>; handle generically here */
+		var connectionKey = message.connectionKey = message.connectionKey.split('!').pop();
+
+		/* if there was a (non-fatal) connection error
+		 * that invalidates an existing connection id, then
+		 * remove all channels attached to the previous id */
+		var error = message.error, connectionManager = this.connectionManager;
+		if(error && message.connectionKey !== connectionManager.connectionKey)
+			connectionManager.realtime.channels.setSuspended(error);
+
+		this.connectionKey = connectionKey;
 		this.isConnected = true;
 	};
 
@@ -4625,13 +4638,13 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.onConnect = function(message) {
-		/* the connectionId in a comet connected response is really
-		 * <instId>-<connectionId> */
-		var connectionStr = message.connectionId;
+		/* the connectionKey in a comet connected response is really
+		 * <instId>-<connectionKey> */
+		var connectionStr = message.connectionKey;
 		Transport.prototype.onConnect.call(this, message);
 
 		var baseConnectionUri =  this.baseUri + connectionStr;
-		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
+		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
@@ -5546,8 +5559,8 @@ var Connection = (function() {
 		this.ably = ably;
 		this.connectionManager = new ConnectionManager(ably, options);
 		this.state = this.connectionManager.state.state;
+		this.key = undefined;
 		this.id = undefined;
-		this.memberId = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -5579,7 +5592,7 @@ var Connection = (function() {
 	};
 
 	Connection.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionId = ' + this.id);
+		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
 	};
 
@@ -5989,6 +6002,7 @@ var RealtimeChannel = (function() {
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
+				connectionId = message.connectionId,
 				timestamp = message.timestamp,
 				options = this.options;
 
@@ -6003,8 +6017,9 @@ var RealtimeChannel = (function() {
 					var err = new Error(errmsg);
 					this.emit('error', err);
 				}
-				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
+				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 			}
 			this.presence.setPresence(presence, true, syncChannelSerial);
 			break;
@@ -6012,6 +6027,7 @@ var RealtimeChannel = (function() {
 		case actions.MESSAGE:
 			var messages = message.messages,
 				id = message.id,
+				connectionId = message.connectionId,
 				timestamp = message.timestamp,
 				options = this.options;
 
@@ -6026,8 +6042,9 @@ var RealtimeChannel = (function() {
 					var err = new Error(errmsg);
 					this.emit('error', err);
 				}
-				if(!msg.id) msg.id = id + ':' + i;
+				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
+				if(!msg.id) msg.id = id + ':' + i;
 			}
 			this.onEvent(messages);
 			break;
@@ -6201,7 +6218,7 @@ var Presence = (function() {
 	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 
 	function memberKey(item) {
-		return item.clientId + ':' + item.memberId;
+		return item.clientId + ':' + item.connectionId;
 	}
 
 	function Presence(channel, options) {
@@ -6249,17 +6266,22 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.leave = function(callback) {
+	Presence.prototype.leave = function(data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
+		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
-		this.leaveClient(this.clientId, callback);
+		this.leaveClient(this.clientId, data, callback);
 	};
 
-	Presence.prototype.leaveClient = function(clientId, callback) {
+	Presence.prototype.leaveClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
-			clientId : clientId
+			clientId : clientId,
+			data: data
 		});
 		var channel = this.channel;
 		switch(channel.state) {
@@ -6279,7 +6301,7 @@ var Presence = (function() {
 				var err = new Error('Unable to enter presence channel (incompatible state)');
 				err.code = 90001;
 				callback(err);
-				break
+				break;
 			default:
 				/* there is no connection; therefore we let
 				 * any entered status will timeout by itself */
