@@ -6,6 +6,7 @@ var Message = (function() {
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.clientId = undefined;
+		this.connectionId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
 	}
@@ -18,6 +19,7 @@ var Message = (function() {
 		var result = {
 			name: this.name,
 			clientId: this.clientId,
+			connectionId: this.connectionId,
 			timestamp: this.timestamp,
 			encoding: this.encoding
 		};
@@ -45,6 +47,8 @@ var Message = (function() {
 			result += '; timestamp=' + this.timestamp;
 		if(this.clientId)
 			result += '; clientId=' + this.clientId;
+		if(this.connectionId)
+			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {

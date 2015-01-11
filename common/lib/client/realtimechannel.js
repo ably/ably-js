@@ -258,6 +258,7 @@ var RealtimeChannel = (function() {
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
+				connectionId = message.connectionId,
 				timestamp = message.timestamp,
 				options = this.options;
 
@@ -272,8 +273,9 @@ var RealtimeChannel = (function() {
 					var err = new Error(errmsg);
 					this.emit('error', err);
 				}
-				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
+				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 			}
 			this.presence.setPresence(presence, true, syncChannelSerial);
 			break;
@@ -281,6 +283,7 @@ var RealtimeChannel = (function() {
 		case actions.MESSAGE:
 			var messages = message.messages,
 				id = message.id,
+				connectionId = message.connectionId,
 				timestamp = message.timestamp,
 				options = this.options;
 
@@ -295,8 +298,9 @@ var RealtimeChannel = (function() {
 					var err = new Error(errmsg);
 					this.emit('error', err);
 				}
-				if(!msg.id) msg.id = id + ':' + i;
+				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
+				if(!msg.id) msg.id = id + ':' + i;
 			}
 			this.onEvent(messages);
 			break;

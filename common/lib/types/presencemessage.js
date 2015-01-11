@@ -6,9 +6,9 @@ var PresenceMessage = (function() {
 		this.id = undefined;
 		this.timestamp = undefined;
 		this.clientId = undefined;
+		this.connectionId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
-		this.connectionId = undefined;
 	}
 
 	PresenceMessage.Action = {
