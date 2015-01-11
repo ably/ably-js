@@ -8,7 +8,7 @@ var PresenceMessage = (function() {
 		this.clientId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
-		this.memberId = undefined;
+		this.connectionId = undefined;
 	}
 
 	PresenceMessage.Action = {
@@ -27,7 +27,7 @@ var PresenceMessage = (function() {
 		var result = {
 			name: this.name,
 			clientId: this.clientId,
-			memberId: this.memberId,
+			connectionId: this.connectionId,
 			timestamp: this.timestamp,
 			action: this.action,
 			encoding: this.encoding

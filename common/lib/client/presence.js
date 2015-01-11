@@ -3,7 +3,7 @@ var Presence = (function() {
 	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 
 	function memberKey(item) {
-		return item.clientId + ':' + item.memberId;
+		return item.clientId + ':' + item.connectionId;
 	}
 
 	function Presence(channel, options) {

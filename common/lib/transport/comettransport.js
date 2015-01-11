@@ -110,13 +110,13 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.onConnect = function(message) {
-		/* the connectionId in a comet connected response is really
-		 * <instId>-<connectionId> */
-		var connectionStr = message.connectionId;
+		/* the connectionKey in a comet connected response is really
+		 * <instId>-<connectionKey> */
+		var connectionStr = message.connectionKey;
 		Transport.prototype.onConnect.call(this, message);
 
 		var baseConnectionUri =  this.baseUri + connectionStr;
-		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionId = ' + message.connectionId);
+		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };

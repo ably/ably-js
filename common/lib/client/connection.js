@@ -6,8 +6,8 @@ var Connection = (function() {
 		this.ably = ably;
 		this.connectionManager = new ConnectionManager(ably, options);
 		this.state = this.connectionManager.state.state;
+		this.key = undefined;
 		this.id = undefined;
-		this.memberId = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -39,7 +39,7 @@ var Connection = (function() {
 	};
 
 	Connection.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionId = ' + this.id);
+		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
 	};
 

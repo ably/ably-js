@@ -67,7 +67,7 @@
 		var connectRequest = this.recvRequest = XHRRequest.createRequest(connectUri, null, connectParams, null, (this.stream ? REQ_RECV_STREAM : REQ_RECV));
 
 		connectRequest.on('data', function(data) {
-			/* intercept initial responses until connectionId obtained */
+			/* intercept initial responses until connectionKey obtained */
 			if(self.sendUri == null)
 				self.checkConnectResponse(data);
 			self.onData(data);
@@ -106,7 +106,7 @@
 	};
 
 	IframeAgent.prototype.onConnect = function(message) {
-		var baseConnectionUri =  this.baseUri + message.connectionId;
+		var baseConnectionUri =  this.baseUri + message.connectionKey;
 		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.onConnect()', 'baseUri = ' + baseConnectionUri);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
