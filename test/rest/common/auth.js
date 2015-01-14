@@ -182,7 +182,7 @@ exports.setup = function(base) {
 	rExports.authclientid0 = function(test) {
 		test.expect(1);
 		var testClientId = 'test client id';
-		rest.auth.requestToken({client_id:testClientId}, function(err, tokenDetails) {
+		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -192,7 +192,7 @@ exports.setup = function(base) {
 			test.ok((tokenDetails.id), 'Verify token id');
 			test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
 			test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-			test.equal(tokenDetails.client_id, testClientId, 'Verify client id');
+			test.equal(tokenDetails.clientId, testClientId, 'Verify client id');
 			test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
 			test.done();
 		});
