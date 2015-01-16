@@ -5043,7 +5043,7 @@ var Auth = (function() {
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - client_id:   (optional) a client Id to associate with the token
+	 * - clientId:   (optional) a client Id to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
@@ -5113,7 +5113,7 @@ var Auth = (function() {
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - client_id:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client Id to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in seconds since the epoch. If none is specified,
@@ -5260,9 +5260,9 @@ var Auth = (function() {
 			return;
 		}
 		var request = { id: keyId };
-		var clientId = tokenParams.client_id || '';
+		var clientId = tokenParams.clientId || '';
 		if(clientId)
-			request.client_id = clientId;
+			request.clientId = clientId;
 
 		var ttl = tokenParams.ttl || '';
 		if(ttl)
