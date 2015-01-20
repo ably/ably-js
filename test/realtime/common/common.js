@@ -235,7 +235,7 @@ exports.setup = function() {
 					callback('Failed to create correct number of namespaces for app');
 				} else {
 					rExports.testVars.testAcct = res.accountId;
-					rExports.testVars.testAppId = res.id;
+					rExports.testVars.testAppId = res.appId;
 					for (var i=0; i<res.keys.length; i++) {
 						rExports.testVars['testKey'+i] = res.keys[i];
 						rExports.testVars['testKey'+i+'Id'] = res.keys[i].id;
