@@ -16,8 +16,7 @@ function realtimeConnection(transports) {
 		port: testVars.realtimePort,
 		tlsPort: testVars.realtimeTlsPort,
 		key: testVars.key0Str,
-		tls: testVars.useTls,
-		flashTransport: testVars.flashTransport
+		tls: testVars.useTls
 	};
 	if (transports) options.transports = transports;
 	return new Ably.Realtime(options);
@@ -236,27 +235,6 @@ if(isTransportAvailable(jsonpTransport)) {
 	 */
 	simple_.jsonpheartbeat0 = function (test) {
 		heartbeatWithTransport(test, jsonpTransport);
-	};
-}
-
-var flashTransport = 'flash_socket';
-if(isTransportAvailable(flashTransport)) {
-	simple_.flashbase0 = function (test) {
-		connectionWithTransport(test, flashTransport);
-	};
-
-	/*
-	 * Publish and subscribe, json transport
-	 */
-	simple_.flashppublish0 = function (test) {
-		publishWithTransport(test, flashTransport);
-	};
-
-	/*
-	 * Check heartbeat
-	 */
-	simple_.flashheartbeat0 = function (test) {
-		heartbeatWithTransport(test, flashTransport);
 	};
 }
 

@@ -31,6 +31,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:ably/ably-js.git"
+    "url": "git@github.com:ably/ably-js.git"
   }
 }

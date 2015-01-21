@@ -18,8 +18,7 @@ function createRealtime(opts) {
 		port: testVars.realtimePort,
 		tlsPort: testVars.realtimeTlsPort,
 		key: testVars.key0Str,
-		tls: testVars.useTls,
-		flashTransport: testVars.flashTransport
+		tls: testVars.useTls
 	};
 	if(opts) options = mixin(options, opts);
 	return new Ably.Realtime(options);

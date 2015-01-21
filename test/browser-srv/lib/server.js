@@ -7,11 +7,9 @@ var url = require('url');
 var util = require('util');
 var ejs = require('ejs');
 var testvars = require('../framework/testvars');
-var existsSync = fs.existsSync || path.existsSync;
 var console2 = require('../lib/quietconsole');
 var setup = require('../framework/setup');
 var teardown = require('../framework/teardown');
-var browserDefaults = require('../../../browser/lib/util/defaults.js').defaults;
 
 var testAccounts = {}; // keep track of all accounts set up that have not yet been torn down
 
@@ -26,7 +24,6 @@ var external = {
 	'nodeunit.js' : path.resolve(ably_js, 'node_modules/nodeunit/examples/browser/nodeunit.js'),
 	'nodeunit.css' : path.resolve(ably_js, 'node_modules/nodeunit/share/nodeunit.css'),
 	'async.js' : path.resolve(ably_js, 'node_modules/async/lib/async.js'),
-	'^(?:test/swf/)WebSocketMainInsecure(.*)\.swf$' : path.resolve(ably_js, 'browser/static/swf/WebSocketMainInsecure*.swf'),
 	'compat-pubnub.js' : path.resolve(ably_js, 'browser/static/compat-pubnub.js'),
 	'compat-pusher.js' : path.resolve(ably_js, 'browser/static/compat-pusher.js')
 };
@@ -49,8 +46,6 @@ var guessContentType = function(string) {
 		contentType = 'application/javascript';
 	else if(endsWith(string, '.json'))
 		contentType = 'application/json';
-	else if(endsWith(string, '.swf'))
-		contentType = 'application/x-shockwave-flash';
 	return contentType;
 };
 
@@ -79,20 +74,6 @@ var corsResponseHeaders = function(origin) {
 	};
 };
 
-var policyText  =
-	'<?xml version="1.0"?>' +
-	'<!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">' +
-	'<cross-domain-policy>' +
-	'<site-control permitted-cross-domain-policies="master-only"/>' +
-	'<allow-access-from domain="*" to-ports="*"/>' +
-	'</cross-domain-policy>';
-
-// serve swf locally rather than from CDN by default
-testvars.flashTransport = {
-	swfLocation: browserDefaults.flashTransport.swfLocation.replace(/https?:\/\/cdn.ably.io\/lib\/swf\//, '/test/swf/'),
-	policyPort: 843
-};
-
 exports.start = function(opts, callback) {
 	if (opts.pipeJSON || opts.onTestResult) console2.quiet(true);
 
@@ -117,24 +98,6 @@ exports.start = function(opts, callback) {
 		res.writeHead(204, corsOptionsHeaders());
 		res.end();
 	};
-
-	/* flash policy file server */
-	if(opts.flashPolicyServer) {
-		var policySrv = net.createServer(function(socket) {
-			socket.end(policyText);
-		});
-		policySrv.listen(843, function(err) {
-			if (!err) console2.log('Policy server started on port 843');
-		});
-		policySrv.on('error', function(err) {
-			if (err) {
-				console2.error('Error - Flash policy server was not started on port 843!!!');
-				console2.info('Have you started the server with root privileges?');
-				callback(err, null);
-				return;
-			}
-		});
-	}
 
 	/* test server */
 	var testSrv;
@@ -220,12 +183,12 @@ exports.start = function(opts, callback) {
 				if(endsWith(filename, '.ejs')) file = ejs.render(file.toString(), { filename: filename });
 				res200(response, guessContentType(filename), file, params);
 			};
-			if (existsSync(filename) && fs.statSync(filename).isFile()) {
+			if (fs.existsSync(filename) && fs.statSync(filename).isFile()) {
 				fs.readFile(filename, readFileCallback);
 				return;
 			}
 			filename = filename + '.ejs';
-			if (existsSync(filename) && fs.statSync(filename).isFile()) {
+			if (fs.existsSync(filename) && fs.statSync(filename).isFile()) {
 				fs.readFile(filename, readFileCallback);
 				return;
 			}

@@ -12,7 +12,6 @@ module.exports = function (grunt) {
 		static: 'browser/static',
 		dest: 'browser/static',
 		compat: 'browser/compat',
-		ws_js: 'submodules/web-socket-js',
 		crypto_js: 'node_modules/crypto-js',
 		tools_compiler: __dirname + '/tools/closure-compiler'
 	};
@@ -96,9 +95,6 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/domevent.js',
 		'<%= dirs.browser %>/lib/util/msgpack.js',
 
-//		'<%= dirs.ws_js %>/swfobject.js',
-//		'<%= dirs.ws_js %>/web_socket.js',
-
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/utils.js',
@@ -129,8 +125,7 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/xhrtransport.js',
-		'<%= dirs.browser %>/lib/transport/iframetransport.js',
-//		'<%= dirs.browser %>/lib/transport/flashtransport.js',
+		'<%= dirs.browser %>/lib/transport/iframetransport.js'
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(
