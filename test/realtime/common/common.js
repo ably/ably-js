@@ -17,7 +17,7 @@ exports.setup = function() {
 		var Realtime = Ably.Realtime;
 		var Rest = Ably.Realtime.super_;
 
-		var wsHost = testVars.realtimeHost || 'sandbox-rest.ably.io';
+		var wsHost = testVars.realtimeHost || 'sandbox-realtime.ably.io';
 		var restHost = testVars.restHost || 'sandbox-rest.ably.io';
 		var port = testVars.realtimePort || '80';
 		var tlsPort = testVars.realtimeTlsPort || '443';
