@@ -74,7 +74,7 @@ exports.setup = function() {
 		var Rest = Ably.Rest;
 		var Realtime = Ably.Realtime;
 
-		var wsHost = process.env.WEBSOCKET_ADDRESS || 'sandbox-rest.ably.io';
+		var wsHost = process.env.WEBSOCKET_ADDRESS || 'sandbox-realtime.ably.io';
 		var restHost = process.env.REST_ADDRESS || 'sandbox-rest.ably.io';
 		var port = process.env.WEBSOCKET_PORT || '80';
 		var tlsPort = process.env.WEBSOCKET_TLS_PORT || '443';
