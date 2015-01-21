@@ -2796,8 +2796,7 @@ var Defaults = {
 	sendTimeout:              10000,
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'flash_socket', 'xhr', 'iframe', 'jsonp'],
-	flashTransport:           {swfLocation: (typeof window !== 'undefined' ? window.location.protocol : 'https:') + '//cdn.ably.io/lib/swf/WebSocketMainInsecure-0.9.swf'}
+	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp']
 };
 
 Defaults.getHost = function(options, host, ws) {
