@@ -1,3 +1,0 @@
-[submodule "submodules/web-socket-js"]
-	path = submodules/web-socket-js
-	url = git://github.com/ably-forks/web-socket-js.git
