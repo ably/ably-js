@@ -30,11 +30,11 @@ exports.createAccountAppAndKeys = function (testVars, console, callback) {
 				callback('Invalid HTTP request: ' + response + '; statusCode = ' + res.statusCode);
 			} else {
 				response = JSON.parse(response);
-				completeKey = response.id + '.' + response.keys[0].id + ':' + response.keys[0].value;
-				console.log(" Test starting -> Account set up, account ID: `" + response.accountId + "`, app ID: `" + response.id + "`, key: `" + completeKey + "`");
+				completeKey = response.appId + '.' + response.keys[0].id + ':' + response.keys[0].value;
+				console.log(" Test starting -> Account set up, account ID: `" + response.accountId + "`, app ID: `" + response.appId + "`, key: `" + completeKey + "`");
 				callback(null, {
 					acctId: response.accountId,
-					appId: response.id,
+					appId: response.appId,
 					key0Id: response.keys[0].id,
 					key0Value: response.keys[0].value,
 					key0Str: completeKey
