@@ -253,13 +253,14 @@ exports.setup = function() {
 			} else {
 				//console.log('Setup response: '+res);
 				if (typeof(res) === 'string') res = JSON.parse(res);
+				rExports.setupRes = res;
 				if (res.keys.length != appSpec.keys.length) {
 					callback('Failed to create correct number of keys for app');
 				} else if (res.namespaces.length != appSpec.namespaces.length) {
 					callback('Failed to create correct number of namespaces for app');
 				} else {
 					rExports.testVars.testAcct = res.accountId;
-					rExports.testVars.testAppId = res.id;
+					rExports.testVars.testAppId = res.appId;
 					for (var i=0; i<res.keys.length; i++) {
 						rExports.testVars['testKey'+i] = res.keys[i];
 						rExports.testVars['testKey'+i+'Id'] = res.keys[i].id;
@@ -283,7 +284,7 @@ exports.setup = function() {
 		var authKey = rExports.testVars.testAppId + '.' + rExports.testVars.testKey0Id + ':' + rExports.testVars.testKey0Value;
 		var authHeader = toBase64(authKey);
 		var delOptions = {
-			host: restHost, port: tlsPort, method: 'DELETE', path: '/apps/' + rExports.testVars.testAppId,
+			host: restHost, port: tlsPort, method: 'DELETE', path: '/apps/' + rExports.setupRes.id,
 			scheme: 'https', headers: { 'Authorization': 'Basic ' + authHeader }
 		};
 		httpReq(delOptions, function(err, resp) { callback(err); });
