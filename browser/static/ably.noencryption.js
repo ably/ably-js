@@ -5969,7 +5969,7 @@ var RealtimeChannel = (function() {
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, name: this.name});
 		syncMessage.channelSerial = this.syncChannelSerial;
-		connectionManager.sendImpl(syncMessage);
+		connectionManager.send(syncMessage);
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
