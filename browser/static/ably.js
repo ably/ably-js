@@ -6776,8 +6776,9 @@ var Rest = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
-		if(typeof(options) == 'string')
-			options = {key: options};
+		if(typeof(options) == 'string') {
+			options = (options.indexOf(':') == -1) ? {key: options} : {authToken: options};
+		}
 		this.options = options;
 
 		if (typeof(this.options.useBinaryProtocol) === 'undefined')
@@ -7375,7 +7376,7 @@ var RealtimeChannel = (function() {
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, name: this.name});
 		syncMessage.channelSerial = this.syncChannelSerial;
-		connectionManager.sendImpl(syncMessage);
+		connectionManager.send(syncMessage);
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
