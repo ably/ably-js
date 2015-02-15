@@ -5,7 +5,7 @@
 	// compatibility library:
 	//
 	//  <script src="http://cdn.ably.io/lib/ably.min.js"></script>
-	//  <script src="compat/pubnub.js"></script>
+	//  <script src="compat/pusher.js"></script>
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	// and various other dependencies.
