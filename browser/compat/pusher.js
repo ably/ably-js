@@ -92,7 +92,8 @@
 				opts.tlsPort = p[1];
 		}
 
-		var ably = this.ably = new Ably.Realtime(opts);
+		var realtime = (Ably || window.Ably).Realtime;
+		var ably = this.ably = new realtime(opts);
 		this.clientId = opts.clientId;
 		this.connection = new PusherConnection(ably.connection);
 		this.channels = {};
