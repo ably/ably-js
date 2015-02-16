@@ -86,8 +86,9 @@ var XHRRequest = (function() {
 				body = JSON.stringify(body);
 		}
 
-		xhr.responseType = responseType;
+
 		xhr.open(method, this.uri, true);
+		xhr.responseType = responseType;
 		xhr.withCredentials = 'true';
 
 		for(var h in headers)
