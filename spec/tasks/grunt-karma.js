@@ -1,17 +1,26 @@
 "use strict";
 
 module.exports = function (grunt) {
-  var defaultBrowser = 'PhantomJS';
-
-  grunt.registerTask('karma', 'Start a Karma server and run the browser test suite.  Optionally specify browser(s) e.g. `grunt karma:Chrome,PhantomJS`', function(browsers) {
-    var shell = require('shelljs');
-
-    if (!browsers || browsers == 'undefined') {
-      browsers = defaultBrowser;
+  function browsersFromArgument(browserArg) {
+    var defaultBrowser = 'PhantomJS';
+    if (!browserArg || browserArg == 'undefined') {
+      browserArg = defaultBrowser;
     }
+    return browserArg.split(',').map(function(browser) {
+      if (browser.toLowerCase() == 'phantomjs') {
+        return 'PhantomJS_without_security';
+      } else {
+        return browser;
+      }
+    });
+  }
 
-    grunt.log.writeln("Running Karma tests against the following browsers: " + browsers);
-    if (shell.exec('karma start --browsers ' + browsers + ' --single-run').code !== 0) {
+  grunt.registerTask('karma', 'Start a Karma server and run the browser test suite.  Optionally specify browser(s) e.g. `grunt karma:Chrome,PhantomJS`', function(browsersArg) {
+    var shell = require('shelljs');
+    var browsers = browsersFromArgument(browsersArg);
+
+    grunt.log.writeln("Running Karma tests against the following browsers: " + browsers.join(','));
+    if (shell.exec('karma start --browsers ' + browsers.join(',') + ' --single-run').code !== 0) {
       grunt.log.error("Browser tests failed!");
       shell.exit(1);
     } else {
@@ -19,15 +28,12 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('karma:server', 'Start a Karma server.  Optionally specify browser(s) e.g. `grunt karma:server:Chrome,PhantomJS`', function(browsers) {
+  grunt.registerTask('karma:server', 'Start a Karma server.  Optionally specify browser(s) e.g. `grunt karma:server:Chrome,PhantomJS`', function(browsersArg) {
     var shell = require('shelljs');
+    var browsers = browsersFromArgument(browsersArg);
 
-    if (!browsers) {
-      browsers = defaultBrowser;
-    }
-
-    grunt.log.writeln("Starting Karma server with the following browsers: " + browsers);
-    shell.exit(shell.exec('karma start --browsers ' + browsers).code);
+    grunt.log.writeln("Starting Karma server with the following browsers: " + browsers.join(','));
+    shell.exit(shell.exec('karma start --browsers ' + browsers.join(',')).code);
   });
 
   grunt.registerTask('karma:run', 'run the Karma test runner.  Assumes a Karma server is running', function() {
