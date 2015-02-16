@@ -16,11 +16,14 @@ module.exports = function(config) {
     files: [
       'spec/support/test-main.js',
       'spec/support/globals.js.env',
+
+      // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },
       { pattern: 'browser/static/*.html', included: false },
-      { pattern: 'spec/**/*.spec.js', included: false }
+      { pattern: 'browser/lib/util/base64.js', included: false },
+      { pattern: 'spec/**/*.spec.js', included: false },
+      { pattern: 'spec/common/*.js', included: false },
     ],
-
 
     // list of files to exclude
     exclude: [

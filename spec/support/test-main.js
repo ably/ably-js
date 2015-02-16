@@ -1,5 +1,7 @@
-var allTestFiles = [];
-var TEST_REGEXP = /(spec|test)\.js$/i;
+"use strict";
+
+var allTestFiles = [],
+    TEST_REGEXP = /(spec|test)\.js$/i;
 
 var pathToModule = function(path) {
   return path.replace(/^\/base\//, '').replace(/\.js$/, '');
@@ -20,12 +22,22 @@ require.config({
     'ably': 'browser/static/ably',
     'ably.noencryption': 'browser/static/ably.noencryption',
     'compat-pubnub': 'browser/static/compat-pubnub',
-    'compat-pusher': 'browser/static/compat-pusher'
+    'compat-pusher': 'browser/static/compat-pusher',
+    'browser-base64': 'browser/lib/util/base64'
+  },
+
+  shim: {
+    'browser-base64': {
+      exports: 'Base64'
+    }
   },
 
   // dynamically load all test files
   deps: allTestFiles,
 
   // we have to kickoff jasmine, as it is asynchronous
-  callback: window.__karma__.start
+  callback: function() {
+    jasmine.getEnv().defaultTimeoutInterval = 20000;
+    window.__karma__.start();
+  }
 });
