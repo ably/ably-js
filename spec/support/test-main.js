@@ -24,7 +24,8 @@ require.config({
     'compat-pubnub': 'browser/static/compat-pubnub',
     'compat-pusher': 'browser/static/compat-pusher',
     'browser-base64': 'browser/lib/util/base64',
-    'testapp': 'spec/common/testapp'
+    'testapp': 'spec/common/testapp',
+    'testapp_helper': 'spec/common/jasmine_testapp_helper'
   },
 
   shim: {
