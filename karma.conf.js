@@ -12,10 +12,10 @@ module.exports = function(config) {
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ['jasmine', 'requirejs'],
 
-
     // list of files / patterns to load in the browser
     files: [
-      'spec/test-main.js',
+      'spec/support/test-main.js',
+      'spec/support/globals.js.env',
       { pattern: 'browser/static/*.js', included: false },
       { pattern: 'browser/static/*.html', included: false },
       { pattern: 'spec/**/*.spec.js', included: false }
@@ -30,8 +30,17 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
+      'spec/support/globals.js.env': ['env']
     },
 
+    envPreprocessor: [
+      'ABLY_ENV',
+      'ABLY_REALTIME_HOST',
+      'ABLY_REST_HOST',
+      'ABLY_PORT',
+      'ABLY_TLS_PORT',
+      'ABLY_USE_TLS'
+    ],
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
