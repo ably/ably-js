@@ -87,6 +87,16 @@ Then run the tests against the Karma server.  The `test:karma:run` command will 
 
     grunt test:karma:run
 
+### Environment testing
+
+All tests are run against the sandbox environment by default.  However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
+
+* `ABLY_ENV` - defaults to sandbox, however this can be set to another known environment such as 'staging'
+* `ABLY_REALTIME_HOST` - explicitly tell the client library to use an alternate host for real-time websocket communication.
+* `ABLY_REST_HOST` - explicitly tell the client library to use an alternate host for REST communication.
+* `ABLY_PORT` - non-TLS port to use for the tests, defaults to 80
+* `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
+
 
 # Contributing
 
