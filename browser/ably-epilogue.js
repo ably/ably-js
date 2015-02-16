@@ -1,4 +1,5 @@
 window.Ably.Realtime = Realtime;
+window.Ably.Rest = Rest;
 Realtime.ConnectionManager = ConnectionManager;
 Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
