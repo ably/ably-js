@@ -7,4 +7,6 @@
     `require` is only used within the Node.js library, the ably-js browser library
     is built as a single Javascript file.
   */
-  this.define = this.exports = this.require = undefined;
+  var define = undefined,
+      exports = undefined,
+      require = undefined;
