@@ -23,52 +23,70 @@ For complete API documentation, see the [ably documentation](https://ably.io/doc
 
 ## Usage
 
+### With Node.js
+
 For the real-time library:
 
-    var realtime = require('ably-js').Realtime;
+```javascript
+var realtime = require('ably-js').Realtime;
+```
 
 For the rest-only library:
 
-    var rest = require('ably-js').Rest
+```javascript
+var rest = require('ably-js').Rest;
+```
 
-## Tests
+### With the Browser library
+
+Include the Ably library in your HTML:
+
+```html
+<script src="https://cdn.ably.io/lib/ably.min.js"></script>
+```
+
+For the real-time library:
+
+```javascript
+var realtime = Ably.Realtime;
+```
+
+For the rest-only library:
+
+```javascript
+var rest = Ably.Rest;
+```
+
+
+## Node Tests
 
 To run the test suite:
 
     nodeunit test/rest/all.js
-
     nodeunit test/realtime/all.js
 
-# Browser
+## Browser Tests
 
-## To build
+Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.12/index.html).
 
-    cd </path/to/this/repo>
+### To build & run the tests in a single step
 
-To build the first time, it is necessary to download the Google closure compiler.
-This is done with the `compiler` target:
+    grunt test
 
-    grunt compiler
+### Debugging the tests in a browser
 
-To build the browser library and its variants:
+Start a Karma server
 
-    grunt
+    grunt karma:server
 
+Connect your browser to the server, visit http://localhost:9876/
 
-## Usage
+Click on the Debug button in the top right, and open your browser's debugging console.
 
-For the real-time library:
+Then run the tests against the Karma server.  The `test:karma:run` command will concatenate the Ably files beforehand so any changes made in the source will be reflected in the test run.
 
-    var realtime = Ably.Realtime;
+    grunt test:karma:run
 
-
-## Tests
-
-To run the test suite:
-
-    test/browser-server
-
-Visit http://localhost:8092/ to run the tests in your browser
 
 # Contributing
 

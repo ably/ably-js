@@ -181,9 +181,22 @@ module.exports = function (grunt) {
 	];
 
 	grunt.initConfig(gruntConfig);
-
 	grunt.registerTask('compiler', ['curl:compiler', 'unzip:compiler']);
 	grunt.registerTask('all', ['copy', 'concat', 'closure-compiler']);
+
+	grunt.loadTasks('spec/tasks');
+
+	var browsers = grunt.option('browsers');
+  grunt.registerTask('test',
+    'Run the test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
+    ['copy', 'concat', 'karma:' + browsers]
+  );
+
+  grunt.registerTask('test:karma:run',
+    'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
+    ['copy', 'concat', 'karma:run']
+  );
+
 	grunt.registerTask('default', 'all');
 };
 
