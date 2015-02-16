@@ -23,10 +23,17 @@ require.config({
     'ably.noencryption': 'browser/static/ably.noencryption',
     'compat-pubnub': 'browser/static/compat-pubnub',
     'compat-pusher': 'browser/static/compat-pusher',
-    'browser-base64': 'browser/lib/util/base64'
+    'browser-base64': 'browser/lib/util/base64',
+    'testapp': 'spec/common/testapp'
   },
 
   shim: {
+    'ably': {
+      exports: 'Ably'
+    },
+    'ably.noencryption': {
+      exports: 'Ably'
+    },
     'browser-base64': {
       exports: 'Base64'
     }
