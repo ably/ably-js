@@ -37,7 +37,7 @@ require.config({
 
   // we have to kickoff jasmine, as it is asynchronous
   callback: function() {
-    jasmine.getEnv().defaultTimeoutInterval = 20000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
     window.__karma__.start();
   }
 });
