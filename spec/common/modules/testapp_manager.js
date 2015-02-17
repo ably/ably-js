@@ -1,12 +1,9 @@
-/* global Buffer, __ABLY__, define, require */
 "use strict";
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['browser-base64'], function(base64) {
-  var restHost = __ABLY__.restHost || prefixDomainWithEnvironment('rest.ably.io', __ABLY__.environment),
-      port     = __ABLY__.port,
-      tlsPort  = __ABLY__.tlsPort,
-      useTls   = __ABLY__.useTls;
+define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
+  var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
+      tlsPort  = ablyGlobals.tlsPort;
 
   var isBrowser = (typeof(window) === 'object'),
       httpReq   = httpReqFunction(),
@@ -172,10 +169,10 @@ define(['browser-base64'], function(base64) {
       scheme: 'https', headers: { 'Authorization': 'Basic ' + authHeader }
     };
 
-    httpReq(delOptions, function(err, resp) { callback(err); });
+    httpReq(delOptions, function(err) { callback(err); });
   }
 
-  var exports = {
+  return module.exports = {
     setup: function(callback) {
       /* create a test account, application, and key */
       createNewApp(callback);
@@ -185,11 +182,4 @@ define(['browser-base64'], function(base64) {
       deleteApp(app, callback);
     }
   };
-
-  var isBrowser = (typeof(window) === 'object');
-  if (isBrowser) {
-    return exports;
-  } else {
-    module.exports = exports;
-  }
 });

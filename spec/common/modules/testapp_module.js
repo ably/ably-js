@@ -1,4 +1,3 @@
-/* global console, define, global, module */
 "use strict";
 
 /*
@@ -6,9 +5,8 @@
   Ensures setup and tear down only occurs once across a single test run
 */
 
-define(['testapp'], function(testAppModule) {
-  var isBrowser = (typeof(window) === 'object'),
-      globalObject = isBrowser? window : global;
+define(['spec/common/modules/testapp_manager'], function(testAppManager) {
+  var globalObject = isBrowser? window : global;
 
   if (!globalObject.AblySetupBlockCounter) { globalObject.AblySetupBlockCounter = 0; }
 
@@ -35,7 +33,7 @@ define(['testapp'], function(testAppModule) {
     incrementSetupBlockCounter();
     if (configuredTestApp() && !forceSetup) { return done(); }
 
-    testAppModule.setup(function(err, newTestApp) {
+    testAppManager.setup(function(err, newTestApp) {
       if (err) {
         throw "Could not set up Test App: " + JSON.stringify(err);
       } else {
@@ -54,7 +52,7 @@ define(['testapp'], function(testAppModule) {
     if (!forceTearDown && (globalObject.AblySetupBlockCounter === 0)) { return done(); } // tearDown only if last afterAll block to run
     if (!configuredTestApp() && !forceTearDown) { return done(); }
 
-    testAppModule.tearDown(configuredTestApp(), function(err) {
+    testAppManager.tearDown(configuredTestApp(), function(err) {
       if (err) {
         throw "Could not tear down Test App: " + JSON.stringify(err);
       } else {
@@ -73,16 +71,10 @@ define(['testapp'], function(testAppModule) {
     }, true);
   }
 
-  var exports = {
+  return module.exports = {
     setup: setup,
     tearDown: tearDown,
     reset: reset,
     getTestApp: function() { return globalObject.AblyTestApp; }
   };
-
-  if (isBrowser) {
-    return exports;
-  } else {
-    module.exports = exports;
-  }
 });
