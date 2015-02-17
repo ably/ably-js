@@ -14,27 +14,31 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'spec/support/globals.js.env',
-      'spec/support/modules.js',
-      'spec/support/jasmine_requirejs_setup.js',
+      'spec/support/environment.vars.js',
+      'spec/support/modules_helper.js',
+      'spec/support/jasmine_setup.js',
 
       // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },
       { pattern: 'browser/static/*.html', included: false },
       { pattern: 'browser/lib/util/base64.js', included: false },
+
+      { pattern: 'spec/common/**/*.js', included: false },
+      { pattern: 'spec/support/*.js', include: false },
       { pattern: 'spec/**/*.spec.js', included: false },
-      { pattern: 'spec/common/*.js', included: false },
     ],
 
     // list of files to exclude
     exclude: [
+      'spec/support/jasmine.json',
+      'spec/support/node_helper.js',
     ],
 
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'spec/support/globals.js.env': ['env']
+      'spec/support/environment.vars.js': ['env']
     },
 
     envPreprocessor: [

@@ -1,17 +1,15 @@
-/* global define, describe, it, beforeAll, afterAll, expect, Ably, __ABLY__ */
-
 "use strict";
 
-define(['ably', 'testapp_module', 'client_module'], function(Ably, testAppHelper, clientHelper) {
-  beforeAll(testAppHelper.setup);
-  afterAll(testAppHelper.tearDown);
+define(['ably', 'shared_helper'], function(Ably, helper) {
+  beforeAll(helper.setupApp);
+  afterAll(helper.tearDownApp);
 
   describe('REST Auth', function() {
     var currentTime; // set by first test
 
     describe('Ably.Rest#time', function() {
       it('obtains the server time', function(done) {
-        clientHelper.AblyRest({ key: 0 }).time(function(err, time) {
+        helper.AblyRest({ key: 0 }).time(function(err, time) {
           if(err) { throw err; }
           var timeOffset = time - Date.now();
           expect(Math.abs(timeOffset)).toBeLessThan(5000);
@@ -23,7 +21,7 @@ define(['ably', 'testapp_module', 'client_module'], function(Ably, testAppHelper
 
     describe('#requestToken', function() {
       it('generates a valid new token', function(done) {
-        clientHelper.AblyRest({ key: 0 }).auth.requestToken(function(err, tokenDetails) {
+        helper.AblyRest({ key: 0 }).auth.requestToken(function(err, tokenDetails) {
           if(err) { throw err; }
 
           expect(tokenDetails.id).toBeDefined();
