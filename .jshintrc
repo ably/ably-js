@@ -1,0 +1,23 @@
+{
+  "undef": true,
+  "unused": true,
+  "globalstrict": true,
+  "predef": [
+    "console",
+    "global",
+    "window",
+    "define",
+    "require",
+    "jasmine",
+    "module",
+    "isBrowser",
+    "beforeAll",
+    "afterAll",
+    "describe",
+    "it",
+    "expect",
+    "XMLHttpRequest",
+    "Buffer",
+    "XDomainRequest"
+  ]
+}
