@@ -110,6 +110,7 @@ var EventEmitter = (function() {
 		function callListener(listener) {
 			try { listener.apply(eventThis, args); } catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+				throw e;
 			}
 		}
 		if(this.anyOnce.length) {
@@ -397,7 +398,7 @@ var Utils = (function() {
 	// compatibility library:
 	//
 	//  <script src="http://cdn.ably.io/lib/ably.min.js"></script>
-	//  <script src="compat/pubnub.js"></script>
+	//  <script src="compat/pusher.js"></script>
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	// and various other dependencies.
@@ -484,7 +485,8 @@ var Utils = (function() {
 				opts.tlsPort = p[1];
 		}
 
-		var ably = this.ably = new Ably.Realtime(opts);
+		var realtime = (Ably || window.Ably).Realtime;
+		var ably = this.ably = new realtime(opts);
 		this.clientId = opts.clientId;
 		this.connection = new PusherConnection(ably.connection);
 		this.channels = {};

@@ -141,7 +141,7 @@
 
 		// Start up Ably connection
 		PUBNUB.ablyOptions = opts;
-		PUBNUB.ably = new PUBNUB.Ably.Realtime(opts);
+		PUBNUB.ably = new Ably.Realtime(opts);
 		if (args.cipher_key) {
 			PUBNUB.ablyCipherParamsPending = true;
 			PUBNUB.Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);

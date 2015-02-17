@@ -23,52 +23,92 @@ For complete API documentation, see the [ably documentation](https://ably.io/doc
 
 ## Usage
 
+### With Node.js
+
 For the real-time library:
 
-    var realtime = require('ably-js').Realtime;
+```javascript
+var realtime = require('ably-js').Realtime;
+```
 
 For the rest-only library:
 
-    var rest = require('ably-js').Rest
+```javascript
+var rest = require('ably-js').Rest;
+```
 
-## Tests
+### With the Browser library
+
+Include the Ably library in your HTML:
+
+```html
+<script src="https://cdn.ably.io/lib/ably.min.js"></script>
+```
+
+The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.7.js or http://cdn.ably.io/lib/ably-0.7.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+
+For the real-time library:
+
+```javascript
+var realtime = Ably.Realtime;
+```
+
+For the rest-only library:
+
+```javascript
+var rest = Ably.Rest;
+```
+
+
+## Legacy Node Tests
 
 To run the test suite:
 
     nodeunit test/rest/all.js
-
     nodeunit test/realtime/all.js
 
-# Browser
+## Node Jasmine Tests
 
-## To build
+Install Jasmine CLI
 
-    cd </path/to/this/repo>
+    npm install jasmine -g
 
-To build the first time, it is necessary to download the Google closure compiler.
-This is done with the `compiler` target:
+Run the Jasmine test suite
 
-    grunt compiler
+    jasmine
 
-To build the browser library and its variants:
+## Browser Tests
 
-    grunt
+Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.12/index.html).
 
+### To build & run the tests in a single step
 
-## Usage
+    grunt test
 
-For the real-time library:
+### Debugging the tests in a browser
 
-    var realtime = Ably.Realtime;
+Start a Karma server
 
+    karma server
 
-## Tests
+You can optionally connect your browser to the server, visit http://localhost:9876/
 
-To run the test suite:
+Click on the Debug button in the top right, and open your browser's debugging console.
 
-    test/browser-server
+Then run the tests against the Karma server.  The `test:karma:run` command will concatenate the Ably files beforehand so any changes made in the source will be reflected in the test run.
 
-Visit http://localhost:8092/ to run the tests in your browser
+    grunt test:karma:run
+
+### Environment testing
+
+All tests are run against the sandbox environment by default.  However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
+
+* `ABLY_ENV` - defaults to sandbox, however this can be set to another known environment such as 'staging'
+* `ABLY_REALTIME_HOST` - explicitly tell the client library to use an alternate host for real-time websocket communication.
+* `ABLY_REST_HOST` - explicitly tell the client library to use an alternate host for REST communication.
+* `ABLY_PORT` - non-TLS port to use for the tests, defaults to 80
+* `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
+
 
 # Contributing
 

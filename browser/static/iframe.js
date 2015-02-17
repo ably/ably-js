@@ -110,6 +110,7 @@ var EventEmitter = (function() {
 		function callListener(listener) {
 			try { listener.apply(eventThis, args); } catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+				throw e;
 			}
 		}
 		if(this.anyOnce.length) {
@@ -541,11 +542,22 @@ var Defaults = {
 	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp']
 };
 
+/* If an environment option is provided, the environment is prefixed to the domain
+   i.e. rest.ably.io with environment sandbox becomes sandbox-rest.ably.io */
+Defaults.environmentHost = function(environment, host) {
+	if (!environment || (String(environment).toLowerCase() === 'production')) {
+		return host;
+	} else {
+		return [String(environment).toLowerCase(), host].join('-');
+	}
+};
+
 Defaults.getHost = function(options, host, ws) {
-	host = host || options.host || Defaults.HOST;
+	var defaultHost = Defaults.environmentHost(options.environment, Defaults.HOST);
+	host = host || options.host || defaultHost;
 	if(ws)
 		host = ((host == options.host) && (options.wsHost || host))
-			|| ((host == Defaults.HOST) && (Defaults.WS_HOST || host))
+			|| ((host == defaultHost) && (Defaults.environmentHost(options.environment, Defaults.WS_HOST) || host))
 			|| host;
 	return host;
 };
@@ -561,7 +573,7 @@ Defaults.getHosts = function(options) {
 		if(options.fallbackHosts)
 			hosts.concat(options.fallbackHosts);
 	} else {
-		hosts = [Defaults.HOST].concat(Defaults.FALLBACK_HOSTS);
+		hosts = [Defaults.environmentHost(options.environment, Defaults.HOST)].concat(Defaults.FALLBACK_HOSTS);
 	}
 	return hosts;
 };
@@ -569,6 +581,7 @@ Defaults.getHosts = function(options) {
 if (typeof exports !== 'undefined' && this.exports !== exports) {
 	exports.defaults = Defaults;
 }
+
 var DomEvent = (function() {
 	function DomEvent() {}
 
@@ -690,8 +703,9 @@ var XHRRequest = (function() {
 				body = JSON.stringify(body);
 		}
 
-		xhr.responseType = responseType;
+
 		xhr.open(method, this.uri, true);
+		xhr.responseType = responseType;
 		xhr.withCredentials = 'true';
 
 		for(var h in headers)

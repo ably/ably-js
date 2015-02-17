@@ -5,7 +5,7 @@
 	// compatibility library:
 	//
 	//  <script src="http://cdn.ably.io/lib/ably.min.js"></script>
-	//  <script src="compat/pubnub.js"></script>
+	//  <script src="compat/pusher.js"></script>
 	//
 	// If this hasn't happened, assume we're running under node.js, and attempt to include it
 	// and various other dependencies.
@@ -92,7 +92,8 @@
 				opts.tlsPort = p[1];
 		}
 
-		var ably = this.ably = new Ably.Realtime(opts);
+		var realtime = (Ably || window.Ably).Realtime;
+		var ably = this.ably = new realtime(opts);
 		this.clientId = opts.clientId;
 		this.connection = new PusherConnection(ably.connection);
 		this.channels = {};
