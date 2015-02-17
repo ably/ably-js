@@ -14,8 +14,9 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'spec/support/test-main.js',
       'spec/support/globals.js.env',
+      'spec/support/modules.js',
+      'spec/support/jasmine_requirejs_setup.js',
 
       // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },

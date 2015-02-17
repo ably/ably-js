@@ -14,19 +14,19 @@ Object.keys(window.__karma__.files).forEach(function(file) {
   }
 });
 
+var requireJsPaths = {};
+for (var key in __ABLY__.MODULES) {
+  if (__ABLY__.MODULES.hasOwnProperty(key)) {
+    requireJsPaths[key] = __ABLY__.MODULES[key].jasmine;
+  }
+}
+
 require.config({
   // Karma serves files under /base, which is the basePath from your config file
   baseUrl: '/base',
 
-  paths: {
-    'ably': 'browser/static/ably',
-    'ably.noencryption': 'browser/static/ably.noencryption',
-    'compat-pubnub': 'browser/static/compat-pubnub',
-    'compat-pusher': 'browser/static/compat-pusher',
-    'browser-base64': 'browser/lib/util/base64',
-    'testapp': 'spec/common/testapp',
-    'testapp_helper': 'spec/common/jasmine_testapp_helper'
-  },
+  // Ensure changes to these modules are reflected in node_helper.js
+  paths: requireJsPaths,
 
   shim: {
     'ably': {
