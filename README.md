@@ -58,12 +58,22 @@ var rest = Ably.Rest;
 ```
 
 
-## Node Tests
+## Legacy Node Tests
 
 To run the test suite:
 
     nodeunit test/rest/all.js
     nodeunit test/realtime/all.js
+
+## Node Jasmine Tests
+
+Install Jasmine CLI
+
+    npm install jasmine -g
+
+Run the Jasmine test suite
+
+    jasmine
 
 ## Browser Tests
 
@@ -77,9 +87,9 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
 Start a Karma server
 
-    grunt karma:server
+    karma server
 
-Connect your browser to the server, visit http://localhost:9876/
+You can optionally connect your browser to the server, visit http://localhost:9876/
 
 Click on the Debug button in the top right, and open your browser's debugging console.
 

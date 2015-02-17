@@ -2,11 +2,14 @@
 
 "use strict";
 
-define(['ably', 'testapp_helper'], function(Ably, helper) {
+define(['ably', 'testapp_module', 'client_module'], function(Ably, testAppHelper, clientHelper) {
+  beforeAll(testAppHelper.setup);
+  afterAll(testAppHelper.tearDown);
+
   describe('REST Auth', function() {
     describe('Ably.Rest#time', function() {
       it('obtains the server time', function(done) {
-        helper.AblyRealtime({ key: 0 }).time(function(err, time) {
+        clientHelper.AblyRealtime({ key: 0 }).time(function(err, time) {
           if(err) {
             throw err;
           }

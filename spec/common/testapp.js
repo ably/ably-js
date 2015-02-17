@@ -175,7 +175,7 @@ define(['browser-base64'], function(base64) {
     httpReq(delOptions, function(err, resp) { callback(err); });
   }
 
-  return {
+  var exports = {
     setup: function(callback) {
       /* create a test account, application, and key */
       createNewApp(callback);
@@ -185,4 +185,11 @@ define(['browser-base64'], function(base64) {
       deleteApp(app, callback);
     }
   };
+
+  var isBrowser = (typeof(window) === 'object');
+  if (isBrowser) {
+    return exports;
+  } else {
+    module.exports = exports;
+  }
 });
