@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "browserstack": "git://github.com/ably-forks/node-browserstack.git",
+    "chai": "*",
     "ejs": ">=0.8.5",
     "grunt": ">=0.4.4",
     "grunt-closure-compiler": ">=0.0.21",
@@ -27,6 +28,7 @@
     "jasmine-reporters": ">=2.0.4",
     "karma": "~0.12",
     "karma-cli": "",
+    "karma-chai": "*",
     "karma-chrome-launcher": "~0.1",
     "karma-firefox-launcher": "~0.1",
     "karma-env-preprocessor": "~0.1",
