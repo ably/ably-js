@@ -20,16 +20,37 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     });
 
     describe('#requestToken', function() {
-      it('generates a valid new token', function(done) {
-        helper.AblyRest({ key: 0 }).auth.requestToken(function(err, tokenDetails) {
-          if(err) { throw err; }
+      var rest, auth;
 
-          expect(tokenDetails.id).toBeDefined();
-          expect(tokenDetails.issued_at).toBeGreaterThan(currentTime - 1);
-          expect(tokenDetails.expires).toBeGreaterThan(tokenDetails.issued_at);
-          expect(tokenDetails.expires).toEqual(60*60 + tokenDetails.issued_at);
-          expect(tokenDetails.capability).toEqual({'*':['*']});
+      beforeEach(function() {
+        rest = helper.AblyRest({ key: 0 });
+        auth = rest.auth;
+      });
+
+      it('generates a valid new token', function(done) {
+        auth.requestToken(function(err, tokenDetails) {
+          if (err) { return fail(err); }
+
+          assert.ok((tokenDetails.id), 'Verify token id');
+          assert.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
+          assert.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
+          assert.equal(tokenDetails.expires, 60*60 + tokenDetails.issued_at, 'Verify default expiry period');
+          assert.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
           done();
+        });
+      });
+
+      describe('with options', function() {
+        it('generates a valid new token', function(done) {
+          auth.requestToken(null, function(err, tokenDetails) {
+            if (err) { return fail(err); }
+
+            assert.ok((tokenDetails.id), 'Verify token id');
+            assert.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
+            assert.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
+            assert.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+            done();
+          });
         });
       });
     });
