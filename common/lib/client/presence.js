@@ -162,6 +162,7 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.awaitSync = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
 		this.members.startSync();
 	};
 
