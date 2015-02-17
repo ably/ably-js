@@ -1,76 +1,85 @@
-/* global console, jasmine, define, beforeAll, afterAll, global, __ABLY__, Ably */
+/* global console, define, global, module */
 "use strict";
 
-/* Shared test helper used within Jasmine tests */
+/*
+  Test App creation helper used within Jasmine tests.
+  Ensures setup and tear down only occurs once across a single test run
+*/
 
 define(['testapp'], function(testAppModule) {
-  var isBrowser = (typeof(window) === 'object');
+  var isBrowser = (typeof(window) === 'object'),
+      globalObject = isBrowser? window : global;
 
-  function globalObject() {
-    if (isBrowser) {
-      return window;
-    } else {
-      return global;
-    }
-  }
+  if (!globalObject.AblySetupBlockCounter) { globalObject.AblySetupBlockCounter = 0; }
 
   function updateTestApp(newTestApp) {
-    globalObject().AblyTestApp = newTestApp;
+    globalObject.AblyTestApp = newTestApp;
   }
 
-  function getTestApp() {
-    return globalObject().AblyTestApp;
+  function configuredTestApp() {
+    return globalObject.AblyTestApp;
   }
 
-  function incrementBeforeAllCounter(quantity) {
-    if (!globalObject().AblyBeforeAllCounter) { globalObject().AblyBeforeAllCounter = 0; }
-    globalObject().AblyBeforeAllCounter += quantity;
-    return globalObject().AblyBeforeAllCounter;
+  function incrementSetupBlockCounter() {
+    globalObject.AblySetupBlockCounter += 1;
   }
 
-  function getBeforeAllCounter() {
-    return globalObject().AblyBeforeAllCounter;
+  function decrementSetupBlockCounter() {
+    globalObject.AblySetupBlockCounter -= 1;
   }
 
-  function setup(done) {
-    incrementBeforeAllCounter(1);
-    if (getTestApp()) { return done(); }
+  /* setup is typically called by a beforeAll test suite block.
+     If setup is called more than once i.e. across multiple suites,
+     then no need to recreate a test app */
+  function setup(done, forceSetup) {
+    incrementSetupBlockCounter();
+    if (configuredTestApp() && !forceSetup) { return done(); }
 
     testAppModule.setup(function(err, newTestApp) {
       if (err) {
         throw "Could not set up Test App: " + JSON.stringify(err);
       } else {
         updateTestApp(newTestApp);
-        console.log("Test App " + getTestApp().appId + " has been set up");
+        console.log("Test App " + configuredTestApp().appId + " has been set up");
         done();
       }
     });
   }
 
-  function tearDown(done) {
-    if (incrementBeforeAllCounter(-1) <= 0) { return done(); } // tearDown only if last afterAll block to run
-    if (!getTestApp()) { return done(); }
+  /* tearDown is typically called by an afterAll test suite block.
+     If tearDown is called more than once i.e. across multiple suites,
+     and other test suites are still to run, then we must not yet delete the test app */
+  function tearDown(done, forceTearDown) {
+    decrementSetupBlockCounter();
+    if (!forceTearDown && (globalObject.AblySetupBlockCounter === 0)) { return done(); } // tearDown only if last afterAll block to run
+    if (!configuredTestApp() && !forceTearDown) { return done(); }
 
-    testAppModule.tearDown(getTestApp(), function(err) {
+    testAppModule.tearDown(configuredTestApp(), function(err) {
       if (err) {
         throw "Could not tear down Test App: " + JSON.stringify(err);
       } else {
-        console.log("Test App " + getTestApp().appId + " has been torn down");
+        console.log("Test App " + configuredTestApp().appId + " has been torn down");
         updateTestApp(null);
         done();
       }
     });
   }
 
+  function reset(done) {
+    setup(function() {
+      tearDown(function() {
+        done();
+      }, true);
+    }, true);
+  }
+
   var exports = {
     setup: setup,
     tearDown: tearDown,
-    getTestApp: function() {
-      return getTestApp();
-    }
+    reset: reset,
+    getTestApp: function() { return globalObject.AblyTestApp; }
   };
 
-  var isBrowser = (typeof(window) === 'object');
   if (isBrowser) {
     return exports;
   } else {
