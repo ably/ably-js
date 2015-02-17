@@ -110,6 +110,7 @@ var EventEmitter = (function() {
 		function callListener(listener) {
 			try { listener.apply(eventThis, args); } catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+				throw e;
 			}
 		}
 		if(this.anyOnce.length) {
