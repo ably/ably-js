@@ -1,7 +1,8 @@
 "use strict";
 
 var path = require('path'),
-    shell = require('shelljs');
+    shell = require('shelljs'),
+    kexec = require('kexec');
 
 module.exports = function (grunt) {
   var karmaPath = 'node_modules/karma/bin/karma ',
@@ -52,7 +53,7 @@ module.exports = function (grunt) {
     var browsers = browsersFromArgument(browsersArg);
 
     grunt.log.writeln("Starting Karma server with the following browsers: " + browsers.join(','));
-    shell.exit(shell.exec(karmaPath + 'start --browsers ' + browsers.join(',')).code);
+    kexec(karmaPath + 'start --browsers ' + browsers.join(','));
   });
 
   grunt.registerTask('karma:run', 'run the Karma test runner.  Assumes a Karma server is running', function() {

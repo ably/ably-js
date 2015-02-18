@@ -27,7 +27,7 @@
     "jasmine": "~2.2",
     "jasmine-reporters": ">=2.0.4",
     "karma": "~0.12",
-    "karma-cli": "",
+    "karma-cli": "*",
     "karma-chai": "*",
     "karma-chrome-launcher": "~0.1",
     "karma-firefox-launcher": "~0.1",
@@ -36,6 +36,7 @@
     "karma-phantomjs-launcher": "~0.1",
     "karma-requirejs": "^0.2.2",
     "karma-story-reporter": "~0.3",
+    "kexec": "*",
     "nodeunit": ">=0.8.6",
     "shelljs": "~0.3"
   },
