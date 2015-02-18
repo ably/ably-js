@@ -4,6 +4,8 @@
 
 define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
   function ablyClientOptions(options) {
+    if (!options) { options = {}; }
+
     var keyIndex = options.key || 0,
         environment = options.environment || ablyGlobals.environment,
         clientOptions = { key: testAppHelper.getTestApp()['key' + keyIndex + 'Str'], environment: environment };
