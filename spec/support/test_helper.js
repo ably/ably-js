@@ -2,18 +2,31 @@
 
 var inspect = function(object) { return JSON.stringify(object); };
 
-var fail = function(error, message, asyncDone) {
-  console.error("Error! " + util.inspect(error));
+var fail = function(error, asyncDone) {
+  console.error("Failure error: " + inspect(error));
   if (error.stack) { console.error(error.stack); }
-  if (message) { console.error(message); }
-  assert(false, "Spec failed");
+  jasmine.getEnv().fail({ message: error.message || error, stack: error.stack || '' });
+  if (typeof(asyncDone) === 'function') { asyncDone(error); }
 };
 
 if (isBrowser) {
   window.fail = fail;
+
+  var oldOnError = window.onerror;
+  window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+    fail(new Error(errorMsg, url, lineNumber));
+    if (typeof(oldOnError) === 'function') { oldOnError(errorMsg, url, lineNumber); }
+    return false;
+  };
 } else {
   global.fail = fail;
 
   var util = require('util');
   inspect = util.inspect;
+
+  process.on('uncaughtException', function(err) {
+    fail(err);
+  });
 }
+
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;

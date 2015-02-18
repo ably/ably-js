@@ -4,6 +4,8 @@
   "globalstrict": true,
   "predef": [
     "console",
+    "setInterval",
+    "setTimeout",
     "global",
     "window",
     "define",

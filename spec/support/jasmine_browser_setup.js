@@ -48,7 +48,6 @@ require(['/base/spec/common/globals/named_dependencies.js'], function(modules) {
 
     // we have to kickoff jasmine, as it is asynchronous
     callback: function() {
-      jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
       window.__karma__.start();
     }
   });

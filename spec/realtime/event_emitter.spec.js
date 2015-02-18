@@ -11,8 +11,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
       channel.attach(function(err) {
         if (err) {
-          console.log(err);
-          assert(false, 'failed');
+          fail(err, done);
         }
         assert.ok(true, 'passed');
         done();
@@ -21,10 +20,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   });
 
   describe('Test suite behaviour', function() {
-    it('stops immediately when an exception is raised in an async block', function(done) {
+    it('shows the stracktrace for an actual exception', function(done) {
       setTimeout(function() {
-        assert(false, 'failed');
-      }, 1000);
+        try {
+          throw new Error("Intentional exception");
+        } catch (e) {
+          fail(e, done);
+        }
+      }, 50);
+    }, 5000);
+
+    it('reports on uncaught exceptions', function(done) {
+      setTimeout(function() {
+        throw new Error("Intentional uncaught exception");
+      }, 50);
+    }, 5000);
+
+    it('times out but still catches a failed assert from a 3rd party library', function(done) {
+      setTimeout(function() {
+        assert(false, "Assert will raise an exception")
+      }, 50);
     }, 5000);
   });
 });
