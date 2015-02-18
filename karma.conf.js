@@ -16,7 +16,8 @@ module.exports = function(config) {
     files: [
       'spec/support/environment.vars.js',
       'spec/support/modules_helper.js',
-      'spec/support/jasmine_setup.js',
+      'spec/support/test_helper.js',
+      'spec/support/jasmine_browser_setup.js',
 
       // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },
