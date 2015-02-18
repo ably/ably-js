@@ -10,7 +10,7 @@ module.exports = function (grunt) {
 
   function browsersFromArgument(browserArg) {
     var defaultBrowser = 'PhantomJS';
-    if (!browserArg || browserArg == 'undefined') {
+    if (!browserArg || browserArg == 'undefined' || browserArg == 'default') {
       browserArg = defaultBrowser;
     }
     return browserArg.split(',').map(function(browser) {
@@ -23,7 +23,7 @@ module.exports = function (grunt) {
   }
 
   function getSpecArguments(specString) {
-    if (!specString) { return '' };
+    if (!specString) { return ''; }
 
     grunt.log.error("Karma does not yet support running specific tests, see https://github.com/karma-runner/karma/issues/553");
     grunt.log.error("To run a single test prefix the describe or it block with f, such as fdescribe");

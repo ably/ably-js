@@ -192,7 +192,7 @@ module.exports = function (grunt) {
     ['copy', 'concat', 'jasmine', 'karma:' + browsers]
   );
 
-	var browsers = grunt.option('browsers');
+	var browsers = grunt.option('browsers') || 'default'
   grunt.registerTask('test:karma',
     'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
     ['copy', 'concat', 'karma:' + browsers]
