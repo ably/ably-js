@@ -188,13 +188,24 @@ module.exports = function (grunt) {
 
 	var browsers = grunt.option('browsers');
   grunt.registerTask('test',
-    'Run the test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
+    'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
+    ['copy', 'concat', 'jasmine', 'karma:' + browsers]
+  );
+
+	var browsers = grunt.option('browsers');
+  grunt.registerTask('test:karma',
+    'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
     ['copy', 'concat', 'karma:' + browsers]
   );
 
   grunt.registerTask('test:karma:run',
     'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
     ['copy', 'concat', 'karma:run']
+  );
+
+  grunt.registerTask('test:jasmine',
+    'Concat files and then run the Jasmine specs\nOptions\n  --spec [specs] e.g. --spec spec/rest/auth.spec.js,spec/rest/messages.spec.js',
+    ['copy', 'concat', 'jasmine']
   );
 
 	grunt.registerTask('default', 'all');

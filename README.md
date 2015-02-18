@@ -59,23 +59,17 @@ For the rest-only library:
 var rest = Ably.Rest;
 ```
 
+## Test suite
 
-## Legacy Node Tests
+To run both the Node Jasmine & Karma Browser tests, simply run the following command:
 
-To run the test suite:
-
-    nodeunit test/rest/all.js
-    nodeunit test/realtime/all.js
+    grunt test
 
 ## Node Jasmine Tests
 
-Install Jasmine CLI
-
-    npm install jasmine -g
-
 Run the Jasmine test suite
 
-    jasmine
+    grunt test:jasmine
 
 ## Browser Tests
 
@@ -83,9 +77,9 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
 ### To build & run the tests in a single step
 
-    grunt test
+    grunt test:karma
 
-### Debugging the tests in a browser
+### Debugging the tests in your browser
 
 Start a Karma server
 
@@ -99,7 +93,7 @@ Then run the tests against the Karma server.  The `test:karma:run` command will 
 
     grunt test:karma:run
 
-### Environment testing
+### Testing environment variables
 
 All tests are run against the sandbox environment by default.  However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
 

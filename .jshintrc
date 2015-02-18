@@ -16,6 +16,10 @@
     "describe",
     "it",
     "expect",
+    "assert",
+    "process",
+    "__dirname",
+    "__filename",
     "XMLHttpRequest",
     "Buffer",
     "XDomainRequest"
