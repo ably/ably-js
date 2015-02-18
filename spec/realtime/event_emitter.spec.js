@@ -11,7 +11,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
       channel.attach(function(err) {
         if (err) {
-          fail(err, done);
+          fail(err);
         }
         assert.ok(true, 'passed');
         done();
@@ -25,7 +25,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         try {
           throw new Error("Intentional exception");
         } catch (e) {
-          fail(e, done);
+          fail(e);
         }
       }, 50);
     }, 5000);

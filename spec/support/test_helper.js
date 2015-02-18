@@ -2,11 +2,11 @@
 
 var inspect = function(object) { return JSON.stringify(object); };
 
-var fail = function(error, asyncDone) {
+var fail = function(error) {
   console.error("Failure error: " + inspect(error));
   if (error.stack) { console.error(error.stack); }
   jasmine.getEnv().fail({ message: error.message || error, stack: error.stack || '' });
-  if (typeof(asyncDone) === 'function') { asyncDone(error); }
+  if (typeof(jasmine.getEnv().done) === 'function') { jasmine.getEnv().done(); }
 };
 
 if (isBrowser) {

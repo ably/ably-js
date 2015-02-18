@@ -19,6 +19,7 @@
     "it",
     "expect",
     "assert",
+    "fail",
     "process",
     "__dirname",
     "__filename",
