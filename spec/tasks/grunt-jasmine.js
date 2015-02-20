@@ -27,20 +27,20 @@ module.exports = function (grunt) {
   }
 
   grunt.registerTask('jasmine',
-    'Run the Jasmine test suite.\nOptions\n  --spec [specs] e.g. --spec spec/rest/auth.spec.js,spec/rest/messages.spec.js',
+    'Run the Node Jasmine test suite.\nOptions\n  --spec [specs] e.g. --spec spec/rest/auth.spec.js,spec/rest/messages.spec.js',
     function() {
       var runSpecs = '';
-      grunt.log.writeln("Running Jasmine test suite against " + (spec ? spec : 'all specs'));
+      grunt.log.writeln("Running Node Jasmine test suite against " + (spec ? spec : 'all specs'));
 
       if (spec) {
         runSpecs = getHelpers().concat(resolveSpecs(spec)).join(' ');
       }
 
       if (shell.exec('node_modules/jasmine/bin/jasmine.js ' + runSpecs).code !== 0) {
-        grunt.log.error("Browser tests failed!");
+        grunt.log.error("Node Jasmine tests failed!");
         shell.exit(1);
       } else {
-        grunt.log.ok("Browser tests passed");
+        grunt.log.ok("Node Jasmine tests passed");
       }
     });
 };

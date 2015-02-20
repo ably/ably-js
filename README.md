@@ -79,7 +79,15 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
     grunt test:karma
 
-### Debugging the tests in your browser
+### Debugging the tests in your browser with Jasmine test runner
+
+Simply open [spec/jasmine.html](./spec/jasmine.html) in your browser to run the test suite with a nice GUI.
+
+Note: Running the task `grunt requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser.
+
+### Debugging the tests in your browser with Karma
+
+If you would like to run the tests through Karma, then:
 
 Start a Karma server
 

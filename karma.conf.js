@@ -33,6 +33,7 @@ module.exports = function(config) {
     exclude: [
       'spec/support/jasmine.json',
       'spec/support/node_helper.js',
+      'spec/support/jasmine_html_*'
     ],
 
 

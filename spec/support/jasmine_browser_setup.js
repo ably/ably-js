@@ -14,7 +14,9 @@ Object.keys(window.__karma__.files).forEach(function(file) {
   }
 });
 
-require(['/base/spec/common/globals/named_dependencies.js'], function(modules) {
+var baseUrl = window.__karma__.base || '/base';
+
+require([baseUrl + '/spec/common/globals/named_dependencies.js'], function(modules) {
   var requireJsPaths = {};
   for (var key in modules) {
     if (modules.hasOwnProperty(key)) {
@@ -24,7 +26,7 @@ require(['/base/spec/common/globals/named_dependencies.js'], function(modules) {
 
   require.config({
     // Karma serves files under /base, which is the basePath from your config file
-    baseUrl: '/base',
+    baseUrl: baseUrl,
 
     // Ensure changes to these modules are reflected in node_helper.js
     paths: requireJsPaths,
@@ -46,9 +48,42 @@ require(['/base/spec/common/globals/named_dependencies.js'], function(modules) {
     // dynamically load all test files
     deps: allTestFiles,
 
-    // we have to kickoff jasmine, as it is asynchronous
+    // we have to kickoff jasmine with Karma
     callback: function() {
-      window.__karma__.start();
+      if (typeof(window.__karma__.start) === 'function') {
+        window.__karma__.start();
+      } else {
+        // load Chai
+        require(['../node_modules/chai/chai.js'], function() {
+          // then require it with the name it has used to register itself
+          require(['chai'], function(chai) {
+            window.assert = chai.assert;
+            catchAssertExceptions('assert');
+
+            require(allTestFiles, function() {
+              var env = jasmine.getEnv();
+
+              var queryString = new jasmine.QueryString({
+                getWindowLocation: function() { return window.location; }
+              });
+
+              var htmlReporter = new jasmine.HtmlReporter({
+                env: env,
+                onRaiseExceptionsClick: function() { queryString.navigateWithNewParam("catch", !env.catchingExceptions()); },
+                addToExistingQueryString: function(key, value) { return queryString.fullStringWithNewParam(key, value); },
+                getContainer: function() { return document.body; },
+                createElement: function() { return document.createElement.apply(document, arguments); },
+                createTextNode: function() { return document.createTextNode.apply(document, arguments); },
+                timer: new jasmine.Timer()
+              });
+
+              env.addReporter(htmlReporter);
+              htmlReporter.initialize();
+              env.execute();
+            });
+          });
+        });
+      }
     }
   });
 });

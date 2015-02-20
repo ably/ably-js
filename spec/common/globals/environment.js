@@ -1,7 +1,7 @@
 /* Assumes process.env defined, or window.__env__ or populated via globals.env.js and karam-env-preprocessor plugin */
 
 define(function(require) {
-  var environment = isBrowser ? window.__env__ : process.env;
+  var environment = (isBrowser ? window.__env__ : process.env) || {};
 
   return module.exports = {
     environment:  environment.ABLY_ENV || 'sandbox',

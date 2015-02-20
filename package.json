@@ -38,6 +38,7 @@
     "karma-requirejs": "^0.2.2",
     "karma-story-reporter": "~0.3",
     "kexec": "*",
+    "glob": "*",
     "nodeunit": ">=0.8.6",
     "shelljs": "~0.3"
   },

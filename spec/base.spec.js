@@ -9,7 +9,7 @@ define(['ably', 'globals'], function(Ably, ablyGlobals) {
 
   describe('Globals in support library', function() {
     var isBrowser = (typeof(window) == 'object');
-    var environment = isBrowser ? window.__env__ : process.env;
+    var environment = (isBrowser ? window.__env__ : process.env) || {};
 
     it('contains a valid environment', function() {
       expect(ablyGlobals.environment).toEqual(environment.ABLY_ENV || 'sandbox');
