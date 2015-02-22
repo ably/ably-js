@@ -69,7 +69,7 @@ globalObject.catchAssertExceptions = function(assertObjectName) {
   /* Wrap all assert.function objects in a try / catch that will fail the current test */
   for (var fn in assertObject) {
     if (assertObject.hasOwnProperty(fn)) {
-      if (typeof(assertObject[fn]) == 'function') {
+      if (typeof(assertObject[fn]) === 'function') {
         assertObject[fn] = catchAndFailFunction(fn, assertObject[fn]);
       }
     }
@@ -84,6 +84,4 @@ globalObject.catchAssertExceptions = function(assertObjectName) {
     globalObject[assertObjectName] = target;
   }
 };
-
 catchAssertExceptions('assert');
-catchAssertExceptions('expect');
