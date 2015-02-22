@@ -186,13 +186,13 @@ module.exports = function (grunt) {
 
 	grunt.loadTasks('spec/tasks');
 
-	var browsers = grunt.option('browsers');
+	var browsers = grunt.option('browsers') || 'default';
   grunt.registerTask('test',
     'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
-    ['copy', 'concat', 'requirejs', 'jasmine', 'karma:' + browsers]
+    ['copy', 'concat', 'requirejs', 'nodeunit', 'karma:' + browsers]
   );
 
-	var browsers = grunt.option('browsers') || 'default'
+	var browsers = grunt.option('browsers') || 'default';
   grunt.registerTask('test:karma',
     'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
     ['copy', 'concat', 'requirejs', 'karma:' + browsers]
@@ -203,9 +203,9 @@ module.exports = function (grunt) {
     ['copy', 'concat', 'requirejs', 'karma:run']
   );
 
-  grunt.registerTask('test:jasmine',
-    'Concat files and then run the Jasmine specs\nOptions\n  --spec [specs] e.g. --spec spec/rest/auth.spec.js,spec/rest/messages.spec.js',
-    ['copy', 'concat', 'requirejs', 'jasmine']
+  grunt.registerTask('test:nodeunit',
+    'Concat files and then run the NodeUnit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+    ['copy', 'concat', 'requirejs', 'nodeunit']
   );
 
 	grunt.registerTask('default', 'all');

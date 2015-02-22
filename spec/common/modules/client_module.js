@@ -6,9 +6,14 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
   function ablyClientOptions(options) {
     if (!options) { options = {}; }
 
-    var keyIndex = options.key || 0,
-        environment = options.environment || ablyGlobals.environment,
-        clientOptions = { key: testAppHelper.getTestApp()['key' + keyIndex + 'Str'], environment: environment };
+    var environment = options.environment || ablyGlobals.environment,
+        clientOptions = { environment: environment };
+
+    if (options.authToken) {
+      clientOptions.authToken = options.authToken;
+    } else {
+      clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
+    }
 
     if (options.host) { clientOptions.host = options.host; }
     if (options.wsHost) { clientOptions.wsHost = options.wsHost; }

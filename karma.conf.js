@@ -10,14 +10,14 @@ module.exports = function(config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jasmine', 'requirejs', 'chai'],
+    frameworks: ['requirejs', 'nodeunit'],
 
     // list of files / patterns to load in the browser
     files: [
       'spec/support/environment.vars.js',
       'spec/support/modules_helper.js',
       'spec/support/test_helper.js',
-      'spec/support/jasmine_browser_setup.js',
+      'spec/support/browser_setup.js',
 
       // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },
@@ -25,15 +25,16 @@ module.exports = function(config) {
       { pattern: 'browser/lib/util/base64.js', included: false },
 
       { pattern: 'spec/common/**/*.js', included: false },
-      { pattern: 'spec/support/*.js', include: false },
-      { pattern: 'spec/**/*.spec.js', included: false },
+      { pattern: 'spec/support/*.js', included: false },
+      { pattern: 'spec/**/*.test.js', included: false }
     ],
 
     // list of files to exclude
     exclude: [
       'spec/support/jasmine.json',
+      'spec/support/browser_file_list.js',
       'spec/support/node_helper.js',
-      'spec/support/jasmine_html_*'
+      'spec/support/nodeunit.js'
     ],
 
 

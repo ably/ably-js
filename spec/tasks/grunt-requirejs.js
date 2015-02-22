@@ -29,6 +29,6 @@ module.exports = function (grunt) {
     function() {
       var body = "window.__karma__ = { base: '../' };\n";
       body += "window.__karma__.files = " + JSON.stringify(requireFiles) + ";"
-      fs.writeFileSync(path.resolve(__dirname, '../support', 'jasmine_html_runner.js'), body);
+      fs.writeFileSync(path.resolve(__dirname, '../support', 'browser_file_list.js'), body);
     });
 };

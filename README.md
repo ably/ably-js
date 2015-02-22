@@ -61,15 +61,15 @@ var rest = Ably.Rest;
 
 ## Test suite
 
-To run both the Node Jasmine & Karma Browser tests, simply run the following command:
+To run both the NodeUnit & Karma Browser tests, simply run the following command:
 
     grunt test
 
-## Node Jasmine Tests
+## NodeUnit Tests
 
-Run the Jasmine test suite
+Run the NodeUnit test suite
 
-    grunt test:jasmine
+    grunt test:nodeunit
 
 ## Browser Tests
 
@@ -79,11 +79,11 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
     grunt test:karma
 
-### Debugging the tests in your browser with Jasmine test runner
+### Debugging the tests in your browser with NodeUnit test runner
 
-Simply open [spec/jasmine.html](./spec/jasmine.html) in your browser to run the test suite with a nice GUI.
+Simply open [spec/nodeunit.html](./spec/nodeunit.html) in your browser to run the test suite with a nice GUI.
 
-Note: Running the task `grunt requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser.
+Note: If any files have been added or remove, running the task `grunt requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
 
 ### Debugging the tests in your browser with Karma
 
