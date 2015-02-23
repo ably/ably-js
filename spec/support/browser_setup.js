@@ -1,14 +1,24 @@
 "use strict";
 
 var allTestFiles = [],
-    TEST_REGEXP = /(spec|test)\.js$/i;
+    TEST_REGEXP = /\.test\.js$/i,
+    TEAR_DOWN_REGEXP = /tear_down\.js$/i;
 
 var pathToModule = function(path) {
   return path.replace(/^\/base\//, '').replace(/\.js$/, '');
 };
 
+// Match all test files
 Object.keys(window.__karma__.files).forEach(function(file) {
   if (TEST_REGEXP.test(file)) {
+    // Normalize paths to RequireJS module names.
+    allTestFiles.push(pathToModule(file));
+  }
+});
+
+// Add the final tear down
+Object.keys(window.__karma__.files).forEach(function(file) {
+  if (TEAR_DOWN_REGEXP.test(file)) {
     // Normalize paths to RequireJS module names.
     allTestFiles.push(pathToModule(file));
   }

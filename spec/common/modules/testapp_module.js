@@ -1,14 +1,11 @@
 "use strict";
 
 /*
-  Test App creation helper used within Jasmine tests.
-  Ensures setup and tear down only occurs once across a single test run
+  Test App creation helper used within NodeUnit tests.
 */
 
 define(['spec/common/modules/testapp_manager'], function(testAppManager) {
   var globalObject = isBrowser? window : global;
-
-  if (!globalObject.AblySetupBlockCounter) { globalObject.AblySetupBlockCounter = 0; }
 
   function updateTestApp(newTestApp) {
     globalObject.AblyTestApp = newTestApp;
@@ -18,43 +15,55 @@ define(['spec/common/modules/testapp_manager'], function(testAppManager) {
     return globalObject.AblyTestApp;
   }
 
-  function incrementSetupBlockCounter() {
-    globalObject.AblySetupBlockCounter += 1;
-  }
-
-  function decrementSetupBlockCounter() {
-    globalObject.AblySetupBlockCounter -= 1;
-  }
-
-  /* setup is typically called by a beforeAll test suite block.
+  /* setup is typically called at the start of a test suite.
      If setup is called more than once i.e. across multiple suites,
-     then no need to recreate a test app */
-  function setup(done, forceSetup) {
-    incrementSetupBlockCounter();
+     then no need to recreate a test app, unless forceSetup is true.
+     If forceSetup is true and existing app exists, then the app will be torn down (deleted)
+     first */
+  function setup(forceSetup, done) {
+    if (typeof(forceSetup) === 'function') {
+      done = forceSetup;
+      forceSetup = false;
+    }
     if (configuredTestApp() && !forceSetup) { return done(); }
 
-    testAppManager.setup(function(err, newTestApp) {
-      if (err) {
-        throw "Could not set up Test App: " + JSON.stringify(err);
-      } else {
-        updateTestApp(newTestApp);
-        console.log("Test App " + configuredTestApp().appId + " has been set up");
-        done();
-      }
-    });
+    var setupFn = function() {
+      testAppManager.setup(function(err, newTestApp) {
+        if (err) {
+          done(new Error("Could not set up Test App: " + JSON.stringify(err)));
+        } else {
+          updateTestApp(newTestApp);
+          console.log("Test App " + configuredTestApp().appId + " has been set up");
+          done();
+        }
+      });
+    };
+
+    if (configuredTestApp() && forceSetup) {
+      tearDown(function(err) {
+        if (err) {
+          done(err);
+        } else {
+          setupFn();
+        }
+      });
+    } else {
+      setupFn();
+    }
   }
 
   /* tearDown is typically called by an afterAll test suite block.
      If tearDown is called more than once i.e. across multiple suites,
      and other test suites are still to run, then we must not yet delete the test app */
-  function tearDown(done, forceTearDown) {
-    decrementSetupBlockCounter();
-    if (!forceTearDown && (globalObject.AblySetupBlockCounter === 0)) { return done(); } // tearDown only if last afterAll block to run
-    if (!configuredTestApp() && !forceTearDown) { return done(); }
+  function tearDown(done) {
+    if (!configuredTestApp()) {
+      done();
+      return;
+    }
 
     testAppManager.tearDown(configuredTestApp(), function(err) {
       if (err) {
-        throw "Could not tear down Test App: " + JSON.stringify(err);
+        done(new Error("Could not tear down Test App: " + JSON.stringify(err)));
       } else {
         console.log("Test App " + configuredTestApp().appId + " has been torn down");
         updateTestApp(null);
@@ -63,18 +72,9 @@ define(['spec/common/modules/testapp_manager'], function(testAppManager) {
     });
   }
 
-  function reset(done) {
-    setup(function() {
-      tearDown(function() {
-        done();
-      }, true);
-    }, true);
-  }
-
   return module.exports = {
     setup: setup,
     tearDown: tearDown,
-    reset: reset,
     getTestApp: function() { return globalObject.AblyTestApp; }
   };
 });
