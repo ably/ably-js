@@ -4,8 +4,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   var realtime, currentTime, exports = {};
 
   exports.setupauth = function(test) {
-    helper.setupApp(function() {
-      test.expect(1);
+    test.expect(1);
+    helper.setupApp(function(err) {
+      if(err) {
+        test.ok(false, helper.displayError(err));
+        test.done();
+        return;
+      }
+
       realtime = helper.AblyRealtime();
       realtime.time(function(err, time) {
         if(err) {

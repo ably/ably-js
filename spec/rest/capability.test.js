@@ -17,7 +17,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
   exports.setupcapability = function(test) {
     test.expect(1);
-    helper.setupApp(function() {
+    helper.setupApp(function(err) {
+      if(err) {
+        test.ok(false, helper.displayError(err));
+        test.done();
+        return;
+      }
+
       rest = helper.AblyRest();
       testApp = helper.getTestApp();
       rest.time(function(err, time) {
