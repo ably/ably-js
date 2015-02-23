@@ -8,8 +8,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
 
   exports.setupauth = function(test) {
+    test.expect(1);
     helper.setupApp(function() {
-      test.expect(1);
       rest = helper.AblyRest();
       rest.time(function(err, time) {
         if(err) {
