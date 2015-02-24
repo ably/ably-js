@@ -34,7 +34,7 @@ module.exports = function (grunt) {
   grunt.registerTask('nodeunit',
     'Run the Nodeunit test suite.\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
     function() {
-      var runTests = getRelativePath(helpers).concat(['spec/**/*.test.js']).concat(getRelativePath(tearDown)).join(' ');
+      var runTests = getRelativePath(helpers).concat(['spec/realtime/*.test.js', 'spec/rest/*.test.js']).concat(getRelativePath(tearDown)).join(' ');
       grunt.log.writeln("Running Nodeunit test suite against " + (test ? test : 'all tests'));
 
       if (test) {
