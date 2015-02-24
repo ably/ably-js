@@ -55,6 +55,8 @@ module.exports = function(config) {
       { pattern: 'browser/static/*.html', included: false },
       { pattern: 'browser/lib/util/base64.js', included: false },
 
+      { pattern: 'node_modules/async/lib/async.js', included: false },
+
       { pattern: 'spec/common/**/*.js', included: false },
       { pattern: 'spec/support/*.js', included: false },
       { pattern: 'spec/**/*.test.js', included: false }

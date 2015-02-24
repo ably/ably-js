@@ -36,7 +36,18 @@ if (isBrowser) {
       var required = requireModules.map(function (module) {
         var modulePath = (namedDependencies[module] || {}).node;
         if (modulePath === 'skip') { return; }
-        return require("../../" + (modulePath || module));
+
+        if (modulePath) {
+          return require("../../" + modulePath);
+        } else {
+          /* define has used a relative path to the base such as spec/file */
+          if (module.indexOf('/') >= 0) {
+            return require("../../" + module);
+          } else {
+            /* requiring a named Node.js module such as async */
+            return require(module);
+          }
+        }
       });
 
       callback.apply(this, required);
