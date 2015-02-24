@@ -12,7 +12,11 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
     if (options.authToken) {
       clientOptions.authToken = options.authToken;
     } else {
-      clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
+      if (options.key) {
+        clientOptions.key = options.key;
+      } else {
+        clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
+      }
     }
 
     if (options.useBinaryProtocol !== undefined) { clientOptions.useBinaryProtocol = options.useBinaryProtocol; }
