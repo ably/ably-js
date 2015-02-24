@@ -29,8 +29,8 @@ var baseUrl = window.__karma__.base || '/base';
 require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
   var requireJsPaths = {};
   for (var key in modules) {
-    if (modules.hasOwnProperty(key)) {
-      requireJsPaths[key] = modules[key].jasmine;
+    if (modules.hasOwnProperty(key) && modules[key].browser) {
+      requireJsPaths[key] = modules[key].browser;
     }
   }
 
@@ -58,7 +58,7 @@ require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','
     // dynamically load all test files
     deps: allTestFiles,
 
-    // we have to kickoff jasmine with Karma
+    // we have to kickoff nodeunit with Karma
     callback: function() {
       require(allTestFiles, function() {
         var testModules = {};

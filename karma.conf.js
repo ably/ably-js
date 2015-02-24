@@ -62,7 +62,6 @@ module.exports = function(config) {
 
     // list of files to exclude
     exclude: [
-      'spec/support/jasmine.json',
       'spec/support/browser_file_list.js',
       'spec/support/node_helper.js',
       'spec/support/nodeunit.js'

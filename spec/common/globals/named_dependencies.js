@@ -1,17 +1,15 @@
 /* These modules are paths to common modules loaded by requireJs in the browser or Node */
-define(function(require) {
+define(function() {
   return module.exports = {
     // Ably modules
-    'ably':              { jasmine: 'browser/static/ably',                node: 'nodejs/index' },
-    'ably.noencryption': { jasmine: 'browser/static/ably.noencryption' },
-    'compat-pubnub':     { jasmine: 'browser/static/compat-pubnub' },
-    'compat-pusher':     { jasmine: 'browser/static/compat-pusher' },
-    'browser-base64':    { jasmine: 'browser/lib/util/base64',            node: 'skip' },
+    'ably':              { browser: 'browser/static/ably',                node: 'nodejs/index' },
+    'ably.noencryption': { browser: 'browser/static/ably.noencryption' },
+    'compat-pubnub':     { browser: 'browser/static/compat-pubnub' },
+    'compat-pusher':     { browser: 'browser/static/compat-pusher' },
+    'browser-base64':    { browser: 'browser/lib/util/base64',            node: 'skip' },
 
     // test modules
-    'globals':           { jasmine: 'spec/common/globals/environment',    node: 'spec/common/globals/environment' },
-    'shared_helper':     { jasmine: 'spec/common/modules/shared_helper',  node: 'spec/common/modules/shared_helper' }
+    'globals':           { browser: 'spec/common/globals/environment',    node: 'spec/common/globals/environment' },
+    'shared_helper':     { browser: 'spec/common/modules/shared_helper',  node: 'spec/common/modules/shared_helper' },
   };
-
-  return module.exports = ablyModules;
 });

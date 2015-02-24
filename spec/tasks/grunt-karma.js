@@ -26,8 +26,6 @@ module.exports = function (grunt) {
     if (!specString) { return ''; }
 
     grunt.log.error("Karma does not yet support running specific tests, see https://github.com/karma-runner/karma/issues/553");
-    grunt.log.error("To run a single test prefix the describe or it block with f, such as fdescribe");
-    grunt.log.error("See http://jasmine.github.io/2.2/focused_specs.html");
     process.exit();
 
     return ' -- ' + specString.split(',').map(function(spec) {
