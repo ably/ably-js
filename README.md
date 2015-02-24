@@ -85,6 +85,14 @@ Simply open [spec/nodeunit.html](./spec/nodeunit.html) in your browser to run th
 
 Note: If any files have been added or remove, running the task `grunt requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
 
+### Debugging the tests in a remote browser with NodeUnit test runner
+
+Run the following command to start a local Nodeunit test runner web server
+
+    grunt test:webserver
+
+Open your browser to [http://localhost:3000](http://localhost:3000). If you are usig a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Nodeunit runner web server.
+
 ### Debugging the tests in your browser with Karma
 
 If you would like to run the tests through Karma, then:
