@@ -31,6 +31,7 @@
     "karma-nodeunit": "~0.2",
     "karma-phantomjs-launcher": "~0.1",
     "karma-requirejs": "^0.2.2",
+    "karma-sauce-launcher": "0.2",
     "karma-story-reporter": "~0.3",
     "kexec": "*",
     "glob": "*",

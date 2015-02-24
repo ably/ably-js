@@ -2,6 +2,37 @@
 // Generated on Mon Feb 16 2015 09:26:57 GMT+0000 (GMT)
 
 module.exports = function(config) {
+  var customLaunchers = {
+    PhantomJS_without_security: {
+      base: 'PhantomJS',
+      flags: ['--web-security=no']
+    },
+    // Check out https://saucelabs.com/platforms for all browser/platform combos
+    sl_chrome: {
+      base: 'SauceLabs',
+      browserName: 'chrome',
+      platform: 'Windows 7',
+      version: '35'
+    },
+    sl_firefox: {
+      base: 'SauceLabs',
+      browserName: 'firefox',
+      version: '30'
+    },
+    sl_ios_safari: {
+      base: 'SauceLabs',
+      browserName: 'iphone',
+      platform: 'OS X 10.9',
+      version: '7.1'
+    },
+    sl_ie_11: {
+      base: 'SauceLabs',
+      browserName: 'internet explorer',
+      platform: 'Windows 8.1',
+      version: '11'
+    }
+  };
+
   config.set({
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
@@ -56,7 +87,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['story'],
+    reporters: ['story', 'saucelabs'],
     reportSlowerThan: 5000,
 
     // web server port
@@ -75,18 +106,15 @@ module.exports = function(config) {
     // enable / disable watching file and executing tests whenever any file changes
     autoWatch: false,
 
+    sauceLabs: {
+      testName: 'Ably-JS Javascript Tests'
+    },
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['PhantomJS_without_security'],
+    browsers: Object.keys(customLaunchers),
     browserNoActivityTimeout: 3600000,
-    customLaunchers: {
-      PhantomJS_without_security: {
-        base: 'PhantomJS',
-        flags: ['--web-security=no']
-      }
-    },
-
+    customLaunchers: customLaunchers,
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
