@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function (grunt) {
 
 	grunt.loadNpmTasks('grunt-curl');
@@ -192,7 +194,6 @@ module.exports = function (grunt) {
     ['copy', 'concat', 'requirejs', 'nodeunit', 'karma:' + browsers]
   );
 
-	var browsers = grunt.option('browsers') || 'default';
   grunt.registerTask('test:karma',
     'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
     ['copy', 'concat', 'requirejs', 'karma:' + browsers]
