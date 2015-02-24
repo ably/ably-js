@@ -180,6 +180,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
     tearDown: function(app, callback) {
       /* remove test account, application, and key */
       deleteApp(app, callback);
-    }
+    },
+    httpReq: httpReq
   };
 });
