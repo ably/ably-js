@@ -7,7 +7,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
   exports.setup_stats = function(test) {
     test.expect(1);
-    helper.setupApp(function() {
+    // force a new app to be created with first argument true so that stats are not effected by other tests
+    helper.setupApp(true, function() {
       rest = helper.AblyRest();
       rest.time(function(err, time) {
         if(err) {
