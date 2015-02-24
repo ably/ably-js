@@ -1,7 +1,7 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-  var currentTime, exports = {},
+  var exports = {},
       displayError = helper.displayError;
 
   exports.setupauth = function(test) {
@@ -9,22 +9,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     helper.setupApp(function(err) {
       if(err) {
         test.ok(false, helper.displayError(err));
-        test.done();
-        return;
+      } else {
+        test.ok(true, 'app set up');
       }
-
-      var realtime = helper.AblyRealtime();
-      realtime.time(function(err, time) {
-        if(err) {
-          test.ok(false, helper.displayError(err));
-          test.done();
-          return;
-        }
-        currentTime = time;
-        test.ok(true, 'Obtained time');
-        test.done();
-        realtime.close();
-      });
+      test.done();
     });
   };
 

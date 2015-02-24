@@ -12,15 +12,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         return;
       }
 
-      realtime = helper.AblyRealtime();
-      realtime.time(function(err, time) {
+      var rest = helper.AblyRest();
+      rest.time(function(err, time) {
         if(err) {
           test.ok(false, helper.displayError(err));
-          test.done();
-          return;
+        } else {
+          currentTime = time;
+          test.ok(true, 'Obtained time via REST');
         }
-        currentTime = time;
-        test.ok(true, 'Obtained time');
         test.done();
       });
     });
@@ -31,6 +30,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authbase0 = function(test) {
     test.expect(1);
+    realtime = helper.AblyRealtime();
     realtime.auth.requestToken(function(err, tokenDetails) {
       if(err) {
         test.ok(false, displayError(err));

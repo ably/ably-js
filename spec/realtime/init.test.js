@@ -8,8 +8,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     helper.setupApp(function(err) {
       if(err) {
         test.ok(false, helper.displayError(err));
+      } else {
+        test.ok(true, 'app set up');
       }
-      test.ok(true, 'app set up');
       test.done();
     });
   };
