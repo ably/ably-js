@@ -6,6 +6,7 @@
     "console",
     "setInterval",
     "setTimeout",
+    "clearInterval",
     "global",
     "window",
     "isBrowser",
