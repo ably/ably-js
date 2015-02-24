@@ -15,9 +15,16 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
       clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
     }
 
-    if (options.host) { clientOptions.host = options.host; }
-    if (options.wsHost) { clientOptions.wsHost = options.wsHost; }
-    if (options.restHost) { clientOptions.host = options.restHost; }
+    if (options.useBinaryProtocol !== undefined) { clientOptions.useBinaryProtocol = options.useBinaryProtocol; }
+
+    var ignoreOptions = ['environment', 'authToken', 'key'];
+    for (var key in options) {
+      if (options.hasOwnProperty(key)) {
+        if (ignoreOptions.indexOf(key) === -1) {
+          clientOptions[key] = options[key];
+        }
+      }
+    }
 
     return clientOptions;
   }
