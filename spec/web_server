@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+/*
+  Runs a simple web server that runs the nodeunit.html tests
+  This is useful if you need to run the nodeunit tests visually
+  via a tunnel to your localhost server
+*/
+
+var express = require('express');
+var server = express();
+server.use('/node_modules', express.static(__dirname + '/../node_modules'));
+server.use('/spec', express.static(__dirname));
+server.use('/browser', express.static(__dirname + '/../browser'));
+server.use(express.static(__dirname));
+
+server.use(function(req, res, next) {
+  console.log('%s %s %s', req.method, req.url, req.path);
+  next();
+});
+
+server.get('/', function(req, res) {
+  res.redirect('/nodeunit.html');
+});
+
+var port = process.env['PORT'] || 3000;
+server.listen(port);
+
+console.log("Nodeunit test server listening on http://localhost:3000/");

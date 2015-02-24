@@ -15,6 +15,7 @@
   "devDependencies": {
     "browserstack": "git://github.com/ably-forks/node-browserstack.git",
     "ejs": ">=0.8.5",
+    "express": "~4.12.0",
     "grunt": ">=0.4.4",
     "grunt-closure-compiler": ">=0.0.21",
     "grunt-contrib-compress": ">=0.7.0",

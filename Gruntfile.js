@@ -204,8 +204,13 @@ module.exports = function (grunt) {
   );
 
   grunt.registerTask('test:nodeunit',
-    'Concat files and then run the NodeUnit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+    'Concat files and then run the Nodeunit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
     ['copy', 'concat', 'requirejs', 'nodeunit']
+  );
+
+  grunt.registerTask('test:webserver',
+    'Launch the Nodeunit test web server on http://localhost:3000/',
+    ['copy', 'concat', 'requirejs', 'nodeunit:webserver']
   );
 
 	grunt.registerTask('default', 'all');

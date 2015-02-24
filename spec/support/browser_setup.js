@@ -26,7 +26,7 @@ Object.keys(window.__karma__.files).forEach(function(file) {
 
 var baseUrl = window.__karma__.base || '/base';
 
-require([baseUrl + '/spec/common/globals/named_dependencies.js'], function(modules) {
+require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
   var requireJsPaths = {};
   for (var key in modules) {
     if (modules.hasOwnProperty(key)) {

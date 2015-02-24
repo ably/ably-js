@@ -2,7 +2,8 @@
 
 var fs = require('fs'),
     path = require('path'),
-    shell = require('shelljs');
+    shell = require('shelljs'),
+    kexec = require('kexec');
 
 module.exports = function (grunt) {
   var test = grunt.option('test'),
@@ -23,21 +24,28 @@ module.exports = function (grunt) {
     });
   }
 
+  grunt.registerTask('nodeunit:webserver',
+    'Run the Nodeunit web server',
+    function() {
+      kexec('spec/web_server');
+    }
+  );
+
   grunt.registerTask('nodeunit',
-    'Run the NodeUnit test suite.\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+    'Run the Nodeunit test suite.\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
     function() {
       var runTests = getRelativePath(helpers).concat(['spec/**/*.test.js']).concat(getRelativePath(tearDown)).join(' ');
-      grunt.log.writeln("Running NodeUnit test suite against " + (test ? test : 'all tests'));
+      grunt.log.writeln("Running Nodeunit test suite against " + (test ? test : 'all tests'));
 
       if (test) {
         runTests = getRelativePath(helpers).concat(resolveTests(test)).concat(getRelativePath(tearDown)).join(' ');
       }
 
       if (shell.exec('node_modules/nodeunit/bin/nodeunit ' + runTests).code !== 0) {
-        grunt.log.error("NodeUnit tests failed!");
+        grunt.log.error("Nodeunit tests failed!");
         shell.exit(1);
       } else {
-        grunt.log.ok("NodeUnit tests passed");
+        grunt.log.ok("Nodeunit tests passed");
       }
     });
 };
