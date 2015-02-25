@@ -1,13 +1,12 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-  var currentTime, exports = {},
-      displayError = helper.displayError,
+  var exports = {},
       loadTestData = helper.loadTestData,
       BufferUtils = Ably.Realtime.BufferUtils,
       Crypto = Ably.Realtime.Crypto,
       Message = Ably.Realtime.Message,
-      assetPath = 'spec/realtime/assets/';
+      assetPath = (isBrowser && window.__karma__ ? 'base/' : '') + 'spec/realtime/assets/';
 
   function attachChannels(channels, callback) {
     async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
