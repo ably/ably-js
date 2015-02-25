@@ -39,12 +39,16 @@ module.exports = function (grunt) {
 
     grunt.log.writeln("Running Karma tests using browsers '" + browsers.join(',') + "' against " + (spec ? spec : 'all specs'));
 
-    if (shell.exec(karmaPath + 'start --browsers ' + browsers.join(',') + ' --single-run' + getSpecArguments(spec)).code !== 0) {
-      grunt.log.error("Browser tests failed!");
-      shell.exit(1);
-    } else {
-      grunt.log.ok("Browser tests passed");
-    }
+    var done = this.async();
+    shell.exec(karmaPath + 'start --browsers ' + browsers.join(',') + ' --single-run' + getSpecArguments(spec), function(code) {
+      if (code !== 0) {
+        grunt.log.error("Browser tests failed!");
+        shell.exit(1);
+      } else {
+        grunt.log.ok("Browser tests passed");
+      }
+      done();
+    });
   });
 
   grunt.registerTask('karma:server', 'Start a Karma server.  Optionally specify browser(s) e.g. `grunt karma:server:Chrome,PhantomJS`', function(browsersArg) {
@@ -57,11 +61,15 @@ module.exports = function (grunt) {
   grunt.registerTask('karma:run', 'run the Karma test runner.  Assumes a Karma server is running', function() {
     grunt.log.writeln("Running Karma test runner against against " + (spec ? spec : 'all specs'));
 
-    if (shell.exec(karmaPath + 'run' + getSpecArguments(spec)).code !== 0) {
-      grunt.log.error("Browser tests failed!");
-      shell.exit(1);
-    } else {
-      grunt.log.ok("Browser tests passed");
-    }
+    var done = this.async();
+    shell.exec(karmaPath + 'run' + getSpecArguments(spec), function(code) {
+      if (code !== 0) {
+        grunt.log.error("Browser tests failed!");
+        shell.exit(1);
+      } else {
+        grunt.log.ok("Browser tests passed");
+      }
+      done();
+    });
   });
 };

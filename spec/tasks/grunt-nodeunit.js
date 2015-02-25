@@ -41,12 +41,17 @@ module.exports = function (grunt) {
         runTests = getRelativePath(helpers).concat(resolveTests(test)).concat(getRelativePath(tearDown)).join(' ');
       }
 
-      if (shell.exec('node_modules/nodeunit/bin/nodeunit ' + runTests).code !== 0) {
-        grunt.log.error("Nodeunit tests failed!");
-        shell.exit(1);
-      } else {
-        grunt.log.ok("Nodeunit tests passed");
-      }
+      var done = this.async();
+
+      shell.exec('node_modules/nodeunit/bin/nodeunit ' + runTests, function(code) {
+        if (code !== 0) {
+          grunt.log.error("Nodeunit tests failed!");
+          shell.exit(1);
+        } else {
+          grunt.log.ok("Nodeunit tests passed");
+        }
+        done();
+      });
     });
 };
 
