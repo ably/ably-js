@@ -130,7 +130,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
     var postData = JSON.stringify(appSpec);
     var postOptions = {
       host: restHost, port: tlsPort, path: '/apps', method: 'POST', scheme: 'https',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': postData.length },
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': postData.length },
       body: postData
     };
 
@@ -160,6 +160,32 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
     });
   }
 
+  function createStatsFixtureData(app, statsData, callback) {
+    var postData = JSON.stringify(statsData);
+
+    var authKey = app.appId + '.' + app.key0Id + ':' + app.key0Value,
+        authHeader = toBase64(authKey);
+
+    var postOptions = {
+      host: restHost, port: tlsPort, path: '/stats', method: 'POST', scheme: 'https',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Content-Length': postData.length,
+        'Authorization': 'Basic ' + authHeader
+      },
+      body: postData
+    };
+
+    httpReq(postOptions, function(err) {
+      if (err) {
+        callback(err);
+      } else {
+        callback(null);
+      }
+    });
+  }
+
   function deleteApp(app, callback) {
     var authKey = app.appId + '.' + app.key0Id + ':' + app.key0Value,
         authHeader = toBase64(authKey);
@@ -173,14 +199,9 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
   }
 
   return module.exports = {
-    setup: function(callback) {
-      /* create a test account, application, and key */
-      createNewApp(callback);
-    },
-    tearDown: function(app, callback) {
-      /* remove test account, application, and key */
-      deleteApp(app, callback);
-    },
+    setup: createNewApp,
+    tearDown: deleteApp,
+    createStatsFixtureData: createStatsFixtureData,
     httpReq: httpReq
   };
 });

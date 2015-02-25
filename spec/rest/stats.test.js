@@ -5,107 +5,150 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       displayError = helper.displayError,
       startTime, intervalStart, timeOffset;
 
+  var lastYear = new Date().getUTCFullYear() - 1;
+
+  // Set last interval to 3rd Feb 20xx 16:03:00, Javascript uses zero based months
+  var firstIntervalEpoch = Date.UTC(lastYear, 1, 3, 15, 3, 0);
+
+  var statsFixtures = [
+    {
+      intervalId: lastYear + '-02-03:15:03',
+      inbound:  { realtime: { messages: { count: 50, data: 5000 } } },
+      outbound: { realtime: { messages: { count: 20, data: 2000 } } }
+    },
+    {
+      intervalId: lastYear + '-02-03:15:04',
+      inbound:  { realtime: { messages: { count: 60, data: 6000 } } },
+      outbound: { realtime: { messages: { count: 10, data: 1000 } } }
+    },
+    {
+      intervalId: lastYear + '-02-03:15:05',
+      inbound:       { realtime: { messages: { count: 70, data: 7000 } } },
+      outbound:      { realtime: { messages: { count: 40, data: 4000 } } },
+      persisted:     { presence: { count: 20, data: 2000 } },
+      connections:   { tls:      { peak: 20,  opened: 10 } },
+      channels:      { peak: 50, opened: 30 },
+      apiRequests:   { succeeded: 50, failed: 10 },
+      tokenRequests: { succeeded: 60, failed: 20 },
+    }
+  ];
+
   exports.setup_stats = function(test) {
     test.expect(1);
     // force a new app to be created with first argument true so that stats are not effected by other tests
     helper.setupApp(true, function() {
       rest = helper.AblyRest();
-      rest.time(function(err, time) {
+      helper.createStats(helper.getTestApp(), statsFixtures, function(err) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
           return;
         }
-        var expectedTime = Date.now();
-        timeOffset = time - expectedTime;
-        test.ok((Math.abs(timeOffset) < 2000), 'Verify returned time matches current local time');
+        test.ok(true, 'Stats fixtures data created');
         test.done();
       });
     });
   };
 
-  exports.statsWaitForNextInterval0 = function(test) {
-    var currentTime = new Date(timeOffset + Date.now());
-    var nextMinute = new Date(currentTime);
-    nextMinute.setMinutes(currentTime.getMinutes() + 1);
-    nextMinute.setSeconds(5);
-    setTimeout(function(){
-      test.done();
-    }, nextMinute.getTime() - currentTime.getTime());
-  };
-
   /**
-   * Publish events and check minute-level stats exist (forwards)
+   * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
    */
   exports.appstats_minute0 = function(test) {
     test.expect(1);
-    startTime = intervalStart = timeOffset + Date.now();
-
-    /*publish some messages */
-    var testchannel = rest.channels.get('appstats_0');
-    for(var i = 0; i < 50; i++)
-      testchannel.publish("stats" + i, i);
-
-    /* add a delay to allow published messages to reach persistent storage */
-    setTimeout(function() {
-      /* so now the messages are there; try querying the stats */
+    rest.stats({
+      start: lastYear + '-02-03:15:03',
+      direction: 'forwards'
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
+        test.done();
+        return;
+      }
       try {
-        rest.stats({
-          start: startTime,
-          direction: 'forwards'
-        }, function(err, stats) {
-          //console.log(require('util').inspect(stats));
-          if(err) {
-            test.ok(false, displayError(err));
-            test.done();
-            return;
-          }
-          try {
-            test.expect(2);
-            test.ok(stats.length > 0, 'Verify stats records found');
-            var totalMessages = 0;
-            for(var i = 0; i < stats.length; i++)
-              totalMessages += stats[i].inbound.all.messages.count;
-            test.equal(totalMessages, 50, 'Verify all published messages found');
-            test.done();
-          } catch(e) {
-            console.log(e);
-          }
-        });
+        test.expect(3);
+        test.equal(stats.length, 3, 'Verify 3 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 50 + 60 + 70, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 20 + 10 + 40, 'Verify all outbound messages found');
+        test.done();
       } catch(e) {
         console.log(e);
       }
-    }, 10000);
+    });
   };
 
   /**
-   * Check hour-level stats exist (forwards)
+   * Using milliseconds since epoch, check minute-level inbound and outbound stats match fixture data (forwards)
+   */
+  exports.appstats_minute1 = function(test) {
+    test.expect(1);
+    rest.stats({
+      start: firstIntervalEpoch,
+      direction: 'forwards'
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
+        test.done();
+        return;
+      }
+      try {
+        test.expect(3);
+        test.equal(stats.length, 3, 'Verify 3 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 50 + 60 + 70, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 20 + 10 + 40, 'Verify all outbound messages found');
+        test.done();
+      } catch(e) {
+        console.log(e);
+      }
+    });
+  };
+
+  /**
+   * Check hour-level inbound and outbound stats match fixture data (forwards)
    */
   exports.appstats_hour0 = function(test) {
     test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        by: 'hour'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+    rest.stats({
+      start: lastYear + '-02-03:15',
+      direction: 'forwards',
+      by: 'hour'
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
         test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
+        return;
+      }
+      try {
+        test.expect(3);
+        console.log("stats length", stats.length);
+        test.equal(stats.length, 1, 'Verify 1 stat record found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 50 + 60 + 70, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 20 + 10 + 40, 'Verify all outbound messages found');
+        test.done();
+      } catch(e) {
+        console.log(e);
+      }
+    });
   };
 
   /**
@@ -113,29 +156,33 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.appstats_day0 = function(test) {
     test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        by: 'day'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+    rest.stats({
+      end: lastYear + '-02-03',
+      direction: 'forwards',
+      by: 'day'
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
         test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
+        return;
+      }
+      try {
+        test.expect(3);
+        test.ok(stats.length == 1, 'Verify 1 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 50 + 60 + 70, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 20 + 10 + 40, 'Verify all outbound messages found');
+        test.done();
+      } catch(e) {
+        console.log(e);
+      }
+    });
   };
 
   /**
@@ -143,219 +190,67 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.appstats_month0 = function(test) {
     test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        by: 'month'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+    rest.stats({
+      end: lastYear + '-02',
+      direction: 'forwards',
+      by: 'month'
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
         test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  exports.statsWaitForNextInterval1 = function(test) {
-    var currentTime = new Date(timeOffset + Date.now());
-    var nextMinute = new Date(currentTime);
-    nextMinute.setMinutes(currentTime.getMinutes() + 1);
-    nextMinute.setSeconds(5);
-    setTimeout(function(){
-      test.done();
-    }, nextMinute.getTime() - currentTime.getTime());
-  };
-
-  /**
-   * Publish events and check minute-level stats exist (backwards)
-   */
-  exports.appstats_minute1 = function(test) {
-    test.expect(1);
-    intervalStart = timeOffset + Date.now();
-
-    /*publish some messages */
-    var testchannel = rest.channels.get('appstats_1');
-    for(var i = 0; i < 60; i++)
-      testchannel.publish("stats" + i, i);
-
-    /* add a delay to allow published messages to reach persistent storage */
-    setTimeout(function() {
-      /* so now the messages are there; try querying the stats */
+        return;
+      }
       try {
-        rest.stats({
-          start: intervalStart,
-          direction: 'backwards'
-        }, function(err, stats) {
-          //console.log(require('util').inspect(stats));
-          if(err) {
-            test.ok(false, displayError(err));
-            test.done();
-            return;
-          }
-          test.expect(2);
-          test.ok(stats.length > 0, 'Verify stats records found');
-          var totalMessages = 0;
-          for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 60, 'Verify all published messages found');
-          test.done();
-        });
+        test.expect(3);
+        test.ok(stats.length == 1, 'Verify 1 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 50 + 60 + 70, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 20 + 10 + 40, 'Verify all outbound messages found');
+        test.done();
       } catch(e) {
         console.log(e);
       }
-    }, 10000);
+    });
   };
 
   /**
-   * Check hour-level stats exist (backwards)
-   */
-  exports.appstats_hour1 = function(test) {
-    test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'backwards',
-        by: 'hour'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 110, 'Verify all published messages found');
-        test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  /**
-   * Check day-level stats exist (backwards)
-   */
-  exports.appstats_day1 = function(test) {
-    test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'backwards',
-        by: 'day'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 110, 'Verify all published messages found');
-        test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  /**
-   * Check month-level stats exist (backwards)
-   */
-  exports.appstats_month1 = function(test) {
-    test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'backwards',
-        by: 'month'
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length > 0, 'Verify stats records found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 110, 'Verify all published messages found');
-        test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  exports.statsWaitForNextInterval2 = function(test) {
-    var currentTime = new Date(timeOffset + Date.now());
-    var nextMinute = new Date(currentTime);
-    nextMinute.setMinutes(currentTime.getMinutes() + 1);
-    nextMinute.setSeconds(5);
-    setTimeout(function(){
-      test.done();
-    }, nextMinute.getTime() - currentTime.getTime());
-  };
-
-  /**
-   * Publish events and check limit query param (backwards)
+   * Check limit query param (backwards)
    */
   exports.appstats_limit0 = function(test) {
     test.expect(1);
-
-    /*publish some messages */
-    var testchannel = rest.channels.get('appstats_2');
-    for(var i = 0; i < 70; i++)
-      testchannel.publish("stats" + i, i);
-
-    /* add a delay to allow published messages to reach persistent storage */
-    setTimeout(function() {
-      /* so now the messages are there; try querying the stats */
+    rest.stats({
+      end: lastYear + '-02-03:15:04',
+      direction: 'backwards',
+      limit: 1
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
+        test.done();
+        return;
+      }
       try {
-        rest.stats({
-          start: startTime,
-          direction: 'backwards',
-          limit: 1
-        }, function(err, stats) {
-          //console.log(require('util').inspect(stats));
-          if(err) {
-            test.ok(false, displayError(err));
-            test.done();
-            return;
-          }
-          test.expect(2);
-          test.ok(stats.length == 1, 'Verify exactly one stats record found');
-          var totalMessages = 0;
-          for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 70, 'Verify all published messages found');
-          test.done();
-        });
+        test.expect(3);
+        test.ok(stats.length == 1, 'Verify 1 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 60, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 10, 'Verify all outbound messages found');
+        test.done();
       } catch(e) {
         console.log(e);
       }
-    }, 10000);
+    });
   };
 
   /**
@@ -363,127 +258,72 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.appstats_limit1 = function(test) {
     test.expect(1);
-    try {
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        limit: 1
-      }, function(err, stats) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(2);
-        test.ok(stats.length == 1, 'Verify exactly one stats record found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+    rest.stats({
+      end: lastYear + '-02-03:15:04',
+      direction: 'backwards',
+      limit: 1
+    }, function(err, stats) {
+      if(err) {
+        test.ok(false, displayError(err));
         test.done();
-      });
-    } catch(e) {
-      console.log(e);
-    }
+        return;
+      }
+      try {
+        test.expect(3);
+        test.ok(stats.length == 1, 'Verify 1 stat records found');
+
+        var totalInbound = 0, totalOutbound = 0;
+        for(var i = 0; i < stats.length; i++) {
+          totalInbound += stats[i].inbound.all.messages.count;
+          totalOutbound += stats[i].outbound.all.messages.count;
+        }
+
+        test.equal(totalInbound, 60, 'Verify all inbound messages found');
+        test.equal(totalOutbound, 10, 'Verify all outbound messages found');
+        test.done();
+      } catch(e) {
+        console.log(e);
+      }
+    });
   };
 
   /**
    * Check query pagination (backwards)
    */
-  exports.appstats_pagination0 = function(test) {
+  exports.appstats_pagination_backwards = function(test) {
     test.expect(1);
-    try {
-      /* get initial query and page */
-      rest.stats({
-        start: startTime,
-        direction: 'backwards',
-        limit: 1
-      }, function(err, stats, relLinks) {
-        try {
-          //console.log(require('util').inspect(stats));
-          if(err) {
-            test.ok(false, displayError(err));
-            test.done();
-            return;
-          }
-          test.expect(3);
-          test.ok(stats.length == 1, 'Verify exactly one stats record found');
-          var totalMessages = 0;
-          for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 70, 'Verify all published messages found');
+    rest.stats({
+      end: lastYear + '-02-03:15:05',
+      direction: 'backwards',
+      limit: 1
+    }, function(err, stats, relLinks) {
+      if(err) {
+        test.ok(false, displayError(err));
+        test.done();
+        return;
+      }
 
-          /* get next page */
-          test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-          rest.stats(relLinks.next, function(err, stats, relLinks) {
-            if(err) {
-              test.ok(false, displayError(err));
-              test.done();
-              return;
-            }
-            test.expect(6);
-            test.ok(stats.length == 1, 'Verify exactly one stats record found');
-            var totalMessages = 0;
-            for(var i = 0; i < stats.length; i++)
-              totalMessages += stats[i].inbound.all.messages.count;
-            test.equal(totalMessages, 60, 'Verify all published messages found');
+      test.expect(3);
+      test.ok(stats.length == 1, 'Verify exactly one stats record found');
+      var totalData = 0;
+      for(var i = 0; i < stats.length; i++)
+        totalData += stats[i].inbound.all.messages.data;
+      test.equal(totalData, 7000, 'Verify all published message data found');
 
-            /* get next page */
-            test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-            rest.stats(relLinks.next, function(err, stats, relLinks) {
-              if(err) {
-                test.ok(false, displayError(err));
-                test.done();
-                return;
-              }
-              test.expect(9);
-              test.ok(stats.length == 1, 'Verify exactly one stats record found');
-              var totalMessages = 0;
-              for(var i = 0; i < stats.length; i++)
-                totalMessages += stats[i].inbound.all.messages.count;
-              test.equal(totalMessages, 50, 'Verify all published messages found');
-
-              /* verify no further pages */
-              test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
-
-              /* that's it */
-              test.done();
-            });
-          });
-        } catch(e) {
-          console.log(e);
-        }
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  /**
-   * Check query pagination (forwards)
-   */
-  exports.appstats_pagination1 = function(test) {
-    test.expect(1);
-    try {
-      /* get initial query and page */
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        limit: 1
-      }, function(err, stats, relLinks) {
-        //console.log(require('util').inspect(stats));
+      /* get next page */
+      test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
+      rest.stats(relLinks.next, function(err, stats, relLinks) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
           return;
         }
-        test.expect(3);
+        test.expect(6);
         test.ok(stats.length == 1, 'Verify exactly one stats record found');
-        var totalMessages = 0;
+        var totalData = 0;
         for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+          totalData += stats[i].inbound.all.messages.data;
+        test.equal(totalData, 6000, 'Verify all published message data found');
 
         /* get next page */
         test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
@@ -493,130 +333,69 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
             test.done();
             return;
           }
-          test.expect(6);
+          test.expect(9);
           test.ok(stats.length == 1, 'Verify exactly one stats record found');
-          var totalMessages = 0;
+          var totalData = 0;
           for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 60, 'Verify all published messages found');
+            totalData += stats[i].inbound.all.messages.data;
+          test.equal(totalData, 5000, 'Verify all published message data found');
 
-          /* get next page */
-          test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-          rest.stats(relLinks.next, function(err, stats, relLinks) {
-            if(err) {
-              test.ok(false, displayError(err));
-              test.done();
-              return;
-            }
-            test.expect(9);
-            test.ok(stats.length == 1, 'Verify exactly one stats record found');
-            var totalMessages = 0;
-            for(var i = 0; i < stats.length; i++)
-              totalMessages += stats[i].inbound.all.messages.count;
-            test.equal(totalMessages, 70, 'Verify all published messages found');
+          /* verify no further pages */
+          test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
 
-            /* verify no further pages */
-            test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
+          test.expect(10);
 
-            /* that's it */
-            test.done();
-          });
-        });
-      });
-    } catch(e) {
-      console.log(e);
-    }
-  };
-
-  /**
-   * Check query pagination rel="first" (backwards)
-   */
-  exports.appstats_pagination2 = function(test) {
-    test.expect(1);
-    try {
-      /* get initial query and page */
-      rest.stats({
-        start: startTime,
-        direction: 'backwards',
-        limit: 1
-      }, function(err, stats, relLinks) {
-        //console.log(require('util').inspect(stats));
-        if(err) {
-          test.ok(false, displayError(err));
-          test.done();
-          return;
-        }
-        test.expect(3);
-        test.ok(stats.length == 1, 'Verify exactly one stats record found');
-        var totalMessages = 0;
-        for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 70, 'Verify all published messages found');
-
-        /* get next page */
-        test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-        rest.stats(relLinks.next, function(err, stats, relLinks) {
-          if(err) {
-            test.ok(false, displayError(err));
-            test.done();
-            return;
-          }
-          test.expect(6);
-          test.ok(stats.length == 1, 'Verify exactly one stats record found');
-          var totalMessages = 0;
-          for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 60, 'Verify all published messages found');
-
-          /* get next page */
-          test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
           rest.stats(relLinks.first, function(err, stats, relLinks) {
-            if(err) {
-              test.ok(false, displayError(err));
-              test.done();
-              return;
-            }
-            test.expect(8);
-            test.ok(stats.length == 1, 'Verify exactly one stats record found');
-            var totalMessages = 0;
+            var totalData = 0;
             for(var i = 0; i < stats.length; i++)
-              totalMessages += stats[i].inbound.all.messages.count;
-            test.equal(totalMessages, 70, 'Verify all published messages found');
+              totalData += stats[i].inbound.all.messages.data;
+            test.equal(totalData, 7000, 'Verify all published message data found');
 
             /* that's it */
             test.done();
           });
         });
       });
-    } catch(e) {
-      console.log(e);
-    }
+    });
   };
 
   /**
-   * Check query pagination rel="first" (forwards)
+   * Check query pagination (backwards)
    */
-  exports.appstats_pagination3 = function(test) {
+  exports.appstats_pagination_forwards = function(test) {
     test.expect(1);
-    try {
-      /* get initial query and page */
-      rest.stats({
-        start: startTime,
-        direction: 'forwards',
-        limit: 1
-      }, function(err, stats, relLinks) {
-        //console.log(require('util').inspect(stats));
+    rest.stats({
+      end: lastYear + '-02-03:15:05',
+      direction: 'forwards',
+      limit: 1
+    }, function(err, stats, relLinks) {
+      if(err) {
+        test.ok(false, displayError(err));
+        test.done();
+        return;
+      }
+
+      test.expect(3);
+      test.ok(stats.length == 1, 'Verify exactly one stats record found');
+      var totalData = 0;
+      for(var i = 0; i < stats.length; i++)
+        totalData += stats[i].inbound.all.messages.data;
+      test.equal(totalData, 5000, 'Verify all published message data found');
+
+      /* get next page */
+      test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
+      rest.stats(relLinks.next, function(err, stats, relLinks) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
           return;
         }
-        test.expect(3);
+        test.expect(6);
         test.ok(stats.length == 1, 'Verify exactly one stats record found');
-        var totalMessages = 0;
+        var totalData = 0;
         for(var i = 0; i < stats.length; i++)
-          totalMessages += stats[i].inbound.all.messages.count;
-        test.equal(totalMessages, 50, 'Verify all published messages found');
+          totalData += stats[i].inbound.all.messages.data;
+        test.equal(totalData, 6000, 'Verify all published message data found');
 
         /* get next page */
         test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
@@ -626,36 +405,30 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
             test.done();
             return;
           }
-          test.expect(6);
+          test.expect(9);
           test.ok(stats.length == 1, 'Verify exactly one stats record found');
-          var totalMessages = 0;
+          var totalData = 0;
           for(var i = 0; i < stats.length; i++)
-            totalMessages += stats[i].inbound.all.messages.count;
-          test.equal(totalMessages, 60, 'Verify all published messages found');
+            totalData += stats[i].inbound.all.messages.data;
+          test.equal(totalData, 7000, 'Verify all published message data found');
 
-          /* get next page */
-          test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
+          /* verify no further pages */
+          test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
+
+          test.expect(10);
+
           rest.stats(relLinks.first, function(err, stats, relLinks) {
-            if(err) {
-              test.ok(false, displayError(err));
-              test.done();
-              return;
-            }
-            test.expect(8);
-            test.ok(stats.length == 1, 'Verify exactly one stats record found');
-            var totalMessages = 0;
+            var totalData = 0;
             for(var i = 0; i < stats.length; i++)
-              totalMessages += stats[i].inbound.all.messages.count;
-            test.equal(totalMessages, 50, 'Verify all published messages found');
+              totalData += stats[i].inbound.all.messages.data;
+            test.equal(totalData, 5000, 'Verify all published message data found');
 
             /* that's it */
             test.done();
           });
         });
       });
-    } catch(e) {
-      console.log(e);
-    }
+    });
   };
 
   return module.exports = exports;

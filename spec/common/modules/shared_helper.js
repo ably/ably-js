@@ -23,6 +23,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
     return module.exports = {
       setupApp:     testAppModule.setup,
       tearDownApp:  testAppModule.tearDown,
+      createStats:  testAppModule.createStatsFixtureData,
       getTestApp:   testAppModule.getTestApp,
 
       AblyRest:     clientModule.AblyRest,

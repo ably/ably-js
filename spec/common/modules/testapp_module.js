@@ -75,6 +75,7 @@ define(['spec/common/modules/testapp_manager'], function(testAppManager) {
   return module.exports = {
     setup: setup,
     tearDown: tearDown,
+    createStatsFixtureData: testAppManager.createStatsFixtureData,
     getTestApp: function() { return globalObject.AblyTestApp; }
   };
 });
