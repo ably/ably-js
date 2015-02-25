@@ -9,7 +9,7 @@ module.exports = function (grunt) {
       spec = grunt.option('spec');
 
   function browsersFromArgument(browserArg) {
-    var defaultBrowser = 'PhantomJS';
+    var defaultBrowser = 'PhantomJS_without_security';
     if (!browserArg || browserArg == 'undefined' || browserArg == 'default') {
       browserArg = defaultBrowser;
     }
