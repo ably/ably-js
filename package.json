@@ -46,5 +46,8 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:ably/ably-js.git"
+  },
+  "scripts": {
+    "test": "grunt test:nodeunit"
   }
 }
