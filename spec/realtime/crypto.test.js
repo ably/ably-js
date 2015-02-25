@@ -1,6 +1,11 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
+  if (/PhantomJS/.test(window.navigator.userAgent)) {
+    console.warn("PhantomJS is incompatible with CryptoJS WordArray, cryptography tests will be skipped in this environment");
+    return module.exports = {};
+  }
+
   var exports = {},
       loadTestData = helper.loadTestData,
       BufferUtils = Ably.Realtime.BufferUtils,
@@ -18,7 +23,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       return one.data == two.data;
     }
     if(BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-      return (BufferUtils.bufferCompare(one.data, two.data) == 0);
+      return (BufferUtils.bufferCompare(one.data, two.data) === 0);
     }
     return JSON.stringify(one.data) == JSON.stringify(two.data);
   }
