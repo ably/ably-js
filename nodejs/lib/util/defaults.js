@@ -40,7 +40,8 @@ Defaults.getPort = function(options) {
 };
 
 Defaults.getHosts = function(options) {
-	var hosts;
+	var hosts,
+			options = options || {};
 	if(options.host) {
 		hosts = [options.host];
 		if(options.fallbackHosts)
