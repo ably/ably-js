@@ -1,7 +1,8 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-  if (/PhantomJS/.test(window.navigator.userAgent)) {
+  var phantomJS = (typeof(window) == 'object') && (/PhantomJS/.test(window.navigator.userAgent));
+  if (phantomJS) {
     console.warn("PhantomJS is incompatible with CryptoJS WordArray, cryptography tests will be skipped in this environment");
     return module.exports = {};
   }

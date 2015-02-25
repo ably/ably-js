@@ -8536,8 +8536,9 @@ var IframeTransport = (function() {
 	Utils.inherits(IframeTransport, Transport);
 
 	IframeTransport.isAvailable = function() {
+		var phantomJS = (typeof(window) == 'object') && (/PhantomJS/.test(window.navigator.userAgent));
 		// Disable iFrame transport in PhantomJS tests until root cause can be discovered
-		return ((window.postMessage !== undefined) && !(/PhantomJS/.test(window.navigator.userAgent)));
+		return ((window.postMessage !== undefined) && !phantomJS);
 	};
 
 	if(IframeTransport.isAvailable())
