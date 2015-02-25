@@ -1,7 +1,7 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-  var currentTime, rest, exports = {};
+  var rest, exports = {};
 
   exports.setuptime = function(test) {
     test.expect(1);
@@ -14,20 +14,20 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
       rest = helper.AblyRest();
       test.ok(true, 'app set up');
-      test.done()
+      test.done();
     });
   };
 
   exports.time0 = function(test) {
     test.expect(1);
-    rest.time(function(err, time) {
+    rest.time(function(err, serverTime) {
       if(err) {
-        test.ok(false, displayError(err));
+        test.ok(false, helper.displayError(err));
         test.done();
         return;
       }
-      var expectedTime = Date.now();
-      test.ok((Math.abs(time - expectedTime) < 2000), 'Verify returned time matches current local time');
+      var localFiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      test.ok(serverTime > localFiveMinutesAgo, 'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks');
       test.done();
     });
   };

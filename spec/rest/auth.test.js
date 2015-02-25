@@ -7,17 +7,24 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     return qualifiedKeyId.split('.')[1];
   };
 
+  var getServerTime = function(callback) {
+    rest.time(function(err, time) {
+      if(err) { callback(err); }
+      callback(null, Math.floor(time/1000));
+    });
+  };
+
   exports.setupauth = function(test) {
     test.expect(1);
     helper.setupApp(function() {
       rest = helper.AblyRest();
-      rest.time(function(err, time) {
+      getServerTime(function(err, time) {
         if(err) {
           test.ok(false, helper.displayError(err));
           test.done();
           return;
         }
-        currentTime = Math.floor(time/1000);
+        currentTime = time;
         test.ok(true, 'Obtained time');
         test.done();
       });
@@ -92,19 +99,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authtime0 = function(test) {
     test.expect(1);
-    var localTime = Math.floor(Date.now()/1000);
-    rest.auth.requestToken({timestamp:localTime}, function(err, tokenDetails) {
+    getServerTime(function(err, serverTime) {
       if(err) {
         test.ok(false, helper.displayError(err));
         test.done();
         return;
       }
-      test.expect(4);
-      test.ok((tokenDetails.id), 'Verify token id');
-      test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
-      test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
-      test.done();
+
+      rest.auth.requestToken({timestamp: serverTime}, function(err, tokenDetails) {
+        if(err) {
+          test.ok(false, helper.displayError(err));
+          test.done();
+          return;
+        }
+        test.expect(4);
+        test.ok((tokenDetails.id), 'Verify token id');
+        test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
+        test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
+        test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+        test.done();
+      });
     });
   };
 
@@ -150,21 +164,28 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authnonce0 = function(test) {
     test.expect(1);
-    var localTime = Math.floor(Date.now()/1000);
-    rest.auth.requestToken({timestamp:localTime, nonce:'1234567890123456'}, function(err, tokenDetails) {
+    getServerTime(function(err, serverTime) {
       if(err) {
         test.ok(false, helper.displayError(err));
         test.done();
         return;
       }
-      rest.auth.requestToken({timestamp:localTime, nonce:'1234567890123456'}, function(err, tokenDetails) {
+
+      rest.auth.requestToken({timestamp:serverTime, nonce:'1234567890123456'}, function(err, tokenDetails) {
         if(err) {
-          test.equal(err.statusCode, 401, 'Verify request rejected with duplicated nonce');
+          test.ok(false, helper.displayError(err));
           test.done();
           return;
         }
-        test.ok(false, 'Invalid nonce, expected rejection');
-        test.done();
+        rest.auth.requestToken({timestamp:serverTime, nonce:'1234567890123456'}, function(err, tokenDetails) {
+          if(err) {
+            test.equal(err.statusCode, 401, 'Verify request rejected with duplicated nonce');
+            test.done();
+            return;
+          }
+          test.ok(false, 'Invalid nonce, expected rejection');
+          test.done();
+        });
       });
     });
   };
