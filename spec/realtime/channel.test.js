@@ -474,5 +474,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
-  return module.exports = exports;
+  return module.exports = helper.withTimeout(exports);
 });

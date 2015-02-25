@@ -20,6 +20,32 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
       return result;
     };
 
+    /* Wraps all tests with a timeout so that they don't run indefinitely */
+    var withTimeout = function(exports, defaultTimeout) {
+      var timeout = defaultTimeout || 25 * 1000;
+
+      for (var needle in exports) {
+        if (exports.hasOwnProperty(needle)) {
+          (function(originalFn) {
+            exports[needle] = function(test) {
+              var originalDone = test.done;
+              test.done = function() {
+                clearTimeout(timer);
+                originalDone.apply(test, arguments);
+              };
+              var timer = setTimeout(function() {
+                test.ok(false, "Test timed out after " + (timeout / 1000) + "s");
+                test.done();
+              }, timeout);
+              originalFn(test);
+            };
+          })(exports[needle]);
+        }
+      }
+
+      return exports;
+    };
+
     return module.exports = {
       setupApp:     testAppModule.setup,
       tearDownApp:  testAppModule.tearDown,
@@ -31,6 +57,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
       loadTestData: testDataModule.loadTestData,
 
-      displayError: displayError
+      displayError: displayError,
+      withTimeout:  withTimeout
     };
   });

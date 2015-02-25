@@ -844,5 +844,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     }, 3000);
   };
 
-  return module.exports = exports;
+  return module.exports = helper.withTimeout(exports);
 });

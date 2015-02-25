@@ -52,5 +52,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     test.done();
   };
 
-  return module.exports = exports;
+  return module.exports = helper.withTimeout(exports);
 });

@@ -21,6 +21,8 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 
     if (options.useBinaryProtocol !== undefined) { clientOptions.useBinaryProtocol = options.useBinaryProtocol; }
 
+    // clientOptions.log = { level:4 };
+
     var ignoreOptions = ['environment', 'authToken', 'key'];
     for (var key in options) {
       if (options.hasOwnProperty(key)) {
