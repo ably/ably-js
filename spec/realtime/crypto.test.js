@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       BufferUtils = Ably.Realtime.BufferUtils,
       Crypto = Ably.Realtime.Crypto,
       Message = Ably.Realtime.Message,
-      assetPath = (isBrowser && window.__karma__ ? 'base/' : '') + 'spec/realtime/assets/';
+      assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/';
 
   function attachChannels(channels, callback) {
     async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
