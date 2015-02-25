@@ -189,30 +189,30 @@ module.exports = function (grunt) {
 	grunt.loadTasks('spec/tasks');
 
 	var browsers = grunt.option('browsers') || 'default';
-  grunt.registerTask('test',
-    'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
-    ['copy', 'concat', 'requirejs', 'nodeunit', 'karma:' + browsers]
-  );
+	grunt.registerTask('test',
+		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
+		['copy', 'concat', 'requirejs', 'nodeunit', 'karma:' + browsers]
+	);
 
-  grunt.registerTask('test:karma',
-    'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
-    ['copy', 'concat', 'requirejs', 'karma:' + browsers]
-  );
+	grunt.registerTask('test:karma',
+		'Run the Karma test suite\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS',
+		['copy', 'concat', 'requirejs', 'karma:' + browsers]
+	);
 
-  grunt.registerTask('test:karma:run',
-    'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
-    ['copy', 'concat', 'requirejs', 'karma:run']
-  );
+	grunt.registerTask('test:karma:run',
+		'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
+		['copy', 'concat', 'requirejs', 'karma:run']
+	);
 
-  grunt.registerTask('test:nodeunit',
-    'Concat files and then run the Nodeunit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-    ['copy', 'concat', 'requirejs', 'nodeunit']
-  );
+	grunt.registerTask('test:nodeunit',
+		'Concat files and then run the Nodeunit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+		['copy', 'concat', 'requirejs', 'nodeunit']
+	);
 
-  grunt.registerTask('test:webserver',
-    'Launch the Nodeunit test web server on http://localhost:3000/',
-    ['copy', 'concat', 'requirejs', 'nodeunit:webserver']
-  );
+	grunt.registerTask('test:webserver',
+		'Launch the Nodeunit test web server on http://localhost:3000/',
+		['copy', 'concat', 'requirejs', 'nodeunit:webserver']
+	);
 
 	grunt.registerTask('default', 'all');
 };
