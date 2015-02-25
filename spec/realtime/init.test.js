@@ -58,10 +58,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       exitOnState('failed');
       exitOnState('disconnected');
-      realtime.connection.on('failed', function() {
-        test.done();
-        realtime.close();
-      });
     } catch(e) {
       test.ok(false, 'Init with key failed with exception: ' + e.stack);
       test.done();
