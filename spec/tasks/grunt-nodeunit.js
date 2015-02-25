@@ -7,6 +7,8 @@ var fs = require('fs'),
 
 module.exports = function (grunt) {
   var test = grunt.option('test'),
+      debug = grunt.option('debug'),
+      inspector = grunt.option('inspector'),
       helpers = ['spec/support/modules_helper.js', 'spec/support/test_helper.js'],
       tearDown = ['spec/support/tear_down.js'];
 
@@ -32,7 +34,7 @@ module.exports = function (grunt) {
   );
 
   grunt.registerTask('nodeunit',
-    'Run the Nodeunit test suite.\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+    'Run the Nodeunit test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
     function() {
       var runTests = getRelativePath(helpers).concat(['spec/realtime/*.test.js', 'spec/rest/*.test.js']).concat(getRelativePath(tearDown)).join(' ');
       grunt.log.writeln("Running Nodeunit test suite against " + (test ? test : 'all tests'));
@@ -41,9 +43,16 @@ module.exports = function (grunt) {
         runTests = getRelativePath(helpers).concat(resolveTests(test)).concat(getRelativePath(tearDown)).join(' ');
       }
 
-      var done = this.async();
+      var done = this.async(),
+          nodeExecutable = 'node';
 
-      shell.exec('node_modules/nodeunit/bin/nodeunit ' + runTests, function(code) {
+      if (debug) {
+        nodeExecutable = 'node debug';
+      } else if (inspector) {
+        nodeExecutable = 'node-debug';
+      }
+
+      shell.exec(nodeExecutable + ' node_modules/nodeunit/bin/nodeunit ' + runTests, function(code) {
         if (code !== 0) {
           grunt.log.error("Nodeunit tests failed!");
           shell.exit(1);
