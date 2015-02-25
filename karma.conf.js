@@ -59,9 +59,9 @@ module.exports = function(config) {
 
       { pattern: 'spec/common/**/*.js', included: false },
       { pattern: 'spec/support/*.js', included: false },
-      { pattern: 'spec/rest/*.test.js', included: false },
-      { pattern: 'spec/realtime/*.test.js', included: false },
       { pattern: 'spec/realtime/assets/*.json', included: false },
+      { pattern: 'spec/realtime/*.test.js', included: false },
+      { pattern: 'spec/rest/*.test.js', included: false },
       { pattern: 'spec/browser/*.test.js', included: false }
     ],
 
