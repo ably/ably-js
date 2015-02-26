@@ -31,7 +31,7 @@ exports.createAccountAppAndKeys = function (testVars, console, callback) {
 			} else {
 				response = JSON.parse(response);
 				completeKey = response.appId + '.' + response.keys[0].id + ':' + response.keys[0].value;
-				console.log(" Test starting -> Account set up, account ID: `" + response.accountId + "`, app ID: `" + response.appId + "`, key: `" + completeKey + "`");
+				console.log("Test starting -> Account set up, account ID: `" + response.accountId + "`, app ID: `" + response.appId + "`, key: `" + completeKey + "`");
 				callback(null, {
 					acctId: response.accountId,
 					appId: response.appId,

@@ -4,7 +4,7 @@
   Test App creation helper used within NodeUnit tests.
 */
 
-define(['spec/common/modules/testapp_manager'], function(testAppManager) {
+define(['spec/common/modules/testapp_manager', 'globals'], function(testAppManager, ablyGlobals) {
   var globalObject = isBrowser? window : global;
 
   function updateTestApp(newTestApp) {
@@ -33,7 +33,7 @@ define(['spec/common/modules/testapp_manager'], function(testAppManager) {
           done(new Error("Could not set up Test App: " + JSON.stringify(err)));
         } else {
           updateTestApp(newTestApp);
-          console.log("Test App " + configuredTestApp().appId + " has been set up");
+          console.info("Test App " + configuredTestApp().appId + " in environment " + (ablyGlobals.environment || 'production') + " has been set up");
           done();
         }
       });
@@ -65,7 +65,7 @@ define(['spec/common/modules/testapp_manager'], function(testAppManager) {
       if (err) {
         done(new Error("Could not tear down Test App: " + JSON.stringify(err)));
       } else {
-        console.log("Test App " + configuredTestApp().appId + " has been torn down");
+        console.info("Test App " + configuredTestApp().appId + " has been torn down");
         updateTestApp(null);
         done();
       }
