@@ -6,12 +6,12 @@
   via a tunnel to your localhost server
 */
 
-var express = require('express');
+"use strict";
+
+var express = require('express'),
+    browserTestFiles = require('./tasks/lib/browser_test_files');
+
 var server = express();
-server.use('/node_modules', express.static(__dirname + '/../node_modules'));
-server.use('/spec', express.static(__dirname));
-server.use('/browser', express.static(__dirname + '/../browser'));
-server.use(express.static(__dirname));
 
 server.use(function(req, res, next) {
   console.log('%s %s %s', req.method, req.url, req.path);
@@ -22,7 +22,19 @@ server.get('/', function(req, res) {
   res.redirect('/nodeunit.html');
 });
 
-var port = process.env['PORT'] || 3000;
+server.get('/support/browser_file_list.js', function(req, res) {
+  var body = "window.__karma__ = { base: '../' };\n";
+  body += "window.__karma__.files = " + JSON.stringify(browserTestFiles()) + ";";
+  res.set('Content-Type', 'application/json');
+  res.send(body);
+});
+
+server.use('/node_modules', express.static(__dirname + '/../node_modules'));
+server.use('/spec', express.static(__dirname));
+server.use('/browser', express.static(__dirname + '/../browser'));
+server.use(express.static(__dirname));
+
+var port = process.env.PORT || 3000;
 server.listen(port);
 
 console.log("Nodeunit test server listening on http://localhost:3000/");
