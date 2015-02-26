@@ -531,5 +531,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
-  return module.exports = helper.withTimeout(exports);
+  // TODO: Figure out why these test take so long when run following other tests, they pass quicker when run in isolation
+  return module.exports = helper.withTimeout(exports, 45000);
 });
