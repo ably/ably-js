@@ -115,7 +115,9 @@ module.exports = function(config) {
     autoWatch: false,
 
     sauceLabs: {
-      testName: 'Ably-JS Javascript Tests'
+      testName: 'Ably-JS Javascript Tests',
+      username: process.env.SAUCE_USERNAME || 'ably',
+      accessKey: process.env.SAUCE_ACCESS_KEY
     },
 
     // start these browsers
