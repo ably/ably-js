@@ -57,9 +57,13 @@ module.exports = function(config) {
 
       { pattern: 'node_modules/async/lib/async.js', included: false },
 
+      // shared test set up files
       { pattern: 'spec/common/**/*.js', included: false },
       { pattern: 'spec/support/*.js', included: false },
       { pattern: 'spec/realtime/assets/*.json', included: false },
+
+      // List of Tests to run
+      // To run an individual test, comment the patterns below and specify path to a single test file
       { pattern: 'spec/realtime/*.test.js', included: false },
       { pattern: 'spec/rest/*.test.js', included: false },
       { pattern: 'spec/browser/*.test.js', included: false }

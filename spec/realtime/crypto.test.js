@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   var phantomJS = (typeof(window) == 'object') && (/PhantomJS/.test(window.navigator.userAgent));
   if (phantomJS) {
+    // TODO: Fix this issue with PhantomJS
     console.warn("PhantomJS is incompatible with CryptoJS WordArray, cryptography tests will be skipped in this environment");
     return module.exports = {};
   }
