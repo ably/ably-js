@@ -48,6 +48,6 @@
     "url": "git@github.com:ably/ably-js.git"
   },
   "scripts": {
-    "test": "grunt test:nodeunit"
+    "test": "grunt test"
   }
 }

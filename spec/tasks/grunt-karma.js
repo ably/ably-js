@@ -9,10 +9,12 @@ module.exports = function (grunt) {
       spec = grunt.option('spec');
 
   function browsersFromArgument(browserArg) {
-    var defaultBrowser = 'PhantomJS_without_security';
+    var defaultBrowser = 'Firefox';
+
     if (!browserArg || browserArg == 'undefined' || browserArg == 'default') {
       browserArg = defaultBrowser;
     }
+
     return browserArg.split(',').map(function(browser) {
       if (browser.toLowerCase() == 'phantomjs') {
         return 'PhantomJS_without_security';
@@ -34,7 +36,9 @@ module.exports = function (grunt) {
     }).join(' ');
   }
 
-  grunt.registerTask('karma', 'Start a Karma server and run the browser test suite.  Optionally specify browser(s) e.g. `grunt karma:Chrome,PhantomJS`', function(browsersArg) {
+  var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
+
+  grunt.registerTask('karma', 'Start a Karma server and run the browser test suite' + optionsDescription, function(browsersArg) {
     var browsers = browsersFromArgument(browsersArg);
 
     grunt.log.writeln("Running Karma tests using browsers '" + browsers.join(',') + "' against " + (spec ? spec : 'all specs'));
@@ -51,7 +55,7 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('karma:server', 'Start a Karma server.  Optionally specify browser(s) e.g. `grunt karma:server:Chrome,PhantomJS`', function(browsersArg) {
+  grunt.registerTask('karma:server', 'Start a Karma server' + optionsDescription, function(browsersArg) {
     var browsers = browsersFromArgument(browsersArg);
 
     grunt.log.writeln("Starting Karma server with the following browsers: " + browsers.join(','));
