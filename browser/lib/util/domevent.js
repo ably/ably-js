@@ -5,7 +5,7 @@ var DomEvent = (function() {
 		if(target.addEventListener) {
 			target.addEventListener(event, listener, false);
 		} else {
-			target.attachEvent('on'+event, listener);
+			target.attachEvent('on'+event, function() { listener.apply(target, arguments); });
 		}
 	};
 
@@ -13,7 +13,7 @@ var DomEvent = (function() {
 		if(target.removeEventListener) {
 			target.removeEventListener(event, listener, false);
 		} else {
-			target.detachEvent('on'+event, listener);
+			target.detachEvent('on'+event, function() { listener.apply(target, arguments); });
 		}
 	};
 
