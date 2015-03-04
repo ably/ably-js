@@ -1,5 +1,5 @@
 var Logger = (function() {
-	var noop = function() {};
+	var consoleLogger = (console && console.log.bind(console)) || function() {};
 
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
@@ -7,11 +7,11 @@ var Logger = (function() {
 	LOG_MINOR = 3,
 	LOG_MICRO = 4;
 
-	var LOG_DEFAULT = LOG_MINOR,
+	var LOG_DEFAULT = LOG_MAJOR,
 	LOG_DEBUG   = LOG_MICRO;
 
-	var logLevel = LOG_MICRO;
-	var logHandler = noop;
+	var logLevel = LOG_DEFAULT;
+	var logHandler = consoleLogger;
 
 	/* public constructor */
 	function Logger(args) {}
@@ -34,8 +34,8 @@ var Logger = (function() {
 	};
 
 	Logger.setLog = function(level, handler) {
-		logLevel = level || LOG_DEFAULT;
-		logHandler = handler || function(msg) { console.log(msg); };
+		if(level !== undefined) logLevel = level;
+		if(handler !== undefined) logHandler = handler;
 	};
 
 	return Logger;
