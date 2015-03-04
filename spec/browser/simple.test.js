@@ -240,8 +240,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   }
 
   var iframeTransport = 'iframe';
-  // TODO: Cannot get this test to pass ever in Karma environment, so manually removing for now
-  if(isTransportAvailable(iframeTransport) && !(window.__karma__ && window.__karma__.start)) {
+  if(isTransportAvailable(iframeTransport)) {
     exports.iframebase0 = function (test) {
       connectionWithTransport(test, iframeTransport);
     };
