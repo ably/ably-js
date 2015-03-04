@@ -2,7 +2,7 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
   var exports = {},
-      wsString = 'wss://', // TODO: Implement TLS toggle - base.useTls ? 'wss://' : 'ws://';
+      wsString = 'wss://', // TODO: Implement TLS toggle - base.tls ? 'wss://' : 'ws://';
       rest;
 
   exports.setupUpgrade = function(test) {

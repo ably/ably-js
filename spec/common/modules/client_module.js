@@ -3,48 +3,48 @@
 /* Shared test helper used for creating Rest and Real-time clients */
 
 define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
-  function ablyClientOptions(options) {
-    if (!options) { options = {}; }
+	var ignoreOptions = ['authToken', 'key'];
 
-    var environment = options.environment || ablyGlobals.environment,
-        clientOptions = { environment: environment };
+	function mixinOptions(dest, src) {
+		for (var key in src) {
+			if (src.hasOwnProperty(key)) {
+				if (ignoreOptions.indexOf(key) === -1) {
+					dest[key] = src[key];
+				}
+			}
+		}
+		return dest;
+	}
 
-    if (options.authToken) {
-      clientOptions.authToken = options.authToken;
-    } else {
-      if (options.key) {
-        clientOptions.key = options.key;
-      } else {
-        clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
-      }
-    }
+	function ablyClientOptions(options) {
+		options = options || {};
+		var clientOptions = mixinOptions({log: {level: 1}}, ablyGlobals);
+		if(options) {
+			mixinOptions(clientOptions, options);
+			if (options.authToken) {
+				clientOptions.authToken = options.authToken;
+			} else {
+				if (options.key) {
+					clientOptions.key = options.key;
+				} else {
+					clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
+				}
+			}
+		}
 
-    if (options.useBinaryProtocol !== undefined) { clientOptions.useBinaryProtocol = options.useBinaryProtocol; }
+		return clientOptions;
+	}
 
-    clientOptions.log = { level:4 };
+	function ablyRest(options) {
+		return new Ably.Rest(ablyClientOptions(options));
+	}
 
-    var ignoreOptions = ['environment', 'authToken', 'key'];
-    for (var key in options) {
-      if (options.hasOwnProperty(key)) {
-        if (ignoreOptions.indexOf(key) === -1) {
-          clientOptions[key] = options[key];
-        }
-      }
-    }
+	function ablyRealtime(options) {
+		return new Ably.Realtime(ablyClientOptions(options));
+	}
 
-    return clientOptions;
-  }
-
-  function ablyRest(options) {
-    return new Ably.Rest(ablyClientOptions(options));
-  }
-
-  function ablyRealtime(options) {
-    return new Ably.Realtime(ablyClientOptions(options));
-  }
-
-  return module.exports = {
-    AblyRest:     ablyRest,
-    AblyRealtime: ablyRealtime
-  };
+	return module.exports = {
+		AblyRest:     ablyRest,
+		AblyRealtime: ablyRealtime
+	};
 });

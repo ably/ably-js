@@ -1,30 +1,38 @@
 /* Assumes process.env defined, or window.__env__ or populated via globals.env.js and karam-env-preprocessor plugin */
 
 define(function(require) {
-  var environment = (isBrowser ? window.__env__ : process.env) || {};
+	var environment = isBrowser ? (window.__env__ || {}) : process.env,
+		ablyEnvironment = environment.ABLY_ENV || 'sandbox',
+		wsHost = environment.ABLY_REALTIME_HOST,
+		host = environment.ABLY_REST_HOST,
+		port = environment.ABLY_PORT,
+		tlsPort = environment.ABLY_TLS_PORT,
+		tls = ('ABLY_USE_TLS' in environment) ? (environment.ABLY_USE_TLS.toLowerCase() !== 'false') : true;
 
-  function queryStr(Key) {
-    var url = window.location.href;
-    KeysValues = url.split(/[\?&]+/);
-    for (i = 0; i < KeysValues.length; i++) {
-        KeyValue = KeysValues[i].split("=");
-        if (KeyValue[0] == Key) {
-            return KeyValue[1];
-        }
-    }
-  }
+	if (isBrowser) {
+		var url = window.location.href,
+			keysValues = url.split(/[\?&]+/),
+			query = {};
 
-  var ablyEnvironment = environment.ABLY_ENV || 'sandbox';
-  if (isBrowser && queryStr('env')) {
-    ablyEnvironment = queryStr('env');
-  }
+		for(i = 0; i < keysValues.length; i++) {
+			var keyValue = keysValues[i].split("=");
+			query[keyValue[0]] = keyValue[1];
+		}
 
-  return module.exports = {
-    environment:  ablyEnvironment,
-    realtimeHost: environment.ABLY_REALTIME_HOST,
-    restHost:     environment.ABLY_REST_HOST,
-    port:         environment.ABLY_PORT || 80,
-    tlsPort:      environment.ABLY_TLS_PORT || 443,
-    useTls:       String(environment.ABLY_USE_TLS).toLowerCase() === 'false' ? false : true
-  };
+		if(query['env'])      ablyEnvironment = query['env'];
+		if(query['ws_host'])  wsHost = query['ws_host'];
+		if(query['host'])     host = query['host'];
+		if(query['port'])     port = query['port'];
+		if(query['tls_port']) tlsPort = query['tls_port'];
+		if(query['tls'])      tls = query['tls'].toLowerCase() !== 'false';
+	}
+
+	return module.exports = {
+		environment: ablyEnvironment,
+		wsHost:      wsHost,
+		restHost:    host,
+		port:        port,
+		tlsPort:     tlsPort,
+		tls:         tls
+	};
 });
