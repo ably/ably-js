@@ -83,7 +83,13 @@ var IframeTransport = (function() {
 		}
 
 		function onload() {
-			self.destWindow = wrapWindow.destWindow;
+			var wrapWindow = wrapWindow || this.contentWindow || this.contentDocument.parentWindow,
+				destWindow = self.destWindow = wrapWindow.destWindow;
+
+			/* if we got a load event before the HTML content was added to the iframe,
+			 * ignore it because we will get a second event when the document content loads */
+			if(!destWindow) return;
+
 			DomEvent.addMessageListener(wrapWindow, self.messageListener = messageListener);
 			iframeComplete = true;
 			callback(null, wrapIframe);
