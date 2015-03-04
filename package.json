@@ -4,6 +4,7 @@
   "version": "0.7.1",
   "main": "./nodejs/index.js",
   "dependencies": {
+    "async": "~0.9",
     "buffertools": "~2.1",
     "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
     "request": "~2.53",
