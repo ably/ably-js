@@ -18,7 +18,7 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 
 	function ablyClientOptions(options) {
 		options = options || {};
-		var clientOptions = mixinOptions({log: {level: 1}}, ablyGlobals);
+		var clientOptions = mixinOptions({}, ablyGlobals);
 		if(options) {
 			mixinOptions(clientOptions, options);
 			if (options.authToken) {
