@@ -69,7 +69,8 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.send = function(message) {
-		this.wsConnection.send(ProtocolMessage.encode(message, this.params.format));
+		var wsConnection = this.wsConnection;
+		if(wsConnection) wsConnection.send(ProtocolMessage.encode(message, this.params.format));
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
