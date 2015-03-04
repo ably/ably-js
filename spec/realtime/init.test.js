@@ -46,18 +46,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.init_defaulthost = function(test) {
     test.expect(1);
     try {
-      // TODO: Karma issue with iFrame and XHR transports means we have to force alternative transports
-      // XHR error:
-      //   EventEmitter.emit(): Unexpected listener exception: TypeError: undefined is not a function; stack = TypeError: undefined is not a function
-      //    at callListener (http://localhost:9876/base/browser/static/ably.js?f465f17ef34b12ef3b289873fbc1bd522732d114:4155:19)
-      //    at XHRRequest.EventEmitter.emit (http://localhost:9876/base/browser/static/ably.js?f465f17ef34b12ef3b289873fbc1bd522732d114:4172:5)
-      //    at XHRRequest.complete (http://localhost:9876/base/browser/static/ably.js?f465f17ef34b12ef3b289873fbc1bd522732d114:8108:9)
-      //    at XMLHttpRequest.xhr.onerror (http://localhost:9876/base/browser/static/ably.js?f465f17ef34b12ef3b289873fbc1bd522732d114:8149:9)'
-      // Iframe error:
-      //    Uncaught TypeError: Cannot read property 'destWindow' of null
-      //      at /Users/matthew/Projects/Ably/clients/ably-js/browser/static/ably.js:8608
-      //
-      var realtime = helper.AblyRealtime({ key: 'not_a.real:key', transports: ['web_socket', 'jsonp'] });
+      var realtime = helper.AblyRealtime({ key: 'not_a.real:key' });
       var defaultHost = realtime.connection.connectionManager.httpHosts[0];
       var hostWithoutEnv = defaultHost.replace(/^\w+\-rest/, 'rest');
       test.equal(hostWithoutEnv, 'rest.ably.io', 'Verify correct default rest host chosen');
@@ -74,11 +63,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.done();
     }
   };
-
-  // TODO: Cannot get this test to pass ever in Karma environment, so manually removing for now
-  if (isBrowser && window.__karma__ && window.__karma__.start) {
-    delete exports.init_defaulthost;
-  }
 
   return module.exports = helper.withTimeout(exports);
 });
