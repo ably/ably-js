@@ -1,5 +1,5 @@
 var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
 
 	function PresenceMessage() {
 		this.action = undefined;
