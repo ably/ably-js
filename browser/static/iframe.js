@@ -22,7 +22,7 @@ var EventEmitter = (function() {
 		} else if(event === null) {
 			this.any.push(listener);
 		} else {
-			var listeners = this.events[event] = this.events[event] || [];
+			var listeners = (this.events[event] || (this.events[event] = []));
 			listeners.push(listener);
 		}
 	};
@@ -144,7 +144,7 @@ var EventEmitter = (function() {
 		} else if(event === null) {
 			this.anyOnce.push(listener);
 		} else {
-			var listeners = this.eventsOnce[event] = (this.eventsOnce[event] || []);
+			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);
 		}
 	};
@@ -153,7 +153,7 @@ var EventEmitter = (function() {
 })();
 
 var Logger = (function() {
-	var noop = function() {};
+	var consoleLogger = console && function() { console.log.apply(console, arguments); };
 
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
@@ -161,11 +161,11 @@ var Logger = (function() {
 	LOG_MINOR = 3,
 	LOG_MICRO = 4;
 
-	var LOG_DEFAULT = LOG_MINOR,
+	var LOG_DEFAULT = LOG_MAJOR,
 	LOG_DEBUG   = LOG_MICRO;
 
-	var logLevel = LOG_MICRO;
-	var logHandler = noop;
+	var logLevel = LOG_DEFAULT;
+	var logHandler = consoleLogger;
 
 	/* public constructor */
 	function Logger(args) {}
@@ -188,8 +188,8 @@ var Logger = (function() {
 	};
 
 	Logger.setLog = function(level, handler) {
-		logLevel = level || LOG_DEFAULT;
-		logHandler = handler || function(msg) { console.log(msg); };
+		if(level !== undefined) logLevel = level;
+		if(handler !== undefined) logHandler = handler;
 	};
 
 	return Logger;
@@ -455,7 +455,7 @@ var Utils = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.msgpack : require('msgpack-js');
+	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -590,7 +590,7 @@ var DomEvent = (function() {
 		if(target.addEventListener) {
 			target.addEventListener(event, listener, false);
 		} else {
-			target.attachEvent('on'+event, listener);
+			target.attachEvent('on'+event, function() { listener.apply(target, arguments); });
 		}
 	};
 
@@ -598,7 +598,7 @@ var DomEvent = (function() {
 		if(target.removeEventListener) {
 			target.removeEventListener(event, listener, false);
 		} else {
-			target.detachEvent('on'+event, listener);
+			target.detachEvent('on'+event, function() { listener.apply(target, arguments); });
 		}
 	};
 
