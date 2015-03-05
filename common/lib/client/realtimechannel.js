@@ -346,7 +346,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.setAttached = function(message) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name);
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name + '; message flags = ' + message.flags);
 		this.clearStateTimer();
 
 		/* update any presence included with this message */
