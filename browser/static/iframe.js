@@ -1,4 +1,14 @@
-(function() {
+;(function() {
+	"use strict";
+	var Ably = window.Ably = this;
+
+  /*
+    Prevent libraries such as msgpack plugging into AMD or CommonJS
+    as the libraries loaded are expected in the `this` context.
+    `require` is only used within the Node.js library, the ably-js browser library
+    is built as a single Javascript file.
+  */
+  var define, exports, require;
 
 var EventEmitter = (function() {
 
@@ -1280,4 +1290,14 @@ var XHRRequest = (function() {
 
 
 
-})();
+if(typeof Realtime !== 'undefined') {
+	Ably.Rest = Rest;
+	Ably.Realtime = Realtime;
+	Realtime.ConnectionManager = ConnectionManager;
+	Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
+	if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
+	Realtime.Message = Rest.Message = Message;
+	Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
+	Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
+}
+}).call({});
