@@ -6,7 +6,7 @@
 } : function(m) {
 	this.msgpack = m();
 }
-	)(function() {"use strict";
+	).call(this, function() {"use strict";
 
 	var exports = {};
 
