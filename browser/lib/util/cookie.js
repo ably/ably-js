@@ -1,4 +1,4 @@
-this.Cookie = (function() {
+var Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	function noop() {}
 
