@@ -20,7 +20,7 @@ var EventEmitter = (function() {
 		} else if(event === null) {
 			this.any.push(listener);
 		} else {
-			var listeners = this.events[event] = this.events[event] || [];
+			var listeners = (this.events[event] || (this.events[event] = []));
 			listeners.push(listener);
 		}
 	};
@@ -142,7 +142,7 @@ var EventEmitter = (function() {
 		} else if(event === null) {
 			this.anyOnce.push(listener);
 		} else {
-			var listeners = this.eventsOnce[event] = (this.eventsOnce[event] || []);
+			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);
 		}
 	};
