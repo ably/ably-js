@@ -7,7 +7,7 @@ var Crypto = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 
 	/**
-	 * Internal: generate a WordArray of secure random words corresponding to the given length of bytes
+	 * Internal: generate an array of secure random words corresponding to the given length of bytes
 	 * @param bytes
 	 * @param callback
 	 */
@@ -17,9 +17,7 @@ var Crypto = (function() {
 		generateRandom = function(bytes, callback) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
 			window.crypto.getRandomValues(nativeArray);
-			var array = new Array(words);
-			for(var i = 0; i < words; i++) array[i] = nativeArray[i];
-			callback(null, WordArray.create(array));
+			callback(null, BufferUtils.toWordArray(nativeArray));
 		};
 	} else {
 		generateRandom = function(bytes, callback) {
@@ -115,7 +113,7 @@ var Crypto = (function() {
 	 * system SecureRandom.
 	 * A generated key may be obtained from the returned CipherParams
 	 * for out-of-band distribution to other clients.
-	 * @param key (optional) buffer containing key
+	 * @param key (optional) ArrayBuffer, Array, WordArray or base64 string, containing key
 	 * @param callback (err, params)
 	 */
 	Crypto.getDefaultParams = function(key, callback) {
@@ -123,12 +121,7 @@ var Crypto = (function() {
 			callback = key;
 			key = undefined;
 		}
-		if(key) {
-			if (typeof(key) === 'string')
-				key = CryptoJS.enc.Hex.parse(key);
-			else if (!key.words)
-				key = WordArray.create(key);   // Expect key to be an array at this point
-		} else {
+		if(!key) {
 			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
 				if(err) {
 					callback(err);
@@ -138,6 +131,10 @@ var Crypto = (function() {
 			});
 			return;
 		}
+		if (typeof(key) === 'string')
+			key = CryptoJS.enc.Hex.parse(key);
+		else
+			key = BufferUtils.toWordArray(key);   // Expect key to be an Array, ArrayBuffer, or WordArray at this point
 
 		var params = new CipherParams();
 		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.words.length * (4 * 8));

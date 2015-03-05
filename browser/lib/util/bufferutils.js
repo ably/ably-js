@@ -1,6 +1,5 @@
 var BufferUtils = (function() {
-	var CryptoJS = window.CryptoJS;
-	var WordArray = CryptoJS && CryptoJS.lib.WordArray;
+	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = window.ArrayBuffer;
 	var TextDecoder = window.TextDecoder;
 
@@ -78,9 +77,7 @@ var BufferUtils = (function() {
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
 	BufferUtils.toWordArray = function(buf) {
-		if(isArrayBuffer(buf))
-			buf = WordArray.create(buf);
-		return buf;
+		return isWordArray(buf) ? buf : WordArray.create(buf);
 	};
 
 	BufferUtils.base64Encode = function(buf) {
