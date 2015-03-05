@@ -1,5 +1,5 @@
 var Logger = (function() {
-	var consoleLogger = (console && console.log.bind(console)) || function() {};
+	var consoleLogger = console && function() { console.log.apply(console, arguments); };
 
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
