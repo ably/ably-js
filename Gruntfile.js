@@ -14,7 +14,7 @@ module.exports = function (grunt) {
 		static: 'browser/static',
 		dest: 'browser/static',
 		compat: 'browser/compat',
-		crypto_js: 'node_modules/crypto-js',
+		crypto_js: 'node_modules/crypto-js/src',
 		tools_compiler: __dirname + '/tools/closure-compiler'
 	};
 
