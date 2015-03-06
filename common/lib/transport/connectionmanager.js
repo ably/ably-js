@@ -765,7 +765,7 @@ var ConnectionManager = (function() {
 
 			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
 			transport.once('heartbeat', onHeartbeat);
-			transport.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), noop);
+			transport.ping();
 			return;
 		}
 
