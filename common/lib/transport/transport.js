@@ -1,6 +1,7 @@
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;
 	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
+	var noop = function() {};
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -126,6 +127,10 @@ var Transport = (function() {
 	Transport.prototype.sendClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
 		this.send(closeMessage);
+	};
+
+	Transport.prototype.ping = function(callback) {
+		this.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), callback || noop);
 	};
 
 	Transport.prototype.dispose = function() {
