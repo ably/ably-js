@@ -324,6 +324,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     });
   };
 
-  // TODO: Figure out why these test take so long when run following other tests, they pass quicker when run in isolation
-  return module.exports = helper.withTimeout(exports, 150000); // allow 2.5 minutes for some of the longer phased tests
+  return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });
