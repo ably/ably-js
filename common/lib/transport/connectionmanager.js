@@ -28,8 +28,7 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionKey = connectionKey;
 		this.connectionSerial = connectionSerial;
-		if(options.useBinaryProtocol !== undefined)
-			this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
+		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -643,6 +642,7 @@ var ConnectionManager = (function() {
 		var transport = this.transport;
 		if(transport) {
 			try {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
 				transport.close();
 			} catch(e) {
 				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
