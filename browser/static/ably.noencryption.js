@@ -3438,8 +3438,7 @@ var ConnectionManager = (function() {
 		this.mode = mode;
 		this.connectionKey = connectionKey;
 		this.connectionSerial = connectionSerial;
-		if(options.useBinaryProtocol !== undefined)
-			this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
+		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 		if(options.transportParams && options.transportParams.stream !== undefined)
 			this.stream = options.transportParams.stream;
 	}
@@ -4053,6 +4052,7 @@ var ConnectionManager = (function() {
 		var transport = this.transport;
 		if(transport) {
 			try {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
 				transport.close();
 			} catch(e) {
 				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
@@ -4329,20 +4329,24 @@ var Transport = (function() {
 	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + err);
 		this.emit('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + err);
 		this.emit('closed', err);
 	};
 
 	Transport.prototype.sendClose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
 		this.send(closeMessage);
 	};
 
 	Transport.prototype.dispose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.off();
 	};
 
@@ -4463,9 +4467,16 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
-		if(this.wsConnection) {
-			this.wsConnection.close();
+		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+		var wsConnection = this.wsConnection;
+		if(wsConnection) {
 			delete this.wsConnection;
+			/* defer until the next event loop cycle before closing the socket,
+			 * giving some implementations the opportunity to send any outstanding close message */
+			Utils.nextTick(function() {
+				Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', 'closing websocket');
+				wsConnection.close();
+			});
 		}
 	};
 
@@ -5322,8 +5333,9 @@ var Rest = (function() {
 		}
 		this.options = options;
 
-		if (typeof(this.options.useBinaryProtocol) === 'undefined')
-			this.options.useBinaryProtocol = BufferUtils.supportsBinary;
+		/* use binary protocol only if it is supported and explicitly requested */
+		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
+			this.options.useBinaryProtocol = false;
 
 		/* process options */
 		if(options.key) {
@@ -5915,7 +5927,7 @@ var RealtimeChannel = (function() {
 			throw connectionManager.getStateError();
 
 		/* send sync request */
-		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, name: this.name});
+		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, channel: this.name});
 		syncMessage.channelSerial = this.syncChannelSerial;
 		connectionManager.send(syncMessage);
 	};
