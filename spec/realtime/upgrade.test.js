@@ -2,7 +2,6 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
-		wsString = 'wss://', // TODO: Implement TLS toggle - base.tls ? 'wss://' : 'ws://';
 		rest;
 
 	exports.setupUpgrade = function(test) {
@@ -19,7 +18,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	exports.setupUpgradeRest = function(test) {
 		test.expect(1);
-		rest = helper.AblyRealtime();
+		rest = helper.AblyRest();
 		test.ok(true, 'rest client set up');
 		test.done();
 	};
@@ -28,10 +27,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Publish once with REST, before upgrade, verify message received
 	 */
 	exports.publishpreupgrade = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 			/* connect and attach */
 			realtime.connection.on('connected', function() {
 				//console.log('publishpreupgrade: connected');
@@ -84,10 +83,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Publish once with REST, after upgrade, verify message received on active transport
 	 */
 	exports.publishpostupgrade0 = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* subscribe to event */
 			var rtChannel = realtime.channels.get('publishpostupgrade0');
@@ -111,7 +110,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
 				//console.log('publishpostupgrade0: transport active: transport = ' + transport);
-				if(transport.toString().indexOf(wsString) > -1) {
+				if(transport.toString().match(/wss?\:/)) {
 					if(rtChannel.state == 'attached') {
 						//console.log('*** publishpostupgrade0: publishing (channel attached on transport active) ...');
 						restChannel.publish('event0', testMsg, function(err) {
@@ -157,10 +156,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Publish once with REST, after upgrade, verify message not received on inactive transport
 	 */
 	exports.publishpostupgrade1 = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* subscribe to event */
 			var rtChannel = realtime.channels.get('publishpostupgrade0');
@@ -195,7 +194,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				}
 			});
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf(wsString) > -1) {
+				if(transport.toString().match(/wss?\:/)) {
 					if(rtChannel.state == 'attached') {
 						//console.log('*** publishing (channel attached on transport active) ...');
 						restChannel.publish('event0', testMsg);
@@ -237,7 +236,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				realtime.close();
 			}
 		};
-		var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
+		var transportOpts = {useBinaryProtocol: false};
+		var realtime = helper.AblyRealtime(transportOpts);
 		test.expect(count);
 		var channel = realtime.channels.get('upgradepublish0');
 		/* subscribe to event */
@@ -251,7 +251,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				--cbCount;
 				checkFinish();
 			});
-		}, 500);
+		}, 300);
 	};
 
 	/**
@@ -268,7 +268,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				realtime.close();
 			}
 		};
-		var realtime = helper.AblyRealtime();
+		var transportOpts = {useBinaryProtocol: true};
+		var realtime = helper.AblyRealtime(transportOpts);
 		test.expect(count);
 		var channel = realtime.channels.get('upgradepublish1');
 		/* subscribe to event */
@@ -282,17 +283,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				--cbCount;
 				checkFinish();
 			});
-		}, 500);
+		}, 300);
 	};
 
 	/*
 	 * Base upgrade case
 	 */
 	exports.upgradebase0 = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(2);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 			/* check that we see the transport we're interested in get activated,
 			 * and that we see the comet transport deactivated */
 			var failTimer = setTimeout(function() {
@@ -306,7 +307,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.ok(true, 'verify comet transport deactivated');
 			});
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf(wsString) > -1) {
+				if(transport.toString().match(/wss?\:/)) {
 					clearTimeout(failTimer);
 					var closeFn = function() {
 						realtime.close();
@@ -339,23 +340,24 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Check active heartbeat, text protocol
 	 */
 	exports.upgradeheartbeat0 = function(test) {
-		var transport = 'text';
+		var transportOpts = {useBinaryProtocol: false};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* when we see the transport we're interested in get activated,
 			 * listen for the heartbeat event */
 			var failTimer;
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf(wsString) > -1)
+				if(transport.toString().match(/wss?\:/))
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
 						test.done();
 						realtime.close();
 					});
+				transport.ping();
 			});
 
 			realtime.connection.on('connected', function() {
@@ -383,23 +385,24 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Check active heartbeat, binary protocol
 	 */
 	exports.upgradeheartbeat1 = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* when we see the transport we're interested in get activated,
 			 * listen for the heartbeat event */
 			var failTimer;
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf(wsString) > -1)
+				if(transport.toString().match(/wss?\:/))
 					transport.on('heartbeat', function() {
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
 						test.done();
 						realtime.close();
 					});
+				transport.ping();
 			});
 
 			realtime.connection.on('connected', function() {
@@ -427,33 +430,40 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Check heartbeat does not fire on inactive transport, text protocol
 	 */
 	exports.upgradeheartbeat2 = function(test) {
-		var transport = 'text';
+		var transportOpts = {useBinaryProtocol: false};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* when we see the transport we're interested in get activated,
 			 * listen for the heartbeat event */
-			var failTimer;
+			var failTimer, cometTransport, wsTransport;
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('/comet/') > -1)
-					transport.on('heartbeat', function() {
+				var transportDescription = transport.toString();
+				//console.log('active transport: ' + transportDescription);
+				if(transportDescription.indexOf('/comet/') > -1) {
+					cometTransport = transport;
+					cometTransport.on('heartbeat', function () {
 						test.ok(false, 'verify heartbeat does not fire on inactive transport');
 						test.done();
 						realtime.close();
 					});
-				if(transport.toString().indexOf(wsString) > -1)
-					transport.on('heartbeat', function() {
+				}
+				if(transportDescription.match(/wss?\:/)) {
+					wsTransport = transport;
+					wsTransport.on('heartbeat', function () {
 						clearTimeout(failTimer);
 						/* wait a couple of seconds to give it time
 						 * in case it might still fire */
 						test.ok(true, 'verify upgrade heartbeat');
-						setTimeout(function() {
+						setTimeout(function () {
 							test.done();
 							realtime.close();
 						}, 2000);
 					});
+					wsTransport.ping();
+				}
 			});
 
 			realtime.connection.on('connected', function() {
@@ -481,24 +491,29 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Check heartbeat does not fire on inactive transport, binary protocol
 	 */
 	exports.upgradeheartbeat3 = function(test) {
-		var transport = 'binary';
+		var transportOpts = {useBinaryProtocol: true};
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* when we see the transport we're interested in get activated,
 			 * listen for the heartbeat event */
-			var failTimer;
+			var failTimer, cometTransport, wsTransport;
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('/comet/') > -1)
-					transport.on('heartbeat', function() {
+				var transportDescription = transport.toString();
+				//console.log('active transport: ' + transportDescription);
+				if(transportDescription.indexOf('/comet/') > -1) {
+					cometTransport = transport;
+					cometTransport.on('heartbeat', function () {
 						test.ok(false, 'verify heartbeat does not fire on inactive transport');
 						test.done();
 						realtime.close();
 					});
-				if(transport.toString().indexOf(wsString) > -1)
-					transport.on('heartbeat', function() {
+				}
+				if(transportDescription.match(/wss?\:/)) {
+					wsTransport = transport;
+					wsTransport.on('heartbeat', function () {
 						clearTimeout(failTimer);
 						/* wait a couple of seconds to give it time
 						 * in case it might still fire */
@@ -508,6 +523,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							realtime.close();
 						}, 2000);
 					});
+					wsTransport.ping();
+				}
 			});
 
 			realtime.connection.on('connected', function() {
@@ -531,6 +548,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
-	// TODO: Figure out why these test take so long when run following other tests, they pass quicker when run in isolation
-	return module.exports = helper.withTimeout(exports, 45000);
+	return module.exports = exports;
 });
