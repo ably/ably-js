@@ -112,20 +112,24 @@ var Transport = (function() {
 	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + err);
 		this.emit('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + err);
 		this.emit('closed', err);
 	};
 
 	Transport.prototype.sendClose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
 		this.send(closeMessage);
 	};
 
 	Transport.prototype.dispose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.off();
 	};
 
