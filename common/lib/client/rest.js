@@ -14,8 +14,9 @@ var Rest = (function() {
 		}
 		this.options = options;
 
-		if (typeof(this.options.useBinaryProtocol) === 'undefined')
-			this.options.useBinaryProtocol = BufferUtils.supportsBinary;
+		/* use binary protocol only if it is supported and explicitly requested */
+		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
+			this.options.useBinaryProtocol = false;
 
 		/* process options */
 		if(options.key) {
