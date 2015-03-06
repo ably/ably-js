@@ -5523,7 +5523,7 @@ var ConnectionManager = (function() {
 
 			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
 			transport.once('heartbeat', onHeartbeat);
-			transport.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), noop);
+			transport.ping();
 			return;
 		}
 
@@ -5566,6 +5566,7 @@ var ConnectionManager = (function() {
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;
 	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
+	var noop = function() {};
 
 	/*
 	 * EventEmitter, generates the following events:
@@ -5691,6 +5692,10 @@ var Transport = (function() {
 	Transport.prototype.sendClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
 		this.send(closeMessage);
+	};
+
+	Transport.prototype.ping = function(callback) {
+		this.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), callback || noop);
 	};
 
 	Transport.prototype.dispose = function() {
@@ -8416,10 +8421,7 @@ var IframeTransport = (function() {
 	Utils.inherits(IframeTransport, Transport);
 
 	IframeTransport.isAvailable = function() {
-		var phantomJS = (typeof(window) == 'object') && (/PhantomJS/.test(window.navigator.userAgent));
-		// Disable iFrame transport in PhantomJS tests until root cause can be discovered
-		// TODO: Fix this in PhantomJS
-		return ((window.postMessage !== undefined) && !phantomJS);
+		return (window.postMessage !== undefined);
 	};
 
 	if(IframeTransport.isAvailable())
