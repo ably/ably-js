@@ -112,9 +112,16 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
-		if(this.wsConnection) {
-			this.wsConnection.close();
+		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+		var wsConnection = this.wsConnection;
+		if(wsConnection) {
 			delete this.wsConnection;
+			/* defer until the next event loop cycle before closing the socket,
+			 * giving some implementations the opportunity to send any outstanding close message */
+			Utils.nextTick(function() {
+				Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', 'closing websocket');
+				wsConnection.close();
+			});
 		}
 	};
 
