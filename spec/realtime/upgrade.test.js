@@ -352,6 +352,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			connectionManager.on('transport.active', function(transport) {
 				if(transport.toString().match(/wss?\:/))
 					transport.on('heartbeat', function() {
+						transport.off('heartbeat');
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
 						test.done();
@@ -397,6 +398,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			connectionManager.on('transport.active', function(transport) {
 				if(transport.toString().match(/wss?\:/))
 					transport.on('heartbeat', function() {
+						transport.off('heartbeat');
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
 						test.done();
@@ -474,7 +476,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 			var exitOnState = function(state) {
 				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
+					test.ok(false, 'connection to server failed');
 					test.done();
 					realtime.close();
 				});
@@ -535,7 +537,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 			var exitOnState = function(state) {
 				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
+					test.ok(false, 'connection to server failed');
 					test.done();
 					realtime.close();
 				});
