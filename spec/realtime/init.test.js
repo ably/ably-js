@@ -19,7 +19,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Base init case
 	 */
 	exports.initbase0 = function(test) {
-		test.expect(2);
+		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime();
 			realtime.connection.on('connected', function() {
