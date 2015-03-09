@@ -131,7 +131,6 @@ var NodeCometTransport = (function() {
 	Request.prototype.readStream = function() {
 		var res = this.res,
 			headers = res.headers,
-			contentType = headers && headers['content-type'],
 			self = this;
 
 		/* an array of text blocks to concatenate and parse once complete */
@@ -237,6 +236,7 @@ var NodeCometTransport = (function() {
 	};
 
 	Request.prototype.abort = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
 		var timer = this.timer;
 		if(timer) {
 			clearTimeout(timer);
@@ -244,16 +244,11 @@ var NodeCometTransport = (function() {
 		}
 		var req = this.req;
 		if(req) {
+			Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', 'aborting request');
 			req.removeListener('error', this.onReqError);
 			req.on('error', noop);
 			req.abort();
 			this.req = null;
-		}
-		var res = this.res;
-		if(res) {
-			res.removeListener('error', this.onResError);
-			res.on('error', noop);
-			this.res = null;
 		}
 		this.complete({statusCode: 400, code: 40000, message: 'Cancelled'})
 	};

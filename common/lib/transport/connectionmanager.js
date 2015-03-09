@@ -160,7 +160,7 @@ var ConnectionManager = (function() {
 		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + err);
-				/* http failed, so nothing's going to work */
+				/* http failed, or terminal, so nothing's going to work */
 				callback(err);
 				return;
 			}
@@ -203,6 +203,20 @@ var ConnectionManager = (function() {
 		var self = this;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'trying ' + candidate);
 		(ConnectionManager.transports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
+			var state = self.state;
+			if(state == states.closing || state == states.closed || state == states.failed) {
+				/* the connection was closed when we were away
+				 * attempting this transport so close */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'connection closing');
+				if(transport) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
+					transport.close();
+				}
+				var err = new ErrorInfo('Connection already closed', 400, 80017);
+				err.terminal = true;
+				callback(err);
+				return;
+			}
 			if(err) {
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
@@ -266,7 +280,9 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						tryFallbackHosts();
+						if(!err.terminal) {
+							tryFallbackHosts();
+						}
 						return;
 					}
 					/* succeeded */
@@ -277,7 +293,9 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				tryFallbackHosts();
+				if(!err.terminal) {
+					tryFallbackHosts();
+				}
 				return;
 			}
 			/* succeeded */
@@ -293,12 +311,6 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		if(this.state == states.closing || this.state == states.closed) {
-			/* the connection was closed when we were away
-			 * attempting this transport so close */
-			transport.close();
-			return;
- 		}
 		/* if there was already a pending transport, abandon it */
 		if(this.pendingTransport)
 			this.pendingTransport.disconnect();
@@ -461,6 +473,13 @@ var ConnectionManager = (function() {
 	 ****************************************/
 
 	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState);
+
+		if(this.transitionTimer) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
+			clearTimeout(this.transitionTimer);
+		}
+
 		var self = this;
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
@@ -472,6 +491,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
 		if(this.transitionTimer) {
 			clearTimeout(this.transitionTimer);
 			this.transitionTimer = null;
@@ -592,6 +612,11 @@ var ConnectionManager = (function() {
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', err);
+			var state = self.state;
+			if(state == states.closing || state == states.closed || state == states.failed) {
+				/* do nothing */
+				return;
+			}
 			if(err.statusCode == 401 && err.message.indexOf('expire') != -1 && auth.method == 'token') {
 				/* re-get a token */
 				auth.getToken(true, function(err) {
@@ -633,25 +658,30 @@ var ConnectionManager = (function() {
 		}
 	};
 
+
 	ConnectionManager.prototype.closeImpl = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
 		this.cancelSuspendTimer();
 		this.startTransitionTimer(states.closing);
 
-		/* if transport exists, send close message */
-		var transport = this.transport;
-		if(transport) {
-			try {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
-				transport.close();
-			} catch(e) {
-				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-				var err = new ErrorInfo(msg, 50000, 500);
-				transport.abort(err);
+		function closeTransport(transport) {
+			if(transport) {
+				try {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
+					transport.close();
+				} catch(e) {
+					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
+					var err = new ErrorInfo(msg, 50000, 500);
+					transport.abort(err);
+				}
 			}
-			return;
 		}
+
+		/* if transport exists, send close message */
+		closeTransport(this.pendingTransport);
+		closeTransport(this.transport);
+
 		this.notifyState({state: 'closed'});
 	};
 

@@ -1,7 +1,8 @@
 "use strict";
 
 var allTestFiles = [],
-    TEST_REGEXP = /\.test\.js$/i,
+//	TEST_REGEXP = /\.test\.js$/i,
+	TEST_REGEXP = /upgrade\.test\.js$/i,
     TEAR_DOWN_REGEXP = /tear_down\.js$/i;
 
 var pathToModule = function(path) {

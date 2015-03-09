@@ -18,6 +18,7 @@ var CometTransport = (function() {
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
+		this.disposed = false;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -52,6 +53,10 @@ var CometTransport = (function() {
 				connectRequest = self.recvRequest = self.createRequest(connectUri, null, connectParams, null, (self.stream ? REQ_RECV_STREAM : REQ_RECV));
 
 			connectRequest.on('data', function(data) {
+				if(!self.recvRequest) {
+					/* the transport was disposed before we connected */
+					return;
+				}
 				if(!preconnected) {
 					preconnected = true;
 					self.emit('preconnect');
@@ -59,6 +64,10 @@ var CometTransport = (function() {
 				self.onData(data);
 			});
 			connectRequest.on('complete', function(err) {
+				if(!self.recvRequest) {
+					/* the transport was disposed before we connected */
+					err = err || new ErrorInfo('Request cancelled', 400, 80017);
+				}
 				self.recvRequest = null;
 				if(err) {
 					self.emit('error', err);
@@ -70,24 +79,28 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.disconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
 		this.requestClose(false);
 		this.emit('disconnected');
 		this.dispose();
 	};
 
 	CometTransport.prototype.close = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.close()', '');
 		this.requestClose(true);
 		this.emit('closed');
 		this.dispose();
 	};
 
 	CometTransport.prototype.abort = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', '');
 		this.requestClose(true);
 		this.emit('failed');
 		this.dispose();
 	};
 
 	CometTransport.prototype.requestClose = function(closing) {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()', 'closing = ' + closing);
 		var closeUri = this.closeUri;
 		if(closeUri) {
 			var self = this,
@@ -103,13 +116,21 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.dispose = function() {
-		if(this.recvRequest) {
-			this.recvRequest.abort();
-			this.recvRequest = null;
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
+		if(!this.disposed) {
+			this.disposed = true;
+			if(this.recvRequest) {
+				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
+				this.recvRequest.abort();
+				this.recvRequest = null;
+			}
 		}
 	};
 
 	CometTransport.prototype.onConnect = function(message) {
+		/* if this transport has been disposed whilst awaiting connection, do nothing */
+		if(this.disposed) return;
+
 		/* the connectionKey in a comet connected response is really
 		 * <instId>-<connectionKey> */
 		var connectionStr = message.connectionKey;
