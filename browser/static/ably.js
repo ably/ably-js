@@ -4918,7 +4918,7 @@ var ConnectionManager = (function() {
 		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + err);
-				/* http failed, so nothing's going to work */
+				/* http failed, or terminal, so nothing's going to work */
 				callback(err);
 				return;
 			}
@@ -4961,6 +4961,20 @@ var ConnectionManager = (function() {
 		var self = this;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'trying ' + candidate);
 		(ConnectionManager.transports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
+			var state = self.state;
+			if(state == states.closing || state == states.closed || state == states.failed) {
+				/* the connection was closed when we were away
+				 * attempting this transport so close */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'connection closing');
+				if(transport) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
+					transport.close();
+				}
+				var err = new ErrorInfo('Connection already closed', 400, 80017);
+				err.terminal = true;
+				callback(err);
+				return;
+			}
 			if(err) {
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
@@ -5024,7 +5038,9 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						tryFallbackHosts();
+						if(!err.terminal) {
+							tryFallbackHosts();
+						}
 						return;
 					}
 					/* succeeded */
@@ -5035,7 +5051,9 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				tryFallbackHosts();
+				if(!err.terminal) {
+					tryFallbackHosts();
+				}
 				return;
 			}
 			/* succeeded */
@@ -5051,12 +5069,6 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		if(this.state == states.closing || this.state == states.closed) {
-			/* the connection was closed when we were away
-			 * attempting this transport so close */
-			transport.close();
-			return;
- 		}
 		/* if there was already a pending transport, abandon it */
 		if(this.pendingTransport)
 			this.pendingTransport.disconnect();
@@ -5219,6 +5231,13 @@ var ConnectionManager = (function() {
 	 ****************************************/
 
 	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState);
+
+		if(this.transitionTimer) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
+			clearTimeout(this.transitionTimer);
+		}
+
 		var self = this;
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
@@ -5230,6 +5249,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
 		if(this.transitionTimer) {
 			clearTimeout(this.transitionTimer);
 			this.transitionTimer = null;
@@ -5350,6 +5370,11 @@ var ConnectionManager = (function() {
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', err);
+			var state = self.state;
+			if(state == states.closing || state == states.closed || state == states.failed) {
+				/* do nothing */
+				return;
+			}
 			if(err.statusCode == 401 && err.message.indexOf('expire') != -1 && auth.method == 'token') {
 				/* re-get a token */
 				auth.getToken(true, function(err) {
@@ -5391,25 +5416,30 @@ var ConnectionManager = (function() {
 		}
 	};
 
+
 	ConnectionManager.prototype.closeImpl = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
 		this.cancelSuspendTimer();
 		this.startTransitionTimer(states.closing);
 
-		/* if transport exists, send close message */
-		var transport = this.transport;
-		if(transport) {
-			try {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
-				transport.close();
-			} catch(e) {
-				var msg = 'Unexpected exception attempting to close transport; e = ' + e;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-				var err = new ErrorInfo(msg, 50000, 500);
-				transport.abort(err);
+		function closeTransport(transport) {
+			if(transport) {
+				try {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
+					transport.close();
+				} catch(e) {
+					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
+					var err = new ErrorInfo(msg, 50000, 500);
+					transport.abort(err);
+				}
 			}
-			return;
 		}
+
+		/* if transport exists, send close message */
+		closeTransport(this.pendingTransport);
+		closeTransport(this.transport);
+
 		this.notifyState({state: 'closed'});
 	};
 
@@ -5856,6 +5886,7 @@ var CometTransport = (function() {
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
+		this.disposed = false;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -5890,6 +5921,10 @@ var CometTransport = (function() {
 				connectRequest = self.recvRequest = self.createRequest(connectUri, null, connectParams, null, (self.stream ? REQ_RECV_STREAM : REQ_RECV));
 
 			connectRequest.on('data', function(data) {
+				if(!self.recvRequest) {
+					/* the transport was disposed before we connected */
+					return;
+				}
 				if(!preconnected) {
 					preconnected = true;
 					self.emit('preconnect');
@@ -5897,6 +5932,10 @@ var CometTransport = (function() {
 				self.onData(data);
 			});
 			connectRequest.on('complete', function(err) {
+				if(!self.recvRequest) {
+					/* the transport was disposed before we connected */
+					err = err || new ErrorInfo('Request cancelled', 400, 80017);
+				}
 				self.recvRequest = null;
 				if(err) {
 					self.emit('error', err);
@@ -5908,24 +5947,28 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.disconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
 		this.requestClose(false);
 		this.emit('disconnected');
 		this.dispose();
 	};
 
 	CometTransport.prototype.close = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.close()', '');
 		this.requestClose(true);
 		this.emit('closed');
 		this.dispose();
 	};
 
 	CometTransport.prototype.abort = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', '');
 		this.requestClose(true);
 		this.emit('failed');
 		this.dispose();
 	};
 
 	CometTransport.prototype.requestClose = function(closing) {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()', 'closing = ' + closing);
 		var closeUri = this.closeUri;
 		if(closeUri) {
 			var self = this,
@@ -5941,13 +5984,21 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.dispose = function() {
-		if(this.recvRequest) {
-			this.recvRequest.abort();
-			this.recvRequest = null;
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
+		if(!this.disposed) {
+			this.disposed = true;
+			if(this.recvRequest) {
+				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
+				this.recvRequest.abort();
+				this.recvRequest = null;
+			}
 		}
 	};
 
 	CometTransport.prototype.onConnect = function(message) {
+		/* if this transport has been disposed whilst awaiting connection, do nothing */
+		if(this.disposed) return;
+
 		/* the connectionKey in a comet connected response is really
 		 * <instId>-<connectionKey> */
 		var connectionStr = message.connectionKey;
