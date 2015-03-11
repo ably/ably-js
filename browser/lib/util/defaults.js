@@ -13,7 +13,8 @@ var Defaults = {
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
 	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	version:                  '0.7.3'
+	version:                  '0.7.25',
+	minified:                 !(function _(){}).name
 };
 
 /* If an environment option is provided, the environment is prefixed to the domain
