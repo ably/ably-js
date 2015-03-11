@@ -71,7 +71,7 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(encoded, options, format) {
+	PresenceMessage.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
