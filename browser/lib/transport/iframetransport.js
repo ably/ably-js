@@ -67,7 +67,9 @@ var IframeTransport = (function() {
 		var wrapIframe = this.wrapIframe = document.createElement('iframe'),
 			options = this.params.options,
 			destOrigin = this.destOrigin = 'https://' + Defaults.getHost(options) + ':' + Defaults.getPort(options, true),
-			destUri = destOrigin + '/static/iframe.html' + Utils.toQueryString(params),
+			minQualifier = Defaults.minified ? '.min' : '',
+			versionQualifier = Defaults.version ? ('-' + Defaults.version) : '',
+			destUri = destOrigin + '/static/iframe' + minQualifier+ versionQualifier + '.html' + Utils.toQueryString(params),
 			iframeComplete = false,
 			wrapWindow = null,
 			self = this;
