@@ -12,7 +12,8 @@ var Defaults = {
 	sendTimeout:              10000,
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp']
+	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
+	version:                  '0.7.3'
 };
 
 /* If an environment option is provided, the environment is prefixed to the domain
