@@ -29,63 +29,79 @@ module.exports = function (grunt) {
 		};
 	}
 
-	var gruntConfig ={
+	var gruntConfig = {
 		dirs: dirs,
-		curl: {
-			'compiler': {
-				src: 'http://dl.google.com/closure-compiler/compiler-latest.zip',
-				dest: '<%= dirs.tools_compiler %>/build/compiler-latest.zip'
-			}
-		},
-		unzip: {
-			'compiler': {
-				src: '<%= dirs.tools_compiler %>/build/compiler-latest.zip',
-				dest: '<%= dirs.tools_compiler %>/build'
-			}
-		},
-		copy: {
-			'compat-pubnub-js': {
-				src: '<%= dirs.compat %>/pubnub.js',
-				dest: '<%= dirs.dest %>/compat-pubnub.js',
-				flatten: true,
-				nonull: true
-			},
-			'compat-pubnub-md': {
-				src: '<%= dirs.compat %>/pubnub.md',
-				dest: '<%= dirs.dest %>/compat-pubnub.md',
-				flatten: true
-			},
-			'compat-pusher-md': {
-				src: '<%= dirs.compat %>/pusher.md',
-				dest: '<%= dirs.dest %>/compat-pusher.md',
-				flatten: true
-			}
-		},
-		concat: {
-			ably: {
-				dest: '<%= dirs.dest %>/ably.js',
-				nonull: true
-			},
-			'ably.noencryption': {
-				dest: '<%= dirs.dest %>/ably.noencryption.js',
-				nonull: true
-			},
-			iframe: {
-				dest: '<%= dirs.dest %>/iframe.js',
-				nonull: true
-			},
-			pusher: {
-				dest: '<%= dirs.dest %>/compat-pusher.js',
-				nonull: true
-			}
-		},
-		'closure-compiler': {
-			'ably-js': compilerSpec('<%= dirs.static %>/ably.js'),
-			'ably.noencryption-js': compilerSpec('<%= dirs.static %>/ably.noencryption.js'),
-			'iframe-js': compilerSpec('<%= dirs.static %>/iframe.js'),
-			'pubnub-js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
-			'pusher-js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
+		pkgVersion: grunt.file.readJSON('package.json').version
+	};
+
+	gruntConfig.curl = {
+		'compiler': {
+			src: 'http://dl.google.com/closure-compiler/compiler-latest.zip',
+			dest: '<%= dirs.tools_compiler %>/build/compiler-latest.zip'
 		}
+	};
+
+	gruntConfig.unzip = {
+		'compiler': {
+			src: '<%= dirs.tools_compiler %>/build/compiler-latest.zip',
+			dest: '<%= dirs.tools_compiler %>/build'
+		}
+	};
+
+	gruntConfig.copy = {
+		'compat-pubnub-js': {
+			src: '<%= dirs.compat %>/pubnub.js',
+			dest: '<%= dirs.dest %>/compat-pubnub.js',
+			flatten: true,
+			nonull: true
+		},
+		'compat-pubnub-md': {
+			src: '<%= dirs.compat %>/pubnub.md',
+			dest: '<%= dirs.dest %>/compat-pubnub.md',
+			flatten: true
+		},
+		'compat-pusher-md': {
+			src: '<%= dirs.compat %>/pusher.md',
+			dest: '<%= dirs.dest %>/compat-pusher.md',
+			flatten: true
+		},
+		'iframe.js': {
+			src: '<%= dirs.static %>/iframe.js',
+			dest: '<%= dirs.static %>/iframe-<%= pkgVersion %>.js',
+			flatten: true
+		},
+		'iframe.min.js': {
+			src: '<%= dirs.static %>/iframe.min.js',
+			dest: '<%= dirs.static %>/iframe.min-<%= pkgVersion %>.js',
+			flatten: true
+		}
+	};
+
+	gruntConfig.concat = {
+		ably: {
+			dest: '<%= dirs.dest %>/ably.js',
+			nonull: true
+		},
+		'ably.noencryption': {
+			dest: '<%= dirs.dest %>/ably.noencryption.js',
+			nonull: true
+		},
+		iframe: {
+			dest: '<%= dirs.dest %>/iframe.js',
+			nonull: true
+		},
+		pusher: {
+			dest: '<%= dirs.dest %>/compat-pusher.js',
+			nonull: true
+		}
+	};
+
+	gruntConfig['closure-compiler'] = {
+		'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
+		'ably.noencryption.js': compilerSpec('<%= dirs.static %>/ably.noencryption.js'),
+		'iframe.js': compilerSpec('<%= dirs.static %>/iframe.js'),
+		'pubnub.js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
+		'pusher.js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
 	};
 
 	var ablyFiles = [
@@ -183,21 +199,93 @@ module.exports = function (grunt) {
 	];
 
 	grunt.initConfig(gruntConfig);
-	grunt.registerTask('compiler', ['curl:compiler', 'unzip:compiler']);
-	grunt.registerTask('all', ['copy', 'concat', 'requirejs', 'closure-compiler']);
+
+	grunt.registerTask('compiler', [
+		'curl:compiler',
+		'unzip:compiler'
+	]);
+
+	grunt.registerTask('build', [
+		'set-library-version',
+		'ably.js',
+		'ably.noencryption.js',
+		'iframe.js',
+		'iframe.html',
+		'pusher',
+		'pubnub'
+	]);
+
+	grunt.registerTask('ably.js', [
+		'concat:ably'
+	]);
+
+	grunt.registerTask('ably.noencryption.js', [
+		'concat:ably.noencryption'
+	]);
+
+	grunt.registerTask('iframe.js', [
+		'concat:iframe',
+		'copy:iframe.js'
+	]);
+
+	grunt.registerTask('iframe.html', [
+		'set-iframe-version'
+	]);
+
+	grunt.registerTask('pusher', [
+		'concat:pusher',
+		'copy:compat-pusher-md'
+	]);
+
+	grunt.registerTask('pubnub', [
+		'copy:compat-pubnub-js',
+		'copy:compat-pubnub-md'
+	]);
+
+	grunt.registerTask('minify', [
+		'closure-compiler:ably.js',
+		'closure-compiler:ably.noencryption.js',
+		'closure-compiler:iframe.js',
+		'copy:iframe.min.js',
+		'closure-compiler:pubnub.js',
+		'closure-compiler:pusher.js'
+	]);
+
+	grunt.registerTask('all', ['build', 'minify']);
 
 	grunt.loadTasks('spec/tasks');
 
 	var browsers = grunt.option('browsers') || 'default';
 	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
+
+	grunt.registerTask('set-library-version',
+		'Set the library version string used for loading dependencies',
+		function() {
+			var defaultsFile = dirs.browser + '/lib/util/defaults.js';
+			var defaultsText = grunt.file.read(defaultsFile).replace(/(version:\s*)'([\w\.]*)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
+			grunt.file.write(defaultsFile, defaultsText);
+		}
+	);
+
+	grunt.registerTask('set-iframe-version',
+		'Set the script reference used for loading iframe.js',
+		function() {
+			var iframeText = grunt.file.read(dirs.static + '/iframe.html'),
+				iframeVersionedText = iframeText.replace('iframe.js', 'iframe-' + gruntConfig.pkgVersion + '.js'),
+				iframeMinVersionedText = iframeText.replace('iframe.js', 'iframe.min-' + gruntConfig.pkgVersion + '.js');
+			grunt.file.write(dirs.static + '/iframe-' + gruntConfig.pkgVersion + '.html', iframeVersionedText);
+			grunt.file.write(dirs.static + '/iframe.min-' + gruntConfig.pkgVersion + '.html', iframeMinVersionedText);
+		}
+	);
+
 	grunt.registerTask('test',
 		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
-		['copy', 'concat', 'requirejs', 'nodeunit', 'karma:' + browsers]
+		['build', 'nodeunit', 'karma:' + browsers]
 	);
 
 	grunt.registerTask('test:karma',
 		'Run the Karma test suite' + optionsDescription,
-		['copy', 'concat', 'requirejs', 'karma:' + browsers]
+		['build', 'karma:' + browsers]
 	);
 
 	grunt.registerTask('test:karma:run',
