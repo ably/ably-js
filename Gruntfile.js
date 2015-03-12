@@ -11,6 +11,7 @@ module.exports = function (grunt) {
 	var dirs = {
 		common: 'common',
 		browser: 'browser',
+		fragments: 'browser/fragments',
 		static: 'browser/static',
 		dest: 'browser/static',
 		compat: 'browser/compat',
@@ -64,16 +65,6 @@ module.exports = function (grunt) {
 			src: '<%= dirs.compat %>/pusher.md',
 			dest: '<%= dirs.dest %>/compat-pusher.md',
 			flatten: true
-		},
-		'iframe.js': {
-			src: '<%= dirs.static %>/iframe.js',
-			dest: '<%= dirs.static %>/iframe-<%= pkgVersion %>.js',
-			flatten: true
-		},
-		'iframe.min.js': {
-			src: '<%= dirs.static %>/iframe.min.js',
-			dest: '<%= dirs.static %>/iframe.min-<%= pkgVersion %>.js',
-			flatten: true
 		}
 	};
 
@@ -86,8 +77,16 @@ module.exports = function (grunt) {
 			dest: '<%= dirs.dest %>/ably.noencryption.js',
 			nonull: true
 		},
-		iframe: {
+		'iframe.js': {
 			dest: '<%= dirs.dest %>/iframe.js',
+			nonull: true
+		},
+		'iframe.html': {
+			dest: '<%= dirs.dest %>/iframe-<%= pkgVersion %>.html',
+			nonull: true
+		},
+		'iframe.min.html': {
+			dest: '<%= dirs.dest %>/iframe.min-<%= pkgVersion %>.html',
 			nonull: true
 		},
 		pusher: {
@@ -147,8 +146,7 @@ module.exports = function (grunt) {
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(
-		'<%= dirs.browser %>/ably-prologue.js',
-
+		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.crypto_js %>/core.js',
 		'<%= dirs.crypto_js %>/sha256.js',
 		'<%= dirs.crypto_js %>/hmac.js',
@@ -160,12 +158,11 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
 
-		'<%= dirs.browser %>/ably-epilogue.js'
+		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
 
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
-		'<%= dirs.browser %>/ably-prologue.js',
-
+		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.crypto_js %>/core.js',
 		'<%= dirs.crypto_js %>/sha256.js',
 		'<%= dirs.crypto_js %>/hmac.js',
@@ -173,11 +170,11 @@ module.exports = function (grunt) {
 
 		ablyFiles,
 
-		'<%= dirs.browser %>/ably-epilogue.js'
+		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
 
-	gruntConfig.concat['iframe'].src = [
-		'<%= dirs.browser %>/ably-prologue.js',
+	gruntConfig.concat['iframe.js'].src = [
+		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
@@ -187,15 +184,27 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/domevent.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/iframeagent.js',
-		'<%= dirs.browser %>/ably-epilogue.js'
+		'<%= dirs.fragments %>/ably-epilogue.js'
+	];
+
+	gruntConfig.concat['iframe.html'].src = [
+		'<%= dirs.fragments %>/iframe-prologue.html',
+		'<%= dirs.dest %>/iframe.js',
+		'<%= dirs.fragments %>/iframe-epilogue.html'
+	];
+
+	gruntConfig.concat['iframe.min.html'].src = [
+		'<%= dirs.fragments %>/iframe-prologue.html',
+		'<%= dirs.dest %>/iframe.min.js',
+		'<%= dirs.fragments %>/iframe-epilogue.html'
 	];
 
 	gruntConfig.concat['pusher'].src = [
-		'<%= dirs.browser %>/prologue.js',
+		'<%= dirs.fragments %>/prologue.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.browser %>/compat/pusher.js',
-		'<%= dirs.browser %>/epilogue.js'
+		'<%= dirs.fragments %>/epilogue.js'
 	];
 
 	grunt.initConfig(gruntConfig);
@@ -224,12 +233,16 @@ module.exports = function (grunt) {
 	]);
 
 	grunt.registerTask('iframe.js', [
-		'concat:iframe',
-		'copy:iframe.js'
+		'concat:iframe.js'
 	]);
 
 	grunt.registerTask('iframe.html', [
-		'set-iframe-version'
+		'concat:iframe.html'
+	]);
+
+	grunt.registerTask('iframe.min.html', [
+		'closure-compiler:iframe.js',
+		'concat:iframe.min.html'
 	]);
 
 	grunt.registerTask('pusher', [
@@ -245,36 +258,32 @@ module.exports = function (grunt) {
 	grunt.registerTask('minify', [
 		'closure-compiler:ably.js',
 		'closure-compiler:ably.noencryption.js',
-		'closure-compiler:iframe.js',
-		'copy:iframe.min.js',
+		'iframe.min.html',
 		'closure-compiler:pubnub.js',
 		'closure-compiler:pusher.js'
 	]);
 
-	grunt.registerTask('all', ['build', 'minify']);
+	grunt.registerTask('all', ['clean', 'build', 'minify']);
 
 	grunt.loadTasks('spec/tasks');
 
 	var browsers = grunt.option('browsers') || 'default';
 	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
 
-	grunt.registerTask('set-library-version',
-		'Set the library version string used for loading dependencies',
+	grunt.registerTask('clean',
+		'Remove versioned files',
 		function() {
-			var defaultsFile = dirs.browser + '/lib/util/defaults.js';
-			var defaultsText = grunt.file.read(defaultsFile).replace(/(version:\s*)'([\w\.]*)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
-			grunt.file.write(defaultsFile, defaultsText);
+			grunt.file.expand(gruntConfig.dirs.dest + '/iframe-*.html').forEach(grunt.file.delete);
+			grunt.file.expand(gruntConfig.dirs.dest + '/iframe.min-*.html').forEach(grunt.file.delete);
 		}
 	);
 
-	grunt.registerTask('set-iframe-version',
-		'Set the script reference used for loading iframe.js',
+	grunt.registerTask('set-library-version',
+		'Set the library version string used for loading dependencies',
 		function() {
-			var iframeText = grunt.file.read(dirs.static + '/iframe.html'),
-				iframeVersionedText = iframeText.replace('iframe.js', 'iframe-' + gruntConfig.pkgVersion + '.js'),
-				iframeMinVersionedText = iframeText.replace('iframe.js', 'iframe.min-' + gruntConfig.pkgVersion + '.js');
-			grunt.file.write(dirs.static + '/iframe-' + gruntConfig.pkgVersion + '.html', iframeVersionedText);
-			grunt.file.write(dirs.static + '/iframe.min-' + gruntConfig.pkgVersion + '.html', iframeMinVersionedText);
+			var defaultsFile = gruntConfig.dirs.browser + '/lib/util/defaults.js';
+			var defaultsText = grunt.file.read(defaultsFile).replace(/(version:\s*)'([\w\.]*)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
+			grunt.file.write(defaultsFile, defaultsText);
 		}
 	);
 
@@ -305,4 +314,3 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('default', 'all');
 };
-
