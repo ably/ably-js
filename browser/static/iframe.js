@@ -549,7 +549,9 @@ var Defaults = {
 	sendTimeout:              10000,
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp']
+	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
+	version:                  '0.7.3',
+	minified:                 !(function _(){}).name
 };
 
 /* If an environment option is provided, the environment is prefixed to the domain
@@ -981,7 +983,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				err = new Error('Malformed response body from server: ' + e.message);
+				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
 				self.complete(err);
 				return;
