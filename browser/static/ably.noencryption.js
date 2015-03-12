@@ -1322,7 +1322,9 @@ var Defaults = {
 	sendTimeout:              10000,
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp']
+	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
+	version:                  '0.7.3',
+	minified:                 !(function _(){}).name
 };
 
 /* If an environment option is provided, the environment is prefixed to the domain
@@ -3281,7 +3283,7 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(encoded, options, format) {
+	PresenceMessage.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
@@ -6991,7 +6993,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				err = new Error('Malformed response body from server: ' + e.message);
+				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
 				self.complete(err);
 				return;
@@ -7178,7 +7180,9 @@ var IframeTransport = (function() {
 		var wrapIframe = this.wrapIframe = document.createElement('iframe'),
 			options = this.params.options,
 			destOrigin = this.destOrigin = 'https://' + Defaults.getHost(options) + ':' + Defaults.getPort(options, true),
-			destUri = destOrigin + '/static/iframe.html' + Utils.toQueryString(params),
+			minQualifier = Defaults.minified ? '.min' : '',
+			versionQualifier = Defaults.version ? ('-' + Defaults.version) : '',
+			destUri = destOrigin + '/static/iframe' + minQualifier+ versionQualifier + '.html' + Utils.toQueryString(params),
 			iframeComplete = false,
 			wrapWindow = null,
 			self = this;
