@@ -333,34 +333,27 @@ var Auth = (function() {
 			callback(new Error('No key specified'));
 			return;
 		}
-		var request = { id: keyId };
-		var clientId = tokenParams.clientId || '';
-		if(clientId)
-			request.clientId = clientId;
+		var request = Utils.mixin({ id: keyId }, tokenParams),
+			clientId = tokenParams.clientId || '',
+			ttl = tokenParams.ttl || '',
+			capability = tokenParams.capability || '',
+			rest = this.rest,
+			self = this;
 
-		var ttl = tokenParams.ttl || '';
-		if(ttl)
-			request.ttl = ttl;
-
-		var capability = tokenParams.capability || '';
-		if(capability)
-			request.capability = capability;
-
-		var rest = this.rest, self = this;
 		(function(authoriseCb) {
-			if(tokenParams.timestamp) {
+			if(request.timestamp) {
 				authoriseCb();
 				return;
 			}
 			if(authOptions.queryTime) {
 				rest.time(function(err, time) {
 					if(err) {callback(err); return;}
-					tokenParams.timestamp = Math.floor(time/1000);
+					request.timestamp = Math.floor(time/1000);
 					authoriseCb();
 				});
 				return;
 			}
-			tokenParams.timestamp = self.getTimestamp();
+			request.timestamp = self.getTimestamp();
 			authoriseCb();
 		})(function() {
 			/* nonce */
@@ -368,9 +361,8 @@ var Auth = (function() {
 			 * specifies the nonce; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			var nonce = request.nonce = (tokenParams.nonce || random());
-
-			var timestamp = request.timestamp = tokenParams.timestamp;
+			var nonce = request.nonce || (request.nonce = random()),
+				timestamp = request.timestamp;
 
 			var signText
 			=	request.id + '\n'
@@ -379,12 +371,13 @@ var Auth = (function() {
 			+	clientId + '\n'
 			+	timestamp + '\n'
 			+	nonce + '\n';
+
 			/* mac */
 			/* NOTE: there is no expectation that the client
 			 * specifies the mac; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			request.mac = tokenParams.mac || hmac(signText, keyValue);
+			request.mac = request.mac || hmac(signText, keyValue);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
 			callback(null, request);
