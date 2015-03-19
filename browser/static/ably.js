@@ -6725,7 +6725,6 @@ var Auth = (function() {
 
 var Rest = (function() {
 	var noop = function() {};
-	var identity = function(x) { return x; }
 
 	function Rest(options) {
 		/* normalise options */
@@ -6735,7 +6734,7 @@ var Rest = (function() {
 			throw new Error(msg);
 		}
 		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {key: options} : {authToken: options};
+			options = (options.indexOf(':') == -1) ? {authToken: options} : {key: options};
 		}
 		this.options = options;
 
