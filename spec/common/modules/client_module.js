@@ -44,6 +44,7 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 	}
 
 	return module.exports = {
+		Ably:         Ably,
 		AblyRest:     ablyRest,
 		AblyRealtime: ablyRealtime
 	};
