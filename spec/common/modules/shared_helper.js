@@ -1,7 +1,7 @@
 "use strict";
 
 /* Shared test helper for the Jasmine test suite that simplifies
-   the dependencies by provoding common methods in a single dependency */
+   the dependencies by providing common methods in a single dependency */
 
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testdata_module'],
   function(testAppModule, clientModule, testDataModule) {
@@ -52,6 +52,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
       createStats:  testAppModule.createStatsFixtureData,
       getTestApp:   testAppModule.getTestApp,
 
+      Ably:         clientModule.Ably,
       AblyRest:     clientModule.AblyRest,
       AblyRealtime: clientModule.AblyRealtime,
 
