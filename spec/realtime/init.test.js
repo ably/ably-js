@@ -1,7 +1,7 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-	var realtime, exports = {};
+	var exports = {};
 
 	exports.setupInit = function(test) {
 		test.expect(1);
@@ -42,6 +42,51 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/* init with key string */
+	exports.init_key_string = function(test) {
+		test.expect(1);
+		try {
+			var keyStr = helper.getTestApp().key0Str,
+				realtime = new helper.Ably.Realtime(keyStr);
+
+			realtime.close();
+			test.equal(realtime.options.key, keyStr);
+			test.done();
+		} catch(e) {
+			test.ok(false, 'Init with key failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/* init with token string */
+	exports.init_token_string = function(test) {
+		test.expect(1);
+		try {
+			/* first generate a token ... */
+			var rest = helper.AblyRest(),
+				key1Id = helper.getTestApp().appId + '.' + helper.getTestApp().key1Id,
+				testKeyOpts = { keyId: key1Id, keyValue: helper.getTestApp().key1Value };
+
+			rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					test.done();
+					return;
+				}
+
+				var tokenStr = tokenDetails.id,
+					realtime = new helper.Ably.Realtime(tokenStr);
+
+				realtime.close();
+				test.equal(realtime.options.authToken, tokenStr);
+				test.done();
+			});
+		} catch(e) {
+			test.ok(false, 'Init with token failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
 	/* check default httpHost selection */
 	exports.init_defaulthost = function(test) {
 		test.expect(1);
@@ -55,7 +100,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.done();
 					realtime.close();
 				});
-			}
+			};
 			exitOnState('failed');
 			exitOnState('disconnected');
 		} catch(e) {
