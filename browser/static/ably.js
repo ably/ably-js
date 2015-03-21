@@ -2671,7 +2671,7 @@ var Defaults = {
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
 	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	version:                  '0.7.4',
+	version:                  '0.7.5',
 	minified:                 !(function _(){}).name
 };
 
@@ -6837,7 +6837,7 @@ var Realtime = (function() {
 	function Realtime(options) {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
-		this.connection = new Connection(this, options);
+		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
 		this.connection.connect();
 	}
