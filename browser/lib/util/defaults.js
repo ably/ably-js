@@ -13,7 +13,7 @@ var Defaults = {
 	connectionPersistTimeout: 15000,
 	httpTransports:           ['xhr', 'iframe', 'jsonp'],
 	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	version:                  '0.7.4',
+	version:                  '0.7.5',
 	minified:                 !(function _(){}).name
 };
 
