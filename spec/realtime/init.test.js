@@ -51,6 +51,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 			realtime.close();
 			test.equal(realtime.options.key, keyStr);
+			test.deepEqual(realtime.options, realtime.connection.connectionManager.options);
 			test.done();
 		} catch(e) {
 			test.ok(false, 'Init with key failed with exception: ' + e.stack);
@@ -79,6 +80,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				realtime.close();
 				test.equal(realtime.options.authToken, tokenStr);
+				test.deepEqual(realtime.options, realtime.connection.connectionManager.options);
 				test.done();
 			});
 		} catch(e) {
