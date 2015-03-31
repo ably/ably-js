@@ -40,22 +40,18 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-
-		/* tokenParams contains the parameters that may be used in
-		 * token requests */
-		var tokenParams = this.tokenParams = {},
-			keyId = options.keyId;
+		this.tokenParams = {};
 
 		/* decide default auth method */
-		if(options.keyValue) {
+		var key = options.key;
+		if(key) {
 			if(!options.clientId) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				this.basicKey = toBase64(options.key || (options.keyId + ':' + options.keyValue));
-				this.keyId = options.keyId;
-				this.keyValue = options.keyValue;
+				this.key = key;
+				this.basicKey = toBase64(key);
 				return;
 			}
 			/* token auth, but we have the key so we can authorise
@@ -74,7 +70,7 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
-		} else if(options.keyValue) {
+		} else if(options.keySecret) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
 		} else if(this.token) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
@@ -93,11 +89,8 @@ var Auth = (function() {
 	 * where overridden with the options supplied in the call.
 	 * @param authOptions
 	 * an object containing the request params:
-	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
+	 * - key:        (optional) the key to use; if not specified, a key
 	 *               passed in constructing the Rest interface may be used
-	 *
-	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
-	 *               value passed in constructing the Rest interface may be used
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
@@ -108,7 +101,7 @@ var Auth = (function() {
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
 	 *
-	 * - ttl:    (optional) the requested life of any new token in seconds. If none
+	 * - ttl:        (optional) the requested life of any new token in seconds. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -153,11 +146,7 @@ var Auth = (function() {
 	 * Request an access token
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - keyId:         the id of the key to use.
-	 *
-	 * - keyValue:      (optional) the secret value of the key; if not
-	 *                  specified, a key passed in constructing the Rest interface will be used; or
-	 *                  if no key is available, a token request callback or url will be used.
+	 * - key:           the key to use.
 	 *
 	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
 	 *                  request params, to get a signed token request.
@@ -229,7 +218,7 @@ var Auth = (function() {
 					cb(null, body);
 				});
 			};
-		} else if(authOptions.keyValue) {
+		} else if(authOptions.key) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(authOptions, params, cb); };
@@ -244,8 +233,8 @@ var Auth = (function() {
 		var rest = this.rest;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
-				keyId = signedTokenParams.id,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
+				keyName = signedTokenParams.id,
+				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
@@ -294,11 +283,7 @@ var Auth = (function() {
 	 *
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - keyId:         the id of the key to use.
-	 *
-	 * - keyValue:      (optional) the secret value of the key; if not
-	 *                  specified, a key passed in constructing the Rest interface will be used; or
-	 *                  if no key is available, a token request callback or url will be used.
+	 * - key:           the key to use.
 	 *
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
@@ -327,13 +312,21 @@ var Auth = (function() {
 		authOptions = authOptions || this.rest.options;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
-		var keyId = authOptions.keyId;
-		var keyValue = authOptions.keyValue;
-		if(!keyId || !keyValue) {
+		var key = authOptions.key;
+		if(!key) {
 			callback(new Error('No key specified'));
 			return;
 		}
-		var request = Utils.mixin({ id: keyId }, tokenParams),
+		var keyParts = key.split(':'),
+			keyName = keyParts[0],
+			keySecret = keyParts[1];
+
+		if(!keySecret) {
+			callback(new Error('Invalid key specified'));
+			return;
+		}
+
+		var request = Utils.mixin({ id: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability || '',
@@ -377,7 +370,7 @@ var Auth = (function() {
 			 * specifies the mac; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			request.mac = request.mac || hmac(signText, keyValue);
+			request.mac = request.mac || hmac(signText, keySecret);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
 			callback(null, request);
@@ -390,7 +383,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthParams = function(callback) {
 		if(this.method == 'basic')
-			callback(null, {key_id: this.keyId, key_value: this.keyValue});
+			callback(null, {key: this.key});
 		else
 			this.authorise(null, null, function(err, token) {
 				if(err) {

@@ -25,8 +25,8 @@ var Rest = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.keyId = keyMatch[1];
-			options.keyValue = keyMatch[2];
+			options.keyName = keyMatch[1];
+			options.keySecret = keyMatch[2];
 		}
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
