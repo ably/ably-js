@@ -3,10 +3,6 @@
 define(['ably', 'shared_helper'], function(Ably, helper) {
   var currentTime, rest, exports = {};
 
-  var stripQualifier = function(qualifiedKeyId) {
-    return qualifiedKeyId.split('.')[1];
-  };
-
   var getServerTime = function(callback) {
     rest.time(function(err, time) {
       if(err) { callback(err); }
@@ -47,7 +43,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
       test.equal(tokenDetails.expires, 60*60 + tokenDetails.issued_at, 'Verify default expiry period');
-      test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
       test.done();
     });
   };
@@ -67,7 +63,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.id), 'Verify token id');
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
       test.done();
     });
   };
@@ -116,7 +112,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.ok((tokenDetails.id), 'Verify token id');
         test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
         test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-        test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+        test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
         test.done();
       });
     });
@@ -154,7 +150,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.id), 'Verify token id');
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
       test.done();
     });
   };
@@ -207,7 +203,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
       test.equal(tokenDetails.clientId, testClientId, 'Verify client id');
-      test.deepEqual(tokenDetails.capability, {'*':['*']}, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
       test.done();
     });
   };
@@ -228,7 +224,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.id), 'Verify token id');
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
       test.done();
     });
   };
@@ -238,9 +234,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authkey0 = function(test) {
     test.expect(1);
-    var key1Id = helper.getTestApp().appId + '.' + helper.getTestApp().key1Id;
-    var testKeyOpts = { keyId: key1Id, keyValue: helper.getTestApp().key1Value };
-    var testCapability = JSON.parse(helper.getTestApp().key1.capability);
+	var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
+	var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
     rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
       if(err) {
         test.ok(false, helper.displayError(err));
@@ -251,8 +246,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.id), 'Verify token id');
       test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.equal(stripQualifier(tokenDetails.key), helper.getTestApp().key1Id, 'Verify token key');
-      test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+      test.equal(tokenDetails.key, helper.getTestApp().keys[1].keyName, 'Verify token key');
+      test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
       test.done();
     });
   };
@@ -273,7 +268,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.ok((tokenDetails.id), 'Verify token id');
         test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
         test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-        test.equal(stripQualifier(tokenDetails.key), helper.getTestApp().key0Id, 'Verify token key');
+        test.equal(tokenDetails.key, helper.getTestApp().keys[0].keyName, 'Verify token key');
         test.done();
       });
     });
@@ -285,9 +280,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.authexplicit_key = function(test) {
     test.expect(1);
     rest.auth.getAuthHeaders(function(err, authHeaders) {
-      var key1Id = helper.getTestApp().appId + '.' + helper.getTestApp().key1Id;
-      var testKeyOpts = {keyId: key1Id, keyValue: helper.getTestApp().key1Value, requestHeaders: authHeaders};
-      var testCapability = JSON.parse(helper.getTestApp().key1.capability);
+	  var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
+	  var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
       rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
         if(err) {
           test.ok(false, helper.displayError(err));
@@ -298,8 +292,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.ok((tokenDetails.id), 'Verify token id');
         test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
         test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-        test.equal(stripQualifier(tokenDetails.key), helper.getTestApp().key1Id, 'Verify token key');
-        test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+        test.equal(tokenDetails.key, helper.getTestApp().keys[1].keyName, 'Verify token key');
+        test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
         test.done();
       });
     });
@@ -385,5 +379,21 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     });
   };
 
-  return module.exports = helper.withTimeout(exports);
+	/*
+	 * createTokenRequest uses specified key
+	 */
+	exports.auth_createTokenRequest_given_key = function(test) {
+		test.expect(1);
+		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenRequest.id, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	return module.exports = helper.withTimeout(exports);
 });

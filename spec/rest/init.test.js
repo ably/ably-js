@@ -19,7 +19,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.init_key_string = function(test) {
 		test.expect(1);
 		try {
-			var keyStr = helper.getTestApp().key0Str,
+			var keyStr = helper.getTestApp().keys[0].keyStr,
 				rest = new helper.Ably.Rest(keyStr);
 
 			test.equal(rest.options.key, keyStr);
@@ -35,9 +35,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		try {
 			/* first generate a token ... */
-			var rest = helper.AblyRest(),
-				key1Id = helper.getTestApp().appId + '.' + helper.getTestApp().key1Id,
-				testKeyOpts = { keyId: key1Id, keyValue: helper.getTestApp().key1Value };
+			var rest = helper.AblyRest();
+			var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
 
 			rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
 				if(err) {

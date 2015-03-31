@@ -44,9 +44,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability0 = function(test) {
     test.expect(1);
-    var key1Id = testApp.appId + '.' + testApp.key1Id;
-    var testKeyOpts = {keyId: key1Id, keyValue: testApp.key1.value};
-    var testCapability = JSON.parse(testApp.key1.capability);
+	var testKeyOpts = {key: testApp.keys[1].keyStr};
+    var testCapability = JSON.parse(testApp.keys[1].capability);
     rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
       if(err) {
         test.ok(false, displayError(err));
@@ -63,9 +62,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability1 = function(test) {
     test.expect(1);
-    var key1Id = testApp.appId + '.' + testApp.key1Id;
-    var testKeyOpts = {keyId: key1Id, keyValue: testApp.key1.value};
-    var testCapability = JSON.parse(testApp.key1.capability);
+	var testKeyOpts = {key: testApp.keys[1].keyStr};
+	var testCapability = JSON.parse(testApp.keys[1].capability);
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
       if(err) {
         test.ok(false, displayError(err));
@@ -82,8 +80,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability2 = function(test) {
     test.expect(1);
-    var key1Id = testApp.appId + '.' + testApp.key1Id;
-    var testKeyOpts = {keyId: key1Id, keyValue: testApp.key1.value};
+	var testKeyOpts = {key: testApp.keys[1].keyStr};
     var testCapability = {testchannel:['subscribe']};
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
       if(err) {
@@ -101,8 +98,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability3 = function(test) {
     test.expect(1);
-    var key4Id = testApp.appId + '.' + testApp.key4Id;
-    var testKeyOpts = {keyId: key4Id, keyValue: testApp.key4.value};
+	var testKeyOpts = {key: testApp.keys[4].keyStr};
     var testCapability = {channelx:['publish']};
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
       if(err) {
@@ -120,8 +116,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability4 = function(test) {
     test.expect(1);
-    var key4Id = testApp.appId + '.' + testApp.key4Id;
-    var testKeyOpts = {keyId: key4Id, keyValue: testApp.key4.value};
+	var testKeyOpts = {key: testApp.keys[4].keyStr};
     var testCapability = {channel2:['presence', 'subscribe']};
     var expectedIntersection = {channel2:['subscribe']};
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
@@ -140,8 +135,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability5 = function(test) {
     test.expect(1);
-    var key4Id = testApp.appId + '.' + testApp.key4Id;
-    var testKeyOpts = {keyId: key4Id, keyValue: testApp.key4.value};
+	var testKeyOpts = {key: testApp.keys[4].keyStr};
     var testCapability = {
       channel2:['presence', 'subscribe'],
       channelx:['presence', 'subscribe']
@@ -163,8 +157,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability6 = function(test) {
     test.expect(1);
-    var key4Id = testApp.appId + '.' + testApp.key4Id;
-    var testKeyOpts = {keyId: key4Id, keyValue: testApp.key4.value};
+	var testKeyOpts = {key: testApp.keys[4].keyStr};
     var testCapability = {channel2:['*']};
     var expectedIntersection = {channel2:['publish', 'subscribe']};
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
@@ -179,8 +172,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
   exports.authcapability7 = function(test) {
     test.expect(1);
-    var key4Id = testApp.appId + '.' + testApp.key4Id;
-    var testKeyOpts = {keyId: key4Id, keyValue: testApp.key4.value};
+	var testKeyOpts = {key: testApp.keys[4].keyStr};
     var testCapability = {channel6:['publish', 'subscribe']};
     var expectedIntersection = {channel6:['publish', 'subscribe']};
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
@@ -199,8 +191,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authcapability8 = function(test) {
     test.expect(1);
-    var key2Id = testApp.appId + '.' + testApp.key2Id;
-    var testKeyOpts = {keyId: key2Id, keyValue: testApp.key2.value};
+	var testKeyOpts = {key: testApp.keys[2].keyStr};
     var testCapability = {cansubscribe:['subscribe']};
     var expectedIntersection = testCapability;
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
@@ -215,8 +206,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
   exports.authcapability9 = function(test) {
     test.expect(1);
-    var key2Id = testApp.appId + '.' + testApp.key2Id;
-    var testKeyOpts = {keyId: key2Id, keyValue: testApp.key2.value};
+	var testKeyOpts = {key: testApp.keys[2].keyStr};
     var testCapability = {'canpublish:check':['publish']};
     var expectedIntersection = testCapability;
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
@@ -231,8 +221,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
   exports.authcapability10 = function(test) {
     test.expect(1);
-    var key2Id = testApp.appId + '.' + testApp.key2Id;
-    var testKeyOpts = {keyId: key2Id, keyValue: testApp.key2.value};
+	var testKeyOpts = {key: testApp.keys[2].keyStr};
     var testCapability = {'cansubscribe:*':['subscribe']};
     var expectedIntersection = testCapability;
     rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
