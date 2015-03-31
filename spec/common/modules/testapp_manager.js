@@ -147,13 +147,8 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
           var testApp = {
             accountId: res.accountId,
             appId: res.appId,
+			keys: res.keys
           };
-          for (var i=0; i<res.keys.length; i++) {
-            testApp['key'+i] = res.keys[i];
-            testApp['key'+i+'Id'] = res.keys[i].id;
-            testApp['key'+i+'Value'] = res.keys[i].value;
-            testApp['key'+i+'Str'] = res.appId + '.' + res.keys[i].id + ':' + res.keys[i].value;
-          }
           callback(null, testApp);
         }
       }
@@ -163,7 +158,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
   function createStatsFixtureData(app, statsData, callback) {
     var postData = JSON.stringify(statsData);
 
-    var authKey = app.appId + '.' + app.key0Id + ':' + app.key0Value,
+    var authKey = app.keys[0].keyStr,
         authHeader = toBase64(authKey);
 
     var postOptions = {
@@ -187,7 +182,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
   }
 
   function deleteApp(app, callback) {
-    var authKey = app.appId + '.' + app.key0Id + ':' + app.key0Value,
+    var authKey = app.keys[0].keyStr,
         authHeader = toBase64(authKey);
 
     var delOptions = {

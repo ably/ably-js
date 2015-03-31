@@ -27,7 +27,7 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 				if (options.key) {
 					clientOptions.key = options.key;
 				} else {
-					clientOptions.key = testAppHelper.getTestApp()['key' + (options.key || 0) + 'Str'];
+					clientOptions.key = testAppHelper.getTestApp().keys[0].keyStr;
 				}
 			}
 		}
