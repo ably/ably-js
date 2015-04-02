@@ -52,7 +52,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
       test.done();
     });
   };
@@ -70,7 +70,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, testCapability, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
       test.done();
     });
   };
@@ -125,7 +125,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -147,7 +147,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -166,7 +166,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -181,7 +181,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -200,7 +200,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -215,7 +215,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
@@ -230,7 +230,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.done();
         return;
       }
-      test.deepEqual(tokenDetails.capability, expectedIntersection, 'Verify token capability');
+      test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
       test.done();
     });
   };
