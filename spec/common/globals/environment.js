@@ -5,8 +5,8 @@ define(function(require) {
 		ablyEnvironment = environment.ABLY_ENV || 'sandbox',
 		wsHost = environment.ABLY_REALTIME_HOST,
 		host = environment.ABLY_REST_HOST,
-		port = environment.ABLY_PORT,
-		tlsPort = environment.ABLY_TLS_PORT,
+		port = environment.ABLY_PORT || 80,
+		tlsPort = environment.ABLY_TLS_PORT || 443,
 		tls = ('ABLY_USE_TLS' in environment) ? (environment.ABLY_USE_TLS.toLowerCase() !== 'false') : true;
 
 	if (isBrowser) {
