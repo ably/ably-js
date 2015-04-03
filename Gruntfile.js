@@ -177,13 +177,16 @@ module.exports = function (grunt) {
 
 	gruntConfig.concat['iframe.js'].src = [
 		'<%= dirs.fragments %>/ably-prologue.js',
+		'<%= dirs.browser %>/lib/util/defaults.js',
+		'<%= dirs.browser %>/lib/util/domevent.js',
+
+		'<%= dirs.common %>/lib/util/defaults.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
 		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.common %>/lib/types/protocolmessage.js',
-		'<%= dirs.browser %>/lib/util/defaults.js',
-		'<%= dirs.browser %>/lib/util/domevent.js',
+
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/iframeagent.js',
 		'<%= dirs.fragments %>/ably-epilogue.js'
