@@ -461,6 +461,14 @@ var Utils = (function() {
  		return result;
 	};
 
+	Utils.inspect = function(x) {
+		return JSON.stringify(x);
+	};
+
+	Utils.inspectError = function(x) {
+		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+	};
+
 	return Utils;
 })();
 
@@ -536,64 +544,10 @@ var ProtocolMessage = (function() {
 })();
 
 var Defaults = {
-	protocolVersion:          1,
-	HOST:                     'rest.ably.io',
-	WS_HOST:                  'realtime.ably.io',
-	FALLBACK_HOSTS:           ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
-	PORT:                     80,
-	TLS_PORT:                 443,
-	connectTimeout:           15000,
-	disconnectTimeout:        30000,
-	suspendedTimeout:         120000,
-	recvTimeout:              90000,
-	sendTimeout:              10000,
-	connectionPersistTimeout: 15000,
-	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	version:                  '0.7.5',
-	minified:                 !(function _(){}).name
+	httpTransports: ['comet'],
+	transports: ['web_socket', 'comet'],
+	minified: !(function _(){}).name
 };
-
-/* If an environment option is provided, the environment is prefixed to the domain
-   i.e. rest.ably.io with environment sandbox becomes sandbox-rest.ably.io */
-Defaults.environmentHost = function(environment, host) {
-	if (!environment || (String(environment).toLowerCase() === 'production')) {
-		return host;
-	} else {
-		return [String(environment).toLowerCase(), host].join('-');
-	}
-};
-
-Defaults.getHost = function(options, host, ws) {
-	var defaultHost = Defaults.environmentHost(options.environment, Defaults.HOST);
-	host = host || options.host || defaultHost;
-	if(ws)
-		host = ((host == options.host) && (options.wsHost || host))
-			|| ((host == defaultHost) && (Defaults.environmentHost(options.environment, Defaults.WS_HOST) || host))
-			|| host;
-	return host;
-};
-
-Defaults.getPort = function(options, tls) {
-	return (tls || options.tls) ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
-};
-
-Defaults.getHosts = function(options) {
-	var hosts,
-			options = options || {};
-	if(options.host) {
-		hosts = [options.host];
-		if(options.fallbackHosts)
-			hosts.concat(options.fallbackHosts);
-	} else {
-		hosts = [Defaults.environmentHost(options.environment, Defaults.HOST)].concat(Defaults.FALLBACK_HOSTS);
-	}
-	return hosts;
-};
-
-if (typeof exports !== 'undefined' && this.exports !== exports) {
-	exports.defaults = Defaults;
-}
 
 var DomEvent = (function() {
 	function DomEvent() {}
@@ -1065,7 +1019,7 @@ var XHRRequest = (function() {
 	var connectParams = Utils.parseQueryString(window.location.search);
 	var parentOrigin = connectParams.origin;
 	delete connectParams.origin;
-	var authParams = ('access_token' in connectParams) ? {access_token: connectParams.access_token} : {key_id: connectParams.key_id, key_value:connectParams.key_value};
+	var authParams = ('access_token' in connectParams) ? {access_token: connectParams.access_token} : {key: connectParams.key};
 	var parentWindow = window.parent;
 	var actions = ProtocolMessage.Action;
 
@@ -1228,7 +1182,7 @@ var XHRRequest = (function() {
 
 		var sendRequest = this.sendRequest = XHRRequest.createRequest(sendUri, null, authParams, encodeRequest(items), REQ_SEND);
 		sendRequest.on('complete', function(err, data) {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'IframeAgent.sendItems()', 'on complete: err = ' + err);
+			if(err) Logger.logAction(Logger.LOG_ERROR, 'IframeAgent.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 			if(data) self.onData(data);
 
@@ -1298,6 +1252,7 @@ if(typeof Realtime !== 'undefined') {
 	Realtime.ConnectionManager = ConnectionManager;
 	Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 	if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
+	Realtime.Defaults = Rest.Defaults = Defaults;
 	Realtime.Message = Rest.Message = Message;
 	Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 	Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;

@@ -2494,6 +2494,12 @@ var Crypto = (function() {
 
 	return Crypto;
 })();
+var Defaults = {
+	httpTransports: ['comet'],
+	transports: ['web_socket', 'comet'],
+	minified: !(function _(){}).name
+};
+
 var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = window.ArrayBuffer;
@@ -2655,66 +2661,6 @@ var Cookie = (function() {
 
 	return Cookie;
 })();
-
-var Defaults = {
-	protocolVersion:          1,
-	HOST:                     'rest.ably.io',
-	WS_HOST:                  'realtime.ably.io',
-	FALLBACK_HOSTS:           ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
-	PORT:                     80,
-	TLS_PORT:                 443,
-	connectTimeout:           15000,
-	disconnectTimeout:        30000,
-	suspendedTimeout:         120000,
-	recvTimeout:              90000,
-	sendTimeout:              10000,
-	connectionPersistTimeout: 15000,
-	httpTransports:           ['xhr', 'iframe', 'jsonp'],
-	transports:               ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	version:                  '0.7.5',
-	minified:                 !(function _(){}).name
-};
-
-/* If an environment option is provided, the environment is prefixed to the domain
-   i.e. rest.ably.io with environment sandbox becomes sandbox-rest.ably.io */
-Defaults.environmentHost = function(environment, host) {
-	if (!environment || (String(environment).toLowerCase() === 'production')) {
-		return host;
-	} else {
-		return [String(environment).toLowerCase(), host].join('-');
-	}
-};
-
-Defaults.getHost = function(options, host, ws) {
-	var defaultHost = Defaults.environmentHost(options.environment, Defaults.HOST);
-	host = host || options.host || defaultHost;
-	if(ws)
-		host = ((host == options.host) && (options.wsHost || host))
-			|| ((host == defaultHost) && (Defaults.environmentHost(options.environment, Defaults.WS_HOST) || host))
-			|| host;
-	return host;
-};
-
-Defaults.getPort = function(options, tls) {
-	return (tls || options.tls) ? (options.tlsPort || Defaults.TLS_PORT) : (options.port || Defaults.PORT);
-};
-
-Defaults.getHosts = function(options) {
-	var hosts,
-			options = options || {};
-	if(options.host) {
-		hosts = [options.host];
-		if(options.fallbackHosts)
-			hosts.concat(options.fallbackHosts);
-	} else {
-		hosts = [Defaults.environmentHost(options.environment, Defaults.HOST)].concat(Defaults.FALLBACK_HOSTS);
-	}
-	return hosts;
-};
-
-if (typeof exports !== 'undefined' && this.exports !== exports) {
-	exports.defaults = Defaults;
-}
 
 var Http = (function() {
 	var noop = function() {};
@@ -3912,6 +3858,59 @@ var DomEvent = (function() {
 
 	return exports;
 });
+Defaults.protocolVersion          = 1;
+Defaults.ENVIRONMENT              = '';
+Defaults.HOST                     = 'rest.ably.io';
+Defaults.WS_HOST                  = 'realtime.ably.io';
+Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
+Defaults.PORT                     = 80;
+Defaults.TLS_PORT                 = 443;
+Defaults.connectTimeout           = 15000;
+Defaults.disconnectTimeout        = 30000;
+Defaults.suspendedTimeout         = 120000;
+Defaults.recvTimeout              = 90000;
+Defaults.sendTimeout              = 10000;
+Defaults.connectionPersistTimeout = 15000;
+Defaults.version                  = '0.7.6';
+
+Defaults.getHost = function(options, host, ws) {
+	if(ws)
+		host = ((host == options.host) && options.wsHost) || host || options.wsHost;
+	else
+		host = host || options.host;
+
+	return host;
+};
+
+Defaults.getPort = function(options, tls) {
+	return (tls || options.tls) ? options.tlsPort : options.port;
+};
+
+Defaults.getHosts = function(options) {
+	var hosts = [options.host],
+		fallbackHosts = options.fallbackHosts;
+
+	if(fallbackHosts) hosts = hosts.concat(fallbackHosts);
+	return hosts;
+};
+
+Defaults.normaliseOptions = function(options) {
+	if(options.host) {
+		options.wsHost = options.wsHost || options.host;
+	} else {
+		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
+			production = !environment || (environment === 'production');
+		options.host = production ? Defaults.HOST : environment + '-' + Defaults.HOST;
+		options.wsHost = production ? Defaults.WS_HOST : environment + '-' + Defaults.WS_HOST;
+		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
+	}
+	options.port = options.port || Defaults.PORT;
+	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
+	if(!('tls' in options)) options.tls = true;
+
+	return options;
+};
+
 var EventEmitter = (function() {
 
 	/* public constructor */
@@ -4343,6 +4342,14 @@ var Utils = (function() {
  		return result;
 	};
 
+	Utils.inspect = function(x) {
+		return JSON.stringify(x);
+	};
+
+	Utils.inspectError = function(x) {
+		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+	};
+
 	return Utils;
 })();
 
@@ -4730,6 +4737,65 @@ var ProtocolMessage = (function() {
 	return ProtocolMessage;
 })();
 
+var Stats = (function() {
+
+	function MessageCount(values) {
+		this.count = (values && values.count) || 0;
+		this.data = (values && values.data) || 0;
+	}
+
+	function ResourceCount(values) {
+		this.peak = (values && values.peak) || 0;
+		this.min = (values && values.min) || 0;
+		this.mean = (values && values.mean) || 0;
+		this.opened = (values && values.opened) || 0;
+		this.refused = (values && values.refused) || 0;
+	}
+
+	function RequestCount(values) {
+		this.succeeded = (values && values.succeeded) || 0;
+		this.failed = (values && values.failed) || 0;
+		this.refused = (values && values.refused) || 0;
+	}
+
+	function ConnectionTypes(values) {
+		this.plain = new ResourceCount(values && values.plain);
+		this.tls = new ResourceCount(values && values.tls);
+		this.all = new ResourceCount(values && values.all);
+	}
+
+	function MessageTypes(values) {
+		this.messages = new MessageCount(values && values.messages);
+		this.presence = new MessageCount(values && values.presence);
+		this.all = new MessageCount(values && values.all);
+	}
+
+	function MessageTraffic(values) {
+		this.realtime = new MessageTypes(values && values.realtime);
+		this.rest = new MessageTypes(values && values.rest);
+		this.webhook = new MessageTypes(values && values.webhook);
+		this.all = new MessageTypes(values && values.all);
+	}
+
+	function Stats(values) {
+		this.all           = new MessageTypes(values && values.all);
+		this.inbound       = new MessageTraffic(values && values.inbound);
+		this.outbound      = new MessageTraffic(values && values.outbound);
+		this.persisted     = new MessageTypes(values && values.persisted);
+		this.connections   = new ConnectionTypes(values && values.connections);
+		this.channels      = new ResourceCount(values && values.channels);
+		this.apiRequests   = new RequestCount(values && values.apiRequests);
+		this.tokenRequests = new RequestCount(values && values.tokenRequests);
+		this.inProgress    = (values && values.inProgress) || undefined;
+		this.intervalId    = (values && values.intervalId) || undefined;
+	}
+
+	Stats.fromValues = function(values) {
+		return new Stats(values);
+	};
+
+	return Stats;
+})();
 var ConnectionError = {
 	disconnected: {
 		statusCode: 408,
@@ -4919,7 +4985,7 @@ var ConnectionManager = (function() {
 		/* first try to establish an http transport */
 		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + err);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
 				/* http failed, or terminal, so nothing's going to work */
 				callback(err);
 				return;
@@ -5163,7 +5229,7 @@ var ConnectionManager = (function() {
 			self.ackMessage(serial, count);
 		});
 		transport.on('nack', function(serial, count, err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 			if(!err) {
 				err = new Error('Unknown error');
 				err.statusCode = 500;
@@ -5710,14 +5776,14 @@ var Transport = (function() {
 	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + err);
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.emit('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + err);
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
 		this.emit('closed', err);
 	};
 
@@ -5845,7 +5911,7 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err);
+		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + Utils.inspectError(err));
 		this.emit('wserror', err);
 		/* FIXME: this should not be fatal */
 		this.abort();
@@ -6329,22 +6395,18 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-
-		/* tokenParams contains the parameters that may be used in
-		 * token requests */
-		var tokenParams = this.tokenParams = {},
-			keyId = options.keyId;
+		this.tokenParams = {};
 
 		/* decide default auth method */
-		if(options.keyValue) {
+		var key = options.key;
+		if(key) {
 			if(!options.clientId) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 				this.method = 'basic';
-				this.basicKey = toBase64(options.key || (options.keyId + ':' + options.keyValue));
-				this.keyId = options.keyId;
-				this.keyValue = options.keyValue;
+				this.key = key;
+				this.basicKey = toBase64(key);
 				return;
 			}
 			/* token auth, but we have the key so we can authorise
@@ -6363,7 +6425,7 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
-		} else if(options.keyValue) {
+		} else if(options.keySecret) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
 		} else if(this.token) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
@@ -6382,11 +6444,8 @@ var Auth = (function() {
 	 * where overridden with the options supplied in the call.
 	 * @param authOptions
 	 * an object containing the request params:
-	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
+	 * - key:        (optional) the key to use; if not specified, a key
 	 *               passed in constructing the Rest interface may be used
-	 *
-	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
-	 *               value passed in constructing the Rest interface may be used
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
@@ -6397,7 +6456,7 @@ var Auth = (function() {
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
 	 *
-	 * - ttl:    (optional) the requested life of any new token in seconds. If none
+	 * - ttl:        (optional) the requested life of any new token in seconds. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -6442,11 +6501,7 @@ var Auth = (function() {
 	 * Request an access token
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - keyId:         the id of the key to use.
-	 *
-	 * - keyValue:      (optional) the secret value of the key; if not
-	 *                  specified, a key passed in constructing the Rest interface will be used; or
-	 *                  if no key is available, a token request callback or url will be used.
+	 * - key:           the key to use.
 	 *
 	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
 	 *                  request params, to get a signed token request.
@@ -6518,7 +6573,7 @@ var Auth = (function() {
 					cb(null, body);
 				});
 			};
-		} else if(authOptions.keyValue) {
+		} else if(authOptions.key) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(authOptions, params, cb); };
@@ -6533,8 +6588,8 @@ var Auth = (function() {
 		var rest = this.rest;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
-				keyId = signedTokenParams.id,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyId + '/requestToken';};
+				keyName = signedTokenParams.id,
+				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
@@ -6549,7 +6604,7 @@ var Auth = (function() {
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + err);
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
 				if(!('code' in err))
 					err.code = 40170;
 				if(!('statusCode' in err))
@@ -6564,7 +6619,7 @@ var Auth = (function() {
 			}
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + err);
+					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
 					callback(err);
 					return;
 				}
@@ -6583,11 +6638,7 @@ var Auth = (function() {
 	 *
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - keyId:         the id of the key to use.
-	 *
-	 * - keyValue:      (optional) the secret value of the key; if not
-	 *                  specified, a key passed in constructing the Rest interface will be used; or
-	 *                  if no key is available, a token request callback or url will be used.
+	 * - key:           the key to use.
 	 *
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
@@ -6616,13 +6667,21 @@ var Auth = (function() {
 		authOptions = authOptions || this.rest.options;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
-		var keyId = authOptions.keyId;
-		var keyValue = authOptions.keyValue;
-		if(!keyId || !keyValue) {
+		var key = authOptions.key;
+		if(!key) {
 			callback(new Error('No key specified'));
 			return;
 		}
-		var request = Utils.mixin({ id: keyId }, tokenParams),
+		var keyParts = key.split(':'),
+			keyName = keyParts[0],
+			keySecret = keyParts[1];
+
+		if(!keySecret) {
+			callback(new Error('Invalid key specified'));
+			return;
+		}
+
+		var request = Utils.mixin({ id: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability || '',
@@ -6666,7 +6725,7 @@ var Auth = (function() {
 			 * specifies the mac; this is done by the library
 			 * However, this can be overridden by the client
 			 * simply for testing purposes. */
-			request.mac = request.mac || hmac(signText, keyValue);
+			request.mac = request.mac || hmac(signText, keySecret);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
 			callback(null, request);
@@ -6679,7 +6738,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthParams = function(callback) {
 		if(this.method == 'basic')
-			callback(null, {key_id: this.keyId, key_value: this.keyValue});
+			callback(null, {key: this.key});
 		else
 			this.authorise(null, null, function(err, token) {
 				if(err) {
@@ -6729,7 +6788,7 @@ var Rest = (function() {
 		if(typeof(options) == 'string') {
 			options = (options.indexOf(':') == -1) ? {authToken: options} : {key: options};
 		}
-		this.options = options;
+		this.options = Defaults.normaliseOptions(options);
 
 		/* use binary protocol only if it is supported and explicitly requested */
 		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
@@ -6743,20 +6802,16 @@ var Rest = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.keyId = keyMatch[1];
-			options.keyValue = keyMatch[2];
+			options.keyName = keyMatch[1];
+			options.keySecret = keyMatch[2];
 		}
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 		this.clientId = options.clientId;
 
-		if(!('tls' in options))
-			options.tls = true;
-
 		this.serverTimeOffset = null;
-		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
-		this.baseUri = authority;
+		this.baseUri = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
@@ -6779,7 +6834,9 @@ var Rest = (function() {
 			Utils.mixin(headers, this.options.headers);
 
 		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
-			return unpacked ? body : JSON.parse(body);
+			var statsValues = (unpacked ? body : JSON.parse(body));
+			for(var i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
+			return statsValues;
 		})).get(callback);
 	};
 
@@ -7559,7 +7616,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', err = ' + err);
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', err = ' + Utils.inspectError(err));
 		for(var i = 0; i < this.pendingEvents.length; i++)
 			try {
 				this.pendingEvents[i].callback(err);
@@ -8639,6 +8696,7 @@ if(typeof Realtime !== 'undefined') {
 	Realtime.ConnectionManager = ConnectionManager;
 	Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 	if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
+	Realtime.Defaults = Rest.Defaults = Defaults;
 	Realtime.Message = Rest.Message = Message;
 	Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 	Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;

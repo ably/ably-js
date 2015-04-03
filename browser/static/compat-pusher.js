@@ -388,6 +388,14 @@ var Utils = (function() {
  		return result;
 	};
 
+	Utils.inspect = function(x) {
+		return JSON.stringify(x);
+	};
+
+	Utils.inspectError = function(x) {
+		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+	};
+
 	return Utils;
 })();
 
