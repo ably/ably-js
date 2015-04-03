@@ -3,7 +3,7 @@
 	var connectParams = Utils.parseQueryString(window.location.search);
 	var parentOrigin = connectParams.origin;
 	delete connectParams.origin;
-	var authParams = ('access_token' in connectParams) ? {access_token: connectParams.access_token} : {key_id: connectParams.key_id, key_value:connectParams.key_value};
+	var authParams = ('access_token' in connectParams) ? {access_token: connectParams.access_token} : {key: connectParams.key};
 	var parentWindow = window.parent;
 	var actions = ProtocolMessage.Action;
 
