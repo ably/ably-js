@@ -15,6 +15,98 @@
   */
   var define, exports, require;
 
+var Defaults = {
+	httpTransports: ['xhr', 'iframe', 'jsonp'],
+	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
+	minified: !(function _(){}).name
+};
+
+var DomEvent = (function() {
+	function DomEvent() {}
+
+	DomEvent.addListener = function(target, event, listener) {
+		if(target.addEventListener) {
+			target.addEventListener(event, listener, false);
+		} else {
+			target.attachEvent('on'+event, function() { listener.apply(target, arguments); });
+		}
+	};
+
+	DomEvent.removeListener = function(target, event, listener) {
+		if(target.removeEventListener) {
+			target.removeEventListener(event, listener, false);
+		} else {
+			target.detachEvent('on'+event, function() { listener.apply(target, arguments); });
+		}
+	};
+
+	DomEvent.addMessageListener = function(target, listener) {
+		DomEvent.addListener(target, 'message', listener);
+	};
+
+	DomEvent.removeMessageListener = function(target, listener) {
+		DomEvent.removeListener(target, 'message', listener);
+	};
+
+	DomEvent.addUnloadListener = function(listener) {
+		DomEvent.addListener(window, 'unload', listener);
+	};
+
+	return DomEvent;
+})();
+Defaults.protocolVersion          = 1;
+Defaults.ENVIRONMENT              = '';
+Defaults.HOST                     = 'rest.ably.io';
+Defaults.WS_HOST                  = 'realtime.ably.io';
+Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
+Defaults.PORT                     = 80;
+Defaults.TLS_PORT                 = 443;
+Defaults.connectTimeout           = 15000;
+Defaults.disconnectTimeout        = 30000;
+Defaults.suspendedTimeout         = 120000;
+Defaults.recvTimeout              = 90000;
+Defaults.sendTimeout              = 10000;
+Defaults.connectionPersistTimeout = 15000;
+Defaults.version                  = '0.7.9';
+
+Defaults.getHost = function(options, host, ws) {
+	if(ws)
+		host = ((host == options.host) && options.wsHost) || host || options.wsHost;
+	else
+		host = host || options.host;
+
+	return host;
+};
+
+Defaults.getPort = function(options, tls) {
+	return (tls || options.tls) ? options.tlsPort : options.port;
+};
+
+Defaults.getHosts = function(options) {
+	var hosts = [options.host],
+		fallbackHosts = options.fallbackHosts;
+
+	if(fallbackHosts) hosts = hosts.concat(fallbackHosts);
+	return hosts;
+};
+
+Defaults.normaliseOptions = function(options) {
+	if(options.host) {
+		options.wsHost = options.wsHost || options.host;
+	} else {
+		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
+			production = !environment || (environment === 'production');
+		options.host = production ? Defaults.HOST : environment + '-' + Defaults.HOST;
+		options.wsHost = production ? Defaults.WS_HOST : environment + '-' + Defaults.WS_HOST;
+		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
+	}
+	options.port = options.port || Defaults.PORT;
+	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
+	if(!('tls' in options)) options.tls = true;
+
+	return options;
+};
+
 var EventEmitter = (function() {
 
 	/* public constructor */
@@ -548,45 +640,6 @@ var ProtocolMessage = (function() {
 	return ProtocolMessage;
 })();
 
-var Defaults = {
-	httpTransports: ['xhr', 'iframe', 'jsonp'],
-	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
-	minified: !(function _(){}).name
-};
-
-var DomEvent = (function() {
-	function DomEvent() {}
-
-	DomEvent.addListener = function(target, event, listener) {
-		if(target.addEventListener) {
-			target.addEventListener(event, listener, false);
-		} else {
-			target.attachEvent('on'+event, function() { listener.apply(target, arguments); });
-		}
-	};
-
-	DomEvent.removeListener = function(target, event, listener) {
-		if(target.removeEventListener) {
-			target.removeEventListener(event, listener, false);
-		} else {
-			target.detachEvent('on'+event, function() { listener.apply(target, arguments); });
-		}
-	};
-
-	DomEvent.addMessageListener = function(target, listener) {
-		DomEvent.addListener(target, 'message', listener);
-	};
-
-	DomEvent.removeMessageListener = function(target, listener) {
-		DomEvent.removeListener(target, 'message', listener);
-	};
-
-	DomEvent.addUnloadListener = function(listener) {
-		DomEvent.addListener(window, 'unload', listener);
-	};
-
-	return DomEvent;
-})();
 var XHRRequest = (function() {
 	var noop = function() {};
 	var idCounter = 0;
