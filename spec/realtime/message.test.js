@@ -136,7 +136,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       };
       var realtime = helper.AblyRealtime({ transports : ['xhr'] });
       test.expect(count);
-      var channel = realtime.channels.get('wspublish');
+      var channel = realtime.channels.get('wsxhrpublish');
       /* subscribe to event */
       channel.subscribe('event0', function() {
         test.ok(true, 'Received event0');
@@ -166,7 +166,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       };
       var realtime = helper.AblyRealtime({ transports : ['jsonp'] });
       test.expect(count);
-      var channel = realtime.channels.get('wspublish');
+      var channel = realtime.channels.get('wsjsonppublish');
       /* subscribe to event */
       channel.subscribe('event0', function() {
         test.ok(true, 'Received event0');
@@ -183,7 +183,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }, 500);
     };
   } else {
-    exports.wsjsonppublish = function(test) {
+    exports.wscometpublish = function(test) {
       var count = 5;
       var cbCount = 5;
       var timer;
@@ -196,7 +196,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       };
       var realtime = helper.AblyRealtime({ transports : ['comet'] });
       test.expect(count);
-      var channel = realtime.channels.get('wspublish');
+      var channel = realtime.channels.get('wscometpublish');
       /* subscribe to event */
       channel.subscribe('event0', function() {
         test.ok(true, 'Received event0');
