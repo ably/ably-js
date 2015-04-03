@@ -133,7 +133,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
-        console.log("stats length", stats.length);
         test.equal(stats.length, 1, 'Verify 1 stat record found');
 
         var totalInbound = 0, totalOutbound = 0;
