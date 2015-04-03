@@ -34,6 +34,7 @@ includeScript('../common/lib/types/errorinfo.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
 includeScript('../common/lib/types/protocolmessage.js');
+includeScript('../common/lib/types/stats.js');
 includeScript('../common/lib/transport/connectionerror.js');
 includeScript('../common/lib/transport/connectionmanager.js');
 includeScript('../common/lib/transport/transport.js');

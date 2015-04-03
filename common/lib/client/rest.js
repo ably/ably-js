@@ -57,7 +57,9 @@ var Rest = (function() {
 			Utils.mixin(headers, this.options.headers);
 
 		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
-			return unpacked ? body : JSON.parse(body);
+			var statsValues = (unpacked ? body : JSON.parse(body));
+			for(var i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
+			return statsValues;
 		})).get(callback);
 	};
 

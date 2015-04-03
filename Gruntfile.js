@@ -122,6 +122,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/types/message.js',
 		'<%= dirs.common %>/lib/types/presencemessage.js',
 		'<%= dirs.common %>/lib/types/protocolmessage.js',
+		'<%= dirs.common %>/lib/types/stats.js',
 
 		'<%= dirs.common %>/lib/transport/connectionerror.js',
 		'<%= dirs.common %>/lib/transport/connectionmanager.js',

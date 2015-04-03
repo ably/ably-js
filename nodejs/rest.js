@@ -32,6 +32,7 @@ includeScript('./lib/util/crypto.js');
 includeScript('../common/lib/types/errorinfo.js');
 includeScript('../common/lib/types/message.js');
 includeScript('../common/lib/types/presencemessage.js');
+includeScript('../common/lib/types/stats.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
