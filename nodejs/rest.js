@@ -21,9 +21,10 @@ var includeScript = function(name) {
 };
 
 /* include libraries */
+includeScript('./lib/util/defaults.js');
 includeScript('./lib/util/bufferutils.js');
 includeScript('./lib/util/http.js');
-includeScript('./lib/util/defaults.js');
+includeScript('../common/lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
@@ -40,4 +41,5 @@ includeScript('../common/lib/client/rest.js');
 var Rest = module.exports = context.Rest;
 Rest.BufferUtils = context.BufferUtils;
 Rest.Crypto = context.Crypto;
+Rest.Defaults = context.Defaults;
 Rest.Http = context.Http;

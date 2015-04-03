@@ -21,9 +21,10 @@ var includeScript = function(name) {
 };
 
 /* include libraries */
+includeScript('./lib/util/defaults.js');
 includeScript('./lib/util/bufferutils.js');
 includeScript('./lib/util/http.js');
-includeScript('./lib/util/defaults.js');
+includeScript('../common/lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
 includeScript('../common/lib/util/utils.js');
@@ -53,6 +54,7 @@ includeScript('./lib/transport/nodecomettransport.js');
 var Realtime = module.exports = context.Realtime;
 Realtime.BufferUtils = context.BufferUtils;
 Realtime.Crypto = context.Crypto;
+Realtime.Defaults = context.Defaults;
 Realtime.Http = context.Http;
 Realtime.Message = context.Message;
 Realtime.PresenceMessage = context.PresenceMessage;

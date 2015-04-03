@@ -11,7 +11,7 @@ var Rest = (function() {
 		if(typeof(options) == 'string') {
 			options = (options.indexOf(':') == -1) ? {authToken: options} : {key: options};
 		}
-		this.options = options;
+		this.options = Defaults.normaliseOptions(options);
 
 		/* use binary protocol only if it is supported and explicitly requested */
 		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
@@ -33,12 +33,8 @@ var Rest = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 		this.clientId = options.clientId;
 
-		if(!('tls' in options))
-			options.tls = true;
-
 		this.serverTimeOffset = null;
-		var authority = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
-		this.baseUri = authority;
+		this.baseUri = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);

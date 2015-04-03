@@ -104,14 +104,15 @@ module.exports = function (grunt) {
 	};
 
 	var ablyFiles = [
+		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
 		'<%= dirs.browser %>/lib/util/cookie.js',
-		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
 		'<%= dirs.browser %>/lib/util/domevent.js',
 		'<%= dirs.browser %>/lib/util/msgpack.js',
 
+		'<%= dirs.common %>/lib/util/defaults.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/utils.js',

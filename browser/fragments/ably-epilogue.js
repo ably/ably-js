@@ -4,6 +4,7 @@ if(typeof Realtime !== 'undefined') {
 	Realtime.ConnectionManager = ConnectionManager;
 	Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 	if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
+	Realtime.Defaults = Rest.Defaults = Defaults;
 	Realtime.Message = Rest.Message = Message;
 	Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 	Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
