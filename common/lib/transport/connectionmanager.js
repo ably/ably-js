@@ -159,7 +159,7 @@ var ConnectionManager = (function() {
 		/* first try to establish an http transport */
 		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + err);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
 				/* http failed, or terminal, so nothing's going to work */
 				callback(err);
 				return;
@@ -403,7 +403,7 @@ var ConnectionManager = (function() {
 			self.ackMessage(serial, count);
 		});
 		transport.on('nack', function(serial, count, err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 			if(!err) {
 				err = new Error('Unknown error');
 				err.statusCode = 500;

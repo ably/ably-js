@@ -113,14 +113,14 @@ var Transport = (function() {
 	Transport.prototype.onDisconnect = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + err);
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.emit('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
 		this.isConnected = false;
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + err);
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
 		this.emit('closed', err);
 	};
 

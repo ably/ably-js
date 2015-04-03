@@ -105,7 +105,7 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err);
+		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + Utils.inspectError(err));
 		this.emit('wserror', err);
 		/* FIXME: this should not be fatal */
 		this.abort();

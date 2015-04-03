@@ -112,7 +112,7 @@ var NodeCometTransport = (function() {
 			}
 
 			res.on('error', self.onResError = function(err) {
-				console.log('incomingMessage error: ' + err);
+				console.log('incomingMessage error: ' + Utils.inspectError(err));
 				self.complete(err);
 			});
 

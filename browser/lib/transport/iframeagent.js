@@ -166,7 +166,7 @@
 
 		var sendRequest = this.sendRequest = XHRRequest.createRequest(sendUri, null, authParams, encodeRequest(items), REQ_SEND);
 		sendRequest.on('complete', function(err, data) {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'IframeAgent.sendItems()', 'on complete: err = ' + err);
+			if(err) Logger.logAction(Logger.LOG_ERROR, 'IframeAgent.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 			if(data) self.onData(data);
 

@@ -249,7 +249,7 @@ var Auth = (function() {
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + err);
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
 				if(!('code' in err))
 					err.code = 40170;
 				if(!('statusCode' in err))
@@ -264,7 +264,7 @@ var Auth = (function() {
 			}
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + err);
+					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
 					callback(err);
 					return;
 				}
