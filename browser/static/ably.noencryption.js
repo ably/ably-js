@@ -1147,8 +1147,8 @@ var CryptoJS = CryptoJS || (function (Math, undefined) {
 }());
 
 var Defaults = {
-	httpTransports: ['comet'],
-	transports: ['web_socket', 'comet'],
+	httpTransports: ['xhr', 'iframe', 'jsonp'],
+	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
 	minified: !(function _(){}).name
 };
 
@@ -2523,7 +2523,7 @@ Defaults.suspendedTimeout         = 120000;
 Defaults.recvTimeout              = 90000;
 Defaults.sendTimeout              = 10000;
 Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.7.6';
+Defaults.version                  = '0.7.7';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)

@@ -544,8 +544,8 @@ var ProtocolMessage = (function() {
 })();
 
 var Defaults = {
-	httpTransports: ['comet'],
-	transports: ['web_socket', 'comet'],
+	httpTransports: ['xhr', 'iframe', 'jsonp'],
+	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
 	minified: !(function _(){}).name
 };
 
