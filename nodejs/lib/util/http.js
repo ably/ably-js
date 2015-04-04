@@ -27,7 +27,7 @@ this.Http = (function() {
 			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
 				if(headers['content-type'] == 'application/json') body = JSON.parse(body);
-				callback(body.error || {statusCode: statusCode});
+				callback(body.error || {statusCode: statusCode}, body, headers, true);
 				return;
 			}
 			callback(null, body, headers, false);
