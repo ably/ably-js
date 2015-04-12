@@ -1,5 +1,5 @@
 {
-  "name": "ably-js",
+  "name": "ably",
   "description": "Realtime messaging client",
   "version": "0.7.9",
   "main": "./nodejs/index.js",
