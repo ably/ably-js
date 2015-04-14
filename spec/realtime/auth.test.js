@@ -38,10 +38,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         return;
       }
       test.expect(5);
-      test.ok((tokenDetails.id), 'Verify token id');
-      test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= Math.floor(currentTime/1000)), 'Verify token issued_at');
+      test.ok((tokenDetails.token), 'Verify token value');
+      test.ok((tokenDetails.issued_at && tokenDetails.issued_at >= currentTime), 'Verify token issued_at');
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued_at), 'Verify token expires');
-      test.equal(tokenDetails.expires, 60*60 + tokenDetails.issued_at, 'Verify default expiry period');
+      test.equal(tokenDetails.expires, 60*60*1000 + tokenDetails.issued_at, 'Verify default expiry period');
       test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
       test.done();
     });

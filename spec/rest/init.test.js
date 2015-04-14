@@ -45,10 +45,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 
-				var tokenStr = tokenDetails.id,
+				var tokenStr = tokenDetails.token,
 					rest = new helper.Ably.Rest(tokenStr);
 
-				test.equal(rest.options.authToken, tokenStr);
+				test.equal(rest.options.token, tokenStr);
 				test.done();
 			});
 		} catch(e) {

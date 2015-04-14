@@ -74,11 +74,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 
-				var tokenStr = tokenDetails.id,
+				var tokenStr = tokenDetails.token,
 					realtime = new helper.Ably.Realtime(tokenStr);
 
 				realtime.close();
-				test.equal(realtime.options.authToken, tokenStr);
+				test.equal(realtime.options.token, tokenStr);
 				test.deepEqual(realtime.options, realtime.connection.connectionManager.options);
 				test.done();
 			});
