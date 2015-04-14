@@ -9,7 +9,7 @@ var Rest = (function() {
 			throw new Error(msg);
 		}
 		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {authToken: options} : {key: options};
+			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
 		}
 		this.options = Defaults.normaliseOptions(options);
 
