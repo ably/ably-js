@@ -5071,15 +5071,19 @@ var Auth = (function() {
 		}
 		/* using token auth, but decide the method */
 		this.method = 'token';
-		if(options.authToken)
-			this.token = {id: options.authToken};
+		if(options.token) {
+			/* options.token may contain a token string or, for convenience, a TokenDetails */
+			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
+		}
+		this.tokenDetails = options.tokenDetails;
+
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
 		} else if(options.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
 		} else if(options.keySecret) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
-		} else if(this.token) {
+		} else if(options.tokenDetails) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
 		} else {
 			var msg = 'options must include valid authentication parameters';
@@ -5108,7 +5112,7 @@ var Auth = (function() {
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
 	 *
-	 * - ttl:        (optional) the requested life of any new token in seconds. If none
+	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -5119,13 +5123,13 @@ var Auth = (function() {
 	 *
 	 * - clientId:   (optional) a client Id to associate with the token
 	 *
-	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
+	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
-		var token = this.token;
+		var token = this.tokenDetails;
 		if(token) {
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!(authOptions && authOptions.force)) {
@@ -5136,7 +5140,7 @@ var Auth = (function() {
 			} else {
 				/* expired, so remove */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				this.token = null;
+				this.tokenDetails = null;
 			}
 		}
 		var self = this;
@@ -5145,7 +5149,7 @@ var Auth = (function() {
 				callback(err);
 				return;
 			}
-			callback(null, (self.token = tokenResponse));
+			callback(null, (self.tokenDetails = tokenResponse));
 		});
 	};
 
@@ -5175,7 +5179,7 @@ var Auth = (function() {
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
-	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:          (optional) the requested life of the token in milliseconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -5186,7 +5190,7 @@ var Auth = (function() {
 	 * - clientId:      (optional) a client Id to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
-	 * - timestamp:     (optional) the time in seconds since the epoch. If none is specified,
+	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
 	 * @param callback (err, tokenDetails)
@@ -5221,7 +5225,7 @@ var Auth = (function() {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
 					if(err) return cb(err);
-					if(!unpacked) body = JSON.parse(body);
+					if(!unpacked && headers['content-type'] !== 'text/plain') body = JSON.parse(body);
 					cb(null, body);
 				});
 			};
@@ -5240,7 +5244,7 @@ var Auth = (function() {
 		var rest = this.rest;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
-				keyName = signedTokenParams.id,
+				keyName = signedTokenParams.keyName,
 				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
@@ -5264,11 +5268,16 @@ var Auth = (function() {
 				callback(err);
 				return;
 			}
-			/* the response from the callback might be a signed request or a token details */
+			/* the response from the callback might be a token string, a signed request or a token details */
+			if(typeof(tokenRequestOrDetails) === 'string') {
+				callback(null, {token: tokenRequestOrDetails});
+				return;
+			}
 			if('issued_at' in tokenRequestOrDetails) {
 				callback(null, tokenRequestOrDetails);
 				return;
 			}
+			/* it's a token request, so make the request */
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
@@ -5277,7 +5286,7 @@ var Auth = (function() {
 				}
 				if(!unpacked) tokenResponse = (format == 'msgpack') ? msgpack.decode(tokenResponse) : JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-				callback(null, tokenResponse.access_token);
+				callback(null, tokenResponse);
 			});
 		});
 	};
@@ -5300,7 +5309,7 @@ var Auth = (function() {
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
-	 * - ttl:       (optional) the requested life of the token in seconds. If none is specified
+	 * - ttl:       (optional) the requested life of the token in ms. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
 	 *                  exceeeding that lifetime will be rejected with an error.
 	 *
@@ -5311,7 +5320,7 @@ var Auth = (function() {
 	 * - clientId:      (optional) a client Id to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
-	 * - timestamp:     (optional) the time in seconds since the epoch. If none is specified,
+	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
 	 */
@@ -5333,7 +5342,7 @@ var Auth = (function() {
 			return;
 		}
 
-		var request = Utils.mixin({ id: keyName }, tokenParams),
+		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability || '',
@@ -5348,7 +5357,7 @@ var Auth = (function() {
 			if(authOptions.queryTime) {
 				rest.time(function(err, time) {
 					if(err) {callback(err); return;}
-					request.timestamp = Math.floor(time/1000);
+					request.timestamp = time;
 					authoriseCb();
 				});
 				return;
@@ -5365,7 +5374,7 @@ var Auth = (function() {
 				timestamp = request.timestamp;
 
 			var signText
-			=	request.id + '\n'
+			=	request.keyName + '\n'
 			+	ttl + '\n'
 			+	capability + '\n'
 			+	clientId + '\n'
@@ -5392,12 +5401,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this.authorise(null, null, function(err, token) {
+			this.authorise(null, null, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:token.id});
+				callback(null, {access_token:tokenDetails.token});
 			});
 	};
 
@@ -5409,19 +5418,18 @@ var Auth = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this.authorise(null, null, function(err, token) {
+			this.authorise(null, null, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {authorization: 'Bearer ' + toBase64(token.id)});
+				callback(null, {authorization: 'Bearer ' + toBase64(tokenDetails.token)});
 			});
 		}
 	};
 
 	Auth.prototype.getTimestamp = function() {
-		var time = Date.now() + (this.rest.serverTimeOffset || 0);
-		return Math.floor(time / 1000);
+		return Date.now() + (this.rest.serverTimeOffset || 0);
 	};
 
 	return Auth;
@@ -5438,7 +5446,7 @@ var Rest = (function() {
 			throw new Error(msg);
 		}
 		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {authToken: options} : {key: options};
+			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
 		}
 		this.options = Defaults.normaliseOptions(options);
 
