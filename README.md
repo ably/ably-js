@@ -1,5 +1,7 @@
 # ably-js
 
+[![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
+
 This repo contains the ably javascript client libraries, both for the browser and node.js.
 
 For complete API documentation, see the [ably documentation](https://ably.io/documentation).
