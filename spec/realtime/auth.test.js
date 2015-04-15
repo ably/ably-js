@@ -33,7 +33,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     realtime = helper.AblyRealtime();
     realtime.auth.requestToken(function(err, tokenDetails) {
       if(err) {
-        test.ok(false, displayError(err));
+        test.ok(false, helper.displayError(err));
         test.done();
         return;
       }
