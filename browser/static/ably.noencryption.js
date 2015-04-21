@@ -5273,7 +5273,7 @@ var Auth = (function() {
 				callback(null, {token: tokenRequestOrDetails});
 				return;
 			}
-			if('issued_at' in tokenRequestOrDetails) {
+			if('issued' in tokenRequestOrDetails) {
 				callback(null, tokenRequestOrDetails);
 				return;
 			}
