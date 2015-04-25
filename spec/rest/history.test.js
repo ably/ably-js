@@ -53,7 +53,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline */
-        testchannel.history(function(err, messages) {
+        testchannel.history(function(err, resultPage) {
           //console.log(require('util').inspect(messages));
           if(err) {
             test.ok(false, displayError(err));
@@ -61,6 +61,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             return;
           }
           /* verify all messages are received */
+		  var messages = resultPage.items;
           test.equal(messages.length, testMessages.length, 'Verify correct number of messages found');
 
           /* verify message ids are unique */
@@ -96,7 +97,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline */
-        testchannel.history(function(err, messages) {
+        testchannel.history(function(err, resultPage) {
           //console.log(require('util').inspect(messages));
           if(err) {
             test.ok(false, displayError(err));
@@ -104,6 +105,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             return;
           }
           /* verify all messages are received */
+		  var messages = resultPage.items;
           test.equal(messages.length, testMessages.length, 'Verify correct number of messages found');
 
           /* verify message ids are unique */
@@ -149,14 +151,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		testMessages.reverse();
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          nextPage(function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage) {
             if(err) {
               cb(err);
               return;
             }
             /* verify expected number of messages in this page */
-            test.equal(resultPage.length, 1, 'Verify a single message received');
-            var resultMessage = resultPage[0];
+            test.equal(resultPage.items.length, 1, 'Verify a single message received');
+            var resultMessage = resultPage.items[0];
             ids[resultMessage.id] = resultMessage;
 
             /* verify expected message */
@@ -164,7 +166,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextPage = relLinks.next;
+              nextPage = resultPage.next;
               test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
@@ -215,14 +217,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			  };
 
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          nextPage(function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage) {
             if(err) {
               cb(err);
               return;
             }
             /* verify expected number of messages in this page */
-            test.equal(resultPage.length, 1, 'Verify a single message received');
-            var resultMessage = resultPage[0];
+            test.equal(resultPage.items.length, 1, 'Verify a single message received');
+            var resultMessage = resultPage.items[0];
             ids[resultMessage.id] = resultMessage;
 
             /* verify expected message */
@@ -230,7 +232,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextPage = relLinks.next;
+              nextPage = resultPage.next;
               test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
@@ -280,14 +282,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
         testMessages.reverse();
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          nextPage(function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage) {
             if(err) {
               cb(err);
               return;
             }
             /* verify expected number of messages in this page */
-            test.equal(resultPage.length, 1, 'Verify a single message received');
-            var resultMessage = resultPage[0];
+            test.equal(resultPage.items.length, 1, 'Verify a single message received');
+            var resultMessage = resultPage.items[0];
             ids[resultMessage.id] = resultMessage;
 
             /* verify expected message */
@@ -295,7 +297,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextPage = relLinks.next;
+              nextPage = resultPage.next;
               test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
@@ -344,14 +346,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			  };
 
 		  async.mapSeries(testMessages, function(expectedMessage, cb) {
-          nextPage(function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage) {
             if(err) {
               cb(err);
               return;
             }
             /* verify expected number of messages in this page */
-            test.equal(resultPage.length, 1, 'Verify a single message received');
-            var resultMessage = resultPage[0];
+            test.equal(resultPage.items.length, 1, 'Verify a single message received');
+            var resultMessage = resultPage.items[0];
             ids[resultMessage.id] = resultMessage;
 
             /* verify expected message */
@@ -359,7 +361,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextPage = relLinks.next;
+              nextPage = resultPage.next;
               test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();

@@ -58,7 +58,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     rest.stats({
       start: lastYear + '-02-03:15:03',
       direction: 'forwards'
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -66,6 +66,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.equal(stats.length, 3, 'Verify 3 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -91,7 +92,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     rest.stats({
       start: firstIntervalEpoch,
       direction: 'forwards'
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -99,6 +100,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.equal(stats.length, 3, 'Verify 3 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -125,7 +127,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       start: lastYear + '-02-03:15',
       direction: 'forwards',
       by: 'hour'
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -133,6 +135,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.equal(stats.length, 1, 'Verify 1 stat record found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -159,7 +162,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02-03',
       direction: 'forwards',
       by: 'day'
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -167,6 +170,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify 1 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -193,7 +197,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02',
       direction: 'forwards',
       by: 'month'
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -201,6 +205,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify 1 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -227,7 +232,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02-03:15:04',
       direction: 'backwards',
       limit: 1
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -235,6 +240,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify 1 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -261,7 +267,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02-03:15:04',
       direction: 'backwards',
       limit: 1
-    }, function(err, stats) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -269,6 +275,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
       try {
         test.expect(3);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify 1 stat records found');
 
         var totalInbound = 0, totalOutbound = 0;
@@ -295,7 +302,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02-03:15:05',
       direction: 'backwards',
       limit: 1
-    }, function(err, stats, relLinks) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -303,6 +310,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
 
       test.expect(3);
+      var stats = page.items;
       test.ok(stats.length == 1, 'Verify exactly one stats record found');
       var totalData = 0;
       for(var i = 0; i < stats.length; i++)
@@ -310,14 +318,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.equal(totalData, 7000, 'Verify all published message data found');
 
       /* get next page */
-      test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-      relLinks.next(function(err, stats, relLinks) {
+      test.ok(page.next, 'Verify next page rel link present');
+      page.next(function(err, page) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
           return;
         }
         test.expect(6);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify exactly one stats record found');
         var totalData = 0;
         for(var i = 0; i < stats.length; i++)
@@ -325,14 +334,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.equal(totalData, 6000, 'Verify all published message data found');
 
         /* get next page */
-        test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-        relLinks.next(function(err, stats, relLinks) {
+        test.ok(page.next, 'Verify next page rel link present');
+        page.next(function(err, page) {
           if(err) {
             test.ok(false, displayError(err));
             test.done();
             return;
           }
           test.expect(9);
+	      var stats = page.items;
           test.ok(stats.length == 1, 'Verify exactly one stats record found');
           var totalData = 0;
           for(var i = 0; i < stats.length; i++)
@@ -340,12 +350,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
           test.equal(totalData, 5000, 'Verify all published message data found');
 
           /* verify no further pages */
-          test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
+          test.ok(!page.next, 'Verify next page rel link not present');
 
           test.expect(10);
 
-          relLinks.first(function(err, stats, relLinks) {
+          page.first(function(err, page) {
             var totalData = 0;
+			var stats = page.items;
             for(var i = 0; i < stats.length; i++)
               totalData += stats[i].inbound.all.messages.data;
             test.equal(totalData, 7000, 'Verify all published message data found');
@@ -367,7 +378,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       end: lastYear + '-02-03:15:05',
       direction: 'forwards',
       limit: 1
-    }, function(err, stats, relLinks) {
+    }, function(err, page) {
       if(err) {
         test.ok(false, displayError(err));
         test.done();
@@ -375,6 +386,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       }
 
       test.expect(3);
+      var stats = page.items;
       test.ok(stats.length == 1, 'Verify exactly one stats record found');
       var totalData = 0;
       for(var i = 0; i < stats.length; i++)
@@ -382,14 +394,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.equal(totalData, 5000, 'Verify all published message data found');
 
       /* get next page */
-      test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-      relLinks.next(function(err, stats, relLinks) {
+      test.ok(page.next, 'Verify next page rel link present');
+      page.next(function(err, page) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
           return;
         }
         test.expect(6);
+		var stats = page.items;
         test.ok(stats.length == 1, 'Verify exactly one stats record found');
         var totalData = 0;
         for(var i = 0; i < stats.length; i++)
@@ -397,14 +410,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         test.equal(totalData, 6000, 'Verify all published message data found');
 
         /* get next page */
-        test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-        relLinks.next(function(err, stats, relLinks) {
+        test.ok(page.next, 'Verify next page rel link present');
+        page.next(function(err, page) {
           if(err) {
             test.ok(false, displayError(err));
             test.done();
             return;
           }
           test.expect(9);
+	      var stats = page.items;
           test.ok(stats.length == 1, 'Verify exactly one stats record found');
           var totalData = 0;
           for(var i = 0; i < stats.length; i++)
@@ -412,12 +426,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
           test.equal(totalData, 7000, 'Verify all published message data found');
 
           /* verify no further pages */
-          test.ok(!(relLinks && relLinks.next), 'Verify next page rel link not present');
+          test.ok(!page.next, 'Verify next page rel link not present');
 
           test.expect(10);
 
-          relLinks.first(function(err, stats, relLinks) {
+          page.first(function(err, page) {
             var totalData = 0;
+			var stats = page.items;
             for(var i = 0; i < stats.length; i++)
               totalData += stats[i].inbound.all.messages.data;
             test.equal(totalData, 5000, 'Verify all published message data found');
