@@ -29,7 +29,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       connections:   { tls:      { peak: 20,  opened: 10 } },
       channels:      { peak: 50, opened: 30 },
       apiRequests:   { succeeded: 50, failed: 10 },
-      tokenRequests: { succeeded: 60, failed: 20 },
+      tokenRequests: { succeeded: 60, failed: 20 }
     }
   ];
 
@@ -311,7 +311,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
       /* get next page */
       test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-      rest.stats(relLinks.next, function(err, stats, relLinks) {
+      relLinks.next(function(err, stats, relLinks) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
@@ -326,7 +326,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
         /* get next page */
         test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-        rest.stats(relLinks.next, function(err, stats, relLinks) {
+        relLinks.next(function(err, stats, relLinks) {
           if(err) {
             test.ok(false, displayError(err));
             test.done();
@@ -344,7 +344,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
           test.expect(10);
 
-          rest.stats(relLinks.first, function(err, stats, relLinks) {
+          relLinks.first(function(err, stats, relLinks) {
             var totalData = 0;
             for(var i = 0; i < stats.length; i++)
               totalData += stats[i].inbound.all.messages.data;
@@ -383,7 +383,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
       /* get next page */
       test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-      rest.stats(relLinks.next, function(err, stats, relLinks) {
+      relLinks.next(function(err, stats, relLinks) {
         if(err) {
           test.ok(false, displayError(err));
           test.done();
@@ -398,7 +398,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
         /* get next page */
         test.ok(relLinks && relLinks.next, 'Verify next page rel link present');
-        rest.stats(relLinks.next, function(err, stats, relLinks) {
+        relLinks.next(function(err, stats, relLinks) {
           if(err) {
             test.ok(false, displayError(err));
             test.done();
@@ -416,7 +416,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
           test.expect(10);
 
-          rest.stats(relLinks.first, function(err, stats, relLinks) {
+          relLinks.first(function(err, stats, relLinks) {
             var totalData = 0;
             for(var i = 0; i < stats.length; i++)
               totalData += stats[i].inbound.all.messages.data;

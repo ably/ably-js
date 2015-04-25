@@ -56,11 +56,11 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 
-		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(this, '/stats', headers, envelope, function(body, headers, unpacked) {
 			var statsValues = (unpacked ? body : JSON.parse(body));
 			for(var i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
 			return statsValues;
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {

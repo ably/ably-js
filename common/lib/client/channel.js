@@ -49,9 +49,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
 			return Message.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Channel.prototype.publish = function() {
@@ -108,9 +108,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath, headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Presence.prototype.history = function(params, callback) {
@@ -133,9 +133,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	return Channel;

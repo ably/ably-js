@@ -141,12 +141,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline to get messages one at a time */
-        var ids = {};
-        var nextParams = {limit: 1, direction: 'backwards'};
-        var totalMessagesExpected = testMessages.length;
-        testMessages.reverse();
+        var ids = {},
+			totalMessagesExpected = testMessages.length,
+			nextPage = function(cb) {
+				testchannel.history({limit: 1, direction: 'backwards'}, cb);
+			};
+
+		testMessages.reverse();
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          testchannel.history(nextParams, function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage, relLinks) {
             if(err) {
               cb(err);
               return;
@@ -161,8 +164,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextParams = relLinks.next;
-              test.ok(!!nextParams, 'Verify next link is present');
+              nextPage = relLinks.next;
+              test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
           });
@@ -205,11 +208,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline to get messages one at a time */
-        var ids = {};
-        var nextParams = {limit: 1, direction: 'forwards'};
-        var totalMessagesExpected = testMessages.length;
+		  var ids = {},
+			  totalMessagesExpected = testMessages.length,
+			  nextPage = function(cb) {
+				  testchannel.history({limit: 1, direction: 'forwards'}, cb);
+			  };
+
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          testchannel.history(nextParams, function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage, relLinks) {
             if(err) {
               cb(err);
               return;
@@ -224,8 +230,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextParams = relLinks.next;
-              test.ok(!!nextParams, 'Verify next link is present');
+              nextPage = relLinks.next;
+              test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
           });
@@ -266,12 +272,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline to get messages one at a time */
-        var ids = {};
-        var nextParams = {limit: 1, direction: 'backwards'};
-        var totalMessagesExpected = testMessages.length;
+		  var ids = {},
+			  totalMessagesExpected = testMessages.length,
+			  nextPage = function(cb) {
+				  testchannel.history({limit: 1, direction: 'backwards'}, cb);
+			  };
+
         testMessages.reverse();
         async.mapSeries(testMessages, function(expectedMessage, cb) {
-          testchannel.history(nextParams, function(err, resultPage, relLinks) {
+          nextPage(function(err, resultPage, relLinks) {
             if(err) {
               cb(err);
               return;
@@ -286,8 +295,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextParams = relLinks.next;
-              test.ok(!!nextParams, 'Verify next link is present');
+              nextPage = relLinks.next;
+              test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
           });
@@ -328,11 +337,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
 
         /* so now the messages are there; try querying the timeline to get messages one at a time */
-        var ids = {};
-        var nextParams = {limit: 1, direction: 'forwards'};
-        var totalMessagesExpected = testMessages.length;
-        async.mapSeries(testMessages, function(expectedMessage, cb) {
-          testchannel.history(nextParams, function(err, resultPage, relLinks) {
+		  var ids = {},
+			  totalMessagesExpected = testMessages.length,
+			  nextPage = function(cb) {
+				  testchannel.history({limit: 1, direction: 'forwards'}, cb);
+			  };
+
+		  async.mapSeries(testMessages, function(expectedMessage, cb) {
+          nextPage(function(err, resultPage, relLinks) {
             if(err) {
               cb(err);
               return;
@@ -347,8 +359,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
             test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
             if(--totalMessagesExpected > 0) {
-              nextParams = relLinks.next;
-              test.ok(!!nextParams, 'Verify next link is present');
+              nextPage = relLinks.next;
+              test.ok(!!nextPage, 'Verify next link is present');
             }
             cb();
           });
