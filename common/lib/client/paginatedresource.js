@@ -30,16 +30,10 @@ var PaginatedResource = (function() {
 	}
 
 	PaginatedResource.prototype.get = function(params, callback) {
-		this.requestPage(params)(callback);
-	};
-
-	PaginatedResource.prototype.requestPage = function(params) {
 		var self = this;
-		return function(callback) {
-			Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked) {
-				self.handlePage(err, body, headers, unpacked, callback);
-			});
-		};
+		Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked) {
+			self.handlePage(err, body, headers, unpacked, callback);
+		});
 	};
 
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, callback) {
@@ -48,23 +42,39 @@ var PaginatedResource = (function() {
 			callback(err);
 			return;
 		}
-		var current, linkHeader, relLinks;
+		var items, linkHeader, relParams;
 		try {
-			current = this.bodyHandler(body, headers, unpacked);
+			items = this.bodyHandler(body, headers, unpacked);
 		} catch(e) {
 			callback(e);
 			return;
 		}
 
 		if(headers && (linkHeader = (headers['Link'] || headers['link']))) {
-			var relParams = parseRelLinks(linkHeader), self = this;
-			for(var rel in relParams) {
-				relLinks = relLinks || {};
-				relLinks[rel] = self.requestPage(relParams[rel]);
-			}
+			relParams = parseRelLinks(linkHeader);
 		}
 
-		callback(null, current, relLinks);
+		callback(null, new PaginatedResult(this, items, relParams));
+	};
+
+	function PaginatedResult(resource, items, relParams) {
+		this.resource = resource;
+		this.items = items;
+
+		var self = this;
+		if('first' in relParams)
+			this.first = function(cb) { self.get(relParams.first, cb); };
+		if('current' in relParams)
+			this.current = function(cb) { self.get(relParams.current, cb); };
+		if('next' in relParams)
+			this.next = function(cb) { self.get(relParams.next, cb); };
+	}
+
+	PaginatedResult.prototype.get = function(params, callback) {
+		var res = this.resource;
+		Resource.get(res.rest, res.path, res.headers, params, res.envelope, function(err, body, headers, unpacked) {
+			res.handlePage(err, body, headers, unpacked, callback);
+		});
 	};
 
 	return PaginatedResource;
