@@ -8,28 +8,58 @@ module.exports = function(config) {
       flags: ['--web-security=no']
     },
     // Check out https://saucelabs.com/platforms for all browser/platform combos
-    sl_chrome: {
+    sl_chrome_42: {
+      base: 'SauceLabs',
+      browserName: 'chrome',
+      platform: 'Windows 8.1',
+      version: '42'
+    },
+    sl_chrome_35: {
       base: 'SauceLabs',
       browserName: 'chrome',
       platform: 'Windows 7',
-      version: '35'
+      version: '31'
     },
-    sl_firefox: {
+    sl_firefox_37: {
       base: 'SauceLabs',
       browserName: 'firefox',
-      version: '30'
+      version: '37'
     },
-    sl_ios_safari: {
+    sl_firefox_31: {
       base: 'SauceLabs',
-      browserName: 'iphone',
-      platform: 'OS X 10.9',
-      version: '7.1'
+      browserName: 'firefox',
+      version: '31'
     },
     sl_ie_11: {
       base: 'SauceLabs',
       browserName: 'internet explorer',
       platform: 'Windows 8.1',
       version: '11'
+    },
+    sl_ie_10: {
+      base: 'SauceLabs',
+      browserName: 'internet explorer',
+      platform: 'Windows 8',
+      version: '10'
+    },
+    sl_ios_safari_8_2: {
+      base: 'SauceLabs',
+      browserName: 'iphone',
+      platform: 'OS X 10.10',
+      version: '8.2'
+    },
+    sl_ios_safari_7_1: {
+      base: 'SauceLabs',
+      browserName: 'iphone',
+      platform: 'OS X 10.9',
+      version: '7.1'
+    },
+    sl_android_5_1: {
+      base: 'SauceLabs',
+      browserName: 'android',
+      deviceName: 'Android Emulator',
+      platform: 'Linux',
+      version: '5.1'
     }
   };
 
