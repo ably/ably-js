@@ -15,16 +15,16 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.enter = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this.enterClient(this.clientId, data, callback);
 	};
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
+		}
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
