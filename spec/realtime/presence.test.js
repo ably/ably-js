@@ -338,7 +338,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       exitOnState('failed');
       exitOnState('suspended');
     } catch(e) {
-      test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
+      test.ok(false, 'presence.enter3 failed with exception: ' + e.stack);
       done();
     }
   };
@@ -652,7 +652,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       exitOnState('failed');
       exitOnState('suspended');
     } catch(e) {
-      test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
+      test.ok(false, 'presence.get0 failed with exception: ' + e.stack);
       done();
     }
   };
@@ -832,7 +832,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       exitOnState('failed');
       exitOnState('suspended');
     } catch(e) {
-      test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
+      test.ok(false, 'presence.attach0 failed with exception: ' + e.stack);
       done();
     }
   };
@@ -932,7 +932,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         });
       });
     } catch(e) {
-      test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
+      test.ok(false, 'presence.member0 failed with exception: ' + e.stack);
       done();
     }
   };
