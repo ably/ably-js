@@ -100,7 +100,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   };
 
   /*
-   * Attach to channel, enter presence channel and await entered event
+   * Attach to channel, enter presence channel with data and await entered event
    */
   exports.enter0 = function(test) {
     var clientRealtime;
@@ -339,6 +339,178 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       exitOnState('suspended');
     } catch(e) {
       test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
+  /*
+   * Attach to channel, enter presence channel with a callback but no data and await entered event
+   */
+  exports.enter4 = function(test) {
+    var clientRealtime;
+    var isDone = false, done = function() {
+      if(!isDone) {
+        isDone = true;
+        setTimeout(function() {
+          test.done(); clientRealtime.close();
+        }, 3000);
+      }
+    };
+    try {
+      var transport = 'web_socket';
+
+      test.expect(2);
+      /* listen for the enter event, test is complete when received */
+      var presenceHandler = function() {
+        if(this.event == 'enter') {
+          test.ok(true, 'Presence event received');
+          done();
+          presenceChannel.presence.off(presenceHandler);
+        }
+      };
+      presenceChannel.presence.on(presenceHandler);
+
+      /* set up authenticated connection */
+      clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+      clientRealtime.connection.on('connected', function() {
+        /* get channel, attach, and enter */
+        var clientChannel = clientRealtime.channels.get('presence0');
+        clientChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.enter(function(err) {
+            if(err) {
+              test.ok(false, 'Enter failed with error: ' + err);
+              done();
+              return;
+            }
+            test.ok(true, 'Presence event sent');
+          });
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.enter4 failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
+  /*
+   * Attach to channel, enter presence channel with neither callback nor data and await entered event
+   */
+  exports.enter5 = function(test) {
+    var clientRealtime;
+    var isDone = false, done = function() {
+      if(!isDone) {
+        isDone = true;
+        setTimeout(function() {
+          test.done(); clientRealtime.close();
+        }, 3000);
+      }
+    };
+    try {
+      var transport = 'web_socket';
+
+      test.expect(1);
+      /* listen for the enter event, test is complete when received */
+      var presenceHandler = function() {
+        if(this.event == 'enter') {
+          test.ok(true, 'Presence event received');
+          done();
+          presenceChannel.presence.off(presenceHandler);
+        }
+      };
+      presenceChannel.presence.on(presenceHandler);
+
+      /* set up authenticated connection */
+      clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+      clientRealtime.connection.on('connected', function() {
+        /* get channel, attach, and enter */
+        var clientChannel = clientRealtime.channels.get('presence0');
+        clientChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.enter();
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.enter5 failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
+  /*
+   * Attach to channel, enter presence channel with data but no callback and await entered event
+   */
+  exports.enter6 = function(test) {
+    var clientRealtime;
+    var isDone = false, done = function() {
+      if(!isDone) {
+        isDone = true;
+        setTimeout(function() {
+          test.done(); clientRealtime.close();
+        }, 3000);
+      }
+    };
+    try {
+      var transport = 'web_socket';
+
+      test.expect(1);
+      /* listen for the enter event, test is complete when received */
+      var presenceHandler = function() {
+        if(this.event == 'enter') {
+          test.ok(true, 'Presence event received');
+          done();
+          presenceChannel.presence.off(presenceHandler);
+        }
+      };
+      presenceChannel.presence.on(presenceHandler);
+
+      /* set up authenticated connection */
+      clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+      clientRealtime.connection.on('connected', function() {
+        /* get channel, attach, and enter */
+        var clientChannel = clientRealtime.channels.get('presence0');
+        clientChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.enter('Test client data (enter6)');
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.enter6 failed with exception: ' + e.stack);
       done();
     }
   };

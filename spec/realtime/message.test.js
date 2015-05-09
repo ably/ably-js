@@ -66,6 +66,55 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
+  exports.publishonceWithoutData = function(test) {
+    var transport = 'binary';
+
+    test.expect(2);
+    try {
+      /* set up realtime */
+      var realtime = helper.AblyRealtime();
+      var rest = helper.AblyRest();
+
+      /* connect and attach */
+      realtime.connection.on('connected', function() {
+        var rtChannel = realtime.channels.get('publishonce');
+        rtChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            test.done();
+            realtime.close();
+            return;
+          }
+
+          /* subscribe to event */
+          rtChannel.subscribe('event0', function(msg) {
+            test.ok(true, 'Received event0');
+            test.equal(msg.data, '', 'Unexpected msg text received');
+            test.done();
+            realtime.close();
+          });
+
+          /* publish event */
+          var restChannel = rest.channels.get('publishonce');
+          restChannel.publish('event0');
+        });
+      });
+      var exitOnState = function(state) {
+        realtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          test.done();
+          realtime.close();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+      test.done();
+      realtime.close();
+    }
+  };
+
   exports.restpublish = function(test) {
     var count = 10;
     var rest = helper.AblyRest();
