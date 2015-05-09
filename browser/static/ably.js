@@ -4592,7 +4592,6 @@ var PresenceMessage = (function() {
 	 */
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
-			name: this.name,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			timestamp: this.timestamp,
@@ -7078,21 +7077,19 @@ var Channel = (function() {
 	};
 
 	Channel.prototype.publish = function() {
-		var argCount = arguments.length,
-			messages = arguments[0],
-			callback = arguments[argCount - 1],
+	  var messages = arguments[0],
+			callback = arguments[arguments.length - 1],
 			options = this.options;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
-			++argCount;
 		}
-		if(argCount == 2) {
+		if(typeof messages === 'object') {
 			if(!Utils.isArray(messages))
 				messages = [messages];
 			messages = Message.fromValuesArray(messages);
 		} else {
-			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1] || ''})];
 		}
 
 		var rest = this.rest,
@@ -7214,26 +7211,24 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.publish = function() {
-		var argCount = arguments.length,
-			messages = arguments[0],
-			callback = arguments[argCount - 1],
+		var	messages = arguments[0],
+			callback = arguments[arguments.length - 1],
 			options = this.options;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
-			++argCount;
 		}
 		var connectionManager = this.connectionManager;
 		if(!ConnectionManager.activeState(connectionManager.state)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
-		if(argCount == 2) {
+		if(typeof messages === 'object') {
 			if(!Utils.isArray(messages))
 				messages = [messages];
 			messages = Message.fromValuesArray(messages);
 		} else {
-			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1] || ''})];
 		}
 		for(var i = 0; i < messages.length; i++)
 			Message.encode(messages[i], options);
@@ -7652,21 +7647,21 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.enter = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this.enterClient(this.clientId, data, callback);
 	};
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = '';
+		}
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
 			clientId : clientId,
-			data: data
+			data: data || ''
 		});
 		var channel = this.channel;
 		switch(channel.state) {
