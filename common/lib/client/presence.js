@@ -29,7 +29,7 @@ var Presence = (function() {
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
 			clientId : clientId,
-			data: data
+			data: data || ''
 		});
 		var channel = this.channel;
 		switch(channel.state) {
