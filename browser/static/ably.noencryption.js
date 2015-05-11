@@ -3075,11 +3075,11 @@ var Message = (function() {
 			encoding: this.encoding
 		};
 
-		/* encode to base64 if we're returning real JSON;
+		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
 			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = BufferUtils.base64Encode(data);
@@ -3129,10 +3129,12 @@ var Message = (function() {
 	};
 
 	Message.encode = function(msg, options) {
-		var data = msg.data, encoding;
-		if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
-			msg.data = JSON.stringify(data);
-			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		if(msg.data){
+			var data = msg.data, encoding;
+			if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+				msg.data = JSON.stringify(data);
+				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+			}
 		}
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);
@@ -3244,7 +3246,6 @@ var PresenceMessage = (function() {
 	 */
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
-			name: this.name,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			timestamp: this.timestamp,
@@ -3256,7 +3257,7 @@ var PresenceMessage = (function() {
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it passes on the stringify arguments */
 		var data = this.data;
-		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
 			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = data.toString('base64');
@@ -6304,16 +6305,16 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.enter = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this.enterClient(this.clientId, data, callback);
 	};
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
+		if (!callback && (typeof(data)==='function')) {
+			callback = data;
+			data = null;
+		}
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.ENTER,
