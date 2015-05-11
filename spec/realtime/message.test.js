@@ -66,6 +66,113 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
+  exports.publishVariations = function(test) {
+    var transport = 'binary';
+
+    test.expect(32);
+    try {
+      /* set up realtime */
+      var realtime = helper.AblyRealtime();
+      var rest = helper.AblyRest();
+
+      /* connect and attach */
+      realtime.connection.on('connected', function() {
+        var rtChannel = realtime.channels.get('publishVariations');
+        var testData = 'Some data'
+        var errorCallback = function(err){
+          if(err) {
+            test.ok(false, 'Error received by publish callback ' + err);
+            test.done();
+            realtime.close();
+            return;
+          }
+        }
+        rtChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            test.done();
+            realtime.close();
+            return;
+          }
+
+          /* subscribe to different message types */
+          var messagesReceived = 0
+          rtChannel.subscribe(function(msg) {
+            test.ok(true, 'Received ' + msg.name);
+            ++messagesReceived;
+            switch(msg.name) {
+              case 'objectWithName':
+              case 'objectWithNameAndCallback':
+              case 'objectWithNameAndNullData':
+              case 'objectWithNameAndUndefinedData':
+              case 'nameAndNullData':
+              case 'nameAndUndefinedData':
+                test.equal(typeof(msg.data), 'undefined', 'Msg data was received where none expected');
+                break;
+              case 'nameAndData':
+              case 'nameAndDataAndCallback':
+              case 'objectWithNameAndData':
+              case 'objectWithNameAndDataAndCallback':
+                test.equal(msg.data, testData, 'Msg data ' + msg.data + 'Unexpected message data received');
+                break;
+              case undefined:
+                if (msg.data) {
+                  // 3 messages: null name and data, null name and data and callback, object with null name and data
+                  test.equal(msg.data, testData, 'Msg data ' + msg.data + 'Unexpected message data received');
+                } else {
+                  // 3 messages: null name and null data, object with null name and no data, object with null name and null data
+                  test.equal(typeof(msg.data), 'undefined', 'Msg data was received where none expected');
+                }
+								break;
+              default:
+                test.ok(false, 'Unexpected message ' + msg.name + 'received');
+                test.done();
+                realtime.close();
+            }
+
+            if (messagesReceived == 16) {
+              test.done();
+              realtime.close();
+            }
+          });
+
+          /* publish events */
+          var restChannel = rest.channels.get('publishVariations');
+          restChannel.publish({name: 'objectWithName'});
+          restChannel.publish({name: 'objectWithNameAndCallback'}, errorCallback);
+          restChannel.publish({name: 'objectWithNameAndNullData', data: null});
+          restChannel.publish({name: 'objectWithNameAndUndefinedData', data: undefined});
+          restChannel.publish('nameAndNullData', null);
+          restChannel.publish('nameAndUndefinedData', undefined);
+          restChannel.publish('nameAndData', testData);
+          restChannel.publish('nameAndDataAndCallback', testData, errorCallback);
+          restChannel.publish({name: 'objectWithNameAndData', data: testData});
+          restChannel.publish({name: 'objectWithNameAndDataAndCallback', data: testData}, errorCallback);
+          // 6 messages with null name:
+          restChannel.publish(null, testData);
+          restChannel.publish(null, testData, errorCallback);
+          restChannel.publish({name: null, data: testData});
+          restChannel.publish(null, null);
+          restChannel.publish({name: null});
+          restChannel.publish({name: null, data: null});
+        });
+      });
+      var exitOnState = function(state) {
+        realtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          test.done();
+          realtime.close();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+      test.done();
+      realtime.close();
+    }
+  };
+
   exports.restpublish = function(test) {
     var count = 10;
     var rest = helper.AblyRest();
