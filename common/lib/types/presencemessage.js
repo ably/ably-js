@@ -36,7 +36,7 @@ var PresenceMessage = (function() {
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it passes on the stringify arguments */
 		var data = this.data;
-		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
 			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = data.toString('base64');

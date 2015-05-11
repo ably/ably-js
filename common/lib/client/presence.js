@@ -23,7 +23,7 @@ var Presence = (function() {
 	Presence.prototype.enterClient = function(clientId, data, callback) {
 		if (!callback && (typeof(data)==='function')) {
 			callback = data;
-			data = '';
+			data = null;
 		}
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
