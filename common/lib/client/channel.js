@@ -55,7 +55,7 @@ var Channel = (function() {
 	};
 
 	Channel.prototype.publish = function() {
-	  var messages = arguments[0],
+		var messages = arguments[0],
 			callback = arguments[arguments.length - 1],
 			options = this.options;
 
@@ -67,7 +67,7 @@ var Channel = (function() {
 				messages = [messages];
 			messages = Message.fromValuesArray(messages);
 		} else {
-			messages = [Message.fromValues({name: arguments[0], data: arguments[1] || ''})];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 
 		var rest = this.rest,

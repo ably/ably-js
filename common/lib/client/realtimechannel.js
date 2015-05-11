@@ -65,7 +65,7 @@ var RealtimeChannel = (function() {
 				messages = [messages];
 			messages = Message.fromValuesArray(messages);
 		} else {
-			messages = [Message.fromValues({name: arguments[0], data: arguments[1] || ''})];
+			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 		for(var i = 0; i < messages.length; i++)
 			Message.encode(messages[i], options);
