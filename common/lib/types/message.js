@@ -78,10 +78,12 @@ var Message = (function() {
 	};
 
 	Message.encode = function(msg, options) {
-		var data = msg.data, encoding;
-		if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
-			msg.data = JSON.stringify(data);
-			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		if(msg.data){
+			var data = msg.data, encoding;
+			if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+				msg.data = JSON.stringify(data);
+				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+			}
 		}
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);

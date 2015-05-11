@@ -55,16 +55,14 @@ var Channel = (function() {
 	};
 
 	Channel.prototype.publish = function() {
-		var argCount = arguments.length,
-			messages = arguments[0],
-			callback = arguments[argCount - 1],
+		var messages = arguments[0],
+			callback = arguments[arguments.length - 1],
 			options = this.options;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
-			++argCount;
 		}
-		if(argCount == 2) {
+		if(typeof messages === 'object') {
 			if(!Utils.isArray(messages))
 				messages = [messages];
 			messages = Message.fromValuesArray(messages);
