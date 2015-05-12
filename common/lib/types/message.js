@@ -79,7 +79,7 @@ var Message = (function() {
 
 	Message.encode = function(msg, options) {
 		var data = msg.data, encoding;
-		if(data && typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+		if(data !== null && data !== undefined && typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
 			msg.data = JSON.stringify(data);
 			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 		}

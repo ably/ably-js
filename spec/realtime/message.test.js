@@ -83,9 +83,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       [{name: 'objectWithNameAndNullData', data: null}],
       [{name: 'objectWithNameAndUndefinedData', data: undefined}],
       [{name: 'objectWithNameAndEmptyStringData', data: ''}],
+      [{name: 'objectWithNameAndFalseData', data: false}],
       ['nameAndNullData', null],
       ['nameAndUndefinedData', undefined],
       ['nameAndEmptyStringData', ''],
+      ['nameAndFalseData', false],
       ['nameAndData', testData],
       ['nameAndDataAndCallback', testData, errorCallback],
       [{name: 'objectWithNameAndData', data: testData}],
@@ -133,6 +135,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
               case 'nameAndEmptyStringData':
               case 'objectWithNameAndEmptyStringData':
                 test.strictEqual(msg.data, '', 'Msg data received was a ' + typeof(msg.data) + ' when should have been an empty string');
+                break;
+              case 'objectWithNameAndFalseData':
+              case 'nameAndFalseData':
+                test.strictEqual(msg.data, false, 'Msg data received was a ' + typeof(msg.data) + ' when should have been a bool false');
                 break;
               case 'nameAndData':
               case 'nameAndDataAndCallback':
