@@ -68,8 +68,38 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
   exports.publishVariations = function(test) {
     var transport = 'binary';
+    var testData = 'Some data'
+    var errorCallback = function(err){
+      if(err) {
+        test.ok(false, 'Error received by publish callback ' + err);
+        test.done();
+        realtime.close();
+        return;
+      }
+    };
+    var testArguments = [
+      [{name: 'objectWithName'}],
+      [{name: 'objectWithNameAndCallback'}, errorCallback],
+      [{name: 'objectWithNameAndNullData', data: null}],
+      [{name: 'objectWithNameAndUndefinedData', data: undefined}],
+      [{name: 'objectWithNameAndEmptyStringData', data: ''}],
+      ['nameAndNullData', null],
+      ['nameAndUndefinedData', undefined],
+      ['nameAndEmptyStringData', ''],
+      ['nameAndData', testData],
+      ['nameAndDataAndCallback', testData, errorCallback],
+      [{name: 'objectWithNameAndData', data: testData}],
+      [{name: 'objectWithNameAndDataAndCallback', data: testData}, errorCallback],
+      // 6 messages with null name,
+      [null, testData],
+      [null, testData, errorCallback],
+      [{name: null, data: testData}],
+      [null, null],
+      [{name: null}],
+      [{name: null, data: null}]
+    ];
 
-    test.expect(32);
+    test.expect(testArguments.length * 2);
     try {
       /* set up realtime */
       var realtime = helper.AblyRealtime();
@@ -78,15 +108,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       /* connect and attach */
       realtime.connection.on('connected', function() {
         var rtChannel = realtime.channels.get('publishVariations');
-        var testData = 'Some data'
-        var errorCallback = function(err){
-          if(err) {
-            test.ok(false, 'Error received by publish callback ' + err);
-            test.done();
-            realtime.close();
-            return;
-          }
-        }
         rtChannel.attach(function(err) {
           if(err) {
             test.ok(false, 'Attach failed with error: ' + err);
@@ -109,6 +130,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
               case 'nameAndUndefinedData':
                 test.equal(typeof(msg.data), 'undefined', 'Msg data was received where none expected');
                 break;
+              case 'nameAndEmptyStringData':
+              case 'objectWithNameAndEmptyStringData':
+                test.strictEqual(msg.data, '', 'Msg data received was a ' + typeof(msg.data) + ' when should have been an empty string');
+                break;
               case 'nameAndData':
               case 'nameAndDataAndCallback':
               case 'objectWithNameAndData':
@@ -123,14 +148,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
                   // 3 messages: null name and null data, object with null name and no data, object with null name and null data
                   test.equal(typeof(msg.data), 'undefined', 'Msg data was received where none expected');
                 }
-								break;
+                break;
               default:
                 test.ok(false, 'Unexpected message ' + msg.name + 'received');
                 test.done();
                 realtime.close();
             }
 
-            if (messagesReceived == 16) {
+            if (messagesReceived == testArguments.length) {
               test.done();
               realtime.close();
             }
@@ -138,23 +163,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
           /* publish events */
           var restChannel = rest.channels.get('publishVariations');
-          restChannel.publish({name: 'objectWithName'});
-          restChannel.publish({name: 'objectWithNameAndCallback'}, errorCallback);
-          restChannel.publish({name: 'objectWithNameAndNullData', data: null});
-          restChannel.publish({name: 'objectWithNameAndUndefinedData', data: undefined});
-          restChannel.publish('nameAndNullData', null);
-          restChannel.publish('nameAndUndefinedData', undefined);
-          restChannel.publish('nameAndData', testData);
-          restChannel.publish('nameAndDataAndCallback', testData, errorCallback);
-          restChannel.publish({name: 'objectWithNameAndData', data: testData});
-          restChannel.publish({name: 'objectWithNameAndDataAndCallback', data: testData}, errorCallback);
-          // 6 messages with null name:
-          restChannel.publish(null, testData);
-          restChannel.publish(null, testData, errorCallback);
-          restChannel.publish({name: null, data: testData});
-          restChannel.publish(null, null);
-          restChannel.publish({name: null});
-          restChannel.publish({name: null, data: null});
+          for(var i = 0; i < testArguments.length; i++) {
+            restChannel.publish.apply(restChannel, testArguments[i]);
+          }
         });
       });
       var exitOnState = function(state) {
