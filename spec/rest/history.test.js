@@ -2,7 +2,23 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   var currentTime, rest, exports = {},
-      displayError = helper.displayError;
+      displayError = helper.displayError,
+      testMessages = [
+        { name: 'event0',
+          data: 'some data' },
+        { name: 'event1',
+          data: 'some more data' },
+        { name: 'event2',
+          data: 'and more' },
+        { name: 'event3',
+          data: 'and more' },
+        { name: 'event4',
+          data: [1,2,3] },
+        { name: 'event5',
+          data: {one: 1, two: 2, three: 3} },
+        { name: 'event6',
+          data: {foo: 'bar'} }
+      ];
 
   exports.setup_history = function(test) {
     test.expect(1);
@@ -18,22 +34,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_simple');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
+
     var publishTasks = testMessages.map(function(event) {
       return function(publishCb) {
         testchannel.publish(event.name, event.data, publishCb);
@@ -79,22 +80,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_multiple');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
     var publishTasks = [function(publishCb) {
       testchannel.publish(testMessages, publishCb);
     }];
@@ -137,23 +122,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_simple_paginated_b');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
-
     test.expect(4 * testMessages.length);
     var publishTasks = testMessages.map(function(event) {
       return function(publishCb) {
@@ -218,23 +186,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
-
     test.expect(4 * testMessages.length);
     var publishTasks = testMessages.map(function(event) {
       return function(publishCb) {
@@ -298,23 +249,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_multiple_paginated_b');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
-
     test.expect(4 * testMessages.length);
     var publishTasks = [function(publishCb) {
       testchannel.publish(testMessages, publishCb);
@@ -377,23 +311,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     var testchannel = rest.channels.get('persisted:history_multiple_paginated_f');
 
     /* first, send a number of events to this channel */
-    var testMessages = [
-      { name: 'event0',
-        data: true },
-      { name: 'event1',
-        data: false },
-      { name: 'event2',
-        data: 24 },
-      { name: 'event3',
-        data: 'this is a string' },
-      { name: 'event4',
-        data: [1,2,3] },
-      { name: 'event5',
-        data: {one: 1, two: 2, three: 3} },
-      { name: 'event6',
-        data: Date.now() }
-    ];
-
     test.expect(4 * testMessages.length);
     var publishTasks = [function(publishCb) {
       testchannel.publish(testMessages, publishCb);
