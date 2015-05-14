@@ -189,6 +189,11 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
+  /* ...Or an Object (in the narrow sense) */
+	Utils.isObject = function(ob) {
+		return Object.prototype.toString.call(ob) == '[object Object]';
+	};
+
 	/*
 	 * Determine whether or not an object contains
 	 * any enumerable properties.

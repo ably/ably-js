@@ -2505,8 +2505,8 @@ var BufferUtils = (function() {
 	var ArrayBuffer = window.ArrayBuffer;
 	var TextDecoder = window.TextDecoder;
 
-	function isWordArray(ob) { return ob.sigBytes !== undefined; }
-	function isArrayBuffer(ob) { return ob.constructor === ArrayBuffer; }
+	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
+	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function arrayBufferToBase64(ArrayBuffer) {
@@ -2626,6 +2626,7 @@ var BufferUtils = (function() {
 
 	return BufferUtils;
 })();
+
 var Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	function noop() {}
@@ -4143,6 +4144,11 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
+  /* ...Or an Object (in the narrow sense) */
+	Utils.isObject = function(ob) {
+		return Object.prototype.toString.call(ob) == '[object Object]';
+	};
+
 	/*
 	 * Determine whether or not an object contains
 	 * any enumerable properties.
@@ -4477,11 +4483,18 @@ var Message = (function() {
 	};
 
 	Message.encode = function(msg, options) {
-		var data = msg.data, encoding;
-		if(data !== null && data !== undefined && typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
-			msg.data = JSON.stringify(data);
-			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		var data = msg.data, encoding,
+			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
+
+		if (!nativeDataType) {
+			if (Utils.isObject(data) || Utils.isArray(data)) {
+				msg.data = JSON.stringify(data);
+				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+			} else {
+				throw new ErrorInfo('Data type is unsupported', 40011, 400);
+			}
 		}
+
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);
 	};
