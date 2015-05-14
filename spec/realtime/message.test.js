@@ -188,6 +188,66 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
+  exports.publishDisallowed = function(test) {
+    var transport = 'binary';
+    var testData = 'Some data'
+    var testArguments = [
+      [{name: 'objectAndBoolData', data: false}],
+      ['nameAndBoolData', false],
+      [{name: 'objectAndNumericData', data: 0}],
+      ['nameAndNumericData', 0],
+      [{name: 'objectAndOtherObjectData', data: new Date()}],
+      ['nameAndOtherObjectData', new Date()],
+    ];
+
+    test.expect(testArguments.length * 2);
+    try {
+      /* set up realtime */
+      var realtime = helper.AblyRealtime();
+      var rest = helper.AblyRest();
+
+      /* connect and attach */
+      realtime.connection.on('connected', function() {
+        var rtChannel = realtime.channels.get('publishDisallowed');
+        rtChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            test.done();
+            realtime.close();
+            return;
+          }
+
+          /* publish events */
+          var restChannel = rest.channels.get('publishDisallowed');
+          for(var i = 0; i < testArguments.length; i++) {
+            try {
+              restChannel.publish.apply(restChannel, testArguments[i]);
+              test.ok(false, "Exception was not raised");
+            } catch (e) {
+              test.ok(true, "Exception correctly raised");
+              test.equal(e.code, 40011, "Invalid data type exception raised");
+            }
+          }
+          test.done();
+          realtime.close();
+        });
+      });
+      var exitOnState = function(state) {
+        realtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          test.done();
+          realtime.close();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+      test.done();
+      realtime.close();
+    }
+  };
+
   exports.restpublish = function(test) {
     var count = 10;
     var rest = helper.AblyRest();
