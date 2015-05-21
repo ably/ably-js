@@ -3244,7 +3244,6 @@ var PresenceMessage = (function() {
 	 */
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
-			name: this.name,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			timestamp: this.timestamp,
@@ -4143,6 +4142,7 @@ var ConnectionManager = (function() {
 		this.startTransitionTimer(states.closing);
 
 		function closeTransport(transport) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
 			if(transport) {
 				try {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
