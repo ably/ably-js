@@ -1,12 +1,11 @@
 language: node_js
 node_js:
-- '0.12'
-- '0.10'
-before_install: npm install -g grunt-cli
+  - '0.12'
+  - '0.10'
+before_install:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - "npm install -g grunt-cli"
 install: npm install
 addons:
   firefox: "31.0esr"
-env:
-  global:
-  - secure: he0BhCscD/69jRT6NAHIQeSkocD7YSlznu03KVjVuQ/QMuvOVi3uwDALgtAh+s5g7oYlbzbZZeb9WfphUKxD/dBUM+ThDv3BYWseJDTnLGVT7xAS8kirIIgMOUnrktC+r3WT2NW8x/J1lEU1NQfSrSqIYLDKfhJf2t/WoQ5G+Ig=
-  - secure: kIunvTn6oWAQ4v974ruTz4TfFv7Nora3Klq9pWrY5sFaBmyePSNliZIYeGPPeaIK2T5ZqXfWS8fw42/V+D2n1iR+3BqpK/qfRHVFPGAG7Lm6j2sLis8pL2XCB09y1HiVHSeQhKbjibmp+qytQ5np0lnmOYr47dYTc5HzAs9lPLc=

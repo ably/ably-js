@@ -24,11 +24,11 @@ var Message = (function() {
 			encoding: this.encoding
 		};
 
-		/* encode to base64 if we're returning real JSON;
+		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(arguments.length > 0 && BufferUtils.isBuffer(data)) {
+		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
 			var encoding = this.encoding;
 			result.encoding = encoding ? (encoding + '/base64') : 'base64';
 			data = BufferUtils.base64Encode(data);
@@ -79,7 +79,7 @@ var Message = (function() {
 
 	Message.encode = function(msg, options) {
 		var data = msg.data, encoding;
-		if(typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
+		if(data !== null && data !== undefined && typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
 			msg.data = JSON.stringify(data);
 			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 		}
