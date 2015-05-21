@@ -3,8 +3,8 @@ var BufferUtils = (function() {
 	var ArrayBuffer = window.ArrayBuffer;
 	var TextDecoder = window.TextDecoder;
 
-	function isWordArray(ob) { return ob.sigBytes !== undefined; }
-	function isArrayBuffer(ob) { return ob.constructor === ArrayBuffer; }
+	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
+	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function arrayBufferToBase64(ArrayBuffer) {
