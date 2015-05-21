@@ -3438,6 +3438,7 @@ var Stats = (function() {
 		this.apiRequests   = new RequestCount(values && values.apiRequests);
 		this.tokenRequests = new RequestCount(values && values.tokenRequests);
 		this.inProgress    = (values && values.inProgress) || undefined;
+		this.unit          = (values && values.unit) || undefined;
 		this.intervalId    = (values && values.intervalId) || undefined;
 	}
 
