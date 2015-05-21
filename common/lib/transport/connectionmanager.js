@@ -665,6 +665,7 @@ var ConnectionManager = (function() {
 		this.startTransitionTimer(states.closing);
 
 		function closeTransport(transport) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
 			if(transport) {
 				try {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
