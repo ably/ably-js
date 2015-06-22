@@ -35,6 +35,7 @@ var PaginatedResource = (function() {
 		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+				callback(err);
 				return;
 			}
 			var current, linkHeader, relLinks;
