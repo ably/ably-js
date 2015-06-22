@@ -5,7 +5,8 @@ var Realtime = (function() {
 		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
-		this.connection.connect();
+		if(options.autoConnect !== false)
+			this.connection.connect();
 	}
 	Utils.inherits(Realtime, Rest);
 
