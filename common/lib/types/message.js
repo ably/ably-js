@@ -78,11 +78,18 @@ var Message = (function() {
 	};
 
 	Message.encode = function(msg, options) {
-		var data = msg.data, encoding;
-		if(data !== null && data !== undefined && typeof(data) != 'string' && !BufferUtils.isBuffer(data)) {
-			msg.data = JSON.stringify(data);
-			msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+		var data = msg.data, encoding,
+			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
+
+		if (!nativeDataType) {
+			if (Utils.isObject(data) || Utils.isArray(data)) {
+				msg.data = JSON.stringify(data);
+				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
+			} else {
+				throw new ErrorInfo('Data type is unsupported', 40011, 400);
+			}
 		}
+
 		if(options != null && options.encrypted)
 			Message.encrypt(msg, options);
 	};
