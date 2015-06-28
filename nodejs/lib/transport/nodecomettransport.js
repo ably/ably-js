@@ -165,7 +165,7 @@ var NodeCometTransport = (function() {
 			/* if the trailing chunk wasn't empty, it's a new fragment */
 			var trailingNewChunk = newChunks.pop();
 			if(trailingNewChunk.length) {
-				self.chunks = [trailingNewChunk];
+				self.chunks.push(trailingNewChunk);
 			}
 
 			/* the remaining new chunks are complete */
