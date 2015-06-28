@@ -473,7 +473,7 @@ var ConnectionManager = (function() {
 	 ****************************************/
 
 	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState.state);
 
 		if(this.transitionTimer) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
