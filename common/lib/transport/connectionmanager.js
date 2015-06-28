@@ -218,6 +218,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(err) {
+				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
+				if(err.statusCode < 500) {
+					callback(err);
+					return;
+				}
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
 			}
@@ -280,9 +285,11 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(!err.terminal) {
-							tryFallbackHosts();
+						if(err.terminal || err.statusCode < 500) {
+							callback(err);
+							return;
 						}
+						tryFallbackHosts();
 						return;
 					}
 					/* succeeded */
@@ -293,9 +300,11 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(!err.terminal) {
-					tryFallbackHosts();
+				if(err.terminal || err.statusCode < 500) {
+					callback(err);
+					return;
 				}
+				tryFallbackHosts();
 				return;
 			}
 			/* succeeded */
@@ -611,7 +620,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + ErrorInfo.fromValues(err).toString());
 			var state = self.state;
 			if(state == states.closing || state == states.closed || state == states.failed) {
 				/* do nothing */
