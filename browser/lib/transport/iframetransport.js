@@ -92,7 +92,7 @@ var IframeTransport = (function() {
 			DomEvent.addMessageListener(wrapWindow, self.messageListener = messageListener);
 			iframeComplete = true;
 			callback(null, wrapIframe);
-		};
+		}
 
 		function onerror(e) {
 			clearIframe();
@@ -101,11 +101,11 @@ var IframeTransport = (function() {
 				e = e || new Error('Unknown error loading iframe');
 				callback(e);
 			}
-		};
+		}
 
 		function messageListener(ev) {
 			self.onData(ev.data);
-		};
+		}
 
 		wrapIframe.style.display = 'none';
 		wrapIframe.style.position = 'absolute';
