@@ -21,36 +21,50 @@ var PaginatedResource = (function() {
 		return relParams;
 	}
 
-	function PaginatedResource(rest, path, headers, params, envelope, bodyHandler) {
+	function PaginatedResource(rest, path, headers, envelope, bodyHandler) {
 		this.rest = rest;
 		this.path = path;
 		this.headers = headers;
-		this.params = params;
 		this.envelope = envelope;
 		this.bodyHandler = bodyHandler;
 	}
 
-	PaginatedResource.prototype.get = function(callback) {
+	PaginatedResource.prototype.get = function(params, callback) {
+		this.requestPage(params)(callback);
+	};
+
+	PaginatedResource.prototype.requestPage = function(params) {
 		var self = this;
-		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
-			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
-				callback(err);
-				return;
-			}
-			var current, linkHeader, relLinks;
-			try {
-				current = self.bodyHandler(body, headers, unpacked);
-			} catch(e) {
-				callback(e);
-				return;
-			}
+		return function(callback) {
+			Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked) {
+				self.handlePage(err, body, headers, unpacked, callback);
+			});
+		};
+	};
 
-			if(headers && (linkHeader = (headers['Link'] || headers['link'])))
-				relLinks = parseRelLinks(linkHeader);
+	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, callback) {
+		if(err) {
+			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+			callback(err);
+			return;
+		}
+		var current, linkHeader, relLinks;
+		try {
+			current = this.bodyHandler(body, headers, unpacked);
+		} catch(e) {
+			callback(e);
+			return;
+		}
 
-			callback(null, current, relLinks);
-		});
+		if(headers && (linkHeader = (headers['Link'] || headers['link']))) {
+			var relParams = parseRelLinks(linkHeader), self = this;
+			for(var rel in relParams) {
+				relLinks = relLinks || {};
+				relLinks[rel] = self.requestPage(relParams[rel]);
+			}
+		}
+
+		callback(null, current, relLinks);
 	};
 
 	return PaginatedResource;
