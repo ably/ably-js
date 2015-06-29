@@ -29,7 +29,7 @@ var XHRRequest = (function() {
 	};
 
 	function getContentType(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('Content-Type');
+		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
@@ -154,7 +154,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, (contentType && {'Content-Type': contentType}), unpacked);
+				self.complete(null, responseBody, (contentType && {'content-type': contentType}), unpacked);
 				return;
 			}
 
@@ -335,7 +335,7 @@ var XHRRequest = (function() {
 				self.complete(err);
 				return;
 			}
-			self.complete(null, responseBody, {'Content-Type': 'application/json'}, true);
+			self.complete(null, responseBody, {'content-type': 'application/json'}, true);
 		}
 
 		function onProgress() {
