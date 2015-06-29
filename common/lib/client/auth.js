@@ -217,8 +217,16 @@ var Auth = (function() {
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
-					if(err) return cb(err);
-					if(!unpacked && headers['content-type'] !== 'text/plain') body = JSON.parse(body);
+					if(err || unpacked) return cb(err, body);
+					if(BufferUtils.isBuffer(body)) body = body.toString();
+					if(headers['content-type'] == 'application/json') {
+						try {
+							body = JSON.parse(body);
+						} catch(e) {
+							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40000, 400));
+							return;
+						}
+					}
 					cb(null, body);
 				});
 			};
