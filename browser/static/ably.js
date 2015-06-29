@@ -2626,7 +2626,6 @@ var BufferUtils = (function() {
 
 	return BufferUtils;
 })();
-
 var Cookie = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	function noop() {}
@@ -5057,6 +5056,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(err) {
+				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
+				if(err.statusCode < 500) {
+					callback(err);
+					return;
+				}
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
 			}
@@ -5119,9 +5123,11 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(!err.terminal) {
-							tryFallbackHosts();
+						if(err.terminal || err.statusCode < 500) {
+							callback(err);
+							return;
 						}
+						tryFallbackHosts();
 						return;
 					}
 					/* succeeded */
@@ -5132,9 +5138,11 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(!err.terminal) {
-					tryFallbackHosts();
+				if(err.terminal || err.statusCode < 500) {
+					callback(err);
+					return;
 				}
+				tryFallbackHosts();
 				return;
 			}
 			/* succeeded */
@@ -5312,7 +5320,7 @@ var ConnectionManager = (function() {
 	 ****************************************/
 
 	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState.state);
 
 		if(this.transitionTimer) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
@@ -5450,7 +5458,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + ErrorInfo.fromValues(err).toString());
 			var state = self.state;
 			if(state == states.closing || state == states.closed || state == states.failed) {
 				/* do nothing */
@@ -6348,6 +6356,7 @@ var PaginatedResource = (function() {
 		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+				callback(err);
 				return;
 			}
 			var current, linkHeader, relLinks;
@@ -6586,8 +6595,16 @@ var Auth = (function() {
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
-					if(err) return cb(err);
-					if(!unpacked && headers['content-type'] !== 'text/plain') body = JSON.parse(body);
+					if(err || unpacked) return cb(err, body);
+					if(BufferUtils.isBuffer(body)) body = body.toString();
+					if(headers['content-type'] == 'application/json') {
+						try {
+							body = JSON.parse(body);
+						} catch(e) {
+							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40000, 400));
+							return;
+						}
+					}
 					cb(null, body);
 				});
 			};
@@ -6918,7 +6935,8 @@ var Realtime = (function() {
 		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
-		this.connection.connect();
+		if(options.autoConnect !== false)
+			this.connection.connect();
 	}
 	Utils.inherits(Realtime, Rest);
 
@@ -7975,7 +7993,7 @@ var JSONPTransport = (function() {
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
 		return new Request(undefined, uri, headers, params, body, requestMode);
-	}
+	};
 
 	function Request(id, uri, headers, params, body, requestMode) {
 		EventEmitter.call(this);
@@ -8024,10 +8042,13 @@ var JSONPTransport = (function() {
 	Request.prototype.complete = function(err, body) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			if(body)
+			var contentType;
+			if(body) {
+				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
 				this.emit('data', body);
+			}
 
-			this.emit('complete', err, body, true);
+			this.emit('complete', err, body, contentType && {'content-type': contentType}, true);
 			this.dispose();
 		}
 	};
@@ -8088,7 +8109,7 @@ var XHRRequest = (function() {
 	};
 
 	function getContentType(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('Content-Type');
+		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
@@ -8213,7 +8234,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, (contentType && {'Content-Type': contentType}), unpacked);
+				self.complete(null, responseBody, (contentType && {'content-type': contentType}), unpacked);
 				return;
 			}
 
@@ -8394,7 +8415,7 @@ var XHRRequest = (function() {
 				self.complete(err);
 				return;
 			}
-			self.complete(null, responseBody, {'Content-Type': 'application/json'}, true);
+			self.complete(null, responseBody, {'content-type': 'application/json'}, true);
 		}
 
 		function onProgress() {
@@ -8624,7 +8645,7 @@ var IframeTransport = (function() {
 			DomEvent.addMessageListener(wrapWindow, self.messageListener = messageListener);
 			iframeComplete = true;
 			callback(null, wrapIframe);
-		};
+		}
 
 		function onerror(e) {
 			clearIframe();
@@ -8633,11 +8654,11 @@ var IframeTransport = (function() {
 				e = e || new Error('Unknown error loading iframe');
 				callback(e);
 			}
-		};
+		}
 
 		function messageListener(ev) {
 			self.onData(ev.data);
-		};
+		}
 
 		wrapIframe.style.display = 'none';
 		wrapIframe.style.position = 'absolute';
