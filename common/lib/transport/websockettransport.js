@@ -64,7 +64,10 @@ var WebSocketTransport = (function() {
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
-			} catch(e) { self.onWsError(e); }
+			} catch(e) {
+				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
+				self.onWsError(e);
+			}
 		});
 	};
 
