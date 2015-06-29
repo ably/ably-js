@@ -210,7 +210,7 @@ var NodeCometTransport = (function() {
 					return;
 				}
 
-				var err = body.error;
+				err = body.error;
 				if(!err) {
 					err = new Error('Error response received from server: ' + statusCode);
 					err.statusCode = statusCode;
