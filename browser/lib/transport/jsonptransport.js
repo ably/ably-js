@@ -49,7 +49,7 @@ var JSONPTransport = (function() {
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
 		return new Request(undefined, uri, headers, params, body, requestMode);
-	}
+	};
 
 	function Request(id, uri, headers, params, body, requestMode) {
 		EventEmitter.call(this);
@@ -98,10 +98,13 @@ var JSONPTransport = (function() {
 	Request.prototype.complete = function(err, body) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			if(body)
+			var contentType;
+			if(body) {
+				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
 				this.emit('data', body);
+			}
 
-			this.emit('complete', err, body, true);
+			this.emit('complete', err, body, contentType && {'content-type': contentType}, true);
 			this.dispose();
 		}
 	};
