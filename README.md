@@ -1,8 +1,10 @@
-# ably-js
+# [Ably](https://www.ably.io)
+
+## Version 0.8.1
 
 [![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
 
-This repo contains the ably javascript client libraries, both for the browser and node.js.
+This repo contains the ably javascript client libraries, both for the browser and nodejs.
 
 For complete API documentation, see the [ably documentation](https://ably.io/documentation).
 
@@ -27,7 +29,7 @@ For complete API documentation, see the [ably documentation](https://ably.io/doc
 
 ### With Node.js
 
-For the real-time library:
+For the realtime library:
 
 ```javascript
 var realtime = require('ably-js').Realtime;
@@ -47,7 +49,7 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.io/lib/ably.min.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.7.js or http://cdn.ably.io/lib/ably-0.7.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.1.js or http://cdn.ably.io/lib/ably-0.8.1.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For the real-time library:
 
@@ -59,6 +61,208 @@ For the rest-only library:
 
 ```javascript
 var rest = Ably.Rest;
+```
+
+## Using the Realtime API
+
+### Introduction
+
+All examples assume a client has been created as follows:
+
+```javascript
+// basic auth with an API key
+var client = new Ably.Realtime(<key string>)
+
+// using token auth
+var client = new Ably.Realtime(<token string>)
+```
+
+### Connection
+
+Successful connection:
+
+```javascript
+client.connection.on('connected', function() {
+  # successful connection
+});
+```
+
+Failed connection:
+
+```javascript
+client.connection.on('failed', function() {
+  # failed connection
+});
+```
+
+### Subscribing to a channel
+
+Given:
+
+```javascript
+var channel = client.channels.get('test');
+```
+
+Subscribe to all events:
+
+```javascript
+channel.subscribe(function(message) {
+  message.name // 'greeting'
+  message.data // 'Hello World!'
+});
+```
+
+Only certain events:
+
+```javascript
+channel.subscribe('myEvent', function(message) {
+  message.name // 'myEvent'
+  message.data // 'myData'
+});
+```
+
+### Publishing to a channel
+
+```javascript
+channel.publish('greeting', 'Hello World!')
+```
+
+### Querying the History
+
+```javascript
+channel.history(function(messagesPage) {
+  messagesPage                                    // PaginatedResult
+  messagesPage.items                              // array of Message
+  messagesPage.items[0].data                      // payload for first message
+  messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  messagesPage.next == undefined                  // there are no more pages
+});
+```
+
+### Presence on a channel
+
+```javascript
+channel.presence.get(function(presencePage) {     // PaginatedResult
+  presencePage.items                              // array of PresenceMessage
+  presencePage.items[0].data                      // payload for first message
+  presencePage.items.length                       // number of messages in the current page of members
+  presencePage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  presencePage.next == undefined                  // there are no more pages
+});
+
+channel.presence.enter('my status', function() {
+  // now I am entered
+});
+```
+
+### Querying the Presence History
+
+```javascript
+channel.presence.history(function(messagesPage) { // PaginatedResult
+  messagesPage.items                              // array of PresenceMessage
+  messagesPage.items[0].data                      // payload for first message
+  messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  messagesPage.next == undefined                  // there are no more pages
+});
+```
+
+## Using the REST API
+
+### Introduction
+
+All examples assume a client and/or channel has been created as follows:
+
+```javascript
+// basic auth with an API key
+var client = new Ably.Realtime(<key string>)
+
+// using token auth
+var client = new Ably.Realtime(<token string>)
+```
+
+Given:
+
+```javascript
+var channel = client.channels.get('test');
+```
+
+### Publishing to a channel
+
+```javascript
+channel.publish('greeting', 'Hello World!')
+```
+
+### Querying the History
+
+```javascript
+channel.history(function(messagesPage) {
+  messagesPage                                    // PaginatedResult
+  messagesPage.items                              // array of Message
+  messagesPage.items[0].data                      // payload for first message
+  messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  messagesPage.next == undefined                  // there are no more pages
+});
+```
+
+### Presence on a channel
+
+```javascript
+channel.presence.get(function(presencePage) {     // PaginatedResult
+  presencePage.items                              // array of PresenceMessage
+  presencePage.items[0].data                      // payload for first message
+  presencePage.items.length                       // number of messages in the current page of members
+  presencePage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  presencePage.next == undefined                  // there are no more pages
+});
+```
+
+### Querying the Presence History
+
+```javascript
+channel.presence.history(function(messagesPage) { // PaginatedResult
+  messagesPage.items                              // array of PresenceMessage
+  messagesPage.items[0].data                      // payload for first message
+  messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+  messagesPage.next == undefined                  // there are no more pages
+});
+```
+
+### Generate Token and Token Request
+
+```javascript
+client.auth.requestToken(function(err, tokenDetails) {
+  // tokenDetails is instance of TokenDetails
+  token_details.token // token string, eg 'xVLyHw.CLchevH3hF....MDh9ZC_Q'
+});
+var clientUsingToken = new Ably.Rest(token_details.token);
+
+client.auth.createTokenRequest(function(err, tokenRequest) {
+  tokenRequest.keyName     // name of key used to derive token
+  tokenRequest.clientId    // name of a clientId to be bound to the token
+  tokenRequest.ttl         // time to live for token, in ms
+  tokenRequest.timestamp   // timestamp of this request, in ms since epoch
+  tokenRequest.capability  // capability string for this token
+  tokenRequest.nonce       // non-replayable random string
+  tokenRequest.mac         // HMAC of these params, generated with keyValue
+```
+
+### Fetching your application's stats
+
+```javascript
+client.stats(function(statsPage) {             // statsPage as PaginatedResult
+  statsPage.items                              // array of Stats
+  statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
+});
+```
+
+### Fetching the Ably service time
+
+```javascript
+client.time(function(time) { ... }); // time is in ms since epoch
 ```
 
 ## Test suite
@@ -122,11 +326,19 @@ All tests are run against the sandbox environment by default.  However, the foll
 * `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
 
 
-# Contributing
+## Support and feedback
+
+Please visit https://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
+
+## Contributing
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Ensure you have test coverage for new features and current test suites are still passing
-4. Commit your changes (`git commit -am 'Add some feature'`)
-5. Push to the branch (`git push origin my-new-feature`)
-6. Create new Pull Request
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Ensure you have added suitable tests and the test suite is passing(`bundle exec rspec`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a new Pull Request
+
+## License
+
+Copyright (c) 2015 Ably, Licensed under an MIT license.  Refer to [LICENSE.txt](LICENSE.txt) for the license terms.
