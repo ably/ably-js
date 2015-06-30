@@ -1,7 +1,7 @@
 {
   "name": "ably",
   "description": "Realtime messaging client",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "main": "./nodejs/index.js",
   "dependencies": {
     "async": "~0.9",
