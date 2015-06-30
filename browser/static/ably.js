@@ -3871,7 +3871,7 @@ Defaults.suspendedTimeout         = 120000;
 Defaults.recvTimeout              = 90000;
 Defaults.sendTimeout              = 10000;
 Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.8.0';
+Defaults.version                  = '0.8.1';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -5892,7 +5892,10 @@ var WebSocketTransport = (function() {
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
-			} catch(e) { self.onWsError(e); }
+			} catch(e) {
+				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
+				self.onWsError(e);
+			}
 		});
 	};
 
@@ -6342,35 +6345,59 @@ var PaginatedResource = (function() {
 		return relParams;
 	}
 
-	function PaginatedResource(rest, path, headers, params, envelope, bodyHandler) {
+	function PaginatedResource(rest, path, headers, envelope, bodyHandler) {
 		this.rest = rest;
 		this.path = path;
 		this.headers = headers;
-		this.params = params;
 		this.envelope = envelope;
 		this.bodyHandler = bodyHandler;
 	}
 
-	PaginatedResource.prototype.get = function(callback) {
+	PaginatedResource.prototype.get = function(params, callback) {
 		var self = this;
-		Resource.get(this.rest, this.path, this.headers, this.params, this.envelope, function(err, body, headers, unpacked) {
-			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
-				callback(err);
-				return;
-			}
-			var current, linkHeader, relLinks;
-			try {
-				current = self.bodyHandler(body, headers, unpacked);
-			} catch(e) {
-				callback(e);
-				return;
-			}
+		Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked) {
+			self.handlePage(err, body, headers, unpacked, callback);
+		});
+	};
 
-			if(headers && (linkHeader = (headers['Link'] || headers['link'])))
-				relLinks = parseRelLinks(linkHeader);
+	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, callback) {
+		if(err) {
+			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+			callback(err);
+			return;
+		}
+		var items, linkHeader, relParams;
+		try {
+			items = this.bodyHandler(body, headers, unpacked);
+		} catch(e) {
+			callback(e);
+			return;
+		}
 
-			callback(null, current, relLinks);
+		if(headers && (linkHeader = (headers['Link'] || headers['link']))) {
+			relParams = parseRelLinks(linkHeader);
+		}
+
+		callback(null, new PaginatedResult(this, items, relParams));
+	};
+
+	function PaginatedResult(resource, items, relParams) {
+		this.resource = resource;
+		this.items = items;
+
+		var self = this;
+		if('first' in relParams)
+			this.first = function(cb) { self.get(relParams.first, cb); };
+		if('current' in relParams)
+			this.current = function(cb) { self.get(relParams.current, cb); };
+		if('next' in relParams)
+			this.next = function(cb) { self.get(relParams.next, cb); };
+	}
+
+	PaginatedResult.prototype.get = function(params, callback) {
+		var res = this.resource;
+		Resource.get(res.rest, res.path, res.headers, params, res.envelope, function(err, body, headers, unpacked) {
+			res.handlePage(err, body, headers, unpacked, callback);
 		});
 	};
 
@@ -6872,11 +6899,11 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 
-		(new PaginatedResource(this, '/stats', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(this, '/stats', headers, envelope, function(body, headers, unpacked) {
 			var statsValues = (unpacked ? body : JSON.parse(body));
 			for(var i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
 			return statsValues;
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Rest.prototype.time = function(params, callback) {
@@ -7104,9 +7131,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
 			return Message.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Channel.prototype.publish = function() {
@@ -7163,9 +7190,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath, headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	Presence.prototype.history = function(params, callback) {
@@ -7188,9 +7215,9 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, this.basePath + '/history', headers, params, envelope, function(body, headers, unpacked) {
+		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
-		})).get(callback);
+		})).get(params, callback);
 	};
 
 	return Channel;
