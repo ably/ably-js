@@ -11,7 +11,7 @@ Defaults.suspendedTimeout         = 120000;
 Defaults.recvTimeout              = 90000;
 Defaults.sendTimeout              = 10000;
 Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.8.1';
+Defaults.version                  = '0.8.2';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)

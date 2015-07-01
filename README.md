@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-## Version 0.8.1
+## Version 0.8.2
 
 [![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
 
@@ -49,7 +49,7 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.io/lib/ably.min.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.1.js or http://cdn.ably.io/lib/ably-0.8.1.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.2.js or http://cdn.ably.io/lib/ably-0.8.2.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For the real-time library:
 
