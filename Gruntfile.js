@@ -268,7 +268,7 @@ module.exports = function (grunt) {
 		'closure-compiler:pusher.js'
 	]);
 
-	grunt.registerTask('all', ['clean', 'build', 'minify']);
+	grunt.registerTask('all', ['clean', 'build', 'minify', 'requirejs']);
 
 	grunt.loadTasks('spec/tasks');
 
