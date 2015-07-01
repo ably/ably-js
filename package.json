@@ -1,6 +1,6 @@
 {
   "name": "ably",
-  "description": "Realtime messaging client",
+  "description": "Realtime client library for Ably.io, the realtime messaging service",
   "version": "0.8.1",
   "main": "./nodejs/index.js",
   "dependencies": {
