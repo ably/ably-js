@@ -626,15 +626,16 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(err.statusCode == 401 && err.message.indexOf('expire') != -1 && auth.method == 'token') {
+			if(err.code == 40140) {
 				/* re-get a token */
-				auth.getToken(true, function(err) {
+				auth.authorise(null, null, function(err) {
 					if(err) {
 						connectErr(err);
 						return;
 					}
 					self.connectImpl();
 				});
+				return;
 			}
 			/* FIXME: decide if fatal */
 			var fatal = false;
