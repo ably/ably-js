@@ -47,6 +47,82 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     });
   };
 
+  /*
+   * Use authUrl for authentication with JSON TokenDetails response
+   */
+  exports.auth_useAuthUrl_json = function(test) {
+    test.expect(1);
+
+    var rest = helper.AblyRest();
+    rest.auth.requestToken(null, null, function(err, tokenDetails) {
+      if(err) {
+        test.ok(false, helper.displayError(err));
+        test.done();
+        return;
+      }
+
+      var authPath = ["http://echo.jsontest.com/"];
+      for (var key in tokenDetails) {
+        if (tokenDetails.hasOwnProperty(key)) {
+          authPath.push(key);
+          authPath.push(tokenDetails[key]);
+        }
+      }
+
+      realtime = helper.AblyRealtime({ authUrl: authPath.join("/") });
+
+      realtime.connection.on('connected', function() {
+        realtime.connection.off();
+        realtime.connection.close();
+        test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+        test.done();
+        return;
+      });
+
+      realtime.connection.on('failed', function(err) {
+        realtime.close();
+        test.ok(false, "Failed: " + err);
+        test.done();
+        return;
+      });
+    });
+  };
+
+  /*
+   * Use authUrl for authentication with plain text token response
+   */
+  exports.auth_useAuthUrl_plainText = function(test) {
+    test.expect(1);
+
+    var rest = helper.AblyRest();
+    rest.auth.requestToken(null, null, function(err, tokenDetails) {
+      if(err) {
+        test.ok(false, helper.displayError(err));
+        test.done();
+        return;
+      }
+
+      var authPath = "http://urlecho.appspot.com/echo?status=200&Content-Type=text%2Fplain&body=" + tokenDetails['token'];
+
+      realtime = helper.AblyRealtime({ authUrl: authPath });
+
+      realtime.connection.on('connected', function() {
+        realtime.connection.off();
+        realtime.connection.close();
+        test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+        test.done();
+        return;
+      });
+
+      realtime.connection.on('failed', function(err) {
+        realtime.close();
+        test.ok(false, "Failed: " + err);
+        test.done();
+        return;
+      });
+    });
+  };
+
   exports.teardown = function(test) {
     realtime.close();
     test.done();

@@ -219,7 +219,7 @@ var Auth = (function() {
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
-					if(headers['content-type'] == 'application/json') {
+					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
 						try {
 							body = JSON.parse(body);
 						} catch(e) {

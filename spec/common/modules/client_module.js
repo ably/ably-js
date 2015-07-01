@@ -3,7 +3,7 @@
 /* Shared test helper used for creating Rest and Real-time clients */
 
 define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
-	var ignoreOptions = ['authToken', 'key'];
+	var ignoreOptions = ['authToken', 'authUrl', 'key'];
 
 	function mixinOptions(dest, src) {
 		for (var key in src) {
@@ -21,7 +21,12 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 		var clientOptions = mixinOptions({}, ablyGlobals);
 		if(options) {
 			mixinOptions(clientOptions, options);
-			if (options.authToken) {
+
+			/* Only allow one of the following options to be used.
+			   Else an API key will be configured by default for all clients */
+			if (options.authUrl) {
+				clientOptions.authUrl = options.authUrl;
+			} else if (options.authToken) {
 				clientOptions.authToken = options.authToken;
 			} else {
 				if (options.key) {
