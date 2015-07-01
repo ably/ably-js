@@ -329,10 +329,13 @@ All tests are run against the sandbox environment by default.  However, the foll
 * `ABLY_PORT` - non-TLS port to use for the tests, defaults to 80
 * `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
 
+## Support, feedback and troubleshooting
 
-## Support and feedback
+Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
 
-Please visit https://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
+You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
+
+To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANGELOG.md).
 
 ## Contributing
 
@@ -345,4 +348,4 @@ Please visit https://support.ably.io/ for access to our knowledgebase and to ask
 
 ## License
 
-Copyright (c) 2015 Ably, Licensed under an MIT license.  Refer to [LICENSE.txt](LICENSE.txt) for the license terms.
+Copyright (c) 2015 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
