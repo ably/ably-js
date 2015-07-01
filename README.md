@@ -277,6 +277,10 @@ Run the NodeUnit test suite
 
     grunt test:nodeunit
 
+Or run just one or more test files
+
+    grunt test:nodeunit --test spec/realtime/auth.test.js
+
 ## Browser Tests
 
 Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.12/index.html).
