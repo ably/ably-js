@@ -61,15 +61,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         return;
       }
 
-      var authPath = ["http://echo.jsontest.com/"];
-      for (var key in tokenDetails) {
-        if (tokenDetails.hasOwnProperty(key)) {
-          authPath.push(key);
-          authPath.push(tokenDetails[key]);
-        }
-      }
+      var authPath = "http://echo.ably.io/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
 
-      realtime = helper.AblyRealtime({ authUrl: authPath.join("/") });
+      realtime = helper.AblyRealtime({ authUrl: authPath });
 
       realtime.connection.on('connected', function() {
         realtime.connection.off();
@@ -102,7 +96,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         return;
       }
 
-      var authPath = "http://urlecho.appspot.com/echo?status=200&Content-Type=text%2Fplain&body=" + tokenDetails['token'];
+      var authPath = "http://echo.ably.io/?type=text&body=" + tokenDetails['token'];
 
       realtime = helper.AblyRealtime({ authUrl: authPath });
 
