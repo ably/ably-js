@@ -36,7 +36,7 @@ var XHRRequest = (function() {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = String(Math.random()).substr(2);
-		this.uri = uri + Utils.toQueryString(params);
+		this.uri = uri + Utils.toQueryString(params, uri);
 		this.headers = headers || {};
 		this.body = body;
 		this.requestMode = requestMode;
