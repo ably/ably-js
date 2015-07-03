@@ -219,13 +219,14 @@ var Utils = (function() {
 		return arr.splice(Math.floor(Math.random() * arr.length));
 	};
 
-	Utils.toQueryString = function(params) {
-		var parts = [];
+	Utils.toQueryString = function(params, uri) {
+		var parts = [],
+				prefix = uri && (String(uri).indexOf('?') > -1) ? '&' : '?';
 		if(params) {
 			for(var key in params)
 				parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(params[key]));
 		}
-		return parts.length ? '?' + parts.join('&') : '';
+		return parts.length ? prefix + parts.join('&') : '';
 	};
 
 	Utils.parseQueryString = function(query) {
