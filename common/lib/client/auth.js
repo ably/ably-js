@@ -214,6 +214,14 @@ var Auth = (function() {
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
+			/* if no authParams given, check if they were given in the URL */
+			if(!authOptions.authParams) {
+				var queryIdx = authOptions.authUrl.indexOf('?');
+				if(queryIdx > -1) {
+					authOptions.authParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
+					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+				}
+			}
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
