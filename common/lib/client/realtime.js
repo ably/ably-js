@@ -24,7 +24,7 @@ var Realtime = (function() {
 
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
-		if(!channelName) {
+		if(channelName === undefined) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}

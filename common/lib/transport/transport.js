@@ -78,7 +78,7 @@ var Transport = (function() {
 		case actions.ERROR:
 			var msgErr = message.error;
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
-			if(!message.channel) {
+			if(message.channel === undefined) {
 				/* a transport error */
 				var err = {
 					statusCode: msgErr.statusCode,
