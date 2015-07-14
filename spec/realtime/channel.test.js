@@ -170,6 +170,44 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     }
   };
 
+  /*
+   * Attach with an empty channel and expect a channel error
+   * and the connection to remain open
+   */
+  exports.channelattachempty = function(test) {
+    test.expect(1);
+    try {
+      var realtime = helper.AblyRealtime();
+      realtime.connection.once('connected', function() {
+        var channel0 = realtime.channels.get('');
+        channel0.attach(function(err) {
+          if(err) {
+            test.expect(2);
+            test.ok(true, 'Attach failed as expected');
+            setTimeout(function() {
+              test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
+              realtime.close();
+              test.done();
+            }, 1000);
+          }
+        });
+      });
+      var exitOnState = function(state) {
+        realtime.connection.on(state, function () {
+          test.ok(false, 'Connection to server ' + state);
+          test.done();
+          realtime.close();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+      test.done();
+      realtime.close();
+    }
+  };
+
   if (isBrowser) {
     /*
      * Base attach case, jsonp transport
