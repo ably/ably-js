@@ -116,10 +116,6 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
-		if(this.state == 'failed') {
-			callback(connectionManager.getStateError());
-			return;
-		}
 		this.once(function(err) {
 			switch(this.event) {
 			case 'attached':
@@ -159,9 +155,6 @@ var RealtimeChannel = (function() {
 			case 'attached':
 				/* this shouldn't happen ... */
 				callback(ConnectionError.unknownChannelErr);
-				break;
-			case 'failed':
-				callback(err || connectionManager.getStateError());
 				break;
 			}
 		});
