@@ -189,12 +189,105 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							realtime.close();
 							test.done();
 						}, 1000);
+						return;
 					}
+					test.ok(false, 'Unexpected attach success');
+					test.done();
 				});
 			});
 			var exitOnState = function(state) {
 				realtime.connection.on(state, function () {
 					test.ok(false, 'Connection to server ' + state);
+					test.done();
+					realtime.close();
+				});
+			};
+			exitOnState('failed');
+			exitOnState('suspended');
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.done();
+			realtime.close();
+		}
+	};
+
+	/*
+	 * Attach with an invalid channel name and expect a channel error
+	 * and the connection to remain open
+	 */
+	exports.channelattach_invalid = function(test) {
+		test.expect(1);
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.once('connected', function() {
+				realtime.channels.get(':hell').attach(function(err) {
+					if(err) {
+						test.expect(2);
+						test.ok(true, 'Attach failed as expected');
+						setTimeout(function() {
+							test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
+							realtime.close();
+							test.done();
+						}, 1000);
+						return;
+					}
+					test.ok(false, 'Unexpected attach success');
+					test.done();
+				});
+			});
+			var exitOnState = function(state) {
+				realtime.connection.on(state, function () {
+					test.ok(false, 'Connection to server ' + state);
+					test.done();
+					realtime.close();
+				});
+			};
+			exitOnState('failed');
+			exitOnState('suspended');
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.done();
+			realtime.close();
+		}
+	};
+
+	/*
+	 * Attach with an invalid channel name and expect a channel error
+	 * and the connection to remain open
+	 */
+	exports.channelattach_invalid_twice = function(test) {
+		test.expect(1);
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.once('connected', function() {
+				realtime.channels.get(':hell').attach(function(err) {
+					if(err) {
+						test.expect(2);
+						test.ok(true, 'Attach failed as expected');
+						/* attempt second attach */
+						realtime.channels.get(':hell').attach(function(err) {
+							if(err) {
+								test.expect(3);
+								test.ok(true, 'Attach (second attempt) failed as expected');
+								setTimeout(function() {
+									test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
+									realtime.close();
+									test.done();
+								}, 1000);
+								return;
+							}
+							test.ok(false, 'Unexpected attach (second attempt) success');
+							test.done();
+						});
+						return;
+					}
+					test.ok(false, 'Unexpected attach success');
+					test.done();
+				});
+			});
+			var exitOnState = function(state) {
+				realtime.connection.on(state, function(stateChange) {
+					test.ok(false, 'Connection to server ' + state + '; reason = ' + stateChange.reason.message);
 					test.done();
 					realtime.close();
 				});
