@@ -4116,15 +4116,16 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(err.statusCode == 401 && err.message.indexOf('expire') != -1 && auth.method == 'token') {
+			if(err.code == 40140) {
 				/* re-get a token */
-				auth.getToken(true, function(err) {
+				auth.authorise(null, null, function(err) {
 					if(err) {
 						connectErr(err);
 						return;
 					}
 					self.connectImpl();
 				});
+				return;
 			}
 			/* FIXME: decide if fatal */
 			var fatal = false;
@@ -4415,7 +4416,7 @@ var Transport = (function() {
 		case actions.ERROR:
 			var msgErr = message.error;
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
-			if(!message.channel) {
+			if(message.channel === undefined) {
 				/* a transport error */
 				var err = {
 					statusCode: msgErr.statusCode,
@@ -4588,7 +4589,7 @@ var WebSocketTransport = (function() {
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + Utils.inspectError(err));
+		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
 		this.emit('wserror', err);
 		/* FIXME: this should not be fatal */
 		this.abort();
@@ -5271,6 +5272,14 @@ var Auth = (function() {
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
+			/* if no authParams given, check if they were given in the URL */
+			if(!authOptions.authParams) {
+				var queryIdx = authOptions.authUrl.indexOf('?');
+				if(queryIdx > -1) {
+					authOptions.authParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
+					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+				}
+			}
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
 				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
@@ -5633,7 +5642,7 @@ var Realtime = (function() {
 
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
-		if(!channelName) {
+		if(channelName === undefined) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
@@ -5993,10 +6002,6 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
-		if(this.state == 'failed') {
-			callback(connectionManager.getStateError());
-			return;
-		}
 		this.once(function(err) {
 			switch(this.event) {
 			case 'attached':
@@ -6036,9 +6041,6 @@ var RealtimeChannel = (function() {
 			case 'attached':
 				/* this shouldn't happen ... */
 				callback(ConnectionError.unknownChannelErr);
-				break;
-			case 'failed':
-				callback(err || connectionManager.getStateError());
 				break;
 			}
 		});
@@ -6848,7 +6850,10 @@ var XHRRequest = (function() {
 
 		xhr.open(method, this.uri, true);
 		xhr.responseType = responseType;
-		xhr.withCredentials = 'true';
+
+		if ('authorization' in headers) {
+			xhr.withCredentials = 'true';
+		}
 
 		for(var h in headers)
 			xhr.setRequestHeader(h, headers[h]);

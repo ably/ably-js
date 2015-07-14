@@ -731,7 +731,10 @@ var XHRRequest = (function() {
 
 		xhr.open(method, this.uri, true);
 		xhr.responseType = responseType;
-		xhr.withCredentials = 'true';
+
+		if ('authorization' in headers) {
+			xhr.withCredentials = 'true';
+		}
 
 		for(var h in headers)
 			xhr.setRequestHeader(h, headers[h]);
