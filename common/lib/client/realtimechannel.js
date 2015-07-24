@@ -419,7 +419,9 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, Defaults.sendTimeout)
+		}, Defaults.sendTimeout);
+		/* notify the state change */
+		this.emit(state);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
