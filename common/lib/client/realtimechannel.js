@@ -116,6 +116,7 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
+		this.setPendingState('attaching');
 		this.once(function(err) {
 			switch(this.event) {
 			case 'attached':
@@ -126,7 +127,6 @@ var RealtimeChannel = (function() {
 				callback(err || connectionManager.getStateError());
 			}
 		});
-		this.setPendingState('attaching');
     };
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
@@ -147,6 +147,7 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
+		this.setPendingState('detaching');
 		this.once(function(err) {
 			switch(this.event) {
 			case 'detached':
@@ -158,7 +159,6 @@ var RealtimeChannel = (function() {
 				break;
 			}
 		});
-		this.setPendingState('detaching');
 		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
