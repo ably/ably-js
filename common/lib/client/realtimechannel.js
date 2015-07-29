@@ -486,18 +486,7 @@ var RealtimeChannel = (function() {
 			}
 		}
 
-		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.options;
-
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
-
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format);
-		})).get(params, callback);
+		Channel.prototype._history.call(this, params, callback);
 	};
 
 	return RealtimeChannel;

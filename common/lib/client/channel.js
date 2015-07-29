@@ -40,11 +40,14 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-
 		if(params && params.untilAttach) {
 			throw new ErrorInfo("option untilAttach requires a realtime connection, it is not part of the REST API", 40000, 400);
 		}
 
+		this._history(params, callback);
+	};
+
+	Channel.prototype._history = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
