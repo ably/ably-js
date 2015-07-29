@@ -40,9 +40,6 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
-		if(params && params.untilAttach) {
-			throw new ErrorInfo("option untilAttach requires a realtime connection, it is not part of the REST API", 40000, 400);
-		}
 
 		this._history(params, callback);
 	};
