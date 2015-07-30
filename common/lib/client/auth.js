@@ -45,7 +45,7 @@ var Auth = (function() {
 		/* decide default auth method */
 		var key = options.key;
 		if(key) {
-			if(!options.clientId) {
+			if(!options.clientId && !options.useTokenAuth) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
@@ -61,6 +61,13 @@ var Auth = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 				throw new Error(msg);
 			}
+		}
+		if('useTokenAuth' in options && !options.useTokenAuth) {
+			var msg = 'option useTokenAuth was falsey, but basic auth cannot be used' +
+				(options.clientId ? ' as a clientId implies token auth' :
+				(!options.key ? ' as a key was not given' : ''));
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+			throw new Error(msg);
 		}
 		/* using token auth, but decide the method */
 		this.method = 'token';
