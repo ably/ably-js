@@ -40,6 +40,11 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
+
+		this._history(params, callback);
+	};
+
+	Channel.prototype._history = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
