@@ -587,6 +587,79 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   };
 
   /*
+   * Attach to channel, enter presence channel, update data, and await update event
+   */
+  exports.update0 = function(test) {
+    var clientRealtime;
+    var isDone = false, done = function() {
+      if(!isDone) {
+        isDone = true;
+        setTimeout(function() {
+          test.done(); clientRealtime.close();
+        }, 3000);
+      }
+    };
+    var newData = "New data";
+    try {
+      test.expect(5);
+
+      /* set up authenticated connection */
+      var transport = 'web_socket';
+      clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+      clientRealtime.connection.on('connected', function() {
+        var clientChannel = clientRealtime.channels.get('presenceUpdate0');
+
+        /* listen for the enter event, test is complete when received */
+        var presenceHandler = function(presenceMessage) {
+          if(this.event == 'update') {
+            test.ok(true, 'Update event received');
+            test.equal(presenceMessage.clientId, testClientId, 'Check presence event has correct clientId');
+            test.equal(presenceMessage.data, newData, 'Check presence event has correct data');
+            done();
+            clientChannel.presence.off(presenceHandler);
+          }
+        };
+        clientChannel.presence.on(presenceHandler);
+
+        clientChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.enter('Original data', function(err) {
+            if(err) {
+              test.ok(false, 'Enter failed with error: ' + err);
+              done();
+              return;
+            }
+            test.ok(true, 'Presence event sent');
+          });
+          clientChannel.presence.update(newData, function(err) {
+            if(err) {
+              test.ok(false, 'Update failed with error: ' + err);
+              done();
+              return;
+            }
+            test.ok(true, 'Presence event sent');
+          });
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.update0 failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
+  /*
    * Attach to channel, enter presence channel and get presence
    */
   exports.get0 = function(test) {

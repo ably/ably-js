@@ -17,17 +17,35 @@ var Presence = (function() {
 	Presence.prototype.enter = function(data, callback) {
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this.enterClient(this.clientId, data, callback);
+		this._enterOrUpdateClient(this.clientId, data, callback, 'enter');
+	};
+
+	Presence.prototype.update = function(data, callback) {
+		if(!this.clientId) {
+			throw new Error('clientId must be specified to update presence data');
+		}
+		this._enterOrUpdateClient(this.clientId, data, callback, 'update');
 	};
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
+		this._enterOrUpdateClient(clientId, data, callback, 'enter')
+	}
+
+	Presence.prototype.updateClient = function(clientId, data, callback) {
+		this._enterOrUpdateClient(clientId, data, callback, 'update')
+	}
+
+	Presence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
 		if (!callback && (typeof(data)==='function')) {
 			callback = data;
 			data = null;
 		}
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
+
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.' + action + 'Client()',
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId)
+
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction.ENTER,
+			action : presenceAction[action.toUpperCase()],
 			clientId : clientId,
 			data: data
 		});
