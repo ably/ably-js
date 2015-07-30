@@ -88,6 +88,37 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/* init with key string and useTokenAuth: true */
+	exports.init_key_with_usetokenauth = function(test) {
+		test.expect(2);
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr,
+				realtime = new helper.Ably.Realtime({key: keyStr, useTokenAuth: true});
+			realtime.close();
+			test.equal(realtime.options.key, keyStr);
+			test.equal(realtime.auth.method, 'token');
+			test.done();
+		} catch(e) {
+			test.ok(false, 'Init with key failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/* init with useTokenAuth: false with a clientId (should fail) */
+	exports.init_with_usetokenauth_false_and_a_clientid = function(test) {
+		test.expect(1);
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			test.throws(function(){
+				realtime = new helper.Ably.Realtime({key: keyStr, useTokenAuth: false, clientId: "foo"});
+			});
+			test.done();
+		} catch(e) {
+			test.ok(false, 'Init with key failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
 	/* check default httpHost selection */
 	exports.init_defaulthost = function(test) {
 		test.expect(1);
