@@ -160,7 +160,8 @@ var Auth = (function() {
 	 * - key:           the key to use.
 	 *
 	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
-	 *                  request params, to get a signed token request.
+	 *                  request params, to get a signed token request, a token details object,
+	 *                  or a token string.
 	 *
 	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
 	 *                  params, to obtain a signed token request.

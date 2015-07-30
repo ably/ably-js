@@ -26,6 +26,8 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 			   Else an API key will be configured by default for all clients */
 			if (options.authUrl) {
 				clientOptions.authUrl = options.authUrl;
+			} else if (options.authCallback) {
+				clientOptions.authCallback = options.authCallback;
 			} else if (options.authToken) {
 				clientOptions.authToken = options.authToken;
 			} else {

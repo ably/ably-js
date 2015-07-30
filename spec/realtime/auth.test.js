@@ -117,6 +117,117 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     });
   };
 
+  /*
+   * Use authCallback for authentication with tokenRequest response
+   */
+  exports.auth_useAuthCallback_tokenRequestResponse = function(test) {
+    test.expect(3);
+
+    var rest = helper.AblyRest();
+    var authCallback = function(tokenParams, callback) {
+      rest.auth.createTokenRequest(null, tokenParams, function(err, tokenRequest) {
+        if(err) {
+          test.ok(false, helper.displayError(err));
+          test.done();
+          return;
+        }
+        test.ok("nonce" in tokenRequest);
+        callback(null, tokenRequest);
+      });
+    };
+
+    realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+    realtime.connection.on('connected', function() {
+      realtime.connection.close();
+      test.equal(realtime.auth.method, 'token');
+      test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
+      test.done();
+      return;
+    });
+
+    realtime.connection.on('failed', function(err) {
+      realtime.close();
+      test.ok(false, "Failed: " + err);
+      test.done();
+      return;
+    });
+  };
+
+  /*
+   * Use authCallback for authentication with tokenDetails response
+   */
+  exports.auth_useAuthCallback_tokenDetailsResponse = function(test) {
+    test.expect(3);
+
+    var rest = helper.AblyRest();
+    var authCallback = function(tokenParams, callback) {
+      rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
+        if(err) {
+          test.ok(false, helper.displayError(err));
+          test.done();
+          return;
+        }
+        test.ok("token" in tokenDetails);
+        callback(null, tokenDetails);
+      });
+    };
+
+    realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+    realtime.connection.on('connected', function() {
+      realtime.connection.close();
+      test.equal(realtime.auth.method, 'token');
+      test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
+      test.done();
+      return;
+    });
+
+    realtime.connection.on('failed', function(err) {
+      realtime.close();
+      test.ok(false, "Failed: " + err);
+      test.done();
+      return;
+    });
+  };
+
+  /*
+   * Use authCallback for authentication with token string response
+   */
+  exports.auth_useAuthCallback_tokenStringResponse = function(test) {
+    test.expect(3);
+
+    var rest = helper.AblyRest();
+    var authCallback = function(tokenParams, callback) {
+      rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
+        if(err) {
+          test.ok(false, helper.displayError(err));
+          test.done();
+          return;
+        }
+        test.ok("token" in tokenDetails);
+        callback(null, tokenDetails.token);
+      });
+    };
+
+    realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+    realtime.connection.on('connected', function() {
+      realtime.connection.close();
+      test.equal(realtime.auth.method, 'token');
+      test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
+      test.done();
+      return;
+    });
+
+    realtime.connection.on('failed', function(err) {
+      realtime.close();
+      test.ok(false, "Failed: " + err);
+      test.done();
+      return;
+    });
+  };
+
   exports.teardown = function(test) {
     realtime.close();
     test.done();
