@@ -7131,6 +7131,11 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
+
+		if(params && params.untilAttach) {
+			throw new ErrorInfo("option untilAttach requires a realtime connection, it is not part of the REST API", 40000, 400);
+		}
+
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
@@ -7251,6 +7256,7 @@ var RealtimeChannel = (function() {
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
+		this.attachSerial = undefined;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -7576,6 +7582,10 @@ var RealtimeChannel = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name + '; message flags = ' + message.flags);
 		this.clearStateTimer();
 
+		/* Remember the channel serial at the moment of attaching in
+		 * order to support untilAttach flag for history retrieval */
+		this.attachSerial = message.channelSerial;
+
 		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
@@ -7691,6 +7701,42 @@ var RealtimeChannel = (function() {
 				this.pendingEvents[i].callback(err);
 			} catch(e) {}
 		this.pendingEvents = [];
+	};
+
+	RealtimeChannel.prototype.history = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+
+		if(params && params.untilAttach) {
+			if(this.state === 'attached') {
+				delete params.untilAttach;
+				params.from_serial = this.attachSerial;
+			} else {
+				console.log(this.state)
+				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
+			}
+		}
+
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			options = this.options;
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
+			return Message.fromResponseBody(body, options, !unpacked && format);
+		})).get(params, callback);
 	};
 
 	return RealtimeChannel;
