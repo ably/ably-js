@@ -159,9 +159,12 @@ var Auth = (function() {
 	 * an object containing the request options:
 	 * - key:           the key to use.
 	 *
-	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
-	 *                  request params, to get a signed token request, a token details object,
-	 *                  or a token string.
+	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 *                  authCallback should be a function of (tokenParams, callback) that calls
+	 *                  the callback with (err, result), where result is any of:
+	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
+	 *                  - a tokenDetails object (ie the result of a rest.auth.requestToken call),
+	 *                  - a token string
 	 *
 	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
 	 *                  params, to obtain a signed token request.
