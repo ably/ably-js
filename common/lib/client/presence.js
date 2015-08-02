@@ -113,17 +113,17 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(/* clientId, callback */) {
+	Presence.prototype.get = function(/* params, callback */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var clientId = args[0],
+		var params = args[0],
 			callback = args[1] || noop,
 			members = this.members;
 
 		members.waitSync(function() {
-			callback(null, clientId ? members.getClient(clientId) : members.values());
+			callback(null, params ? members.list(params) : members.values());
 		});
 	};
 
@@ -203,6 +203,22 @@ var Presence = (function() {
 			var item = map[key];
 			if(item.clientId == clientId && item.action != presenceAction.ABSENT)
 				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.list = function(params) {
+		var map = this.map,
+			clientId = params && params.clientId,
+			connectionId = params && params.connectionId,
+			result = [];
+
+		for(var key in map) {
+			var item = map[key];
+			if(item.action == presenceAction.ABSENT) continue;
+			if(clientId && clientId != item.clientId) continue;
+			if(connectionId && connectionId != item.connectionId) continue;
+			result.push(item);
 		}
 		return result;
 	};
