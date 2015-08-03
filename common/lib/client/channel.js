@@ -10,7 +10,7 @@ var Channel = (function() {
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
-		this.presence = new Presence(this);
+		this.presence = new RestPresence(this);
 		this.setOptions(options);
 	}
 	Utils.inherits(Channel, EventEmitter);
@@ -88,12 +88,12 @@ var Channel = (function() {
 		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
 	};
 
-	function Presence(channel) {
+	function RestPresence(channel) {
 		this.channel = channel;
 		this.basePath = channel.basePath + '/presence';
 	}
 
-	Presence.prototype.get = function(params, callback) {
+	RestPresence.prototype.get = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.get()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
@@ -118,7 +118,7 @@ var Channel = (function() {
 		})).get(params, callback);
 	};
 
-	Presence.prototype.history = function(params, callback) {
+	RestPresence.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.presence.history()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
