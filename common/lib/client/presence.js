@@ -29,11 +29,11 @@ var Presence = (function() {
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
 		this._enterOrUpdateClient(clientId, data, callback, 'enter')
-	}
+	};
 
 	Presence.prototype.updateClient = function(clientId, data, callback) {
 		this._enterOrUpdateClient(clientId, data, callback, 'update')
-	}
+	};
 
 	Presence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
 		if (!callback && (typeof(data)==='function')) {
