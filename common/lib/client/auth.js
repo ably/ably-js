@@ -363,10 +363,12 @@ var Auth = (function() {
 			return;
 		}
 
+		tokenParams.capability = c14n(tokenParams.capability);
+
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
-			capability = tokenParams.capability || '',
+			capability = tokenParams.capability,
 			rest = this.rest,
 			self = this;
 

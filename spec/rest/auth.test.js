@@ -411,5 +411,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
+	/*
+	 * createTokenRequest given capability object JSON-stringifies it
+	 */
+	exports.auth_createTokenRequest_capability_object = function(test) {
+		test.expect(1);
+		var capability = {'*':['*']};
+		rest.auth.createTokenRequest(null, {capability: capability}, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.deepEqual(JSON.parse(tokenRequest.capability), capability, 'Verify createTokenRequest has JSON-stringified capability');
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
