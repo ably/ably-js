@@ -380,7 +380,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
 
 	/*
-	 * createTokenRequest uses specified key
+	 * createTokenRequest uses the key it was initialised with if authOptions is null
 	 */
 	exports.auth_createTokenRequest_given_key = function(test) {
 		test.expect(1);
@@ -391,6 +391,39 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	/*
+	 * createTokenRequest uses the key it was initialised with if authOptions does not have a "key" key
+	 */
+	exports.auth_createTokenRequest_given_key2 = function(test) {
+		test.expect(1);
+		rest.auth.createTokenRequest({}, null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	/*
+	 * createTokenRequest given capability object JSON-stringifies it
+	 */
+	exports.auth_createTokenRequest_capability_object = function(test) {
+		test.expect(1);
+		var capability = {'*':['*']};
+		rest.auth.createTokenRequest(null, {capability: capability}, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.deepEqual(JSON.parse(tokenRequest.capability), capability, 'Verify createTokenRequest has JSON-stringified capability');
 			test.done();
 		});
 	};

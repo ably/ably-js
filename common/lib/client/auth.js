@@ -319,7 +319,8 @@ var Auth = (function() {
 	 *
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - key:           the key to use.
+	 * - key:           the key to use. If not specified, a key passed in constructing
+	 *                  the Rest interface will be used
 	 *
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
@@ -345,7 +346,7 @@ var Auth = (function() {
 	 *
 	 */
 	Auth.prototype.createTokenRequest = function(authOptions, tokenParams, callback) {
-		authOptions = authOptions || this.rest.options;
+		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -362,10 +363,12 @@ var Auth = (function() {
 			return;
 		}
 
+		tokenParams.capability = c14n(tokenParams.capability);
+
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
-			capability = tokenParams.capability || '',
+			capability = tokenParams.capability,
 			rest = this.rest,
 			self = this;
 
