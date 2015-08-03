@@ -380,11 +380,27 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   };
 
 	/*
-	 * createTokenRequest uses specified key
+	 * createTokenRequest uses the key it was initialised with if authOptions is null
 	 */
 	exports.auth_createTokenRequest_given_key = function(test) {
 		test.expect(1);
 		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	/*
+	 * createTokenRequest uses the key it was initialised with if authOptions does not have a "key" key
+	 */
+	exports.auth_createTokenRequest_given_key2 = function(test) {
+		test.expect(1);
+		rest.auth.createTokenRequest({}, null, function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
