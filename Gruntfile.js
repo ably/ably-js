@@ -130,6 +130,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/transport/websockettransport.js',
 		'<%= dirs.common %>/lib/transport/comettransport.js',
 
+		'<%= dirs.common %>/lib/client/restpresence.js',
 		'<%= dirs.common %>/lib/client/resource.js',
 		'<%= dirs.common %>/lib/client/paginatedresource.js',
 		'<%= dirs.common %>/lib/client/auth.js',

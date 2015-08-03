@@ -8,11 +8,11 @@ var Presence = (function() {
 
 	function Presence(channel, options) {
 		EventEmitter.call(this);
-		this.channel = channel;
+		RestPresence.call(this, channel);
 		this.clientId = options.clientId;
 		this.members = new PresenceMap(this);
 	}
-	Utils.inherits(Presence, EventEmitter);
+	Utils.inherits(Presence, RestPresence);
 
 	Presence.prototype.enter = function(data, callback) {
 		if(!this.clientId)

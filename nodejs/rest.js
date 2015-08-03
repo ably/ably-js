@@ -36,6 +36,7 @@ includeScript('../common/lib/types/stats.js');
 includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
+includeScript('../common/lib/client/restpresence.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/rest.js');
 
