@@ -12,7 +12,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				data: 'some data' }
 		});
 
-	var parallelPublishMessages = function(channel, messages, callback) {
+	var parallelPublishMessages = function(test, channel, messages, callback) {
 		var publishTasks = messages.map(function(event) {
 			return function(publishCb) {
 				channel.publish(event.name, event.data, publishCb);
@@ -52,7 +52,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var restChannel = rest.channels.get('persisted:history_until_attach');
 
 		/* first, send a number of events to this channel before attaching */
-		parallelPublishMessages(restChannel, preAttachMessages, function(){
+		parallelPublishMessages(test, restChannel, preAttachMessages, function(){
 
 			/* second, connect and attach to the channel */
 			try {
@@ -69,7 +69,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						/* third, send some more events post-attach (over rest, not using the
 						 * new realtime connection) */
 
-						parallelPublishMessages(restChannel, postAttachMessages, function(){
+						parallelPublishMessages(test, restChannel, postAttachMessages, function(){
 
 							/* fourth, query history using the realtime connection with
 							 * untilAttach both true, false, and not present, checking that
