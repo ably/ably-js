@@ -1,4 +1,4 @@
-var Presence = (function() {
+var RealtimePresence = (function() {
 	var presenceAction = PresenceMessage.Action;
 	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 
@@ -6,42 +6,42 @@ var Presence = (function() {
 		return item.clientId + ':' + item.connectionId;
 	}
 
-	function Presence(channel, options) {
+	function RealtimePresence(channel, options) {
 		EventEmitter.call(this);
-		RestPresence.call(this, channel);
+		Presence.call(this, channel);
 		this.clientId = options.clientId;
 		this.members = new PresenceMap(this);
 	}
-	Utils.inherits(Presence, RestPresence);
+	Utils.inherits(RealtimePresence, Presence);
 
-	Presence.prototype.enter = function(data, callback) {
+	RealtimePresence.prototype.enter = function(data, callback) {
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
 		this._enterOrUpdateClient(this.clientId, data, callback, 'enter');
 	};
 
-	Presence.prototype.update = function(data, callback) {
+	RealtimePresence.prototype.update = function(data, callback) {
 		if(!this.clientId) {
 			throw new Error('clientId must be specified to update presence data');
 		}
 		this._enterOrUpdateClient(this.clientId, data, callback, 'update');
 	};
 
-	Presence.prototype.enterClient = function(clientId, data, callback) {
+	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
 		this._enterOrUpdateClient(clientId, data, callback, 'enter')
 	};
 
-	Presence.prototype.updateClient = function(clientId, data, callback) {
+	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
 		this._enterOrUpdateClient(clientId, data, callback, 'update')
 	};
 
-	Presence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
+	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
 		if (!callback && (typeof(data)==='function')) {
 			callback = data;
 			data = null;
 		}
 
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.' + action + 'Client()',
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
 		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId)
 
 		var presence = PresenceMessage.fromValues({
@@ -69,7 +69,7 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.leave = function(data, callback) {
+	RealtimePresence.prototype.leave = function(data, callback) {
 		if (!callback && (typeof(data)==='function')) {
 			callback = data;
 			data = '';
@@ -79,8 +79,8 @@ var Presence = (function() {
 		this.leaveClient(this.clientId, data, callback);
 	};
 
-	Presence.prototype.leaveClient = function(clientId, data, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
+	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
 			clientId : clientId,
@@ -113,7 +113,7 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(/* params, callback */) {
+	RealtimePresence.prototype.get = function(/* params, callback */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
@@ -127,8 +127,8 @@ var Presence = (function() {
 		});
 	};
 
-	Presence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
+	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
 		var syncCursor, match, members = this.members;
 		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
 			this.members.startSync();
@@ -161,17 +161,17 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.setAttached = function() {
+	RealtimePresence.prototype.setAttached = function() {
 		var pendingPresence = this.pendingPresence;
 		if(pendingPresence) {
 			var presence = pendingPresence.presence, callback = pendingPresence.callback;
-			Logger.logAction(Logger.LOG_MICRO, 'Presence.setAttached', 'sending queued presence; action = ' + presence.action);
+			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setAttached', 'sending queued presence; action = ' + presence.action);
 			this.channel.sendPresence(presence, callback);
 			this.pendingPresence = null;
 		}
 	};
 
-	Presence.prototype.setSuspended = function(err) {
+	RealtimePresence.prototype.setSuspended = function(err) {
 		var pendingPresence = this.pendingPresence;
 		if(pendingPresence) {
 			pendingPresence.callback(err);
@@ -179,7 +179,7 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.awaitSync = function() {
+	RealtimePresence.prototype.awaitSync = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
 		this.members.startSync();
 	};
@@ -304,5 +304,5 @@ var Presence = (function() {
 		this.once('sync', callback);
 	};
 
-	return Presence;
+	return RealtimePresence;
 })();

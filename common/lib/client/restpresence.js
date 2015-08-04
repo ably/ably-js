@@ -1,13 +1,13 @@
-var RestPresence = (function() {
-	function RestPresence(channel) {
+var Presence = (function() {
+	function Presence(channel) {
 		this.channel = channel;
 		this.basePath = channel.basePath + '/presence';
 	}
 
-	Utils.inherits(RestPresence, EventEmitter);
+	Utils.inherits(Presence, EventEmitter);
 
-	RestPresence.prototype.get = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RestPresence.get()', 'channel = ' + this.channel.name);
+	Presence.prototype.get = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.get()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -31,8 +31,8 @@ var RestPresence = (function() {
 		})).get(params, callback);
 	};
 
-	RestPresence.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RestPresence.history()', 'channel = ' + this.channel.name);
+	Presence.prototype.history = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -56,5 +56,5 @@ var RestPresence = (function() {
 		})).get(params, callback);
 	};
 
-	return RestPresence;
+	return Presence;
 })();

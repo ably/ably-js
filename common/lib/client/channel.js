@@ -10,7 +10,7 @@ var Channel = (function() {
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
-		this.presence = new RestPresence(this);
+		this.presence = new Presence(this);
 		this.setOptions(options);
 	}
 	Utils.inherits(Channel, EventEmitter);
