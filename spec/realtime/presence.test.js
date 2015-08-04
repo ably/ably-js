@@ -815,6 +815,91 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     }
   };
 
+ /*
+   * Attach to channel, enter+leave presence, detatch again, and get presence history
+   */
+  exports.history0 = function(test) {
+    var clientRealtime;
+    var isDone = false, done = function() {
+      if(!isDone) {
+        isDone = true;
+        setTimeout(function() {
+          test.done(); clientRealtime.close();
+        }, 3000);
+      }
+    };
+    try {
+      test.expect(4);
+      /* listen for the enter event, test is complete when received */
+      var testClientData = 'Test client data (history0)';
+      var queryPresenceHistory = function(channel) {
+        channel.presence.history(function(err, resultPage) {
+          if(err) {
+            test.ok(false, displayError(err));
+            done();
+            return;
+          }
+
+          var presenceMessages = resultPage.items;
+          test.equal(presenceMessages.length, 2, 'Verify correct number of presence messages found');
+          var actions = presenceMessages.map(function(msg){return msg.action}).sort();
+          test.deepEqual(actions, [2,3], 'Verify presenceMessages have correct actions');
+          test.equal(presenceMessages[0].data, testClientData, 'Verify first presenceMessages has correct data');
+          test.equal(presenceMessages[1].data, testClientData, 'Verify second presenceMessages has correct data');
+          done();
+        });
+      };
+
+      /* set up authenticated connection */
+      var transport = 'web_socket';
+      clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+      clientRealtime.connection.on('connected', function() {
+        /* get channel, attach, and enter */
+        var clientChannel = clientRealtime.channels.get('presenceHistory0');
+        clientChannel.attach(function(err) {
+          if(err) {
+            test.ok(false, 'Attach failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.enter(testClientData, function(err) {
+            if(err) {
+              test.ok(false, 'Enter failed with error: ' + err);
+              done();
+              return;
+            }
+            clientChannel.presence.leave(function(err) {
+              if(err) {
+                test.ok(false, 'Enter failed with error: ' + err);
+                done();
+                return;
+              }
+              clientChannel.detach(function(err) {
+                if(err) {
+                  test.ok(false, 'Attach failed with error: ' + err);
+                  done();
+                  return;
+                }
+                queryPresenceHistory(clientChannel);
+              });
+            });
+          });
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, transport + ' connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.history0 failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
   /*
    * Attach to channel, enter presence channel, then initiate second
    * connection, seeing existing member in message subsequent to second attach response

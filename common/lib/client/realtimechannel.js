@@ -11,11 +11,11 @@ var RealtimeChannel = (function() {
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
-    	this.presence = new Presence(this, options);
-    	this.connectionManager = realtime.connection.connectionManager;
-    	this.state = 'initialized';
-    	this.subscriptions = new EventEmitter();
-    	this.pendingEvents = [];
+		this.presence = new RealtimePresence(this, options);
+		this.connectionManager = realtime.connection.connectionManager;
+		this.state = 'initialized';
+		this.subscriptions = new EventEmitter();
+		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
 		this.setOptions(options);

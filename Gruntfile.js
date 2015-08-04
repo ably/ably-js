@@ -130,6 +130,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/transport/websockettransport.js',
 		'<%= dirs.common %>/lib/transport/comettransport.js',
 
+		'<%= dirs.common %>/lib/client/presence.js',
 		'<%= dirs.common %>/lib/client/resource.js',
 		'<%= dirs.common %>/lib/client/paginatedresource.js',
 		'<%= dirs.common %>/lib/client/auth.js',
@@ -139,7 +140,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/connection.js',
 		'<%= dirs.common %>/lib/client/channel.js',
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
-		'<%= dirs.common %>/lib/client/presence.js',
+		'<%= dirs.common %>/lib/client/realtimepresence.js',
 
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
