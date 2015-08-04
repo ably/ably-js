@@ -48,7 +48,7 @@ includeScript('../common/lib/client/connection.js');
 includeScript('../common/lib/client/restpresence.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/realtimechannel.js');
-includeScript('../common/lib/client/presence.js');
+includeScript('../common/lib/client/realtimepresence.js');
 includeScript('../common/lib/client/rest.js');
 includeScript('../common/lib/client/realtime.js');
 includeScript('./lib/transport/nodecomettransport.js');
