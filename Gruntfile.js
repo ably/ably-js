@@ -7,6 +7,7 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-closure-compiler');
+	grunt.loadNpmTasks('grunt-bump');
 
 	var dirs = {
 		common: 'common',
@@ -213,6 +214,19 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/epilogue.js'
 	];
 
+	gruntConfig.bump = {
+		options: {
+			files: ['package.json'],
+			commit: true,
+			commitMessage: 'Regenerate and release version %VERSION%',
+			commitFiles: [], // Add files manually as can't add new files with a commit flag
+			createTag: true,
+			tagName: '%VERSION%',
+			tagMessage: 'Version %VERSION%',
+			push: false,
+		}
+	};
+
 	grunt.initConfig(gruntConfig);
 
 	grunt.registerTask('compiler', [
@@ -316,6 +330,46 @@ module.exports = function (grunt) {
 	grunt.registerTask('test:webserver',
 		'Launch the Nodeunit test web server on http://localhost:3000/',
 		['copy', 'concat', 'requirejs', 'nodeunit:webserver']
+	);
+
+	grunt.registerTask('release:refresh-pkgVersion',
+		'Refreshes GruntConfig.pkgVersion', function() {
+			grunt.config('pkgVersion', grunt.file.readJSON('package.json').version);
+			grunt.log.ok('pkgVersion updated');
+		}
+  );
+
+	grunt.registerTask('release:git-add-generated',
+		'Adds generated files to the git staging area', function() {
+			var done = this.async();
+			var generatedFiles = [
+				gruntConfig.dirs.static,
+				gruntConfig.dirs.common + '/lib/util/defaults.js',
+				'package.json',
+				'spec/support/browser_file_list.js'
+			];
+			var cmd = 'git add -A ' + generatedFiles.join(' ');
+			grunt.log.ok("Executing " + cmd);
+
+			require('child_process').exec(cmd, function(err, stdout, stderr) {
+				if (err) {
+					grunt.fatal('git add . -A failed with ' + stderr);
+				}
+				done();
+			});
+		}
+	);
+
+	grunt.registerTask('release',
+		'Increments the version, regenerates, and makes a tagged commit. Run as "grunt release:type", where "type" is "major", "minor", "patch", "prepatch", etc.)',
+		function(versionType) {
+			grunt.task.run([
+				'bump-only:' + versionType,
+				'release:refresh-pkgVersion', // Else the iframe file gets created with the old version
+				'all',
+				'release:git-add-generated',
+				'bump-commit']);
+		}
 	);
 
 	grunt.registerTask('default', 'all');
