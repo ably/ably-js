@@ -6451,7 +6451,7 @@ var Auth = (function() {
 		/* decide default auth method */
 		var key = options.key;
 		if(key) {
-			if(!options.clientId) {
+			if(!options.clientId && !options.useTokenAuth) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
@@ -6467,6 +6467,13 @@ var Auth = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 				throw new Error(msg);
 			}
+		}
+		if('useTokenAuth' in options && !options.useTokenAuth) {
+			var msg = 'option useTokenAuth was falsey, but basic auth cannot be used' +
+				(options.clientId ? ' as a clientId implies token auth' :
+				(!options.key ? ' as a key was not given' : ''));
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+			throw new Error(msg);
 		}
 		/* using token auth, but decide the method */
 		this.method = 'token';
@@ -6558,8 +6565,12 @@ var Auth = (function() {
 	 * an object containing the request options:
 	 * - key:           the key to use.
 	 *
-	 * - authCallback:  (optional) a javascript callback to be used, passing a set of token
-	 *                  request params, to get a signed token request.
+	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 *                  authCallback should be a function of (tokenParams, callback) that calls
+	 *                  the callback with (err, result), where result is any of:
+	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
+	 *                  - a tokenDetails object (ie the result of a rest.auth.requestToken call),
+	 *                  - a token string
 	 *
 	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
 	 *                  params, to obtain a signed token request.
@@ -6714,7 +6725,8 @@ var Auth = (function() {
 	 *
 	 * @param authOptions
 	 * an object containing the request options:
-	 * - key:           the key to use.
+	 * - key:           the key to use. If not specified, a key passed in constructing
+	 *                  the Rest interface will be used
 	 *
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
@@ -6740,7 +6752,7 @@ var Auth = (function() {
 	 *
 	 */
 	Auth.prototype.createTokenRequest = function(authOptions, tokenParams, callback) {
-		authOptions = authOptions || this.rest.options;
+		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -6757,10 +6769,12 @@ var Auth = (function() {
 			return;
 		}
 
+		tokenParams.capability = c14n(tokenParams.capability);
+
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
-			capability = tokenParams.capability || '',
+			capability = tokenParams.capability,
 			rest = this.rest,
 			self = this;
 
@@ -7131,6 +7145,11 @@ var Channel = (function() {
 				callback = noop;
 			}
 		}
+
+		this._history(params, callback);
+	};
+
+	Channel.prototype._history = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
@@ -7251,6 +7270,7 @@ var RealtimeChannel = (function() {
     	this.subscriptions = new EventEmitter();
     	this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
+		this.attachSerial = undefined;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -7350,6 +7370,7 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
+		this.setPendingState('attaching');
 		this.once(function(err) {
 			switch(this.event) {
 			case 'attached':
@@ -7360,7 +7381,6 @@ var RealtimeChannel = (function() {
 				callback(err || connectionManager.getStateError());
 			}
 		});
-		this.setPendingState('attaching');
     };
 
     RealtimeChannel.prototype.attachImpl = function(callback) {
@@ -7381,6 +7401,7 @@ var RealtimeChannel = (function() {
 			callback();
 			return;
 		}
+		this.setPendingState('detaching');
 		this.once(function(err) {
 			switch(this.event) {
 			case 'detached':
@@ -7392,7 +7413,6 @@ var RealtimeChannel = (function() {
 				break;
 			}
 		});
-		this.setPendingState('detaching');
 		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
@@ -7576,6 +7596,10 @@ var RealtimeChannel = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name + '; message flags = ' + message.flags);
 		this.clearStateTimer();
 
+		/* Remember the channel serial at the moment of attaching in
+		 * order to support untilAttach flag for history retrieval */
+		this.attachSerial = message.channelSerial;
+
 		/* update any presence included with this message */
 		if(message.presence)
 			this.presence.setPresence(message.presence, false);
@@ -7628,7 +7652,7 @@ var RealtimeChannel = (function() {
 		this.clearStateTimer();
 		this.failPendingMessages(err);
 		this.presence.setSuspended(err);
-		if (!suppressEvent)
+		if (!suppressEvent && this.state !== 'detached')
 			this.emit('detached');
 	};
 
@@ -7653,7 +7677,9 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, Defaults.sendTimeout)
+		}, Defaults.sendTimeout);
+		/* notify the state change */
+		this.emit(state);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
@@ -7693,6 +7719,31 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 	};
 
+	RealtimeChannel.prototype.history = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+
+		if(params && params.untilAttach) {
+			if(this.state === 'attached') {
+				delete params.untilAttach;
+				params.from_serial = this.attachSerial;
+			} else {
+				console.log(this.state)
+				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
+			}
+		}
+
+		Channel.prototype._history.call(this, params, callback);
+	};
+
 	return RealtimeChannel;
 })();
 
@@ -7715,17 +7766,35 @@ var Presence = (function() {
 	Presence.prototype.enter = function(data, callback) {
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this.enterClient(this.clientId, data, callback);
+		this._enterOrUpdateClient(this.clientId, data, callback, 'enter');
+	};
+
+	Presence.prototype.update = function(data, callback) {
+		if(!this.clientId) {
+			throw new Error('clientId must be specified to update presence data');
+		}
+		this._enterOrUpdateClient(this.clientId, data, callback, 'update');
 	};
 
 	Presence.prototype.enterClient = function(clientId, data, callback) {
+		this._enterOrUpdateClient(clientId, data, callback, 'enter')
+	};
+
+	Presence.prototype.updateClient = function(clientId, data, callback) {
+		this._enterOrUpdateClient(clientId, data, callback, 'update')
+	};
+
+	Presence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
 		if (!callback && (typeof(data)==='function')) {
 			callback = data;
 			data = null;
 		}
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.enterClient()', 'entering; channel = ' + this.channel.name + ', client = ' + clientId);
+
+		Logger.logAction(Logger.LOG_MICRO, 'Presence.' + action + 'Client()',
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId)
+
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction.ENTER,
+			action : presenceAction[action.toUpperCase()],
 			clientId : clientId,
 			data: data
 		});
@@ -7793,17 +7862,17 @@ var Presence = (function() {
 		}
 	};
 
-	Presence.prototype.get = function(/* clientId, callback */) {
+	Presence.prototype.get = function(/* params, callback */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
-		var clientId = args[0],
+		var params = args[0],
 			callback = args[1] || noop,
 			members = this.members;
 
 		members.waitSync(function() {
-			callback(null, clientId ? members.getClient(clientId) : members.values());
+			callback(null, params ? members.list(params) : members.values());
 		});
 	};
 
@@ -7883,6 +7952,22 @@ var Presence = (function() {
 			var item = map[key];
 			if(item.clientId == clientId && item.action != presenceAction.ABSENT)
 				result.push(item);
+		}
+		return result;
+	};
+
+	PresenceMap.prototype.list = function(params) {
+		var map = this.map,
+			clientId = params && params.clientId,
+			connectionId = params && params.connectionId,
+			result = [];
+
+		for(var key in map) {
+			var item = map[key];
+			if(item.action == presenceAction.ABSENT) continue;
+			if(clientId && clientId != item.clientId) continue;
+			if(connectionId && connectionId != item.connectionId) continue;
+			result.push(item);
 		}
 		return result;
 	};
