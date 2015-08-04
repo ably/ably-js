@@ -2,7 +2,19 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
-		rest;
+		rest,
+		publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
+			for(var i = numMessages; i > 0; i--) {
+				var helper = function(currentMessageNum) {
+					console.log('sending: ' + currentMessageNum);
+					channel.publish('event0', dataFn(), function(err) {
+						console.log('publish callback called');
+						onPublish();
+					});
+				};
+				setTimeout(helper(i), 20*i);
+			}
+		};
 
 	exports.setupUpgrade = function(test) {
 		test.expect(1);
@@ -228,13 +240,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.upgradepublish0 = function(test) {
 		var count = 10;
 		var cbCount = 10;
-		var timer;
 		var checkFinish = function() {
 			if(count <= 0 && cbCount <= 0) {
-				clearInterval(timer);
 				test.done();
 				realtime.close();
 			}
+		};
+		var onPublish = function() {
+			--cbCount;
+			checkFinish();
 		};
 		var transportOpts = {useBinaryProtocol: false};
 		var realtime = helper.AblyRealtime(transportOpts);
@@ -246,12 +260,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			--count;
 			checkFinish();
 		});
-		timer = setInterval(function() {
-			channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-				--cbCount;
-				checkFinish();
-			});
-		}, 300);
+		var dataFn = function() { return 'Hello world at: ' + new Date() };
+		publishAtIntervals(count, channel, dataFn, onPublish);
 	};
 
 	/**
@@ -260,13 +270,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.upgradepublish1 = function(test) {
 		var count = 10;
 		var cbCount = 10;
-		var timer;
 		var checkFinish = function() {
 			if(count <= 0 && cbCount <= 0) {
-				clearInterval(timer);
 				test.done();
 				realtime.close();
 			}
+		};
+		var onPublish = function() {
+			--cbCount;
+			checkFinish();
 		};
 		var transportOpts = {useBinaryProtocol: true};
 		var realtime = helper.AblyRealtime(transportOpts);
@@ -278,12 +290,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			--count;
 			checkFinish();
 		});
-		timer = setInterval(function() {
-			channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-				--cbCount;
-				checkFinish();
-			});
-		}, 300);
+		var dataFn = function() { return 'Hello world at: ' + new Date() };
+		publishAtIntervals(count, channel, dataFn, onPublish);
 	};
 
 	/*

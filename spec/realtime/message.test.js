@@ -2,7 +2,19 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
   var exports = {},
-      displayError = helper.displayError;
+    displayError = helper.displayError,
+    publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
+      for(var i = numMessages; i > 0; i--) {
+        var helper = function(currentMessageNum) {
+          console.log('sending: ' + currentMessageNum);
+          channel.publish('event0', dataFn(), function(err) {
+            console.log('publish callback called');
+            onPublish();
+          });
+        };
+        setTimeout(helper(i), 20*i);
+      }
+    };
 
   exports.setupMessage = function(test) {
     test.expect(1);
@@ -277,13 +289,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.wspublish = function(test) {
     var count = 10;
     var cbCount = 10;
-    var timer;
     var checkFinish = function() {
       if(count <= 0 && cbCount <= 0) {
-        clearInterval(timer);
         test.done();
         realtime.close();
       }
+    };
+    var onPublish = function() {
+      --cbCount;
+      checkFinish();
     };
     var realtime = helper.AblyRealtime();
     test.expect(count);
@@ -294,27 +308,23 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       --count;
       checkFinish();
     });
-    timer = setInterval(function() {
-      // console.log('sending: ' + count);
-      channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-        // console.log('publish callback called');
-        --cbCount;
-        checkFinish();
-      });
-    }, 500);
+    var dataFn = function() { return 'Hello world at: ' + new Date() };
+    publishAtIntervals(count, channel, dataFn, onPublish);
   };
 
   if (isBrowser) {
     exports.wsxhrpublish = function(test) {
       var count = 5;
       var cbCount = 5;
-      var timer;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          clearInterval(timer);
           test.done();
           realtime.close();
         }
+      };
+      var onPublish = function() {
+        --cbCount;
+        checkFinish();
       };
       var realtime = helper.AblyRealtime({ transports : ['xhr'] });
       test.expect(count);
@@ -325,26 +335,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         --count;
         checkFinish();
       });
-      timer = setInterval(function() {
-        console.log('sending: ' + count);
-        channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-          console.log('publish callback called');
-          --cbCount;
-          checkFinish();
-        });
-      }, 500);
+      var dataFn = function() { return 'Hello world at: ' + new Date() };
+      publishAtIntervals(count, channel, dataFn, onPublish);
     };
 
     exports.wsjsonppublish = function(test) {
       var count = 5;
       var cbCount = 5;
-      var timer;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          clearInterval(timer);
           test.done();
           realtime.close();
         }
+      };
+      var onPublish = function() {
+        --cbCount;
+        checkFinish();
       };
       var realtime = helper.AblyRealtime({ transports : ['jsonp'] });
       test.expect(count);
@@ -355,26 +361,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         --count;
         checkFinish();
       });
-      timer = setInterval(function() {
-        console.log('sending: ' + count);
-        channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-          console.log('publish callback called');
-          --cbCount;
-          checkFinish();
-        });
-      }, 500);
+      var dataFn = function() { return 'Hello world at: ' + new Date() };
+      publishAtIntervals(count, channel, dataFn, onPublish);
     };
   } else {
     exports.wscometpublish = function(test) {
       var count = 5;
       var cbCount = 5;
-      var timer;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          clearInterval(timer);
           test.done();
           realtime.close();
         }
+      };
+      var onPublish = function() {
+        --cbCount;
+        checkFinish();
       };
       var realtime = helper.AblyRealtime({ transports : ['comet'] });
       test.expect(count);
@@ -385,14 +387,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         --count;
         checkFinish();
       });
-      timer = setInterval(function() {
-        console.log('sending: ' + count);
-        channel.publish('event0', 'Hello world at: ' + new Date(), function() {
-          console.log('publish callback called');
-          --cbCount;
-          checkFinish();
-        });
-      }, 500);
+      var dataFn = function() { return 'Hello world at: ' + new Date() };
+      publishAtIntervals(count, channel, dataFn, onPublish);
     };
   }
 
