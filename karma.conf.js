@@ -147,7 +147,10 @@ module.exports = function(config) {
     sauceLabs: {
       testName: 'Ably-JS Javascript Tests',
       username: process.env.SAUCE_USERNAME || 'ably',
-      accessKey: process.env.SAUCE_ACCESS_KEY
+      accessKey: process.env.SAUCE_ACCESS_KEY,
+      connectOptions: {
+        vmVersion: 'dev-varnish'
+      }
     },
 
     // start these browsers
