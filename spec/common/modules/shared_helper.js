@@ -3,8 +3,8 @@
 /* Shared test helper for the Jasmine test suite that simplifies
    the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testdata_module'],
-  function(testAppModule, clientModule, testDataModule) {
+define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testdata_module', 'async'],
+  function(testAppModule, clientModule, testDataModule, async) {
     var displayError = function(err) {
       if(typeof(err) == 'string')
         return err;
@@ -18,6 +18,58 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
         result += JSON.stringify(err.message);
 
       return result;
+    };
+
+    var monitorConnection = function(test, realtime) {
+      ['failed', 'suspended'].forEach(function(state) {
+        realtime.connection.on(state, function () {
+          test.ok(false, 'connection to server ' + state);
+          test.done();
+          realtime.close();
+        });
+      });
+    };
+
+    var closeAndFinish = function(test, realtime) {
+      if(typeof realtime === 'undefined') {
+        // Likely called in a catch block for an exception
+        // that occured before realtime was initialised
+        test.done();
+        return;
+      }
+      if(Object.prototype.toString.call(realtime) == '[object Array]') {
+        closeAndFinishSeveral(test, realtime);
+        return;
+      }
+      callbackOnClose(realtime, function(){ test.done(); })
+    };
+
+    function callbackOnClose(realtime, callback) {
+      if(realtime.connection.connectionManager.transport === null) {
+        console.log("No transport established; closing connection and calling test.done()")
+        realtime.close();
+        callback();
+        return;
+      }
+      realtime.connection.connectionManager.transport.on('disposed', function() {
+        console.log("Transport disposed; calling test.done()")
+        callback();
+      });
+      realtime.close();
+    }
+
+    function closeAndFinishSeveral(test, realtimeArray) {
+      async.map(realtimeArray, function(realtime, mapCb){
+        var parallelItem = function(parallelCb) {
+          callbackOnClose(realtime, function(){ parallelCb(); })
+        };
+        mapCb(null, parallelItem)
+      }, function(err, parallelItems) {
+        async.parallel(parallelItems, function() {
+          test.done();
+        });
+      }
+     )
     };
 
     /* Wraps all tests with a timeout so that they don't run indefinitely */
@@ -58,7 +110,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
       loadTestData: testDataModule.loadTestData,
 
-      displayError: displayError,
-      withTimeout:  withTimeout
+      displayError:      displayError,
+      monitorConnection: monitorConnection,
+      closeAndFinish:    closeAndFinish,
+      withTimeout:       withTimeout
     };
   });
