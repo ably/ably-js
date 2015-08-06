@@ -105,6 +105,7 @@ var WebSocketTransport = (function() {
 		delete this.wsConnection;
 		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
 		Transport.prototype.onDisconnect.call(this, err);
+		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {

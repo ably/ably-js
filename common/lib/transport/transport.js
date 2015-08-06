@@ -5,10 +5,11 @@ var Transport = (function() {
 
 	/*
 	 * EventEmitter, generates the following events:
-	 * 
+	 *
 	 * event name       data
 	 * closed           error
 	 * failed           error
+	 * disposed
 	 * connected        null error, connectionKey
 	 * event            channel message object
 	 */
