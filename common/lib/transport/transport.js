@@ -54,6 +54,7 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onProtocolMessage = function(message) {
+		Logger.logAction(Logger.LOG_MAJOR, 'Transport.onProtocolMessage()', JSON.stringify(message));
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);

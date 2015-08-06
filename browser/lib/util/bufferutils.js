@@ -5,6 +5,11 @@ var BufferUtils = (function() {
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
+	// msgpack.decode for raw binary data gives a wordArray-like object that isn't a proper wordArray,
+	// so doesn't have a wordArray.clamp() method
+	function ensureProperWordArray(wordArray) {
+		return (wordArray.clamp !== undefined ? wordArray : WordArray.create(wordArray.words));
+	}
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function arrayBufferToBase64(ArrayBuffer) {
@@ -84,7 +89,7 @@ var BufferUtils = (function() {
 		if(isArrayBuffer(buf))
 			return arrayBufferToBase64(buf);
 		if(isWordArray(buf))
-			return CryptoJS.enc.Base64.stringify(buf);
+			return CryptoJS.enc.Base64.stringify(ensureProperWordArray(buf));
 	};
 
 	BufferUtils.base64Decode = function(str) {
