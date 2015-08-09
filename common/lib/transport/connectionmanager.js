@@ -65,6 +65,8 @@ var ConnectionManager = (function() {
 				break;
 			default:
 		}
+		if(options.clientId !== undefined)
+			params.clientId = options.clientId;
 		if(options.echoMessages === false)
 			params.echo = 'false';
 		if(this.format !== undefined)
