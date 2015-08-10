@@ -2,7 +2,9 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
-		displayError = helper.displayError;
+		displayError = helper.displayError,
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -32,22 +34,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.ok(false, 'Attach failed with error: ' + err);
 					else
 						test.ok(true, 'Attach to channel 0 with no options');
-					test.done();
-					realtime.close();
+					closeAndFinish(test, realtime);
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -67,26 +60,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.ok(false, 'Attach failed with error: ' + err);
 					else
 						test.ok(true, 'Attach to channel1 with no options');
-
-					setTimeout(function() {
-						test.done();
-
-					}, 3000);
-					realtime.close();
+					closeAndFinish(test, realtime);
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -105,21 +85,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.ok(false, 'Attach failed with error: ' + err);
 				else
 					test.ok(true, 'Attach to channel 0 with no options');
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -137,36 +108,25 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				channel0.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					}
 					channel0.detach(function(err) {
 						if(err) {
 							test.ok(false, 'Detach failed with error: ' + err);
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}
 						if(channel0.state == 'detached')
 							test.ok(true, 'Attach then detach to channel 0 with no options');
 						else
 							test.ok(false, 'Detach failed: State is '+channel0.state);
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -186,28 +146,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.ok(true, 'Attach failed as expected');
 						setTimeout(function() {
 							test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
-							realtime.close();
-							test.done();
+							closeAndFinish(test, realtime);
 						}, 1000);
 						return;
 					}
 					test.ok(false, 'Unexpected attach success');
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, 'Connection to server ' + state);
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
-			realtime.close();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -226,28 +176,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.ok(true, 'Attach failed as expected');
 						setTimeout(function() {
 							test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
-							realtime.close();
-							test.done();
+							closeAndFinish(test, realtime);
 						}, 1000);
 						return;
 					}
 					test.ok(false, 'Unexpected attach success');
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, 'Connection to server ' + state);
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
-			realtime.close();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -271,33 +211,23 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 								test.ok(true, 'Attach (second attempt) failed as expected');
 								setTimeout(function() {
 									test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
-									realtime.close();
-									test.done();
+									closeAndFinish(test, realtime);
 								}, 1000);
 								return;
 							}
 							test.ok(false, 'Unexpected attach (second attempt) success');
-							test.done();
+							closeAndFinish(test, realtime);
 						});
 						return;
 					}
 					test.ok(false, 'Unexpected attach success');
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function(stateChange) {
-					test.ok(false, 'Connection to server ' + state + '; reason = ' + stateChange.reason.message);
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
-			realtime.close();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -318,22 +248,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							test.ok(false, 'Attach failed with error: ' + err);
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 
@@ -351,37 +272,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
 								test.ok(false, 'Attach failed with error: ' + err);
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
 								test.ok(true, 'Attach then detach to channel 0 with no options');
 							else
 								test.ok(false, 'Detach failed');
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						});
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 
@@ -401,22 +311,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							test.ok(false, 'Attach failed with error: ' + err);
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 
@@ -434,37 +335,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
 								test.ok(false, 'Attach failed with error: ' + err);
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
 								test.ok(true, 'Attach then detach to channel 0 with no options');
 							else
 								test.ok(false, 'Detach failed');
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						});
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 	} else {
@@ -484,22 +374,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							test.ok(false, 'Attach failed with error: ' + err);
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 
@@ -517,37 +398,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
 								test.ok(false, 'Attach failed with error: ' + err);
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
 								test.ok(true, 'Attach then detach to channel 0 with no options');
 							else
 								test.ok(false, 'Detach failed');
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						});
 					});
 				});
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, transport + ' connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
+				closeAndFinish(test, realtime);
 			}
 		};
 	}
@@ -566,8 +436,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				channel6.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					}
 					try {
 						channel6.subscribe('event0', function() {});
@@ -575,33 +444,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							try {
 								channel6.unsubscribe('event0', function() {});
 								test.ok(true, 'Subscribe then unsubscribe to channel6:event0 with no options');
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							} catch(e) {
 								test.ok(false, 'Unsubscribe failed with error: ' + e.stack);
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							}
 						}, 1000);
 					} catch(e) {
 						test.ok(false, 'Subscribe failed with error: ' + e);
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					}
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 

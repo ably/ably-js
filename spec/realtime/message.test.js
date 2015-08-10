@@ -3,6 +3,8 @@
 define(['ably', 'shared_helper'], function(Ably, helper) {
   var exports = {},
     displayError = helper.displayError,
+    closeAndFinish = helper.closeAndFinish,
+    monitorConnection = helper.monitorConnection,
     publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
       for(var i = numMessages; i > 0; i--) {
         var helper = function(currentMessageNum) {
@@ -44,8 +46,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         rtChannel.attach(function(err) {
           if(err) {
             test.ok(false, 'Attach failed with error: ' + err);
-            test.done();
-            realtime.close();
+            closeAndFinish(test, realtime);
             return;
           }
 
@@ -53,8 +54,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
           rtChannel.subscribe('event0', function(msg) {
             test.ok(true, 'Received event0');
             test.equal(msg.data, testMsg, 'Unexpected msg text received');
-            test.done();
-            realtime.close();
+            closeAndFinish(test, realtime);
           });
 
           /* publish event */
@@ -62,19 +62,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
           restChannel.publish('event0', testMsg);
         });
       });
-      var exitOnState = function(state) {
-        realtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          test.done();
-          realtime.close();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, realtime);
     } catch(e) {
       test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-      test.done();
-      realtime.close();
+      closeAndFinish(test, realtime);
     }
   };
 
@@ -84,8 +75,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     var errorCallback = function(err){
       if(err) {
         test.ok(false, 'Error received by publish callback ' + err);
-        test.done();
-        realtime.close();
+        closeAndFinish(test, realtime);
         return;
       }
     };
@@ -123,8 +113,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         rtChannel.attach(function(err) {
           if(err) {
             test.ok(false, 'Attach failed with error: ' + err);
-            test.done();
-            realtime.close();
+            closeAndFinish(test, realtime);
             return;
           }
 
@@ -167,13 +156,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
                 break;
               default:
                 test.ok(false, 'Unexpected message ' + msg.name + 'received');
-                test.done();
-                realtime.close();
+                closeAndFinish(test, realtime);
             }
 
             if (messagesReceived == testArguments.length) {
-              test.done();
-              realtime.close();
+              closeAndFinish(test, realtime);
             }
           });
 
@@ -184,19 +171,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
           }
         });
       });
-      var exitOnState = function(state) {
-        realtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          test.done();
-          realtime.close();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, realtime);
     } catch(e) {
       test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-      test.done();
-      realtime.close();
+      closeAndFinish(test, realtime);
     }
   };
 
@@ -224,8 +202,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
         rtChannel.attach(function(err) {
           if(err) {
             test.ok(false, 'Attach failed with error: ' + err);
-            test.done();
-            realtime.close();
+            closeAndFinish(test, realtime);
             return;
           }
 
@@ -240,23 +217,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
               test.equal(e.code, 40011, "Invalid data type exception raised");
             }
           }
-          test.done();
-          realtime.close();
+          closeAndFinish(test, realtime);
         });
       });
-      var exitOnState = function(state) {
-        realtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          test.done();
-          realtime.close();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, realtime);
     } catch(e) {
       test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-      test.done();
-      realtime.close();
+      closeAndFinish(test, realtime);
     }
   };
 
@@ -273,9 +240,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok(true, 'Received event0');
       test.notEqual(-1, messagesSent.indexOf(msg.data), 'Received unexpected message text');
       if(!--count) {
-        realtime.close();
         clearInterval(timer);
-        test.done();
+        closeAndFinish(test, realtime);
       }
     });
     var timer = setInterval(function() {
@@ -291,8 +257,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     var cbCount = 10;
     var checkFinish = function() {
       if(count <= 0 && cbCount <= 0) {
-        test.done();
-        realtime.close();
+        closeAndFinish(test, realtime);
       }
     };
     var onPublish = function() {
@@ -318,8 +283,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       var cbCount = 5;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          test.done();
-          realtime.close();
+          closeAndFinish(test, realtime);
         }
       };
       var onPublish = function() {
@@ -344,8 +308,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       var cbCount = 5;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          test.done();
-          realtime.close();
+          closeAndFinish(test, realtime);
         }
       };
       var onPublish = function() {
@@ -370,8 +333,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       var cbCount = 5;
       var checkFinish = function() {
         if(count <= 0 && cbCount <= 0) {
-          test.done();
-          realtime.close();
+          closeAndFinish(test, realtime);
         }
       };
       var onPublish = function() {

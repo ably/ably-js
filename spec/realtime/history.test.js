@@ -10,7 +10,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		postAttachMessages = [1,2,3,4,5].map(function(i) {
 			return { name: 'post-attach-' + i,
 				data: 'some data' }
-		});
+		}),
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
 	var parallelPublishMessages = function(test, channel, messages, callback) {
 		var publishTasks = messages.map(function(event) {
@@ -61,8 +63,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					rtChannel.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 							return;
 						}
 
@@ -110,30 +111,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							async.parallel(tests, function(err){
 								if(err) {
 									test.ok(false, displayError(err));
-									test.done();
-									realtime.close();
+									closeAndFinish(test, realtime);
 									return;
 								}
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							})
 						});
 					});
 				});
-
-				var exitOnState = function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, 'connection to server failed');
-						test.done();
-						realtime.close();
-					});
-				};
-				exitOnState('failed');
-				exitOnState('suspended');
+				monitorConnection(test, realtime);
 			} catch(e) {
 				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			}
 		});
 	};

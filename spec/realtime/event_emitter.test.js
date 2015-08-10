@@ -2,7 +2,9 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
-	displayError = helper.displayError;
+	displayError = helper.displayError,
+	closeAndFinish = helper.closeAndFinish,
+	monitorConnection = helper.monitorConnection;
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -42,7 +44,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					delete expectedConnectionEvents[index];
 					test.ok(true, this.event + ' connection event received');
 					if(this.event == 'closed') {
-						test.done();
+						closeAndFinish(test, realtime);
 					}
 				} else {
 					test.ok(false, 'Unexpected ' + this.event + ' event received');
@@ -71,23 +73,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				channel.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					}
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 

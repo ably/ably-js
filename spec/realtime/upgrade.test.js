@@ -14,7 +14,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				};
 				setTimeout(helper(i), 20*i);
 			}
-		};
+		},
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
 	exports.setupUpgrade = function(test) {
 		test.expect(1);
@@ -51,8 +53,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				rtChannel.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + helper.displayError(err));
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 						return;
 					}
 
@@ -61,8 +62,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.expect(2);
 						test.ok(true, 'Received event0');
 						test.equal(msg.data, testMsg, 'Unexpected msg text received');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 
 					/* publish event */
@@ -70,24 +70,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					restChannel.publish('event0', testMsg, function(err) {
 						if(err) {
 							test.ok(false, 'Publish failed with error: ' + helper.displayError(err));
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}
 					});
 				});
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -107,8 +98,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.ok(true, 'Received event0');
 				test.equal(msg.data, testMsg, 'Unexpected msg text received');
 				var closeFn = function() {
-					realtime.close();
-					test.done();
+					closeAndFinish(test, realtime);
 				};
 				if (isBrowser)
 					setTimeout(closeFn, 0);
@@ -129,8 +119,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							//console.log('publishpostupgrade0: publish returned err = ' + err);
 							if(err) {
 								test.ok(false, 'Publish failed with error: ' + err);
-								test.done();
-								realtime.close();
+								closeAndFinish(test, realtime);
 							}
 						});
 					} else {
@@ -140,27 +129,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 								//console.log('publishpostupgrade0: publish returned err = ' + err);
 								if(err) {
 									test.ok(false, 'Publish failed with error: ' + err);
-									test.done();
-									realtime.close();
+									closeAndFinish(test, realtime);
 								}
 							});
 						});
 					}
 				}
 			});
-
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -180,8 +159,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.ok(true, 'Received event0');
 				test.equal(msg.data, testMsg, 'Unexpected msg text received');
 				var closeFn = function() {
-					realtime.close();
-					test.done();
+					closeAndFinish(test, realtime);
 				};
 				if (isBrowser)
 					setTimeout(closeFn, 0);
@@ -219,18 +197,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				}
 			});
 
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -242,8 +212,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var cbCount = 10;
 		var checkFinish = function() {
 			if(count <= 0 && cbCount <= 0) {
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			}
 		};
 		var onPublish = function() {
@@ -272,8 +241,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var cbCount = 10;
 		var checkFinish = function() {
 			if(count <= 0 && cbCount <= 0) {
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			}
 		};
 		var onPublish = function() {
@@ -306,11 +274,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			 * and that we see the comet transport deactivated */
 			var failTimer = setTimeout(function() {
 				test.ok(false, 'upgrade heartbeat failed (timer expired)');
-				test.done();
+				closeAndFinish(test, realtime);
 			}, 120000);
 
 			var connectionManager = realtime.connection.connectionManager;
-			connectionManager.on('transport.inactive', function(transport) {
+			connectionManager.once('transport.inactive', function(transport) {
 				if(transport.toString().indexOf('/comet/') > -1)
 					test.ok(true, 'verify comet transport deactivated');
 			});
@@ -318,9 +286,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				if(transport.toString().match(/wss?\:/)) {
 					clearTimeout(failTimer);
 					var closeFn = function() {
-						realtime.close();
 						test.ok(true, 'verify upgrade to ws transport');
-						test.done();
+						closeAndFinish(test, realtime);
 					};
 					if (isBrowser)
 						setTimeout(closeFn, 0);
@@ -328,19 +295,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						process.nextTick(closeFn);
 				}
 			});
-
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -363,8 +321,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						transport.off('heartbeat');
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				transport.ping();
 			});
@@ -372,21 +329,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.on('connected', function() {
 				failTimer = setTimeout(function() {
 					test.ok(false, 'upgrade heartbeat failed (timer expired)');
-					test.done();
+					closeAndFinish(test, realtime);
 				}, 120000);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -409,8 +358,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						transport.off('heartbeat');
 						clearTimeout(failTimer);
 						test.ok(true, 'verify upgrade heartbeat');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				transport.ping();
 			});
@@ -418,21 +366,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.on('connected', function() {
 				failTimer = setTimeout(function() {
 					test.ok(false, 'upgrade heartbeat failed (timer expired)');
-					test.done();
+					closeAndFinish(test, realtime);
 				}, 120000);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, transport + ' connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+				monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -456,8 +396,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					cometTransport = transport;
 					cometTransport.on('heartbeat', function () {
 						test.ok(false, 'verify heartbeat does not fire on inactive transport');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				}
 				if(transportDescription.match(/wss?\:/)) {
@@ -468,8 +407,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						 * in case it might still fire */
 						test.ok(true, 'verify upgrade heartbeat');
 						setTimeout(function () {
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}, 2000);
 					});
 					wsTransport.ping();
@@ -479,21 +417,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.on('connected', function() {
 				failTimer = setTimeout(function() {
 					test.ok(false, 'upgrade heartbeat failed (timer expired)');
-					test.done();
+					closeAndFinish(test, realtime);
 				}, 120000);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, 'connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+				monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -517,8 +447,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					cometTransport = transport;
 					cometTransport.on('heartbeat', function () {
 						test.ok(false, 'verify heartbeat does not fire on inactive transport');
-						test.done();
-						realtime.close();
+						closeAndFinish(test, realtime);
 					});
 				}
 				if(transportDescription.match(/wss?\:/)) {
@@ -529,8 +458,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						 * in case it might still fire */
 						test.ok(true, 'verify upgrade heartbeat');
 						setTimeout(function() {
-							test.done();
-							realtime.close();
+							closeAndFinish(test, realtime);
 						}, 2000);
 					});
 					wsTransport.ping();
@@ -540,21 +468,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.on('connected', function() {
 				failTimer = setTimeout(function() {
 					test.ok(false, 'upgrade heartbeat failed (timer expired)');
-					test.done();
+					closeAndFinish(test, realtime);
 				}, 120000);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, 'connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
