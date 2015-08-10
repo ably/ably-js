@@ -1073,16 +1073,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           monitorConnection(test, clientRealtime2);
         }
       ], function() {
-        clientChannel2.presence.get(function(err, members) {
-          if(err) {
-            test.ok(false, 'Presence.get() failed with error: ' + err);
+        setTimeout(function(){
+          clientChannel2.presence.get(function(err, members) {
+            if(err) {
+              test.ok(false, 'Presence.get() failed with error: ' + err);
+              done();
+              return;
+            }
+            test.equal(members.length, 2, 'Verify both members present');
+            test.notEqual(members[0].connectionId, members[1].connectionId, 'Verify members have distinct connectionIds');
             done();
-            return;
-          }
-          test.equal(members.length, 2, 'Verify both members present');
-          test.notEqual(members[0].connectionId, members[1].connectionId, 'Verify members have distinct connectionIds');
-          done();
-        });
+          });
+        }, 500);
       });
     } catch(e) {
       test.ok(false, 'presence.member0 failed with exception: ' + e.stack);
