@@ -16,11 +16,14 @@ var Realtime = (function() {
 	};
 
 	function Channels(realtime) {
+		EventEmitter.call(this);
 		this.realtime = realtime;
-		this.attached = {};
+		this.all = {};
+		this.pending = {};
 		var self = this;
 		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
+	Utils.inherits(Channels, EventEmitter);
 
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
@@ -28,7 +31,7 @@ var Realtime = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
-		var channel = this.attached[channelName];
+		var channel = this.all[channelName];
 		if(!channel) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
 			return;
@@ -37,26 +40,65 @@ var Realtime = (function() {
 	};
 
 	/* called when a transport becomes connected; reattempt attach()
-	 * for channels that were pending from a previous transport */
+	 * for channels that may have been pending from a previous transport */
 	Channels.prototype.onTransportActive = function() {
-		for(var channelId in this.attached)
-			this.attached[channelId].checkPendingState();
+		for(var channelId in this.pending)
+			this.pending[channelId].checkPendingState();
 	};
 
 	Channels.prototype.setSuspended = function(err) {
-		for(var channelId in this.attached) {
-			var channel = this.attached[channelId];
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
 			channel.setSuspended(err);
 		}
 	};
 
 	Channels.prototype.get = function(name) {
 		name = String(name);
-		var channel = this.attached[name];
+		var channel = this.all[name];
 		if(!channel) {
-			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, this.realtime.options);
+			channel = this.all[name] = new RealtimeChannel(this.realtime, name, this.realtime.options);
+			this.watchChannel(channel);
 		}
 		return channel;
+	};
+
+	Channels.prototype.release = function(name) {
+		var channel = this.all[name];
+		if(channel) {
+			this.unwatchChannel(channel);
+			delete this.all[name];
+		}
+	};
+
+	Channels.prototype.watchChannel = function(channel) {
+		var self = this;
+		channel.on(function() {
+			var event = this.event;
+			switch(event) {
+				case 'attaching':
+				case 'detaching':
+					self.pending[channel.name] = channel;
+					break;
+				default:
+					delete self.pending[channel.name];
+					if(Utils.isEmpty(self.pending)) {
+						self.emit('nopending');
+					}
+			}
+		});
+	};
+
+	Channels.prototype.unwatchChannel = function(channel) {
+		channel.off();
+	};
+
+	Channels.prototype.onceNopending = function(listener) {
+		if(Utils.isEmpty(this.pending)) {
+			listener();
+			return;
+		}
+		this.once('nopending', listener);
 	};
 
 	return Realtime;

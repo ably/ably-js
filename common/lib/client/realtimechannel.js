@@ -408,6 +408,9 @@ var RealtimeChannel = (function() {
 		this.state = state;
 		this.clearStateTimer();
 
+		/* notify the state change */
+		this.emit(state);
+
 		/* if not currently connected, do nothing */
 		if(this.connectionManager.state.state != 'connected') {
 			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'not connected');
@@ -425,8 +428,6 @@ var RealtimeChannel = (function() {
 			/* retry */
 			self.checkPendingState();
 		}, Defaults.sendTimeout);
-		/* notify the state change */
-		this.emit(state);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {

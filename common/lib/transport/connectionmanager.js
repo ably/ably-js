@@ -4,6 +4,7 @@ var ConnectionManager = (function() {
 	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
 	var actions = ProtocolMessage.Action;
+	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 
 	var states = {
@@ -15,11 +16,6 @@ var ConnectionManager = (function() {
 		closing:      {state: 'closing',      terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
 		closed:       {state: 'closed',       terminal: true,  queueEvents: false, sendEvents: false},
 		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
-	};
-
-	var channelMessage = function(msg) {
-		var action = msg.action;
-		return (action == actions.MESSAGE || action == actions.PRESENCE);
 	};
 
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
@@ -39,8 +35,6 @@ var ConnectionManager = (function() {
 		switch(this.mode) {
 			case 'upgrade':
 				params.upgrade = this.connectionKey;
-				if(this.connectionSerial !== undefined)
-					params.connection_serial = this.connectionSerial;
 				break;
 			case 'resume':
 				params.resume = this.connectionKey;
@@ -76,13 +70,6 @@ var ConnectionManager = (function() {
 		return params;
 	};
 
-	function PendingMessage(msg, callback) {
-		this.msg = msg;
-		this.ackRequired = channelMessage(msg);
-		this.callback = callback;
-		this.merged = false;
-	}
-
 	/* public constructor */
 	function ConnectionManager(realtime, options) {
 		EventEmitter.call(this);
@@ -91,9 +78,9 @@ var ConnectionManager = (function() {
 		this.state = states.initialized;
 		this.error = null;
 
-		this.queuedMessages = [];
-		this.pendingMessages = [];
+		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
+		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 
@@ -102,8 +89,8 @@ var ConnectionManager = (function() {
 		this.upgradeTransports = Utils.arrSubtract(this.transports, this.httpTransports);
 
 		this.httpHosts = Defaults.getHosts(options);
-		this.transport = null;
-		this.pendingTransport = null;
+		this.activeProtocol = null;
+		this.pendingTransports = [];
 		this.host = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
@@ -134,9 +121,9 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
-		if(this.transport) {
+		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport already established');
-			callback(null, this.transport);
+			callback(null);
 			return;
 		}
 
@@ -168,6 +155,7 @@ var ConnectionManager = (function() {
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
 			callback(null, httpTransport);
+
 			/* we have the http transport; if there is a potential upgrade
 			 * transport, lets see if we can upgrade to that. We won't
 			  * be trying any fallback hosts, so we know the host to use */
@@ -228,8 +216,8 @@ var ConnectionManager = (function() {
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
 			}
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'transport ' + candidate + ' connecting');
-			self.setTransportPending(transport);
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'transport ' + candidate + ' connecting');
+			self.setTransportPending(transport, transportParams.mode);
 			callback(null, transport);
 		});
 	};
@@ -320,86 +308,86 @@ var ConnectionManager = (function() {
 	 * @param host
 	 * @param transport
 	 */
-	ConnectionManager.prototype.setTransportPending = function(transport) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		/* if there was already a pending transport, abandon it */
-		if(this.pendingTransport)
-			this.pendingTransport.disconnect();
+	ConnectionManager.prototype.setTransportPending = function(transport, mode) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport + '; mode = ' + mode);
 
-		/* this is now the pending transport */
-		this.pendingTransport = transport;
+		/* this is now pending */
+		this.pendingTransports.push(transport);
 
 		var self = this;
-		var handleTransportEvent = function(state) {
-			return function(error, connectionKey, connectionSerial, connectionId) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
-				if(error && error.message)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
-				if(connectionKey)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionKey =  ' + connectionKey);
-				if(connectionSerial !== undefined)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
-				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
+		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId) {
+			if(mode == 'upgrade' && self.activeProtocol) {
+				self.scheduleTransportActivation(transport);
+			} else {
+				self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
+			}
+		});
 
-				/* handle activity transition */
-				var notifyState;
-				if(state == 'connected') {
-					self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
-					notifyState = true;
-				} else {
-					notifyState = self.deactivateTransport(transport);
-				}
-
-				/* if this is the active transport, notify clients */
-				if(notifyState)
-					self.notifyState({state:state, error:error});
+		var eventHandler = function(event) {
+			return function(error) {
+				self.deactivateTransport(transport, event, error);
 			};
 		};
-		var events = ['connected', 'disconnected', 'closed', 'failed'];
+		var events = ['disconnected', 'closed', 'failed'];
 		for(var i = 0; i < events.length; i++) {
 			var event = events[i];
-			transport.on(event, handleTransportEvent(event));
+			transport.on(event, eventHandler(event));
 		}
 		this.emit('transport.pending', transport);
+	};
+
+	/**
+	 * Called when an upgrade transport is connected,
+	 * to schedule the activation of that transport.
+	 * @param transport the transport instance
+	 */
+	ConnectionManager.prototype.scheduleTransportActivation = function(transport) {
+		var self = this;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport; transport = ' + transport);
+		this.realtime.channels.onceNopending(function(err) {
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
+				return;
+			}
+			self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId);
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+			self.sync(transport);
+		});
 	};
 
 	/**
 	 * Called when a transport is connected, and the connectionmanager decides that
 	 * it will now be the active transport.
 	 * @param transport the transport instance
-	 * @param connectionKey the id of the new active connection
-	 * @param mode the nature of the activation:
-	 *   'clean': new connection;
-	 *   'recover': new connection with recoverable messages;
-	 *   'resume': uninterrupted resumption of connection without loss of messages
+	 * @param connectionKey the key of the new active connection
+	 * @param connectionSerial the current connectionSerial
+	 * @param connectionId the id of the new active connection
 	 */
 	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionKey = ' + connectionKey + '; connectionSerial = ' + connectionSerial);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+		if(connectionKey)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
+		if(connectionSerial !== undefined)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
+		if(connectionId)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
+
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		if(this.state == states.closing || this.state == states.closed)
+		var existingState = this.state;
+		if(existingState == states.closing || existingState == states.closed)
 			return;
 
- 		/* Terminate any existing transport */
-		var existingTransport = this.transport;
- 		if(existingTransport) {
-			 this.transport = null;
-			 existingTransport.disconnect();
-		}
-		existingTransport = this.pendingTransport;
-		if(existingTransport) {
-			this.pendingTransport = null;
-			if(existingTransport !== transport)
-				existingTransport.disconnect();
-		}
+		/* remove this transport from pending transports */
+		Utils.arrDeleteValue(this.pendingTransports, transport);
 
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
-		this.transport = transport;
+		var existingActiveProtocol = this.activeProtocol;
+		this.activeProtocol = new Protocol(transport);
 		this.host = transport.params.host;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.realtime.connection.id = connectionId;
+			this.realtime.connection.id = this.connectionId = connectionId;
 			this.realtime.connection.key = this.connectionKey = connectionKey;
 			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 			if(createCookie && this.options.recover === true)
@@ -407,23 +395,22 @@ var ConnectionManager = (function() {
 			this.msgSerial = 0;
 		}
 
- 		/* set up handler for events received on this transport */
-		var self = this;
-		transport.on('ack', function(serial, count) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count);
-			self.ackMessage(serial, count);
-		});
-		transport.on('nack', function(serial, count, err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
-			if(!err) {
-				err = new Error('Unknown error');
-				err.statusCode = 500;
-				err.code = 50001;
-				err.message = 'Unable to send message; channel not responding';
-			}
-			self.ackMessage(serial, count, err);
-		});
 		this.emit('transport.active', transport, connectionKey, transport.params);
+
+		/* notify the state change if previously not connected */
+		if(existingState !== states.connected) {
+			this.notifyState({state: 'connected'});
+		}
+
+		/* Gracefully terminate existing protocol */
+		if(existingActiveProtocol) {
+			existingActiveProtocol.finish();
+		}
+
+		/* Terminate any other pending transport(s) */
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			this.pendingTransports[i].disconnect();
+		}
 	};
 
 	/**
@@ -431,19 +418,52 @@ var ConnectionManager = (function() {
 	 * in any transport connection state.
 	 * @param transport
 	 */
-	ConnectionManager.prototype.deactivateTransport = function(transport) {
-		var wasActive = (this.transport === transport),
-			wasPending = (this.transport === null) && (this.pendingTransport === transport);
+	ConnectionManager.prototype.deactivateTransport = function(transport, state, error) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		transport.off('ack');
-		transport.off('nack');
-		if(wasActive)
-			this.transport = this.host = null;
-		else if(wasPending)
-			this.pendingTransport = null;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state);
+		if(error && error.message)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
+
+		var wasActive = this.activeProtocol && this.activeProtocol.getTransport() === transport,
+			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
+
+		if(wasActive) {
+			this.queuePendingMessages(this.activeProtocol.getPendingMessages());
+			this.activeProtocol = this.host = null;
+		}
 
 		this.emit('transport.inactive', transport);
-		return wasActive || wasPending;
+
+		/* this transport state change is a state change for the connectionmanager if
+		 * - the transport was the active transport; or
+		 * - the transport was one of the pending transports (so we were in the connecting state)
+		 *   and there are no longer any pending transports
+		 */
+		if(wasActive || (wasPending && this.pendingTransports.length === 0)) {
+			this.notifyState({state: state, error: error});
+		}
+	};
+
+	/**
+	 * Called when activating a new transport, to ensure message delivery
+	 * on the new transport synchronises with the messages already received
+	 */
+	ConnectionManager.prototype.sync = function(transport) {
+		/* check preconditions */
+		if(!transport.isConnected)
+				throw new ErrorInfo('Unable to sync connection; not connected', 40000);
+
+		/* send sync request */
+		var syncMessage = ProtocolMessage.fromValues({
+			action: actions.SYNC,
+			connectionKey: this.connectionKey,
+			connectionSerial: this.connectionSerial
+		});
+		transport.send(syncMessage, function(err) {
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
+			}
+		});
 	};
 
 	/**
@@ -476,7 +496,7 @@ var ConnectionManager = (function() {
 		this.state = states[stateChange.current];
 		if(this.state.terminal)
 			this.error = stateChange.reason;
-		this.emit('connectionstate', stateChange, this.transport);
+		this.emit('connectionstate', stateChange);
 	};
 
 	/****************************************
@@ -581,9 +601,7 @@ var ConnectionManager = (function() {
 		this.enactStateChange(change);
 		if(this.state.sendEvents)
 			this.sendQueuedMessages();
-		else if(this.state.queueEvents)
-			this.queuePendingMessages();
-		else
+		else if(!this.state.queueEvents)
 			this.realtime.channels.setSuspended(change.reason);
 	};
 
@@ -648,7 +666,7 @@ var ConnectionManager = (function() {
 		};
 
 		var tryConnect = function() {
-			self.chooseTransport(function(err, transport) {
+			self.chooseTransport(function(err) {
 				if(err) {
 					connectErr(err);
 					return;
@@ -692,8 +710,10 @@ var ConnectionManager = (function() {
 		}
 
 		/* if transport exists, send close message */
-		closeTransport(this.pendingTransport);
-		closeTransport(this.transport);
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			closeTransport(this.pendingTransports[i]);
+		}
+		closeTransport(this.activeProtocol && this.activeProtocol.getTransport());
 
 		this.notifyState({state: 'closed'});
 	};
@@ -722,41 +742,23 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
-		var msg = pendingMessage.msg;
+		var msg = pendingMessage.message;
 		if(pendingMessage.ackRequired) {
 			msg.msgSerial = this.msgSerial++;
-			this.pendingMessages.push(pendingMessage);
 		}
 		try {
-			this.transport.send(msg, function(err) {
+			this.activeProtocol.send(pendingMessage, function(err) {
 				/* FIXME: schedule a retry directly if we get an error */
 			});
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendQueuedMessages()', 'Unexpected exception in transport.send(): ' + e);
-		}
-	};
-
-	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.ackMessage()', 'serial = ' + serial + '; count = ' + count);
-		err = err || null;
-		var pendingMessages = this.pendingMessages;
-		var firstPending = pendingMessages[0];
-		if(firstPending) {
-			var startSerial = firstPending.msg.msgSerial;
-			var ackSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
-			if(ackSerial > startSerial) {
-				var ackMessages = pendingMessages.splice(0, (ackSerial - startSerial));
-				for(var i = 0; i < ackMessages.length; i++) {
-					ackMessages[i].callback(err);
-				}
-			}
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
 		}
 	};
 
 	ConnectionManager.prototype.queue = function(msg, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
-		var lastQueued = this.queuedMessages[this.queuedMessages.length - 1];
-		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.msg, msg)) {
+		var lastQueued = this.queuedMessages.last();
+		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
 			if(!lastQueued.merged) {
 				lastQueued.callback = Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
@@ -768,22 +770,23 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.sendQueuedMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.length + ' queued messages');
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.count() + ' queued messages');
 		var pendingMessage;
 		while(pendingMessage = this.queuedMessages.shift())
 			this.sendImpl(pendingMessage);
 	};
 
-	ConnectionManager.prototype.queuePendingMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + this.pendingMessages.length + ' pending messages');
-		this.queuedMessages = this.pendingMessages.concat(this.queuedMessages);
-		this.pendingMessages = [];
+	ConnectionManager.prototype.queuePendingMessages = function(pendingMessages) {
+		if(pendingMessages && pendingMessages.length) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
+			this.queuedMessages.prepend(pendingMessages);
+		}
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		/* do not update connectionSerial for messages received
 		 * on transports that are no longer the current transport */
-		if(transport === this.transport) {
+		if(transport === this.activeProtocol && this.activeProtocol.getTransport()) {
 			var connectionSerial = message.connectionSerial;
 			if(connectionSerial !== undefined)
 				this.connectionSerial = connectionSerial;
@@ -842,7 +845,7 @@ var ConnectionManager = (function() {
 		};
 
 		this.on('transport.active', onTransportActive);
-		this.ping(this.transport, onPingComplete);
+		this.ping(this.activeProtocol.getTransport(), onPingComplete);
 	};
 
 	return ConnectionManager;

@@ -36,9 +36,10 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.disconnect = function() {
-		if(this.isConnected) {
-			this.isConnected = false;
-		}
+		if(!this.isConnected)
+			return;
+
+		this.isConnected = false;
 		this.emit('disconnected', ConnectionError.disconnected);
 		this.dispose();
 	};
@@ -97,14 +98,15 @@ var Transport = (function() {
 
 	Transport.prototype.onConnect = function(message) {
 		/* the connectionKey in a comet connected response is really
-		 * <instId>!<connectionKey>; handle generically here */
-		var connectionKey = message.connectionKey = message.connectionKey.split('!').pop();
+		 * <instId>!<connectionKey>!<transport uid>; handle generically here */
+		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)(?:\![\w\-]+)?$/),
+			connectionKey = message.connectionKey = match && match[1];
 
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		var error = message.error, connectionManager = this.connectionManager;
-		if(error && message.connectionKey !== connectionManager.connectionKey)
+		if(error && connectionKey !== connectionManager.connectionKey)
 			connectionManager.realtime.channels.setSuspended(error);
 
 		this.connectionKey = connectionKey;
@@ -127,7 +129,7 @@ var Transport = (function() {
 
 	Transport.prototype.sendClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
-		this.send(closeMessage);
+		this.send(closeMessage, noop);
 	};
 
 	Transport.prototype.ping = function(callback) {

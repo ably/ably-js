@@ -153,11 +153,11 @@ var CometTransport = (function() {
 		})
 	};
 
-	CometTransport.prototype.send = function(msg, callback) {
+	CometTransport.prototype.send = function(message, callback) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
-			this.pendingItems.push(msg);
+			this.pendingItems.push(message);
 
 			this.pendingCallback = this.pendingCallback || Multicaster();
 			this.pendingCallback.push(callback);
@@ -165,7 +165,7 @@ var CometTransport = (function() {
 		}
 		/* send this, plus any pending, now */
 		var pendingItems = this.pendingItems || [];
-		pendingItems.push(msg);
+		pendingItems.push(message);
 		this.pendingItems = null;
 
 		var pendingCallback = this.pendingCallback;
@@ -196,7 +196,7 @@ var CometTransport = (function() {
 					self.sendItems(pendingItems, pendingCallback);
 				});
 			}
-			callback(err);
+			callback && callback(err);
 		});
 		sendRequest.exec();
 	};
