@@ -356,7 +356,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useTextProtocol: text });
 		test.expect(iterations + 2);
-		var channelName = 'multiple_send_' + iterations + '_' + delay,
+		var channelName = 'multiple_send_' + (text ? 'text_' : 'binary_') + iterations + '_' + delay,
 			channel = realtime.channels.get(channelName),
 			messageText = 'Test message (' + channelName + ')';
 
