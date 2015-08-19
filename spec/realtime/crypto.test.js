@@ -354,7 +354,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useTextProtocol: text });
+		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: !text});
 		test.expect(iterations + 2);
 		var channelName = 'multiple_send_' + (text ? 'text_' : 'binary_') + iterations + '_' + delay,
 			channel = realtime.channels.get(channelName),
