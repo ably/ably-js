@@ -36,11 +36,11 @@ var Protocol = (function() {
 		messageQueue.once('idle', listener);
 	};
 
-	Protocol.prototype.send = function(pendingMessage) {
+	Protocol.prototype.send = function(pendingMessage, callback) {
 		if(pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
-		this.transport.send(pendingMessage.message);
+		this.transport.send(pendingMessage.message, callback);
 	};
 
 	Protocol.prototype.getTransport = function() {
