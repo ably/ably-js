@@ -98,8 +98,8 @@ var Transport = (function() {
 
 	Transport.prototype.onConnect = function(message) {
 		/* the connectionKey in a comet connected response is really
-		 * <instId>!<connectionKey>!<transport uid>; handle generically here */
-		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)(?:\![\w\-]+)?$/),
+		 * <instId>!<connectionKey>; handle generically here */
+		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)$/),
 			connectionKey = message.connectionKey = match && match[1];
 
 		/* if there was a (non-fatal) connection error
