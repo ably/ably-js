@@ -1,6 +1,7 @@
 var ConnectionManager = (function() {
 	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
+	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
 	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
 	var actions = ProtocolMessage.Action;
@@ -387,12 +388,7 @@ var ConnectionManager = (function() {
 		this.activeProtocol = new Protocol(transport);
 		this.host = transport.params.host;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.realtime.connection.id = this.connectionId = connectionId;
-			this.realtime.connection.key = this.connectionKey = connectionKey;
-			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-			if(createCookie && this.options.recover === true)
-				this.persistConnection();
-			this.msgSerial = 0;
+			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
@@ -466,6 +462,24 @@ var ConnectionManager = (function() {
 		});
 	};
 
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
+		this.realtime.connection.id = this.connectionId = connectionId;
+		this.realtime.connection.key = this.connectionKey = connectionKey;
+		this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.msgSerial = 0;
+		if(this.options.recover === true)
+			this.persistConnection();
+
+	};
+
+	ConnectionManager.prototype.clearConnection = function() {
+		this.realtime.connection.id = this.connectionId = undefined;
+		this.realtime.connection.key = this.connectionKey = undefined;
+		this.connectionSerial = undefined;
+		this.msgSerial = 0;
+		this.unpersistConnection();
+	};
+
 	/**
 	 * Called when the connectionmanager wants to persist transport
 	 * state for later recovery. Only applicable in the browser context.
@@ -476,6 +490,17 @@ var ConnectionManager = (function() {
 				createCookie(connectionKeyCookie, this.connectionKey, Defaults.connectionPersistTimeout);
 				createCookie(connectionSerialCookie, this.connectionSerial, Defaults.connectionPersistTimeout);
 			}
+		}
+	};
+
+	/**
+	 * Called when the connectionmanager wants to persist transport
+	 * state for later recovery. Only applicable in the browser context.
+	 */
+	ConnectionManager.prototype.unpersistConnection = function() {
+		if(eraseCookie) {
+			eraseCookie(connectionKeyCookie);
+			eraseCookie(connectionSerialCookie);
 		}
 	};
 
@@ -494,8 +519,10 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		this.state = states[stateChange.current];
-		if(this.state.terminal)
+		if(this.state.terminal) {
 			this.error = stateChange.reason;
+			this.clearConnection();
+		}
 		this.emit('connectionstate', stateChange);
 	};
 
@@ -633,6 +660,12 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.connectImpl = function() {
+		var state = this.state;
+		if(state == states.closing || state == states.closed || state == states.failed) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'abandoning connection attempt; state = ' + state.state);
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'starting connection');
 		this.startSuspendTimer();
 		this.startTransitionTimer(states.connecting);
@@ -748,7 +781,7 @@ var ConnectionManager = (function() {
 		}
 		try {
 			this.activeProtocol.send(pendingMessage, function(err) {
-				/* FIXME: schedule a retry directly if we get an error */
+				/* FIXME: schedule a retry directly if we get a send error */
 			});
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
@@ -786,7 +819,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		/* do not update connectionSerial for messages received
 		 * on transports that are no longer the current transport */
-		if(transport === this.activeProtocol && this.activeProtocol.getTransport()) {
+		if(this.activeProtocol && transport === this.activeProtocol.getTransport()) {
 			var connectionSerial = message.connectionSerial;
 			if(connectionSerial !== undefined)
 				this.connectionSerial = connectionSerial;
