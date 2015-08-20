@@ -900,6 +900,111 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     }
   };
 
+  exports.history_until_attach = function(test) {
+    var clientRealtime = helper.AblyRealtime({clientId: testClientId});
+    var clientChannel = clientRealtime.channels.get('presenceHistoryUntilAttach');
+    var testClientData = 'Test client data (history0)';
+    var done = function() {
+      test.done(); clientRealtime.close();
+    };
+    var attachEnterAndLeave = function(callback) {
+      clientChannel.attach(function(err) {
+        if(err) {
+          test.ok(false, 'Attach failed with error: ' + err);
+          done();
+          return;
+        }
+        clientChannel.presence.enter(testClientData, function(err) {
+          if(err) {
+            test.ok(false, 'Enter failed with error: ' + err);
+            done();
+            return;
+          }
+          clientChannel.presence.leave(function(err) {
+            if(err) {
+              test.ok(false, 'Enter failed with error: ' + err);
+              done();
+              return;
+            }
+            callback();
+          });
+        });
+      });
+    };
+    var sortedActions = function(presenceMessages) {
+      return presenceMessages.map(function(msg){
+        return msg.action;
+      }).sort();
+    };
+    var tests = [
+      function(callback) {
+        clientChannel.presence.history({untilAttach: false}, function(err, resultPage) {
+          if(err) { callback(err); }
+          test.equal(resultPage.items.length, 4, 'Verify both sets of presence messages returned when untilAttached is false');
+          test.deepEqual(sortedActions(resultPage.items), [2,2,3,3], 'Verify presenceMessages have correct actions');
+          callback();
+        });
+      },
+      function(callback) {
+        clientChannel.presence.history({untilAttach: true}, function(err, resultPage) {
+          if(err) { callback(err); }
+          test.equal(resultPage.items.length, 2, 'Verify only the first set of presence messages returned when untilAttached is true');
+          test.deepEqual(sortedActions(resultPage.items), [2,3], 'Verify presenceMessages have correct actions');
+          callback();
+        });
+      },
+      function(callback) {
+        clientChannel.presence.history(function(err, resultPage) {
+          if(err) { callback(err); }
+          test.equal(resultPage.items.length, 4, 'Verify both sets of presence messages returned when untilAttached is not present');
+          test.deepEqual(sortedActions(resultPage.items), [2,2,3,3], 'Verify presenceMessages have correct actions');
+          callback();
+        });
+      }
+    ];
+
+    test.expect(6);
+
+    try {
+      clientRealtime.connection.on('connected', function() {
+        /* Attach, enter, leave, then detach. Then attach, enter, and
+         * leave, but stay attached. Then query presence history with
+         * untilAttach both true, false, and not present, checking that
+         * the right presence messages are returned in each case */
+        attachEnterAndLeave(function() {
+          clientChannel.detach(function(err) {
+            if(err) {
+              test.ok(false, 'Attach failed with error: ' + err);
+              done();
+              return;
+            }
+            attachEnterAndLeave(function() {
+              async.parallel(tests, function(err){
+                if(err) {
+                  test.ok(false, displayError(err));
+                  done();
+                  return;
+                }
+                done();
+              });
+            });
+          });
+        });
+      });
+      var exitOnState = function(state) {
+        clientRealtime.connection.on(state, function () {
+          test.ok(false, 'connection to server failed');
+          done();
+        });
+      };
+      exitOnState('failed');
+      exitOnState('suspended');
+    } catch(e) {
+      test.ok(false, 'presence.history_until_attach failed with exception: ' + e.stack);
+      done();
+    }
+  };
+
   /*
    * Attach to channel, enter presence channel, then initiate second
    * connection, seeing existing member in message subsequent to second attach response

@@ -127,6 +127,30 @@ var RealtimePresence = (function() {
 		});
 	};
 
+	RealtimePresence.prototype.history = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+
+		if(params && params.untilAttach) {
+			if(this.channel.state === 'attached') {
+				delete params.untilAttach;
+				params.from_serial = this.channel.attachSerial;
+			} else {
+				throw new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400);
+			}
+		}
+
+		Presence.prototype._history.call(this, params, callback);
+	};
+
 	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
 		var syncCursor, match, members = this.members;

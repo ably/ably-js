@@ -33,6 +33,10 @@ var Presence = (function() {
 
 	Presence.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
+		this._history(params, callback);
+  };
+
+	Presence.prototype._history = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
