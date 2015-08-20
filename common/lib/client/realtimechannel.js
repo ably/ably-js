@@ -99,67 +99,77 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.onEvent = function(messages) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
-			for(var i = 0; i < messages.length; i++) {
-				var message = messages[i];
-				subscriptions.emit(message.name, message);
-			}
-		};
+		for(var i = 0; i < messages.length; i++) {
+			var message = messages[i];
+			subscriptions.emit(message.name, message);
+		}
+	};
 
-		RealtimeChannel.prototype.attach = function(callback) {
-			callback = callback || noop;
-			var connectionManager = this.connectionManager;
-			var connectionState = connectionManager.state;
-			if(!ConnectionManager.activeState(connectionState)) {
+	RealtimeChannel.prototype.attach = function(callback) {
+		callback = callback || noop;
+		var connectionManager = this.connectionManager;
+		var connectionState = connectionManager.state;
+		if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
-		if(this.state == 'attached') {
-			callback();
-			return;
-		}
-		this.setPendingState('attaching');
-		this.once(function(err) {
-			switch(this.event) {
+		switch(this.state) {
 			case 'attached':
 				callback();
 				break;
-			case 'detached':
-			case 'failed':
-				callback(err || connectionManager.getStateError());
+			default:
+				this.setPendingState('attaching');
+			case 'attaching':
+				this.once(function(err) {
+					switch(this.event) {
+						case 'attached':
+							callback();
+							break;
+						case 'detached':
+						case 'failed':
+							callback(err || connectionManager.getStateError());
+					}
+				});
 			}
-		});
-		};
+    };
 
-		RealtimeChannel.prototype.attachImpl = function(callback) {
+	RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 			var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
 			this.sendMessage(msg, (callback || noop));
 	};
 
-		RealtimeChannel.prototype.detach = function(callback) {
-			callback = callback || noop;
-			var connectionManager = this.connectionManager;
-			var connectionState = connectionManager.state;
-			if(!ConnectionManager.activeState(connectionState)) {
+	RealtimeChannel.prototype.detach = function(callback) {
+		callback = callback || noop;
+		var connectionManager = this.connectionManager;
+		var connectionState = connectionManager.state;
+		if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
-		if(this.state == 'detached') {
-			callback();
-			return;
-		}
-		this.setPendingState('detaching');
-		this.once(function(err) {
-			switch(this.event) {
+		switch(this.state) {
 			case 'detached':
+			case 'failed':
 				callback();
 				break;
-			case 'attached':
-				/* this shouldn't happen ... */
-				callback(ConnectionError.unknownChannelErr);
-				break;
-			}
-		});
+			default:
+				this.setPendingState('detaching');
+			case 'detaching':
+				this.once(function(err) {
+					switch(this.event) {
+						case 'detached':
+							callback();
+							break;
+						case 'failed':
+							callback(err || connectionManager.getStateError());
+							break;
+						default:
+							/* this shouldn't happen ... */
+							callback(ConnectionError.unknownChannelErr);
+							break;
+					}
+				});
+		}
 		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
