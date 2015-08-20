@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript">
+
 (function(){var y=window.Ably=this,h={httpTransports:["xhr","iframe","jsonp"],transports:["web_socket","xhr","iframe","jsonp"],minified:!function(){}.name},z=function(){function a(){}a.addListener=function(a,b,c){a.addEventListener?a.addEventListener(b,c,!1):a.attachEvent("on"+b,function(){c.apply(a,arguments)})};a.removeListener=function(a,b,c){a.removeEventListener?a.removeEventListener(b,c,!1):a.detachEvent("on"+b,function(){c.apply(a,arguments)})};a.addMessageListener=function(g,b){a.addListener(g,
 "message",b)};a.removeMessageListener=function(g,b){a.removeListener(g,"message",b)};a.addUnloadListener=function(g){a.addListener(window,"unload",g)};return a}();h.protocolVersion=1;h.ENVIRONMENT="";h.HOST="rest.ably.io";h.WS_HOST="realtime.ably.io";h.FALLBACK_HOSTS=["A.ably-realtime.com","B.ably-realtime.com","C.ably-realtime.com","D.ably-realtime.com","E.ably-realtime.com"];h.PORT=80;h.TLS_PORT=443;h.connectTimeout=15E3;h.disconnectTimeout=3E4;h.suspendedTimeout=12E4;h.recvTimeout=9E4;h.sendTimeout=
 1E4;h.connectionPersistTimeout=15E3;h.version="0.8.5";h.getHost=function(a,g,b){return g=b?g==a.host&&a.wsHost||g||a.wsHost:g||a.host};h.getPort=function(a,g){return g||a.tls?a.tlsPort:a.port};h.getHosts=function(a){var g=[a.host];(a=a.fallbackHosts)&&(g=g.concat(a));return g};h.normaliseOptions=function(a){if(a.host)a.wsHost=a.wsHost||a.host;else{var g=a.environment&&String(a.environment).toLowerCase()||h.ENVIRONMENT,b=!g||"production"===g;a.host=b?h.HOST:g+"-"+h.HOST;a.wsHost=b?h.WS_HOST:g+"-"+
@@ -31,3 +36,10 @@ this.pendingCallback=this.pendingCallback||C(),this.pendingCallback.push(b);else
 var c=e.pendingItems;if(c){e.pendingItems=null;var f=e.pendingCallback;e.pendingCallback=null;n.nextTick(function(){e.sendItems(c,f)})}d(a)}),c.exec()):d({message:"Unable to send; not connected",code:8E4,statusCode:400})};b.prototype.recv=function(){if(!this.recvRequest&&this.isConnected){var a=this,b=this.recvRequest=x.createRequest(this.recvUri,null,f,null,a.stream?3:2);b.on("data",function(b){a.onData(b)});b.on("complete",function(b){a.recvRequest=null;b?a.postErrorEvent(b):n.nextTick(function(){a.recv()})});
 b.exec()}};b.prototype.onData=function(a){this.postMessageEvent(a)};b.prototype.postMessageEvent=function(b){h.postMessage(a(b),e)};b.prototype.postErrorEvent=function(a,b){var c=b;if(a){var d=new s.fromValues({action:p.ERROR,error:a});c&&n.mixin(d,c);c=d}this.postMessageEvent([c])};(new b).connect()})();"undefined"!==typeof Realtime&&(y.Rest=Rest,y.Realtime=Realtime,Realtime.ConnectionManager=ConnectionManager,Realtime.BufferUtils=Rest.BufferUtils=BufferUtils,"undefined"!==typeof Crypto&&(Realtime.Crypto=
 Rest.Crypto=Crypto),Realtime.Defaults=Rest.Defaults=h,Realtime.Message=Rest.Message=Message,Realtime.PresenceMessage=Rest.PresenceMessage=PresenceMessage,Realtime.ProtocolMessage=Rest.ProtocolMessage=s)}).call({});
+
+</script>
+</head>
+<body>
+<h2>Ably cross-origin iframe</h2>
+</body>
+</html>

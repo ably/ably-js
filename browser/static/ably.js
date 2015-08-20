@@ -3871,7 +3871,7 @@ Defaults.suspendedTimeout         = 120000;
 Defaults.recvTimeout              = 90000;
 Defaults.sendTimeout              = 10000;
 Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.8.4';
+Defaults.version                  = '0.8.5';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -4903,6 +4903,8 @@ var ConnectionManager = (function() {
 				break;
 			default:
 		}
+		if(options.clientId !== undefined)
+			params.clientId = options.clientId;
 		if(options.echoMessages === false)
 			params.echo = 'false';
 		if(this.format !== undefined)
@@ -6245,6 +6247,10 @@ var Presence = (function() {
 
 	Presence.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
+		this._history(params, callback);
+  };
+
+	Presence.prototype._history = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -7521,7 +7527,7 @@ var RealtimeChannel = (function() {
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					var errmsg = 'Unexpected error decoding message; err = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
 					var err = new Error(errmsg);
 					this.emit('error', err);
@@ -7546,7 +7552,7 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, options);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decrypting message; err = ' + e;
+					var errmsg = 'Unexpected error decoding message; err = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
 					var err = new Error(errmsg);
 					this.emit('error', err);
@@ -7880,6 +7886,30 @@ var RealtimePresence = (function() {
 		members.waitSync(function() {
 			callback(null, params ? members.list(params) : members.values());
 		});
+	};
+
+	RealtimePresence.prototype.history = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+
+		if(params && params.untilAttach) {
+			if(this.channel.state === 'attached') {
+				delete params.untilAttach;
+				params.from_serial = this.channel.attachSerial;
+			} else {
+				throw new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400);
+			}
+		}
+
+		Presence.prototype._history.call(this, params, callback);
 	};
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
