@@ -159,8 +159,10 @@ var CometTransport = (function() {
 			this.pendingItems = this.pendingItems || [];
 			this.pendingItems.push(message);
 
-			this.pendingCallback = this.pendingCallback || Multicaster();
-			this.pendingCallback.push(callback);
+			if(callback) {
+				this.pendingCallback = this.pendingCallback || Multicaster();
+				this.pendingCallback.push(callback);
+			}
 			return;
 		}
 		/* send this, plus any pending, now */
@@ -170,7 +172,7 @@ var CometTransport = (function() {
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
-			pendingCallback.push(callback);
+			if(callback) pendingCallback.push(callback);
 			callback = pendingCallback;
 			this.pendingCallback = null;
 		}
@@ -185,7 +187,14 @@ var CometTransport = (function() {
 		sendRequest.on('complete', function(err, data) {
 			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + JSON.stringify(err));
 			self.sendRequest = null;
-			if(data) self.onData(data);
+
+			/* the results of the request usually get handled as protocol responses instead of send errors */
+			if(data) {
+				self.onData(data);
+			} else if(err && err.code) {
+				self.onData([ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})]);
+				err = null;
+			}
 
 			var pendingItems = self.pendingItems;
 			if(pendingItems) {
