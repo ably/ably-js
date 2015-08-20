@@ -36,6 +36,8 @@ includeScript('../common/lib/types/presencemessage.js');
 includeScript('../common/lib/types/protocolmessage.js');
 includeScript('../common/lib/types/stats.js');
 includeScript('../common/lib/transport/connectionerror.js');
+includeScript('../common/lib/transport/messagequeue.js');
+includeScript('../common/lib/transport/protocol.js');
 includeScript('../common/lib/transport/connectionmanager.js');
 includeScript('../common/lib/transport/transport.js');
 includeScript('../common/lib/transport/websockettransport.js');

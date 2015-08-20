@@ -126,6 +126,8 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/types/stats.js',
 
 		'<%= dirs.common %>/lib/transport/connectionerror.js',
+		'<%= dirs.common %>/lib/transport/messagequeue.js',
+		'<%= dirs.common %>/lib/transport/protocol.js',
 		'<%= dirs.common %>/lib/transport/connectionmanager.js',
 		'<%= dirs.common %>/lib/transport/transport.js',
 		'<%= dirs.common %>/lib/transport/websockettransport.js',
