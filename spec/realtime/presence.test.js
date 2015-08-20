@@ -901,7 +901,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   };
 
   exports.history_until_attach = function(test) {
-    var clientRealtime = helper.AblyRealtime({clientId: testClientId});
+    var transport = 'web_socket';
+    var clientRealtime = helper.AblyRealtime({clientId: testClientId, transports: [transport]});
     var clientChannel = clientRealtime.channels.get('presenceHistoryUntilAttach');
     var testClientData = 'Test client data (history0)';
     var done = function() {
