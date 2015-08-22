@@ -365,7 +365,6 @@ var RealtimeChannel = (function() {
 		if(this.state != 'attaching')
 			return;
 
-		this.state = 'attached';
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
 			this.pendingEvents = [];
@@ -382,7 +381,7 @@ var RealtimeChannel = (function() {
 		if((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0)
 			this.presence.awaitSync();
 		this.presence.setAttached();
-		this.emit('attached');
+		this.setState('attached');
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -391,15 +390,13 @@ var RealtimeChannel = (function() {
 		var msgErr = message.error;
 		if(msgErr) {
 			/* this is an error message */
-			this.state = 'failed';
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
 			this.failPendingMessages(err);
-			this.emit('failed', err);
+			this.setState('failed', err);
 		} else {
 			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 			if(this.state !== 'detached') {
-				this.state = 'detached';
-				this.emit('detached');
+				this.setState('detached');
 			}
 		}
 	};
@@ -413,13 +410,18 @@ var RealtimeChannel = (function() {
 			this.emit('detached');
 	};
 
+	RealtimeChannel.prototype.setState = function(state, err) {
+		this.state = state;
+		this.rest.channels.setChannelState(this);
+		this.emit(state, err);
+	};
+
 	RealtimeChannel.prototype.setPendingState = function(state) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'name = ' + this.name + ', state = ' + state);
-		this.state = state;
 		this.clearStateTimer();
 
 		/* notify the state change */
-		this.emit(state);
+		this.setState(state);
 
 		/* if not currently connected, do nothing */
 		if(this.connectionManager.state.state != 'connected') {
@@ -494,7 +496,6 @@ var RealtimeChannel = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.attachSerial;
 			} else {
-				console.log(this.state)
 				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
 			}
 		}

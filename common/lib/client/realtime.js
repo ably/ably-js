@@ -58,7 +58,6 @@ var Realtime = (function() {
 		var channel = this.all[name];
 		if(!channel) {
 			channel = this.all[name] = new RealtimeChannel(this.realtime, name, this.realtime.options);
-			this.watchChannel(channel);
 		}
 		return channel;
 	};
@@ -66,31 +65,23 @@ var Realtime = (function() {
 	Channels.prototype.release = function(name) {
 		var channel = this.all[name];
 		if(channel) {
-			this.unwatchChannel(channel);
 			delete this.all[name];
 		}
 	};
 
-	Channels.prototype.watchChannel = function(channel) {
-		var self = this;
-		channel.on(function() {
-			var event = this.event;
-			switch(event) {
-				case 'attaching':
-				case 'detaching':
-					self.pending[channel.name] = channel;
-					break;
-				default:
-					delete self.pending[channel.name];
-					if(Utils.isEmpty(self.pending)) {
-						self.emit('nopending');
-					}
-			}
-		});
-	};
-
-	Channels.prototype.unwatchChannel = function(channel) {
-		channel.off();
+	Channels.prototype.setChannelState = function(channel) {
+		var name = channel.name;
+		switch(channel.state) {
+			case 'attaching':
+			case 'detaching':
+				this.pending[name] = channel;
+				break;
+			default:
+				delete this.pending[name];
+				if(Utils.isEmpty(this.pending)) {
+					this.emit('nopending');
+				}
+		}
 	};
 
 	Channels.prototype.onceNopending = function(listener) {
