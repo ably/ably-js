@@ -23,8 +23,10 @@ var WebSocketTransport = (function() {
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
+			transport.cancelDisposeOnFailTimer();
 			callback(null, transport);
 		});
+		transport.startDisposeOnFailTimer();
 		transport.connect();
 	};
 
@@ -123,9 +125,26 @@ var WebSocketTransport = (function() {
 			/* defer until the next event loop cycle before closing the socket,
 			 * giving some implementations the opportunity to send any outstanding close message */
 			Utils.nextTick(function() {
-				Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', 'closing websocket');
+				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
 				wsConnection.close();
 			});
+		}
+	};
+
+	WebSocketTransport.prototype.startDisposeOnFailTimer = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startDisposeOnFailTimer()')
+		var self = this;
+		this.ensureDisposedTimer = setTimeout(function() {
+			Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startDisposeOnFailTimer()',
+				'Websocket failed to open after connectTimeout expired; disposing');
+			self.dispose();
+		}, Defaults.connectTimeout);
+	};
+
+	WebSocketTransport.prototype.cancelDisposeOnFailTimer = function() {
+		if(this.ensureDisposedTimer) {
+			clearTimeout(this.ensureDisposedTimer);
+			this.ensureDisposedTimer= null;
 		}
 	};
 
