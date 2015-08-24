@@ -12,11 +12,12 @@ var Crypto = (function() {
 	 * @param callback
 	 */
 	var generateRandom;
-	if(window.Uint32Array && window.crypto && window.crypto.getRandomValues) {
+	var browsercrypto = window.crypto || window.msCrypto; // mscrypto for IE11
+	if(window.Uint32Array && browsercrypto && browsercrypto.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
-			window.crypto.getRandomValues(nativeArray);
+			browsercrypto.getRandomValues(nativeArray);
 			callback(null, BufferUtils.toWordArray(nativeArray));
 		};
 	} else {
