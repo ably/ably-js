@@ -317,11 +317,11 @@ var ConnectionManager = (function() {
 		this.pendingTransports.push(transport);
 
 		var self = this;
-		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId) {
+		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
 			if(mode == 'upgrade' && self.activeProtocol) {
 				self.scheduleTransportActivation(transport);
 			} else {
-				self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
+				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
 			}
 		});
 
@@ -382,7 +382,7 @@ var ConnectionManager = (function() {
 	 * @param connectionSerial the current connectionSerial
 	 * @param connectionId the id of the new active connection
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId) {
+	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId, clientId) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
 		if(connectionKey)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
@@ -390,6 +390,8 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
 		if(connectionId)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
+		if(clientId)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'clientId =  ' + clientId);
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
@@ -407,6 +409,14 @@ var ConnectionManager = (function() {
 		this.host = transport.params.host;
 		if(connectionKey && this.connectionKey != connectionKey)  {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
+		}
+		if(clientId) {
+			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+				/* Should never happen in normal circumstances as realtime should
+				 * recognise mismatch and return an error */
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Unexpected mismatch between expected and received clientId');
+			}
+			this.realtime.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);

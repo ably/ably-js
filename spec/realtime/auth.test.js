@@ -198,5 +198,42 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		monitorConnection(test, realtime);
 	};
 
+	/*
+	 * Request a token using clientId, then initialize a connection without one,
+	 * and check that the connection inherits the clientId of the token
+	 */
+	exports.auth_clientid_inheritance = function(test) {
+		test.expect(1);
+
+		var rest = helper.AblyRest(),
+		testClientId = 'testClientId';
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.clientId, testClientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + err);
+			test.done();
+			return;
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
