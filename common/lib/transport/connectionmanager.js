@@ -331,7 +331,7 @@ var ConnectionManager = (function() {
 
 		var self = this;
 		var handleTransportEvent = function(state) {
-			return function(error, connectionKey, connectionSerial, connectionId) {
+			return function(error, connectionKey, connectionSerial, connectionId, clientId) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
 				if(error && error.message)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
@@ -341,11 +341,14 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
 				if(connectionId)
 					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
+				if(clientId)
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'clientId=  ' + clientId);
+
 
 				/* handle activity transition */
 				var notifyState;
 				if(state == 'connected') {
-					self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
+					self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
 					notifyState = true;
 				} else {
 					notifyState = self.deactivateTransport(transport);
@@ -374,8 +377,8 @@ var ConnectionManager = (function() {
 	 *   'recover': new connection with recoverable messages;
 	 *   'resume': uninterrupted resumption of connection without loss of messages
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionKey = ' + connectionKey + '; connectionSerial = ' + connectionSerial);
+	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId, clientId) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionKey = ' + connectionKey + '; connectionSerial = ' + connectionSerial + '; clientId = ' + clientId);
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
 		if(this.state == states.closing || this.state == states.closed)
@@ -405,6 +408,14 @@ var ConnectionManager = (function() {
 			if(createCookie && this.options.recover === true)
 				this.persistConnection();
 			this.msgSerial = 0;
+		}
+		if(clientId) {
+			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+				/* Should never happen in normal circumstances as realtime should
+				 * return an error code in case of mismatch */
+				throw new Error('Unexpected mismatch between expected and received clientId');
+			}
+			this.realtime.clientId = clientId;
 		}
 
  		/* set up handler for events received on this transport */
@@ -639,8 +650,9 @@ var ConnectionManager = (function() {
 				});
 				return;
 			}
-			/* FIXME: decide if fatal */
-			var fatal = false;
+			/* all codes in the 40-50k zone indicate a fault with the request, so
+			 * should not be retried unmodified */
+			var fatal = err.code >= 40000 && err.code <= 50000;
 			if(fatal)
 				self.notifyState({state: 'failed', error: err});
 			else
