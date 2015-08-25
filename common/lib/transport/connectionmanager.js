@@ -650,8 +650,9 @@ var ConnectionManager = (function() {
 				});
 				return;
 			}
-			/* FIXME: decide if fatal */
-			var fatal = false;
+			/* all codes in the 40-50k zone indicate a fault with the request, so
+			 * should not be retried unmodified */
+			var fatal = err.code >= 40000 && err.code <= 50000;
 			if(fatal)
 				self.notifyState({state: 'failed', error: err});
 			else
