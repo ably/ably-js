@@ -131,6 +131,9 @@ var Auth = (function() {
 	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
 		var token = this.tokenDetails;
 		if(token) {
+			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.rest.clientId, 40102, 401));
+			}
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!(authOptions && authOptions.force)) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
