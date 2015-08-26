@@ -695,6 +695,11 @@ var ConnectionManager = (function() {
 		closeTransport(this.pendingTransport);
 		closeTransport(this.transport);
 
+		/* Discard connection state */
+		this.connectionKey = null;
+		this.connectionSerial = null;
+		this.realtime.channels.setSuspended();
+
 		this.notifyState({state: 'closed'});
 	};
 
