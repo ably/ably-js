@@ -124,6 +124,11 @@ var CometTransport = (function() {
 				this.recvRequest.abort();
 				this.recvRequest = null;
 			}
+			Transport.prototype.onDisconnect.call(this);
+			var self = this;
+			Utils.nextTick(function() {
+				self.emit('disposed');
+			})
 		}
 	};
 

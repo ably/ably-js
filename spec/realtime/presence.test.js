@@ -2,7 +2,9 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   var exports = {},
-      displayError = helper.displayError;
+    displayError = helper.displayError,
+    closeAndFinish = helper.closeAndFinish,
+    monitorConnection = helper.monitorConnection;
 
   var rest, realtime, authToken, authToken2;
   var testClientId = 'testclient', testClientId2 = 'testclient2';
@@ -79,15 +81,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
                 cb(err);
               });
             });
-            var exitOnState = function(state) {
-              realtime.connection.on(state, function () {
-                test.ok(false, transport + ' connection to server failed');
-                realtime.close();
-                cb(new Error('Connection to server failed'));
-              });
-            };
-            exitOnState('failed');
-            exitOnState('suspended');
+            monitorConnection(test, realtime);
           } catch(err) {
             test.ok(false, 'Test failed with exception: ' + err.stack);
             cb(err);
@@ -108,7 +102,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -147,14 +141,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter0 failed with exception: ' + e.stack);
       done();
@@ -170,7 +157,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -201,14 +188,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           test.ok(true, 'Presence event sent');
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter1 failed with exception: ' + e.stack);
       done();
@@ -224,7 +204,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -253,14 +233,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
         }
         test.ok(true, 'Presence event sent');
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter2 failed with exception: ' + e.stack);
       done();
@@ -277,7 +250,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -329,14 +302,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           /* done() is called in presence event handler */
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter3 failed with exception: ' + e.stack);
       done();
@@ -352,7 +318,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -391,14 +357,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter4 failed with exception: ' + e.stack);
       done();
@@ -414,7 +373,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -446,14 +405,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           clientChannel.presence.enter();
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter5 failed with exception: ' + e.stack);
       done();
@@ -469,7 +421,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -501,14 +453,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           clientChannel.presence.enter('Test client data (enter6)');
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.enter6 failed with exception: ' + e.stack);
       done();
@@ -524,7 +469,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -572,14 +517,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.leave0 failed with exception: ' + e.stack);
       done();
@@ -595,7 +533,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -645,14 +583,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.update0 failed with exception: ' + e.stack);
       done();
@@ -668,7 +599,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -716,14 +647,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.get0 failed with exception: ' + e.stack);
       done();
@@ -739,7 +663,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -801,14 +725,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.get1 failed with exception: ' + e.stack);
       done();
@@ -824,7 +741,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -886,14 +803,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       test.ok(false, 'presence.history0 failed with exception: ' + e.stack);
       done();
@@ -1016,7 +926,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime1.close(); clientRealtime2.close();
+          closeAndFinish(test, [clientRealtime1, clientRealtime2]);
         }, 3000);
       }
     };
@@ -1074,27 +984,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
                   });
                 });
               });
-              var exitOnState = function(state) {
-                clientRealtime2.connection.on(state, function () {
-                  test.ok(false, transport + ' connection to server failed');
-                  done();
-                });
-              };
-              exitOnState('failed');
-              exitOnState('suspended');
-
+              monitorConnection(test, clientRealtime2);
             });
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime1.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime1);
     } catch(e) {
       test.ok(false, 'presence.attach0 failed with exception: ' + e.stack);
       done();
@@ -1111,7 +1006,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime1.close(); clientRealtime2.close();
+          closeAndFinish(test, [clientRealtime1, clientRealtime2]);
         }, 3000);
       }
     };
@@ -1121,6 +1016,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       async.parallel([
         function(cb1) {
           var transport = 'web_socket';
+          var data = 'Test client data (member0-1)';
           clientRealtime1 = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
           clientRealtime1.connection.on('connected', function() {
             /* get channel, attach, and enter */
@@ -1131,28 +1027,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
                 cb1(err);
                 return;
               }
-              clientChannel1.presence.enter('Test client data (member0-1)', function(err) {
+              clientChannel1.presence.on('enter', function(presenceEvent){
+                if(presenceEvent.data == data)
+                  cb1();
+              });
+              clientChannel1.presence.enter(data, function(err) {
                 if(err) {
                   test.ok(false, 'Enter failed with error: ' + err);
                   cb1(err);
                   return;
                 }
                 test.ok(true, 'Presence event sent');
-                cb1(null);
               });
             });
           });
-          var exitOnState = function(state) {
-            clientRealtime1.connection.on(state, function (err) {
-              test.ok(false, transport + ' connection to server failed');
-              cb1(err);
-            });
-          };
-          exitOnState('failed');
-          exitOnState('suspended');
+          monitorConnection(test, clientRealtime1);
         },
         function(cb2) {
           var transport = 'web_socket';
+          var data = 'Test client data (member0-2)';
           clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, authToken: authToken2, transports: [transport] });
           clientRealtime2.connection.on('connected', function() {
             /* get channel, attach */
@@ -1163,31 +1056,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
                 cb2(err);
                 return;
               }
-              clientChannel2.presence.enter('Test client data (member0-2)', function(err) {
+              clientChannel2.presence.on('enter', function(presenceEvent){
+                if(presenceEvent.data == data)
+                  cb2();
+              });
+              clientChannel2.presence.enter(data, function(err) {
                 if(err) {
                   test.ok(false, 'Enter failed with error: ' + err);
                   cb2(err);
                   return;
                 }
                 test.ok(true, 'Presence event sent');
-                cb2(null);
               });
             });
           });
-          var exitOnState = function(state) {
-            clientRealtime2.connection.on(state, function (err) {
-              test.ok(false, transport + ' connection to server failed');
-              cb2(err);
-            });
-          };
-          exitOnState('failed');
-          exitOnState('suspended');
+          monitorConnection(test, clientRealtime2);
         }
       ], function() {
         clientChannel2.presence.get(function(err, members) {
           if(err) {
             test.ok(false, 'Presence.get() failed with error: ' + err);
-            test.done();
+            done();
             return;
           }
           test.equal(members.length, 2, 'Verify both members present');
@@ -1210,7 +1099,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
       if(!isDone) {
         isDone = true;
         setTimeout(function() {
-          test.done(); clientRealtime.close();
+          closeAndFinish(test, clientRealtime);
         }, 3000);
       }
     };
@@ -1255,14 +1144,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
           });
         });
       });
-      var exitOnState = function(state) {
-        clientRealtime.connection.on(state, function () {
-          test.ok(false, transport + ' connection to server failed');
-          done();
-        });
-      };
-      exitOnState('failed');
-      exitOnState('suspended');
+      monitorConnection(test, clientRealtime);
     } catch(e) {
       console.log('presence.leave0 failed with exception: ' + e.stack);
       test.ok(false, 'presence.leave0 failed with exception: ' + e.stack);
@@ -1273,10 +1155,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
   exports.clear99 = function(test) {
     /* delay before closing, to allow final tests to see events on connections */
     setTimeout(function() {
-      realtime.close();
-      test.expect(1);
-      test.ok(true, 'Closed listener connection');
-      test.done();
+      closeAndFinish(test, realtime);
     }, 3000);
   };
 

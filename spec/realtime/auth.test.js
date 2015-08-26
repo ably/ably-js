@@ -1,7 +1,9 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-  var realtime, currentTime, exports = {};
+  var currentTime, exports = {},
+    closeAndFinish = helper.closeAndFinish,
+    monitorConnection = helper.monitorConnection;
 
   exports.setupauth = function(test) {
     test.expect(1);
@@ -30,11 +32,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
    */
   exports.authbase0 = function(test) {
     test.expect(1);
-    realtime = helper.AblyRealtime();
+    var realtime = helper.AblyRealtime();
     realtime.auth.requestToken(function(err, tokenDetails) {
       if(err) {
         test.ok(false, helper.displayError(err));
-        test.done();
+        closeAndFinish(test, realtime);
         return;
       }
       test.expect(5);
@@ -43,7 +45,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued), 'Verify token expires');
       test.equal(tokenDetails.expires, 60*60*1000 + tokenDetails.issued, 'Verify default expiry period');
       test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
-      test.done();
+      closeAndFinish(test, realtime);
     });
   };
 
@@ -53,11 +55,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.auth_useAuthUrl_json = function(test) {
     test.expect(1);
 
-    var rest = helper.AblyRest();
+    var realtime, rest = helper.AblyRest();
     rest.auth.requestToken(null, null, function(err, tokenDetails) {
       if(err) {
         test.ok(false, helper.displayError(err));
-        test.done();
+        closeAndFinish(test, realtime);
         return;
       }
 
@@ -66,19 +68,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       realtime = helper.AblyRealtime({ authUrl: authPath });
 
       realtime.connection.on('connected', function() {
-        realtime.connection.off();
-        realtime.connection.close();
         test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-        test.done();
+        closeAndFinish(test, realtime);
         return;
       });
 
-      realtime.connection.on('failed', function(err) {
-        realtime.close();
-        test.ok(false, "Failed: " + err);
-        test.done();
-        return;
-      });
+      monitorConnection(test, realtime);
     });
   };
 
@@ -88,11 +83,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.auth_useAuthUrl_plainText = function(test) {
     test.expect(1);
 
-    var rest = helper.AblyRest();
+    var realtime, rest = helper.AblyRest();
     rest.auth.requestToken(null, null, function(err, tokenDetails) {
       if(err) {
         test.ok(false, helper.displayError(err));
-        test.done();
+        closeAndFinish(test, realtime);
         return;
       }
 
@@ -101,19 +96,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
       realtime = helper.AblyRealtime({ authUrl: authPath });
 
       realtime.connection.on('connected', function() {
-        realtime.connection.off();
-        realtime.connection.close();
         test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-        test.done();
+        closeAndFinish(test, realtime);
         return;
       });
 
-      realtime.connection.on('failed', function(err) {
-        realtime.close();
-        test.ok(false, "Failed: " + err);
-        test.done();
-        return;
-      });
+      monitorConnection(test, realtime);
     });
   };
 
@@ -123,12 +111,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.auth_useAuthCallback_tokenRequestResponse = function(test) {
     test.expect(3);
 
-    var rest = helper.AblyRest();
+    var realtime, rest = helper.AblyRest();
     var authCallback = function(tokenParams, callback) {
       rest.auth.createTokenRequest(null, tokenParams, function(err, tokenRequest) {
         if(err) {
           test.ok(false, helper.displayError(err));
-          test.done();
+          closeAndFinish(test, realtime);
           return;
         }
         test.ok("nonce" in tokenRequest);
@@ -139,19 +127,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     realtime = helper.AblyRealtime({ authCallback: authCallback });
 
     realtime.connection.on('connected', function() {
-      realtime.connection.close();
       test.equal(realtime.auth.method, 'token');
       test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-      test.done();
+      closeAndFinish(test, realtime);
       return;
     });
 
-    realtime.connection.on('failed', function(err) {
-      realtime.close();
-      test.ok(false, "Failed: " + err);
-      test.done();
-      return;
-    });
+    monitorConnection(test, realtime);
   };
 
   /*
@@ -160,12 +142,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.auth_useAuthCallback_tokenDetailsResponse = function(test) {
     test.expect(3);
 
-    var rest = helper.AblyRest();
+    var realtime, rest = helper.AblyRest();
     var authCallback = function(tokenParams, callback) {
       rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
         if(err) {
           test.ok(false, helper.displayError(err));
-          test.done();
+          closeAndFinish(test, realtime);
           return;
         }
         test.ok("token" in tokenDetails);
@@ -176,19 +158,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     realtime = helper.AblyRealtime({ authCallback: authCallback });
 
     realtime.connection.on('connected', function() {
-      realtime.connection.close();
       test.equal(realtime.auth.method, 'token');
       test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-      test.done();
+      closeAndFinish(test, realtime);
       return;
     });
 
-    realtime.connection.on('failed', function(err) {
-      realtime.close();
-      test.ok(false, "Failed: " + err);
-      test.done();
-      return;
-    });
+    monitorConnection(test, realtime);
   };
 
   /*
@@ -197,12 +173,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
   exports.auth_useAuthCallback_tokenStringResponse = function(test) {
     test.expect(3);
 
-    var rest = helper.AblyRest();
+    var realtime, rest = helper.AblyRest();
     var authCallback = function(tokenParams, callback) {
       rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
         if(err) {
           test.ok(false, helper.displayError(err));
-          test.done();
+          closeAndFinish(test, realtime);
           return;
         }
         test.ok("token" in tokenDetails);
@@ -213,24 +189,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
     realtime = helper.AblyRealtime({ authCallback: authCallback });
 
     realtime.connection.on('connected', function() {
-      realtime.connection.close();
       test.equal(realtime.auth.method, 'token');
       test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-      test.done();
+      closeAndFinish(test, realtime);
       return;
     });
 
-    realtime.connection.on('failed', function(err) {
-      realtime.close();
-      test.ok(false, "Failed: " + err);
-      test.done();
-      return;
-    });
-  };
-
-  exports.teardown = function(test) {
-    realtime.close();
-    test.done();
+    monitorConnection(test, realtime);
   };
 
   return module.exports = helper.withTimeout(exports);

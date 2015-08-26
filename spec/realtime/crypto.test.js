@@ -6,7 +6,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		BufferUtils = Ably.Realtime.BufferUtils,
 		Crypto = Ably.Realtime.Crypto,
 		Message = Ably.Realtime.Message,
-		assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/';
+		assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/',
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
 	function attachChannels(channels, callback) {
 		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
@@ -53,8 +55,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				params.iv = iv;
@@ -76,8 +78,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* compare */
 					test.ok(compareMessage(testMessage, encryptedMessage));
 				}
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
@@ -101,8 +102,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				params.iv = iv;
@@ -124,8 +125,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* compare */
 					test.ok(compareMessage(testMessage, encryptedMessage));
 				}
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
@@ -148,8 +148,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -169,8 +169,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* compare */
 					test.ok(compareMessage(testMessage, encryptedMessage));
 				}
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
@@ -193,8 +192,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			Crypto.getDefaultParams(key, function(err, params) {
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -214,8 +213,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* compare */
 					test.ok(compareMessage(testMessage, encryptedMessage));
 				}
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
@@ -237,8 +235,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		Crypto.getDefaultParams(function(err, params) {
 			if(err) {
-				realtime.close();
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
+				closeAndFinish(test, realtime);
 				return;
 			}
 
@@ -246,8 +244,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.setOptions({encrypted:true, cipherParams: params});
 			channel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
-				realtime.close();
-				test.done();
+				closeAndFinish(test, realtime);
 			});
 			channel.publish('event0', messageText);
 		});
@@ -271,15 +268,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Crypto.getDefaultParams(function(err, params) {
 			test.equal(params.algorithm, 'aes-128');
 			if(err) {
-				realtime.close();
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
+				closeAndFinish(test, realtime);
 				return;
 			}
 			channel.setOptions({encrypted:true, cipherParams: params});
 			channel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
-				realtime.close();
-				test.done();
+				closeAndFinish(test, realtime);
 			});
 			channel.publish('event0', messageText);
 		});
@@ -304,15 +300,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				test.equal(params.algorithm, 'aes-256');
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
 				channel.subscribe('event0', function(msg) {
 					test.ok(msg.data == messageText);
-					realtime.close();
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 				channel.publish('event0', messageText);
 			});
@@ -338,15 +333,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				test.equal(params.algorithm, 'aes-256');
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
 				channel.subscribe('event0', function(msg) {
 					test.ok(msg.data == messageText);
-					realtime.close();
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 				channel.publish('event0', messageText);
 			});
@@ -360,9 +354,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useTextProtocol: text });
+		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: !text});
 		test.expect(iterations + 2);
-		var channelName = 'multiple_send_' + iterations + '_' + delay,
+		var channelName = 'multiple_send_' + (text ? 'text_' : 'binary_') + iterations + '_' + delay,
 			channel = realtime.channels.get(channelName),
 			messageText = 'Test message (' + channelName + ')';
 
@@ -370,8 +364,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			Crypto.getDefaultParams(key, function(err, params) {
 				test.equal(params.algorithm, 'aes-128');
 				if(err) {
-					realtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
 					return;
 				}
 				channel.setOptions({encrypted:true, cipherParams: params});
@@ -397,13 +391,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				async.parallel([sendAll, recvAll], function(err) {
 					if(err) {
-						realtime.close();
 						test.ok(false, 'Error sending messages; err = ' + err);
-						return;
 					}
 					test.ok('Verify all messages received');
-					realtime.close();
-					test.done();
+					closeAndFinish(test, realtime);
 				});
 			});
 		});
@@ -439,9 +430,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) { attachChannels([txChannel, rxChannel], cb); }
 		], function(err, res) {
 			if (err) {
-				rxRealtime.close();
-				txRealtime.close();
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
 			var params = res[0];
@@ -452,9 +442,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			rxChannel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
-				rxRealtime.close();
-				txRealtime.close();
-				test.done();
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 			});
 			txChannel.publish('event0', messageText);
 		});
@@ -485,9 +473,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) { attachChannels([txChannel, rxChannel], cb); }
 		], function(err, res) {
 			if (err) {
-				rxRealtime.close();
-				txRealtime.close();
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
 			var params = res[0];
@@ -498,9 +485,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			rxChannel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
-				rxRealtime.close();
-				txRealtime.close();
-				test.done();
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 			});
 			txChannel.publish('event0', messageText);
 		});
@@ -533,9 +518,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) { attachChannels([txChannel, rxChannel], cb); }
 		], function(err, res) {
 			if(err) {
-				rxRealtime.close();
-				txRealtime.close();
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
 			var txParams = res[0],
@@ -545,9 +529,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
 			rxChannel.subscribe('event0', function(msg) {
 				test.ok(msg.data != messageText);
-				rxRealtime.close();
-				txRealtime.close();
-				test.done();
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 			});
 			txChannel.publish('event0', messageText);
 		});
@@ -575,24 +557,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		attachChannels([txChannel, rxChannel], function(err) {
 			if(err) {
-				rxRealtime.close();
-				txRealtime.close();
 				test.ok(false, 'Unable to get attach channels; err = ' + err);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
 			Crypto.getDefaultParams(function(err, rxParams) {
 				if(err) {
-					rxRealtime.close();
-					txRealtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
 				rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
 				rxChannel.subscribe('event0', function(msg) {
 					test.ok(msg.data == messageText);
-					rxRealtime.close();
-					txRealtime.close();
-					test.done();
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 				});
 				txChannel.publish('event0', messageText);
 			});
@@ -621,24 +599,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		attachChannels([txChannel, rxChannel], function(err) {
 			if(err) {
-				rxRealtime.close();
-				txRealtime.close();
 				test.ok(false, 'Unable to get attach channels; err = ' + err);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
 			Crypto.getDefaultParams(function(err, txParams) {
 				if(err) {
-					rxRealtime.close();
-					txRealtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
 				txChannel.setOptions({encrypted:true, cipherParams: txParams});
 				rxChannel.subscribe('event0', function(msg) {
 					test.ok(msg.encoding.indexOf('cipher') > -1);
-					rxRealtime.close();
-					txRealtime.close();
-					test.done();
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 				});
 				txChannel.publish('event0', messageText);
 			});
@@ -671,9 +645,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var setInitialOptions = function(cb) {
 			Crypto.getDefaultParams(function(err, params) {
 				if(err) {
-					rxRealtime.close();
-					txRealtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
 				firstParams = params;
@@ -696,9 +669,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var createSecondKey = function(cb) {
 			Crypto.getDefaultParams(function(err, params) {
 				if(err) {
-					rxRealtime.close();
-					txRealtime.close();
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
 				secondParams = params;
@@ -744,14 +716,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		], function(err) {
 			if(err) {
 				test.ok(false, 'Unexpected error running test; err = ' + err);
-				rxRealtime.close();
-				txRealtime.close();
-				test.done();
+				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
-			rxRealtime.close();
-			txRealtime.close();
-			test.done();
+			closeAndFinish(test, [txRealtime, rxRealtime]);
 		});
 	};
 

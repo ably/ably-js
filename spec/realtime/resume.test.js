@@ -1,7 +1,9 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-  var exports = {};
+  var exports = {},
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
   exports.setupResume = function(test) {
     test.expect(1);
@@ -141,9 +143,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
                 test.ok(false, 'Phase 4 failed with err: ' + err);
                 return;
               }
-              rxRealtime.close();
-              txRealtime.close();
-              test.done();
+              closeAndFinish(test, [rxRealtime, txRealtime]);
             });
           });
         });
@@ -265,30 +265,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
     phase0(function(err) {
       if(err) {
         test.ok(false, 'Phase 1 failed with err: ' + err);
-        test.done();
+        closeAndFinish(test, [rxRealtime, txRealtime]);
         return;
       }
       phase1(function(err) {
         if(err) {
           test.ok(false, 'Phase 1 failed with err: ' + err);
-          test.done();
+          closeAndFinish(test, [rxRealtime, txRealtime]);
           return;
         }
         phase2(function(err) {
           if(err) {
             test.ok(false, 'Phase 2 failed with err: ' + err);
-            test.done();
+            closeAndFinish(test, [rxRealtime, txRealtime]);
             return;
           }
           phase3(function(err) {
             if(err) {
               test.ok(false, 'Phase 3 failed with err: ' + err);
-              test.done();
+              closeAndFinish(test, [rxRealtime, txRealtime]);
               return;
             }
-            rxRealtime.close();
-            txRealtime.close();
-            test.done();
+            closeAndFinish(test, [rxRealtime, txRealtime]);
           });
         });
       });

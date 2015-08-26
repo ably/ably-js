@@ -1,7 +1,9 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-	var exports = {};
+	var exports = {},
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection;
 
 	exports.setupInit = function(test) {
 		test.expect(1);
@@ -20,42 +22,34 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 */
 	exports.initbase0 = function(test) {
 		test.expect(1);
+		var realtime;
 		try {
-			var realtime = helper.AblyRealtime();
+			realtime = helper.AblyRealtime();
 			realtime.connection.on('connected', function() {
 				test.ok(true, 'Verify init with key');
-				test.done();
-				realtime.close();
+				closeAndFinish(test, realtime);
 			});
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.ok(false, 'connection to server failed');
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('suspended');
+			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Init with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
 	/* init with key string */
 	exports.init_key_string = function(test) {
 		test.expect(2);
+		var realtime;
 		try {
-			var keyStr = helper.getTestApp().keys[0].keyStr,
-				realtime = new helper.Ably.Realtime(keyStr);
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			realtime = new helper.Ably.Realtime(keyStr);
 
-			realtime.close();
 			test.equal(realtime.options.key, keyStr);
 			test.deepEqual(realtime.options, realtime.connection.connectionManager.options);
-			test.done();
+			closeAndFinish(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Init with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -77,10 +71,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var tokenStr = tokenDetails.token,
 					realtime = new helper.Ably.Realtime(tokenStr);
 
-				realtime.close();
 				test.equal(realtime.options.token, tokenStr);
 				test.deepEqual(realtime.options, realtime.connection.connectionManager.options);
-				test.done();
+				closeAndFinish(test, realtime);
 			});
 		} catch(e) {
 			test.ok(false, 'Init with token failed with exception: ' + e.stack);
@@ -91,16 +84,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/* init with key string and useTokenAuth: true */
 	exports.init_key_with_usetokenauth = function(test) {
 		test.expect(2);
+		var realtime;
 		try {
-			var keyStr = helper.getTestApp().keys[0].keyStr,
-				realtime = new helper.Ably.Realtime({key: keyStr, useTokenAuth: true});
-			realtime.close();
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			realtime = new helper.Ably.Realtime({key: keyStr, useTokenAuth: true});
 			test.equal(realtime.options.key, keyStr);
 			test.equal(realtime.auth.method, 'token');
-			test.done();
+			closeAndFinish(test, realtime);
 		} catch(e) {
 			test.ok(false, 'Init with key failed with exception: ' + e.stack);
-			test.done();
+			closeAndFinish(test, realtime);
 		}
 	};
 
@@ -127,14 +120,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var defaultHost = realtime.connection.connectionManager.httpHosts[0];
 			var hostWithoutEnv = defaultHost.replace(/^\w+\-rest/, 'rest');
 			test.equal(hostWithoutEnv, 'rest.ably.io', 'Verify correct default rest host chosen');
-			var exitOnState = function(state) {
-				realtime.connection.on(state, function () {
-					test.done();
-					realtime.close();
-				});
-			};
-			exitOnState('failed');
-			exitOnState('disconnected');
+			realtime.connection.on('disconnected', function (state) {
+				test.done();
+				realtime.close();
+			});
 		} catch(e) {
 			test.ok(false, 'Init with key failed with exception: ' + e.stack);
 			test.done();
