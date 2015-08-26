@@ -406,8 +406,9 @@ var RealtimeChannel = (function() {
 		this.clearStateTimer();
 		this.failPendingMessages(err);
 		this.presence.setSuspended(err);
-		if (!suppressEvent && this.state !== 'detached')
-			this.emit('detached');
+		if(!suppressEvent && this.state !== 'detached') {
+			this.setState('detached');
+		}
 	};
 
 	RealtimeChannel.prototype.setState = function(state, err) {
