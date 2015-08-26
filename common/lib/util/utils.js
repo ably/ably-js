@@ -35,7 +35,7 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
-  /* ...Or an Object (in the narrow sense) */
+	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Object]';
 	};

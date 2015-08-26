@@ -1,36 +1,36 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-  var rest, exports = {};
+	var rest, exports = {};
 
-  exports.setuptime = function(test) {
-    test.expect(1);
-    helper.setupApp(function(err) {
-      if(err) {
-        test.ok(false, helper.displayError(err));
-        test.done();
-        return;
-      }
+	exports.setuptime = function(test) {
+		test.expect(1);
+		helper.setupApp(function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
 
-      rest = helper.AblyRest();
-      test.ok(true, 'app set up');
-      test.done();
-    });
-  };
+			rest = helper.AblyRest();
+			test.ok(true, 'app set up');
+			test.done();
+		});
+	};
 
-  exports.time0 = function(test) {
-    test.expect(1);
-    rest.time(function(err, serverTime) {
-      if(err) {
-        test.ok(false, helper.displayError(err));
-        test.done();
-        return;
-      }
-      var localFiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-      test.ok(serverTime > localFiveMinutesAgo, 'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks');
-      test.done();
-    });
-  };
+	exports.time0 = function(test) {
+		test.expect(1);
+		rest.time(function(err, serverTime) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			var localFiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+			test.ok(serverTime > localFiveMinutesAgo, 'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks');
+			test.done();
+		});
+	};
 
-  return module.exports = helper.withTimeout(exports);
+	return module.exports = helper.withTimeout(exports);
 });
