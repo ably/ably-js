@@ -99,17 +99,17 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.onEvent = function(messages) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
-    	for(var i = 0; i < messages.length; i++) {
-    		var message = messages[i];
-    		subscriptions.emit(message.name, message);
-    	}
-    };
+			for(var i = 0; i < messages.length; i++) {
+				var message = messages[i];
+				subscriptions.emit(message.name, message);
+			}
+		};
 
-    RealtimeChannel.prototype.attach = function(callback) {
-    	callback = callback || noop;
-    	var connectionManager = this.connectionManager;
-    	var connectionState = connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
+		RealtimeChannel.prototype.attach = function(callback) {
+			callback = callback || noop;
+			var connectionManager = this.connectionManager;
+			var connectionState = connectionManager.state;
+			if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
@@ -128,19 +128,19 @@ var RealtimeChannel = (function() {
 				callback(err || connectionManager.getStateError());
 			}
 		});
-    };
+		};
 
-    RealtimeChannel.prototype.attachImpl = function(callback) {
+		RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    	var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-    	this.sendMessage(msg, (callback || noop));
+			var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+			this.sendMessage(msg, (callback || noop));
 	};
 
-    RealtimeChannel.prototype.detach = function(callback) {
-    	callback = callback || noop;
-    	var connectionManager = this.connectionManager;
-    	var connectionState = connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
+		RealtimeChannel.prototype.detach = function(callback) {
+			callback = callback || noop;
+			var connectionManager = this.connectionManager;
+			var connectionState = connectionManager.state;
+			if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
@@ -165,8 +165,8 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    	var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
-    	this.sendMessage(msg, (callback || noop));
+			var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
+			this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {

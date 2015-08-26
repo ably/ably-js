@@ -183,7 +183,7 @@ var ConnectionManager = (function() {
 					});
 				});
 			}
-  		});
+			});
 	};
 
 	/**
