@@ -461,6 +461,55 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Enter presence channel (without attaching), detach, then enter again to reattach
+	 */
+	exports.enter7 = function(test) {
+		var clientRealtime;
+		try {
+			test.expect(2);
+			var transport = 'web_socket';
+			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+			var clientChannel = clientRealtime.channels.get('presenceEnter7');
+			/* listen for the enter event, test is complete when received */
+			var presenceHandler = function(presenceMsg) {
+				if(this.event == 'enter' && presenceMsg.data == 'second') {
+					test.ok(true, 'Second presence event received');
+					closeAndFinish(test, clientRealtime);
+				}
+			};
+			clientRealtime.connection.once('connected', function() {
+				clientChannel.presence.enter('first', function(err) {
+					if(err) {
+						test.ok(false, 'Enter failed with error: ' + err);
+						closeAndFinish(test, clientRealtime);
+						return;
+					}
+					test.ok(true, 'Entered presence first time');
+					clientChannel.detach(function(err) {
+						if(err) {
+							test.ok(false, 'Detach failed with error: ' + err);
+							closeAndFinish(test, clientRealtime);
+							return;
+						}
+						clientChannel.presence.on(presenceHandler);
+						clientChannel.presence.enter('second', function(err){
+							if(err) {
+								test.ok(false, 'Enter failed with error: ' + err);
+								closeAndFinish(test, clientRealtime);
+								return;
+							}
+						});
+					});
+				});
+			});
+			monitorConnection(test, clientRealtime);
+		} catch(e) {
+			test.ok(false, 'presence.enter3 failed with exception: ' + e.stack);
+			closeAndFinish(test, clientRealtime);
+		}
+	};
+
+	/*
 	 * Attach to channel, enter+leave presence channel and await leave event
 	 */
 	exports.leave0 = function(test) {
@@ -486,7 +535,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 			};
 			presenceChannel.presence.on(presenceHandler);
-
 			/* set up authenticated connection */
 			var transport = 'web_socket';
 			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
@@ -1149,6 +1197,56 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			console.log('presence.leave0 failed with exception: ' + e.stack);
 			test.ok(false, 'presence.leave0 failed with exception: ' + e.stack);
 			done();
+		}
+	};
+
+	/*
+	 * Enter presence channel (without attaching), close the connection,
+	 * reconnect, then enter again to reattach
+	 */
+	exports.connection1 = function(test) {
+		var clientRealtime;
+		try {
+			test.expect(2);
+			var transport = 'web_socket';
+			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken, transports: [transport] });
+			var clientChannel = clientRealtime.channels.get('presenceConnection1');
+			var presenceHandler = function(presenceMsg) {
+				if(this.event == 'enter' && presenceMsg.data == 'second') {
+					test.ok(true, 'Second presence event received');
+					closeAndFinish(test, clientRealtime);
+				}
+			};
+			clientRealtime.connection.once('connected', function() {
+				/* get channel and enter (should automatically attach) */
+				clientChannel.presence.enter('first', function(err) {
+					if(err) {
+						test.ok(false, 'Enter failed with error: ' + err);
+						closeAndFinish(test, clientRealtime);
+						return;
+					}
+					test.ok(true, 'Entered presence first time');
+					clientRealtime.close();
+					clientRealtime.connection.once('closed', function() {
+						clientRealtime.connection.once('connected', function(){
+							//Should automatically reattach
+							clientChannel.presence.on(presenceHandler);
+							clientChannel.presence.enter('second', function(err){
+								if(err) {
+									test.ok(false, 'Enter failed with error: ' + err);
+									closeAndFinish(test, clientRealtime);
+									return;
+								}
+							});
+						});
+						clientRealtime.connection.connect();
+					});
+				});
+			});
+			monitorConnection(test, clientRealtime);
+		} catch(e) {
+			test.ok(false, 'presence.connection1 failed with exception: ' + e.stack);
+			closeAndFinish(test, clientRealtime);
 		}
 	};
 
