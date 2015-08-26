@@ -77,6 +77,15 @@ var Transport = (function() {
 		case actions.NACK:
 			this.emit('nack', message.msgSerial, message.count, message.error);
 			break;
+		case actions.SYNC:
+			if(message.connectionId !== undefined) {
+				/* a transport SYNC */
+				this.emit('sync', message.connectionSerial, message.connectionId);
+				break;
+			}
+			/* otherwise it's a channel SYNC, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		case actions.ERROR:
 			var msgErr = message.error;
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
@@ -91,7 +100,10 @@ var Transport = (function() {
 				break;
 			}
 			/* otherwise it's a channel-specific error, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		default:
+			/* all other actions are channel-specific */
 			this.connectionManager.onChannelMessage(message, this);
 		}
 	};

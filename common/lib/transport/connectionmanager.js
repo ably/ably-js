@@ -9,14 +9,15 @@ var ConnectionManager = (function() {
 	var noop = function() {};
 
 	var states = {
-		initialized:  {state: 'initialized',  terminal: false, queueEvents: true,  sendEvents: false},
-		connecting:   {state: 'connecting',   terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
-		connected:    {state: 'connected',    terminal: false, queueEvents: false, sendEvents: true, failState: 'disconnected'},
-		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closing:      {state: 'closing',      terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
-		closed:       {state: 'closed',       terminal: true,  queueEvents: false, sendEvents: false},
-		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
+		initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+		connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+		connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
+		synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
+		disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
+		suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
+		closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+		closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
+		failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 	};
 
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
@@ -350,9 +351,26 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
 				return;
 			}
+
+			/* temporarily pause events until the sync is complete */
+			self.state = states.synchronizing;
+
+			/* make this the active transport */
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
 			self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId);
+
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport);
+			self.sync(transport, function(err, connectionSerial, connectionId) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+					return;
+				}
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
+
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+				self.state = states.connected;
+				self.sendQueuedMessages();
+			});
 		});
 	};
 
@@ -444,7 +462,7 @@ var ConnectionManager = (function() {
 	 * Called when activating a new transport, to ensure message delivery
 	 * on the new transport synchronises with the messages already received
 	 */
-	ConnectionManager.prototype.sync = function(transport) {
+	ConnectionManager.prototype.sync = function(transport, callback) {
 		/* check preconditions */
 		if(!transport.isConnected)
 				throw new ErrorInfo('Unable to sync connection; not connected', 40000);
@@ -459,6 +477,9 @@ var ConnectionManager = (function() {
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
 			}
+		});
+		transport.once('sync', function(connectionSerial, connectionId) {
+			callback(null, connectionSerial, connectionId);
 		});
 	};
 
@@ -518,8 +539,8 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
-		this.state = states[stateChange.current];
-		if(this.state.terminal) {
+		var newState = this.state = states[stateChange.current];
+		if(newState.terminal) {
 			this.error = stateChange.reason;
 			this.clearConnection();
 		}
@@ -765,7 +786,7 @@ var ConnectionManager = (function() {
 			return;
 		}
 		if(state.queueEvents) {
-			if(queueEvents) {
+			if(state == states.synchronizing || queueEvents) {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
