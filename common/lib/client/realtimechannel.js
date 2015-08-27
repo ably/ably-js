@@ -259,6 +259,9 @@ var RealtimeChannel = (function() {
 
 		case actions.SYNC:
 			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
+			/* syncs can happen on channels with no presence data as part of connection
+			 * resuming, in which case protocol message has no presence property */
+			if(!message.presence) break;
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
@@ -406,8 +409,9 @@ var RealtimeChannel = (function() {
 		this.clearStateTimer();
 		this.failPendingMessages(err);
 		this.presence.setSuspended(err);
-		if (!suppressEvent && this.state !== 'detached')
-			this.emit('detached');
+		if(!suppressEvent && this.state !== 'detached') {
+			this.setState('detached');
+		}
 	};
 
 	RealtimeChannel.prototype.setState = function(state, err) {

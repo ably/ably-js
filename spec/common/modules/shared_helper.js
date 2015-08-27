@@ -45,13 +45,13 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		};
 
 		function callbackOnClose(realtime, callback) {
-			if(realtime.connection.connectionManager.transport === null) {
+			if(realtime.connection.connectionManager.activeProtocol === null) {
 				console.log("No transport established; closing connection and calling test.done()")
 				realtime.close();
 				callback();
 				return;
 			}
-			realtime.connection.connectionManager.transport.on('disposed', function() {
+			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
 				console.log("Transport disposed; calling test.done()")
 				callback();
 			});
