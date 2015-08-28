@@ -414,7 +414,11 @@ var ConnectionManager = (function() {
 			if(this.realtime.clientId && this.realtime.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Unexpected mismatch between expected and received clientId');
+				var msg = 'Unexpected mismatch between expected and received clientId'
+				var err = new ErrorInfo(msg, 40102, 401);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				transport.abort(err);
+				return;
 			}
 			this.realtime.clientId = clientId;
 		}
