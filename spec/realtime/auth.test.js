@@ -198,5 +198,75 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		monitorConnection(test, realtime);
 	};
 
+	/*
+	 * Request a token using clientId, then initialize a connection without one,
+	 * and check that the connection inherits the clientId of the token
+	 */
+	exports.auth_clientid_inheritance = function(test) {
+		test.expect(1);
+
+		var rest = helper.AblyRest(),
+		testClientId = 'testClientId';
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.clientId, testClientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + err);
+			test.done();
+			return;
+		});
+	};
+
+	/*
+	 * Rest token generation with clientId, then connecting with a
+	 * different clientId, should fail with a library-generated message
+	 */
+	exports.auth_clientid_inheritance2 = function(test) {
+		test.expect(2);
+		var clientRealtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
+			clientRealtime.connection.once('failed', function(stateChange){
+				test.ok(true, 'Verify connection failed');
+				test.deepEqual(stateChange.reason, {statusCode: 401, code: 40102, message: 'ClientId in token was ' + testClientId + ', but library was instantiated with clientId WRONG' })
+				clientRealtime.close();
+				test.done();
+			})
+			// Workaround for ably-js issue 101 (comet transport goes into disconnected
+			// rather than failed). TODO remove next 5 lines when that's fixed
+			clientRealtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection failed');
+				test.deepEqual(stateChange.reason, {statusCode: 401, code: 40102, message: 'ClientId in token was ' + testClientId + ', but library was instantiated with clientId WRONG' })
+				clientRealtime.close();
+				test.done();
+			})
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
