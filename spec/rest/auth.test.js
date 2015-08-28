@@ -209,6 +209,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Token generation with empty string clientId should error
+	 */
+	exports.authemptyclientid = function(test) {
+		test.expect(1);
+		rest.auth.requestToken({clientId: ''}, function(err, tokenDetails) {
+			if(err) {
+				test.equal(err.code, 40012);
+				test.done();
+				return;
+			}
+			test.ok(false);
+			test.done();
+		});
+	};
+
+	/*
 	 * Token generation with capability that subsets key capability
 	 */
 	exports.authcapability0 = function(test) {

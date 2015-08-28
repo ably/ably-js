@@ -367,6 +367,11 @@ var Auth = (function() {
 			return;
 		}
 
+		if(tokenParams.clientId === '') {
+			callback(new ErrorInfo('clientId can’t be an empty string', 40012, 400));
+			return;
+		}
+
 		tokenParams.capability = c14n(tokenParams.capability);
 
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
