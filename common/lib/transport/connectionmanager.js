@@ -205,7 +205,6 @@ var ConnectionManager = (function() {
 					transport.close();
 				}
 				var err = new ErrorInfo('Connection already closed', 400, 80017);
-				err.terminal = true;
 				callback(err);
 				return;
 			}
