@@ -76,6 +76,7 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
+		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');

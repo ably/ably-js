@@ -137,12 +137,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
-	 * Use authCallback for authentication with tokenDetails response
+	 * Use authCallback for authentication with tokenDetails response,
+	 * also check that clientId lib is initialised with is passed through
+	 * to the auth callback
 	 */
 	exports.auth_useAuthCallback_tokenDetailsResponse = function(test) {
-		test.expect(3);
+		test.expect(4);
 
 		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
 				if(err) {
@@ -151,11 +154,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.ok("token" in tokenDetails);
+				test.equal(tokenDetails.clientId, clientId);
 				callback(null, tokenDetails);
 			});
 		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
 
 		realtime.connection.on('connected', function() {
 			test.equal(realtime.auth.method, 'token');
