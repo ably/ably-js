@@ -71,6 +71,7 @@ var JSONPTransport = (function() {
 			self = this;
 
 		params.callback = 'Ably._(' + id + ')';
+		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
 		else
@@ -87,7 +88,21 @@ var JSONPTransport = (function() {
 		};
 
 		_[id] = function(message) {
-			self.complete(null, message);
+			var successResponse = (message.statusCode < 400),
+				response = message.response;
+
+			if(!response) {
+				self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
+				return;
+			}
+
+			if(successResponse) {
+				self.complete(null, response);
+				return;
+			}
+
+			var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+			self.complete(err);
 		};
 
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout;
