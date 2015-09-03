@@ -26,8 +26,6 @@ var PresenceMessage = (function() {
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
 			clientId: this.clientId,
-			connectionId: this.connectionId,
-			timestamp: this.timestamp,
 			action: this.action,
 			encoding: this.encoding
 		};
