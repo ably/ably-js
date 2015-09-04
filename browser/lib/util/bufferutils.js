@@ -101,8 +101,10 @@ var BufferUtils = (function() {
 	};
 
 	BufferUtils.utf8Decode = function(buf) {
-		if(CryptoJS)
+		if(isWordArray(buf) && CryptoJS)
 			return CryptoJS.enc.Utf8.stringify(buf);
+		else
+			return buf.toString();
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
