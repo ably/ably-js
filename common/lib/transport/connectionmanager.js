@@ -852,14 +852,26 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		/* do not update connectionSerial for messages received
-		 * on transports that are no longer the current transport */
 		if(this.activeProtocol && transport === this.activeProtocol.getTransport()) {
 			var connectionSerial = message.connectionSerial;
-			if(connectionSerial !== undefined)
+			if(connectionSerial <= this.connectionSerial) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				return;
+			}
+			if(connectionSerial !== undefined) {
 				this.connectionSerial = connectionSerial;
+			}
+			this.realtime.channels.onChannelMessage(message);
+		} else {
+			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
+			// messages,  no new messages (as sync has been sent on new transport so new messages will
+			// be resent there, or connection has been closed so don't want new messages)
+			if(Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
+				this.realtime.channels.onChannelMessage(message);
+			} else {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage()', 'received message ' + JSON.stringify(message) + 'on defunct transport; discarding');
+			}
 		}
-		this.realtime.channels.onChannelMessage(message);
 	};
 
 	ConnectionManager.prototype.ping = function(transport, callback) {
