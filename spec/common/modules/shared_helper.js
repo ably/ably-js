@@ -3,8 +3,8 @@
 /* Shared test helper for the Jasmine test suite that simplifies
 	 the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testdata_module', 'async'],
-	function(testAppModule, clientModule, testDataModule, async) {
+define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
+	function(testAppModule, clientModule, testAppManager, async) {
 		var displayError = function(err) {
 			if(typeof(err) == 'string')
 				return err;
@@ -108,7 +108,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			AblyRest:     clientModule.AblyRest,
 			AblyRealtime: clientModule.AblyRealtime,
 
-			loadTestData: testDataModule.loadTestData,
+			loadTestData: testAppManager.loadJsonData,
 
 			displayError:      displayError,
 			monitorConnection: monitorConnection,

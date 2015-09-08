@@ -7,53 +7,9 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 
 	var isBrowser = (typeof(window) === 'object'),
 			httpReq   = httpReqFunction(),
-			toBase64  = base64Function();
-
-	var appSpec = {
-		namespaces: [
-			{ id: "persisted", persisted: true }
-		],
-		keys : [
-			{}, /* key0 is blanket capability */
-			{   /* key1 is specific channel and ops */
-				capability: JSON.stringify({ testchannel:['publish'] })
-			},
-			{   /* key2 is wildcard channel spec */
-				capability: JSON.stringify({
-					'*':['subscribe'],
-					'canpublish:*':['publish'],
-					'canpublish:andpresence':['presence', 'publish']
-				})
-			},
-			{   /* key3 is wildcard ops spec */
-				capability: JSON.stringify({ 'candoall':['*'] })
-			},
-			{   /* key4 is multiple resources */
-				capability: JSON.stringify({
-					channel0:['publish'],
-					channel1:['publish'],
-					channel2:['publish', 'subscribe'],
-					channel3:['subscribe'],
-					channel4:['presence', 'publish', 'subscribe'],
-					channel5:['presence'],
-					channel6:['*']
-				})
-
-			},
-			{   /* key5 has wildcard clientId */
-				privileged: true,
-				capability: JSON.stringify({
-					channel0:['publish'],
-					channel1:['publish'],
-					channel2:['publish', 'subscribe'],
-					channel3:['subscribe'],
-					channel4:['presence', 'publish', 'subscribe'],
-					channel5:['presence'],
-					channel6:['*']
-				})
-			}
-		]
-	};
+			toBase64  = base64Function(),
+			loadJsonData = isBrowser ? loadJsonDataBrowser : loadJsonDataNode,
+			testResourcesPath = 'spec/common/ably-common/test-resources/';
 
 	function prefixDomainWithEnvironment(domain, environment) {
 		if (environment.toLowerCase() === 'production') {
@@ -127,31 +83,38 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 	}
 
 	function createNewApp(callback) {
-		var postData = JSON.stringify(appSpec);
-		var postOptions = {
-			host: restHost, port: tlsPort, path: '/apps', method: 'POST', scheme: 'https',
-			headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': postData.length },
-			body: postData
-		};
-
-		httpReq(postOptions, function(err, res) {
-			if (err) {
+		loadJsonData(testResourcesPath + 'test-app-setup.json', function(err, testData){
+			if(err) {
 				callback(err);
-			} else {
-				if (typeof(res) === 'string') res = JSON.parse(res);
-				if (res.keys.length != appSpec.keys.length) {
-					callback('Failed to create correct number of keys for app');
-				} else if (res.namespaces.length != appSpec.namespaces.length) {
-					callback('Failed to create correct number of namespaces for app');
-				} else {
-					var testApp = {
-						accountId: res.accountId,
-						appId: res.appId,
-			keys: res.keys
-					};
-					callback(null, testApp);
-				}
+				return;
 			}
+			var postData = JSON.stringify(testData.post_apps);
+			var postOptions = {
+				host: restHost, port: tlsPort, path: '/apps', method: 'POST', scheme: 'https',
+				headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': postData.length },
+				body: postData
+			};
+
+			httpReq(postOptions, function(err, res) {
+				if (err) {
+					callback(err);
+				} else {
+					if (typeof(res) === 'string') res = JSON.parse(res);
+					if (res.keys.length != testData.post_apps.keys.length) {
+						callback('Failed to create correct number of keys for app');
+					} else if (res.namespaces.length != testData.post_apps.namespaces.length) {
+						callback('Failed to create correct number of namespaces for app');
+					} else {
+						var testApp = {
+							accountId: res.accountId,
+							appId: res.appId,
+							keys: res.keys,
+							cipherConfig: testData.cipher
+						};
+						callback(null, testApp);
+					}
+				}
+			});
 		});
 	}
 
@@ -193,10 +156,52 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 		httpReq(delOptions, function(err) { callback(err); });
 	}
 
+	function loadJsonDataBrowser(dataPath, callback) {
+		var getOptions = {
+			host: window.location.hostname,
+			port: window.location.port,
+			path: '/' + dataPath,
+			method: 'GET',
+			scheme: window.location.protocol.slice(0, -1),
+			headers: { 'Content-Type': 'application/json' }
+		};
+
+		httpReq(getOptions, function(err, data) {
+			try {
+				data = JSON.parse(data);
+			} catch(e) {
+				callback(e);
+				return;
+			}
+			callback(null, data);
+		});
+	}
+
+	function loadJsonDataNode(dataPath, callback) {
+		var fs = require('fs'),
+				path = require('path'),
+				resolvedPath = path.resolve(__dirname, '../../..', dataPath);
+
+		fs.readFile(resolvedPath, function(err, data) {
+			if(err) {
+				callback(err);
+				return;
+			}
+			try {
+				data = JSON.parse(data);
+			} catch(e) {
+				callback(e);
+				return;
+			}
+			callback(null, data);
+		});
+	}
+
 	return module.exports = {
 		setup: createNewApp,
 		tearDown: deleteApp,
 		createStatsFixtureData: createStatsFixtureData,
-		httpReq: httpReq
+		httpReq: httpReq,
+		loadJsonData: loadJsonData
 	};
 });
