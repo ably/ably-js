@@ -1,6 +1,7 @@
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 128; // bits
+	var DEFAULT_MODE = 'cbc';
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var VAL32 = 0x100000000;
@@ -102,6 +103,8 @@ var Crypto = (function() {
 	 */
 	function CipherParams() {
 		this.algorithm = null;
+		this.keyLength = null;
+		this.mode = null;
 		this.key = null;
 		this.iv = null;
 	}
@@ -138,8 +141,10 @@ var Crypto = (function() {
 			key = BufferUtils.toWordArray(key);   // Expect key to be an Array, ArrayBuffer, or WordArray at this point
 
 		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM + '-' + String(key.words.length * (4 * 8));
+		params.algorithm = DEFAULT_ALGORITHM;
 		params.key = key;
+		params.keyLength = key.words.length * (4 * 8);
+		params.mode = DEFAULT_MODE;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
 			params.iv = buf;
 			callback(null, params);
@@ -154,10 +159,7 @@ var Crypto = (function() {
 	Crypto.getCipher = function(channelOpts, callback) {
 		var params = channelOpts && channelOpts.cipherParams;
 		if(params) {
-			if(params instanceof CipherParams)
-				callback(null, new CBCCipher(params));
-			else
-				callback(new Error("ChannelOptions not supported"));
+			callback(null, new CBCCipher(params));
 			return;
 		}
 		Crypto.getDefaultParams(function(err, params) {
@@ -170,7 +172,7 @@ var Crypto = (function() {
 	};
 
 	function CBCCipher(params) {
-		this.algorithm = params.algorithm + '-cbc';
+		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
 		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = BufferUtils.toWordArray(params.key);
 		var iv = this.iv = BufferUtils.toWordArray(params.iv);

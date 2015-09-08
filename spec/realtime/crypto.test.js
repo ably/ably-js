@@ -229,7 +229,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'] });
-		test.expect(2);
+		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary'),
 			messageText = 'Test message (single_send_binary)';
 
@@ -240,7 +240,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'aes');
+			test.equal(params.keyLength, 128);
 			channel.setOptions({encrypted:true, cipherParams: params});
 			channel.subscribe('event0', function(msg) {
 				test.ok(msg.data == messageText);
@@ -261,12 +262,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: false });
-		test.expect(2);
+		test.expect(3);
 		var channel = realtime.channels.get('single_send_text'),
 			messageText = 'Test message (single_send_text)';
 
 		Crypto.getDefaultParams(function(err, params) {
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'aes');
+			test.equal(params.keyLength, 128);
 			if(err) {
 				test.ok(false, 'Unable to get cipher params; err = ' + err);
 				closeAndFinish(test, realtime);
@@ -292,13 +294,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'] });
-		test.expect(2);
+		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary_256'),
 			messageText = 'Test message (single_send_binary_256)';
 
 		Crypto.generateRandom(256 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes-256');
+				test.equal(params.algorithm, 'aes');
+				test.equal(params.keyLength, 256);
 				if(err) {
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
 					closeAndFinish(test, realtime);
@@ -325,13 +328,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: false });
-		test.expect(2);
+		test.expect(3);
 		var channel = realtime.channels.get('single_send_text_256'),
 			messageText = 'Test message (single_send_text_256)';
 
 		Crypto.generateRandom(256 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes-256');
+				test.equal(params.algorithm, 'aes');
+				test.equal(params.keyLength, 256);
 				if(err) {
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
 					closeAndFinish(test, realtime);
@@ -355,14 +359,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var realtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: !text});
-		test.expect(iterations + 2);
+		test.expect(iterations + 3);
 		var channelName = 'multiple_send_' + (text ? 'text_' : 'binary_') + iterations + '_' + delay,
 			channel = realtime.channels.get(channelName),
 			messageText = 'Test message (' + channelName + ')';
 
 		Crypto.generateRandom(128 / 8, function(err, key) {
 			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes-128');
+				test.equal(params.algorithm, 'aes');
+				test.equal(params.keyLength, 128);
 				if(err) {
 					test.ok(false, 'Unable to get cipher params; err = ' + err);
 					closeAndFinish(test, realtime);
@@ -419,7 +424,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var txRealtime = helper.AblyRealtime({ transports: ['web_socket'] });
 		var rxRealtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: false });
-		test.expect(2);
+		test.expect(3);
 		var channelName = 'single_send_binary_text',
 			messageText = 'Test message (' + channelName + ')',
 			txChannel = txRealtime.channels.get(channelName),
@@ -435,7 +440,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			var params = res[0];
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'aes');
+			test.equal(params.keyLength, 128);
 
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
@@ -462,7 +468,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var txRealtime = helper.AblyRealtime({ transports: ['web_socket'], useBinaryProtocol: false });
 		var rxRealtime = helper.AblyRealtime({ transports: ['web_socket'] });
-		test.expect(2);
+		test.expect(3);
 		var channelName = 'single_send_text_binary',
 			messageText = 'Test message (' + channelName + ')',
 			txChannel = txRealtime.channels.get(channelName),
@@ -478,7 +484,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			var params = res[0];
-			test.equal(params.algorithm, 'aes-128');
+			test.equal(params.algorithm, 'aes');
+			test.equal(params.keyLength, 128);
 
 			txChannel.setOptions({encrypted:true, cipherParams: params});
 			rxChannel.setOptions({encrypted:true, cipherParams: params});
