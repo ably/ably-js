@@ -159,10 +159,7 @@ var Crypto = (function() {
 	Crypto.getCipher = function(channelOpts, callback) {
 		var params = channelOpts && channelOpts.cipherParams;
 		if(params) {
-			if(params instanceof CipherParams)
-				callback(null, new CBCCipher(params));
-			else
-				callback(new Error("ChannelOptions not supported"));
+			callback(null, new CBCCipher(params));
 			return;
 		}
 		Crypto.getDefaultParams(function(err, params) {
