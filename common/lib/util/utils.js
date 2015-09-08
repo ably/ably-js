@@ -156,6 +156,10 @@ var Utils = (function() {
 			return -1;
 		};
 
+	Utils.arrIn = function(arr, val) {
+		return Utils.arrIndexOf(arr, val) !== -1;
+	};
+
 	Utils.arrDeleteValue = function(arr, val) {
 		var idx = Utils.arrIndexOf(arr, val);
 		var res = (idx != -1);

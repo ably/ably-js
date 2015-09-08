@@ -20,6 +20,19 @@ var ConnectionManager = (function() {
 		failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 	};
 
+	var isErrFatal = function(err) {
+		var RESOLVABLE_ERROR_CODES = [40140];
+		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
+
+		if(err.code) {
+			if(Utils.arrIn(RESOLVABLE_ERROR_CODES, err.code)) return false;
+			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+			return (err.code >= 40000 && err.code < 50000)
+		}
+		// If no statusCode either, assume false
+		return err.statusCode < 500;
+	};
+
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
 		this.host = host;
@@ -205,13 +218,12 @@ var ConnectionManager = (function() {
 					transport.close();
 				}
 				var err = new ErrorInfo('Connection already closed', 400, 80017);
-				err.terminal = true;
 				callback(err);
 				return;
 			}
 			if(err) {
 				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(err.statusCode < 500) {
+				if(isErrFatal(err)) {
 					callback(err);
 					return;
 				}
@@ -277,7 +289,7 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(err.terminal || err.statusCode < 500) {
+						if(isErrFatal(err)) {
 							callback(err);
 							return;
 						}
@@ -292,7 +304,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(err.terminal || err.statusCode < 500) {
+				if(isErrFatal(err)) {
 					callback(err);
 					return;
 				}
@@ -725,9 +737,11 @@ var ConnectionManager = (function() {
 				});
 				return;
 			}
-			/* FIXME: decide if fatal */
-			var fatal = false;
-			if(fatal)
+
+			/* Only allow connection to be 'failed' if err has a definite unrecoverable
+			 * code from realtime; otherwise err on the side of 'disconnected' so will
+			 * retry. (Note: 40140 case is dealt with above) */
+			if(err.code && isErrFatal(err))
 				self.notifyState({state: 'failed', error: err});
 			else
 				self.notifyState({state: states.connecting.failState, error: err});
