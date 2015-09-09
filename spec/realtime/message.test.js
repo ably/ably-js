@@ -227,6 +227,116 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	exports.publishEncodings = function(test) {
+		var testData = 'testData'
+		var testArguments = [
+			// valid
+			[{name: 'justJson', encoding: 'json', data: '{\"foo\":\"bar\"}'}],
+			// invalid -- encoding ending in utf-8 implies data is binary
+			[{name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'}],
+			// valid
+			[{name: 'utf8base64', encoding: 'utf-8/base64', data: 'dGVzdERhdGE='}],
+			// invalid -- nonsense/corrupt encoding
+			[{name: 'nonsense', encoding: 'choahofhpxf', data: testData}],
+		];
+
+		test.expect(testArguments.length * 4); // One for sending, one for receiving, one each for data & encoding
+		try {
+			/* set up realtime */
+			var realtime = helper.AblyRealtime();
+			var rest = helper.AblyRest();
+
+			/* connect and attach */
+			realtime.connection.on('connected', function() {
+				var rtChannel = realtime.channels.get('publishEncodings');
+				rtChannel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + err);
+						closeAndFinish(test, realtime);
+						return;
+					}
+
+					var messagesReceived = 0
+					rtChannel.subscribe(function(msg) {
+						test.ok(true, 'Received ' + msg.name);
+						++messagesReceived;
+						switch(msg.name) {
+							case 'justJson':
+								test.deepEqual(msg.data, {foo: "bar"}, 'justJson: correct decoded data');
+								test.equal(msg.encoding, null, 'justJson: encoding stripped on decoding');
+								break;
+							case 'jsonUtf8string':
+								test.equal(msg.data, '{\"foo\":\"bar\"}', 'justJsonUTF8string: data should be untouched');
+								test.equal(msg.encoding, 'json/utf-8', 'justJsonUTF8string: encoding should be untouched');
+								break;
+							case 'utf8base64':
+								test.equal(msg.data, "testData", 'utf8base64: correct decoded data');
+								test.equal(msg.encoding, null, 'utf8base64: encoding stripped on decoding');
+								break;
+							case 'nonsense':
+								test.deepEqual(msg.data, testData, 'nonsense: data untouched');
+								test.equal(msg.encoding, 'choahofhpxf', 'nonsense: encoding untouched');
+								break;
+							default:
+								test.ok(false, 'Unexpected message ' + msg.name + ' received');
+								closeAndFinish(test, realtime);
+						}
+						if (messagesReceived == testArguments.length) {
+							closeAndFinish(test, realtime);
+						}
+					});
+
+					/* publish events */
+					var restChannel = rest.channels.get('publishEncodings');
+					for(var i = 0; i < testArguments.length; i++) {
+						try {
+							restChannel.publish.apply(restChannel, testArguments[i]);
+							test.ok(true, "Successfully published");
+						} catch (e) {
+							test.ok(false, "Failed to publish");
+						}
+					}
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	exports.publishEncodingsErrorEmitted = function(test) {
+		test.expect(2);
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.on('connected', function() {
+				var rtChannel = realtime.channels.get('publishEncodingsErrorEmitted0');
+
+				rtChannel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + err);
+						closeAndFinish(test, realtime);
+						return;
+					}
+
+					/* Add channel error event listeners */
+					rtChannel.on('error', function(err) {
+						test.equal(err.code, 40013, "Error emitted has correct error code");
+						test.ok(err.message.indexOf("utf-8") > -1, "Error emitted contains correct encoding component");
+						closeAndFinish(test, realtime);
+					});
+
+					rtChannel.publish({name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'})
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+
 	exports.restpublish = function(test) {
 		var count = 10;
 		var rest = helper.AblyRest();
