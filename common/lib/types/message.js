@@ -128,16 +128,19 @@ var Message = (function() {
 								var xformAlgorithm = match[3], cipher = options.cipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
-									Logger.logAction(Logger.LOG_ERROR, 'Message.decode()', 'Unable to decrypt message with given cipher; incompatible cipher params');
+									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
 									break;
 								}
 								data = cipher.decrypt(data);
 								continue;
 							}
 						default:
+							throw new Error("Unknown encoding");
 					}
 					break;
 				}
+			} catch(e) {
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
 			} finally {
 				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
 				message.data = data;
@@ -145,13 +148,18 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(body, options, format) {
+	Message.fromResponseBody = function(body, options, format, channel) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = Message.fromDecoded(body[i]);
-			Message.decode(msg, options);
+			try {
+				Message.decode(msg, options);
+			} catch (e) {
+				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
+				channel.emit('error', e);
+			}
 		}
 		return body;
 	};

@@ -274,11 +274,8 @@ var RealtimeChannel = (function() {
 					var presenceMsg = presence[i];
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
-					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decoding message; err = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
-					var err = new Error(errmsg);
-					this.emit('error', err);
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
 				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
@@ -300,10 +297,8 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, options);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decoding message; err = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
-					var err = new Error(errmsg);
-					this.emit('error', err);
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
