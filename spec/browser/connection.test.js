@@ -1,120 +1,123 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-  var exports = {};
+	var exports = {},
+		closeAndFinish = helper.closeAndFinish,
+		monitorConnection = helper.monitorConnection,
+		Defaults = Ably.Realtime.Defaults;
 
-  exports.setup_realtime_history = function(test) {
-    test.expect(1);
-    helper.setupApp(function(err) {
-      if(err) {
-        test.ok(false, helper.displayError(err));
-      } else {
-        test.ok(true, 'app set up');
-      }
-      test.done();
-    });
-  };
+	function stopIfUnsupported(test) {
+		if(document.body.ononline === undefined) {
+			test.done();
+			return;
+		}
+	}
 
-  exports.device_going_offline_causes_disconnected_state = function(test) {
-    var realtime = helper.AblyRealtime(),
-        connection = realtime.connection,
-        offlineEvent = new Event('offline');
+	exports.setup_realtime = function(test) {
+		test.expect(1);
+		helper.setupApp(function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			} else {
+				test.ok(true, 'app set up');
+			}
+			test.done();
+		});
+	};
 
-    test.expect(2);
+	exports.device_going_offline_causes_disconnected_state = function(test) {
+		stopIfUnsupported(test);
 
-    connection.once('connected', function() {
-      var connectedAt = new Date().getTime()
+		var realtime = helper.AblyRealtime(),
+		connection = realtime.connection,
+		offlineEvent = new Event('offline', {'bubbles': true});
 
-      connection.once('disconnected', function() {
-        var disconnectedAt = new Date().getTime();
+		test.expect(3);
+		monitorConnection(test, realtime);
 
-        test.ok(connectedAt > disconnectedAt - 250, 'Offline event caused connection to move to the disconnected state immediately (under 250ms)');
+		connection.once('connected', function() {
+			var connectedAt = new Date().getTime()
+			connection.once('disconnected', function() {
+				var disconnectedAt = new Date().getTime();
+				test.ok(disconnectedAt - connectedAt < 250, 'Offline event caused connection to move to the disconnected state immediately (under 250ms)');
+				connection.once('connecting', function() {
+					var reconnectingAt = new Date().getTime();
+					test.ok(reconnectingAt - disconnectedAt < 250, 'Client automatically reattempts connection even if the state is still offline');
+					connection.once('connected', function() {
+						test.ok(true, 'Successfully reconnected');
+						closeAndFinish(test, realtime);
+					})
+				});
+			})
 
-        connection.once('connecting', function() {
-          var reconnectingAt = new Date().getTime();
+			// simulate offline event, expect connection moves to disconnected state and waits to retry connection
+			document.dispatchEvent(offlineEvent);
+		});
+	};
 
-          test.ok(disconnectedAt > reconnectingAt - 250, 'Client automatically reattempts connection even if the state is still offline');
-          connection.close();
-          test.done();
-        });
-      })
+	exports.device_going_online_causes_disconnected_connection_to_reconnect_immediately = function(test) {
+		stopIfUnsupported(test);
 
-      // simulate offline event, expect connection moves to disconnected state and waits to retry connection
-      document.dispatchEvent(offlineEvent);
-    });
+		var realtime = helper.AblyRealtime(),
+		connection = realtime.connection,
+		onlineEvent = new Event('online', {'bubbles': true});
 
-    setTimeout(function() {
-      connection.close();
-      test.done();
-    }, 10000)
-  };
+		test.expect(3);
+		Defaults.connectTimeout = 1000; // Give up trying to connect fairly quickly
+		monitorConnection(test, realtime);
 
-  exports.device_going_online_causes_disconnected_connection_to_reconnect_immediately = function(test) {
-    var realtime = helper.AblyRealtime(),
-        connection = realtime.connection,
-        onlineEvent = new Event('online');
+		// simulate the internet being failed by stubbing out chooseTransport to foil
+		// the initial connection. (No immediate reconnect attempt since it was never
+		// connected in the first place)
+		var oldTransport = connection.connectionManager.chooseTransport;
+		connection.connectionManager.chooseTransport = function(){};
 
-    test.expect(2);
+		connection.once('disconnected', function() {
+			var disconnectedAt = new Date();
+			test.ok(connection.state == 'disconnected', 'Connection should still be disconnected before we trigger it to connect');
+			connection.once('connecting', function() {
+				test.ok(new Date() - disconnectedAt < 250, 'Online event should have caused the connection to enter the connecting state immediately');
+				connection.once('connected', function() {
+					test.ok(true, 'Successfully reconnected');
+					closeAndFinish(test, realtime);
+				})
+			});
+			// restore the 'internet' and simulate an online event
+			connection.connectionManager.chooseTransport = oldTransport;
+			document.dispatchEvent(onlineEvent);
+		});
+	};
 
-    connection.connectionManager.on('transport.active', function(transport) {
-      transport.disconnect(); // disconnect the transport before the connection is connected
-    });
+	exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
+		stopIfUnsupported(test);
 
-    connection.once('disconnected', function() {
-      var disconnectedAt = new Date();
+		Defaults.disconnectTimeout = 100; // retry connection more frequently
+		Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconencted
 
-      setTimeout(function() {
-        test.ok(connection.state == 'disconnected', 'Connection should still be disconnected before we trigger it to connect');
-        connection.once('connecting', function() {
-          test.ok(disconnectedAt > new Date() - 250, 'Online event should have caused the connection to enter the connecting state immediately');
-          connection.close();
-          test.done();
-        });
-        document.dispatchEvent(onlineEvent);
-      }, 1000)
-    });
+		var realtime = helper.AblyRealtime(),
+		connection = realtime.connection,
+		onlineEvent = new Event('online', {'bubbles': true});
 
-    setTimeout(function() {
-      connection.close();
-      test.done();
-    }, 10000)
-  };
+		// Easiest way to have all transports attempt fail it to stub out chooseTransport
+		connection.connectionManager.chooseTransport = function(){};
 
-  // TODO: Ensure that connection goes online from the suspended state
-  exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
-    var realtime = helper.AblyRealtime(),
-        connection = realtime.connection,
-        onlineEvent = new Event('online');
+		test.expect(2);
+		connection.on('failed', function () {
+			test.ok(false, 'connection to server failed');
+			closeAndFinish(test, realtime)
+		});
 
-    test.expect(2);
+		connection.once('suspended', function() {
+			var suspendedAt = new Date();
+			test.ok(connection.state == 'suspended', 'Connection should still be suspended before we trigger it to connect');
+			connection.once('connecting', function() {
+				test.ok(new Date() - suspendedAt < 250, 'Online event should have caused the connection to enter the connecting state immediately');
+				closeAndFinish(test, realtime);
+			});
+			// simulate online event
+			document.dispatchEvent(onlineEvent);
+		});
+	};
 
-    // TODO: This will not work as Defaults is contained within an anonymous closure, also need to confirm if this will work once defaults can be changed
-    Defaults.disconnectTimeout = 100; // retry connection more frequently
-    Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconencted
-
-    connection.connectionManager.on('transport.active', function(transport) {
-      transport.disconnect(); // disconnect the transport before the connection is connected
-    });
-
-    connection.once('suspended', function() {
-      var suspendedAt = new Date();
-
-      setTimeout(function() {
-        test.ok(connection.state == 'suspended', 'Connection should still be suspended before we trigger it to connect');
-        connection.once('connecting', function() {
-          test.ok(suspendedAt > new Date() - 250, 'Online event should have caused the connection to enter the connecting state immediately');
-          connection.close();
-          test.done();
-        });
-        document.dispatchEvent(onlineEvent);
-      }, 1000)
-    });
-
-    setTimeout(function() {
-      connection.close();
-      test.done();
-    }, 10000)
-  };
-
-  return module.exports = helper.withTimeout(exports);
+	return module.exports = helper.withTimeout(exports);
 });
