@@ -800,6 +800,31 @@ var ConnectionManager = (function() {
 		this.notifyState({state: 'closed'});
 	};
 
+	ConnectionManager.prototype.disconnectAllTransports = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting all transports');
+
+		function disconnectTransport(transport) {
+			if(transport) {
+				try {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting transport: ' + transport);
+					transport.disconnect();
+				} catch(e) {
+					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
+					var err = new ErrorInfo(msg, 50000, 500);
+					transport.abort(err);
+				}
+			}
+		}
+
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			disconnectTransport(this.pendingTransports[i]);
+		}
+		disconnectTransport(this.activeProtocol && this.activeProtocol.getTransport());
+		// No need to notify state disconnected; disconnecting the active transport
+		// will have that effect
+	};
+
 	/******************
 	 * event queueing
 	 ******************/
