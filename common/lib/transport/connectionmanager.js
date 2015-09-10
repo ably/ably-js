@@ -7,18 +7,7 @@ var ConnectionManager = (function() {
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
-
-	var states = {
-		initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-		connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
-		connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-		synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-		disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-		suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
-		closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
-		failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
-	};
+	var states;
 
 	var isErrFatal = function(err) {
 		var RESOLVABLE_ERROR_CODES = [40140];
@@ -90,6 +79,17 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
+		states = {
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+		};
 		this.state = states.initialized;
 		this.error = null;
 
