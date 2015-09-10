@@ -123,6 +123,26 @@ var ConnectionManager = (function() {
 		/* intercept close event in browser to persist connection id if requested */
 		if(createCookie && options.recover === true && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		/* Listen for online and offline events */
+		if(typeof window === "object" && window.addEventListener) {
+			var self = this;
+			window.addEventListener('online', function() {
+				if(self.state == states.disconnected || self.state == states.suspended) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
+					self.requestState({state: 'connecting'});
+				}
+			});
+			window.addEventListener('offline', function() {
+				if(self.state == states.connected) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
+					// Not sufficient to just go to the 'disconnected' state, want to
+					// force all transports to reattempt the connection. Will immediately
+					// retry.
+					self.disconnectAllTransports();
+				}
+			});
+		}
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
