@@ -491,7 +491,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 			monitorConnection(test, clientRealtime);
 		} catch(e) {
-			test.ok(false, 'presence.enter3 failed with exception: ' + e.stack);
+			test.ok(false, 'presence.enter7 failed with exception: ' + e.stack);
+			closeAndFinish(test, clientRealtime);
+		}
+	};
+
+	/*
+	 * Enter invalid presence channel (without attaching), check callback was called with error
+	 */
+	exports.enter8 = function(test) {
+		var clientRealtime;
+		try {
+			test.expect(2);
+			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientChannel = clientRealtime.channels.get('');
+			clientRealtime.connection.once('connected', function() {
+				clientChannel.presence.enter('clientId', function(err) {
+					if(err) {
+						test.ok(true, 'Enter correctly failed with error: ' + err);
+						test.equal(err.code, 40010, 'Correct error code')
+						closeAndFinish(test, clientRealtime);
+						return;
+					}
+					test.ok(false, 'should have failed');
+					closeAndFinish(test, clientRealtime);
+				});
+			});
+			monitorConnection(test, clientRealtime);
+		} catch(e) {
+			test.ok(false, 'presence.enter8 failed with exception: ' + e.stack);
 			closeAndFinish(test, clientRealtime);
 		}
 	};
