@@ -1250,6 +1250,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
+	/*
+	 * Try to enter presence channel on a closed connection and check error callback
+	 */
+	exports.enter_closed = function(test) {
+		var clientRealtime;
+		try {
+			test.expect(2);
+			clientRealtime = helper.AblyRealtime();
+			var clientChannel = clientRealtime.channels.get('enter_closed');
+			clientRealtime.connection.on('connected', function() {
+				clientRealtime.close();
+				clientChannel.presence.enterClient('clientId', function(err) {
+					test.equal(err.code, 80017, 'presence enter failed with correct code');
+					test.equal(err.statusCode, 408, 'presence enter failed with correct statusCode');
+					test.done();
+				});
+			});
+			monitorConnection(test, clientRealtime);
+		} catch(e) {
+			test.ok(false, 'presence.enter_close failed with exception: ' + e.stack);
+			done();
+		}
+	};
+
 	exports.clear99 = function(test) {
 		/* delay before closing, to allow final tests to see events on connections */
 		setTimeout(function() {
