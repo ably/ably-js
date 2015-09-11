@@ -14,6 +14,11 @@ var ConnectionError = {
 		code: 80000,
 		message: 'Connection failed or disconnected by server'
 	},
+	closed: {
+		statusCode: 408,
+		code: 80017,
+		message: 'Connection closed'
+	},
 	unknownConnectionErr: {
 		statusCode: 500,
 		code: 50002,
