@@ -7,7 +7,7 @@ var Protocol = (function() {
 		this.messageQueue = new MessageQueue();
 		var self = this;
 		transport.on('ack', function(serial, count) { self.onAck(serial, count); });
-		transport.on('nack', function(serial, count, err) { self.onNck(serial, count, err); });
+		transport.on('nack', function(serial, count, err) { self.onNack(serial, count, err); });
 	}
 	Utils.inherits(Protocol, EventEmitter);
 
