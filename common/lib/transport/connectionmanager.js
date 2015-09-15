@@ -669,7 +669,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.notifyState = function(indicated) {
-		var state = indicated.state;
+		var state = indicated.state,
+			self = this;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
 		/* do nothing if we're already in the indicated state */
 		if(state == this.state.state)
@@ -688,8 +689,14 @@ var ConnectionManager = (function() {
 		var newState = states[indicated.state],
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 
-		if(newState.retryDelay)
+		// If go into disconnected straight from connected, try again immediately
+		if(this.state === states.connected && state === 'disconnected') {
+			Utils.nextTick(function() {
+				self.requestState({state: 'connecting'});
+			});
+		} else if(newState.retryDelay) {
 			this.startRetryTimer(newState.retryDelay);
+		}
 
 		/* implement the change and notify */
 		this.enactStateChange(change);
