@@ -3,8 +3,8 @@
 /* Shared test helper for the Jasmine test suite that simplifies
 	 the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testdata_module', 'async'],
-	function(testAppModule, clientModule, testDataModule, async) {
+define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
+	function(testAppModule, clientModule, testAppManager, async) {
 		var displayError = function(err) {
 			if(typeof(err) == 'string')
 				return err;
@@ -45,13 +45,13 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		};
 
 		function callbackOnClose(realtime, callback) {
-			if(realtime.connection.connectionManager.transport === null) {
+			if(realtime.connection.connectionManager.activeProtocol === null) {
 				console.log("No transport established; closing connection and calling test.done()")
 				realtime.close();
 				callback();
 				return;
 			}
-			realtime.connection.connectionManager.transport.on('disposed', function() {
+			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
 				console.log("Transport disposed; calling test.done()")
 				callback();
 			});
@@ -108,7 +108,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			AblyRest:     clientModule.AblyRest,
 			AblyRealtime: clientModule.AblyRealtime,
 
-			loadTestData: testDataModule.loadTestData,
+			loadTestData: testAppManager.loadJsonData,
 
 			displayError:      displayError,
 			monitorConnection: monitorConnection,

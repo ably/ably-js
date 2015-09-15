@@ -90,19 +90,19 @@ var BufferUtils = (function() {
 	BufferUtils.base64Decode = function(str) {
 		if(ArrayBuffer)
 			return base64ToArrayBuffer(str);
-
-		if(CryptoJS)
-			return CryptoJS.enc.Base64.parse(str);
+		return CryptoJS.enc.Base64.parse(str);
 	};
 
 	BufferUtils.utf8Encode = function(string) {
-		if(CryptoJS)
-			return CryptoJS.enc.Utf8.parse(string);
+		return CryptoJS.enc.Utf8.parse(string);
 	};
 
 	BufferUtils.utf8Decode = function(buf) {
-		if(CryptoJS)
+		if(isArrayBuffer(buf))
+			buf = BufferUtils.toWordArray(buf) // CryptoJS only works with WordArrays
+		if(isWordArray(buf))
 			return CryptoJS.enc.Utf8.stringify(buf);
+		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {

@@ -68,13 +68,18 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format) {
+	PresenceMessage.fromResponseBody = function(body, options, format, channel) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
-			PresenceMessage.decode(msg, options);
+			try {
+				PresenceMessage.decode(msg, options);
+			} catch (e) {
+				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
+				channel.emit('error', e);
+			}
 		}
 		return body;
 	};

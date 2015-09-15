@@ -66,7 +66,7 @@ var CometTransport = (function() {
 			connectRequest.on('complete', function(err) {
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
-					err = err || new ErrorInfo('Request cancelled', 400, 80017);
+					err = err || new ErrorInfo('Request cancelled', 400, 80000);
 				}
 				self.recvRequest = null;
 				if(err) {
@@ -153,24 +153,26 @@ var CometTransport = (function() {
 		})
 	};
 
-	CometTransport.prototype.send = function(msg, callback) {
+	CometTransport.prototype.send = function(message, callback) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
-			this.pendingItems.push(msg);
+			this.pendingItems.push(message);
 
-			this.pendingCallback = this.pendingCallback || Multicaster();
-			this.pendingCallback.push(callback);
+			if(callback) {
+				this.pendingCallback = this.pendingCallback || Multicaster();
+				this.pendingCallback.push(callback);
+			}
 			return;
 		}
 		/* send this, plus any pending, now */
 		var pendingItems = this.pendingItems || [];
-		pendingItems.push(msg);
+		pendingItems.push(message);
 		this.pendingItems = null;
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
-			pendingCallback.push(callback);
+			if(callback) pendingCallback.push(callback);
 			callback = pendingCallback;
 			this.pendingCallback = null;
 		}
@@ -185,7 +187,14 @@ var CometTransport = (function() {
 		sendRequest.on('complete', function(err, data) {
 			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + JSON.stringify(err));
 			self.sendRequest = null;
-			if(data) self.onData(data);
+
+			/* the results of the request usually get handled as protocol responses instead of send errors */
+			if(data) {
+				self.onData(data);
+			} else if(err && err.code) {
+				self.onData([ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})]);
+				err = null;
+			}
 
 			var pendingItems = self.pendingItems;
 			if(pendingItems) {
@@ -196,7 +205,7 @@ var CometTransport = (function() {
 					self.sendItems(pendingItems, pendingCallback);
 				});
 			}
-			callback(err);
+			callback && callback(err);
 		});
 		sendRequest.exec();
 	};

@@ -76,6 +76,7 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
+		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
@@ -131,6 +132,10 @@ var Auth = (function() {
 	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
 		var token = this.tokenDetails;
 		if(token) {
+			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.rest.clientId, 40102, 401));
+				return;
+			}
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!(authOptions && authOptions.force)) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
@@ -360,6 +365,11 @@ var Auth = (function() {
 
 		if(!keySecret) {
 			callback(new Error('Invalid key specified'));
+			return;
+		}
+
+		if(tokenParams.clientId === '') {
+			callback(new ErrorInfo('clientId can’t be an empty string', 40012, 400));
 			return;
 		}
 

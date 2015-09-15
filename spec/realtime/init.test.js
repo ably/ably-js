@@ -120,7 +120,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var defaultHost = realtime.connection.connectionManager.httpHosts[0];
 			var hostWithoutEnv = defaultHost.replace(/^\w+\-rest/, 'rest');
 			test.equal(hostWithoutEnv, 'rest.ably.io', 'Verify correct default rest host chosen');
-			realtime.connection.on('disconnected', function (state) {
+			realtime.connection.on('failed', function (state) {
 				test.done();
 				realtime.close();
 			});

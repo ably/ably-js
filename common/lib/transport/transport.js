@@ -36,9 +36,10 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.disconnect = function() {
-		if(this.isConnected) {
-			this.isConnected = false;
-		}
+		if(!this.isConnected)
+			return;
+
+		this.isConnected = false;
 		this.emit('disconnected', ConnectionError.disconnected);
 		this.dispose();
 	};
@@ -60,7 +61,7 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId);
+			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
 			break;
 		case actions.CLOSED:
 			this.isConnected = false;
@@ -76,6 +77,15 @@ var Transport = (function() {
 		case actions.NACK:
 			this.emit('nack', message.msgSerial, message.count, message.error);
 			break;
+		case actions.SYNC:
+			if(message.connectionId !== undefined) {
+				/* a transport SYNC */
+				this.emit('sync', message.connectionSerial, message.connectionId);
+				break;
+			}
+			/* otherwise it's a channel SYNC, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		case actions.ERROR:
 			var msgErr = message.error;
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
@@ -90,7 +100,10 @@ var Transport = (function() {
 				break;
 			}
 			/* otherwise it's a channel-specific error, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		default:
+			/* all other actions are channel-specific */
 			this.connectionManager.onChannelMessage(message, this);
 		}
 	};
@@ -98,13 +111,14 @@ var Transport = (function() {
 	Transport.prototype.onConnect = function(message) {
 		/* the connectionKey in a comet connected response is really
 		 * <instId>!<connectionKey>; handle generically here */
-		var connectionKey = message.connectionKey = message.connectionKey.split('!').pop();
+		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)$/),
+			connectionKey = message.connectionKey = match && match[1];
 
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		var error = message.error, connectionManager = this.connectionManager;
-		if(error && message.connectionKey !== connectionManager.connectionKey)
+		if(error && connectionKey !== connectionManager.connectionKey)
 			connectionManager.realtime.channels.setSuspended(error);
 
 		this.connectionKey = connectionKey;
@@ -127,7 +141,7 @@ var Transport = (function() {
 
 	Transport.prototype.sendClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
-		this.send(closeMessage);
+		this.send(closeMessage, noop);
 	};
 
 	Transport.prototype.ping = function(callback) {

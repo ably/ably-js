@@ -27,7 +27,7 @@ var Cookie = (function() {
 		};
 
 		Cookie.erase = function(name) {
-			createCookie(name, '', -1 * 3600 * 1000);
+			Cookie.create(name, '', -1 * 3600 * 1000);
 		};
 	}
 

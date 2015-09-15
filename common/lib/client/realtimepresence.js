@@ -55,7 +55,15 @@ var RealtimePresence = (function() {
 				channel.sendPresence(presence, callback);
 				break;
 			case 'initialized':
-				channel.attach();
+			case 'detached':
+				var self = this;
+				channel.attach(function(err) {
+					// If error in attaching, callback immediately
+					if(err) {
+						self.pendingPresence = null;
+						callback(err);
+					}
+				});
 			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,

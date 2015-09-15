@@ -50,13 +50,14 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options;
+			options = this.channel.options,
+			channel = this.channel;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
 	};
 

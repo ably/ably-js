@@ -156,6 +156,18 @@ var Utils = (function() {
 			return -1;
 		};
 
+	Utils.arrIn = function(arr, val) {
+		return Utils.arrIndexOf(arr, val) !== -1;
+	};
+
+	Utils.arrDeleteValue = function(arr, val) {
+		var idx = Utils.arrIndexOf(arr, val);
+		var res = (idx != -1);
+		if(res)
+			arr.splice(idx, 1);
+		return res;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
