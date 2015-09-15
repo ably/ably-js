@@ -49,13 +49,14 @@ var Channel = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.options;
+			options = this.options,
+			channel = this;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format);
+			return Message.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
 	};
 
