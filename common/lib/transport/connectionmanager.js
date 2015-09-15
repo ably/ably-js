@@ -7,18 +7,7 @@ var ConnectionManager = (function() {
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
-
-	var states = {
-		initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-		connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
-		connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-		synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-		disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-		suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
-		closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
-		failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
-	};
+	var states;
 
 	var isErrFatal = function(err) {
 		var RESOLVABLE_ERROR_CODES = [40140];
@@ -90,6 +79,17 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
+		states = {
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+		};
 		this.state = states.initialized;
 		this.error = null;
 
@@ -123,6 +123,29 @@ var ConnectionManager = (function() {
 		/* intercept close event in browser to persist connection id if requested */
 		if(createCookie && options.recover === true && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		/* Listen for online and offline events */
+		if(typeof window === "object" && window.addEventListener) {
+			var self = this;
+			window.addEventListener('online', function() {
+				if(self.state == states.disconnected || self.state == states.suspended) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
+					self.requestState({state: 'connecting'});
+				}
+			});
+			window.addEventListener('offline', function() {
+				if(self.state == states.connected) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
+					// Not sufficient to just go to the 'disconnected' state, want to
+					// force all transports to reattempt the connection
+					self.disconnectAllTransports();
+					// Try a reconnect immediately rather than wait for the disconnect timeout
+					Utils.nextTick(function() {
+						self.requestState({state: 'connecting'});
+					});
+				}
+			});
+		}
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
@@ -798,6 +821,31 @@ var ConnectionManager = (function() {
 		closeTransport(this.activeProtocol && this.activeProtocol.getTransport());
 
 		this.notifyState({state: 'closed'});
+	};
+
+	ConnectionManager.prototype.disconnectAllTransports = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting all transports');
+
+		function disconnectTransport(transport) {
+			if(transport) {
+				try {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting transport: ' + transport);
+					transport.disconnect();
+				} catch(e) {
+					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
+					var err = new ErrorInfo(msg, 50000, 500);
+					transport.abort(err);
+				}
+			}
+		}
+
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			disconnectTransport(this.pendingTransports[i]);
+		}
+		disconnectTransport(this.activeProtocol && this.activeProtocol.getTransport());
+		// No need to notify state disconnected; disconnecting the active transport
+		// will have that effect
 	};
 
 	/******************
