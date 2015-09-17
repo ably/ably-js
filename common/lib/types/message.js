@@ -128,10 +128,11 @@ var Message = (function() {
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
-									break;
 								}
 								data = cipher.decrypt(data);
 								continue;
+							} else {
+								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						default:
 							throw new Error("Unknown encoding");
