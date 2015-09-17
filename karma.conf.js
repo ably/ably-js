@@ -89,6 +89,7 @@ module.exports = function(config) {
 
       // shared test set up files
       { pattern: 'spec/common/**/*.js', included: false },
+      { pattern: 'spec/common/ably-common/test-resources/*.json', included: false },
       { pattern: 'spec/support/*.js', included: false },
       { pattern: 'spec/realtime/assets/*.json', included: false },
 

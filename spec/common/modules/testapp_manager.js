@@ -9,7 +9,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 			httpReq   = httpReqFunction(),
 			toBase64  = base64Function(),
 			loadJsonData = isBrowser ? loadJsonDataBrowser : loadJsonDataNode,
-			testResourcesPath = 'spec/common/ably-common/test-resources/';
+			testResourcesPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/common/ably-common/test-resources/';
 
 	function prefixDomainWithEnvironment(domain, environment) {
 		if (environment.toLowerCase() === 'production') {
