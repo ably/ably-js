@@ -68,9 +68,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* read messages from test data */
 					var testMessage = Message.fromValues(item.encoded);
 					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding) */
-					Message.decode(testMessage);
-					Message.decode(encryptedMessage);
+					/* decode (ie remove any base64 encoding). Will throw when
+					 * it gets to the cipher part of the encoding, so wrap in try/catch */
+					try { Message.decode(testMessage); } catch(_) {}
+					try { Message.decode(encryptedMessage); } catch(_) {}
 					/* reset channel cipher, to ensure it uses the given iv */
 					channel.setOptions({encrypted:true, cipherParams: params});
 					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
@@ -115,9 +116,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* read messages from test data */
 					var testMessage = Message.fromValues(item.encoded);
 					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding) */
-					Message.decode(testMessage);
-					Message.decode(encryptedMessage);
+					/* decode (ie remove any base64 encoding). Will throw when
+					 * it gets to the cipher part of the encoding, so wrap in try/catch */
+					try { Message.decode(testMessage); } catch(_) {}
+					try { Message.decode(encryptedMessage); } catch(_) {}
 					/* reset channel cipher, to ensure it uses the given iv */
 					channel.setOptions({encrypted:true, cipherParams: params});
 					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
@@ -161,9 +163,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* read messages from test data */
 					var testMessage = Message.fromValues(item.encoded);
 					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding) */
-					Message.decode(testMessage);
-					Message.decode(encryptedMessage);
+					/* decode (ie remove any base64 encoding). Will throw when
+					 * it gets to the cipher part of the encoding, so wrap in try/catch */
+					try { Message.decode(testMessage); } catch(_) {}
+					try { Message.decode(encryptedMessage); } catch(_) {}
 					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
 					Message.decode(encryptedMessage, channel.options);
 					/* compare */
@@ -205,9 +208,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* read messages from test data */
 					var testMessage = Message.fromValues(item.encoded);
 					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding) */
-					Message.decode(testMessage);
-					Message.decode(encryptedMessage);
+					/* decode (ie remove any base64 encoding). Will throw when
+					 * it gets to the cipher part of the encoding, so wrap in try/catch */
+					try { Message.decode(testMessage); } catch(_) {}
+					try { Message.decode(encryptedMessage); } catch(_) {}
 					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
 					Message.decode(encryptedMessage, channel.options);
 					/* compare */
