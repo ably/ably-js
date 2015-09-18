@@ -4,6 +4,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		simulateDroppedConnection = helper.simulateDroppedConnection,
 		Defaults = Ably.Realtime.Defaults;
 
 	function stopIfUnsupported(test) {

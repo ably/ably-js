@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		simulateDroppedConnection = helper.simulateDroppedConnection,
 		// Ably.Realtime.ConnectionManager not defined in node
 		availableTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.transports : Object.keys(Ably.Realtime.ConnectionManager.transports);
 
@@ -72,7 +73,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.ok(false, 'connection state for transports ' + transports + ' should be disconnected, not failed');
 							cb(null, realtime);
 						});
-						realtime.connection.connectionManager.activeProtocol.transport.disconnect();
+						simulateDroppedConnection(realtime);
 					});
 				};
 			};
