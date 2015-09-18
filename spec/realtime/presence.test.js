@@ -288,7 +288,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					//   is an acceptable result. Throwing an uncaught exception (the behaviour
 					//   that we're testing for) isn't.
 					if(err) {
-						test.ok(true, 'Enter failed with error: ' + err);
+						test.ok(true, 'Enter failed with error: ' + JSON.stringify(err));
+						test.equal(err.code, 40400)
 						done();
 						return;
 					}
