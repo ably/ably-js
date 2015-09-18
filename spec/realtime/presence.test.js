@@ -454,12 +454,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.enter7 = function(test) {
 		var clientRealtime;
 		try {
-			test.expect(2);
+			test.expect(3);
 			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
 			var clientChannel = clientRealtime.channels.get('presenceEnter7');
 			/* listen for the enter event, test is complete when received */
 			var presenceHandler = function(presenceMsg) {
-				if(this.event == 'enter' && presenceMsg.data == 'second') {
+				if(presenceMsg.data == 'second') {
 					test.ok(true, 'Second presence event received');
 					closeAndFinish(test, clientRealtime);
 				}
@@ -478,6 +478,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							closeAndFinish(test, clientRealtime);
 							return;
 						}
+						test.ok(true, 'Detached from channel');
 						clientChannel.presence.on(presenceHandler);
 						clientChannel.presence.enter('second', function(err){
 							if(err) {
