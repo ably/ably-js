@@ -177,9 +177,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					 * so we can see if a message arrived.
 					 * NOTE: this relies on knowledge of the internal implementation
 					 * of the transport */
+
+					var originalOnChannelMessage = transport.onChannelMessage;
 					transport.onChannelMessage = function(message) {
 						if(message.messages)
 							test.ok(false, 'Message received on comet transport');
+						originalOnChannelMessage.apply(this, arguments);
 					};
 				}
 			});
