@@ -5,7 +5,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
 		simulateDroppedConnection = helper.simulateDroppedConnection,
-		Defaults = Ably.Realtime.Defaults;
+		Defaults = Ably.Realtime.Defaults,
+		oldDisconnectTimeout = Defaults.disconnectTimeout,
+		oldSuspendedTimeout = Defaults.suspendedTimeout,
+		oldConnectTimeout = Defaults.connectTimeout;
 
 	function supportedBrowser(test) {
 		if(document.body.ononline === undefined) {
@@ -86,6 +89,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.ok(new Date() - disconnectedAt < 250, 'Online event should have caused the connection to enter the connecting state immediately');
 				connection.once('connected', function() {
 					test.ok(true, 'Successfully reconnected');
+					Defaults.connectTimeout = oldConnectTimeout;
 					closeAndFinish(test, realtime);
 				})
 			});
@@ -97,7 +101,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
 		Defaults.disconnectTimeout = 100; // retry connection more frequently
-		Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconencted
+		Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconnected
 
 		var realtime = helper.AblyRealtime(),
 		connection = realtime.connection,
@@ -109,20 +113,30 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(2);
 		connection.on('failed', function () {
 			test.ok(false, 'connection to server failed');
-			closeAndFinish(test, realtime)
+			closeAndFinish(test, realtime);
 		});
 
 		connection.once('suspended', function() {
 			var suspendedAt = new Date();
 			test.ok(connection.state == 'suspended', 'Connection should still be suspended before we trigger it to connect');
 			connection.once('connecting', function() {
-				test.ok(new Date() - suspendedAt < 250, 'Online event should have caused the connection to enter the connecting state immediately');
+				test.ok(new Date() - suspendedAt < 250, 'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout');
+				Defaults.disconnectTimeout = oldDisconnectTimeout;
+				Defaults.suspendedTimeout = oldSuspendedTimeout;
 				closeAndFinish(test, realtime);
 			});
 			// simulate online event
 			document.dispatchEvent(onlineEvent);
 		});
 	};
+
+	exports.clean99 = function(test) {
+		// Ensure defaults are reset
+		Defaults.connectTimeout = oldConnectTimeout;
+		Defaults.disconnectTimeout = oldDisconnectTimeout;
+		Defaults.suspendedTimeout = oldSuspendedTimeout;
+		test.done();
+	}
 
 	return module.exports = supportedBrowser() ? helper.withTimeout(exports) : {};
 
