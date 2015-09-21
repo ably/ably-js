@@ -51,10 +51,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var connectedAt = new Date().getTime()
 			connection.once('disconnected', function() {
 				var disconnectedAt = new Date().getTime();
-				test.ok(disconnectedAt - connectedAt < 250, 'Offline event caused connection to move to the disconnected state immediately (under 250ms)');
+				test.ok(disconnectedAt - connectedAt < 1500, 'Offline event caused connection to move to the disconnected state');
 				connection.once('connecting', function() {
 					var reconnectingAt = new Date().getTime();
-					test.ok(reconnectingAt - disconnectedAt < 250, 'Client automatically reattempts connection even if the state is still offline');
+					test.ok(reconnectingAt - disconnectedAt < 1500, 'Client automatically reattempts connection without waiting for disconnect timeout, even if the state is still offline');
 					connection.once('connected', function() {
 						test.ok(true, 'Successfully reconnected');
 						closeAndFinish(test, realtime);
@@ -86,7 +86,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var disconnectedAt = new Date();
 			test.ok(connection.state == 'disconnected', 'Connection should still be disconnected before we trigger it to connect');
 			connection.once('connecting', function() {
-				test.ok(new Date() - disconnectedAt < 250, 'Online event should have caused the connection to enter the connecting state immediately');
+				test.ok(new Date() - disconnectedAt < 1500, 'Online event should have caused the connection to enter the connecting state without waiting for disconnect timeout');
 				connection.once('connected', function() {
 					test.ok(true, 'Successfully reconnected');
 					Defaults.connectTimeout = oldConnectTimeout;
@@ -100,8 +100,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
-		Defaults.disconnectTimeout = 100; // retry connection more frequently
-		Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconnected
+		Defaults.disconnectTimeout = 200; // retry connection more frequently
+		Defaults.suspendedTimeout = 2000; // move to suspended state after 2s of being disconnected
 
 		var realtime = helper.AblyRealtime(),
 		connection = realtime.connection,
@@ -120,7 +120,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var suspendedAt = new Date();
 			test.ok(connection.state == 'suspended', 'Connection should still be suspended before we trigger it to connect');
 			connection.once('connecting', function() {
-				test.ok(new Date() - suspendedAt < 250, 'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout');
+				test.ok(new Date() - suspendedAt < 1500, 'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout');
 				Defaults.disconnectTimeout = oldDisconnectTimeout;
 				Defaults.suspendedTimeout = oldSuspendedTimeout;
 				closeAndFinish(test, realtime);
