@@ -7,11 +7,21 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		simulateDroppedConnection = helper.simulateDroppedConnection,
 		Defaults = Ably.Realtime.Defaults;
 
-	function stopIfUnsupported(test) {
+	function supportedBrowser(test) {
 		if(document.body.ononline === undefined) {
-			test.done();
-			return;
+			console.log("Online events not supported; skipping connection.test.js");
+			return false;
 		}
+
+		// IE doesn't support creating your own events with new
+		try {
+			var testEvent = new Event("foo");
+		} catch(e) {
+			console.log("On IE; skipping connection.test.js");
+			return false;
+		}
+
+		return true;
 	}
 
 	exports.setup_realtime = function(test) {
@@ -27,8 +37,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.device_going_offline_causes_disconnected_state = function(test) {
-		stopIfUnsupported(test);
-
 		var realtime = helper.AblyRealtime(),
 		connection = realtime.connection,
 		offlineEvent = new Event('offline', {'bubbles': true});
@@ -57,8 +65,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.device_going_online_causes_disconnected_connection_to_reconnect_immediately = function(test) {
-		stopIfUnsupported(test);
-
 		var realtime = helper.AblyRealtime(),
 		connection = realtime.connection,
 		onlineEvent = new Event('online', {'bubbles': true});
@@ -90,8 +96,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
-		stopIfUnsupported(test);
-
 		Defaults.disconnectTimeout = 100; // retry connection more frequently
 		Defaults.suspendedTimeout = 1000; // move to suspended state after 1s of being disconencted
 
@@ -120,5 +124,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	return module.exports = supportedBrowser() ? helper.withTimeout(exports) : {};
+
 });
