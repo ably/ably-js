@@ -153,7 +153,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var realtime = helper.AblyRealtime(transportOpts);
 
 			/* subscribe to event */
-			var rtChannel = realtime.channels.get('publishpostupgrade0');
+			var rtChannel = realtime.channels.get('publishpostupgrade1');
 			rtChannel.subscribe('event0', function(msg) {
 				test.expect(2);
 				test.ok(true, 'Received event0');
@@ -169,7 +169,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 			/* publish event */
 			var testMsg = 'Hello world';
-			var restChannel = rest.channels.get('publishpostupgrade0');
+			var restChannel = rest.channels.get('publishpostupgrade1');
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
 				if(transport.toString().indexOf('/comet/') > -1) {
