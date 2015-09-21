@@ -55,7 +55,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		}
 
 		function callbackOnClose(realtime, callback) {
-			if(realtime.connection.connectionManager.activeProtocol === null) {
+			if(!realtime.connection.connectionManager.activeProtocol) {
 				console.log("No transport established; closing connection and calling test.done()")
 				realtime.close();
 				callback();
