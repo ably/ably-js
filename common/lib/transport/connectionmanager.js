@@ -993,5 +993,9 @@ var ConnectionManager = (function() {
 		this.ping(this.activeProtocol.getTransport(), onPingComplete);
 	};
 
+	ConnectionManager.prototype.abort = function(error) {
+		this.activeProtocol.getTransport().abort(error);
+	};
+
 	return ConnectionManager;
 })();

@@ -243,7 +243,7 @@ var CometTransport = (function() {
 			var items = this.decodeResponse(responseData);
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onChannelMessage(items[i]);
+					this.onChannelMessage(ProtocolMessage.fromDecoded(items[i]));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}

@@ -44,8 +44,18 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			callbackOnClose(realtime, function(){ test.done(); })
 		};
 
+		var simulateDroppedConnection = function(realtime) {
+			// Go into the 'disconnected' state before actually disconnecting the transports
+			// to avoid the instantaneous reconnect attempt that would be triggered in
+			// notifyState by the active transport getting disconnected from a connected state
+			realtime.connection.once('disconnected', function(){
+				realtime.connection.connectionManager.disconnectAllTransports();
+			});
+			realtime.connection.connectionManager.requestState({state: 'disconnected'});
+		}
+
 		function callbackOnClose(realtime, callback) {
-			if(realtime.connection.connectionManager.activeProtocol === null) {
+			if(!realtime.connection.connectionManager.activeProtocol) {
 				console.log("No transport established; closing connection and calling test.done()")
 				realtime.close();
 				callback();
@@ -110,9 +120,10 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 			loadTestData: testAppManager.loadJsonData,
 
-			displayError:      displayError,
-			monitorConnection: monitorConnection,
-			closeAndFinish:    closeAndFinish,
-			withTimeout:       withTimeout
+			displayError:              displayError,
+			monitorConnection:         monitorConnection,
+			closeAndFinish:            closeAndFinish,
+			simulateDroppedConnection: simulateDroppedConnection,
+			withTimeout:               withTimeout
 		};
 	});

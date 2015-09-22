@@ -3,7 +3,8 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection;
+		monitorConnection = helper.monitorConnection,
+		simulateDroppedConnection = helper.simulateDroppedConnection;
 
 	exports.setupResume = function(test) {
 		test.expect(1);
@@ -42,11 +43,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var txChannel = txRealtime.channels.get(channelName);
 		var rxCount = 0;
 
-		var lastActiveRxTransport;
-		rxRealtime.connection.connectionManager.on('transport.active', function(transport) {
-			lastActiveRxTransport = transport;
-		});
-
 		function phase0(callback) {
 			attachChannels([rxChannel, txChannel], callback);
 		}
@@ -75,11 +71,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		function phase2(callback) {
-			/* disconnect the transport
-			 * NOTE: this uses knowledge of the internal operation
-			 * of the client library to simulate a dropped connection
-			 * without explicitly closing the connection */
-			lastActiveRxTransport.disconnect();
+			simulateDroppedConnection(rxRealtime);
 			/* continue in 5 seconds */
 			setTimeout(callback, 5000);
 		}
@@ -195,11 +187,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var txChannel = txRealtime.channels.get('resume1');
 		var rxCount = 0;
 
-		var lastActiveRxTransport;
-		rxRealtime.connection.connectionManager.on('transport.active', function(transport) {
-			lastActiveRxTransport = transport;
-		});
-
 		function phase0(callback) {
 			attachChannels([rxChannel, txChannel], callback);
 		}
@@ -231,7 +218,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			 * NOTE: this uses knowledge of the internal operation
 			 * of the client library to simulate a dropped connection
 			 * without explicitly closing the connection */
-			lastActiveRxTransport.disconnect();
+			simulateDroppedConnection(rxRealtime);
 			var txCount = 0;
 
 			function ph2TxOnce() {

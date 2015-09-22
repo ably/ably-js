@@ -44,7 +44,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					delete expectedConnectionEvents[index];
 					test.ok(true, this.event + ' connection event received');
 					if(this.event == 'closed') {
-						closeAndFinish(test, realtime);
+						test.done();
 					}
 				} else {
 					test.ok(false, 'Unexpected ' + this.event + ' event received');

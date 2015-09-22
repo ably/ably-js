@@ -6,6 +6,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			startTime, intervalStart, timeOffset;
 
 	var lastYear = new Date().getUTCFullYear() - 1;
+	var anHourAgo = new Date().valueOf() - 60 * 60 * 1000;
 
 	// Set last interval to 3rd Feb 20xx 16:03:00, Javascript uses zero based months
 	var firstIntervalEpoch = Date.UTC(lastYear, 1, 3, 15, 3, 0);
@@ -57,6 +58,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15:03',
+			end: anHourAgo,
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -66,7 +68,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.equal(stats.length, 3, 'Verify 3 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -91,6 +93,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: firstIntervalEpoch,
+			end: anHourAgo,
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -100,7 +103,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.equal(stats.length, 3, 'Verify 3 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -125,6 +128,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15',
+			end: anHourAgo,
 			direction: 'forwards',
 			by: 'hour'
 		}, function(err, page) {
