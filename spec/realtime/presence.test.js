@@ -207,7 +207,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		// will not run its callback
 		var channelName = 'enterDetachRace';
 		try {
-			test.expect(5);
+			test.expect(4);
 			/* listen for the enter event, test is complete when received */
 
 			createListenerChannel(channelName, function(err, listenerRealtime, presenceChannel){
@@ -220,7 +220,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
 
 				listenerFor('enter')(test, presenceChannel, function() {
-					test.ok(true, 'Presence event received');
 					closeAndFinish(test, [listenerRealtime, clientRealtime]);
 				});
 
