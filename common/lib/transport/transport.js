@@ -53,10 +53,10 @@ var Transport = (function() {
 		this.dispose();
 	};
 
-	Transport.prototype.onChannelMessage = function(message) {
+	Transport.prototype.onProtocolMessage = function(message) {
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onChannelMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:
@@ -88,7 +88,7 @@ var Transport = (function() {
 			break;
 		case actions.ERROR:
 			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
 			if(message.channel === undefined) {
 				/* a transport error */
 				var err = {

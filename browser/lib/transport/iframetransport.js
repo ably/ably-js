@@ -127,7 +127,7 @@ var IframeTransport = (function() {
 			var items = JSON.parse(String(data));
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onChannelMessage(items[i]);
+					this.onProtocolMessage(items[i]);
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'IframeTransport.onData()', 'Unexpected exception handing channel event: ' + e);
 		}

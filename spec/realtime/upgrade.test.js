@@ -178,11 +178,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					 * NOTE: this relies on knowledge of the internal implementation
 					 * of the transport */
 
-					var originalOnChannelMessage = transport.onChannelMessage;
-					transport.onChannelMessage = function(message) {
+					var originalOnProtocolMessage = transport.onProtocolMessage;
+					transport.onProtocolMessage = function(message) {
 						if(message.messages)
 							test.ok(false, 'Message received on comet transport');
-						originalOnChannelMessage.apply(this, arguments);
+						originalOnProtocolMessage.apply(this, arguments);
 					};
 				}
 			});
