@@ -64,8 +64,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var break_test = function(transports) {
 				return function(cb) {
 					var realtime = helper.AblyRealtime({transports: transports});
-					realtime.connection.on('connected', function() {
-						realtime.connection.on('disconnected', function() {
+					realtime.connection.once('connected', function() {
+						realtime.connection.once('disconnected', function() {
 							test.ok(true, 'connection state for ' + transports + ' was disconnected, as expected');
 							cb(null, realtime);
 						});
