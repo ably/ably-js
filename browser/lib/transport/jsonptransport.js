@@ -137,6 +137,7 @@ var JSONPTransport = (function() {
 		var script = this.script;
 		if(script.parentNode) script.parentNode.removeChild(script);
 		delete _[this.id];
+		this.emit('disposed');
 	};
 
 	var request = Http.Request = function(uri, headers, params, body, callback) {

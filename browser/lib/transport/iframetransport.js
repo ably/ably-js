@@ -157,6 +157,7 @@ var IframeTransport = (function() {
 				wrapIframe.parentNode.removeChild(wrapIframe);
 			}, 0);
 		}
+		this.emit('disposed');
 	};
 
 	function wrapIframeContent(src) {
