@@ -499,6 +499,11 @@ var ConnectionManager = (function() {
 		 *   and there are no longer any pending transports
 		 */
 		if(wasActive || (wasPending && this.pendingTransports.length === 0)) {
+			/* Transport failures only imply a connection failure
+			 * if the reason for the failure is fatal */
+			if((state === 'failed') && error && !isErrFatal(error)) {
+				state = 'disconnected';
+			}
 			this.notifyState({state: state, error: error});
 		}
 	};
