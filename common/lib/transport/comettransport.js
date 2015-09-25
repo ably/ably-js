@@ -92,10 +92,10 @@ var CometTransport = (function() {
 		this.dispose();
 	};
 
-	CometTransport.prototype.abort = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', '');
+	CometTransport.prototype.abort = function(err) {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', 'err: ' + err);
 		this.requestClose(true);
-		this.emit('failed');
+		this.emit('failed', err);
 		this.dispose();
 	};
 
