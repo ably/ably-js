@@ -4,17 +4,20 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection,
+		monitorConnection = helper.monitorConnection;
+
+	var publishIntervalHelper = function(currentMessageNum, channel, dataFn, onPublish){
+			return function(currentMessageNum) {
+				console.log('sending: ' + currentMessageNum);
+				channel.publish('event0', dataFn(), function() {
+					console.log('publish callback called');
+					onPublish();
+				});
+			};
+		},
 		publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
 			for(var i = numMessages; i > 0; i--) {
-				var helper = function(currentMessageNum) {
-					console.log('sending: ' + currentMessageNum);
-					channel.publish('event0', dataFn(), function(err) {
-						console.log('publish callback called');
-						onPublish();
-					});
-				};
-				setTimeout(helper(i), 20*i);
+				setTimeout(publishIntervalHelper(i, channel, dataFn, onPublish), 20*i);
 			}
 		};
 
@@ -31,8 +34,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.publishonce = function(test) {
-		var transport = 'binary';
-
 		test.expect(2);
 		try {
 			/* set up realtime */
@@ -70,8 +71,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.publishVariations = function(test) {
-		var transport = 'binary';
-		var testData = 'Some data'
+		var testData = 'Some data';
 		var errorCallback = function(err){
 			if(err) {
 				test.ok(false, 'Error received by publish callback ' + err);
@@ -118,7 +118,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					}
 
 					/* subscribe to different message types */
-					var messagesReceived = 0
+					var messagesReceived = 0;
 					rtChannel.subscribe(function(msg) {
 						test.ok(true, 'Received ' + msg.name);
 						++messagesReceived;
@@ -179,8 +179,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.publishDisallowed = function(test) {
-		var transport = 'binary';
-		var testData = 'Some data'
 		var testArguments = [
 			[{name: 'objectAndBoolData', data: false}],
 			['nameAndBoolData', false],
@@ -228,7 +226,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.publishEncodings = function(test) {
-		var testData = 'testData'
+		var testData = 'testData';
 		var testArguments = [
 			// valid
 			[{name: 'justJson', encoding: 'json', data: '{\"foo\":\"bar\"}'}],
@@ -256,7 +254,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 
-					var messagesReceived = 0
+					var messagesReceived = 0;
 					rtChannel.subscribe(function(msg) {
 						test.ok(true, 'Received ' + msg.name);
 						++messagesReceived;
@@ -326,7 +324,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						closeAndFinish(test, realtime);
 					});
 
-					rtChannel.publish({name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'})
+					rtChannel.publish({name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -383,7 +381,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			--count;
 			checkFinish();
 		});
-		var dataFn = function() { return 'Hello world at: ' + new Date() };
+		var dataFn = function() { return 'Hello world at: ' + new Date(); };
 		publishAtIntervals(count, channel, dataFn, onPublish);
 	};
 
@@ -409,7 +407,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				--count;
 				checkFinish();
 			});
-			var dataFn = function() { return 'Hello world at: ' + new Date() };
+			var dataFn = function() { return 'Hello world at: ' + new Date(); };
 			publishAtIntervals(count, channel, dataFn, onPublish);
 		};
 
@@ -434,7 +432,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				--count;
 				checkFinish();
 			});
-			var dataFn = function() { return 'Hello world at: ' + new Date() };
+			var dataFn = function() { return 'Hello world at: ' + new Date(); };
 			publishAtIntervals(count, channel, dataFn, onPublish);
 		};
 	} else {
@@ -459,7 +457,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				--count;
 				checkFinish();
 			});
-			var dataFn = function() { return 'Hello world at: ' + new Date() };
+			var dataFn = function() { return 'Hello world at: ' + new Date(); };
 			publishAtIntervals(count, channel, dataFn, onPublish);
 		};
 	}
