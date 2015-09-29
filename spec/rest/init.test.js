@@ -38,7 +38,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var rest = helper.AblyRest();
 			var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
 
-			rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+			rest.auth.requestToken(null, testKeyOpts, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
 					test.done();

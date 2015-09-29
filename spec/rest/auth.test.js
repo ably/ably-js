@@ -140,7 +140,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 */
 	exports.authtime2 = function(test) {
 		test.expect(1);
-		rest.auth.requestToken({queryTime:true}, null, function(err, tokenDetails) {
+		rest.auth.requestToken(null, {queryTime:true}, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
@@ -252,7 +252,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 	var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
 	var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
-		rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+		rest.auth.requestToken(null, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
@@ -274,7 +274,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.authexplicit_simple = function(test) {
 		test.expect(1);
 		rest.auth.getAuthHeaders(function(err, authHeaders) {
-			rest.auth.requestToken({requestHeaders: authHeaders}, null, function(err, tokenDetails) {
+			rest.auth.requestToken(null, {requestHeaders: authHeaders}, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
 					test.done();
@@ -298,7 +298,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		rest.auth.getAuthHeaders(function(err, authHeaders) {
 	  var testKeyOpts = {key: helper.getTestApp().keys[1].keyStr};
 	  var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
-			rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+			rest.auth.requestToken(null, testKeyOpts, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
 					test.done();
@@ -416,7 +416,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 */
 	exports.auth_createTokenRequest_given_key2 = function(test) {
 		test.expect(1);
-		rest.auth.createTokenRequest({}, null, function(err, tokenRequest) {
+		rest.auth.createTokenRequest(null, {}, function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
@@ -433,7 +433,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.auth_createTokenRequest_capability_object = function(test) {
 		test.expect(1);
 		var capability = {'*':['*']};
-		rest.auth.createTokenRequest(null, {capability: capability}, function(err, tokenRequest) {
+		rest.auth.createTokenRequest({capability: capability}, null, function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();

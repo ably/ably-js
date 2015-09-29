@@ -46,7 +46,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 	var testKeyOpts = {key: testApp.keys[1].keyStr};
 		var testCapability = JSON.parse(testApp.keys[1].capability);
-		rest.auth.requestToken(testKeyOpts, null, function(err, tokenDetails) {
+		rest.auth.requestToken(null, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -64,7 +64,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 	var testKeyOpts = {key: testApp.keys[1].keyStr};
 	var testCapability = JSON.parse(testApp.keys[1].capability);
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -82,7 +82,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 	var testKeyOpts = {key: testApp.keys[1].keyStr};
 		var testCapability = {"canpublish:test":['subscribe']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
 				test.done();
@@ -100,7 +100,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 	var testKeyOpts = {key: testApp.keys[2].keyStr};
 		var testCapability = {channelx:['publish']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
 				test.done();
@@ -119,7 +119,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[2].keyStr};
 		var testCapability = {channel2:['presence', 'subscribe']};
 		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -141,7 +141,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			channelx:['presence', 'subscribe']
 		};
 		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -160,7 +160,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[2].keyStr};
 		var testCapability = {channel2:['*']};
 		var expectedIntersection = {channel2:['publish', 'subscribe']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -175,7 +175,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[2].keyStr};
 		var testCapability = {channel6:['publish', 'subscribe']};
 		var expectedIntersection = {channel6:['publish', 'subscribe']};
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -194,7 +194,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[3].keyStr};
 		var testCapability = {cansubscribe:['subscribe']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -209,7 +209,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[1].keyStr};
 		var testCapability = {'canpublish:check':['publish']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -224,7 +224,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var testKeyOpts = {key: testApp.keys[3].keyStr};
 		var testCapability = {'cansubscribe:*':['subscribe']};
 		var expectedIntersection = testCapability;
-		rest.auth.requestToken(testKeyOpts, {capability: testCapability}, function(err, tokenDetails) {
+		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
