@@ -239,8 +239,15 @@ var Auth = (function() {
 				}
 			}
 			tokenRequestCallback = function(params, cb) {
-				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
-				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
+				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
+						authParams = Utils.mixin(params, authOptions.authParams);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
+				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, function(err, body, headers, unpacked) {
+					if (err) {
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
+					} else {
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; body: ' + JSON.stringify(BufferUtils.isBuffer(body) ? body.toString() : body));
+					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
 					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
@@ -275,11 +282,13 @@ var Auth = (function() {
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
 				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
