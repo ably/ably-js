@@ -376,10 +376,11 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		if((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0)
+		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
+		if(syncInProgress)
 			this.presence.awaitSync();
 		this.presence.setAttached();
-		this.setState('attached');
+		this.setState('attached', null, syncInProgress);
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -409,9 +410,9 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setState = function(state, err) {
+	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
 		this.state = state;
-		this.rest.channels.setChannelState(this);
+		this.setInProgress(inProgress);
 		this.emit(state, err);
 	};
 
@@ -420,7 +421,7 @@ var RealtimeChannel = (function() {
 		this.clearStateTimer();
 
 		/* notify the state change */
-		this.setState(state);
+		this.setState(state, null, true);
 
 		/* if not currently connected, do nothing */
 		if(this.connectionManager.state.state != 'connected') {
@@ -467,6 +468,10 @@ var RealtimeChannel = (function() {
 			clearTimeout(stateTimer);
 			this.stateTimer = null;
 		}
+	};
+
+	RealtimeChannel.prototype.setInProgress = function(inProgress) {
+		this.rest.channels.setInProgress(this, inProgress);
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {

@@ -19,7 +19,7 @@ var Realtime = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.all = {};
-		this.pending = {};
+		this.inProgress = {};
 		var self = this;
 		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
@@ -40,10 +40,10 @@ var Realtime = (function() {
 	};
 
 	/* called when a transport becomes connected; reattempt attach()
-	 * for channels that may have been pending from a previous transport */
+	 * for channels that may have been inProgress from a previous transport */
 	Channels.prototype.onTransportActive = function() {
-		for(var channelId in this.pending)
-			this.pending[channelId].checkPendingState();
+		for(var channelId in this.inProgress)
+			this.inProgress[channelId].checkPendingState();
 	};
 
 	Channels.prototype.setSuspended = function(err) {
@@ -69,23 +69,19 @@ var Realtime = (function() {
 		}
 	};
 
-	Channels.prototype.setChannelState = function(channel) {
-		var name = channel.name;
-		switch(channel.state) {
-			case 'attaching':
-			case 'detaching':
-				this.pending[name] = channel;
-				break;
-			default:
-				delete this.pending[name];
-				if(Utils.isEmpty(this.pending)) {
-					this.emit('nopending');
-				}
+	Channels.prototype.setInProgress = function(channel, inProgress) {
+		if(inProgress) {
+			this.inProgress[channel.name] = channel;
+		} else {
+			delete this.inProgress[channel.name];
+			if(Utils.isEmpty(this.inProgress)) {
+				this.emit('nopending');
+			}
 		}
 	};
 
 	Channels.prototype.onceNopending = function(listener) {
-		if(Utils.isEmpty(this.pending)) {
+		if(Utils.isEmpty(this.inProgress)) {
 			listener();
 			return;
 		}

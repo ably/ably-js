@@ -181,8 +181,10 @@ var RealtimePresence = (function() {
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(!syncCursor)
+		if(!syncCursor) {
 			members.endSync();
+			this.channel.setInProgress(false);
+		}
 
 		/* broadcast to listeners */
 		if(broadcast) {
