@@ -81,6 +81,29 @@ var BufferUtils = (function() {
 
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
+	BufferUtils.toArrayBuffer = function(buf) {
+		if(!ArrayBuffer)
+			throw new Error("Can't convert to ArrayBuffer: ArrayBuffer not supported");
+
+		if(isArrayBuffer(buf))
+			return buf;
+
+		if(isWordArray(buf)) {
+			/* Backported from unreleased CryptoJS
+			* https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
+			var arrayBuffer = new ArrayBuffer(buf.sigBytes);
+			var uint8View = new Uint8Array(arrayBuffer);
+
+			for (var i = 0; i < buf.sigBytes; i++) {
+				uint8View[i] = (buf.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+			}
+
+			return arrayBuffer;
+		};
+
+		throw new Error("BufferUtils.toArrayBuffer expected a buffer");
+	};
+
 	BufferUtils.toWordArray = function(buf) {
 		return isWordArray(buf) ? buf : WordArray.create(buf);
 	};
