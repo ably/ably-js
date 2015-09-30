@@ -9,7 +9,7 @@ var XHRTransport = (function() {
 	XHRTransport.isAvailable = XHRRequest.isAvailable;
 
 	XHRTransport.checkConnectivity = function(callback) {
-		var upUrl = 'http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt';
+		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
 		Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Sending; ' + upUrl);
 		Http.Request(upUrl, null, null, null, function(err, responseText) {
 			var result = (!err && responseText == 'yes');

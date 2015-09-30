@@ -19,7 +19,7 @@ var JSONPTransport = (function() {
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
 	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = 'http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js';
+		var upUrl = Defaults.internetUpUrlWithoutExtension + '.js';
 
 		if(checksInProgress) {
 			checksInProgress.push(callback);
