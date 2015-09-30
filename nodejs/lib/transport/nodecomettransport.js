@@ -96,6 +96,8 @@ var NodeCometTransport = (function() {
 
 		req.on('error', this.onReqError = function(err) {
 			console.log('req error: ' + err.stack);
+			clearTimeout(timer);
+			self.timer = null;
 			self.complete(err);
 		});
 
