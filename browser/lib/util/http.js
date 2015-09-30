@@ -51,6 +51,16 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Http.getUri()', 'Sending; ' + uri + '?' + (params ? JSON.stringify(params) : ''));
+			callback = function(oldCallback) {
+				return function(err) {
+					Logger.logAction(Logger.LOG_MICRO, 'Http.getUri()', 'Received; ' + uri + '?' + (params ? JSON.stringify(params) : '') + '; args: ' + JSON.stringify(arguments));
+					oldCallback.apply(err, arguments);
+				};
+			}(callback);
+		}
+
 		Http.Request(uri, headers, params, null, callback || noop);
 	};
 
@@ -104,6 +114,16 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Http.postUri()', 'Sending; ' + uri + '?' + (params ? JSON.stringify(params) : '') + '; body: ' + body);
+			callback = function(oldCallback) {
+				return function(err) {
+					Logger.logAction(Logger.LOG_MICRO, 'Http.postUri()', 'Received; ' + uri + '?' + (params ? JSON.stringify(params) : '') + '; args: ' + JSON.stringify(arguments));
+					oldCallback.apply(err, arguments);
+				};
+			}(callback);
+		}
+
 		Http.Request(uri, headers, params, body, callback || noop);
 	};
 
