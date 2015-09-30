@@ -66,5 +66,20 @@ var ProtocolMessage = (function() {
 		return Utils.mixin(new ProtocolMessage(), values);
 	};
 
+	ProtocolMessage.jsonify = function(msg) {
+		var keys = Object.keys(msg),
+				newMessage = {};
+
+		for (var i = 0; i < keys.length; i++) {
+			if ((keys[i] === 'action') && (typeof msg[keys[i]] === 'number')) {
+				newMessage.action = Object.keys(ProtocolMessage.Action)[msg.action];
+			} else {
+				newMessage[keys[i]] = msg[keys[i]];
+			}
+		}
+
+		return JSON.stringify(newMessage);
+	};
+
 	return ProtocolMessage;
 })();

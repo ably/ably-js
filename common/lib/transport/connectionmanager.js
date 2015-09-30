@@ -871,6 +871,9 @@ var ConnectionManager = (function() {
 		}
 		if(state.queueEvents) {
 			if(state == this.states.synchronizing || queueEvents) {
+				if (Logger.shouldLog(Logger.LOG_MICRO)) {
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.jsonify(msg));
+				}
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
