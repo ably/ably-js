@@ -86,7 +86,7 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
-		if(msg.action)
+		if(msg.action !== undefined)
 			result += '; action=' + ProtocolMessage.actionName(msg.action) || msg.action;
 
 		var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
