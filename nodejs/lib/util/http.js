@@ -17,7 +17,7 @@ this.Http = (function() {
 	 *
 	 ***************************************************/
 
-	var handler = function(callback) {
+	var handler = function(uri, params, callback) {
 		callback = callback || noop;
 		return function(err, response, body) {
 			if(err) {
@@ -82,7 +82,7 @@ this.Http = (function() {
 			getOptions.qs = params;
 
 		getOptions.uri = uri;
-		request.get(getOptions, handler(callback));
+		request.get(getOptions, handler(uri, params, callback));
 	};
 
 	/**
@@ -133,7 +133,7 @@ this.Http = (function() {
 			postOptions.qs = params;
 
 		postOptions.uri = uri;
-		request.post(postOptions, handler(callback));
+		request.post(postOptions, handler(uri, params, callback));
 	};
 
 	Http.supportsAuthHeaders = true;

@@ -40,6 +40,9 @@ var Protocol = (function() {
 		if(pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
+		}
 		this.transport.send(pendingMessage.message, callback);
 	};
 

@@ -130,7 +130,10 @@
 	};
 
 	IframeAgent.prototype.send = function(msg, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.send()', 'msg = ' + JSON.stringify(msg));
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.send()', 'msg = ' + JSON.stringify(msg));
+		}
+
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];

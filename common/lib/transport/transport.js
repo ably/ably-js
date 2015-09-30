@@ -54,6 +54,10 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onProtocolMessage = function(message) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received; ' + ProtocolMessage.stringify(message));
+		}
+
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);

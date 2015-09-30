@@ -28,9 +28,15 @@ var Logger = (function() {
 
 	/* public static functions */
 	Logger.logAction = function(level, action, message) {
-		if(level <= logLevel) {
+		if (Logger.shouldLog(level)) {
 			logHandler('Ably: ' + action + ': ' + message);
 		}
+	};
+
+	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
+	   the object being serialised if the log level will not output the message */
+	Logger.shouldLog = function(level) {
+		return level <= logLevel;
 	};
 
 	Logger.setLog = function(level, handler) {

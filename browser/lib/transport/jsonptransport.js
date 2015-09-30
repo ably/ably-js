@@ -19,13 +19,17 @@ var JSONPTransport = (function() {
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
 	JSONPTransport.checkConnectivity = function(callback) {
+		var upUrl = 'http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js';
+
 		if(checksInProgress) {
 			checksInProgress.push(callback);
 			return;
 		}
 		checksInProgress = [callback];
-		request('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js', null, null, null, false, function(err, response) {
+		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
+		request(upUrl, null, null, null, false, function(err, response) {
 			var result = !err && response;
+			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
 		});

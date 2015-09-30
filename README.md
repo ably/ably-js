@@ -319,7 +319,7 @@ Then run the tests against the Karma server.  The `test:karma:run` command will 
 
     grunt test:karma:run
 
-### Testing environment variables
+### Testing environment variables for Node.js
 
 All tests are run against the sandbox environment by default.  However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
 
@@ -328,6 +328,20 @@ All tests are run against the sandbox environment by default.  However, the foll
 * `ABLY_REST_HOST` - explicitly tell the client library to use an alternate host for REST communication.
 * `ABLY_PORT` - non-TLS port to use for the tests, defaults to 80
 * `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
+* `ABLY_USE_TLS` - true or false to enable/disable use of TLS respectively
+* `ABLY_LOG_LEVEL` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
+
+### Testing environment variables for browser tests
+
+When using the test webserver `grunt test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/nodeunit.html?log_level=4`.
+
+* `env` - defaults to sandbox, however this can be set to another known environment such as 'staging'
+* `realtime_host` - explicitly tell the client library to use an alternate host for real-time websocket communication.
+* `host` - explicitly tell the client library to use an alternate host for REST communication.
+* `port` - non-TLS port to use for the tests, defaults to 80
+* `tls_port` - TLS port to use for the tests, defaults to 443
+* `tls` - true or false to enable/disable use of TLS respectively
+* `log_level` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
 
 ## Support, feedback and troubleshooting
 
