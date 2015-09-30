@@ -56,13 +56,46 @@ var Resource = (function() {
 		};
 	}
 
+	function paramString(params) {
+		var paramPairs = [];
+		if (params) {
+			for (var needle in params) {
+				paramPairs.push(needle + '=' + params[needle]);
+			}
+		}
+		return paramPairs.join('&');
+	}
+
+	function urlFromPathAndParams(path, params) {
+		return path + (params ? '?' : '') + paramString(params);
+	}
+
+	function logResponseHandler(callback, verb, path, params) {
+		return function(err, body, headers, unpacked) {
+			if (err) {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + JSON.stringify(err));
+			} else {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; Body: ' + JSON.stringify(body));
+			}
+			if (callback) { callback(err, body, headers, unpacked); }
+		}
+	}
+
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			callback = logResponseHandler(callback, 'get', path, origparams);
+		}
+
 		if(envelope) {
 			callback = (callback && unenvelope(callback, envelope));
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
 		function doGet(headers, params) {
+			if (Logger.shouldLog(Logger.LOG_MICRO)) {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
+			}
+
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
@@ -83,12 +116,28 @@ var Resource = (function() {
 	};
 
 	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			callback = logResponseHandler(callback, 'post', path, origparams);
+		}
+
 		if(envelope) {
 			callback = unenvelope(callback, envelope);
 			origparams['envelope'] = envelope;
 		}
 
 		function doPost(headers, params) {
+			if (Logger.shouldLog(Logger.LOG_MICRO)) {
+				var decodedBody = body;
+				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
+					try {
+						body = msgpack.decode(body);
+					} catch (decodeErr) {
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + JSON.stringify(decodeErr));
+					}
+				}
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+			}
+
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */

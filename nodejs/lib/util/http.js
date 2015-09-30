@@ -20,10 +20,6 @@ this.Http = (function() {
 	var handler = function(uri, params, callback) {
 		callback = callback || noop;
 		return function(err, response, body) {
-			if (Logger.shouldLog(Logger.LOG_MICRO)) {
-				Logger.logAction(Logger.LOG_MICRO, 'Http.handler()', 'Received; ' + uri + '?' + (params ? JSON.stringify(params) : '') + '; response: ' + JSON.stringify(response));
-			}
-
 			if(err) {
 				callback(err);
 				return;
@@ -85,10 +81,6 @@ this.Http = (function() {
 		if(params)
 			getOptions.qs = params;
 
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Http.getUri()', 'Sending; ' + uri + '?' + (params ? JSON.stringify(params) : ''));
-		}
-
 		getOptions.uri = uri;
 		request.get(getOptions, handler(uri, params, callback));
 	};
@@ -139,10 +131,6 @@ this.Http = (function() {
 		var postOptions = {headers:headers, body:body, encoding:null};
 		if(params)
 			postOptions.qs = params;
-
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Http.postUri()', 'Sending; ' + uri + '?' + (params ? JSON.stringify(params) : '') + '; body: ' + body);
-		}
 
 		postOptions.uri = uri;
 		request.post(postOptions, handler(uri, params, callback));
