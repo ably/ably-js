@@ -9,8 +9,12 @@ var XHRTransport = (function() {
 	XHRTransport.isAvailable = XHRRequest.isAvailable;
 
 	XHRTransport.checkConnectivity = function(callback) {
-		Http.Request('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt', null, null, null, function(err, responseText) {
-			callback(null, (!err && responseText == 'yes'));
+		var upUrl = 'http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt';
+		Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Sending; ' + upUrl);
+		Http.Request(upUrl, null, null, null, function(err, responseText) {
+			var result = (!err && responseText == 'yes');
+			Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Result: ' + result);
+			callback(null, result);
 		});
 	};
 
