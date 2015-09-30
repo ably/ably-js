@@ -55,7 +55,7 @@ var Transport = (function() {
 
 	Transport.prototype.onProtocolMessage = function(message) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received; ' + ProtocolMessage.jsonify(message));
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received; ' + ProtocolMessage.stringify(message));
 		}
 
 		switch(message.action) {
