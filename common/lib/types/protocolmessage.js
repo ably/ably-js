@@ -38,6 +38,11 @@ var ProtocolMessage = (function() {
 		'SYNC' : 16
 	};
 
+	ProtocolMessage.ActionName = [];
+	Object.keys(ProtocolMessage.Action).forEach(function(name) {
+		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
+	});
+
 	ProtocolMessage.Flag = {
 		'HAS_PRESENCE': 0,
 		'HAS_BACKLOG': 1
@@ -66,14 +71,6 @@ var ProtocolMessage = (function() {
 		return Utils.mixin(new ProtocolMessage(), values);
 	};
 
-	ProtocolMessage.actionName = function(index) {
-		for (var needle in ProtocolMessage.Action) {
-			if (ProtocolMessage.Action[needle] === index) {
-				return needle;
-			}
-		}
-	}
-
 	function toStringArray(array) {
 		var result = [];
 		if (array) {
@@ -84,16 +81,17 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
 		if(msg.action !== undefined)
-			result += '; action=' + ProtocolMessage.actionName(msg.action) || msg.action;
+			result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
 
-		var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
 		var attribute;
 		for (var attribIndex = 0; attribIndex < simpleAttributes.length; attribIndex++) {
 			attribute = simpleAttributes[attribIndex];
-			if(msg[attribute])
+			if(msg[attribute] !== undefined)
 				result += '; ' + attribute + '=' + msg[attribute];
 		}
 
@@ -101,8 +99,8 @@ var ProtocolMessage = (function() {
 			result += '; messages=' + toStringArray(Message.fromValuesArray(msg.messages));
 		if(msg.presence)
 			result += '; presence=' + toStringArray(PresenceMessage.fromValuesArray(msg.presence));
-		if(msg.errorInfo)
-			results += '; errorInfo=' + ErrorInfo.fromValues(msg.errorInfo).toString();
+		if(msg.error)
+			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
 
 		result += ']';
 		return result;
