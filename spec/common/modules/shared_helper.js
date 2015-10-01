@@ -118,7 +118,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			AblyRest:     clientModule.AblyRest,
 			AblyRealtime: clientModule.AblyRealtime,
 
-			loadTestData: testAppManager.loadJsonData,
+			loadTestData:      testAppManager.loadJsonData,
+			testResourcesPath: testAppManager.testResourcesPath,
 
 			displayError:              displayError,
 			monitorConnection:         monitorConnection,

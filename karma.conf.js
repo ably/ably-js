@@ -91,7 +91,6 @@ module.exports = function(config) {
       { pattern: 'spec/common/**/*.js', included: false },
       { pattern: 'spec/common/ably-common/test-resources/*.json', included: false },
       { pattern: 'spec/support/*.js', included: false },
-      { pattern: 'spec/realtime/assets/*.json', included: false },
 
       // List of Tests to run
       // To run an individual test, comment the patterns below and specify path to a single test file

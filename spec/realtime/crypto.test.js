@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		BufferUtils = Ably.Realtime.BufferUtils,
 		Crypto = Ably.Realtime.Crypto,
 		Message = Ably.Realtime.Message,
-		assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/',
+		testResourcesPath = helper.testResourcesPath,
 		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('msgpack-js'),
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		loadTestData(assetPath + filename, function(err, testData) {
+		loadTestData(testResourcesPath + filename, function(err, testData) {
 			if(err) {
 				test.ok(false, 'Unable to get test assets; err = ' + err);
 				return;
