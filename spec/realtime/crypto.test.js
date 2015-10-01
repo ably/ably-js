@@ -232,7 +232,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime();
+		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary'),
 			messageText = 'Test message (single_send_binary)';
@@ -297,7 +297,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime();
+		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary_256'),
 			messageText = 'Test message (single_send_binary_256)';
@@ -415,7 +415,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 20, 100); };
 
 	/**
-	 * Connect twice to the service, using the default (binary) protocol
+	 * Connect twice to the service, using the binary protocol
 	 * and the text protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
@@ -426,7 +426,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var txRealtime = helper.AblyRealtime();
+		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
 		test.expect(3);
 		var channelName = 'single_send_binary_text',
@@ -460,7 +460,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	/**
 	 * Connect twice to the service, using the text protocol and the
-	 * default (binary) protocol. Publish an encrypted message on that channel using
+	 * binary protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
 	exports.single_send_text_binary = function(test) {
@@ -471,7 +471,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
-		var rxRealtime = helper.AblyRealtime();
+		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channelName = 'single_send_text_binary',
 			messageText = 'Test message (' + channelName + ')',
