@@ -7,6 +7,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Crypto = Ably.Realtime.Crypto,
 		Message = Ably.Realtime.Message,
 		assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/',
+		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('msgpack-js'),
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -116,6 +117,52 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			Message.decode(encryptedMessage, channelOpts);
 			/* compare */
 			test.ok(compareMessage(testMessage, encryptedMessage));
+		});
+	};
+
+	exports.msgpack_128 = function(test) {
+		if(!ArrayBuffer) {
+			test.ok(false, 'Encryption or binary transport not supported');
+			test.done();
+			return;
+		}
+
+		testEachFixture(test, 'crypto-data-128.json', 'msgpack_128', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
+			Message.encode(testMessage, channelOpts);
+			var msgpackFromEncoded = msgpack.encode(testMessage);
+			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
+
+			/* Mainly testing that we're correctly encoding the direct output from
+			* CryptoJS (a wordArray) into the msgpack binary type */
+			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
+
+			/* Can't compare msgpackFromEncoded with fixture data because can't
+			* assume key order in the msgpack serialisation. So test decoded instead */
+			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+		});
+	};
+
+	exports.msgpack_256 = function(test) {
+		if(!ArrayBuffer) {
+			test.ok(false, 'Encryption or binary transport not supported');
+			test.done();
+			return;
+		}
+
+		testEachFixture(test, 'crypto-data-256.json', 'msgpack_256', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
+			Message.encode(testMessage, channelOpts);
+			var msgpackFromEncoded = msgpack.encode(testMessage);
+			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
+
+			/* Mainly testing that we're correctly encoding the direct output from
+			* CryptoJS (a wordArray) into the msgpack binary type */
+			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
+
+			/* Can't compare msgpackFromEncoded with fixture data because can't
+			* assume key order in the msgpack serialisation. So test decoded instead */
+			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
 		});
 	};
 
