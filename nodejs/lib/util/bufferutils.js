@@ -7,6 +7,8 @@ this.BufferUtils = (function() {
 
 	BufferUtils.isBuffer = Buffer.isBuffer;
 
+	BufferUtils.toArrayBuffer = function(buf) { return buf; };
+
 	BufferUtils.base64Encode = function(buf) { return buf.toString('base64'); };
 
 	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };

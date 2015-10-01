@@ -30,14 +30,21 @@ var PresenceMessage = (function() {
 			encoding: this.encoding
 		};
 
-		/* encode to base64 if we're returning real JSON;
+		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
+		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var encoding = this.encoding;
-			result.encoding = encoding ? (encoding + '/base64') : 'base64';
-			data = data.toString('base64');
+		if(data && BufferUtils.isBuffer(data)) {
+			if(arguments.length > 0) {
+				/* stringify call */
+				var encoding = this.encoding;
+				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				data = BufferUtils.base64Encode(data);
+			} else {
+				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
+				* understand WordArrays */
+				data = BufferUtils.toArrayBuffer(data);
+			}
 		}
 		result.data = data;
 		return result;

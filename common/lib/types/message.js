@@ -27,10 +27,17 @@ var Message = (function() {
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var encoding = this.encoding;
-			result.encoding = encoding ? (encoding + '/base64') : 'base64';
-			data = BufferUtils.base64Encode(data);
+		if(data && BufferUtils.isBuffer(data)) {
+			if(arguments.length > 0) {
+				/* stringify call */
+				var encoding = this.encoding;
+				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				data = BufferUtils.base64Encode(data);
+			} else {
+				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
+				* understand WordArrays */
+				data = BufferUtils.toArrayBuffer(data);
+			}
 		}
 		result.data = data;
 		return result;
