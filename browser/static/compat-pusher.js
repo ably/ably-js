@@ -189,7 +189,7 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
-  /* ...Or an Object (in the narrow sense) */
+	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Object]';
 	};
@@ -309,6 +309,18 @@ var Utils = (function() {
 			}
 			return -1;
 		};
+
+	Utils.arrIn = function(arr, val) {
+		return Utils.arrIndexOf(arr, val) !== -1;
+	};
+
+	Utils.arrDeleteValue = function(arr, val) {
+		var idx = Utils.arrIndexOf(arr, val);
+		var res = (idx != -1);
+		if(res)
+			arr.splice(idx, 1);
+		return res;
+	};
 
 	/*
 	 * Construct an array of the keys of the enumerable

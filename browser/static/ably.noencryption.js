@@ -1147,6 +1147,7 @@ var CryptoJS = CryptoJS || (function (Math, undefined) {
 }());
 
 var Defaults = {
+	internetUpUrlWithoutExtension: 'https://internet-up.ably-realtime.com/is-the-internet-up',
 	httpTransports: ['xhr', 'iframe', 'jsonp'],
 	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
 	minified: !(function _(){}).name
@@ -1230,6 +1231,29 @@ var BufferUtils = (function() {
 
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
+	BufferUtils.toArrayBuffer = function(buf) {
+		if(!ArrayBuffer)
+			throw new Error("Can't convert to ArrayBuffer: ArrayBuffer not supported");
+
+		if(isArrayBuffer(buf))
+			return buf;
+
+		if(isWordArray(buf)) {
+			/* Backported from unreleased CryptoJS
+			* https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
+			var arrayBuffer = new ArrayBuffer(buf.sigBytes);
+			var uint8View = new Uint8Array(arrayBuffer);
+
+			for (var i = 0; i < buf.sigBytes; i++) {
+				uint8View[i] = (buf.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+			}
+
+			return arrayBuffer;
+		};
+
+		throw new Error("BufferUtils.toArrayBuffer expected a buffer");
+	};
+
 	BufferUtils.toWordArray = function(buf) {
 		return isWordArray(buf) ? buf : WordArray.create(buf);
 	};
@@ -1244,19 +1268,19 @@ var BufferUtils = (function() {
 	BufferUtils.base64Decode = function(str) {
 		if(ArrayBuffer)
 			return base64ToArrayBuffer(str);
-
-		if(CryptoJS)
-			return CryptoJS.enc.Base64.parse(str);
+		return CryptoJS.enc.Base64.parse(str);
 	};
 
 	BufferUtils.utf8Encode = function(string) {
-		if(CryptoJS)
-			return CryptoJS.enc.Utf8.parse(string);
+		return CryptoJS.enc.Utf8.parse(string);
 	};
 
 	BufferUtils.utf8Decode = function(buf) {
-		if(CryptoJS)
+		if(isArrayBuffer(buf))
+			buf = BufferUtils.toWordArray(buf) // CryptoJS only works with WordArrays
+		if(isWordArray(buf))
 			return CryptoJS.enc.Utf8.stringify(buf);
+		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
@@ -1307,7 +1331,7 @@ var Cookie = (function() {
 		};
 
 		Cookie.erase = function(name) {
-			createCookie(name, '', -1 * 3600 * 1000);
+			Cookie.create(name, '', -1 * 3600 * 1000);
 		};
 	}
 
@@ -2745,9 +2769,15 @@ var Logger = (function() {
 
 	/* public static functions */
 	Logger.logAction = function(level, action, message) {
-		if(level <= logLevel) {
+		if (Logger.shouldLog(level)) {
 			logHandler('Ably: ' + action + ': ' + message);
 		}
+	};
+
+	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
+	   the object being serialised if the log level will not output the message */
+	Logger.shouldLog = function(level) {
+		return level <= logLevel;
 	};
 
 	Logger.setLog = function(level, handler) {
@@ -2795,7 +2825,7 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
-  /* ...Or an Object (in the narrow sense) */
+	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Object]';
 	};
@@ -2915,6 +2945,18 @@ var Utils = (function() {
 			}
 			return -1;
 		};
+
+	Utils.arrIn = function(arr, val) {
+		return Utils.arrIndexOf(arr, val) !== -1;
+	};
+
+	Utils.arrDeleteValue = function(arr, val) {
+		var idx = Utils.arrIndexOf(arr, val);
+		var res = (idx != -1);
+		if(res)
+			arr.splice(idx, 1);
+		return res;
+	};
 
 	/*
 	 * Construct an array of the keys of the enumerable
@@ -3076,7 +3118,6 @@ var Message = (function() {
 			name: this.name,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
-			timestamp: this.timestamp,
 			encoding: this.encoding
 		};
 
@@ -3084,10 +3125,17 @@ var Message = (function() {
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var encoding = this.encoding;
-			result.encoding = encoding ? (encoding + '/base64') : 'base64';
-			data = BufferUtils.base64Encode(data);
+		if(data && BufferUtils.isBuffer(data)) {
+			if(arguments.length > 0) {
+				/* stringify call */
+				var encoding = this.encoding;
+				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				data = BufferUtils.base64Encode(data);
+			} else {
+				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
+				* understand WordArrays */
+				data = BufferUtils.toArrayBuffer(data);
+			}
 		}
 		result.data = data;
 		return result;
@@ -3184,16 +3232,20 @@ var Message = (function() {
 								var xformAlgorithm = match[3], cipher = options.cipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
-									Logger.logAction(Logger.LOG_ERROR, 'Message.decode()', 'Unable to decrypt message with given cipher; incompatible cipher params');
-									break;
+									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
 								}
 								data = cipher.decrypt(data);
 								continue;
+							} else {
+								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						default:
+							throw new Error("Unknown encoding");
 					}
 					break;
 				}
+			} catch(e) {
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
 			} finally {
 				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
 				message.data = data;
@@ -3201,13 +3253,18 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(body, options, format) {
+	Message.fromResponseBody = function(body, options, format, channel) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = Message.fromDecoded(body[i]);
-			Message.decode(msg, options);
+			try {
+				Message.decode(msg, options);
+			} catch (e) {
+				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
+				channel.emit('error', e);
+			}
 		}
 		return body;
 	};
@@ -3257,20 +3314,25 @@ var PresenceMessage = (function() {
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
 			clientId: this.clientId,
-			connectionId: this.connectionId,
-			timestamp: this.timestamp,
 			action: this.action,
 			encoding: this.encoding
 		};
 
-		/* encode to base64 if we're returning real JSON;
+		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it passes on the stringify arguments */
+		 * call if it has a non-empty arguments list */
 		var data = this.data;
-		if(data && arguments.length > 0 && BufferUtils.isBuffer(data)) {
-			var encoding = this.encoding;
-			result.encoding = encoding ? (encoding + '/base64') : 'base64';
-			data = data.toString('base64');
+		if(data && BufferUtils.isBuffer(data)) {
+			if(arguments.length > 0) {
+				/* stringify call */
+				var encoding = this.encoding;
+				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				data = BufferUtils.base64Encode(data);
+			} else {
+				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
+				* understand WordArrays */
+				data = BufferUtils.toArrayBuffer(data);
+			}
 		}
 		result.data = data;
 		return result;
@@ -3301,13 +3363,18 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format) {
+	PresenceMessage.fromResponseBody = function(body, options, format, channel) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
-			PresenceMessage.decode(msg, options);
+			try {
+				PresenceMessage.decode(msg, options);
+			} catch (e) {
+				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
+				channel.emit('error', e);
+			}
 		}
 		return body;
 	};
@@ -3369,6 +3436,11 @@ var ProtocolMessage = (function() {
 		'SYNC' : 16
 	};
 
+	ProtocolMessage.ActionName = [];
+	Object.keys(ProtocolMessage.Action).forEach(function(name) {
+		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
+	});
+
 	ProtocolMessage.Flag = {
 		'HAS_PRESENCE': 0,
 		'HAS_BACKLOG': 1
@@ -3395,6 +3467,41 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.fromValues = function(values) {
 		return Utils.mixin(new ProtocolMessage(), values);
+	};
+
+	function toStringArray(array) {
+		var result = [];
+		if (array) {
+			for (var i = 0; i < array.length; i++) {
+				result.push(array[i].toString());
+			}
+		}
+		return '[ ' + result.join(', ') + ' ]';
+	}
+
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+
+	ProtocolMessage.stringify = function(msg) {
+		var result = '[ProtocolMessage';
+		if(msg.action !== undefined)
+			result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
+
+		var attribute;
+		for (var attribIndex = 0; attribIndex < simpleAttributes.length; attribIndex++) {
+			attribute = simpleAttributes[attribIndex];
+			if(msg[attribute] !== undefined)
+				result += '; ' + attribute + '=' + msg[attribute];
+		}
+
+		if(msg.messages)
+			result += '; messages=' + toStringArray(Message.fromValuesArray(msg.messages));
+		if(msg.presence)
+			result += '; presence=' + toStringArray(PresenceMessage.fromValuesArray(msg.presence));
+		if(msg.error)
+			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
+
+		result += ']';
+		return result;
 	};
 
 	return ProtocolMessage;
@@ -3476,6 +3583,11 @@ var ConnectionError = {
 		code: 80000,
 		message: 'Connection failed or disconnected by server'
 	},
+	closed: {
+		statusCode: 408,
+		code: 80017,
+		message: 'Connection closed'
+	},
 	unknownConnectionErr: {
 		statusCode: 500,
 		code: 50002,
@@ -3488,28 +3600,159 @@ var ConnectionError = {
 	}
 };
 
+var MessageQueue = (function() {
+	function MessageQueue() {
+		EventEmitter.call(this);
+		this.messages = [];
+	}
+	Utils.inherits(MessageQueue, EventEmitter);
+
+	MessageQueue.prototype.count = function() {
+		return this.messages.length;
+	};
+
+	MessageQueue.prototype.push = function(message) {
+		this.messages.push(message);
+	};
+
+	MessageQueue.prototype.shift = function() {
+		return this.messages.shift();
+	};
+
+	MessageQueue.prototype.last = function() {
+		return this.messages[this.messages.length - 1];
+	};
+
+	MessageQueue.prototype.copyAll = function() {
+		return this.messages.slice();
+	};
+
+	MessageQueue.prototype.append = function(messageQueue) {
+		this.messages.push.apply(this.messages, messageQueue.messages);
+	};
+
+	MessageQueue.prototype.prepend = function(messageQueue) {
+		this.messages.unshift.apply(this.messages, messageQueue.messages);
+	};
+
+	MessageQueue.prototype.completeMessages = function(serial, count, err) {
+		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
+		err = err || null;
+		var messages = this.messages;
+		var first = messages[0];
+		if(first) {
+			var startSerial = first.message.msgSerial;
+			var endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
+			if(endSerial > startSerial) {
+				var completeMessages = messages.splice(0, (endSerial - startSerial));
+				for(var i = 0; i < completeMessages.length; i++) {
+					completeMessages[i].callback(err);
+				}
+			}
+			if(messages.length == 0)
+				this.emit('idle');
+		}
+	};
+
+	return MessageQueue;
+})();
+
+var Protocol = (function() {
+	var actions = ProtocolMessage.Action;
+
+	function Protocol(transport) {
+		EventEmitter.call(this);
+		this.transport = transport;
+		this.messageQueue = new MessageQueue();
+		var self = this;
+		transport.on('ack', function(serial, count) { self.onAck(serial, count); });
+		transport.on('nack', function(serial, count, err) { self.onNack(serial, count, err); });
+	}
+	Utils.inherits(Protocol, EventEmitter);
+
+	Protocol.prototype.onAck = function(serial, count) {
+		Logger.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
+		this.messageQueue.completeMessages(serial, count);
+	};
+
+	Protocol.prototype.onNack = function(serial, count, err) {
+		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
+		if(!err) {
+			err = new Error('Unknown error');
+			err.statusCode = 500;
+			err.code = 50001;
+			err.message = 'Unable to send message; channel not responding';
+		}
+		this.messageQueue.completeMessages(serial, count, err);
+	};
+
+	Protocol.prototype.onceIdle = function(listener) {
+		var messageQueue = this.messageQueue;
+		if(messageQueue.count() === 0) {
+			listener();
+			return;
+		}
+		messageQueue.once('idle', listener);
+	};
+
+	Protocol.prototype.send = function(pendingMessage, callback) {
+		if(pendingMessage.ackRequired) {
+			this.messageQueue.push(pendingMessage);
+		}
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
+		}
+		this.transport.send(pendingMessage.message, callback);
+	};
+
+	Protocol.prototype.getTransport = function() {
+		return this.transport;
+	};
+
+	Protocol.prototype.getPendingMessages = function() {
+		return this.messageQueue.copyAll();
+	};
+
+	Protocol.prototype.finish = function() {
+		var transport = this.transport;
+		this.onceIdle(function() {
+			transport.disconnect();
+		});
+	};
+
+	function PendingMessage(message, callback) {
+		this.message = message;
+		this.callback = callback;
+		this.merged = false;
+		var action = message.action;
+		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
+	}
+	Protocol.PendingMessage = PendingMessage;
+
+	return Protocol;
+})();
+
 var ConnectionManager = (function() {
 	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
 	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
+	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
 	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
 	var actions = ProtocolMessage.Action;
+	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 
-	var states = {
-		initialized:  {state: 'initialized',  terminal: false, queueEvents: true,  sendEvents: false},
-		connecting:   {state: 'connecting',   terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
-		connected:    {state: 'connected',    terminal: false, queueEvents: false, sendEvents: true, failState: 'disconnected'},
-		disconnected: {state: 'disconnected', terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-		suspended:    {state: 'suspended',    terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-		closing:      {state: 'closing',      terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
-		closed:       {state: 'closed',       terminal: true,  queueEvents: false, sendEvents: false},
-		failed:       {state: 'failed',       terminal: true,  queueEvents: false, sendEvents: false}
-	};
+	var isErrFatal = function(err) {
+		var RESOLVABLE_ERROR_CODES = [40140];
+		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
 
-	var channelMessage = function(msg) {
-		var action = msg.action;
-		return (action == actions.MESSAGE || action == actions.PRESENCE);
+		if(err.code) {
+			if(Utils.arrIn(RESOLVABLE_ERROR_CODES, err.code)) return false;
+			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+			return (err.code >= 40000 && err.code < 50000)
+		}
+		// If no statusCode either, assume false
+		return err.statusCode < 500;
 	};
 
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
@@ -3529,8 +3772,6 @@ var ConnectionManager = (function() {
 		switch(this.mode) {
 			case 'upgrade':
 				params.upgrade = this.connectionKey;
-				if(this.connectionSerial !== undefined)
-					params.connection_serial = this.connectionSerial;
 				break;
 			case 'resume':
 				params.resume = this.connectionKey;
@@ -3566,24 +3807,28 @@ var ConnectionManager = (function() {
 		return params;
 	};
 
-	function PendingMessage(msg, callback) {
-		this.msg = msg;
-		this.ackRequired = channelMessage(msg);
-		this.callback = callback;
-		this.merged = false;
-	}
-
 	/* public constructor */
 	function ConnectionManager(realtime, options) {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
-		this.state = states.initialized;
+		this.states = {
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+		};
+		this.state = this.states.initialized;
 		this.error = null;
 
-		this.queuedMessages = [];
-		this.pendingMessages = [];
+		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
+		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 
@@ -3592,8 +3837,8 @@ var ConnectionManager = (function() {
 		this.upgradeTransports = Utils.arrSubtract(this.transports, this.httpTransports);
 
 		this.httpHosts = Defaults.getHosts(options);
-		this.transport = null;
-		this.pendingTransport = null;
+		this.activeProtocol = null;
+		this.pendingTransports = [];
 		this.host = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
@@ -3611,6 +3856,26 @@ var ConnectionManager = (function() {
 		/* intercept close event in browser to persist connection id if requested */
 		if(createCookie && options.recover === true && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		/* Listen for online and offline events */
+		if(typeof window === "object" && window.addEventListener) {
+			var self = this;
+			window.addEventListener('online', function() {
+				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
+					self.requestState({state: 'connecting'});
+				}
+			});
+			window.addEventListener('offline', function() {
+				if(self.state == self.states.connected) {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
+					// Not sufficient to just go to the 'disconnected' state, want to
+					// force all transports to reattempt the connection. Will immediately
+					// retry.
+					self.disconnectAllTransports();
+				}
+			});
+		}
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
@@ -3624,9 +3889,9 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
-		if(this.transport) {
+		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport already established');
-			callback(null, this.transport);
+			callback(null);
 			return;
 		}
 
@@ -3658,6 +3923,7 @@ var ConnectionManager = (function() {
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
 			callback(null, httpTransport);
+
 			/* we have the http transport; if there is a potential upgrade
 			 * transport, lets see if we can upgrade to that. We won't
 			  * be trying any fallback hosts, so we know the host to use */
@@ -3673,7 +3939,7 @@ var ConnectionManager = (function() {
 					});
 				});
 			}
-  		});
+			});
 	};
 
 	/**
@@ -3696,7 +3962,7 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'trying ' + candidate);
 		(ConnectionManager.transports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
 			var state = self.state;
-			if(state == states.closing || state == states.closed || state == states.failed) {
+			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				/* the connection was closed when we were away
 				 * attempting this transport so close */
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'connection closing');
@@ -3705,21 +3971,20 @@ var ConnectionManager = (function() {
 					transport.close();
 				}
 				var err = new ErrorInfo('Connection already closed', 400, 80017);
-				err.terminal = true;
 				callback(err);
 				return;
 			}
 			if(err) {
 				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(err.statusCode < 500) {
+				if(isErrFatal(err)) {
 					callback(err);
 					return;
 				}
 				self.chooseTransportForHost(transportParams, candidateTransports, callback);
 				return;
 			}
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransport()', 'transport ' + candidate + ' connecting');
-			self.setTransportPending(transport);
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'transport ' + candidate + ' connecting');
+			self.setTransportPending(transport, transportParams.mode);
 			callback(null, transport);
 		});
 	};
@@ -3777,7 +4042,7 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(err.terminal || err.statusCode < 500) {
+						if(isErrFatal(err)) {
 							callback(err);
 							return;
 						}
@@ -3792,7 +4057,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(err.terminal || err.statusCode < 500) {
+				if(isErrFatal(err)) {
 					callback(err);
 					return;
 				}
@@ -3810,110 +4075,135 @@ var ConnectionManager = (function() {
 	 * @param host
 	 * @param transport
 	 */
-	ConnectionManager.prototype.setTransportPending = function(transport) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport);
-		/* if there was already a pending transport, abandon it */
-		if(this.pendingTransport)
-			this.pendingTransport.disconnect();
+	ConnectionManager.prototype.setTransportPending = function(transport, mode) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport + '; mode = ' + mode);
 
-		/* this is now the pending transport */
-		this.pendingTransport = transport;
+		/* this is now pending */
+		this.pendingTransports.push(transport);
 
 		var self = this;
-		var handleTransportEvent = function(state) {
-			return function(error, connectionKey, connectionSerial, connectionId) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending', 'on state = ' + state);
-				if(error && error.message)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'reason =  ' + error.message);
-				if(connectionKey)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionKey =  ' + connectionKey);
-				if(connectionSerial !== undefined)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionSerial =  ' + connectionSerial);
-				if(connectionId)
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setTransportPending', 'connectionId =  ' + connectionId);
+		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
+			if(mode == 'upgrade' && self.activeProtocol) {
+				self.scheduleTransportActivation(transport);
+			} else {
+				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
+			}
+		});
 
-				/* handle activity transition */
-				var notifyState;
-				if(state == 'connected') {
-					self.activateTransport(transport, connectionKey, connectionSerial, connectionId);
-					notifyState = true;
-				} else {
-					notifyState = self.deactivateTransport(transport);
-				}
-
-				/* if this is the active transport, notify clients */
-				if(notifyState)
-					self.notifyState({state:state, error:error});
+		var eventHandler = function(event) {
+			return function(error) {
+				self.deactivateTransport(transport, event, error);
 			};
 		};
-		var events = ['connected', 'disconnected', 'closed', 'failed'];
+		var events = ['disconnected', 'closed', 'failed'];
 		for(var i = 0; i < events.length; i++) {
 			var event = events[i];
-			transport.on(event, handleTransportEvent(event));
+			transport.on(event, eventHandler(event));
 		}
 		this.emit('transport.pending', transport);
+	};
+
+	/**
+	 * Called when an upgrade transport is connected,
+	 * to schedule the activation of that transport.
+	 * @param transport the transport instance
+	 */
+	ConnectionManager.prototype.scheduleTransportActivation = function(transport) {
+		var self = this;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport; transport = ' + transport);
+		this.realtime.channels.onceNopending(function(err) {
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
+				return;
+			}
+
+			/* temporarily pause events until the sync is complete */
+			self.state = self.states.synchronizing;
+
+			/* make this the active transport */
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
+			self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId);
+
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+			self.sync(transport, function(err, connectionSerial, connectionId) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+					return;
+				}
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
+
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+				self.state = self.states.connected;
+				self.sendQueuedMessages();
+			});
+		});
 	};
 
 	/**
 	 * Called when a transport is connected, and the connectionmanager decides that
 	 * it will now be the active transport.
 	 * @param transport the transport instance
-	 * @param connectionKey the id of the new active connection
-	 * @param mode the nature of the activation:
-	 *   'clean': new connection;
-	 *   'recover': new connection with recoverable messages;
-	 *   'resume': uninterrupted resumption of connection without loss of messages
+	 * @param connectionKey the key of the new active connection
+	 * @param connectionSerial the current connectionSerial
+	 * @param connectionId the id of the new active connection
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport + '; connectionKey = ' + connectionKey + '; connectionSerial = ' + connectionSerial);
+	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId, clientId) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+		if(connectionKey)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
+		if(connectionSerial !== undefined)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
+		if(connectionId)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
+		if(clientId)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'clientId =  ' + clientId);
+
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		if(this.state == states.closing || this.state == states.closed)
+		var existingState = this.state;
+		if(existingState == this.states.closing || existingState == this.states.closed)
 			return;
 
- 		/* Terminate any existing transport */
-		var existingTransport = this.transport;
- 		if(existingTransport) {
-			 this.transport = null;
-			 existingTransport.disconnect();
-		}
-		existingTransport = this.pendingTransport;
-		if(existingTransport) {
-			this.pendingTransport = null;
-			if(existingTransport !== transport)
-				existingTransport.disconnect();
-		}
+		/* remove this transport from pending transports */
+		Utils.arrDeleteValue(this.pendingTransports, transport);
 
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
-		this.transport = transport;
+		var existingActiveProtocol = this.activeProtocol;
+		this.activeProtocol = new Protocol(transport);
 		this.host = transport.params.host;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.realtime.connection.id = connectionId;
-			this.realtime.connection.key = this.connectionKey = connectionKey;
-			this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-			if(createCookie && this.options.recover === true)
-				this.persistConnection();
-			this.msgSerial = 0;
+			this.setConnection(connectionId, connectionKey, connectionSerial);
+		}
+		if(clientId) {
+			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+				/* Should never happen in normal circumstances as realtime should
+				 * recognise mismatch and return an error */
+				var msg = 'Unexpected mismatch between expected and received clientId'
+				var err = new ErrorInfo(msg, 40102, 401);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				transport.abort(err);
+				return;
+			}
+			this.realtime.clientId = clientId;
 		}
 
- 		/* set up handler for events received on this transport */
-		var self = this;
-		transport.on('ack', function(serial, count) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager on(ack)', 'serial = ' + serial + '; count = ' + count);
-			self.ackMessage(serial, count);
-		});
-		transport.on('nack', function(serial, count, err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager on(nack)', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
-			if(!err) {
-				err = new Error('Unknown error');
-				err.statusCode = 500;
-				err.code = 50001;
-				err.message = 'Unable to send message; channel not responding';
-			}
-			self.ackMessage(serial, count, err);
-		});
 		this.emit('transport.active', transport, connectionKey, transport.params);
+
+		/* notify the state change if previously not connected */
+		if(existingState !== this.states.connected) {
+			this.notifyState({state: 'connected'});
+		}
+
+		/* Gracefully terminate existing protocol */
+		if(existingActiveProtocol) {
+			existingActiveProtocol.finish();
+		}
+
+		/* Terminate any other pending transport(s) */
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			this.pendingTransports[i].disconnect();
+		}
 	};
 
 	/**
@@ -3921,19 +4211,78 @@ var ConnectionManager = (function() {
 	 * in any transport connection state.
 	 * @param transport
 	 */
-	ConnectionManager.prototype.deactivateTransport = function(transport) {
-		var wasActive = (this.transport === transport),
-			wasPending = (this.transport === null) && (this.pendingTransport === transport);
+	ConnectionManager.prototype.deactivateTransport = function(transport, state, error) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		transport.off('ack');
-		transport.off('nack');
-		if(wasActive)
-			this.transport = this.host = null;
-		else if(wasPending)
-			this.pendingTransport = null;
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state);
+		if(error && error.message)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
+
+		var wasActive = this.activeProtocol && this.activeProtocol.getTransport() === transport,
+			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
+
+		if(wasActive) {
+			this.queuePendingMessages(this.activeProtocol.getPendingMessages());
+			this.activeProtocol = this.host = null;
+		}
 
 		this.emit('transport.inactive', transport);
-		return wasActive || wasPending;
+
+		/* this transport state change is a state change for the connectionmanager if
+		 * - the transport was the active transport; or
+		 * - the transport was one of the pending transports (so we were in the connecting state)
+		 *   and there are no longer any pending transports
+		 */
+		if(wasActive || (wasPending && this.pendingTransports.length === 0)) {
+			/* Transport failures only imply a connection failure
+			 * if the reason for the failure is fatal */
+			if((state === 'failed') && error && !isErrFatal(error)) {
+				state = 'disconnected';
+			}
+			this.notifyState({state: state, error: error});
+		}
+	};
+
+	/**
+	 * Called when activating a new transport, to ensure message delivery
+	 * on the new transport synchronises with the messages already received
+	 */
+	ConnectionManager.prototype.sync = function(transport, callback) {
+		/* check preconditions */
+		if(!transport.isConnected)
+				throw new ErrorInfo('Unable to sync connection; not connected', 40000);
+
+		/* send sync request */
+		var syncMessage = ProtocolMessage.fromValues({
+			action: actions.SYNC,
+			connectionKey: this.connectionKey,
+			connectionSerial: this.connectionSerial
+		});
+		transport.send(syncMessage, function(err) {
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
+			}
+		});
+		transport.once('sync', function(connectionSerial, connectionId) {
+			callback(null, connectionSerial, connectionId);
+		});
+	};
+
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
+		this.realtime.connection.id = this.connectionId = connectionId;
+		this.realtime.connection.key = this.connectionKey = connectionKey;
+		this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.msgSerial = 0;
+		if(this.options.recover === true)
+			this.persistConnection();
+
+	};
+
+	ConnectionManager.prototype.clearConnection = function() {
+		this.realtime.connection.id = this.connectionId = undefined;
+		this.realtime.connection.key = this.connectionKey = undefined;
+		this.connectionSerial = undefined;
+		this.msgSerial = 0;
+		this.unpersistConnection();
 	};
 
 	/**
@@ -3946,6 +4295,17 @@ var ConnectionManager = (function() {
 				createCookie(connectionKeyCookie, this.connectionKey, Defaults.connectionPersistTimeout);
 				createCookie(connectionSerialCookie, this.connectionSerial, Defaults.connectionPersistTimeout);
 			}
+		}
+	};
+
+	/**
+	 * Called when the connectionmanager wants to persist transport
+	 * state for later recovery. Only applicable in the browser context.
+	 */
+	ConnectionManager.prototype.unpersistConnection = function() {
+		if(eraseCookie) {
+			eraseCookie(connectionKeyCookie);
+			eraseCookie(connectionSerialCookie);
 		}
 	};
 
@@ -3963,10 +4323,12 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
-		this.state = states[stateChange.current];
-		if(this.state.terminal)
+		var newState = this.state = this.states[stateChange.current];
+		if(newState.terminal) {
 			this.error = stateChange.reason;
-		this.emit('connectionstate', stateChange, this.transport);
+			this.clearConnection();
+		}
+		this.emit('connectionstate', stateChange);
 	};
 
 	/****************************************
@@ -3985,7 +4347,7 @@ var ConnectionManager = (function() {
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
 				self.transitionTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + states.connecting.failState);
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
 				self.notifyState({state: transitionState.failState});
 			}
 		}, Defaults.connectTimeout);
@@ -4007,8 +4369,8 @@ var ConnectionManager = (function() {
 			if(self.suspendTimer) {
 				self.suspendTimer = null;
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager suspend timer expired', 'requesting new state: suspended');
-				states.connecting.failState = 'suspended';
-				states.connecting.queueEvents = false;
+				self.states.connecting.failState = 'suspended';
+				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
 		}, Defaults.suspendedTimeout);
@@ -4020,8 +4382,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.cancelSuspendTimer = function() {
-		states.connecting.failState = 'disconnected';
-		states.connecting.queueEvents = true;
+		this.states.connecting.failState = 'disconnected';
+		this.states.connecting.queueEvents = true;
 		if(this.suspendTimer) {
 			clearTimeout(this.suspendTimer);
 			this.suspendTimer = null;
@@ -4045,7 +4407,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.notifyState = function(indicated) {
-		var state = indicated.state;
+		var state = indicated.state,
+			self = this;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
 		/* do nothing if we're already in the indicated state */
 		if(state == this.state.state)
@@ -4061,19 +4424,23 @@ var ConnectionManager = (function() {
 			return;
 
 		/* process new state */
-		var newState = states[indicated.state],
+		var newState = this.states[indicated.state],
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 
-		if(newState.retryDelay)
+		// If go into disconnected straight from connected, try again immediately
+		if(this.state === this.states.connected && state === 'disconnected') {
+			Utils.nextTick(function() {
+				self.requestState({state: 'connecting'});
+			});
+		} else if(newState.retryDelay) {
 			this.startRetryTimer(newState.retryDelay);
+		}
 
 		/* implement the change and notify */
 		this.enactStateChange(change);
 		if(this.state.sendEvents)
 			this.sendQueuedMessages();
-		else if(this.state.queueEvents)
-			this.queuePendingMessages();
-		else
+		else if(!this.state.queueEvents)
 			this.realtime.channels.setSuspended(change.reason);
 	};
 
@@ -4098,23 +4465,29 @@ var ConnectionManager = (function() {
 			Utils.nextTick(function() { self.closeImpl(); });
 		}
 
-		var newState = states[state],
+		var newState = this.states[state],
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
 	};
 
 	ConnectionManager.prototype.connectImpl = function() {
+		var state = this.state;
+		if(state == this.states.closing || state == this.states.closed || state == this.states.failed) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'abandoning connection attempt; state = ' + state.state);
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'starting connection');
 		this.startSuspendTimer();
-		this.startTransitionTimer(states.connecting);
+		this.startTransitionTimer(this.states.connecting);
 
 		var self = this;
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + ErrorInfo.fromValues(err).toString());
 			var state = self.state;
-			if(state == states.closing || state == states.closed || state == states.failed) {
+			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				/* do nothing */
 				return;
 			}
@@ -4129,16 +4502,18 @@ var ConnectionManager = (function() {
 				});
 				return;
 			}
-			/* FIXME: decide if fatal */
-			var fatal = false;
-			if(fatal)
+
+			/* Only allow connection to be 'failed' if err has a definite unrecoverable
+			 * code from realtime; otherwise err on the side of 'disconnected' so will
+			 * retry. (Note: 40140 case is dealt with above) */
+			if(err.code && isErrFatal(err))
 				self.notifyState({state: 'failed', error: err});
 			else
-				self.notifyState({state: states.connecting.failState, error: err});
+				self.notifyState({state: self.states.connecting.failState, error: err});
 		};
 
 		var tryConnect = function() {
-			self.chooseTransport(function(err, transport) {
+			self.chooseTransport(function(err) {
 				if(err) {
 					connectErr(err);
 					return;
@@ -4164,7 +4539,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.closeImpl = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
 		this.cancelSuspendTimer();
-		this.startTransitionTimer(states.closing);
+		this.startTransitionTimer(this.states.closing);
 
 		function closeTransport(transport) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing transport: ' + transport);
@@ -4182,10 +4557,37 @@ var ConnectionManager = (function() {
 		}
 
 		/* if transport exists, send close message */
-		closeTransport(this.pendingTransport);
-		closeTransport(this.transport);
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			closeTransport(this.pendingTransports[i]);
+		}
+		closeTransport(this.activeProtocol && this.activeProtocol.getTransport());
 
 		this.notifyState({state: 'closed'});
+	};
+
+	ConnectionManager.prototype.disconnectAllTransports = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting all transports');
+
+		function disconnectTransport(transport) {
+			if(transport) {
+				try {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'disconnecting transport: ' + transport);
+					transport.disconnect();
+				} catch(e) {
+					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
+					var err = new ErrorInfo(msg, 50000, 500);
+					transport.abort(err);
+				}
+			}
+		}
+
+		for(var i = 0; i < this.pendingTransports.length; i++) {
+			disconnectTransport(this.pendingTransports[i]);
+		}
+		disconnectTransport(this.activeProtocol && this.activeProtocol.getTransport());
+		// No need to notify state disconnected; disconnecting the active transport
+		// will have that effect
 	};
 
 	/******************
@@ -4202,7 +4604,10 @@ var ConnectionManager = (function() {
 			return;
 		}
 		if(state.queueEvents) {
-			if(queueEvents) {
+			if(state == this.states.synchronizing || queueEvents) {
+				if (Logger.shouldLog(Logger.LOG_MICRO)) {
+					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
+				}
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
@@ -4212,41 +4617,23 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
-		var msg = pendingMessage.msg;
+		var msg = pendingMessage.message;
 		if(pendingMessage.ackRequired) {
 			msg.msgSerial = this.msgSerial++;
-			this.pendingMessages.push(pendingMessage);
 		}
 		try {
-			this.transport.send(msg, function(err) {
-				/* FIXME: schedule a retry directly if we get an error */
+			this.activeProtocol.send(pendingMessage, function(err) {
+				/* FIXME: schedule a retry directly if we get a send error */
 			});
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendQueuedMessages()', 'Unexpected exception in transport.send(): ' + e);
-		}
-	};
-
-	ConnectionManager.prototype.ackMessage = function(serial, count, err) {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.ackMessage()', 'serial = ' + serial + '; count = ' + count);
-		err = err || null;
-		var pendingMessages = this.pendingMessages;
-		var firstPending = pendingMessages[0];
-		if(firstPending) {
-			var startSerial = firstPending.msg.msgSerial;
-			var ackSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
-			if(ackSerial > startSerial) {
-				var ackMessages = pendingMessages.splice(0, (ackSerial - startSerial));
-				for(var i = 0; i < ackMessages.length; i++) {
-					ackMessages[i].callback(err);
-				}
-			}
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
 		}
 	};
 
 	ConnectionManager.prototype.queue = function(msg, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
-		var lastQueued = this.queuedMessages[this.queuedMessages.length - 1];
-		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.msg, msg)) {
+		var lastQueued = this.queuedMessages.last();
+		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
 			if(!lastQueued.merged) {
 				lastQueued.callback = Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
@@ -4258,27 +4645,40 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.sendQueuedMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.length + ' queued messages');
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.count() + ' queued messages');
 		var pendingMessage;
 		while(pendingMessage = this.queuedMessages.shift())
 			this.sendImpl(pendingMessage);
 	};
 
-	ConnectionManager.prototype.queuePendingMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + this.pendingMessages.length + ' pending messages');
-		this.queuedMessages = this.pendingMessages.concat(this.queuedMessages);
-		this.pendingMessages = [];
+	ConnectionManager.prototype.queuePendingMessages = function(pendingMessages) {
+		if(pendingMessages && pendingMessages.length) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
+			this.queuedMessages.prepend(pendingMessages);
+		}
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		/* do not update connectionSerial for messages received
-		 * on transports that are no longer the current transport */
-		if(transport === this.transport) {
+		if(this.activeProtocol && transport === this.activeProtocol.getTransport()) {
 			var connectionSerial = message.connectionSerial;
-			if(connectionSerial !== undefined)
+			if(connectionSerial <= this.connectionSerial) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				return;
+			}
+			if(connectionSerial !== undefined) {
 				this.connectionSerial = connectionSerial;
+			}
+			this.realtime.channels.onChannelMessage(message);
+		} else {
+			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
+			// messages,  no new messages (as sync has been sent on new transport so new messages will
+			// be resent there, or connection has been closed so don't want new messages)
+			if(Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
+				this.realtime.channels.onChannelMessage(message);
+			} else {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage()', 'received message ' + JSON.stringify(message) + 'on defunct transport; discarding');
+			}
 		}
-		this.realtime.channels.onChannelMessage(message);
 	};
 
 	ConnectionManager.prototype.ping = function(transport, callback) {
@@ -4332,7 +4732,11 @@ var ConnectionManager = (function() {
 		};
 
 		this.on('transport.active', onTransportActive);
-		this.ping(this.transport, onPingComplete);
+		this.ping(this.activeProtocol.getTransport(), onPingComplete);
+	};
+
+	ConnectionManager.prototype.abort = function(error) {
+		this.activeProtocol.getTransport().abort(error);
 	};
 
 	return ConnectionManager;
@@ -4345,10 +4749,11 @@ var Transport = (function() {
 
 	/*
 	 * EventEmitter, generates the following events:
-	 * 
+	 *
 	 * event name       data
 	 * closed           error
 	 * failed           error
+	 * disposed
 	 * connected        null error, connectionKey
 	 * event            channel message object
 	 */
@@ -4375,9 +4780,10 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.disconnect = function() {
-		if(this.isConnected) {
-			this.isConnected = false;
-		}
+		if(!this.isConnected)
+			return;
+
+		this.isConnected = false;
 		this.emit('disconnected', ConnectionError.disconnected);
 		this.dispose();
 	};
@@ -4391,15 +4797,19 @@ var Transport = (function() {
 		this.dispose();
 	};
 
-	Transport.prototype.onChannelMessage = function(message) {
+	Transport.prototype.onProtocolMessage = function(message) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received; ' + ProtocolMessage.stringify(message));
+		}
+
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onChannelMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId);
+			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
 			break;
 		case actions.CLOSED:
 			this.isConnected = false;
@@ -4415,9 +4825,18 @@ var Transport = (function() {
 		case actions.NACK:
 			this.emit('nack', message.msgSerial, message.count, message.error);
 			break;
+		case actions.SYNC:
+			if(message.connectionId !== undefined) {
+				/* a transport SYNC */
+				this.emit('sync', message.connectionSerial, message.connectionId);
+				break;
+			}
+			/* otherwise it's a channel SYNC, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		case actions.ERROR:
 			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onChannelMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
 			if(message.channel === undefined) {
 				/* a transport error */
 				var err = {
@@ -4429,7 +4848,10 @@ var Transport = (function() {
 				break;
 			}
 			/* otherwise it's a channel-specific error, so handle it in the channel */
+			this.connectionManager.onChannelMessage(message, this);
+			break;
 		default:
+			/* all other actions are channel-specific */
 			this.connectionManager.onChannelMessage(message, this);
 		}
 	};
@@ -4437,13 +4859,14 @@ var Transport = (function() {
 	Transport.prototype.onConnect = function(message) {
 		/* the connectionKey in a comet connected response is really
 		 * <instId>!<connectionKey>; handle generically here */
-		var connectionKey = message.connectionKey = message.connectionKey.split('!').pop();
+		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)$/),
+			connectionKey = message.connectionKey = match && match[1];
 
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		var error = message.error, connectionManager = this.connectionManager;
-		if(error && message.connectionKey !== connectionManager.connectionKey)
+		if(error && connectionKey !== connectionManager.connectionKey)
 			connectionManager.realtime.channels.setSuspended(error);
 
 		this.connectionKey = connectionKey;
@@ -4466,7 +4889,7 @@ var Transport = (function() {
 
 	Transport.prototype.sendClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
-		this.send(closeMessage);
+		this.send(closeMessage, noop);
 	};
 
 	Transport.prototype.ping = function(callback) {
@@ -4506,8 +4929,10 @@ var WebSocketTransport = (function() {
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
+			transport.cancelConnectTimeout();
 			callback(null, transport);
 		});
+		transport.startConnectTimeout();
 		transport.connect();
 	};
 
@@ -4554,15 +4979,20 @@ var WebSocketTransport = (function() {
 		});
 	};
 
-	WebSocketTransport.prototype.send = function(message) {
+	WebSocketTransport.prototype.send = function(message, callback) {
 		var wsConnection = this.wsConnection;
-		if(wsConnection) wsConnection.send(ProtocolMessage.encode(message, this.params.format));
+		if(!wsConnection) {
+			callback && callback(new ErrorInfo('No socket connection'));
+			return;
+		}
+		wsConnection.send(ProtocolMessage.encode(message, this.params.format));
+		callback && callback(null);
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
-			this.onChannelMessage(ProtocolMessage.decode(data, this.format));
+			this.onProtocolMessage(ProtocolMessage.decode(data, this.format));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
@@ -4588,6 +5018,7 @@ var WebSocketTransport = (function() {
 		delete this.wsConnection;
 		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
 		Transport.prototype.onDisconnect.call(this, err);
+		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
@@ -4605,9 +5036,26 @@ var WebSocketTransport = (function() {
 			/* defer until the next event loop cycle before closing the socket,
 			 * giving some implementations the opportunity to send any outstanding close message */
 			Utils.nextTick(function() {
-				Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', 'closing websocket');
+				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
 				wsConnection.close();
 			});
+		}
+	};
+
+	WebSocketTransport.prototype.startConnectTimeout = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()')
+		var self = this;
+		this.connectTimeout = setTimeout(function() {
+			Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()',
+				'Websocket failed to open after connectTimeout expired; disposing');
+			self.dispose();
+		}, Defaults.connectTimeout);
+	};
+
+	WebSocketTransport.prototype.cancelConnectTimeout = function() {
+		if(this.connectTimeout) {
+			clearTimeout(this.connectTimeout);
+			this.connectTimeout = null;
 		}
 	};
 
@@ -4682,11 +5130,14 @@ var CometTransport = (function() {
 			connectRequest.on('complete', function(err) {
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
-					err = err || new ErrorInfo('Request cancelled', 400, 80017);
+					err = err || new ErrorInfo('Request cancelled', 400, 80000);
 				}
 				self.recvRequest = null;
 				if(err) {
 					self.emit('error', err);
+					/* If connect errors before the preconnect, connectionManager is
+					* never given the transport, so need to dispose of it ourselves */
+					self.dispose();
 					return;
 				}
 			});
@@ -4708,10 +5159,10 @@ var CometTransport = (function() {
 		this.dispose();
 	};
 
-	CometTransport.prototype.abort = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', '');
+	CometTransport.prototype.abort = function(err) {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', 'err: ' + err);
 		this.requestClose(true);
-		this.emit('failed');
+		this.emit('failed', err);
 		this.dispose();
 	};
 
@@ -4740,6 +5191,11 @@ var CometTransport = (function() {
 				this.recvRequest.abort();
 				this.recvRequest = null;
 			}
+			Transport.prototype.onDisconnect.call(this);
+			var self = this;
+			Utils.nextTick(function() {
+				self.emit('disposed');
+			})
 		}
 	};
 
@@ -4764,24 +5220,26 @@ var CometTransport = (function() {
 		})
 	};
 
-	CometTransport.prototype.send = function(msg, callback) {
+	CometTransport.prototype.send = function(message, callback) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
-			this.pendingItems.push(msg);
+			this.pendingItems.push(message);
 
-			this.pendingCallback = this.pendingCallback || Multicaster();
-			this.pendingCallback.push(callback);
+			if(callback) {
+				this.pendingCallback = this.pendingCallback || Multicaster();
+				this.pendingCallback.push(callback);
+			}
 			return;
 		}
 		/* send this, plus any pending, now */
 		var pendingItems = this.pendingItems || [];
-		pendingItems.push(msg);
+		pendingItems.push(message);
 		this.pendingItems = null;
 
 		var pendingCallback = this.pendingCallback;
 		if(pendingCallback) {
-			pendingCallback.push(callback);
+			if(callback) pendingCallback.push(callback);
 			callback = pendingCallback;
 			this.pendingCallback = null;
 		}
@@ -4796,7 +5254,14 @@ var CometTransport = (function() {
 		sendRequest.on('complete', function(err, data) {
 			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + JSON.stringify(err));
 			self.sendRequest = null;
-			if(data) self.onData(data);
+
+			/* the results of the request usually get handled as protocol responses instead of send errors */
+			if(data) {
+				self.onData(data);
+			} else if(err && err.code) {
+				self.onData([ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})]);
+				err = null;
+			}
 
 			var pendingItems = self.pendingItems;
 			if(pendingItems) {
@@ -4807,7 +5272,7 @@ var CometTransport = (function() {
 					self.sendItems(pendingItems, pendingCallback);
 				});
 			}
-			callback(err);
+			callback && callback(err);
 		});
 		sendRequest.exec();
 	};
@@ -4845,7 +5310,7 @@ var CometTransport = (function() {
 			var items = this.decodeResponse(responseData);
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onChannelMessage(items[i]);
+					this.onProtocolMessage(ProtocolMessage.fromDecoded(items[i]));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}
@@ -4900,7 +5365,7 @@ var Presence = (function() {
 	Presence.prototype.history = function(params, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
 		this._history(params, callback);
-  };
+	};
 
 	Presence.prototype._history = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
@@ -4916,13 +5381,14 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options;
+			options = this.channel.options,
+			channel = this.channel;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
 	};
 
@@ -4987,13 +5453,46 @@ var Resource = (function() {
 		};
 	}
 
+	function paramString(params) {
+		var paramPairs = [];
+		if (params) {
+			for (var needle in params) {
+				paramPairs.push(needle + '=' + params[needle]);
+			}
+		}
+		return paramPairs.join('&');
+	}
+
+	function urlFromPathAndParams(path, params) {
+		return path + (params ? '?' : '') + paramString(params);
+	}
+
+	function logResponseHandler(callback, verb, path, params) {
+		return function(err, body, headers, unpacked) {
+			if (err) {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + JSON.stringify(err));
+			} else {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; Body: ' + JSON.stringify(body));
+			}
+			if (callback) { callback(err, body, headers, unpacked); }
+		}
+	}
+
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			callback = logResponseHandler(callback, 'get', path, origparams);
+		}
+
 		if(envelope) {
 			callback = (callback && unenvelope(callback, envelope));
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
 		function doGet(headers, params) {
+			if (Logger.shouldLog(Logger.LOG_MICRO)) {
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
+			}
+
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
@@ -5014,12 +5513,28 @@ var Resource = (function() {
 	};
 
 	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			callback = logResponseHandler(callback, 'post', path, origparams);
+		}
+
 		if(envelope) {
 			callback = unenvelope(callback, envelope);
 			origparams['envelope'] = envelope;
 		}
 
 		function doPost(headers, params) {
+			if (Logger.shouldLog(Logger.LOG_MICRO)) {
+				var decodedBody = body;
+				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
+					try {
+						body = msgpack.decode(body);
+					} catch (decodeErr) {
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + JSON.stringify(decodeErr));
+					}
+				}
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+			}
+
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
 				if(err && err.code == 40140) {
 					/* token has expired, so get a new one */
@@ -5201,6 +5716,7 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
+		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
@@ -5256,6 +5772,10 @@ var Auth = (function() {
 	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
 		var token = this.tokenDetails;
 		if(token) {
+			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.rest.clientId, 40102, 401));
+				return;
+			}
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
 				if(!(authOptions && authOptions.force)) {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
@@ -5359,8 +5879,15 @@ var Auth = (function() {
 				}
 			}
 			tokenRequestCallback = function(params, cb) {
-				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders);
-				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, Utils.mixin(params, authOptions.authParams), function(err, body, headers, unpacked) {
+				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
+						authParams = Utils.mixin(params, authOptions.authParams);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
+				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, function(err, body, headers, unpacked) {
+					if (err) {
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
+					} else {
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
+					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
 					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
@@ -5395,11 +5922,13 @@ var Auth = (function() {
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
 				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
@@ -5485,6 +6014,11 @@ var Auth = (function() {
 
 		if(!keySecret) {
 			callback(new Error('Invalid key specified'));
+			return;
+		}
+
+		if(tokenParams.clientId === '') {
+			callback(new ErrorInfo('clientId can’t be an empty string', 40012, 400));
 			return;
 		}
 
@@ -5715,11 +6249,14 @@ var Realtime = (function() {
 	};
 
 	function Channels(realtime) {
+		EventEmitter.call(this);
 		this.realtime = realtime;
-		this.attached = {};
+		this.all = {};
+		this.inProgress = {};
 		var self = this;
 		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
 	}
+	Utils.inherits(Channels, EventEmitter);
 
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
@@ -5727,7 +6264,7 @@ var Realtime = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
-		var channel = this.attached[channelName];
+		var channel = this.all[channelName];
 		if(!channel) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
 			return;
@@ -5736,26 +6273,52 @@ var Realtime = (function() {
 	};
 
 	/* called when a transport becomes connected; reattempt attach()
-	 * for channels that were pending from a previous transport */
+	 * for channels that may have been inProgress from a previous transport */
 	Channels.prototype.onTransportActive = function() {
-		for(var channelId in this.attached)
-			this.attached[channelId].checkPendingState();
+		for(var channelId in this.inProgress)
+			this.inProgress[channelId].checkPendingState();
 	};
 
 	Channels.prototype.setSuspended = function(err) {
-		for(var channelId in this.attached) {
-			var channel = this.attached[channelId];
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
 			channel.setSuspended(err);
 		}
 	};
 
 	Channels.prototype.get = function(name) {
 		name = String(name);
-		var channel = this.attached[name];
+		var channel = this.all[name];
 		if(!channel) {
-			this.attached[name] = channel = new RealtimeChannel(this.realtime, name, this.realtime.options);
+			channel = this.all[name] = new RealtimeChannel(this.realtime, name, this.realtime.options);
 		}
 		return channel;
+	};
+
+	Channels.prototype.release = function(name) {
+		var channel = this.all[name];
+		if(channel) {
+			delete this.all[name];
+		}
+	};
+
+	Channels.prototype.setInProgress = function(channel, inProgress) {
+		if(inProgress) {
+			this.inProgress[channel.name] = channel;
+		} else {
+			delete this.inProgress[channel.name];
+			if(Utils.isEmpty(this.inProgress)) {
+				this.emit('nopending');
+			}
+		}
+	};
+
+	Channels.prototype.onceNopending = function(listener) {
+		if(Utils.isEmpty(this.inProgress)) {
+			listener();
+			return;
+		}
+		this.once('nopending', listener);
 	};
 
 	return Realtime;
@@ -5873,13 +6436,14 @@ var Channel = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.options;
+			options = this.options,
+			channel = this;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format);
+			return Message.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
 	};
 
@@ -6016,74 +6580,84 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.onEvent = function(messages) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
-    	for(var i = 0; i < messages.length; i++) {
-    		var message = messages[i];
-    		subscriptions.emit(message.name, message);
-    	}
-    };
-
-    RealtimeChannel.prototype.attach = function(callback) {
-    	callback = callback || noop;
-    	var connectionManager = this.connectionManager;
-    	var connectionState = connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
-			callback(connectionManager.getStateError());
-			return;
+		for(var i = 0; i < messages.length; i++) {
+			var message = messages[i];
+			subscriptions.emit(message.name, message);
 		}
-		if(this.state == 'attached') {
-			callback();
-			return;
-		}
-		this.setPendingState('attaching');
-		this.once(function(err) {
-			switch(this.event) {
-			case 'attached':
-				callback();
-				break;
-			case 'detached':
-			case 'failed':
-				callback(err || connectionManager.getStateError());
-			}
-		});
-    };
-
-    RealtimeChannel.prototype.attachImpl = function(callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    	var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-    	this.sendMessage(msg, (callback || noop));
 	};
 
-    RealtimeChannel.prototype.detach = function(callback) {
-    	callback = callback || noop;
-    	var connectionManager = this.connectionManager;
-    	var connectionState = connectionManager.state;
-    	if(!ConnectionManager.activeState(connectionState)) {
+	RealtimeChannel.prototype.attach = function(callback) {
+		callback = callback || noop;
+		var connectionManager = this.connectionManager;
+		var connectionState = connectionManager.state;
+		if(!ConnectionManager.activeState(connectionState)) {
 			callback(connectionManager.getStateError());
 			return;
 		}
-		if(this.state == 'detached') {
-			callback();
-			return;
-		}
-		this.setPendingState('detaching');
-		this.once(function(err) {
-			switch(this.event) {
-			case 'detached':
+		switch(this.state) {
+			case 'attached':
 				callback();
 				break;
-			case 'attached':
-				/* this shouldn't happen ... */
-				callback(ConnectionError.unknownChannelErr);
-				break;
+			default:
+				this.setPendingState('attaching');
+			case 'attaching':
+				this.once(function(err) {
+					switch(this.event) {
+						case 'attached':
+							callback();
+							break;
+						case 'detached':
+						case 'failed':
+							callback(err || connectionManager.getStateError());
+					}
+				});
 			}
-		});
+    };
+
+	RealtimeChannel.prototype.attachImpl = function(callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
+			var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+			this.sendMessage(msg, (callback || noop));
+	};
+
+	RealtimeChannel.prototype.detach = function(callback) {
+		callback = callback || noop;
+		var connectionManager = this.connectionManager;
+		var connectionState = connectionManager.state;
+		if(!ConnectionManager.activeState(connectionState)) {
+			callback(connectionManager.getStateError());
+			return;
+		}
+		switch(this.state) {
+			case 'detached':
+			case 'failed':
+				callback();
+				break;
+			default:
+				this.setPendingState('detaching');
+			case 'detaching':
+				this.once(function(err) {
+					switch(this.event) {
+						case 'detached':
+							callback();
+							break;
+						case 'failed':
+							callback(err || connectionManager.getStateError());
+							break;
+						default:
+							/* this shouldn't happen ... */
+							callback(ConnectionError.unknownChannelErr);
+							break;
+					}
+				});
+		}
 		this.setSuspended(RealtimeChannel.channelDetachedErr, true);
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    	var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
-    	this.sendMessage(msg, (callback || noop));
+			var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
+			this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
@@ -6166,6 +6740,9 @@ var RealtimeChannel = (function() {
 
 		case actions.SYNC:
 			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
+			/* syncs can happen on channels with no presence data as part of connection
+			 * resuming, in which case protocol message has no presence property */
+			if(!message.presence) break;
 		case actions.PRESENCE:
 			var presence = message.presence,
 				id = message.id,
@@ -6178,11 +6755,8 @@ var RealtimeChannel = (function() {
 					var presenceMsg = presence[i];
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
-					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decoding message; err = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
-					var err = new Error(errmsg);
-					this.emit('error', err);
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
 				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
@@ -6204,10 +6778,8 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, options);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					var errmsg = 'Unexpected error decoding message; err = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', errmsg);
-					var err = new Error(errmsg);
-					this.emit('error', err);
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
@@ -6272,7 +6844,6 @@ var RealtimeChannel = (function() {
 		if(this.state != 'attaching')
 			return;
 
-		this.state = 'attached';
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
 			this.pendingEvents = [];
@@ -6286,10 +6857,11 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		if((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0)
+		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
+		if(syncInProgress)
 			this.presence.awaitSync();
 		this.presence.setAttached();
-		this.emit('attached');
+		this.setState('attached', null, syncInProgress);
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -6298,15 +6870,13 @@ var RealtimeChannel = (function() {
 		var msgErr = message.error;
 		if(msgErr) {
 			/* this is an error message */
-			this.state = 'failed';
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
 			this.failPendingMessages(err);
-			this.emit('failed', err);
+			this.setState('failed', err);
 		} else {
 			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 			if(this.state !== 'detached') {
-				this.state = 'detached';
-				this.emit('detached');
+				this.setState('detached');
 			}
 		}
 	};
@@ -6316,14 +6886,23 @@ var RealtimeChannel = (function() {
 		this.clearStateTimer();
 		this.failPendingMessages(err);
 		this.presence.setSuspended(err);
-		if (!suppressEvent && this.state !== 'detached')
-			this.emit('detached');
+		if(!suppressEvent && this.state !== 'detached') {
+			this.setState('detached');
+		}
+	};
+
+	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
+		this.state = state;
+		this.setInProgress(inProgress);
+		this.emit(state, err);
 	};
 
 	RealtimeChannel.prototype.setPendingState = function(state) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'name = ' + this.name + ', state = ' + state);
-		this.state = state;
 		this.clearStateTimer();
+
+		/* notify the state change */
+		this.setState(state, null, true);
 
 		/* if not currently connected, do nothing */
 		if(this.connectionManager.state.state != 'connected') {
@@ -6342,8 +6921,6 @@ var RealtimeChannel = (function() {
 			/* retry */
 			self.checkPendingState();
 		}, Defaults.sendTimeout);
-		/* notify the state change */
-		this.emit(state);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
@@ -6374,6 +6951,10 @@ var RealtimeChannel = (function() {
 		}
 	};
 
+	RealtimeChannel.prototype.setInProgress = function(inProgress) {
+		this.rest.channels.setInProgress(this, inProgress);
+	};
+
 	RealtimeChannel.prototype.failPendingMessages = function(err) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', err = ' + Utils.inspectError(err));
 		for(var i = 0; i < this.pendingEvents.length; i++)
@@ -6400,7 +6981,6 @@ var RealtimeChannel = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.attachSerial;
 			} else {
-				console.log(this.state)
 				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
 			}
 		}
@@ -6468,7 +7048,15 @@ var RealtimePresence = (function() {
 				channel.sendPresence(presence, callback);
 				break;
 			case 'initialized':
-				channel.attach();
+			case 'detached':
+				var self = this;
+				channel.attach(function(err) {
+					// If error in attaching, callback immediately
+					if(err) {
+						self.pendingPresence = null;
+						callback(err);
+					}
+				});
 			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
@@ -6586,8 +7174,10 @@ var RealtimePresence = (function() {
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(!syncCursor)
+		if(!syncCursor) {
 			members.endSync();
+			this.channel.setInProgress(false);
+		}
 
 		/* broadcast to listeners */
 		if(broadcast) {
@@ -6765,13 +7355,17 @@ var JSONPTransport = (function() {
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
 	JSONPTransport.checkConnectivity = function(callback) {
+		var upUrl = Defaults.internetUpUrlWithoutExtension + '.js';
+
 		if(checksInProgress) {
 			checksInProgress.push(callback);
 			return;
 		}
 		checksInProgress = [callback];
-		request('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.js', null, null, null, false, function(err, response) {
+		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
+		request(upUrl, null, null, null, false, function(err, response) {
 			var result = !err && response;
+			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
 		});
@@ -6817,6 +7411,7 @@ var JSONPTransport = (function() {
 			self = this;
 
 		params.callback = 'Ably._(' + id + ')';
+		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
 		else
@@ -6833,7 +7428,21 @@ var JSONPTransport = (function() {
 		};
 
 		_[id] = function(message) {
-			self.complete(null, message);
+			var successResponse = (message.statusCode < 400),
+				response = message.response;
+
+			if(!response) {
+				self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
+				return;
+			}
+
+			if(successResponse) {
+				self.complete(null, response);
+				return;
+			}
+
+			var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+			self.complete(err);
 		};
 
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout;
@@ -6868,6 +7477,7 @@ var JSONPTransport = (function() {
 		var script = this.script;
 		if(script.parentNode) script.parentNode.removeChild(script);
 		delete _[this.id];
+		this.emit('disposed');
 	};
 
 	var request = Http.Request = function(uri, headers, params, body, callback) {
@@ -7326,8 +7936,12 @@ var XHRTransport = (function() {
 	XHRTransport.isAvailable = XHRRequest.isAvailable;
 
 	XHRTransport.checkConnectivity = function(callback) {
-		Http.Request('http://internet-up.ably.io.s3-website-us-east-1.amazonaws.com/is-the-internet-up.txt', null, null, null, function(err, responseText) {
-			callback(null, (!err && responseText == 'yes'));
+		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Sending; ' + upUrl);
+		Http.Request(upUrl, null, null, null, function(err, responseText) {
+			var result = (!err && responseText == 'yes');
+			Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Result: ' + result);
+			callback(null, result);
 		});
 	};
 
@@ -7485,7 +8099,7 @@ var IframeTransport = (function() {
 			var items = JSON.parse(String(data));
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onChannelMessage(items[i]);
+					this.onProtocolMessage(items[i]);
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'IframeTransport.onData()', 'Unexpected exception handing channel event: ' + e);
 		}
@@ -7515,6 +8129,7 @@ var IframeTransport = (function() {
 				wrapIframe.parentNode.removeChild(wrapIframe);
 			}, 0);
 		}
+		this.emit('disposed');
 	};
 
 	function wrapIframeContent(src) {

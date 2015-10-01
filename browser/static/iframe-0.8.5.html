@@ -16,6 +16,7 @@
   var define, exports, require;
 
 var Defaults = {
+	internetUpUrlWithoutExtension: 'https://internet-up.ably-realtime.com/is-the-internet-up',
 	httpTransports: ['xhr', 'iframe', 'jsonp'],
 	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
 	minified: !(function _(){}).name
@@ -289,9 +290,15 @@ var Logger = (function() {
 
 	/* public static functions */
 	Logger.logAction = function(level, action, message) {
-		if(level <= logLevel) {
+		if (Logger.shouldLog(level)) {
 			logHandler('Ably: ' + action + ': ' + message);
 		}
+	};
+
+	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
+	   the object being serialised if the log level will not output the message */
+	Logger.shouldLog = function(level) {
+		return level <= logLevel;
 	};
 
 	Logger.setLog = function(level, handler) {
@@ -359,7 +366,7 @@ var Utils = (function() {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
-  /* ...Or an Object (in the narrow sense) */
+	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Object]';
 	};
@@ -479,6 +486,18 @@ var Utils = (function() {
 			}
 			return -1;
 		};
+
+	Utils.arrIn = function(arr, val) {
+		return Utils.arrIndexOf(arr, val) !== -1;
+	};
+
+	Utils.arrDeleteValue = function(arr, val) {
+		var idx = Utils.arrIndexOf(arr, val);
+		var res = (idx != -1);
+		if(res)
+			arr.splice(idx, 1);
+		return res;
+	};
 
 	/*
 	 * Construct an array of the keys of the enumerable
@@ -614,6 +633,11 @@ var ProtocolMessage = (function() {
 		'SYNC' : 16
 	};
 
+	ProtocolMessage.ActionName = [];
+	Object.keys(ProtocolMessage.Action).forEach(function(name) {
+		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
+	});
+
 	ProtocolMessage.Flag = {
 		'HAS_PRESENCE': 0,
 		'HAS_BACKLOG': 1
@@ -640,6 +664,41 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.fromValues = function(values) {
 		return Utils.mixin(new ProtocolMessage(), values);
+	};
+
+	function toStringArray(array) {
+		var result = [];
+		if (array) {
+			for (var i = 0; i < array.length; i++) {
+				result.push(array[i].toString());
+			}
+		}
+		return '[ ' + result.join(', ') + ' ]';
+	}
+
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+
+	ProtocolMessage.stringify = function(msg) {
+		var result = '[ProtocolMessage';
+		if(msg.action !== undefined)
+			result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
+
+		var attribute;
+		for (var attribIndex = 0; attribIndex < simpleAttributes.length; attribIndex++) {
+			attribute = simpleAttributes[attribIndex];
+			if(msg[attribute] !== undefined)
+				result += '; ' + attribute + '=' + msg[attribute];
+		}
+
+		if(msg.messages)
+			result += '; messages=' + toStringArray(Message.fromValuesArray(msg.messages));
+		if(msg.presence)
+			result += '; presence=' + toStringArray(PresenceMessage.fromValuesArray(msg.presence));
+		if(msg.error)
+			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
+
+		result += ']';
+		return result;
 	};
 
 	return ProtocolMessage;
@@ -1212,7 +1271,10 @@ var XHRRequest = (function() {
 	};
 
 	IframeAgent.prototype.send = function(msg, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.send()', 'msg = ' + JSON.stringify(msg));
+		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.send()', 'msg = ' + JSON.stringify(msg));
+		}
+
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
