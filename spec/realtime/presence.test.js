@@ -75,7 +75,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	exports.setupauth = function(test) {
+	exports.setupPresence = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -1065,6 +1065,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(false, 'presenceEnterClosed failed with exception: ' + e.stack);
 			closeAndFinish(test, clientRealtime);
 		}
+	};
+
+	/*
+	 * Client ID is implicit in the connection so should not be sent for current client operations
+	 */
+	exports.presenceClientIdIsImplicit = function(test) {
+		var clientId = 'implicitClient',
+				client = helper.AblyRealtime({ clientId: clientId });
+
+		test.expect(6);
+		var channel = client.channels.get('presenceClientIdIsImplicit'),
+				presence = channel.presence;
+
+		var originalSendPresence = channel.sendPresence;
+		channel.sendPresence = function(presence, callback) {
+			test.ok(!presence.clientId, 'Client ID should not be present as it is implicit');
+			originalSendPresence.apply(channel, arguments);
+		};
+
+		presence.enter(null, function(err) {
+			test.ok(!err, 'Enter with implicit clientId failed');
+			presence.update(null, function(err) {
+				test.ok(!err, 'Update with implicit clientId failed');
+				presence.leave(null, function(err) {
+					test.ok(!err, 'Leave with implicit clientId failed');
+					closeAndFinish(test, client);
+				});
+			});
+		});
 	};
 
 	return module.exports = helper.withTimeout(exports);

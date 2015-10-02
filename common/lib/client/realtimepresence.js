@@ -18,22 +18,22 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.enter = function(data, callback) {
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this._enterOrUpdateClient(this.clientId, data, callback, 'enter');
+		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(!this.clientId) {
 			throw new Error('clientId must be specified to update presence data');
 		}
-		this._enterOrUpdateClient(this.clientId, data, callback, 'update');
+		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
 	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'enter')
+		this._enterOrUpdateClient(clientId, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'update')
+		this._enterOrUpdateClient(clientId, data, callback, 'update');
 	};
 
 	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
@@ -47,13 +47,13 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId)
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + this.clientId);
 
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction[action.toUpperCase()],
-			clientId : clientId,
-			data: data
+			data   : data
 		});
+		if (clientId) { presence.clientId = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
@@ -89,16 +89,16 @@ var RealtimePresence = (function() {
 		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
-		this.leaveClient(this.clientId, data, callback);
+		this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
-			clientId : clientId,
-			data: data
+			data   : data
 		});
+		if (clientId) { presence[clientId] = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
