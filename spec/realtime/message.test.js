@@ -462,5 +462,108 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		};
 	}
 
+	/* Authenticate with a clientId and ensure that the clientId is not sent in the Message
+	   and is implicitly added when published */
+	exports.implicit_client_id_0 = function(test) {
+		var clientId = 'implicit_client_id_0',
+				realtime = helper.AblyRealtime({ clientId: clientId });
+
+		test.expect(3);
+
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+
+			transport.send = function(message) {
+				if (message.action === 15) {
+					test.ok(message.messages[0].name === 'event0', 'Outgoing message interecepted');
+					test.ok(!message.messages[0].clientId, 'client ID is not added by the client library as it is implicit');
+				}
+				originalSend.apply(transport, arguments);
+			};
+
+			var channel = realtime.channels.get('implicit_client_id_0');
+			/* subscribe to event */
+			channel.subscribe('event0', function(message) {
+				test.ok(message.clientId == clientId, 'Client ID was added implicitly');
+				closeAndFinish(test, realtime);
+			});
+			channel.publish('event0', null);
+		});
+	};
+
+	/* Authenticate with a clientId and explicitly provide the same clientId in the Message
+	   and ensure it is published */
+	exports.explicit_client_id_0 = function(test) {
+		var clientId = 'explicit_client_id_0',
+				realtime = helper.AblyRealtime({ clientId: clientId });
+
+		test.expect(4);
+
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+
+			transport.send = function(message) {
+				if (message.action === 15) {
+					test.ok(message.messages[0].name === 'event0', 'Outgoing message interecepted');
+					test.ok(message.messages[0].clientId === clientId, 'client ID is present when published to Ably');
+				}
+				originalSend.apply(transport, arguments);
+			};
+
+			var channel = realtime.channels.get('explicit_client_id_0');
+			/* subscribe to event */
+			channel.subscribe('event0', function(message) {
+				test.ok(message.clientId == clientId, 'Client ID was added implicitly');
+				setTimeout(function() { closeAndFinish(test, realtime); }, 500); // wait for publish confirmation
+			});
+			channel.publish({ name: 'event0', clientId: clientId }, function(err) {
+				test.ok(!err, 'Message was published successfully');
+			});
+		});
+	};
+
+	/* Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
+	   and expect it to not be published and be rejected */
+	exports.explicit_client_id_1 = function(test) {
+		var clientId = 'explicit_client_id_1',
+				invalidClientId = 'invalid',
+				rest = helper.AblyRest();
+
+		test.expect(4);
+
+		rest.auth.requestToken({ clientId: clientId }, function(err, token) {
+			test.ok(token.clientId === clientId, 'client ID is present in the Token');
+
+			var realtime = helper.AblyRealtime({ token: token.token }),
+					channel = realtime.channels.get('explicit_client_id_1');
+
+			// Publish before authentication to ensure the client library does not reject the message as the clientId is not known
+			channel.publish({ name: 'event0', clientId: invalidClientId }, function(err) {
+				test.ok(err, 'Message was not published');
+				setTimeout(function() { closeAndFinish(test, realtime); }, 500); // ensure that the message is not published
+			});
+
+			realtime.connection.once('connected', function() {
+				var transport = realtime.connection.connectionManager.activeProtocol.transport,
+						originalSend = transport.send;
+
+				transport.send = function(message) {
+					if (message.action === 15) {
+						test.ok(message.messages[0].name === 'event0', 'Outgoing message interecepted');
+						test.ok(message.messages[0].clientId === invalidClientId, 'client ID is present when published to Ably');
+					}
+					originalSend.apply(transport, arguments);
+				};
+
+				/* subscribe to event */
+				channel.subscribe('event0', function(message) {
+					test.ok(false, 'Message should never have been received');
+				});
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

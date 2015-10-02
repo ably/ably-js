@@ -63,8 +63,7 @@ var Channel = (function() {
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1],
-			options = this.options;
+			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -86,7 +85,11 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
+		this._publish(requestBody, headers, callback);
+	};
+
+	Channel.prototype._publish = function(requestBody, headers, callback) {
+		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
 	};
 
 	return Channel;
