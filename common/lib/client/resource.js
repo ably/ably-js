@@ -75,7 +75,8 @@ var Resource = (function() {
 			if (err) {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + JSON.stringify(err));
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; Body: ' + JSON.stringify(body));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
+					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
 			if (callback) { callback(err, body, headers, unpacked); }
 		}
