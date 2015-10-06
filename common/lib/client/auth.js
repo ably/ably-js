@@ -99,16 +99,6 @@ var Auth = (function() {
 	 * requested.
 	 * Authorisation will use the parameters supplied on construction except
 	 * where overridden with the options supplied in the call.
-	 * @param authOptions
-	 * an object containing the request params:
-	 * - key:        (optional) the key to use; if not specified, a key
-	 *               passed in constructing the Rest interface may be used
-	 *
-	 * - queryTime   (optional) boolean indicating that the Ably system should be
-	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * - force       (optional) boolean indicating that a new token should be requested,
-	 *               even if a current token is still valid.
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
@@ -127,9 +117,20 @@ var Auth = (function() {
 	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
+	 * @param authOptions
+	 * an object containing the request params:
+	 * - key:        (optional) the key to use; if not specified, a key
+	 *               passed in constructing the Rest interface may be used
+	 *
+	 * - queryTime   (optional) boolean indicating that the Ably system should be
+	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * - force       (optional) boolean indicating that a new token should be requested,
+	 *               even if a current token is still valid.
+	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.authorise = function(authOptions, tokenParams, callback) {
+	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
 		var token = this.tokenDetails;
 		if(token) {
 			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
@@ -149,7 +150,7 @@ var Auth = (function() {
 			}
 		}
 		var self = this;
-		this.requestToken(authOptions, tokenParams, function(err, tokenResponse) {
+		this.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
 			if(err) {
 				callback(err);
 				return;
@@ -204,15 +205,14 @@ var Auth = (function() {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.requestToken = function(authOptions, tokenParams, callback) {
+	Auth.prototype.requestToken = function(tokenParams, authOptions, callback) {
 		/* shuffle and normalise arguments as necessary */
-		if(typeof(authOptions) == 'function' && !callback) {
-			callback = authOptions;
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
 			authOptions = tokenParams = null;
 		}
-		else if(typeof(tokenParams) == 'function' && !callback) {
-			callback = tokenParams;
-			tokenParams = authOptions;
+		else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
 			authOptions = null;
 		}
 
@@ -264,7 +264,7 @@ var Auth = (function() {
 		} else if(authOptions.key) {
 			var self = this;
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
-			tokenRequestCallback = function(params, cb) { self.createTokenRequest(authOptions, params, cb); };
+			tokenRequestCallback = function(params, cb) { self.createTokenRequest(params, authOptions, cb); };
 		} else {
 			throw new Error('Auth.requestToken(): authOptions must include valid authentication parameters');
 		}
@@ -359,7 +359,7 @@ var Auth = (function() {
 	 *                  the system will be queried for a time value to use.
 	 *
 	 */
-	Auth.prototype.createTokenRequest = function(authOptions, tokenParams, callback) {
+	Auth.prototype.createTokenRequest = function(tokenParams, authOptions, callback) {
 		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
