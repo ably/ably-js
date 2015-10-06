@@ -202,6 +202,7 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 		tearDown: deleteApp,
 		createStatsFixtureData: createStatsFixtureData,
 		httpReq: httpReq,
-		loadJsonData: loadJsonData
+		loadJsonData: loadJsonData,
+		testResourcesPath: testResourcesPath
 	};
 });

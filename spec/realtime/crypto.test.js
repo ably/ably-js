@@ -6,7 +6,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		BufferUtils = Ably.Realtime.BufferUtils,
 		Crypto = Ably.Realtime.Crypto,
 		Message = Ably.Realtime.Message,
-		assetPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/realtime/assets/',
+		testResourcesPath = helper.testResourcesPath,
+		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('msgpack-js'),
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -25,6 +26,53 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		return JSON.stringify(one.data) == JSON.stringify(two.data);
 	}
 
+
+	function testEachFixture(test, filename, channelName, testsPerFixture, fixtureTest) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
+		loadTestData(testResourcesPath + filename, function(err, testData) {
+			if(err) {
+				test.ok(false, 'Unable to get test assets; err = ' + err);
+				return;
+			}
+			var realtime = helper.AblyRealtime();
+			var channel = realtime.channels.get(channelName);
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			Crypto.getDefaultParams(key, function(err, params) {
+				if(err) {
+					test.ok(false, 'Unable to get cipher params; err = ' + err);
+					closeAndFinish(test, realtime);
+					return;
+				}
+				params.iv = iv;
+
+				test.expect(testData.items.length * testsPerFixture);
+				for(var i = 0; i < testData.items.length; i++) {
+					var item = testData.items[i];
+
+					/* read messages from test data */
+					var testMessage = Message.fromValues(item.encoded);
+					var encryptedMessage = Message.fromValues(item.encrypted);
+					/* decode (ie remove any base64 encoding). Will throw when
+					 * it gets to the cipher part of the encoding, so wrap in try/catch */
+					try { Message.decode(testMessage); } catch(_) {}
+					try { Message.decode(encryptedMessage); } catch(_) {}
+					/* reset channel cipher, to ensure it uses the given iv */
+					channel.setOptions({encrypted:true, cipherParams: params});
+
+					fixtureTest(channel.options, testMessage, encryptedMessage, item.msgpack);
+				}
+				closeAndFinish(test, realtime);
+			});
+		});
+	}
+
 	exports.setupCrypto = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
@@ -37,188 +85,84 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.encrypt_message_128 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		loadTestData(assetPath + 'crypto-data-128.json', function(err, testData) {
-			if(err) {
-				test.ok(false, 'Unable to get test assets; err = ' + err);
-				return;
-			}
-			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get('encrypt_message_128');
-			var key = BufferUtils.base64Decode(testData.key);
-			var iv = BufferUtils.base64Decode(testData.iv);
-
-			Crypto.getDefaultParams(key, function(err, params) {
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + err);
-					closeAndFinish(test, realtime);
-					return;
-				}
-				params.iv = iv;
-
-				test.expect(testData.items.length);
-				for(var i = 0; i < testData.items.length; i++) {
-					var item = testData.items[i];
-
-					/* read messages from test data */
-					var testMessage = Message.fromValues(item.encoded);
-					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding). Will throw when
-					 * it gets to the cipher part of the encoding, so wrap in try/catch */
-					try { Message.decode(testMessage); } catch(_) {}
-					try { Message.decode(encryptedMessage); } catch(_) {}
-					/* reset channel cipher, to ensure it uses the given iv */
-					channel.setOptions({encrypted:true, cipherParams: params});
-					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-					Message.encode(testMessage, channel.options);
-					/* compare */
-					test.ok(compareMessage(testMessage, encryptedMessage));
-				}
-				closeAndFinish(test, realtime);
-			});
+		testEachFixture(test, 'crypto-data-128.json', 'encrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
+			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+			Message.encode(testMessage, channelOpts);
+			/* compare */
+			test.ok(compareMessage(testMessage, encryptedMessage));
 		});
 	};
 
 	exports.encrypt_message_256 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		loadTestData(assetPath + 'crypto-data-256.json', function(err, testData) {
-			if(err) {
-				test.ok(false, 'Unable to get test assets; err = ' + err);
-				return;
-			}
-			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get('encrypt_message_256');
-			var key = BufferUtils.base64Decode(testData.key);
-			var iv = BufferUtils.base64Decode(testData.iv);
-
-			Crypto.getDefaultParams(key, function(err, params) {
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + err);
-					closeAndFinish(test, realtime);
-					return;
-				}
-				params.iv = iv;
-
-				test.expect(testData.items.length);
-				for(var i = 0; i < testData.items.length; i++) {
-					var item = testData.items[i];
-
-					/* read messages from test data */
-					var testMessage = Message.fromValues(item.encoded);
-					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding). Will throw when
-					 * it gets to the cipher part of the encoding, so wrap in try/catch */
-					try { Message.decode(testMessage); } catch(_) {}
-					try { Message.decode(encryptedMessage); } catch(_) {}
-					/* reset channel cipher, to ensure it uses the given iv */
-					channel.setOptions({encrypted:true, cipherParams: params});
-					/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-					Message.encode(testMessage, channel.options);
-					/* compare */
-					test.ok(compareMessage(testMessage, encryptedMessage));
-				}
-				closeAndFinish(test, realtime);
-			});
+		testEachFixture(test, 'crypto-data-256.json', 'encrypt_message_256', 1, function(channelOpts, testMessage, encryptedMessage) {
+			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+			Message.encode(testMessage, channelOpts);
+			/* compare */
+			test.ok(compareMessage(testMessage, encryptedMessage));
 		});
 	};
 
 	exports.decrypt_message_128 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		loadTestData(assetPath + 'crypto-data-128.json', function(err, testData) {
-			if(err) {
-				test.ok(false, 'Unable to get test assets; err = ' + err);
-				return;
-			}
-			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get('decrypt_message_128');
-			var key = BufferUtils.base64Decode(testData.key);
-
-			Crypto.getDefaultParams(key, function(err, params) {
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + err);
-					closeAndFinish(test, realtime);
-					return;
-				}
-				channel.setOptions({encrypted:true, cipherParams: params});
-
-				test.expect(testData.items.length);
-				for(var i = 0; i < testData.items.length; i++) {
-					var item = testData.items[i];
-
-					/* read messages from test data */
-					var testMessage = Message.fromValues(item.encoded);
-					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding). Will throw when
-					 * it gets to the cipher part of the encoding, so wrap in try/catch */
-					try { Message.decode(testMessage); } catch(_) {}
-					try { Message.decode(encryptedMessage); } catch(_) {}
-					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-					Message.decode(encryptedMessage, channel.options);
-					/* compare */
-					test.ok(compareMessage(testMessage, encryptedMessage));
-				}
-				closeAndFinish(test, realtime);
-			});
+		testEachFixture(test, 'crypto-data-128.json', 'decrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
+			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+			Message.decode(encryptedMessage, channelOpts);
+			/* compare */
+			test.ok(compareMessage(testMessage, encryptedMessage));
 		});
 	};
 
 	exports.decrypt_message_256 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
+		testEachFixture(test, 'crypto-data-256.json', 'decrypt_message_256', 1, function(channelOpts, testMessage, encryptedMessage) {
+			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+			Message.decode(encryptedMessage, channelOpts);
+			/* compare */
+			test.ok(compareMessage(testMessage, encryptedMessage));
+		});
+	};
+
+	exports.msgpack_128 = function(test) {
+		if(!ArrayBuffer) {
+			test.ok(false, 'Encryption or binary transport not supported');
 			test.done();
 			return;
 		}
 
-		loadTestData(assetPath + 'crypto-data-256.json', function(err, testData) {
-			if(err) {
-				test.ok(false, 'Unable to get test assets; err = ' + err);
-				return;
-			}
-			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get('decrypt_message_256');
-			var key = BufferUtils.base64Decode(testData.key);
+		testEachFixture(test, 'crypto-data-128.json', 'msgpack_128', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
+			Message.encode(testMessage, channelOpts);
+			var msgpackFromEncoded = msgpack.encode(testMessage);
+			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
 
-			Crypto.getDefaultParams(key, function(err, params) {
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + err);
-					closeAndFinish(test, realtime);
-					return;
-				}
-				channel.setOptions({encrypted:true, cipherParams: params});
+			/* Mainly testing that we're correctly encoding the direct output from
+			* CryptoJS (a wordArray) into the msgpack binary type */
+			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
 
-				test.expect(testData.items.length);
-				for(var i = 0; i < testData.items.length; i++) {
-					var item = testData.items[i];
+			/* Can't compare msgpackFromEncoded with fixture data because can't
+			* assume key order in the msgpack serialisation. So test decoded instead */
+			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+		});
+	};
 
-					/* read messages from test data */
-					var testMessage = Message.fromValues(item.encoded);
-					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding). Will throw when
-					 * it gets to the cipher part of the encoding, so wrap in try/catch */
-					try { Message.decode(testMessage); } catch(_) {}
-					try { Message.decode(encryptedMessage); } catch(_) {}
-					/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-					Message.decode(encryptedMessage, channel.options);
-					/* compare */
-					test.ok(compareMessage(testMessage, encryptedMessage));
-				}
-				closeAndFinish(test, realtime);
-			});
+	exports.msgpack_256 = function(test) {
+		if(!ArrayBuffer) {
+			test.ok(false, 'Encryption or binary transport not supported');
+			test.done();
+			return;
+		}
+
+		testEachFixture(test, 'crypto-data-256.json', 'msgpack_256', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
+			Message.encode(testMessage, channelOpts);
+			var msgpackFromEncoded = msgpack.encode(testMessage);
+			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
+
+			/* Mainly testing that we're correctly encoding the direct output from
+			* CryptoJS (a wordArray) into the msgpack binary type */
+			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
+
+			/* Can't compare msgpackFromEncoded with fixture data because can't
+			* assume key order in the msgpack serialisation. So test decoded instead */
+			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
 		});
 	};
 
@@ -232,7 +176,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime();
+		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary'),
 			messageText = 'Test message (single_send_binary)';
@@ -297,7 +241,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var realtime = helper.AblyRealtime();
+		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channel = realtime.channels.get('single_send_binary_256'),
 			messageText = 'Test message (single_send_binary_256)';
@@ -415,7 +359,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 20, 100); };
 
 	/**
-	 * Connect twice to the service, using the default (binary) protocol
+	 * Connect twice to the service, using the binary protocol
 	 * and the text protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
@@ -426,7 +370,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return;
 		}
 
-		var txRealtime = helper.AblyRealtime();
+		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
 		test.expect(3);
 		var channelName = 'single_send_binary_text',
@@ -460,7 +404,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	/**
 	 * Connect twice to the service, using the text protocol and the
-	 * default (binary) protocol. Publish an encrypted message on that channel using
+	 * binary protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
 	exports.single_send_text_binary = function(test) {
@@ -471,7 +415,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
-		var rxRealtime = helper.AblyRealtime();
+		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
 		var channelName = 'single_send_text_binary',
 			messageText = 'Test message (' + channelName + ')',
