@@ -15,11 +15,11 @@ $(npm bin)/grunt test:karma --browsers sl_chrome_42,sl_chrome_35,sl_firefox_37
 karma_exitstatus1=$?
 
 echo "\n$GREEN -> Running Karma test suite (Sauce Labs - part 2/3) $NO_COLOUR"
-$(npm bin)/grunt test:karma --browsers sl_firefox_31,sl_ie_11,sl_ie_10
+$(npm bin)/grunt test:karma --browsers sl_firefox_31,sl_ie_11
 karma_exitstatus2=$?
 
 echo "\n$GREEN -> Running Karma test suite (Sauce Labs - part 3/3) $NO_COLOUR"
-$(npm bin)/grunt test:karma --browsers sl_ios_safari_8_2,sl_ios_safari_7_1,sl_android_5_1
+$(npm bin)/grunt test:karma --browsers sl_ios_safari_9_1,sl_ios_safari_8_4,sl_android_5_0
 karma_exitstatus3=$?
 
 if [[ $karma_exitstatus1 -ne 0 ]]; then exit $karma_exitstatus1; fi
