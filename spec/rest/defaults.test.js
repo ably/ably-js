@@ -16,7 +16,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.deepEqual(normalisedOptions.fallbackHosts, Defaults.FALLBACK_HOSTS);
 		test.equal(normalisedOptions.tls, true);
 
-		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.host].concat(Defaults.FALLBACK_HOSTS));
+		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.host].concat(Defaults.FALLBACK_HOSTS.slice(0,3)));
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'rest.ably.io', false), 'rest.ably.io');
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'rest.ably.io', true), 'realtime.ably.io');
 
@@ -36,7 +36,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.deepEqual(normalisedOptions.fallbackHosts, Defaults.FALLBACK_HOSTS);
 		test.equal(normalisedOptions.tls, true);
 
-		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.host].concat(Defaults.FALLBACK_HOSTS));
+		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.host].concat(Defaults.FALLBACK_HOSTS.slice(0,3)));
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'rest.ably.io', false), 'rest.ably.io');
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'rest.ably.io', true), 'realtime.ably.io');
 

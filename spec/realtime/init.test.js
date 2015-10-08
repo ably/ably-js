@@ -151,5 +151,24 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/* check changing the default fallback hosts and changing httpMaxRetryCount */
+	exports.init_fallbacks = function(test) {
+		test.expect(1);
+		try {
+			var realtime = helper.AblyRealtime({
+				key: 'not_a.real:key',
+				host: 'a',
+				httpMaxRetryCount: 2,
+				fallbackHosts: ['b', 'c', 'd', 'e']
+			});
+			/* Note: uses internal knowledge of connectionManager */
+			test.deepEqual(realtime.connection.connectionManager.httpHosts, ['a', 'b', 'c'], 'Verify hosts list is as expected');
+			closeAndFinish(test, realtime);
+		} catch(e) {
+			test.ok(false, 'init_defaulthost failed with exception: ' + e.stack);
+			test.done();
+		}
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });

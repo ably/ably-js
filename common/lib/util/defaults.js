@@ -17,6 +17,7 @@ Defaults.TIMEOUTS = {
 	recvTimeout                : 90000,
 	connectionPersistTimeout   : 15000
 };
+Defaults.httpMaxRetryCount = 3;
 
 Defaults.version                  = '0.8.7';
 
@@ -35,9 +36,10 @@ Defaults.getPort = function(options, tls) {
 
 Defaults.getHosts = function(options) {
 	var hosts = [options.host],
-		fallbackHosts = options.fallbackHosts;
+		fallbackHosts = options.fallbackHosts,
+		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) hosts = hosts.concat(fallbackHosts);
+	if(fallbackHosts) hosts = hosts.concat(fallbackHosts.slice(0, httpMaxRetryCount));
 	return hosts;
 };
 
