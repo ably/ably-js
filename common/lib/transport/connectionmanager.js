@@ -643,7 +643,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
-		if(state !== 'disconnected' && state !== 'suspended')
+		if(state !== 'disconnected' && state !== 'suspended' && state !== 'connecting')
 			this.cancelSuspendTimer();
 	};
 
@@ -680,10 +680,11 @@ var ConnectionManager = (function() {
 		if(state == this.state.state)
 			return;
 
-		/* kill timers (possibly excepting suspend timer, as these are superseded by this notification */
+		/* kill timers (possibly excepting suspend timer depending on the notified
+		* state), as these are superseded by this notification */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.checkSuspendTimer();
+		this.checkSuspendTimer(indicated.state);
 
 		/* do nothing if we're unable to move from the current state */
 		if(this.state.terminal)
@@ -719,7 +720,9 @@ var ConnectionManager = (function() {
 		/* kill running timers, as this request supersedes them */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.cancelSuspendTimer();
+		/* for suspend timer check rather than cancel -- eg requesting a connecting
+		* state should not reset the suspend timer */
+		this.checkSuspendTimer(state);
 
 		if(state == 'connecting') {
 			if(this.state.state == 'connected')
