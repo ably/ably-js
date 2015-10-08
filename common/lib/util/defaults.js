@@ -5,15 +5,18 @@ Defaults.WS_HOST                  = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
-
-Defaults.realtimeOpenTimeout        = 15000;
-Defaults.realtimeCloseTimeout       = 10000;
-Defaults.disconnectedRetryFrequency = 15000;
-Defaults.suspendedRetryFrequency    = 30000;
-Defaults.connectionStateTtl         = 60000;
-Defaults.recvTimeout                = 90000;
-Defaults.httpRequestTimeout         = 15000;
-Defaults.connectionPersistTimeout   = 15000;
+Defaults.TIMEOUTS = {
+	/* Documented as options params: */
+	disconnectedRetryFrequency : 15000,
+	suspendedRetryFrequency    : 30000,
+	httpRequestTimeout         : 15000,
+	/* Not documented: */
+	connectionStateTtl         : 60000,
+	realtimeOpenTimeout        : 15000,
+	realtimeCloseTimeout       : 10000,
+	recvTimeout                : 90000,
+	connectionPersistTimeout   : 15000
+};
 
 Defaults.version                  = '0.8.6';
 
@@ -51,6 +54,12 @@ Defaults.normaliseOptions = function(options) {
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	if(!('tls' in options)) options.tls = true;
+
+	/* Allow values passed in options to override default timeouts */
+	options.timeouts = {};
+	for(var prop in Defaults.TIMEOUTS) {
+		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
+	};
 
 	return options;
 };

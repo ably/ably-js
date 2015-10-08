@@ -52,10 +52,10 @@ var JSONPTransport = (function() {
 	};
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(undefined, uri, headers, params, body, requestMode);
+		return new Request(undefined, uri, headers, params, body, requestMode, this.timeouts);
 	};
 
-	function Request(id, uri, headers, params, body, requestMode) {
+	function Request(id, uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		if(id === undefined) id = idCounter++;
 		this.id = id;
@@ -63,6 +63,7 @@ var JSONPTransport = (function() {
 		this.params = params || {};
 		this.body = body;
 		this.requestMode = requestMode;
+		this.timeouts = timeouts;
 		this.requestComplete = false;
 	}
 	Utils.inherits(Request, EventEmitter);
@@ -109,7 +110,7 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout;
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
 		this.timer = setTimeout(function() { self.abort(); }, timeout);
 		head.insertBefore(script, head.firstChild);
 	};

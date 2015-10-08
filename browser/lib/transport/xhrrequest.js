@@ -47,7 +47,7 @@ var XHRRequest = (function() {
 		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
 	}
 
-	function XHRRequest(uri, headers, params, body, requestMode) {
+	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = String(Math.random()).substr(2);
@@ -57,6 +57,7 @@ var XHRRequest = (function() {
 		this.headers = headers || {};
 		this.body = body;
 		this.requestMode = requestMode;
+		this.timeouts = timeouts;
 		this.requestComplete = false;
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
@@ -64,7 +65,9 @@ var XHRRequest = (function() {
 	XHRRequest.isAvailable = isAvailable;
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
-		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode) : new XDRRequest(uri, headers, params, body, requestMode);
+		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
+		var timeouts = (this && this.timeouts) ? this.timeouts : Defaults.TIMEOUTS;
+		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
@@ -82,7 +85,7 @@ var XHRRequest = (function() {
 	};
 
 	XHRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
@@ -264,9 +267,9 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	function XDRRequest(uri, headers, params, body, requestMode) {
+	function XDRRequest(uri, headers, params, body, requestMode, timeouts) {
 		params.ua = 'xdr';
-		XHRRequest.call(this, uri, headers, params, body, requestMode);
+		XHRRequest.call(this, uri, headers, params, body, requestMode, timeouts);
 	}
 	Utils.inherits(XDRRequest, XHRRequest);
 
@@ -276,7 +279,7 @@ var XHRRequest = (function() {
 	* http://msdn.microsoft.com/en-us/library/cc288060(v=VS.85).aspx
 	*/
 	XDRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
