@@ -616,7 +616,7 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
 				self.notifyState({state: transitionState.failState});
 			}
-		}, Defaults.connectTimeout);
+		}, transitionState.retryDelay);
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
