@@ -88,7 +88,7 @@ var NodeCometTransport = (function() {
 	Utils.inherits(Request, EventEmitter);
 
 	Request.prototype.exec = function() {
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout,
 			self = this;
 
 		var timer = this.timer = setTimeout(function() { self.abort(); }, timeout),

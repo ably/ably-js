@@ -82,7 +82,7 @@ var XHRRequest = (function() {
 	};
 
 	XHRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
@@ -276,7 +276,7 @@ var XHRRequest = (function() {
 	* http://msdn.microsoft.com/en-us/library/cc288060(v=VS.85).aspx
 	*/
 	XDRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
