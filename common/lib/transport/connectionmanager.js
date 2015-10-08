@@ -80,12 +80,12 @@ var ConnectionManager = (function() {
 		this.options = options;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.realtimeOpenTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
 			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectedRetryFrequency},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedRetryFrequency},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.realtimeCloseTimeout, failState: 'closed'},
 			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
@@ -639,7 +639,7 @@ var ConnectionManager = (function() {
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
-		}, Defaults.suspendedTimeout);
+		}, Defaults.connectionStateTtl);
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
@@ -965,7 +965,7 @@ var ConnectionManager = (function() {
 				callback(null, responseTime);
 			};
 
-			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+			var timer = setTimeout(onTimeout, Defaults.httpRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();

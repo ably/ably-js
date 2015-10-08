@@ -439,7 +439,7 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, Defaults.sendTimeout);
+		}, Defaults.httpRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {

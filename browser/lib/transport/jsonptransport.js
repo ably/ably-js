@@ -109,7 +109,7 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout;
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.httpRequestTimeout : Defaults.recvTimeout;
 		this.timer = setTimeout(function() { self.abort(); }, timeout);
 		head.insertBefore(script, head.firstChild);
 	};
