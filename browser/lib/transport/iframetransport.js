@@ -1,6 +1,11 @@
 var IframeTransport = (function() {
 	var origin = location.origin || location.protocol + "//" + location.hostname + (location.port ? ':' + location.port: '');
 
+	/* Allows iframe to work from local (file://) files - firefox sets to origin
+	* to 'null', chrome to 'file://', neither of which are valid security
+	* restrictions. */
+	if (origin === 'null' || origin === 'file://') origin = '*';
+
 	/* public constructor */
 	function IframeTransport(connectionManager, auth, params) {
 		params.binary = false;
