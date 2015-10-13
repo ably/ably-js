@@ -100,7 +100,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.done();
 					return;
 				}
-				authToken = tokenDetails.id;
+				authToken = tokenDetails;
 				test.equal(tokenDetails.clientId, testClientId, 'Verify client id');
 
 				rest.auth.requestToken({clientId:testClientId2}, function(err, tokenDetails) {
@@ -109,7 +109,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.done();
 						return;
 					}
-					authToken2 = tokenDetails.id;
+					authToken2 = tokenDetails;
 					test.equal(tokenDetails.clientId, testClientId2, 'Verify client id (2)');
 					test.done();
 				});
@@ -130,7 +130,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var channelName = 'attachAndEnter';
 		var attachAndEnter = function(cb) {
 			/* set up authenticated connection */
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -160,7 +160,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'enterWithoutAttach';
 		var enterWithoutAttach = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -184,7 +184,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'enterWithoutConnect';
 		var enterWithoutConnect = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			var clientChannel = clientRealtime.channels.get(channelName);
 			clientChannel.presence.enter('Test client data (enterWithoutConnect)', function(err) {
 				if(!err)
@@ -217,7 +217,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					return;
 				}
 
-				var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+				var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 
 				listenerFor('enter')(test, presenceChannel, function() {
 					closeAndFinish(test, [listenerRealtime, clientRealtime]);
@@ -275,7 +275,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var channelName = 'enterWithCallback';
 		var enterWithCallback = function(cb) {
 			/* set up authenticated connection */
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -305,7 +305,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'enterWithNothing';
 		var enterWithNothing = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -332,7 +332,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'enterWithData';
 		var enterWithData = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -369,7 +369,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.on(presenceHandler);
 		};
 		var enterDetachEnter = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			var clientChannel = clientRealtime.channels.get(channelName);
 			clientRealtime.connection.once('connected', function() {
 				clientChannel.presence.enter('first', function(err) {
@@ -405,7 +405,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var clientRealtime;
 		try {
 			test.expect(2);
-			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			var clientChannel = clientRealtime.channels.get('');
 			clientRealtime.connection.once('connected', function() {
 				clientChannel.presence.enter('clientId', function(err) {
@@ -434,7 +434,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'enterAndLeave';
 		var enterAndLeave = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -484,7 +484,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.on(presenceHandler);
 		};
 		var enterUpdate = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				var clientChannel = clientRealtime.channels.get(channelName);
 				clientChannel.attach(function(err) {
@@ -537,7 +537,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.on(presenceHandler);
 		};
 		var enterGet = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -583,7 +583,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.on(presenceHandler);
 		};
 		var enterLeaveGet = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -639,7 +639,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		};
 		try {
 			/* set up authenticated connection */
-			clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -787,7 +787,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var channelName = 'secondConnection';
 		try {
 			/* set up authenticated connection */
-			clientRealtime1 = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			clientRealtime1 = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime1.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel1 = clientRealtime1.channels.get(channelName);
@@ -815,7 +815,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.equal(presenceMembers1.length, 1, 'Member present');
 							/* now set up second connection and attach */
 							/* set up authenticated connection */
-							clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, authToken: authToken2 });
+							clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
 							clientRealtime2.connection.on('connected', function() {
 								/* get channel, attach */
 								var clientChannel2 = clientRealtime2.channels.get(channelName);
@@ -868,7 +868,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			async.parallel([
 				function(cb1) {
 					var data = 'Test client data (member0-1)';
-					clientRealtime1 = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+					clientRealtime1 = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 					clientRealtime1.connection.on('connected', function() {
 						/* get channel, attach, and enter */
 						clientChannel1 = clientRealtime1.channels.get(channelName);
@@ -893,7 +893,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				},
 				function(cb2) {
 					var data = 'Test client data (member0-2)';
-					clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, authToken: authToken2 });
+					clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
 					clientRealtime2.connection.on('connected', function() {
 						/* get channel, attach */
 						clientChannel2 = clientRealtime2.channels.get(channelName);
@@ -965,7 +965,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var channelName = 'leaveOnDisconnect';
 		var leaveOnDisconnect = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			clientRealtime.connection.on('connected', function() {
 				/* get channel, attach, and enter */
 				var clientChannel = clientRealtime.channels.get(channelName);
@@ -1012,7 +1012,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.on(presenceHandler);
 		};
 		var enterAfterClose = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, authToken: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 			var clientChannel = clientRealtime.channels.get(channelName);
 			clientRealtime.connection.once('connected', function() {
 				/* get channel and enter (should automatically attach) */
