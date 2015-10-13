@@ -6,7 +6,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
-	exports.setupauth = function(test) {
+	exports.setupchannel = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -22,13 +22,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Base attach case, binary transport
 	 */
 	exports.channelattach0 = function(test) {
-		var transport = 'binary';
-
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 			realtime.connection.on('connected', function() {
-				var channel0 = realtime.channels.get('channel0');
+				var channel0 = realtime.channels.get('channelattach0');
 				channel0.attach(function(err) {
 					if(err)
 						test.ok(false, 'Attach failed with error: ' + err);
@@ -48,13 +46,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Base attach case, text/json transport
 	 */
 	exports.channelattach1 = function(test) {
-		var transport = 'json';
-
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
 			realtime.connection.on('connected', function() {
-				var channel1 = realtime.channels.get('channel1');
+				var channel1 = realtime.channels.get('channelattach1');
 				channel1.attach(function(err) {
 					if(err)
 						test.ok(false, 'Attach failed with error: ' + err);
@@ -74,12 +70,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Attach before connect, binary transport
 	 */
 	exports.channelattach2 = function(test) {
-		var transport = 'binary';
-
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
-			var channel2 = realtime.channels.get('channel2');
+			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
+			var channel2 = realtime.channels.get('channelattach2');
 			channel2.attach(function(err) {
 				if(err)
 					test.ok(false, 'Attach failed with error: ' + err);
@@ -98,13 +92,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Attach then detach, binary transport
 	 */
 	exports.channelattach3 = function(test) {
-		var transport = 'binary';
-
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 			realtime.connection.on('connected', function() {
-				var channel0 = realtime.channels.get('channel0');
+				var channel0 = realtime.channels.get('channelattach3');
 				channel0.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
@@ -319,7 +311,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			try {
 				var realtime = helper.AblyRealtime({ transports: [transport] });
 				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channel5');
+					var channel5 = realtime.channels.get('channelattachjson2');
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
@@ -356,7 +348,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			try {
 				var realtime = helper.AblyRealtime({ transports: [transport] });
 				realtime.connection.on('connected', function() {
-					var channel3 = realtime.channels.get('channel3');
+					var channel3 = realtime.channels.get('channelattachxhr1');
 					channel3.attach(function(err) {
 						if(err)
 							test.ok(false, 'Attach failed with error: ' + err);
@@ -382,7 +374,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			try {
 				var realtime = helper.AblyRealtime({ transports: [transport] });
 				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channel5');
+					var channel5 = realtime.channels.get('channelattachxhr2');
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
@@ -419,7 +411,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			try {
 				var realtime = helper.AblyRealtime({ transports: [transport] });
 				realtime.connection.on('connected', function() {
-					var channel3 = realtime.channels.get('channel3');
+					var channel3 = realtime.channels.get('channelattachcomet1');
 					channel3.attach(function(err) {
 						if(err)
 							test.ok(false, 'Attach failed with error: ' + err);
@@ -445,7 +437,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			try {
 				var realtime = helper.AblyRealtime({ transports: [transport] });
 				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channel5');
+					var channel5 = realtime.channels.get('channelattachcomet2');
 					channel5.attach(function(err) {
 						if(err) {
 							test.ok(false, 'Attach failed with error: ' + err);
@@ -477,13 +469,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Subscribe, then unsubscribe, binary transport
 	 */
 	exports.channelsubscribe0 = function(test) {
-		var transport = 'binary';
-
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 			realtime.connection.on('connected', function() {
-				var channel6 = realtime.channels.get('channel6');
+				var channel6 = realtime.channels.get('channelsubscribe0');
 				channel6.attach(function(err) {
 					if(err) {
 						test.ok(false, 'Attach failed with error: ' + err);
