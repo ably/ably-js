@@ -35,6 +35,7 @@ var Connection = (function() {
 
 	Connection.prototype.ping = function(callback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+		callback = callback || function() {};
 		this.connectionManager.ping(null, callback);
 	};
 

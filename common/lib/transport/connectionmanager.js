@@ -957,12 +957,16 @@ var ConnectionManager = (function() {
 				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
 			};
 
+			var pingStart = Date.now();
+
 			var onHeartbeat = function () {
 				clearTimeout(timer);
-				callback(null);
+				var responseTime = Date.now() - pingStart;
+				callback(null, responseTime);
 			};
 
 			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();
 			return;
@@ -978,11 +982,11 @@ var ConnectionManager = (function() {
 		 * but ensure that we retry if the transport is superseded before we complete */
 		var completed = false, self = this;
 
-		var onPingComplete = function(err) {
+		var onPingComplete = function(err, responseTime) {
 			self.off('transport.active', onTransportActive);
 			if(!completed) {
 				completed = true;
-				callback(err);
+				callback(err, responseTime);
 			}
 		};
 
