@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
+		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection,
 		simulateDroppedConnection = helper.simulateDroppedConnection;
 
@@ -108,31 +109,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		phase0(function(err) {
 			if(err) {
-				test.ok(false, 'Phase 1 failed with err: ' + err);
+				test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
 				test.done();
 				return;
 			}
 			phase1(function(err) {
 				if(err) {
-					test.ok(false, 'Phase 1 failed with err: ' + err);
+					test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
 					test.done();
 					return;
 				}
 				phase2(function(err) {
 					if(err) {
-						test.ok(false, 'Phase 2 failed with err: ' + err);
+						test.ok(false, 'Phase 2 failed with err: ' + displayError(err));
 						test.done();
 						return;
 					}
 					phase3(function(err) {
 						if(err) {
-							test.ok(false, 'Phase 3 failed with err: ' + err);
+							test.ok(false, 'Phase 3 failed with err: ' + displayError(err));
 							test.done();
 							return;
 						}
 						phase4(function(err) {
 							if(err) {
-								test.ok(false, 'Phase 4 failed with err: ' + err);
+								test.ok(false, 'Phase 4 failed with err: ' + displayError(err));
 								return;
 							}
 							closeAndFinish(test, [rxRealtime, txRealtime]);
@@ -251,25 +252,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		phase0(function(err) {
 			if(err) {
-				test.ok(false, 'Phase 1 failed with err: ' + err);
+				test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
 				closeAndFinish(test, [rxRealtime, txRealtime]);
 				return;
 			}
 			phase1(function(err) {
 				if(err) {
-					test.ok(false, 'Phase 1 failed with err: ' + err);
+					test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
 					closeAndFinish(test, [rxRealtime, txRealtime]);
 					return;
 				}
 				phase2(function(err) {
 					if(err) {
-						test.ok(false, 'Phase 2 failed with err: ' + err);
+						test.ok(false, 'Phase 2 failed with err: ' + displayError(err));
 						closeAndFinish(test, [rxRealtime, txRealtime]);
 						return;
 					}
 					phase3(function(err) {
 						if(err) {
-							test.ok(false, 'Phase 3 failed with err: ' + err);
+							test.ok(false, 'Phase 3 failed with err: ' + displayError(err));
 							closeAndFinish(test, [rxRealtime, txRealtime]);
 							return;
 						}

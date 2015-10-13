@@ -29,7 +29,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var channel0 = realtime.channels.get('channelattach0');
 				channel0.attach(function(err) {
 					if(err)
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 					else
 						test.ok(true, 'Attach to channel 0 with no options');
 					closeAndFinish(test, realtime);
@@ -53,7 +53,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var channel1 = realtime.channels.get('channelattach1');
 				channel1.attach(function(err) {
 					if(err)
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 					else
 						test.ok(true, 'Attach to channel1 with no options');
 					closeAndFinish(test, realtime);
@@ -76,7 +76,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var channel2 = realtime.channels.get('channelattach2');
 			channel2.attach(function(err) {
 				if(err)
-					test.ok(false, 'Attach failed with error: ' + err);
+					test.ok(false, 'Attach failed with error: ' + displayError(err));
 				else
 					test.ok(true, 'Attach to channel 0 with no options');
 				closeAndFinish(test, realtime);
@@ -99,12 +99,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var channel0 = realtime.channels.get('channelattach3');
 				channel0.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 					}
 					channel0.detach(function(err) {
 						if(err) {
-							test.ok(false, 'Detach failed with error: ' + err);
+							test.ok(false, 'Detach failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 						}
 						if(channel0.state == 'detached')
@@ -288,7 +288,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel3 = realtime.channels.get('channel3');
 					channel3.attach(function(err) {
 						if(err)
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
 						closeAndFinish(test, realtime);
@@ -314,13 +314,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel5 = realtime.channels.get('channelattachjson2');
 					channel5.attach(function(err) {
 						if(err) {
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
-								test.ok(false, 'Attach failed with error: ' + err);
+								test.ok(false, 'Attach failed with error: ' + displayError(err));
 								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
@@ -351,7 +351,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel3 = realtime.channels.get('channelattachxhr1');
 					channel3.attach(function(err) {
 						if(err)
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
 						closeAndFinish(test, realtime);
@@ -377,13 +377,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel5 = realtime.channels.get('channelattachxhr2');
 					channel5.attach(function(err) {
 						if(err) {
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
-								test.ok(false, 'Attach failed with error: ' + err);
+								test.ok(false, 'Attach failed with error: ' + displayError(err));
 								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
@@ -414,7 +414,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel3 = realtime.channels.get('channelattachcomet1');
 					channel3.attach(function(err) {
 						if(err)
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 						else
 							test.ok(true, 'Attach to channel 3 with no options');
 						closeAndFinish(test, realtime);
@@ -440,13 +440,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					var channel5 = realtime.channels.get('channelattachcomet2');
 					channel5.attach(function(err) {
 						if(err) {
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 						}
 						/* we can't get a callback on a detach, so set a timeout */
 						channel5.detach(function(err) {
 							if(err) {
-								test.ok(false, 'Attach failed with error: ' + err);
+								test.ok(false, 'Attach failed with error: ' + displayError(err));
 								closeAndFinish(test, realtime);
 							}
 							if(channel5.state == 'detached')
@@ -476,7 +476,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var channel6 = realtime.channels.get('channelsubscribe0');
 				channel6.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 					}
 					try {
