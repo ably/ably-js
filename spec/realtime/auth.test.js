@@ -281,7 +281,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var clientRealtime,
 			rest = helper.AblyRest();
 
-		rest.auth.requestToken({ ttl: 1000 }, null, function(err, tokenDetails) {
+		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
