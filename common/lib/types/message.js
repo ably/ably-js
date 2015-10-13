@@ -7,6 +7,7 @@ var Message = (function() {
 		this.timestamp = undefined;
 		this.clientId = undefined;
 		this.connectionId = undefined;
+		this.connectionKey = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
 	}
@@ -20,6 +21,7 @@ var Message = (function() {
 			name: this.name,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
+			connectionKey: this.connectionKey,
 			encoding: this.encoding
 		};
 
