@@ -272,5 +272,34 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
+	/*
+	 * Check state change reason is propogated during a disconnect
+	 * (when connecting with a token that expires while connected)
+	 */
+	exports.auth_token_expires = function(test) {
+		test.expect(4);
+		var clientRealtime,
+			rest = helper.AblyRest();
+
+		rest.auth.requestToken({ ttl: 1000 }, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime({ tokenDetails: tokenDetails });
+			clientRealtime.connection.once('connected', function(){
+				test.ok(true, 'Verify connection connected');
+				clientRealtime.connection.once('disconnected', function(stateChange){
+					test.ok(true, 'Verify connection disconnected');
+					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
+					test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+					clientRealtime.close();
+					test.done();
+				});
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

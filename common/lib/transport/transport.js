@@ -73,7 +73,7 @@ var Transport = (function() {
 			break;
 		case actions.DISCONNECTED:
 			this.isConnected = false;
-			this.onDisconnect();
+			this.onDisconnect(message);
 			break;
 		case actions.ACK:
 			this.emit('ack', message.msgSerial, message.count);
