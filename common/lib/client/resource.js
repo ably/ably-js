@@ -37,6 +37,12 @@ var Resource = (function() {
 				}
 			}
 
+			if(body.statusCode === undefined) {
+				/* Envelope already unwrapped by the transport */
+				callback(err, body, headers, true);
+				return;
+			}
+
 			var statusCode = body.statusCode,
 				response = body.response,
 				headers = body.headers;
