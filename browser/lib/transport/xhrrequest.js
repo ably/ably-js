@@ -32,6 +32,10 @@ var XHRRequest = (function() {
 		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
 	}
 
+	function isEncodingChunked(xhr) {
+		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
+	}
+
 	function XHRRequest(uri, headers, params, body, requestMode) {
 		EventEmitter.call(this);
 		params = params || {};
@@ -127,7 +131,7 @@ var XHRRequest = (function() {
 				self.complete();
 				return;
 			}
-			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse);
+			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
 		function onEnd() {
