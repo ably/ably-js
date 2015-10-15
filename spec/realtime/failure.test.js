@@ -107,11 +107,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						wsHost: 'example.com',
 						host: 'example.com',
 						/* Timings note: some transports fail immediately with an invalid
-						* host, others take longer; so set the realtimeOpenTimeout to be
+						* host, others take longer; so set the realtimeRequestTimeout to be
 						* small enough that the max difference is never large enough that
 						* the suspended timeout trips before three connection cycles */
 						disconnectedRetryFrequency: 1000,
-						realtimeOpenTimeout: 50,
+						realtimeRequestTimeout: 50,
 						suspendedRetryFrequency: 1000,
 						connectionStateTtl: 2500
 					});

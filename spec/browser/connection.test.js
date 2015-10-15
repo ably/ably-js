@@ -66,7 +66,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	exports.device_going_online_causes_disconnected_connection_to_reconnect_immediately = function(test) {
  		/* Give up trying to connect fairly quickly */
-		var realtime = helper.AblyRealtime({realtimeOpenTimeout: 1000}),
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 1000}),
 		connection = realtime.connection,
 		onlineEvent = new Event('online', {'bubbles': true});
 
@@ -97,7 +97,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	exports.device_going_online_causes_suspended_connection_to_reconnect_immediately = function(test) {
 		/* move to suspended state after 2s of being disconnected */
-		var realtime = helper.AblyRealtime({ disconnectedRetryFrequency: 500, realtimeOpenTimeout: 500, connectionStateTtl: 2000 }),
+		var realtime = helper.AblyRealtime({ disconnectedRetryFrequency: 500, realtimeRequestTimeout: 500, connectionStateTtl: 2000 }),
 		connection = realtime.connection,
 		onlineEvent = new Event('online', {'bubbles': true});
 
