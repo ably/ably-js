@@ -161,22 +161,25 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
-		var syncCursor, match, members = this.members;
+		var syncCursor, match, members = this.members, broadcastMessages = [];
 		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
 			this.members.startSync();
 
 		for(var i = 0; i < presenceSet.length; i++) {
-			var presence = presenceSet[i];
+			var presence = PresenceMessage.fromValues(presenceSet[i]);
 			switch(presence.action) {
 				case presenceAction.LEAVE:
-					broadcast &= members.remove(presence);
+					if(members.remove(presence)) {
+						broadcastMessages.push(presence);
+					}
 					break;
 				case presenceAction.UPDATE:
 				case presenceAction.ENTER:
-					presence = PresenceMessage.fromValues(presence);
 					presence.action = presenceAction.PRESENT;
 				case presenceAction.PRESENT:
-					broadcast &= members.put(presence);
+					if(members.put(presence)) {
+						broadcastMessages.push(presence);
+					}
 					break;
 			}
 		}
@@ -187,11 +190,9 @@ var RealtimePresence = (function() {
 		}
 
 		/* broadcast to listeners */
-		if(broadcast) {
-			for(var i = 0; i < presenceSet.length; i++) {
-				var presence = presenceSet[i];
-				this.emit(presenceActionToEvent[presence.action], presence);
-			}
+		for(var i = 0; i < broadcastMessages.length; i++) {
+			var presence = broadcastMessages[i];
+			this.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
@@ -265,9 +266,11 @@ var RealtimePresence = (function() {
 
 		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
 		var existingItem = map[key];
-		if(existingItem && item.timestamp < existingItem.timestamp) {
+		if(existingItem) {
 			/* no item supersedes a newer item with the same key */
-			return false;
+			if(item.id <= existingItem.id) {
+				return false;
+			}
 		}
 		map[key] = item;
 		return true;
