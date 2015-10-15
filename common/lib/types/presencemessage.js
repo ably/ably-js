@@ -59,6 +59,8 @@ var PresenceMessage = (function() {
 			result += '; timestamp=' + this.timestamp;
 		if(this.clientId)
 			result += '; clientId=' + this.clientId;
+		if(this.connectionId)
+			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {
