@@ -12,8 +12,7 @@ Defaults.TIMEOUTS = {
 	httpRequestTimeout         : 15000,
 	/* Not documented: */
 	connectionStateTtl         : 60000,
-	realtimeOpenTimeout        : 15000,
-	realtimeCloseTimeout       : 10000,
+	realtimeRequestTimeout     : 15000,
 	recvTimeout                : 90000,
 	connectionPersistTimeout   : 15000
 };

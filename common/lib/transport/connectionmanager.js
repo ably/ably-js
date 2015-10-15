@@ -81,12 +81,12 @@ var ConnectionManager = (function() {
 		var timeouts = options.timeouts;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeOpenTimeout, failState: 'disconnected'},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
 			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
 			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryFrequency},
 			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryFrequency},
-			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeCloseTimeout, failState: 'closed'},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
 			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
@@ -969,7 +969,7 @@ var ConnectionManager = (function() {
 				callback(null, responseTime);
 			};
 
-			var timer = setTimeout(onTimeout, this.options.timeouts.httpRequestTimeout);
+			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();
