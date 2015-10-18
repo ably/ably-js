@@ -212,7 +212,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							test.ok(false, "Exception was not raised");
 						} catch (e) {
 							test.ok(true, "Exception correctly raised");
-							test.equal(e.code, 40011, "Invalid data type exception raised");
+							test.equal(e.code, 40013, "Invalid data type exception raised");
 						}
 					}
 					closeAndFinish(test, realtime);
