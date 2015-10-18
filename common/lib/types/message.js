@@ -94,7 +94,7 @@ var Message = (function() {
 				msg.data = JSON.stringify(data);
 				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 			} else {
-				throw new ErrorInfo('Data type is unsupported', 40011, 400);
+				throw new ErrorInfo('Data type is unsupported', 40013, 400);
 			}
 		}
 
