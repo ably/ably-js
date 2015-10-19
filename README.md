@@ -143,18 +143,16 @@ channel.history(function(err, messagesPage) {
 ### Presence on a channel
 
 ```javascript
-channel.presence.get(function(err, presencePage) { // PaginatedResult
-  presencePage.items                               // array of PresenceMessage
-  presencePage.items[0].data                       // payload for first message
-  presencePage.items.length                        // number of messages in the current page of members
-  presencePage.next(function(nextPage) { ... });   // retrieves the next page as PaginatedResult
-  presencePage.next == undefined                   // there are no more pages
+channel.presence.get(function(err, presenceSet) {
+  presenceSet                                     // array of PresenceMessages
 });
 
 channel.presence.enter('my status', function() {
   // now I am entered
 });
 ```
+Note that presence#get on a realtime channel does not return a
+PaginatedResult, as the library maintains a local copy of the presence set.
 
 ### Querying the Presence History
 
