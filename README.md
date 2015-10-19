@@ -130,7 +130,7 @@ channel.publish('greeting', 'Hello World!')
 ### Querying the History
 
 ```javascript
-channel.history(function(messagesPage) {
+channel.history(function(err, messagesPage) {
   messagesPage                                    // PaginatedResult
   messagesPage.items                              // array of Message
   messagesPage.items[0].data                      // payload for first message
@@ -143,12 +143,12 @@ channel.history(function(messagesPage) {
 ### Presence on a channel
 
 ```javascript
-channel.presence.get(function(presencePage) {     // PaginatedResult
-  presencePage.items                              // array of PresenceMessage
-  presencePage.items[0].data                      // payload for first message
-  presencePage.items.length                       // number of messages in the current page of members
-  presencePage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  presencePage.next == undefined                  // there are no more pages
+channel.presence.get(function(err, presencePage) { // PaginatedResult
+  presencePage.items                               // array of PresenceMessage
+  presencePage.items[0].data                       // payload for first message
+  presencePage.items.length                        // number of messages in the current page of members
+  presencePage.next(function(nextPage) { ... });   // retrieves the next page as PaginatedResult
+  presencePage.next == undefined                   // there are no more pages
 });
 
 channel.presence.enter('my status', function() {
@@ -159,7 +159,7 @@ channel.presence.enter('my status', function() {
 ### Querying the Presence History
 
 ```javascript
-channel.presence.history(function(messagesPage) { // PaginatedResult
+channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.items                              // array of PresenceMessage
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
@@ -197,7 +197,7 @@ channel.publish('greeting', 'Hello World!')
 ### Querying the History
 
 ```javascript
-channel.history(function(messagesPage) {
+channel.history(function(err, messagesPage) {
   messagesPage                                    // PaginatedResult
   messagesPage.items                              // array of Message
   messagesPage.items[0].data                      // payload for first message
@@ -210,7 +210,7 @@ channel.history(function(messagesPage) {
 ### Presence on a channel
 
 ```javascript
-channel.presence.get(function(presencePage) {     // PaginatedResult
+channel.presence.get(function(err, presencePage) { // PaginatedResult
   presencePage.items                              // array of PresenceMessage
   presencePage.items[0].data                      // payload for first message
   presencePage.items.length                       // number of messages in the current page of members
@@ -222,7 +222,7 @@ channel.presence.get(function(presencePage) {     // PaginatedResult
 ### Querying the Presence History
 
 ```javascript
-channel.presence.history(function(messagesPage) { // PaginatedResult
+channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.items                              // array of PresenceMessage
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
@@ -253,7 +253,7 @@ client.auth.createTokenRequest(function(err, tokenRequest) {
 ### Fetching your application's stats
 
 ```javascript
-client.stats(function(statsPage) {             // statsPage as PaginatedResult
+client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
   statsPage.items                              // array of Stats
   statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
@@ -262,7 +262,7 @@ client.stats(function(statsPage) {             // statsPage as PaginatedResult
 ### Fetching the Ably service time
 
 ```javascript
-client.time(function(time) { ... }); // time is in ms since epoch
+client.time(function(err, time) { ... }); // time is in ms since epoch
 ```
 
 ## Test suite
