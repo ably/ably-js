@@ -175,7 +175,6 @@ var RealtimePresence = (function() {
 					break;
 				case presenceAction.UPDATE:
 				case presenceAction.ENTER:
-					presence.action = presenceAction.PRESENT;
 				case presenceAction.PRESENT:
 					if(members.put(presence)) {
 						broadcastMessages.push(presence);
@@ -259,6 +258,10 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.put = function(item) {
+		if(item.action === presenceAction.ENTER || item.action === presenceAction.UPDATE) {
+			item = PresenceMessage.fromValues(item);
+			item.action = presenceAction.PRESENT;
+		}
 		var map = this.map, key = memberKey(item);
 		/* we've seen this member, so do not remove it at the end of sync */
 		if(this.residualMembers)
