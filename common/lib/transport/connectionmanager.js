@@ -84,8 +84,8 @@ var ConnectionManager = (function() {
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
 			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryFrequency},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryFrequency},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
 			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
