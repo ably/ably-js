@@ -44,9 +44,7 @@ var XHRRequest = (function() {
 	}
 
 	function isEncodingChunked(xhr) {
-		// TODO below line is wrong, remove it and uncomment the other when realtime supports it
-		return true;
-		//return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
+		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
