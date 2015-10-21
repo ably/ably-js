@@ -110,9 +110,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						* host, others take longer; so set the realtimeRequestTimeout to be
 						* small enough that the max difference is never large enough that
 						* the suspended timeout trips before three connection cycles */
-						disconnectedRetryFrequency: 1000,
+						disconnectedRetryTimeout: 1000,
 						realtimeRequestTimeout: 50,
-						suspendedRetryFrequency: 1000,
+						suspendedRetryTimeout: 1000,
 						connectionStateTtl: 2500
 					});
 					realtime.connection.on(function() {

@@ -136,8 +136,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
-				disconnectedRetryFrequency: 123,
-				suspendedRetryFrequency: 456,
+				disconnectedRetryTimeout: 123,
+				suspendedRetryTimeout: 456,
 				httpRequestTimeout: 789,
 			});
 			/* Note: uses internal knowledge of connectionManager */

@@ -7,8 +7,8 @@ Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
 Defaults.TIMEOUTS = {
 	/* Documented as options params: */
-	disconnectedRetryFrequency : 15000,
-	suspendedRetryFrequency    : 30000,
+	disconnectedRetryTimeout : 15000,
+	suspendedRetryTimeout    : 30000,
 	httpRequestTimeout         : 15000,
 	/* Not documented: */
 	connectionStateTtl         : 60000,
