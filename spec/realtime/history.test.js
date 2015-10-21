@@ -62,7 +62,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					var rtChannel = realtime.channels.get('persisted:history_until_attach');
 					rtChannel.attach(function(err) {
 						if(err) {
-							test.ok(false, 'Attach failed with error: ' + err);
+							test.ok(false, 'Attach failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 							return;
 						}

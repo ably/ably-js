@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var currentTime, exports = {},
+		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -35,7 +36,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime = helper.AblyRealtime();
 		realtime.auth.requestToken(function(err, tokenDetails) {
 			if(err) {
-				test.ok(false, helper.displayError(err));
+				test.ok(false, displayError(err));
 				closeAndFinish(test, realtime);
 				return;
 			}
@@ -58,7 +59,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime, rest = helper.AblyRest();
 		rest.auth.requestToken(null, null, function(err, tokenDetails) {
 			if(err) {
-				test.ok(false, helper.displayError(err));
+				test.ok(false, displayError(err));
 				closeAndFinish(test, realtime);
 				return;
 			}
@@ -86,7 +87,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime, rest = helper.AblyRest();
 		rest.auth.requestToken(null, null, function(err, tokenDetails) {
 			if(err) {
-				test.ok(false, helper.displayError(err));
+				test.ok(false, displayError(err));
 				closeAndFinish(test, realtime);
 				return;
 			}
@@ -115,7 +116,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.createTokenRequest(tokenParams, null, function(err, tokenRequest) {
 				if(err) {
-					test.ok(false, helper.displayError(err));
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 					return;
 				}
@@ -149,7 +150,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 				if(err) {
-					test.ok(false, helper.displayError(err));
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 					return;
 				}
@@ -181,7 +182,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
 				if(err) {
-					test.ok(false, helper.displayError(err));
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 					return;
 				}
@@ -214,7 +215,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
 				if(err) {
-					test.ok(false, helper.displayError(err));
+					test.ok(false, displayError(err));
 					test.done();
 					return;
 				}
@@ -233,7 +234,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		realtime.connection.on('failed', function(err) {
 			realtime.close();
-			test.ok(false, "Failed: " + err);
+			test.ok(false, "Failed: " + displayError(err));
 			test.done();
 			return;
 		});

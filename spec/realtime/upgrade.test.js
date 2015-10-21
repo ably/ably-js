@@ -15,6 +15,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				setTimeout(helper(i), 20*i);
 			}
 		},
+		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -116,9 +117,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					if(rtChannel.state == 'attached') {
 						//console.log('*** publishpostupgrade0: publishing (channel attached on transport active) ...');
 						restChannel.publish('event0', testMsg, function(err) {
-							//console.log('publishpostupgrade0: publish returned err = ' + err);
+							//console.log('publishpostupgrade0: publish returned err = ' + displayError(err));
 							if(err) {
-								test.ok(false, 'Publish failed with error: ' + err);
+								test.ok(false, 'Publish failed with error: ' + displayError(err));
 								closeAndFinish(test, realtime);
 							}
 						});
@@ -126,9 +127,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						rtChannel.on('attached', function() {
 							//console.log('*** publishpostupgrade0: publishing (channel attached after wait) ...');
 							restChannel.publish('event0', testMsg, function(err) {
-								//console.log('publishpostupgrade0: publish returned err = ' + err);
+								//console.log('publishpostupgrade0: publish returned err = ' + displayError(err));
 								if(err) {
-									test.ok(false, 'Publish failed with error: ' + err);
+									test.ok(false, 'Publish failed with error: ' + displayError(err));
 									closeAndFinish(test, realtime);
 								}
 							});

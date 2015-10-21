@@ -28,14 +28,33 @@ var XHRRequest = (function() {
 		return false;
 	};
 
+	function ieVersion() {
+		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
+		return match && Number(match[1]);
+	}
+
+	function needJsonEnvelope() {
+		/* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
+		var version;
+		return isIE && (version = ieVersion()) && version === 10;
+	}
+
 	function getContentType(xhr) {
 		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
+	}
+
+	function isEncodingChunked(xhr) {
+		// TODO below line is wrong, remove it and uncomment the other when realtime supports it
+		return true;
+		//return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = String(Math.random()).substr(2);
+		if(needJsonEnvelope() && !params.envelope)
+			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);
 		this.headers = headers || {};
 		this.body = body;
@@ -127,12 +146,13 @@ var XHRRequest = (function() {
 				self.complete();
 				return;
 			}
-			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse);
+			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
 		function onEnd() {
 			try {
 				var contentType = getContentType(xhr),
+					headers = null,
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
@@ -149,6 +169,14 @@ var XHRRequest = (function() {
 					responseBody = JSON.parse(String(responseBody));
 					unpacked = true;
 				}
+
+				if(responseBody.response !== undefined) {
+					/* unwrap JSON envelope */
+					statusCode = responseBody.statusCode;
+					successResponse = (statusCode < 400);
+					headers = responseBody.headers;
+					responseBody = responseBody.response;
+				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
@@ -157,7 +185,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, (contentType && {'content-type': contentType}), unpacked);
+				self.complete(null, responseBody, headers || (contentType && {'content-type': contentType}), unpacked);
 				return;
 			}
 

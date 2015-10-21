@@ -46,7 +46,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var rtChannel = realtime.channels.get('publishonce');
 				rtChannel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
@@ -74,7 +74,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var testData = 'Some data';
 		var errorCallback = function(err){
 			if(err) {
-				test.ok(false, 'Error received by publish callback ' + err);
+				test.ok(false, 'Error received by publish callback ' + displayError(err));
 				closeAndFinish(test, realtime);
 				return;
 			}
@@ -112,7 +112,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var rtChannel = realtime.channels.get('publishVariations');
 				rtChannel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
@@ -199,7 +199,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var rtChannel = realtime.channels.get('publishDisallowed');
 				rtChannel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
@@ -249,7 +249,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				var rtChannel = realtime.channels.get('publishEncodings');
 				rtChannel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
@@ -312,7 +312,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				rtChannel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}

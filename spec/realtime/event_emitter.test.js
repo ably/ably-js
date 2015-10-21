@@ -72,7 +72,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				});
 				channel.attach(function(err) {
 					if(err) {
-						test.ok(false, 'Attach failed with error: ' + err);
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
 						closeAndFinish(test, realtime);
 					}
 				});
