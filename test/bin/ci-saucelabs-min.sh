@@ -13,7 +13,7 @@ npm install
 npm install grunt-cli
 
 echo "\n$GREEN -> Running Karma test suite (Sauce Labs - Chrome, IE, Safari for iOS) $NO_COLOUR"
-$(npm bin)/grunt test:karma --browsers sl_chrome_42,sl_ie_11,sl_ios_safari_8_2
+$(npm bin)/grunt test:karma --browsers sl_chrome_42,sl_ie_11,sl_ios_safari_8_4
 karma_exitstatus=$?
 
 if [[ $karma_exitstatus -ne 0 ]]; then exit $karma_exitstatus; fi
