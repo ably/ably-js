@@ -78,14 +78,15 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
+		var timeouts = options.timeouts;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
 			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
 			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
@@ -558,8 +559,8 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.persistConnection = function() {
 		if(createCookie) {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
-				createCookie(connectionKeyCookie, this.connectionKey, Defaults.connectionPersistTimeout);
-				createCookie(connectionSerialCookie, this.connectionSerial, Defaults.connectionPersistTimeout);
+				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
+				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
 			}
 		}
 	};
@@ -616,7 +617,7 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
 				self.notifyState({state: transitionState.failState});
 			}
-		}, Defaults.connectTimeout);
+		}, transitionState.retryDelay);
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
@@ -639,11 +640,11 @@ var ConnectionManager = (function() {
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
-		}, Defaults.suspendedTimeout);
+		}, this.options.timeouts.connectionStateTtl);
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
-		if(state !== 'disconnected' && state !== 'suspended')
+		if(state !== 'disconnected' && state !== 'suspended' && state !== 'connecting')
 			this.cancelSuspendTimer();
 	};
 
@@ -680,10 +681,11 @@ var ConnectionManager = (function() {
 		if(state == this.state.state)
 			return;
 
-		/* kill timers (possibly excepting suspend timer, as these are superseded by this notification */
+		/* kill timers (possibly excepting suspend timer depending on the notified
+		* state), as these are superseded by this notification */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.checkSuspendTimer();
+		this.checkSuspendTimer(indicated.state);
 
 		/* do nothing if we're unable to move from the current state */
 		if(this.state.terminal)
@@ -719,7 +721,9 @@ var ConnectionManager = (function() {
 		/* kill running timers, as this request supersedes them */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.cancelSuspendTimer();
+		/* for suspend timer check rather than cancel -- eg requesting a connecting
+		* state should not reset the suspend timer */
+		this.checkSuspendTimer(state);
 
 		if(state == 'connecting') {
 			if(this.state.state == 'connected')
@@ -965,7 +969,7 @@ var ConnectionManager = (function() {
 				callback(null, responseTime);
 			};
 
-			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();

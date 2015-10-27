@@ -5,12 +5,19 @@ Defaults.WS_HOST                  = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
-Defaults.connectTimeout           = 15000;
-Defaults.disconnectTimeout        = 30000;
-Defaults.suspendedTimeout         = 120000;
-Defaults.recvTimeout              = 90000;
-Defaults.sendTimeout              = 10000;
-Defaults.connectionPersistTimeout = 15000;
+Defaults.TIMEOUTS = {
+	/* Documented as options params: */
+	disconnectedRetryTimeout : 15000,
+	suspendedRetryTimeout    : 30000,
+	httpRequestTimeout         : 15000,
+	/* Not documented: */
+	connectionStateTtl         : 60000,
+	realtimeRequestTimeout     : 15000,
+	recvTimeout                : 90000,
+	connectionPersistTimeout   : 15000
+};
+Defaults.httpMaxRetryCount = 3;
+
 Defaults.version                  = '0.8.6';
 
 Defaults.getHost = function(options, host, ws) {
@@ -28,9 +35,10 @@ Defaults.getPort = function(options, tls) {
 
 Defaults.getHosts = function(options) {
 	var hosts = [options.host],
-		fallbackHosts = options.fallbackHosts;
+		fallbackHosts = options.fallbackHosts,
+		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) hosts = hosts.concat(fallbackHosts);
+	if(fallbackHosts) hosts = hosts.concat(fallbackHosts.slice(0, httpMaxRetryCount));
 	return hosts;
 };
 
@@ -47,6 +55,12 @@ Defaults.normaliseOptions = function(options) {
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	if(!('tls' in options)) options.tls = true;
+
+	/* Allow values passed in options to override default timeouts */
+	options.timeouts = {};
+	for(var prop in Defaults.TIMEOUTS) {
+		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
+	};
 
 	return options;
 };

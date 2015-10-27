@@ -50,14 +50,15 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(uri, headers, params, body, requestMode, this.format);
+		return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts);
 	};
 
-	function Request(uri, headers, params, body, requestMode, format) {
+	function Request(uri, headers, params, body, requestMode, format, timeouts) {
 		EventEmitter.call(this);
 		if(typeof(uri) == 'string') uri = url.parse(uri);
 		this.client = (uri.protocol == 'http:') ? http : https;
 		this.requestMode = requestMode;
+		this.timeouts = timeouts;
 		this.requestComplete = false;
 		this.req = this.res = null;
 
@@ -88,7 +89,7 @@ var NodeCometTransport = (function() {
 	Utils.inherits(Request, EventEmitter);
 
 	Request.prototype.exec = function() {
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			self = this;
 
 		var timer = this.timer = setTimeout(function() { self.abort(); }, timeout),
