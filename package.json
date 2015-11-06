@@ -5,12 +5,12 @@
   "main": "./nodejs/index.js",
   "dependencies": {
     "async": "~0.9",
-    "buffertools": "~2.1",
+    "buffertools": "^2.1.3",
+    "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit",
+    "hexy": "~0.2",
     "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
     "request": "~2.53",
-    "ws": "~0.7",
-    "hexy": "~0.2",
-    "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit"
+    "ws": "^0.8.0"
   },
   "devDependencies": {
     "ejs": "~2.3",
@@ -36,7 +36,7 @@
     "karma-requirejs": "~0.2",
     "karma-sauce-launcher": "~0.2",
     "karma-story-reporter": "~0.3",
-    "kexec": "~1.2",
+    "kexec": "^1.3.0",
     "nodeunit": "~0.9",
     "requirejs": "~2.1",
     "shelljs": "~0.3"
