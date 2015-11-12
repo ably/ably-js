@@ -3192,7 +3192,7 @@ var Message = (function() {
 				msg.data = JSON.stringify(data);
 				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 			} else {
-				throw new ErrorInfo('Data type is unsupported', 40011, 400);
+				throw new ErrorInfo('Data type is unsupported', 40013, 400);
 			}
 		}
 
@@ -3349,6 +3349,8 @@ var PresenceMessage = (function() {
 			result += '; timestamp=' + this.timestamp;
 		if(this.clientId)
 			result += '; clientId=' + this.clientId;
+		if(this.connectionId)
+			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {
@@ -4693,12 +4695,16 @@ var ConnectionManager = (function() {
 				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
 			};
 
+			var pingStart = Date.now();
+
 			var onHeartbeat = function () {
 				clearTimeout(timer);
-				callback(null);
+				var responseTime = Date.now() - pingStart;
+				callback(null, responseTime);
 			};
 
 			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();
 			return;
@@ -4714,11 +4720,11 @@ var ConnectionManager = (function() {
 		 * but ensure that we retry if the transport is superseded before we complete */
 		var completed = false, self = this;
 
-		var onPingComplete = function(err) {
+		var onPingComplete = function(err, responseTime) {
 			self.off('transport.active', onTransportActive);
 			if(!completed) {
 				completed = true;
-				callback(err);
+				callback(err, responseTime);
 			}
 		};
 
@@ -4819,7 +4825,7 @@ var Transport = (function() {
 			break;
 		case actions.DISCONNECTED:
 			this.isConnected = false;
-			this.onDisconnect();
+			this.onDisconnect(message);
 			break;
 		case actions.ACK:
 			this.emit('ack', message.msgSerial, message.count);
@@ -5434,6 +5440,12 @@ var Resource = (function() {
 					callback(e);
 					return;
 				}
+			}
+
+			if(body.statusCode === undefined) {
+				/* Envelope already unwrapped by the transport */
+				callback(err, body, headers, true);
+				return;
 			}
 
 			var statusCode = body.statusCode,
@@ -6377,6 +6389,7 @@ var Connection = (function() {
 
 	Connection.prototype.ping = function(callback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+		callback = callback || function() {};
 		this.connectionManager.ping(null, callback);
 	};
 
@@ -7157,22 +7170,24 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
-		var syncCursor, match, members = this.members;
+		var syncCursor, match, members = this.members, broadcastMessages = [];
 		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
 			this.members.startSync();
 
 		for(var i = 0; i < presenceSet.length; i++) {
-			var presence = presenceSet[i];
+			var presence = PresenceMessage.fromValues(presenceSet[i]);
 			switch(presence.action) {
 				case presenceAction.LEAVE:
-					broadcast &= members.remove(presence);
+					if(members.remove(presence)) {
+						broadcastMessages.push(presence);
+					}
 					break;
 				case presenceAction.UPDATE:
 				case presenceAction.ENTER:
-					presence = PresenceMessage.fromValues(presence);
-					presence.action = presenceAction.PRESENT;
 				case presenceAction.PRESENT:
-					broadcast &= members.put(presence);
+					if(members.put(presence)) {
+						broadcastMessages.push(presence);
+					}
 					break;
 			}
 		}
@@ -7183,11 +7198,9 @@ var RealtimePresence = (function() {
 		}
 
 		/* broadcast to listeners */
-		if(broadcast) {
-			for(var i = 0; i < presenceSet.length; i++) {
-				var presence = presenceSet[i];
-				this.emit(presenceActionToEvent[presence.action], presence);
-			}
+		for(var i = 0; i < broadcastMessages.length; i++) {
+			var presence = broadcastMessages[i];
+			this.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
@@ -7254,6 +7267,10 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.put = function(item) {
+		if(item.action === presenceAction.ENTER || item.action === presenceAction.UPDATE) {
+			item = PresenceMessage.fromValues(item);
+			item.action = presenceAction.PRESENT;
+		}
 		var map = this.map, key = memberKey(item);
 		/* we've seen this member, so do not remove it at the end of sync */
 		if(this.residualMembers)
@@ -7261,9 +7278,11 @@ var RealtimePresence = (function() {
 
 		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
 		var existingItem = map[key];
-		if(existingItem && item.timestamp < existingItem.timestamp) {
+		if(existingItem) {
 			/* no item supersedes a newer item with the same key */
-			return false;
+			if(item.id <= existingItem.id) {
+				return false;
+			}
 		}
 		map[key] = item;
 		return true;
@@ -7523,14 +7542,31 @@ var XHRRequest = (function() {
 		return false;
 	};
 
+	function ieVersion() {
+		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
+		return match && Number(match[1]);
+	}
+
+	function needJsonEnvelope() {
+		/* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
+		var version;
+		return isIE && (version = ieVersion()) && version === 10;
+	}
+
 	function getContentType(xhr) {
 		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
+	}
+
+	function isEncodingChunked(xhr) {
+		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = String(Math.random()).substr(2);
+		if(needJsonEnvelope() && !params.envelope)
+			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);
 		this.headers = headers || {};
 		this.body = body;
@@ -7622,12 +7658,13 @@ var XHRRequest = (function() {
 				self.complete();
 				return;
 			}
-			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse);
+			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
 		function onEnd() {
 			try {
 				var contentType = getContentType(xhr),
+					headers = null,
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
@@ -7644,6 +7681,14 @@ var XHRRequest = (function() {
 					responseBody = JSON.parse(String(responseBody));
 					unpacked = true;
 				}
+
+				if(responseBody.response !== undefined) {
+					/* unwrap JSON envelope */
+					statusCode = responseBody.statusCode;
+					successResponse = (statusCode < 400);
+					headers = responseBody.headers;
+					responseBody = responseBody.response;
+				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
 				err.statusCode = 400;
@@ -7652,7 +7697,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, (contentType && {'content-type': contentType}), unpacked);
+				self.complete(null, responseBody, headers || (contentType && {'content-type': contentType}), unpacked);
 				return;
 			}
 
@@ -7975,6 +8020,11 @@ var XHRTransport = (function() {
 
 var IframeTransport = (function() {
 	var origin = location.origin || location.protocol + "//" + location.hostname + (location.port ? ':' + location.port: '');
+
+	/* Allows iframe to work from local (file://) files - firefox sets to origin
+	* to 'null', chrome to 'file://', neither of which are valid security
+	* restrictions. */
+	if (origin === 'null' || origin === 'file://') origin = '*';
 
 	/* public constructor */
 	function IframeTransport(connectionManager, auth, params) {
