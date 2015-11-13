@@ -1,3 +1,15 @@
+/**
+ * @license Copyright 2015, Ably
+ *
+ * Ably JavaScript Library v0.8.7
+ * https://github.com/ably/ably-js
+ *
+ * Ably Realtime Messaging
+ * https://www.ably.io
+ *
+ * Released under the Apache Licence v2.0
+ */
+
 ;(function() {
 	"use strict";
 	var Ably = window.Ably = this;
@@ -63,7 +75,7 @@ Defaults.suspendedTimeout         = 120000;
 Defaults.recvTimeout              = 90000;
 Defaults.sendTimeout              = 10000;
 Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.8.6';
+Defaults.version                  = '0.8.7';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)

@@ -3,9 +3,20 @@
 <head>
 <script type="text/javascript">
 
+/*
+ Copyright 2015, Ably
+
+ Ably JavaScript Library v0.8.7
+ https://github.com/ably/ably-js
+
+ Ably Realtime Messaging
+ https://www.ably.io
+
+ Released under the Apache Licence v2.0
+*/
 (function(){var A=window.Ably=this,h={internetUpUrlWithoutExtension:"https://internet-up.ably-realtime.com/is-the-internet-up",httpTransports:["xhr","iframe","jsonp"],transports:["web_socket","xhr","iframe","jsonp"],minified:!function(){}.name},B=function(){function a(){}a.addListener=function(a,b,g){a.addEventListener?a.addEventListener(b,g,!1):a.attachEvent("on"+b,function(){g.apply(a,arguments)})};a.removeListener=function(a,b,g){a.removeEventListener?a.removeEventListener(b,g,!1):a.detachEvent("on"+
 b,function(){g.apply(a,arguments)})};a.addMessageListener=function(e,b){a.addListener(e,"message",b)};a.removeMessageListener=function(e,b){a.removeListener(e,"message",b)};a.addUnloadListener=function(e){a.addListener(window,"unload",e)};return a}();h.protocolVersion=1;h.ENVIRONMENT="";h.HOST="rest.ably.io";h.WS_HOST="realtime.ably.io";h.FALLBACK_HOSTS=["A.ably-realtime.com","B.ably-realtime.com","C.ably-realtime.com","D.ably-realtime.com","E.ably-realtime.com"];h.PORT=80;h.TLS_PORT=443;h.connectTimeout=
-15E3;h.disconnectTimeout=3E4;h.suspendedTimeout=12E4;h.recvTimeout=9E4;h.sendTimeout=1E4;h.connectionPersistTimeout=15E3;h.version="0.8.6";h.getHost=function(a,e,b){return e=b?e==a.host&&a.wsHost||e||a.wsHost:e||a.host};h.getPort=function(a,e){return e||a.tls?a.tlsPort:a.port};h.getHosts=function(a){var e=[a.host];(a=a.fallbackHosts)&&(e=e.concat(a));return e};h.normaliseOptions=function(a){if(a.host)a.wsHost=a.wsHost||a.host;else{var e=a.environment&&String(a.environment).toLowerCase()||h.ENVIRONMENT,
+15E3;h.disconnectTimeout=3E4;h.suspendedTimeout=12E4;h.recvTimeout=9E4;h.sendTimeout=1E4;h.connectionPersistTimeout=15E3;h.version="0.8.7";h.getHost=function(a,e,b){return e=b?e==a.host&&a.wsHost||e||a.wsHost:e||a.host};h.getPort=function(a,e){return e||a.tls?a.tlsPort:a.port};h.getHosts=function(a){var e=[a.host];(a=a.fallbackHosts)&&(e=e.concat(a));return e};h.normaliseOptions=function(a){if(a.host)a.wsHost=a.wsHost||a.host;else{var e=a.environment&&String(a.environment).toLowerCase()||h.ENVIRONMENT,
 b=!e||"production"===e;a.host=b?h.HOST:e+"-"+h.HOST;a.wsHost=b?h.WS_HOST:e+"-"+h.WS_HOST;a.fallbackHosts=b?h.FALLBACK_HOSTS:a.fallbackHosts}a.port=a.port||h.PORT;a.tlsPort=a.tlsPort||h.TLS_PORT;"tls"in a||(a.tls=!0);return a};var C=function(){function a(){this.any=[];this.events={};this.anyOnce=[];this.eventsOnce={}}a.prototype.on=function(a,b){1==arguments.length&&"function"==typeof a?this.any.push(a):null===a?this.any.push(b):(this.events[a]||(this.events[a]=[])).push(b)};a.prototype.off=function(a,
 b){if(0==arguments.length)this.any=[],this.events={},this.anyOnce=[],this.eventsOnce={};else{1==arguments.length&&"function"==typeof a&&(b=a,a=null);var g,d=-1;if(null===a)if(b){if(!(g=this.any)||-1==(d=n.arrIndexOf(g,b)))if(g=this.anyOnce)d=n.arrIndexOf(g,b);-1<d&&g.splice(d,1)}else this.any=[],this.anyOnce=[];else if(b){d=-1;if(!(g=this.events[a])||-1==(d=n.arrIndexOf(g,b)))if(g=this.eventsOnce[a])d=n.arrIndexOf(g,b);-1<d&&g.splice(d,1)}else delete this.events[a],delete this.eventsOnce[a]}};a.prototype.listeners=
 function(a){if(a){var b=this.events[a]||[];this.eventsOnce[a]&&Array.prototype.push.apply(b,this.eventsOnce[a]);return b.length?b:null}return this.any.length?this.any:null};a.prototype.emit=function(a){function b(a){try{a.apply(d,g)}catch(c){throw l.logAction(l.LOG_ERROR,"EventEmitter.emit()","Unexpected listener exception: "+c+"; stack = "+c.stack),c;}}var g=Array.prototype.slice.call(arguments,1),d={event:a};if(this.anyOnce.length){var c=this.anyOnce;this.anyOnce=[];for(var f=0;f<c.length;f++)b(c[f])}for(f=

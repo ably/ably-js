@@ -51,12 +51,6 @@ module.exports = function (grunt) {
 	};
 
 	gruntConfig.copy = {
-		'compat-pubnub-js': {
-			src: '<%= dirs.compat %>/pubnub.js',
-			dest: '<%= dirs.dest %>/compat-pubnub.js',
-			flatten: true,
-			nonull: true
-		},
 		'compat-pubnub-md': {
 			src: '<%= dirs.compat %>/pubnub.md',
 			dest: '<%= dirs.dest %>/compat-pubnub.md',
@@ -88,6 +82,10 @@ module.exports = function (grunt) {
 		},
 		'iframe.min.html': {
 			dest: '<%= dirs.dest %>/iframe.min-<%= pkgVersion %>.html',
+			nonull: true
+		},
+		pubnub: {
+			dest: '<%= dirs.dest %>/compat-pubnub.js',
 			nonull: true
 		},
 		pusher: {
@@ -152,6 +150,7 @@ module.exports = function (grunt) {
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.crypto_js %>/core.js',
 		'<%= dirs.crypto_js %>/sha256.js',
@@ -168,6 +167,7 @@ module.exports = function (grunt) {
 	);
 
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.crypto_js %>/core.js',
 		'<%= dirs.crypto_js %>/sha256.js',
@@ -180,6 +180,7 @@ module.exports = function (grunt) {
 	);
 
 	gruntConfig.concat['iframe.js'].src = [
+		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/ably-prologue.js',
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/domevent.js',
@@ -208,7 +209,13 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/iframe-epilogue.html'
 	];
 
+	gruntConfig.concat['pubnub'].src = [
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.browser %>/compat/pubnub.js'
+	];
+
 	gruntConfig.concat['pusher'].src = [
+		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/prologue.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/utils.js',
@@ -273,7 +280,7 @@ module.exports = function (grunt) {
 	]);
 
 	grunt.registerTask('pubnub', [
-		'copy:compat-pubnub-js',
+		'concat:pubnub',
 		'copy:compat-pubnub-md'
 	]);
 
@@ -304,8 +311,14 @@ module.exports = function (grunt) {
 		'Set the library version string used for loading dependencies',
 		function() {
 			var defaultsFile = gruntConfig.dirs.common + '/lib/util/defaults.js';
-			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.]*)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
+			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.]+)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
 			grunt.file.write(defaultsFile, defaultsText);
+
+			var licenseFile = gruntConfig.dirs.fragments + '/license.js';
+			var licenseText = grunt.file.read(licenseFile).
+													replace(/(Ably JavaScript Library v)([\w\.]+)/i, '$1' + gruntConfig.pkgVersion).
+													replace(/(Copyright )(\d{4,})/i, '$1' + new Date().getFullYear())
+			grunt.file.write(licenseFile, licenseText);
 		}
 	);
 
