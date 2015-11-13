@@ -1,6 +1,7 @@
 var RealtimePresence = (function() {
 	var presenceAction = PresenceMessage.Action;
 	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
+	var noop = function() {};
 
 	function memberKey(item) {
 		return item.clientId + ':' + item.connectionId;
@@ -36,9 +37,13 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = null;
+		if (!callback) {
+			if (typeof(data)==='function') {
+				callback = data;
+				data = null;
+			} else {
+				callback = noop;
+			}
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
