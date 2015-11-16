@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						disconnectedRetryTimeout: 1000,
 						realtimeRequestTimeout: 50,
 						suspendedRetryTimeout: 1000,
-						connectionStateTtl: 2500
+						connectionStateTtl: 2900
 					});
 					realtime.connection.on(function() {
 						connectionEvents.push(this.event);
@@ -136,13 +136,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						'connecting','disconnected', // immediately
 						'connecting','disconnected', // at 1s
 						'connecting','disconnected', // at 2s
-						'suspended',                 // at 2.5s
-						'connecting', 'suspended'    // at 3.5s
+						'suspended',                 // at 2.9s
+						'connecting', 'suspended'    // at 3.9s
 					];
 					setTimeout(function() {
 						test.deepEqual(connectionEvents, expectedConnectionEvents, 'connection state for ' + transports + ' was ' + connectionEvents + ', expected ' + expectedConnectionEvents);
 						cb(null, realtime);
-					}, 4000);
+					}, 4800);
 				};
 			};
 			async.parallel(
