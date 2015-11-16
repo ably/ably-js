@@ -205,7 +205,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/*
 	 * Request a token using clientId, then initialize a connection without one,
-	 * and check that the connection inherits the clientId of the token
+	 * and check that the connection inherits the clientId from the tokenDetails
 	 */
 	exports.auth_clientid_inheritance = function(test) {
 		test.expect(1);
@@ -243,6 +243,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/*
 	 * Rest token generation with clientId, then connecting with a
 	 * different clientId, should fail with a library-generated message
+	 * (RSA15a, RSA15c)
 	 */
 	exports.auth_clientid_inheritance2 = function(test) {
 		test.expect(2);
@@ -270,6 +271,57 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				clientRealtime.close();
 				test.done();
 			})
+		});
+	};
+
+	/*
+	 * Rest token generation with clientId '*', then connecting with just the
+	 * token string and a different clientId, should succeed (RSA15b)
+	 */
+	exports.auth_clientid_inheritance3 = function(test) {
+		test.expect(1);
+		var realtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.clientId, testClientId);
+				realtime.connection.close();
+				test.done();
+				return;
+			});
+			monitorConnection(test, realtime);
+		});
+	};
+
+	/*
+	 * Request a token using clientId, then initialize a connection using just the token string,
+	 * and check that the connection inherits the clientId from the connectionDetails
+	 */
+	exports.auth_clientid_inheritance4 = function(test) {
+		test.expect(1);
+		var clientRealtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
+			clientRealtime.connection.on('connected', function() {
+				test.equal(clientRealtime.auth.clientId, testClientId);
+				closeAndFinish(test, clientRealtime)
+				return;
+			});
+			monitorConnection(test, clientRealtime);
 		});
 	};
 
