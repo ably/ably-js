@@ -41,6 +41,7 @@ var Auth = (function() {
 	function Auth(rest, options) {
 		this.rest = rest;
 		this.tokenParams = {};
+		this.clientId = options.clientId;
 
 		/* decide default auth method */
 		var key = options.key;
@@ -133,8 +134,8 @@ var Auth = (function() {
 	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
 		var token = this.tokenDetails;
 		if(token) {
-			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.rest.clientId, 40102, 401));
+			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {

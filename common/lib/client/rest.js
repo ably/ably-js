@@ -31,7 +31,6 @@ var Rest = (function() {
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
-		this.clientId = options.clientId;
 
 		this.serverTimeOffset = null;
 		this.baseUri = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };

@@ -442,8 +442,10 @@ var ConnectionManager = (function() {
 		if(connectionKey && this.connectionKey != connectionKey)  {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
+
+		var auth = this.realtime.auth;
 		if(clientId) {
-			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
 				var msg = 'Unexpected mismatch between expected and received clientId'
@@ -452,7 +454,7 @@ var ConnectionManager = (function() {
 				transport.abort(err);
 				return;
 			}
-			this.realtime.clientId = clientId;
+			auth.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);

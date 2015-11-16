@@ -226,7 +226,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
 
 		realtime.connection.on('connected', function() {
-			test.equal(realtime.clientId, testClientId);
+			test.equal(realtime.auth.clientId, testClientId);
 			realtime.connection.close();
 			test.done();
 			return;
