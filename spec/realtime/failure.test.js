@@ -102,5 +102,62 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
+	/*
+	 * Connect with various transports with a bad host, check that
+	 * the connecting/disconnecting/suspended cycle works as expected
+	 */
+	exports.no_connection_lifecycle = function(test) {
+		test.expect(availableTransports.length + 1);
+
+		try {
+			var lifecycleTest = function(transports) {
+				return function(cb) {
+					var connectionEvents = [];
+					var realtime = helper.AblyRealtime({
+						transports: transports,
+						wsHost: 'example.com',
+						host: 'example.com',
+						/* Timings note: some transports fail immediately with an invalid
+						* host, others take longer; so set the realtimeRequestTimeout to be
+						* small enough that the max difference is never large enough that
+						* the suspended timeout trips before three connection cycles */
+						disconnectedRetryTimeout: 1000,
+						realtimeRequestTimeout: 50,
+						suspendedRetryTimeout: 1000,
+						connectionStateTtl: 2500
+					});
+					realtime.connection.on(function() {
+						connectionEvents.push(this.event);
+					});
+
+					/* After 4s, has been through three connecting/disconnected cycles
+					* and one connecting/suspended cycles */
+					var expectedConnectionEvents = [
+						'connecting','disconnected', // immediately
+						'connecting','disconnected', // at 1s
+						'connecting','disconnected', // at 2s
+						'suspended',                 // at 2.5s
+						'connecting', 'suspended'    // at 3.5s
+					];
+					setTimeout(function() {
+						test.deepEqual(connectionEvents, expectedConnectionEvents, 'connection state for ' + transports + ' was ' + connectionEvents + ', expected ' + expectedConnectionEvents);
+						cb(null, realtime);
+					}, 4000);
+				};
+			};
+			async.parallel(
+				availableTransports.map(function(transport) {
+					return lifecycleTest([transport]);
+				}).concat(lifecycleTest(null)), // to test not specifying a transport (so will use upgrade mechanism)
+				function(err, realtimes) {
+					closeAndFinish(test, realtimes);
+				}
+			);
+		} catch(e) {
+			test.ok(false, 'connection failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

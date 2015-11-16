@@ -130,5 +130,45 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/* check changing the default timeouts */
+	exports.init_timeouts = function(test) {
+		test.expect(3);
+		try {
+			var realtime = helper.AblyRealtime({
+				key: 'not_a.real:key',
+				disconnectedRetryTimeout: 123,
+				suspendedRetryTimeout: 456,
+				httpRequestTimeout: 789,
+			});
+			/* Note: uses internal knowledge of connectionManager */
+			test.equal(realtime.connection.connectionManager.states.disconnected.retryDelay, 123, 'Verify disconnected retry frequency is settable');
+			test.equal(realtime.connection.connectionManager.states.suspended.retryDelay, 456, 'Verify suspended retry frequency is settable');
+			test.equal(realtime.connection.connectionManager.options.timeouts.httpRequestTimeout, 789, 'Verify suspended retry frequency is settable');
+			closeAndFinish(test, realtime);
+		} catch(e) {
+			test.ok(false, 'init_defaulthost failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
+
+	/* check changing the default fallback hosts and changing httpMaxRetryCount */
+	exports.init_fallbacks = function(test) {
+		test.expect(1);
+		try {
+			var realtime = helper.AblyRealtime({
+				key: 'not_a.real:key',
+				host: 'a',
+				httpMaxRetryCount: 2,
+				fallbackHosts: ['b', 'c', 'd', 'e']
+			});
+			/* Note: uses internal knowledge of connectionManager */
+			test.deepEqual(realtime.connection.connectionManager.httpHosts, ['a', 'b', 'c'], 'Verify hosts list is as expected');
+			closeAndFinish(test, realtime);
+		} catch(e) {
+			test.ok(false, 'init_defaulthost failed with exception: ' + e.stack);
+			test.done();
+		}
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });

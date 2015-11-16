@@ -143,7 +143,7 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()',
 				'Websocket failed to open after connectTimeout expired; disposing');
 			self.dispose();
-		}, Defaults.connectTimeout);
+		}, this.timeouts.realtimeRequestTimeout);
 	};
 
 	WebSocketTransport.prototype.cancelConnectTimeout = function() {

@@ -20,6 +20,7 @@ var Transport = (function() {
 		this.connectionManager = connectionManager;
 		this.auth = auth;
 		this.params = params;
+		this.timeouts = params.options.timeouts;
 		this.format = params.format;
 		this.isConnected = false;
 	}
