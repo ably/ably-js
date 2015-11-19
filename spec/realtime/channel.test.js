@@ -184,7 +184,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
-	 * Implicit attach with an invalid channel name by publishing
+	 * Implicit attach by publishing
 	 */
 	exports.channelattach_publish = function(test) {
 		test.expect(1);
@@ -197,13 +197,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						closeAndFinish(test, realtime);
 						return;
 					}
-					test.ok(true, 'publishfailed as expected');
+					test.ok(true, 'publish succeeded');
 					closeAndFinish(test, realtime);
 				});
 			});
 			monitorConnection(test, realtime);
 		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.ok(false, 'Channelattach_publish failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
@@ -218,7 +218,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.once('connected', function() {
 				realtime.channels.get(':hell').publish(function(err) {
 					if(err) {
-						test.ok(true, 'publishfailed as expected');
+						test.ok(true, 'publish failed as expected');
 						test.equal(err.code, 40010, "correct error code")
 						closeAndFinish(test, realtime);
 						return;
@@ -229,7 +229,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 			monitorConnection(test, realtime);
 		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.ok(false, 'Channelattach_publish_invalid failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
