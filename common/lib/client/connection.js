@@ -8,6 +8,7 @@ var Connection = (function() {
 		this.state = this.connectionManager.state.state;
 		this.key = undefined;
 		this.id = undefined;
+		this.serial = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {

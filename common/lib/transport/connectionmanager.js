@@ -442,8 +442,10 @@ var ConnectionManager = (function() {
 		if(connectionKey && this.connectionKey != connectionKey)  {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
+
+		var auth = this.realtime.auth;
 		if(clientId) {
-			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
 				var msg = 'Unexpected mismatch between expected and received clientId'
@@ -452,7 +454,7 @@ var ConnectionManager = (function() {
 				transport.abort(err);
 				return;
 			}
-			this.realtime.clientId = clientId;
+			auth.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
@@ -537,7 +539,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
-		this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.msgSerial = 0;
 		if(this.options.recover === true)
 			this.persistConnection();
@@ -547,7 +549,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.clearConnection = function() {
 		this.realtime.connection.id = this.connectionId = undefined;
 		this.realtime.connection.key = this.connectionKey = undefined;
-		this.connectionSerial = undefined;
+		this.realtime.connection.serial = this.connectionSerial = undefined;
 		this.msgSerial = 0;
 		this.unpersistConnection();
 	};
@@ -936,7 +938,7 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(connectionSerial !== undefined) {
-				this.connectionSerial = connectionSerial;
+				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 			}
 			this.realtime.channels.onChannelMessage(message);
 		} else {

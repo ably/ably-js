@@ -75,7 +75,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	exports.setupauth = function(test) {
+	exports.setupPresence = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -854,9 +854,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/*
 	 * Attach and enter channel on two connections, seeing
 	 * both members in presence set
+	 * Use get to filter by clientId and connectionId
 	 */
 	exports.presenceTwoMembers = function(test) {
-		test.expect(6);
+		test.expect(10);
 
 		var clientRealtime1, clientRealtime2, clientChannel1, clientChannel2;
 		var channelName = "twoMembers";
@@ -929,8 +930,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								};
 							};
 							async.parallel([
-								waitForClient(testClientId, 'present'),
-								waitForClient(testClientId2, 'enter'),
+								waitForClient(testClientId),
+								waitForClient(testClientId2),
 								enterPresence
 							], function() {
 								cb2();
@@ -939,20 +940,58 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					});
 					monitorConnection(test, clientRealtime2);
 				}
-			], function() {
-				clientChannel2.presence.get(function(err, members) {
-					if(err) {
-						test.ok(false, 'Presence.get() failed with error: ' + displayError(err));
-						done();
-						return;
+			], function(err) {
+				if (err) {
+					test.ok(false, 'Setup failed: ' + displayError(err));
+					return done();
+				}
+				async.parallel([
+					/* First test: no filters */
+					function(cb) {
+						clientChannel2.presence.get(function(err, members) {
+							if(err) {
+								test.ok(false, 'Presence.get() failed with error: ' + displayError(err));
+								return cb(err);
+							}
+							test.equal(members.length, 2, 'Verify both members present');
+							test.notEqual(members[0].connectionId, members[1].connectionId, 'Verify members have distinct connectionIds');
+							cb();
+						});
+					},
+					/* Second test: filter by clientId */
+					function(cb) {
+						clientChannel2.presence.get({ clientId: testClientId }, function(err, members) {
+							if(err) {
+								test.ok(false, 'Presence.get() failed with error: ' + displayError(err));
+								return cb(err);
+							}
+							test.equal(members.length, 1, 'Verify only one member present when filtered by clientId');
+							test.equal(members[0].clientId, testClientId, 'Verify clientId filter works');
+							cb();
+						});
+					},
+					/* Third test: filter by connectionId */
+					function(cb) {
+						clientChannel2.presence.get({ connectionId: clientRealtime1.connection.id }, function(err, members) {
+							if(err) {
+								test.ok(false, 'Presence.get() failed with error: ' + displayError(err));
+								return cb(err);
+							}
+							test.equal(members.length, 1, 'Verify only one member present when filtered by connectionId');
+							test.equal(members[0].connectionId, clientRealtime1.connection.id, 'Verify connectionId filter works');
+							cb();
+						});
 					}
-					test.equal(members.length, 2, 'Verify both members present');
-					test.notEqual(members[0].connectionId, members[1].connectionId, 'Verify members have distinct connectionIds');
+				], function(err) {
+					if (err) {
+						test.ok(false, 'Setup failed: ' + displayError(err));
+					}
 					done();
 				});
+
 			});
 		} catch(e) {
-			test.ok(false, 'presence.member0 failed with exception: ' + e.stack);
+			test.ok(false, 'presence.presenceTwoMembers failed with exception: ' + e.stack);
 			done();
 		}
 	};
@@ -1065,6 +1104,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(false, 'presenceEnterClosed failed with exception: ' + e.stack);
 			closeAndFinish(test, clientRealtime);
 		}
+	};
+
+	/*
+	 * Client ID is implicit in the connection so should not be sent for current client operations
+	 */
+	exports.presenceClientIdIsImplicit = function(test) {
+		var clientId = 'implicitClient',
+				client = helper.AblyRealtime({ clientId: clientId });
+
+		test.expect(6);
+		var channel = client.channels.get('presenceClientIdIsImplicit'),
+				presence = channel.presence;
+
+		var originalSendPresence = channel.sendPresence;
+		channel.sendPresence = function(presence, callback) {
+			test.ok(!presence.clientId, 'Client ID should not be present as it is implicit');
+			originalSendPresence.apply(channel, arguments);
+		};
+
+		presence.enter(null, function(err) {
+			test.ok(!err, 'Enter with implicit clientId failed');
+			presence.update(null, function(err) {
+				test.ok(!err, 'Update with implicit clientId failed');
+				presence.leave(null, function(err) {
+					test.ok(!err, 'Leave with implicit clientId failed');
+					closeAndFinish(test, client);
+				});
+			});
+		});
 	};
 
 	return module.exports = helper.withTimeout(exports);

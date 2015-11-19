@@ -83,16 +83,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* init with key string and useTokenAuth: true */
 	exports.init_key_with_usetokenauth = function(test) {
-		test.expect(2);
+		test.expect(3);
 		var realtime;
 		try {
 			var keyStr = helper.getTestApp().keys[0].keyStr;
-			realtime = new helper.Ably.Realtime({key: keyStr, useTokenAuth: true});
+			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true});
 			test.equal(realtime.options.key, keyStr);
 			test.equal(realtime.auth.method, 'token');
+			test.equal(realtime.auth.clientId, null);
 			closeAndFinish(test, realtime);
 		} catch(e) {
-			test.ok(false, 'Init with key failed with exception: ' + e.stack);
+			test.ok(false, 'Init with key and usetokenauth failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
@@ -169,6 +170,38 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.done();
 		}
 	}
+
+	/* Check that the connectionKey in ConnectionDetails takes precedence over connectionKey in ProtocolMessage,
+	   and clientId in ConnectionDetails updates the client clientId */
+	exports.init_and_connection_details = function(test) {
+		test.expect(4);
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true, transports: ['web_socket'] });
+			realtime.connection.connectionManager.once('transport.pending', function (state) {
+				var transport = realtime.connection.connectionManager.pendingTransports[0],
+						originalOnProtocolMessage = transport.onProtocolMessage;
+				realtime.connection.connectionManager.pendingTransports[0].onProtocolMessage = function(message) {
+					if(message.action === 4) {
+						test.ok(message.connectionDetails.connectionKey);
+						test.equal(message.connectionDetails.connectionKey, message.connectionKey, 'connection keys should match');
+						message.connectionDetails.connectionKey = 'importantConnectionKey';
+						message.connectionDetails.clientId = 'customClientId';
+					}
+					originalOnProtocolMessage.call(transport, message);
+				};
+			});
+			realtime.connection.once('connected', function() {
+				test.equal(realtime.auth.clientId, 'customClientId', 'clientId should be set on the Auth object from connectionDetails');
+				test.equal(realtime.connection.key, 'importantConnectionKey', 'connection key from connectionDetails should be used');
+				test.done();
+				realtime.close();
+			});
+		} catch(e) {
+			test.ok(false, 'Init with token failed with exception: ' + e.stack);
+			test.done();
+		}
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });
