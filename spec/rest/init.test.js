@@ -57,5 +57,29 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/* init with tls: false */
+	exports.init_tls_false = function(test) {
+		test.expect(1);
+		var rest = helper.AblyRest({tls: false, port: 123, tlsPort: 456});
+		test.equal(rest.baseUri("example.com"), "http://example.com:123")
+		test.done();
+	};
+
+	/* init with tls: true */
+	exports.init_tls_true= function(test) {
+		test.expect(1);
+		var rest = helper.AblyRest({tls: true, port: 123, tlsPort: 456});
+		test.equal(rest.baseUri("example.com"), "https://example.com:456")
+		test.done();
+	};
+
+	/* init without any tls key should enable tls */
+	exports.init_tls_absent = function(test) {
+		test.expect(1);
+		var rest = helper.AblyRest({port: 123, tlsPort: 456});
+		test.equal(rest.baseUri("example.com"), "https://example.com:456")
+		test.done();
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
