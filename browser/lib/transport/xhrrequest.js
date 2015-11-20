@@ -71,7 +71,7 @@ var XHRRequest = (function() {
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
 		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) ? this.timeouts : Defaults.TIMEOUTS;
+		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
 		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
 	};
 
