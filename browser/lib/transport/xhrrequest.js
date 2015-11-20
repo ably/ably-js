@@ -43,8 +43,13 @@ var XHRRequest = (function() {
 		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
 	}
 
+	/* Safari mysteriously returns 'Identity' for transfer-encoding
+	 * when in fact it is 'chunked'. So instead, decide that it is
+	 * chunked when transfer-encoding is present, content-length is absent */
 	function isEncodingChunked(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
+		return xhr.getResponseHeader
+			&& xhr.getResponseHeader('transfer-encoding')
+			&& !xhr.getResponseHeader('content-length');
 	}
 
 	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
