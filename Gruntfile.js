@@ -360,6 +360,7 @@ module.exports = function (grunt) {
 			var generatedFiles = [
 				gruntConfig.dirs.static,
 				gruntConfig.dirs.common + '/lib/util/defaults.js',
+				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',
 				'spec/support/browser_file_list.js'
 			];
