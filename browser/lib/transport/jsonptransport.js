@@ -52,7 +52,9 @@ var JSONPTransport = (function() {
 	};
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(undefined, uri, headers, params, body, requestMode, this.timeouts);
+		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
+		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+		return new Request(undefined, uri, headers, params, body, requestMode, timeouts);
 	};
 
 	function Request(id, uri, headers, params, body, requestMode, timeouts) {
