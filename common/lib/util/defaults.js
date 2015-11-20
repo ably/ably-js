@@ -33,6 +33,10 @@ Defaults.getPort = function(options, tls) {
 	return (tls || options.tls) ? options.tlsPort : options.port;
 };
 
+Defaults.getHttpScheme = function(options) {
+	return options.tls ? 'https://' : 'http://';
+};
+
 Defaults.getHosts = function(options) {
 	var hosts = [options.host],
 		fallbackHosts = options.fallbackHosts,
