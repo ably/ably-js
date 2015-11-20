@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.7
+ * Ably JavaScript Library v0.8.8
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3904,13 +3904,20 @@ Defaults.WS_HOST                  = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
-Defaults.connectTimeout           = 15000;
-Defaults.disconnectTimeout        = 30000;
-Defaults.suspendedTimeout         = 120000;
-Defaults.recvTimeout              = 90000;
-Defaults.sendTimeout              = 10000;
-Defaults.connectionPersistTimeout = 15000;
-Defaults.version                  = '0.8.7';
+Defaults.TIMEOUTS = {
+	/* Documented as options params: */
+	disconnectedRetryTimeout   : 15000,
+	suspendedRetryTimeout      : 30000,
+	httpRequestTimeout         : 15000,
+	/* Not documented: */
+	connectionStateTtl         : 60000,
+	realtimeRequestTimeout     : 10000,
+	recvTimeout                : 90000,
+	connectionPersistTimeout   : 15000
+};
+Defaults.httpMaxRetryCount = 3;
+
+Defaults.version                  = '0.8.8';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -3925,11 +3932,16 @@ Defaults.getPort = function(options, tls) {
 	return (tls || options.tls) ? options.tlsPort : options.port;
 };
 
+Defaults.getHttpScheme = function(options) {
+	return options.tls ? 'https://' : 'http://';
+};
+
 Defaults.getHosts = function(options) {
 	var hosts = [options.host],
-		fallbackHosts = options.fallbackHosts;
+		fallbackHosts = options.fallbackHosts,
+		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) hosts = hosts.concat(fallbackHosts);
+	if(fallbackHosts) hosts = hosts.concat(fallbackHosts.slice(0, httpMaxRetryCount));
 	return hosts;
 };
 
@@ -3946,6 +3958,12 @@ Defaults.normaliseOptions = function(options) {
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	if(!('tls' in options)) options.tls = true;
+
+	/* Allow values passed in options to override default timeouts */
+	options.timeouts = {};
+	for(var prop in Defaults.TIMEOUTS) {
+		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
+	};
 
 	return options;
 };
@@ -5179,14 +5197,15 @@ var ConnectionManager = (function() {
 		EventEmitter.call(this);
 		this.realtime = realtime;
 		this.options = options;
+		var timeouts = options.timeouts;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
-			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'disconnected'},
+			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
 			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: Defaults.disconnectTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.suspendedTimeout},
-			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: Defaults.connectTimeout, failState: 'closed'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
+			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
 			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
@@ -5542,8 +5561,10 @@ var ConnectionManager = (function() {
 		if(connectionKey && this.connectionKey != connectionKey)  {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
+
+		var auth = this.realtime.auth;
 		if(clientId) {
-			if(this.realtime.clientId && this.realtime.clientId != clientId) {
+			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
 				var msg = 'Unexpected mismatch between expected and received clientId'
@@ -5552,7 +5573,7 @@ var ConnectionManager = (function() {
 				transport.abort(err);
 				return;
 			}
-			this.realtime.clientId = clientId;
+			auth.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
@@ -5637,7 +5658,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
-		this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.msgSerial = 0;
 		if(this.options.recover === true)
 			this.persistConnection();
@@ -5647,7 +5668,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.clearConnection = function() {
 		this.realtime.connection.id = this.connectionId = undefined;
 		this.realtime.connection.key = this.connectionKey = undefined;
-		this.connectionSerial = undefined;
+		this.realtime.connection.serial = this.connectionSerial = undefined;
 		this.msgSerial = 0;
 		this.unpersistConnection();
 	};
@@ -5659,8 +5680,8 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.persistConnection = function() {
 		if(createCookie) {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
-				createCookie(connectionKeyCookie, this.connectionKey, Defaults.connectionPersistTimeout);
-				createCookie(connectionSerialCookie, this.connectionSerial, Defaults.connectionPersistTimeout);
+				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
+				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
 			}
 		}
 	};
@@ -5717,7 +5738,7 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
 				self.notifyState({state: transitionState.failState});
 			}
-		}, Defaults.connectTimeout);
+		}, transitionState.retryDelay);
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
@@ -5740,11 +5761,11 @@ var ConnectionManager = (function() {
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
-		}, Defaults.suspendedTimeout);
+		}, this.options.timeouts.connectionStateTtl);
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
-		if(state !== 'disconnected' && state !== 'suspended')
+		if(state !== 'disconnected' && state !== 'suspended' && state !== 'connecting')
 			this.cancelSuspendTimer();
 	};
 
@@ -5781,10 +5802,11 @@ var ConnectionManager = (function() {
 		if(state == this.state.state)
 			return;
 
-		/* kill timers (possibly excepting suspend timer, as these are superseded by this notification */
+		/* kill timers (possibly excepting suspend timer depending on the notified
+		* state), as these are superseded by this notification */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.checkSuspendTimer();
+		this.checkSuspendTimer(indicated.state);
 
 		/* do nothing if we're unable to move from the current state */
 		if(this.state.terminal)
@@ -5820,7 +5842,9 @@ var ConnectionManager = (function() {
 		/* kill running timers, as this request supersedes them */
 		this.cancelTransitionTimer();
 		this.cancelRetryTimer();
-		this.cancelSuspendTimer();
+		/* for suspend timer check rather than cancel -- eg requesting a connecting
+		* state should not reset the suspend timer */
+		this.checkSuspendTimer(state);
 
 		if(state == 'connecting') {
 			if(this.state.state == 'connected')
@@ -6033,7 +6057,7 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(connectionSerial !== undefined) {
-				this.connectionSerial = connectionSerial;
+				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 			}
 			this.realtime.channels.onChannelMessage(message);
 		} else {
@@ -6066,7 +6090,7 @@ var ConnectionManager = (function() {
 				callback(null, responseTime);
 			};
 
-			var timer = setTimeout(onTimeout, Defaults.sendTimeout);
+			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
 			transport.ping();
@@ -6135,6 +6159,7 @@ var Transport = (function() {
 		this.connectionManager = connectionManager;
 		this.auth = auth;
 		this.params = params;
+		this.timeouts = params.options.timeouts;
 		this.format = params.format;
 		this.isConnected = false;
 	}
@@ -6180,7 +6205,7 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, message.connectionKey, message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
+			this.emit('connected', null, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
 			break;
 		case actions.CLOSED:
 			this.isConnected = false;
@@ -6420,7 +6445,7 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()',
 				'Websocket failed to open after connectTimeout expired; disposing');
 			self.dispose();
-		}, Defaults.connectTimeout);
+		}, this.timeouts.realtimeRequestTimeout);
 	};
 
 	WebSocketTransport.prototype.cancelConnectTimeout = function() {
@@ -7059,6 +7084,7 @@ var Auth = (function() {
 	function Auth(rest, options) {
 		this.rest = rest;
 		this.tokenParams = {};
+		this.clientId = options.clientId;
 
 		/* decide default auth method */
 		var key = options.key;
@@ -7151,8 +7177,8 @@ var Auth = (function() {
 	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
 		var token = this.tokenDetails;
 		if(token) {
-			if(this.rest.clientId && token.clientId && this.rest.clientId !== token.clientId) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.rest.clientId, 40102, 401));
+			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
 			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
@@ -7528,10 +7554,9 @@ var Rest = (function() {
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
-		this.clientId = options.clientId;
 
 		this.serverTimeOffset = null;
-		this.baseUri = this.authority = function(host) { return 'https://' + host + ':' + (options.tlsPort || Defaults.TLS_PORT); };
+		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
@@ -7725,6 +7750,7 @@ var Connection = (function() {
 		this.state = this.connectionManager.state.state;
 		this.key = undefined;
 		this.id = undefined;
+		this.serial = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -7829,8 +7855,7 @@ var Channel = (function() {
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1],
-			options = this.options;
+			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -7852,7 +7877,11 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.post(rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
+		this._publish(requestBody, headers, callback);
+	};
+
+	Channel.prototype._publish = function(requestBody, headers, callback) {
+		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
 	};
 
 	return Channel;
@@ -8299,7 +8328,7 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, Defaults.sendTimeout);
+		}, this.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
@@ -8373,6 +8402,7 @@ var RealtimeChannel = (function() {
 var RealtimePresence = (function() {
 	var presenceAction = PresenceMessage.Action;
 	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
+	var noop = function() {};
 
 	function memberKey(item) {
 		return item.clientId + ':' + item.connectionId;
@@ -8389,38 +8419,42 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.enter = function(data, callback) {
 		if(!this.clientId)
 			throw new Error('clientId must be specified to enter a presence channel');
-		this._enterOrUpdateClient(this.clientId, data, callback, 'enter');
+		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(!this.clientId) {
 			throw new Error('clientId must be specified to update presence data');
 		}
-		this._enterOrUpdateClient(this.clientId, data, callback, 'update');
+		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
 	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'enter')
+		this._enterOrUpdateClient(clientId, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'update')
+		this._enterOrUpdateClient(clientId, data, callback, 'update');
 	};
 
 	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = null;
+		if (!callback) {
+			if (typeof(data)==='function') {
+				callback = data;
+				data = null;
+			} else {
+				callback = noop;
+			}
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId)
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + this.clientId);
 
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction[action.toUpperCase()],
-			clientId : clientId,
-			data: data
+			data   : data
 		});
+		if (clientId) { presence.clientId = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
@@ -8456,16 +8490,16 @@ var RealtimePresence = (function() {
 		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
-		this.leaveClient(this.clientId, data, callback);
+		this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
-			clientId : clientId,
-			data: data
+			data   : data
 		});
+		if (clientId) { presence[clientId] = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
@@ -8773,10 +8807,10 @@ var JSONPTransport = (function() {
 	};
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(undefined, uri, headers, params, body, requestMode);
+		return new Request(undefined, uri, headers, params, body, requestMode, this.timeouts);
 	};
 
-	function Request(id, uri, headers, params, body, requestMode) {
+	function Request(id, uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		if(id === undefined) id = idCounter++;
 		this.id = id;
@@ -8784,6 +8818,7 @@ var JSONPTransport = (function() {
 		this.params = params || {};
 		this.body = body;
 		this.requestMode = requestMode;
+		this.timeouts = timeouts;
 		this.requestComplete = false;
 	}
 	Utils.inherits(Request, EventEmitter);
@@ -8830,7 +8865,7 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout;
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
 		this.timer = setTimeout(function() { self.abort(); }, timeout);
 		head.insertBefore(script, head.firstChild);
 	};
@@ -8920,11 +8955,16 @@ var XHRRequest = (function() {
 		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
 	}
 
+	/* Safari mysteriously returns 'Identity' for transfer-encoding
+	 * when in fact it is 'chunked'. So instead, decide that it is
+	 * chunked when transfer-encoding is present, content-length is absent */
 	function isEncodingChunked(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('transfer-encoding') === 'chunked';
+		return xhr.getResponseHeader
+			&& xhr.getResponseHeader('transfer-encoding')
+			&& !xhr.getResponseHeader('content-length');
 	}
 
-	function XHRRequest(uri, headers, params, body, requestMode) {
+	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = String(Math.random()).substr(2);
@@ -8934,6 +8974,7 @@ var XHRRequest = (function() {
 		this.headers = headers || {};
 		this.body = body;
 		this.requestMode = requestMode;
+		this.timeouts = timeouts;
 		this.requestComplete = false;
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
@@ -8941,7 +8982,9 @@ var XHRRequest = (function() {
 	XHRRequest.isAvailable = isAvailable;
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
-		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode) : new XDRRequest(uri, headers, params, body, requestMode);
+		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
+		var timeouts = (this && this.timeouts) ? this.timeouts : Defaults.TIMEOUTS;
+		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
@@ -8959,7 +9002,7 @@ var XHRRequest = (function() {
 	};
 
 	XHRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
@@ -9141,9 +9184,9 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	function XDRRequest(uri, headers, params, body, requestMode) {
+	function XDRRequest(uri, headers, params, body, requestMode, timeouts) {
 		params.ua = 'xdr';
-		XHRRequest.call(this, uri, headers, params, body, requestMode);
+		XHRRequest.call(this, uri, headers, params, body, requestMode, timeouts);
 	}
 	Utils.inherits(XDRRequest, XHRRequest);
 
@@ -9153,7 +9196,7 @@ var XHRRequest = (function() {
 	* http://msdn.microsoft.com/en-us/library/cc288060(v=VS.85).aspx
 	*/
 	XDRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? Defaults.sendTimeout : Defaults.recvTimeout,
+		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
