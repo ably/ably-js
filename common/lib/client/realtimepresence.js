@@ -98,7 +98,7 @@ var RealtimePresence = (function() {
 			action : presenceAction.LEAVE,
 			data   : data
 		});
-		if (clientId) { presence[clientId] = clientId; }
+		if (clientId) { presence.clientId = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
