@@ -70,7 +70,7 @@ var CometTransport = (function() {
 				}
 				self.recvRequest = null;
 				if(err) {
-					self.emit('error', err);
+					self.emit('failed', err);
 					/* If connect errors before the preconnect, connectionManager is
 					* never given the transport, so need to dispose of it ourselves */
 					self.dispose();
@@ -111,7 +111,7 @@ var CometTransport = (function() {
 
 			closeRequest.on('complete', function (err) {
 				if (err) {
-					self.emit('error', err);
+					self.emit('failed', err);
 				}
 			});
 			closeRequest.exec();
@@ -231,7 +231,7 @@ var CometTransport = (function() {
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
 			if(err) {
-				self.emit('error', err);
+				self.emit('failed', err);
 				return;
 			}
 			Utils.nextTick(function() {
