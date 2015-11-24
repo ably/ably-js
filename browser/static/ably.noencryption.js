@@ -3987,10 +3987,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.chooseTransportForHost = function(transportParams, candidateTransports, callback) {
 		var candidate = candidateTransports.shift();
 		if(!candidate) {
-			var err = new Error('Unable to connect (no available transport)');
-			err.statusCode = 404;
-			err.code = 80000;
-			callback(err);
+			callback(new ErrorInfo('Unable to connect (no available transport)', 80000, 404));
 			return;
 		}
 		var self = this;
@@ -4005,8 +4002,7 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
 					transport.close();
 				}
-				var err = new ErrorInfo('Connection already closed', 400, 80017);
-				callback(err);
+				callback(new ErrorInfo('Connection already closed', 400, 80017));
 				return;
 			}
 			if(err) {
@@ -4035,10 +4031,7 @@ var ConnectionManager = (function() {
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {
-			var err = new Error('Unable to connect (no available host)');
-			err.statusCode = 404;
-			err.code = 80000;
-			callback(err);
+			callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
 			return;
 		}
 		transportParams.host = host;
@@ -4048,10 +4041,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				var err = new Error('Unable to connect (no available host)');
-				err.statusCode = 404;
-				err.code = 80000;
-				callback(err);
+				callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
@@ -4065,10 +4055,7 @@ var ConnectionManager = (function() {
 				}
 				if(!connectivity) {
 					/* the internet isn't reachable, so don't try the fallback hosts */
-					var err = new Error('Unable to connect (network unreachable)');
-					err.statusCode = 404;
-					err.code = 80000;
-					callback(err);
+					callback(new ErrorInfo('Unable to connect (network unreachable)', 80000, 404));
 					return;
 				}
 				/* the network is there, so there's a problem with the main host, or
@@ -4286,7 +4273,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.sync = function(transport, callback) {
 		/* check preconditions */
 		if(!transport.isConnected)
-				throw new ErrorInfo('Unable to sync connection; not connected', 40000);
+				throw new ErrorInfo('Unable to sync connection; not connected', 40000, 400);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
@@ -4590,8 +4577,7 @@ var ConnectionManager = (function() {
 				} catch(e) {
 					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-					var err = new ErrorInfo(msg, 50000, 500);
-					transport.abort(err);
+					transport.abort(new ErrorInfo(msg, 50000, 500));
 				}
 			}
 		}
@@ -4616,8 +4602,7 @@ var ConnectionManager = (function() {
 				} catch(e) {
 					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
-					var err = new ErrorInfo(msg, 50000, 500);
-					transport.abort(err);
+					transport.abort(new ErrorInfo(msg, 50000, 500));
 				}
 			}
 		}
@@ -4789,6 +4774,7 @@ var ConnectionManager = (function() {
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;
 	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
+	var disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
 	var noop = function() {};
 
 	/*
@@ -4811,34 +4797,37 @@ var Transport = (function() {
 		this.timeouts = params.options.timeouts;
 		this.format = params.format;
 		this.isConnected = false;
+		this.isFinished = false;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
 	Transport.prototype.connect = function() {};
 
 	Transport.prototype.close = function() {
-		if(this.isConnected) {
-			this.sendClose();
-		}
-		this.emit('closed');
-		this.dispose();
-	};
-
-	Transport.prototype.disconnect = function() {
-		if(!this.isConnected)
-			return;
-
-		this.isConnected = false;
-		this.emit('disconnected', ConnectionError.disconnected);
-		this.dispose();
+		if(this.isConnected)
+			this.requestClose(true);
+		this.finish('closed', ConnectionError.closed);
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
-			this.isConnected = false;
-			this.sendClose();
+			this.requestClose(true);
 		}
-		this.emit('failed', error);
+		this.finish('failed', error);
+	};
+
+	Transport.prototype.disconnect = function(err) {
+		this.finish('disconnected', err || ConnectionError.disconnected);
+	};
+
+	Transport.prototype.finish = function(event, err) {
+		if(this.isFinished) {
+			return;
+		}
+
+		this.isFinished = true;
+		this.isConnected = false;
+		this.emit(event, err);
 		this.dispose();
 	};
 
@@ -4857,11 +4846,9 @@ var Transport = (function() {
 			this.emit('connected', null, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
 			break;
 		case actions.CLOSED:
-			this.isConnected = false;
 			this.onClose(message);
 			break;
 		case actions.DISCONNECTED:
-			this.isConnected = false;
 			this.onDisconnect(message);
 			break;
 		case actions.ACK:
@@ -4919,22 +4906,20 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
-		this.isConnected = false;
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
-		this.emit('disconnected', err);
+		this.finish('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
-		this.isConnected = false;
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
-		this.emit('closed', err);
+		this.finish('closed', err);
 	};
 
-	Transport.prototype.sendClose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
-		this.send(closeMessage, noop);
+	Transport.prototype.requestClose = function(closing) {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
+		this.send((closing ? closeMessage :disconnectMessage), noop);
 	};
 
 	Transport.prototype.ping = function(callback) {
@@ -5179,10 +5164,9 @@ var CometTransport = (function() {
 				}
 				self.recvRequest = null;
 				if(err) {
-					self.emit('error', err);
 					/* If connect errors before the preconnect, connectionManager is
-					* never given the transport, so need to dispose of it ourselves */
-					self.dispose();
+					 * never given the transport, so need to dispose of it ourselves */
+					self.finish('error', err);
 					return;
 				}
 			});
@@ -5193,22 +5177,7 @@ var CometTransport = (function() {
 	CometTransport.prototype.disconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
 		this.requestClose(false);
-		this.emit('disconnected');
-		this.dispose();
-	};
-
-	CometTransport.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.close()', '');
-		this.requestClose(true);
-		this.emit('closed');
-		this.dispose();
-	};
-
-	CometTransport.prototype.abort = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', 'err: ' + err);
-		this.requestClose(true);
-		this.emit('failed', err);
-		this.dispose();
+		Transport.prototype.disconnect.call(this);
 	};
 
 	CometTransport.prototype.requestClose = function(closing) {
@@ -5219,8 +5188,8 @@ var CometTransport = (function() {
 				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
 
 			closeRequest.on('complete', function (err) {
-				if (err) {
-					self.emit('error', err);
+				if(err) {
+					self.finish('failed', err);
 				}
 			});
 			closeRequest.exec();
@@ -5340,7 +5309,7 @@ var CometTransport = (function() {
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
 			if(err) {
-				self.emit('error', err);
+				self.finish('failed', err);
 				return;
 			}
 			Utils.nextTick(function() {
@@ -7148,7 +7117,7 @@ var RealtimePresence = (function() {
 			action : presenceAction.LEAVE,
 			data   : data
 		});
-		if (clientId) { presence[clientId] = clientId; }
+		if (clientId) { presence.clientId = clientId; }
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
