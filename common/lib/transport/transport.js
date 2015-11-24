@@ -1,6 +1,7 @@
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;
 	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
+	var disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
 	var noop = function() {};
 
 	/*
@@ -23,34 +24,37 @@ var Transport = (function() {
 		this.timeouts = params.options.timeouts;
 		this.format = params.format;
 		this.isConnected = false;
+		this.isFinished = false;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
 	Transport.prototype.connect = function() {};
 
 	Transport.prototype.close = function() {
-		if(this.isConnected) {
-			this.sendClose();
-		}
-		this.emit('closed');
-		this.dispose();
-	};
-
-	Transport.prototype.disconnect = function() {
-		if(!this.isConnected)
-			return;
-
-		this.isConnected = false;
-		this.emit('disconnected', ConnectionError.disconnected);
-		this.dispose();
+		if(this.isConnected)
+			this.requestClose(true);
+		this.finish('closed', ConnectionError.closed);
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
-			this.isConnected = false;
-			this.sendClose();
+			this.requestClose(true);
 		}
-		this.emit('failed', error);
+		this.finish('failed', error);
+	};
+
+	Transport.prototype.disconnect = function(err) {
+		this.finish('disconnected', err || ConnectionError.disconnected);
+	};
+
+	Transport.prototype.finish = function(event, err) {
+		if(this.isFinished) {
+			return;
+		}
+
+		this.isFinished = true;
+		this.isConnected = false;
+		this.emit(event, err);
 		this.dispose();
 	};
 
@@ -69,11 +73,9 @@ var Transport = (function() {
 			this.emit('connected', null, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
 			break;
 		case actions.CLOSED:
-			this.isConnected = false;
 			this.onClose(message);
 			break;
 		case actions.DISCONNECTED:
-			this.isConnected = false;
 			this.onDisconnect(message);
 			break;
 		case actions.ACK:
@@ -131,22 +133,20 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
-		this.isConnected = false;
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
-		this.emit('disconnected', err);
+		this.finish('disconnected', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
-		this.isConnected = false;
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
-		this.emit('closed', err);
+		this.finish('closed', err);
 	};
 
-	Transport.prototype.sendClose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.sendClose()', '');
-		this.send(closeMessage, noop);
+	Transport.prototype.requestClose = function(closing) {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
+		this.send((closing ? closeMessage :disconnectMessage), noop);
 	};
 
 	Transport.prototype.ping = function(callback) {
