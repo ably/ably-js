@@ -70,10 +70,9 @@ var CometTransport = (function() {
 				}
 				self.recvRequest = null;
 				if(err) {
-					self.emit('failed', err);
 					/* If connect errors before the preconnect, connectionManager is
-					* never given the transport, so need to dispose of it ourselves */
-					self.dispose();
+					 * never given the transport, so need to dispose of it ourselves */
+					self.finish('error', err);
 					return;
 				}
 			});
@@ -84,22 +83,7 @@ var CometTransport = (function() {
 	CometTransport.prototype.disconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
 		this.requestClose(false);
-		this.emit('disconnected');
-		this.dispose();
-	};
-
-	CometTransport.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.close()', '');
-		this.requestClose(true);
-		this.emit('closed');
-		this.dispose();
-	};
-
-	CometTransport.prototype.abort = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.abort()', 'err: ' + err);
-		this.requestClose(true);
-		this.emit('failed', err);
-		this.dispose();
+		Transport.prototype.disconnect.call(this);
 	};
 
 	CometTransport.prototype.requestClose = function(closing) {
@@ -110,8 +94,8 @@ var CometTransport = (function() {
 				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
 
 			closeRequest.on('complete', function (err) {
-				if (err) {
-					self.emit('failed', err);
+				if(err) {
+					self.finish('failed', err);
 				}
 			});
 			closeRequest.exec();
@@ -231,7 +215,7 @@ var CometTransport = (function() {
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
 			if(err) {
-				self.emit('failed', err);
+				self.finish('failed', err);
 				return;
 			}
 			Utils.nextTick(function() {
