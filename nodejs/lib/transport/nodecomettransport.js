@@ -13,6 +13,8 @@ var NodeCometTransport = (function() {
 	 */
 	function NodeCometTransport(connectionManager, auth, params) {
 		CometTransport.call(this, connectionManager, auth, params);
+		this.httpAgent = null;
+		this.httpsAgent = null;
 	}
 	util.inherits(NodeCometTransport, CometTransport);
 
@@ -41,6 +43,24 @@ var NodeCometTransport = (function() {
 		return 'NodeCometTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected + '; format=' + this.format + '; stream=' + this.stream;
 	};
 
+	NodeCometTransport.prototype.getAgent = function(tls) {
+		var prop = tls ? 'httpsAgent' : 'httpAgent',
+			agent = this[prop];
+
+		if(!agent)
+			agent = this[prop] = new (tls ? https: http).Agent({ keepAlive: true });
+
+		return agent;
+	};
+
+	NodeCometTransport.prototype.dispose = function() {
+		if(this.httpAgent)
+			this.httpAgent.destroy();
+		if(this.httpsAgent)
+			this.httpsAgent.destroy();
+		CometTransport.prototype.dispose.call(this);
+	};
+
 	/* valid in non-streaming mode only, or data only contains last update */
 	NodeCometTransport.prototype.request = function(uri, params, body, requestMode, callback) {
 		var req = this.createRequest(uri, params, body, requestMode);
@@ -50,13 +70,14 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts);
+		return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts, this);
 	};
 
-	function Request(uri, headers, params, body, requestMode, format, timeouts) {
+	function Request(uri, headers, params, body, requestMode, format, timeouts, agents) {
 		EventEmitter.call(this);
 		if(typeof(uri) == 'string') uri = url.parse(uri);
-		this.client = (uri.protocol == 'http:') ? http : https;
+		var tls = (uri.protocol == 'https:')
+		this.client = tls ? https : http;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
 		this.requestComplete = false;
@@ -78,13 +99,15 @@ var NodeCometTransport = (function() {
 			headers['Content-Length'] = body.length;
 			headers['Content-Type'] = contentType;
 		}
-		this.requestOptions = {
+		var requestOptions = this.requestOptions = {
 			hostname: uri.hostname,
 			port: uri.port,
 			path: uri.path + Utils.toQueryString(params),
 			method: method,
 			headers: headers
 		};
+		if(agents)
+			requestOptions.agent = agents.getAgent(tls);
 	}
 	Utils.inherits(Request, EventEmitter);
 
@@ -96,7 +119,6 @@ var NodeCometTransport = (function() {
 			req = this.req = this.client.request(this.requestOptions);
 
 		req.on('error', this.onReqError = function(err) {
-			console.log('req error: ' + err.stack);
 			clearTimeout(timer);
 			self.timer = null;
 			self.complete(err);
