@@ -219,10 +219,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.chooseTransportForHost = function(transportParams, candidateTransports, callback) {
 		var candidate = candidateTransports.shift();
 		if(!candidate) {
-			var err = new Error('Unable to connect (no available transport)');
-			err.statusCode = 404;
-			err.code = 80000;
-			callback(err);
+			callback(new ErrorInfo('Unable to connect (no available transport)', 80000, 404));
 			return;
 		}
 		var self = this;
@@ -237,8 +234,7 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
 					transport.close();
 				}
-				var err = new ErrorInfo('Connection already closed', 400, 80017);
-				callback(err);
+				callback(new ErrorInfo('Connection already closed', 400, 80017));
 				return;
 			}
 			if(err) {
@@ -267,10 +263,7 @@ var ConnectionManager = (function() {
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {
-			var err = new Error('Unable to connect (no available host)');
-			err.statusCode = 404;
-			err.code = 80000;
-			callback(err);
+			callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
 			return;
 		}
 		transportParams.host = host;
@@ -280,10 +273,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				var err = new Error('Unable to connect (no available host)');
-				err.statusCode = 404;
-				err.code = 80000;
-				callback(err);
+				callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
@@ -297,10 +287,7 @@ var ConnectionManager = (function() {
 				}
 				if(!connectivity) {
 					/* the internet isn't reachable, so don't try the fallback hosts */
-					var err = new Error('Unable to connect (network unreachable)');
-					err.statusCode = 404;
-					err.code = 80000;
-					callback(err);
+					callback(new ErrorInfo('Unable to connect (network unreachable)', 80000, 404));
 					return;
 				}
 				/* the network is there, so there's a problem with the main host, or
@@ -518,7 +505,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.sync = function(transport, callback) {
 		/* check preconditions */
 		if(!transport.isConnected)
-				throw new ErrorInfo('Unable to sync connection; not connected', 40000);
+				throw new ErrorInfo('Unable to sync connection; not connected', 40000, 400);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
@@ -822,8 +809,7 @@ var ConnectionManager = (function() {
 				} catch(e) {
 					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-					var err = new ErrorInfo(msg, 50000, 500);
-					transport.abort(err);
+					transport.abort(new ErrorInfo(msg, 50000, 500));
 				}
 			}
 		}
@@ -848,8 +834,7 @@ var ConnectionManager = (function() {
 				} catch(e) {
 					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
 					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
-					var err = new ErrorInfo(msg, 50000, 500);
-					transport.abort(err);
+					transport.abort(new ErrorInfo(msg, 50000, 500));
 				}
 			}
 		}
