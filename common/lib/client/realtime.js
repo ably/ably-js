@@ -6,9 +6,14 @@ var Realtime = (function() {
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
 		if(options.autoConnect !== false)
-			this.connection.connect();
+			this.connect();
 	}
 	Utils.inherits(Realtime, Rest);
+
+	Realtime.prototype.connect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
+		this.connection.connect();
+	};
 
 	Realtime.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
