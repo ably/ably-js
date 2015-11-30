@@ -15,6 +15,7 @@ var NodeCometTransport = (function() {
 		CometTransport.call(this, connectionManager, auth, params);
 		this.httpAgent = null;
 		this.httpsAgent = null;
+		this.pendingRequests = 0;
 	}
 	util.inherits(NodeCometTransport, CometTransport);
 
@@ -54,10 +55,13 @@ var NodeCometTransport = (function() {
 	};
 
 	NodeCometTransport.prototype.dispose = function() {
-		if(this.httpAgent)
-			this.httpAgent.destroy();
-		if(this.httpsAgent)
-			this.httpsAgent.destroy();
+		var self = this;
+		this.onceNoPending(function() {
+			if(self.httpAgent)
+				self.httpAgent.destroy();
+			if(self.httpsAgent)
+				self.httpsAgent.destroy();
+		});
 		CometTransport.prototype.dispose.call(this);
 	};
 
@@ -73,13 +77,32 @@ var NodeCometTransport = (function() {
 		return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts, this);
 	};
 
-	function Request(uri, headers, params, body, requestMode, format, timeouts, agents) {
+	NodeCometTransport.prototype.addPending = function() {
+		++this.pendingRequests;
+	};
+
+	NodeCometTransport.prototype.removePending = function() {
+		if(--this.pendingRequests <= 0) {
+			this.emit('nopending');
+		}
+	};
+
+	NodeCometTransport.prototype.onceNoPending = function(listener) {
+		if(this.pendingRequests == 0) {
+			listener();
+			return;
+		}
+		this.once('nopending', listener);
+	};
+
+	function Request(uri, headers, params, body, requestMode, format, timeouts, transport) {
 		EventEmitter.call(this);
 		if(typeof(uri) == 'string') uri = url.parse(uri);
-		var tls = (uri.protocol == 'https:')
+		var tls = (uri.protocol == 'https:');
 		this.client = tls ? https : http;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
+		this.transport = transport;
 		this.requestComplete = false;
 		this.req = this.res = null;
 
@@ -106,8 +129,8 @@ var NodeCometTransport = (function() {
 			method: method,
 			headers: headers
 		};
-		if(agents)
-			requestOptions.agent = agents.getAgent(tls);
+		if(transport)
+			requestOptions.agent = transport.getAgent(tls);
 	}
 	Utils.inherits(Request, EventEmitter);
 
@@ -137,7 +160,6 @@ var NodeCometTransport = (function() {
 			}
 
 			res.on('error', self.onResError = function(err) {
-				console.log('incomingMessage error: ' + Utils.inspectError(err));
 				self.complete(err);
 			});
 
@@ -149,6 +171,9 @@ var NodeCometTransport = (function() {
 				self.readFully();
 			}
 		});
+
+		if(this.transport)
+			this.transport.addPending();
 
 		req.end(this.body);
 	};
@@ -256,6 +281,9 @@ var NodeCometTransport = (function() {
 				 * we get no new data events from the stream */
 				if(this.ondata && !this.streamComplete)
 					if(this.ondata && this.res) this.res.removeListener('data', this.ondata);
+			}
+			if(this.transport) {
+				this.transport.removePending();
 			}
 		}
 	};
