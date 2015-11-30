@@ -94,8 +94,8 @@ var CometTransport = (function() {
 				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
 
 			closeRequest.on('complete', function (err) {
-				Logger.logAction(Logger.LOG_ERROR, 'CometTransport.requestClose()', 'request returned err = ' + err);
 				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.requestClose()', 'request returned err = ' + err);
 					self.finish('failed', err);
 				}
 			});
