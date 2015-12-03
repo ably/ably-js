@@ -56,6 +56,10 @@ Defaults.normaliseOptions = function(options) {
 		Logger.deprecated('wsHost', 'realtimeHost');
 		options.realtimeHost = options.wsHost;
 	}
+	if(options.queueEvents) {
+		Logger.deprecated('queueEvents', 'queueMessages');
+		options.queueMessages = options.queueEvents;
+	}
 
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;

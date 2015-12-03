@@ -4,7 +4,7 @@ var RealtimeChannel = (function() {
 	var noop = function() {};
 
 	var defaultOptions = {
-		queueEvents: true
+		queueMessages: true
 	};
 
 	/* public constructor */
@@ -234,7 +234,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
-		this.connectionManager.send(msg, this.options.queueEvents, callback);
+		this.connectionManager.send(msg, this.options.queueMessages, callback);
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
