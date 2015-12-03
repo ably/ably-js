@@ -262,7 +262,11 @@ var Auth = (function() {
 				};
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
 				if(authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post') {
-					Http.postUri(rest, authOptions.authUrl, authHeaders || {}, authParams, {}, authUrlRequestCallback);
+					/* send body form-encoded */
+					var headers = authHeaders || {};
+					headers['content-type'] = 'application/x-www-form-urlencoded';
+					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
+					Http.postUri(rest, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
 				} else {
 					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
 				}
