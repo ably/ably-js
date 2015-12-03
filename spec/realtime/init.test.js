@@ -158,7 +158,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
-				host: 'a',
+				restHost: 'a',
 				httpMaxRetryCount: 2,
 				fallbackHosts: ['b', 'c', 'd', 'e']
 			});

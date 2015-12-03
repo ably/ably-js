@@ -1,7 +1,7 @@
 Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
-Defaults.HOST                     = 'rest.ably.io';
-Defaults.WS_HOST                  = 'realtime.ably.io';
+Defaults.REST_HOST                     = 'rest.ably.io';
+Defaults.REALTIME_HOST                  = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
@@ -22,9 +22,9 @@ Defaults.version                  = '0.8.9';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
-		host = ((host == options.host) && options.wsHost) || host || options.wsHost;
+		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
 	else
-		host = host || options.host;
+		host = host || options.restHost;
 
 	return host;
 };
@@ -38,7 +38,7 @@ Defaults.getHttpScheme = function(options) {
 };
 
 Defaults.getHosts = function(options) {
-	var hosts = [options.host],
+	var hosts = [options.restHost],
 		fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
@@ -47,13 +47,23 @@ Defaults.getHosts = function(options) {
 };
 
 Defaults.normaliseOptions = function(options) {
+	/* Deprecated options */
 	if(options.host) {
-		options.wsHost = options.wsHost || options.host;
+		Logger.deprecated('host', 'restHost');
+		options.restHost = options.host;
+	}
+	if(options.wsHost) {
+		Logger.deprecated('wsHost', 'realtimeHost');
+		options.realtimeHost = options.wsHost;
+	}
+
+	if(options.restHost) {
+		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
-			production = !environment || (environment === 'production');
-		options.host = production ? Defaults.HOST : environment + '-' + Defaults.HOST;
-		options.wsHost = production ? Defaults.WS_HOST : environment + '-' + Defaults.WS_HOST;
+		production = !environment || (environment === 'production');
+		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
+		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	}
 	options.port = options.port || Defaults.PORT;

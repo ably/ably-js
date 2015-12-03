@@ -4,8 +4,8 @@ define(function(require) {
 	var defaultLogLevel = 2,
 		environment = isBrowser ? (window.__env__ || {}) : process.env,
 		ablyEnvironment = environment.ABLY_ENV || 'sandbox',
-		wsHost = environment.ABLY_REALTIME_HOST,
-		host = environment.ABLY_REST_HOST,
+		realtimeHost = environment.ABLY_REALTIME_HOST,
+		restHost = environment.ABLY_REST_HOST,
 		port = environment.ABLY_PORT || 80,
 		tlsPort = environment.ABLY_TLS_PORT || 443,
 		tls = ('ABLY_USE_TLS' in environment) ? (environment.ABLY_USE_TLS.toLowerCase() !== 'false') : true,
@@ -22,7 +22,7 @@ define(function(require) {
 		}
 
 		if(query['env'])          ablyEnvironment = query['env'];
-		if(query['reltime_host']) wsHost = query['realtime_host'];
+		if(query['realtime_host']) realtimeHost = query['realtime_host'];
 		if(query['host'])         host = query['host'];
 		if(query['port'])         port = query['port'];
 		if(query['tls_port'])     tlsPort = query['tls_port'];
@@ -32,8 +32,8 @@ define(function(require) {
 
 	return module.exports = {
 		environment: ablyEnvironment,
-		wsHost:      wsHost,
-		restHost:    host,
+		realtimeHost:realtimeHost,
+		restHost:    restHost,
 		port:        port,
 		tlsPort:     tlsPort,
 		tls:         tls,

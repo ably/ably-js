@@ -115,8 +115,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					var connectionEvents = [];
 					var realtime = helper.AblyRealtime({
 						transports: transports,
-						wsHost: 'example.com',
-						host: 'example.com',
+						realtimeHost: 'example.com',
+						restHost: 'example.com',
 						/* Timings note: some transports fail immediately with an invalid
 						* host, others take longer; so set the realtimeRequestTimeout to be
 						* small enough that the max difference is never large enough that

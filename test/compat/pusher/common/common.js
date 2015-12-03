@@ -124,7 +124,7 @@ exports.setup = function() {
 		};
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
-			opts.host = opts.wsHost = p[0];
+			opts.restHost = opts.realtimeHost = p[0];
 			if (p.length > 1)
 				opts.port = p[1];
 		}
@@ -149,7 +149,7 @@ exports.setup = function() {
 		};
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
-			opts.host = opts.wsHost = p[0];
+			opts.restHost = opts.realtimeHost = p[0];
 			if (p.length > 1)
 				opts.port = p[1];
 		}
