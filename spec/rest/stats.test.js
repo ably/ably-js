@@ -322,7 +322,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.equal(totalData, 7000, 'Verify all published message data found');
 
 			/* get next page */
-			test.ok(page.next, 'Verify next page rel link present');
+			test.ok(page.hasNext(), 'Verify next page rel link present');
 			page.next(function(err, page) {
 				if(err) {
 					test.ok(false, displayError(err));
@@ -338,7 +338,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.equal(totalData, 6000, 'Verify all published message data found');
 
 				/* get next page */
-				test.ok(page.next, 'Verify next page rel link present');
+				test.ok(page.hasNext(), 'Verify next page rel link present');
 				page.next(function(err, page) {
 					if(err) {
 						test.ok(false, displayError(err));
@@ -354,7 +354,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.equal(totalData, 5000, 'Verify all published message data found');
 
 					/* verify no further pages */
-					test.ok(!page.next, 'Verify next page rel link not present');
+					test.ok(page.isLast(), 'Verify last page');
 
 					test.expect(10);
 
@@ -398,7 +398,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.equal(totalData, 5000, 'Verify all published message data found');
 
 			/* get next page */
-			test.ok(page.next, 'Verify next page rel link present');
+			test.ok(page.hasNext(), 'Verify next page rel link present');
 			page.next(function(err, page) {
 				if(err) {
 					test.ok(false, displayError(err));
@@ -414,7 +414,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.equal(totalData, 6000, 'Verify all published message data found');
 
 				/* get next page */
-				test.ok(page.next, 'Verify next page rel link present');
+				test.ok(page.hasNext(), 'Verify next page rel link present');
 				page.next(function(err, page) {
 					if(err) {
 						test.ok(false, displayError(err));
@@ -430,7 +430,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.equal(totalData, 7000, 'Verify all published message data found');
 
 					/* verify no further pages */
-					test.ok(!page.next, 'Verify next page rel link not present');
+					test.ok(page.isLast(), 'Verify last page');
 
 					test.expect(10);
 
