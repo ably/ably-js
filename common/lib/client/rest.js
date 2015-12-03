@@ -100,12 +100,15 @@ var Rest = (function() {
 		this.attached = {};
 	}
 
-	Channels.prototype.get = function(name) {
+	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
-			this.attached[name] = channel = new Channel(this.rest, name);
+			this.attached[name] = channel = new Channel(this.rest, name, channelOptions);
+		} else if(channelOptions) {
+			channel.setOptions(channelOptions);
 		}
+
 		return channel;
 	};
 

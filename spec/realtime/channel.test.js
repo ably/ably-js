@@ -19,6 +19,35 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Channel init with options
+	 */
+	exports.channelinit0 = function(test) {
+		test.expect(4);
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.on('connected', function() {
+				/* set options on init */
+				var channel0 = realtime.channels.get('channelinit0', {encrypted: true});
+				test.equal(channel0.channelOptions.encrypted, true);
+
+				/* set options on fetch */
+				var channel1 = realtime.channels.get('channelinit0', {encrypted: false});
+				test.equal(channel0.channelOptions.encrypted, false);
+				test.equal(channel1.channelOptions.encrypted, false);
+
+				/* set options with setOptions */
+				channel1.setOptions({encrypted: true});
+				test.equal(channel1.channelOptions.encrypted, true);
+				closeAndFinish(test, realtime);
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
 	 * Base attach case, binary transport
 	 */
 	exports.channelattach0 = function(test) {

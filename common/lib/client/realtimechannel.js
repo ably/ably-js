@@ -3,21 +3,18 @@ var RealtimeChannel = (function() {
 	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 
-	var defaultOptions = {
-		queueMessages: true
-	};
-
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
-		this.presence = new RealtimePresence(this, options);
+		this.presence = new RealtimePresence(this, realtime.options);
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
 		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
+		this.realtime = realtime;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -36,7 +33,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		this.channelOptions = options = options || {};
 		if(options.encrypted) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
@@ -52,7 +49,7 @@ var RealtimeChannel = (function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
 			callback = arguments[argCount - 1],
-			options = this.options;
+			options = this.channelOptions;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -234,7 +231,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
-		this.connectionManager.send(msg, this.options.queueMessages, callback);
+		this.connectionManager.send(msg, this.realtime.options.queueMessages, callback);
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
@@ -267,7 +264,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < presence.length; i++) {
 				try {
@@ -289,7 +286,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < messages.length; i++) {
 				try {
@@ -439,7 +436,7 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, this.options.timeouts.realtimeRequestTimeout);
+		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {

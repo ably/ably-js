@@ -61,6 +61,9 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = options.queueEvents;
 	}
 
+	if(!('queueMessages' in options))
+		options.queueMessages = true;
+
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
