@@ -92,7 +92,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 
-			var authUrl = "http://echo.ably.io/?type=json";
+			var authUrl = "http://echo.ably.io/?type=json&";
 
 			realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: "POST", authParams: tokenDetails});
 
