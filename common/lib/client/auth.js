@@ -242,8 +242,7 @@ var Auth = (function() {
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
 						authParams = Utils.mixin(params, authOptions.authParams);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
-				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, function(err, body, headers, unpacked) {
+				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
 					} else {
@@ -260,7 +259,13 @@ var Auth = (function() {
 						}
 					}
 					cb(null, body);
-				});
+				};
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
+				if(authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post') {
+					Http.postUri(rest, authOptions.authUrl, authHeaders || {}, authParams, {}, authUrlRequestCallback);
+				} else {
+					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
+				}
 			};
 		} else if(authOptions.key) {
 			var self = this;
