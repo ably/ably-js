@@ -79,6 +79,34 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Use authUrl for authentication with JSON TokenDetails response, with authMethod=POST
+	 */
+	exports.auth_useAuthUrl_post_json = function(test) {
+		test.expect(1);
+
+		var realtime, rest = helper.AblyRest();
+		rest.auth.requestToken(null, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+
+			var authUrl = "http://echo.ably.io/?type=json&";
+
+			realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: "POST", authParams: tokenDetails});
+
+			realtime.connection.on('connected', function() {
+				test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+				closeAndFinish(test, realtime);
+				return;
+			});
+
+			monitorConnection(test, realtime);
+		});
+	};
+
+	/*
 	 * Use authUrl for authentication with plain text token response
 	 */
 	exports.auth_useAuthUrl_plainText = function(test) {
