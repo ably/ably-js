@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.8
+ * Ably JavaScript Library v0.8.9
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version                  = '0.8.8';
+Defaults.version                  = '0.8.9';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -5189,6 +5189,7 @@ var CometTransport = (function() {
 
 			closeRequest.on('complete', function (err) {
 				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.requestClose()', 'request returned err = ' + err);
 					self.finish('failed', err);
 				}
 			});
@@ -5903,8 +5904,7 @@ var Auth = (function() {
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
 						authParams = Utils.mixin(params, authOptions.authParams);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
-				Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, function(err, body, headers, unpacked) {
+				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
 					} else {
@@ -5921,7 +5921,17 @@ var Auth = (function() {
 						}
 					}
 					cb(null, body);
-				});
+				};
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
+				if(authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post') {
+					/* send body form-encoded */
+					var headers = authHeaders || {};
+					headers['content-type'] = 'application/x-www-form-urlencoded';
+					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
+					Http.postUri(rest, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
+				} else {
+					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
+				}
 			};
 		} else if(authOptions.key) {
 			var self = this;
@@ -6260,9 +6270,14 @@ var Realtime = (function() {
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
 		if(options.autoConnect !== false)
-			this.connection.connect();
+			this.connect();
 	}
 	Utils.inherits(Realtime, Rest);
+
+	Realtime.prototype.connect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
+		this.connection.connect();
+	};
 
 	Realtime.prototype.close = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');

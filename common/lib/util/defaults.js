@@ -18,7 +18,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version                  = '0.8.8';
+Defaults.version                  = '0.8.9';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
