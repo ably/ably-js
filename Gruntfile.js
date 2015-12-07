@@ -31,6 +31,20 @@ module.exports = function (grunt) {
 		};
 	}
 
+  function execExternal(cmd) {
+		return function() {
+			var done = this.async();
+			grunt.log.ok("Executing " + cmd);
+			require('child_process').exec(cmd, function(err, stdout, stderr) {
+				if (err) {
+					grunt.log.error('Error executing "' + cmd + '": ' + stderr);
+				}
+				done();
+			});
+		};
+	}
+
+
 	var gruntConfig = {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version
@@ -373,6 +387,30 @@ module.exports = function (grunt) {
 				}
 				done();
 			});
+		}
+	);
+
+	grunt.registerTask('release:git-push',
+		'Pushes to git', execExternal('git push origin master --follow-tags')
+	);
+
+	grunt.registerTask('release:npm-publish',
+		'Pushes to npm', execExternal('npm publish .')
+	);
+
+	grunt.registerTask('release:ably-deploy',
+		'Deploys to ably CDN, assuming infrastructure repo is in same dir as ably-js',
+		execExternal('BUNDLE_GEMFILE="../infrastructure/Gemfile" bundle exec ../infrastructure/bin/ably-env deploy javascript')
+	);
+
+	grunt.registerTask('release:deploy',
+		'Pushes a new release to github, deploys to npm, deploys to ably CDN',
+		function() {
+			grunt.task.run([
+				'release:git-push',
+				'release:npm-publish',
+				'release:ably-deploy',
+			]);
 		}
 	);
 
