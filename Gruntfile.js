@@ -225,7 +225,7 @@ module.exports = function (grunt) {
 
 	gruntConfig.bump = {
 		options: {
-			files: ['package.json'],
+			files: ['package.json', 'bower.json', 'README.md'],
 			commit: true,
 			commitMessage: 'Regenerate and release version %VERSION%',
 			commitFiles: [], // Add files manually as can't add new files with a commit flag

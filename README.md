@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-## Version 0.8.2
+## Version: 0.8.9
 
 [![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
 
