@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.9](https://github.com/ably/ably-js/tree/0.8.9) (2015-12-07)
+
+[Changes since 0.8.2](https://github.com/ably/ably-js/compare/0.8.2...0.8.9)
+
 ## [0.8.2](https://github.com/ably/ably-js/tree/0.8.2) (2015-07-01)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.1...0.8.2)
