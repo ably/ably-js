@@ -135,6 +135,7 @@ var RealtimePresence = (function() {
 				};
 				break;
 			case 'initialized':
+			case 'failed':
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
@@ -264,6 +265,8 @@ var RealtimePresence = (function() {
 	}
 
 	RealtimePresence.prototype.unsubscribe = function() {
+		if(this.channel.state === 'failed')
+			throw new ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
 		_off.apply(this, arguments);
 	}
 
