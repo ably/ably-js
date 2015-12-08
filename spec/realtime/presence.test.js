@@ -207,7 +207,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		// will not run its callback
 		var channelName = 'enterDetachRace';
 		try {
-			test.expect(4);
+			test.expect(3);
 			/* listen for the enter event, test is complete when received */
 
 			createListenerChannel(channelName, function(err, listenerRealtime, presenceChannel){
@@ -219,7 +219,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
 
-				listenerFor('enter')(test, presenceChannel, function() {
+				listenerFor('enter', testClientId)(test, presenceChannel, function() {
 					closeAndFinish(test, [listenerRealtime, clientRealtime]);
 				});
 
@@ -239,7 +239,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								closeAndFinish(test, [listenerRealtime, clientRealtime]);
 								return;
 							}
-							test.ok(true, 'Detached');
 						});
 					});
 					clientChannel.presence.enter('Test client data (enter3)', function(err) {
@@ -253,8 +252,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							closeAndFinish(test, [listenerRealtime, clientRealtime]);
 							return;
 						}
-						test.ok(true, 'Presence event sent');
-						/* if presence event gets sent, 5th assertion happens and test
+						/* if presence event gets sent successfully, second and third assertions happen and test
 						* finishes in the presence event handler */
 					});
 				});
