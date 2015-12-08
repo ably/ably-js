@@ -584,6 +584,42 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Realtime presence GET on an unattached channel should attach and wait for sync
+	 */
+	exports.presenceGetUnattached = function(test) {
+		test.expect(5);
+		var channelName = 'getUnattached';
+		var testData = 'some data';
+		var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		clientRealtime.connection.on('connected', function() {
+			/* get channel, attach, and enter */
+			var clientChannel = clientRealtime.channels.get(channelName);
+			clientChannel.presence.enter(testData, function(err) {
+				if(!err) test.ok(true, 'Presence enter sent');
+
+				var clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
+				clientRealtime2.connection.on('connected', function() {
+					var clientChannel2 = clientRealtime2.channels.get(channelName);
+					/* GET without attaching */
+					clientChannel2.presence.get(function(err, presenceMembers) {
+						if(err) {
+							test.ok(false, 'presence get failed with error: ' + displayError(err));
+							closeAndFinish(test, [clientRealtime, clientRealtime2]);
+							return;
+						}
+						test.ok(clientChannel2.state, 'attached', 'Verify channel attached');
+						test.ok(clientChannel2.presence.syncComplete(), 'Verify sync complete');
+						test.equal(presenceMembers.length, 1, 'Expect test client to be present');
+						test.equal(presenceMembers[0].clientId, testClientId, 'Expected test clientId to be correct');
+						closeAndFinish(test, [clientRealtime, clientRealtime2]);
+					});
+				});
+			});
+		});
+		monitorConnection(test, clientRealtime);
+	};
+
+	/*
 	 * Attach to channel, enter+leave presence channel and get presence
 	 */
 	exports.presenceEnterLeaveGet = function(test) {

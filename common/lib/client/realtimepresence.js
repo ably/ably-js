@@ -151,11 +151,14 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			members = this.members;
+			callback = args[1] || noop;
 
-		members.waitSync(function() {
-			callback(null, params ? members.list(params) : members.values());
+		var self = this;
+		waitAttached(this.channel, callback, function() {
+			var members = self.members;
+			members.waitSync(function() {
+				callback(null, params ? members.list(params) : members.values());
+			});
 		});
 	};
 
@@ -267,6 +270,10 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.off = function() {
 		Logger.deprecated('presence.off', 'presence.unsubscribe');
 		_off.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.syncComplete = function() {
+		return !this.members.syncInProgress;
 	}
 
 	function PresenceMap(presence) {
