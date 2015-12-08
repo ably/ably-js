@@ -102,16 +102,21 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
 		this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
+		if (!callback) {
+			if (typeof(data)==='function') {
+				callback = data;
+				data = null;
+			} else {
+				callback = noop;
+			}
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
