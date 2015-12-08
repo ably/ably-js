@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		noop = function() {},
 		simulateDroppedConnection = helper.simulateDroppedConnection,
 		// Ably.Realtime.ConnectionManager not defined in node
 		availableTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.transports : Object.keys(Ably.Realtime.ConnectionManager.transports);
@@ -155,6 +156,95 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			);
 		} catch(e) {
 			test.ok(false, 'connection failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
+	 * Check operations on a failed channel give the right errors
+	 */
+	exports.failed_channel = function(test) {
+		test.expect(18);
+		var realtime = helper.AblyRealtime();
+		var failChan;
+		var channelFailedCode = 90001;
+
+		var tests = [
+			function(callback) {
+				failChan.publish('event', 'data', function(err) {
+					test.ok(err, "publish failed");
+					test.equal(err.code, channelFailedCode, "publish failure code");
+					callback();
+				});
+			},
+			/* subscribe can in theory be called with a callback in addition to the message listener */
+			/* in that case, callback with the error instead of throwing */
+			function(callback) {
+				failChan.subscribe('event', noop, function(err) {
+					test.ok(err, "subscribe failed");
+					test.equal(err.code, channelFailedCode, "subscribe failure code");
+					callback();
+				});
+			},
+			function(callback) {
+				test.throws(failChan.subscribe, "check subscribe threw an exception");
+				callback();
+			},
+			function(callback) {
+				failChan.unsubscribe('event', noop, function(err) {
+					test.ok(err, "unsubscribe failed");
+					test.equal(err.code, channelFailedCode, "unsubscribe failure code");
+					callback();
+				});
+			},
+			function(callback) {
+				test.throws(failChan.unsubscribe, "check subscribe threw an exception");
+				callback();
+			},
+			function(callback) {
+				failChan.presence.enterClient('clientId', function(err) {
+					test.ok(err, "presence enter failed");
+					test.equal(err.code, channelFailedCode, "presence enter failure code");
+					callback();
+				});
+			},
+			function(callback) {
+				failChan.presence.leaveClient('clientId', function(err) {
+					test.ok(err, "presence leave failed");
+					test.equal(err.code, channelFailedCode, "presence leave failure code");
+					callback();
+				});
+			},
+			function(callback) {
+				test.throws(failChan.presence.subscribe, "check presence subscribe threw an exception");
+				callback();
+			},
+			function(callback) {
+				test.throws(failChan.presence.unsubscribe, "check presence unsubscribe threw an exception");
+				callback();
+			},
+			function(callback) {
+				failChan.presence.get(function(err) {
+					test.ok(err, "presence get failed");
+					test.equal(err.code, channelFailedCode, "presence get failure code");
+					callback();
+				});
+			},
+		];
+
+		try {
+			realtime.connection.once('connected', function() {
+				failChan = realtime.channels.get("::");
+				failChan.attach(function(err) {
+					test.ok(err, "channel attach failed");
+					test.equal(failChan.state, "failed", "channel in failed state");
+					async.parallel(tests, function() {
+						closeAndFinish(test, realtime);
+					});
+				});
+			});
+		} catch(e) {
+			test.ok(false, 'caught exception: ' + e.message + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};

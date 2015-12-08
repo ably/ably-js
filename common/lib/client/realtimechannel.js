@@ -76,6 +76,9 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		switch(this.state) {
+			case 'failed':
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				break;
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
 				var msg = new ProtocolMessage();
@@ -183,8 +186,15 @@ var RealtimeChannel = (function() {
 
 		var event = args[0];
 		var listener = args[1];
-		var callback = (args[2] || (args[2] = noop));
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			var err = ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
+			if(callback) callback(err);
+			else throw(err);
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.on(event, listener);
@@ -195,14 +205,22 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
 		var args = Array.prototype.slice.call(arguments);
 		if(args.length == 1 && typeof(args[0]) == 'function')
 			args.unshift(null);
 
 		var event = args[0];
 		var listener = args[1];
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			var err = ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
+			if(callback) callback(err);
+			else throw(err);
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.off(event, listener);
