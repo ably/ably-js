@@ -1095,7 +1095,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * reconnect, then enter again to reattach
 	 */
 	exports.presenceEnterAfterClose = function(test) {
-		test.expect(3);
+		test.expect(5);
 
 		var channelName = "enterAfterClose";
 		var secondEnterListener = function(test, channel, callback) {
@@ -1121,7 +1121,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.ok(true, 'Entered presence first time');
 					clientRealtime.close();
 					clientRealtime.connection.once('closed', function() {
+						test.ok(true, 'Connection successfully closed');
 						clientRealtime.connection.once('connected', function() {
+							test.ok(true, 'Successfully reconnected');
 							//Should automatically reattach
 							clientChannel.presence.enter('second', function(err) {
 								if(!err)
