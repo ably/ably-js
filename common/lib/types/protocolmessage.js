@@ -81,7 +81,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
