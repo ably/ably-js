@@ -7,6 +7,25 @@ var RealtimePresence = (function() {
 		return item.clientId + ':' + item.connectionId;
 	}
 
+	function waitAttached(channel, callback, action) {
+		switch(channel.state) {
+			case 'attached':
+				action();
+				break;
+			case 'initialized':
+			case 'detached':
+			case 'detaching':
+			case 'attaching':
+				channel.attach(function(err) {
+					if(err) callback(err);
+					else action();
+				});
+				break;
+			default:
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+		}
+	}
+
 	function RealtimePresence(channel, options) {
 		EventEmitter.call(this);
 		Presence.call(this, channel);
@@ -227,7 +246,13 @@ var RealtimePresence = (function() {
 	var _off = RealtimePresence.prototype.off;
 
 	RealtimePresence.prototype.subscribe = function() {
-		_on.apply(this, arguments);
+		var self = this, args = arguments;
+		waitAttached(this.channel, function(err) {
+			/* No callback arg, so if error occurs in attaching, raise it */
+			if(err) throw(err);
+		}, function() {
+			_on.apply(self, args);
+		});
 	}
 
 	RealtimePresence.prototype.unsubscribe = function() {

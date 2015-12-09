@@ -560,6 +560,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Realtime presence subscribe on an unattached channel should implicitly attach
+	 */
+	exports.presenceSubscribeUnattached = function(test) {
+		test.expect(1);
+		var channelName = 'subscribeUnattached';
+		var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		var clientRealtime2;
+		clientRealtime.connection.on('connected', function() {
+			var clientChannel = clientRealtime.channels.get(channelName);
+			clientChannel.presence.subscribe(function(presMsg) {
+				test.equal(presMsg.clientId, testClientId2, 'verify clientId correct');
+				closeAndFinish(test, [clientRealtime, clientRealtime2]);
+			})
+			/* Technically a race, but c2 connecting and attaching should take longer than c1 attaching */
+			clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
+			clientRealtime2.connection.on('connected', function() {
+				var clientChannel2 = clientRealtime2.channels.get(channelName);
+				clientChannel2.presence.enter('data');
+			});
+		});
+		monitorConnection(test, clientRealtime);
+	};
+
+	/*
 	 * Attach to channel, enter+leave presence channel and get presence
 	 */
 	exports.presenceEnterLeaveGet = function(test) {
