@@ -332,6 +332,47 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Token generation with defaultTokenParams set and no tokenParams passed in
+	 */
+	exports.authdefaulttokenparams0 = function(test) {
+		test.expect(1);
+		var rest1 = helper.AblyRest({defaultTokenParams: {ttl: 123, clientId: "foo"}});
+		rest1.auth.requestToken(function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.expect(3);
+			test.ok((tokenDetails.token), 'Verify token value');
+			test.equal(tokenDetails.clientId, 'foo', 'Verify client id from defaultTokenParams used');
+			test.equal(tokenDetails.expires - tokenDetails.issued, 123, 'Verify ttl from defaultTokenParams used');
+			test.done();
+		});
+	};
+
+	/*
+	 * Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged
+	 */
+	exports.authdefaulttokenparams1 = function(test) {
+		test.expect(1);
+		var rest1 = helper.AblyRest({defaultTokenParams: {ttl: 123, clientId: "foo"}});
+		rest1.auth.requestToken({clientId: 'bar'}, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.expect(3);
+			test.equal(tokenDetails.clientId, 'bar', 'Verify client id passed in is used, not the one from defaultTokenParams');
+			console.log(1, rest.auth.clientId)
+			test.equal(rest.auth.clientId, 'bar', 'Verify client id passed in set in rest.auth, not the one from defaultTokenParams');
+			test.equal(tokenDetails.expires - tokenDetails.issued, 60 * 60 * 1000, 'Verify ttl from defaultTokenParams ignored completely, even though not overridden');
+			test.done();
+		});
+	};
+
+	/*
 	 * Specify non-default ttl
 	 */
 	exports.authttl0 = function(test) {

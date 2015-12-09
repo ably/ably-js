@@ -431,7 +431,7 @@ var ConnectionManager = (function() {
 		}
 
 		var auth = this.realtime.auth;
-		if(clientId) {
+		if(clientId && !(clientId === '*')) {
 			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
