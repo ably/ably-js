@@ -1,7 +1,7 @@
 Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
-Defaults.REST_HOST                     = 'rest.ably.io';
-Defaults.REALTIME_HOST                  = 'realtime.ably.io';
+Defaults.REST_HOST                = 'rest.ably.io';
+Defaults.REALTIME_HOST            = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
@@ -18,7 +18,8 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version                  = '0.8.9';
+Defaults.version           = '0.8.9';
+Defaults.ablyVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)

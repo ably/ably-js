@@ -70,6 +70,7 @@ var ConnectionManager = (function() {
 			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
+		params.v = Defaults.ablyVersion;
 		return params;
 	};
 
