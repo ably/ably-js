@@ -40,8 +40,14 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenParams = {};
-		this.clientId = options.clientId;
+		this.tokenParams = options.defaultTokenParams || {};
+
+		/* RSA7a4: if options.clientId is provided and is not
+		 * null, it overrides defaultTokenParams.clientId */
+		if(options.clientId) {
+			this.tokenParams.clientId = options.clientId;
+			this.clientId = options.clientId
+		}
 
 		/* decide default auth method */
 		var key = options.key;
@@ -77,7 +83,6 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
-		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
