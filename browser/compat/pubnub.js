@@ -387,8 +387,8 @@
 						occupancy : ablyChannel.presence.get().length
 					});
 				} 
-				ablyChannel.presence.on('enter', function(data) { data.action = 'enter'; presenceEventCb(data); });
-				ablyChannel.presence.on('leave', function(data) { data.action = 'leave'; presenceEventCb(data); });
+				ablyChannel.presence.subscribe('enter', function(data) { data.action = 'enter'; presenceEventCb(data); });
+				ablyChannel.presence.subscribe('leave', function(data) { data.action = 'leave'; presenceEventCb(data); });
 			}
 			ablyChannel.subscribe(cb);
 

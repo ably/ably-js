@@ -223,6 +223,27 @@ var RealtimePresence = (function() {
 		this.members.startSync();
 	};
 
+	var _on = RealtimePresence.prototype.on;
+	var _off = RealtimePresence.prototype.off;
+
+	RealtimePresence.prototype.subscribe = function() {
+		_on.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.unsubscribe = function() {
+		_off.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.on = function() {
+		Logger.deprecated('presence.on', 'presence.subscribe');
+		_on.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.off = function() {
+		Logger.deprecated('presence.off', 'presence.unsubscribe');
+		_off.apply(this, arguments);
+	}
+
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;

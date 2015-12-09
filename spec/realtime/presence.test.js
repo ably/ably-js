@@ -34,11 +34,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					if(expectedClientId !== undefined) {
 						test.equal(presmsg.clientId, expectedClientId, 'Verify correct clientId');
 					}
-					channel.presence.off(presenceHandler);
+					channel.presence.unsubscribe(presenceHandler);
 					callback();
 				}
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 	};
 
@@ -362,11 +362,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var presenceHandler = function(presenceMsg) {
 				if(presenceMsg.data == 'second') {
 					test.ok(true, 'Second presence event received');
-					channel.presence.off(presenceHandler);
+					channel.presence.unsubscribe(presenceHandler);
 					callback();
 				}
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 		var enterDetachEnter = function(cb) {
 			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -477,11 +477,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.ok(true, 'Update event received');
 					test.equal(presenceMsg.clientId, testClientId, 'Check presence event has correct clientId');
 					test.equal(presenceMsg.data, newData, 'Check presence event has correct data');
-					channel.presence.off(presenceHandler);
+					channel.presence.unsubscribe(presenceHandler);
 					callback();
 				}
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 		var enterUpdate = function(cb) {
 			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -530,11 +530,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(presenceMembers.length, 1, 'Expect test client to be the only member present');
 					test.equal(presenceMembers[0].clientId, testClientId, 'Expected test clientId to be correct');
 					test.equal(presenceMembers[0].data, testData, 'Expected data to be correct');
-					channel.presence.off(presenceHandler);
+					channel.presence.unsubscribe(presenceHandler);
 					callback();
 				});
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 		var enterGet = function(cb) {
 			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -575,12 +575,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							return;
 						}
 						test.equal(presenceMembers.length, 0, 'Expect presence set to be empty');
-						channel.presence.off(presenceHandler);
+						channel.presence.unsubscribe(presenceHandler);
 						callback();
 					});
 				}
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 		var enterLeaveGet = function(cb) {
 			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -805,7 +805,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						}
 						test.ok(true, 'Presence event sent');
 					});
-					clientChannel1.presence.on('enter', function() {
+					clientChannel1.presence.subscribe('enter', function() {
 						clientChannel1.presence.get(function(err, presenceMembers1) {
 							if(err) {
 								test.ok(false, 'Presence get() failed with error: ' + displayError(err));
@@ -825,7 +825,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 										closeAndFinish(test, [clientRealtime1, clientRealtime2]);
 										return;
 									}
-									clientChannel2.presence.on('present', function() {
+									clientChannel2.presence.subscribe('present', function() {
 										/* get the channel members and verify testclient is there */
 										clientChannel2.presence.get(function(err, presenceMembers2) {
 											if(err) {
@@ -922,11 +922,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 										/* PrenceEvent from first connection might come through as an enter or a present */
 										if(presenceEvent.clientId == clientId && (this.event === 'enter' || this.event === 'present')) {
 											test.ok(true, 'Presence event for ' + clientId + ' received');
-											clientChannel2.presence.off(presenceHandler);
+											clientChannel2.presence.unsubscribe(presenceHandler);
 											onEnterCb();
 										}
 									};
-									clientChannel2.presence.on(presenceHandler);
+									clientChannel2.presence.subscribe(presenceHandler);
 								};
 							};
 							async.parallel([
@@ -1044,11 +1044,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var presenceHandler = function(presenceMsg) {
 				if(this.event == 'enter' && presenceMsg.data == 'second') {
 					test.ok(true, 'Second presence event received');
-					channel.presence.off(presenceHandler);
+					channel.presence.unsubscribe(presenceHandler);
 					callback();
 				}
 			};
-			channel.presence.on(presenceHandler);
+			channel.presence.subscribe(presenceHandler);
 		};
 		var enterAfterClose = function(cb) {
 			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
