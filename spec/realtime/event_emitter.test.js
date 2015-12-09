@@ -84,5 +84,19 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	exports.emitCallsAllCallbacksIgnoringExceptions = function(test) {
+		var realtime = helper.AblyRealtime(),
+				callbackCalled = false,
+				eventEmitter = realtime.connection;
+
+		eventEmitter.on('custom', function() { throw('Expected failure 1'); });
+		eventEmitter.on('custom', function() { throw('Expected failure 2'); });
+		eventEmitter.on('custom', function() { callbackCalled = true; });
+
+		eventEmitter.emit('custom');
+		test.ok(callbackCalled, 'Last callback should have been called');
+		closeAndFinish(test, realtime);
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
