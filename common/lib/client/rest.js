@@ -28,6 +28,14 @@ var Rest = (function() {
 			options.keyName = keyMatch[1];
 			options.keySecret = keyMatch[2];
 		}
+
+		if('clientId' in options) {
+			if(!(typeof(options.clientId) === 'string' || options.clientId === null))
+				throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
+			else if(options.clientId === '*')
+				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
+		}
+
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
