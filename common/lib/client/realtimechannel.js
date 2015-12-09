@@ -405,23 +405,25 @@ var RealtimeChannel = (function() {
 		if(msgErr) {
 			/* this is an error message */
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
-			this.failPendingMessages(err);
 			this.setState('failed', err);
+			this.failPendingMessages(err);
 		} else {
-			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 			if(this.state !== 'detached') {
 				this.setState('detached');
 			}
+			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 		}
 	};
 
 	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
-		this.clearStateTimer();
-		this.failPendingMessages(err);
-		this.presence.setSuspended(err);
-		if(!suppressEvent && this.state !== 'detached') {
-			this.setState('detached');
+		if(this.state !== 'detached' && this.state !== 'failed') {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
+			this.clearStateTimer();
+			this.presence.setSuspended(err);
+			if(!suppressEvent) {
+				this.setState('detached');
+			}
+			this.failPendingMessages(err);
 		}
 	};
 
