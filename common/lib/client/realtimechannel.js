@@ -522,5 +522,9 @@ var RealtimeChannel = (function() {
 		Channel.prototype._history.call(this, params, callback);
 	};
 
+	RealtimeChannel.prototype.onceOrIf = function(state, listener) {
+		EventEmitter.prototype.onceOrIfState.call(this, state, this.state, listener);
+	}
+
 	return RealtimeChannel;
 })();

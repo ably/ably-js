@@ -495,6 +495,54 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	}
 
 	/*
+	 * Attach then later call onceOrIf which fires immediately
+	 */
+	exports.channelattachOnceOrIfAfter = function(test) {
+		test.expect(1);
+		try {
+			var realtime = helper.AblyRealtime(),
+					channel = realtime.channels.get('channelattachOnceOrIf'),
+					firedImmediately = false;
+
+			channel.attach(function(err) {
+				channel.onceOrIf('attached', function() {
+					firedImmediately = true;
+				});
+				test.ok(firedImmediately, 'onceOrIf fired immediately as attached');
+				closeAndFinish(test, realtime);
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
+	 * Attach and call onceOrIf before attach which fires later
+	 */
+	exports.channelattachOnceOrIfBefore = function(test) {
+		test.expect(2);
+		try {
+			var realtime = helper.AblyRealtime(),
+					channel = realtime.channels.get('channelattachOnceOrIf'),
+					firedImmediately = false;
+
+			channel.attach();
+			channel.onceOrIf('attached', function() {
+				firedImmediately = true;
+				test.ok(channel.state === 'attached', 'onceOrIf fired when attached');
+				closeAndFinish(test, realtime);
+			});
+			test.ok(!firedImmediately, 'onceOrIf should not fire immediately as not attached');
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
 	 * Subscribe, then unsubscribe, binary transport
 	 */
 	exports.channelsubscribe0 = function(test) {
