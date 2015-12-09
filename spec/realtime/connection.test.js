@@ -84,9 +84,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
 
 						realtime.connection.close();
-						realtime.connection.on('closed', function() {
+						realtime.connection.once('closed', function() {
 							test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
-							test.done();
+							closeAndFinish(test, realtime);
 						});
 					});
 					test.equal(realtime.connection.serial, -1, "verify serial is -1 after publish but before ack")
