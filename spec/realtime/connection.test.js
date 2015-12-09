@@ -80,14 +80,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							closeAndFinish(test, realtime);
 							return;
 						}
-						test.equal(realtime.connection.serial, 0, "verify serial is 0 after ack received")
-						test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
+						/* Timeout needed because connectionSerial is not necessarily set
+						 * by the time the publish callback is called */
+						setTimeout(function() {
+							test.equal(realtime.connection.serial, 0, "verify serial is 0 after ack received")
+							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
 
-						realtime.connection.close();
-						realtime.connection.once('closed', function() {
-							test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
-							closeAndFinish(test, realtime);
-						});
+							realtime.connection.close();
+							realtime.connection.once('closed', function() {
+								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
+								closeAndFinish(test, realtime);
+							});
+						}, 50);
 					});
 					test.equal(realtime.connection.serial, -1, "verify serial is -1 after publish but before ack")
 				});
