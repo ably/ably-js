@@ -137,6 +137,15 @@ var Auth = (function() {
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		var token = this.tokenDetails;
 		if(token) {
 			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
@@ -375,6 +384,15 @@ var Auth = (function() {
 	 *
 	 */
 	Auth.prototype.createTokenRequest = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
