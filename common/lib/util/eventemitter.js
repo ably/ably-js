@@ -8,6 +8,13 @@ var EventEmitter = (function() {
 		this.eventsOnce = {};
 	}
 
+	/* Call the listener, catch any exceptions and log, but continue operation*/
+	function callListener(eventThis, listener, args) {
+		try { listener.apply(eventThis, args); } catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
+	}
+
 	/**
 	 * Add an event listener
 	 * @param event (optional) the name of the event to listen to
@@ -104,18 +111,11 @@ var EventEmitter = (function() {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
 
-		/* wrap the try/catch in a function improves performance by 30% */
-		function callListener(listener) {
-			try { listener.apply(eventThis, args); } catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
-				throw e;
-			}
-		}
 		if(this.anyOnce.length) {
 			var listeners = this.anyOnce;
 			this.anyOnce = [];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		for(var i = 0; i < this.any.length; i++)
 			this.any[i].apply(eventThis, args);
@@ -123,12 +123,12 @@ var EventEmitter = (function() {
 		if(listeners) {
 			delete this.eventsOnce[event];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		var listeners = this.events[event];
 		if(listeners)
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 	};
 
 	/**
@@ -146,6 +146,30 @@ var EventEmitter = (function() {
 			listeners.push(listener);
 		}
 	};
+
+	/**
+	 * Private API
+	 *
+	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
+	 * @param targetState the name of the state event to listen to
+	 * @param currentState the name of the current state of this object
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.onceOrIfState = function(targetState, currentState, listener /* ...listenerArgs */) {
+		var eventThis = {event:targetState},
+				listenerArgs = Array.prototype.slice.call(arguments, 3);
+
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+			throw("onceOrIf requires a valid event String argument");
+		if (typeof(listener) !== 'function')
+			throw("onceOrIf requires a valid listener argument");
+
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
+		} else {
+			this.once(targetState, listener);
+		}
+	}
 
 	return EventEmitter;
 })();

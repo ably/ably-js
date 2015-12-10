@@ -265,6 +265,9 @@ var RealtimePresence = (function() {
 	}
 
 	RealtimePresence.prototype.unsubscribe = function() {
+		if(channel.state === 'failed') {
+			throw(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+		}
 		_off.apply(this, arguments);
 	}
 
