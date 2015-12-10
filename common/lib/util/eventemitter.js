@@ -159,16 +159,15 @@ var EventEmitter = (function() {
 		var eventThis = {event:targetState},
 				listenerArgs = Array.prototype.slice.call(arguments, 3);
 
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
 			throw("onceOrIf requires a valid event String argument");
-		} else if (typeof(listener) !== 'function') {
+		if (typeof(listener) !== 'function')
 			throw("onceOrIf requires a valid listener argument");
+
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
 		} else {
-			if(targetState === currentState) {
-				callListener(eventThis, listener, listenerArgs);
-			} else {
-				this.once(targetState, listener);
-			}
+			this.once(targetState, listener);
 		}
 	}
 
