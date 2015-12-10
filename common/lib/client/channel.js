@@ -68,9 +68,12 @@ var Channel = (function() {
 			++argCount;
 		}
 		if(argCount == 2) {
-			if(!Utils.isArray(messages))
-				messages = [messages];
-			messages = Message.fromValuesArray(messages);
+			if(Utils.isObject(messages))
+				messages = [Message.fromValues(messages)];
+			else if(Utils.isArray(messages))
+				messages = Message.fromValuesArray(messages);
+			else
+				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
