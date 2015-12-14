@@ -31,6 +31,14 @@ var RealtimeChannel = (function() {
 		message: 'Channel is detached'
 	};
 
+	RealtimeChannel.processListenerArgs = function(args) {
+		/* [event], listener, [callback] */
+		if(typeof(args[0]) == 'function')
+			return [null, args[0], args[1] || noop];
+		else
+			return [args[0], args[1], (args[2] || noop)];
+	}
+
 	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
 		this.channelOptions = options = options || {};
@@ -183,19 +191,14 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
 
 		if(this.state === 'failed') {
-			var err = ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
-			if(callback) callback(err);
-			else throw(err);
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
@@ -209,19 +212,14 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
 
 		if(this.state === 'failed') {
-			var err = ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
-			if(callback) callback(err);
-			else throw(err);
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
@@ -520,7 +518,7 @@ var RealtimeChannel = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 			}
 		}
 

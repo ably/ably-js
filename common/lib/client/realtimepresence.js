@@ -185,7 +185,7 @@ var RealtimePresence = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.channel.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
 			}
 		}
 
@@ -254,20 +254,28 @@ var RealtimePresence = (function() {
 	var _on = RealtimePresence.prototype.on;
 	var _off = RealtimePresence.prototype.off;
 
-	RealtimePresence.prototype.subscribe = function() {
-		var self = this, args = arguments;
-		waitAttached(this.channel, function(err) {
-			/* No callback arg, so if error occurs in attaching, raise it */
-			if(err) throw(err);
-		}, function() {
-			_on.apply(self, args);
+	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+		var self = this;
+
+		waitAttached(this.channel, callback, function() {
+			_on.call(self, event, listener);
 		});
 	}
 
-	RealtimePresence.prototype.unsubscribe = function() {
+	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+
 		if(this.channel.state === 'failed')
-			throw new ErrorInfo.fromValues(RealtimeChannel.invalidStateError);
-		_off.apply(this, arguments);
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+
+		_off.call(this, event, listener);
 	}
 
 	RealtimePresence.prototype.on = function() {

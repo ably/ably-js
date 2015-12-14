@@ -177,8 +177,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					callback();
 				});
 			},
-			/* subscribe can in theory be called with a callback in addition to the message listener */
-			/* in that case, callback with the error instead of throwing */
 			function(callback) {
 				failChan.subscribe('event', noop, function(err) {
 					test.ok(err, "subscribe failed");
@@ -187,19 +185,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 			},
 			function(callback) {
-				test.throws(failChan.subscribe, "check subscribe threw an exception");
-				callback();
-			},
-			function(callback) {
 				failChan.unsubscribe('event', noop, function(err) {
 					test.ok(err, "unsubscribe failed");
 					test.equal(err.code, channelFailedCode, "unsubscribe failure code");
 					callback();
 				});
-			},
-			function(callback) {
-				test.throws(failChan.unsubscribe, "check subscribe threw an exception");
-				callback();
 			},
 			function(callback) {
 				failChan.presence.enterClient('clientId', function(err) {
@@ -216,12 +206,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 			},
 			function(callback) {
-				test.throws(failChan.presence.subscribe, "check presence subscribe threw an exception");
-				callback();
+				failChan.presence.subscribe('event', noop, function(err) {
+					test.ok(err, "presence subscribe failed");
+					test.equal(err.code, channelFailedCode, "subscribe failure code");
+					callback();
+				});
 			},
 			function(callback) {
-				test.throws(failChan.presence.unsubscribe, "check presence unsubscribe threw an exception");
-				callback();
+				failChan.presence.subscribe('event', noop, function(err) {
+					test.ok(err, "presence unsubscribe failed");
+					test.equal(err.code, channelFailedCode, "subscribe failure code");
+					callback();
+				});
 			},
 			function(callback) {
 				failChan.presence.get(function(err) {
