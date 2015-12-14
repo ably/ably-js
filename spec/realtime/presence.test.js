@@ -1120,7 +1120,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					}
 					test.ok(true, 'Entered presence first time');
 					clientRealtime.close();
-					clientRealtime.connection.once('closed', function() {
+					clientRealtime.connection.whenState('closed', function() {
 						test.ok(true, 'Connection successfully closed');
 						clientRealtime.connection.once('connected', function() {
 							test.ok(true, 'Successfully reconnected');

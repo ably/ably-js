@@ -87,7 +87,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
 
 							realtime.connection.close();
-							realtime.connection.once('closed', function() {
+							realtime.connection.whenState('closed', function() {
 								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
 								closeAndFinish(test, realtime);
 							});

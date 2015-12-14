@@ -58,7 +58,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			/* second, connect and attach to the channel */
 			try {
-				realtime.connection.on('connected', function() {
+				realtime.connection.whenState('connected', function() {
 					var rtChannel = realtime.channels.get('persisted:history_until_attach');
 					rtChannel.attach(function(err) {
 						if(err) {

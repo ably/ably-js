@@ -525,5 +525,9 @@ var RealtimeChannel = (function() {
 		Channel.prototype._history.call(this, params, callback);
 	};
 
+	RealtimeChannel.prototype.whenState = function(state, listener) {
+		EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+	}
+
 	return RealtimeChannel;
 })();

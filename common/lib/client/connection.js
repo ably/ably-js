@@ -21,14 +21,9 @@ var Connection = (function() {
 	}
 	Utils.inherits(Connection, EventEmitter);
 
-	/* public instance methods */
-	Connection.prototype.on = function(state, callback) {
-		EventEmitter.prototype.on.apply(this, arguments);
-		if(this.state == state && callback)
-			try {
-				callback(new ConnectionStateChange(undefined, state));
-			} catch(e) {}
-	};
+	Connection.prototype.whenState = function(state, listener) {
+		EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
+	}
 
 	Connection.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.connect()', '');
