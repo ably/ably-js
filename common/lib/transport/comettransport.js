@@ -75,6 +75,9 @@ var CometTransport = (function() {
 					self.finish('error', err);
 					return;
 				}
+				Utils.nextTick(function() {
+					self.recv();
+				});
 			});
 			connectRequest.exec();
 		});
@@ -134,11 +137,6 @@ var CometTransport = (function() {
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
-
-		var self = this;
-		Utils.nextTick(function() {
-			self.recv();
-		})
 	};
 
 	CometTransport.prototype.send = function(message, callback) {
