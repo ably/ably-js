@@ -200,7 +200,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var txCount = 0;
 			function ph1TxOnce() {
 				console.log('sending (phase 1): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
+				txChannel.publish('event0', 'phase 1 message ' + txCount + ' at ' + new Date());
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() {
@@ -224,7 +224,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			function ph2TxOnce() {
 				console.log('sending (phase 2): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
+				txChannel.publish('event0', 'phase 2 message ' + txCount + ' at ' + new Date());
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() { callback(null); }, 1000);

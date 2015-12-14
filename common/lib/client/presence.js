@@ -21,7 +21,7 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options;
+			options = this.channel.channelOptions;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -50,7 +50,7 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options,
+			options = this.channel.channelOptions,
 			channel = this.channel;
 
 		if(rest.options.headers)

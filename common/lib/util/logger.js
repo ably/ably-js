@@ -33,6 +33,12 @@ var Logger = (function() {
 		}
 	};
 
+	Logger.deprecated = function(original, replacement) {
+		if (Logger.shouldLog(LOG_ERROR)) {
+			logHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+		}
+	}
+
 	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
 	Logger.shouldLog = function(level) {

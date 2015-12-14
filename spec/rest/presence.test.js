@@ -43,9 +43,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.presence_get_simple = function(test) {
 		test.expect(6);
 		try {
-			var channel = rest.channels.get('persisted:presence_fixtures');
 			var cipherParams = cipherParamsFromConfig(cipherConfig);
-			channel.setOptions({encrypted: true, cipherParams: cipherParams});
+			var channel = rest.channels.get('persisted:presence_fixtures',
+																			{encrypted: true, cipherParams: cipherParams});
 			channel.presence.get(function(err, resultPage) {
 				if(err) {
 					test.ok(false, displayError(err));

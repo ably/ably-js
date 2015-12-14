@@ -58,6 +58,50 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	exports.connectionAttributes = function(test) {
+		test.expect(6);
+		var realtime;
+		try {
+			realtime = helper.AblyRealtime();
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.connection.serial, -1, "verify serial is -1 on connect");
+				test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify correct recovery key');
+
+				var channel = realtime.channels.get('connectionattributes');
+				channel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+					channel.publish("name", "data", function(err) {
+						if(err) {
+							test.ok(false, 'Publish failed with error: ' + displayError(err));
+							closeAndFinish(test, realtime);
+							return;
+						}
+						/* Timeout needed because connectionSerial is not necessarily set
+						 * by the time the publish callback is called */
+						setTimeout(function() {
+							test.equal(realtime.connection.serial, 0, "verify serial is 0 after ack received")
+							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
+
+							realtime.connection.close();
+							realtime.connection.once('closed', function() {
+								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
+								closeAndFinish(test, realtime);
+							});
+						}, 50);
+					});
+					test.equal(realtime.connection.serial, -1, "verify serial is -1 after publish but before ack")
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'test failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });

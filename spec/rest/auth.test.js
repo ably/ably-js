@@ -1,6 +1,6 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, rest, exports = {};
 
 	var getServerTime = function(callback) {
@@ -332,6 +332,74 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Token generation with defaultTokenParams set and no tokenParams passed in
+	 */
+	exports.authdefaulttokenparams0 = function(test) {
+		test.expect(1);
+		var rest1 = helper.AblyRest({defaultTokenParams: {ttl: 123, clientId: "foo"}});
+		rest1.auth.requestToken(function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.expect(3);
+			test.ok((tokenDetails.token), 'Verify token value');
+			test.equal(tokenDetails.clientId, 'foo', 'Verify client id from defaultTokenParams used');
+			test.equal(tokenDetails.expires - tokenDetails.issued, 123, 'Verify ttl from defaultTokenParams used');
+			test.done();
+		});
+	};
+
+	/*
+	 * Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged
+	 */
+	exports.authdefaulttokenparams1 = function(test) {
+		test.expect(2);
+		var rest1 = helper.AblyRest({defaultTokenParams: {ttl: 123, clientId: "foo"}});
+		rest1.auth.requestToken({clientId: 'bar'}, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenDetails.clientId, 'bar', 'Verify client id passed in is used, not the one from defaultTokenParams');
+			test.equal(tokenDetails.expires - tokenDetails.issued, 60 * 60 * 1000, 'Verify ttl from defaultTokenParams ignored completely, even though not overridden');
+			test.done();
+		});
+	};
+
+	/*
+	 * Authorise with different args
+	 */
+	exports.authauthorise = function(test) {
+		test.expect(3);
+		async.parallel([
+			function(cb) {
+				rest.auth.authorise(null, null, function(err, tokenDetails) {
+					test.ok(tokenDetails.token, 'Check token obtained');
+					cb(err);
+				});
+			},
+			function(cb) {
+				rest.auth.authorise(null, function(err, tokenDetails) {
+					test.ok(tokenDetails.token, 'Check token obtained');
+					cb(err);
+				});
+			},
+			function(cb) {
+				rest.auth.authorise(function(err, tokenDetails) {
+					test.ok(tokenDetails.token, 'Check token obtained');
+					cb(err);
+				});
+			},
+		], function(err) {
+			if(err) test.ok(false, "Authorise returned an error: " + helper.displayError(err));
+			test.done();
+		});
+	};
+
+	/*
 	 * Specify non-default ttl
 	 */
 	exports.authttl0 = function(test) {
@@ -401,6 +469,38 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.auth_createTokenRequest_given_key = function(test) {
 		test.expect(1);
 		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	/*
+	 * createTokenRequest: no authoptions, callback as 2nd param
+	 */
+	exports.auth_createTokenRequest_params0 = function(test) {
+		test.expect(1);
+		rest.auth.createTokenRequest(null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
+			test.done();
+		});
+	};
+
+	/*
+	 * createTokenRequest: no authoptions or tokenparams, callback as 1st param
+	 */
+	exports.auth_createTokenRequest_params1 = function(test) {
+		test.expect(1);
+		rest.auth.createTokenRequest(function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();

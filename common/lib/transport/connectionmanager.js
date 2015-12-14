@@ -70,6 +70,7 @@ var ConnectionManager = (function() {
 			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
+		params.v = Defaults.apiVersion;
 		return params;
 	};
 
@@ -431,7 +432,7 @@ var ConnectionManager = (function() {
 		}
 
 		var auth = this.realtime.auth;
-		if(clientId) {
+		if(clientId && !(clientId === '*')) {
 			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
@@ -527,6 +528,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
 		if(this.options.recover === true)
 			this.persistConnection();
@@ -537,6 +539,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = undefined;
 		this.realtime.connection.key = this.connectionKey = undefined;
 		this.realtime.connection.serial = this.connectionSerial = undefined;
+		this.realtime.connection.recoveryKey = null;
 		this.msgSerial = 0;
 		this.unpersistConnection();
 	};
@@ -924,6 +927,7 @@ var ConnectionManager = (function() {
 			}
 			if(connectionSerial !== undefined) {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
+				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
 			this.realtime.channels.onChannelMessage(message);
 		} else {

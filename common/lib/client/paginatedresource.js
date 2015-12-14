@@ -66,8 +66,15 @@ var PaginatedResource = (function() {
 			this.first = function(cb) { self.get(relParams.first, cb); };
 		if('current' in relParams)
 			this.current = function(cb) { self.get(relParams.current, cb); };
-		if('next' in relParams)
-			this.next = function(cb) { self.get(relParams.next, cb); };
+		this.next = function(cb) {
+			if('next' in relParams)
+				self.get(relParams.next, cb);
+			else
+				cb(null, null);
+		};
+
+		this.hasNext = function() { return ('next' in relParams) };
+		this.isLast = function() { return !this.hasNext(); }
 	}
 
 	PaginatedResult.prototype.get = function(params, callback) {

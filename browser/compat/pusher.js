@@ -81,7 +81,7 @@
 		if (options.auth && options.auth.headers) opts.authHeaders = options.auth.headers;
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
-			opts.host = opts.wsHost = p[0];
+			opts.realtimeHost = opts.restHost = p[0];
 			if (p.length > 1)
 				opts.port = p[1];
 		}
@@ -239,13 +239,13 @@
 		if (this.isPresence) {
 			var presence = this.channel.presence;
 			this.entered = false;
-			presence.on('enter', function(id) {
+			presence.subscribe('enter', function(id) {
 				if (!self.entered) return;
 				if (id.clientId === self.members.myID) return;
 				var member = self.members.addMember(id.clientId, id.clientInfo);
 				if (member) self.channel.emit('pusher:member_added', member);
 			});
-			presence.on('leave', function(id) {
+			presence.subscribe('leave', function(id) {
 				if (!self.entered) return;
 				var member = self.members.removeMember(id.clientId);
 				if (member) self.channel.emit('pusher:member_removed', member);

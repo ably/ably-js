@@ -83,7 +83,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* init with key string and useTokenAuth: true */
 	exports.init_key_with_usetokenauth = function(test) {
-		test.expect(3);
+		test.expect(4);
 		var realtime;
 		try {
 			var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -91,9 +91,73 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.equal(realtime.options.key, keyStr);
 			test.equal(realtime.auth.method, 'token');
 			test.equal(realtime.auth.clientId, null);
-			closeAndFinish(test, realtime);
+			/* Check that useTokenAuth by default results in an anonymous (and not wildcard) token */
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.tokenDetails.clientId, null);
+				closeAndFinish(test, realtime);
+			});
 		} catch(e) {
 			test.ok(false, 'Init with key and usetokenauth failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/* init with key string, useTokenAuth: true, and some defaultTokenParams to
+	* request a wildcard clientId */
+	exports.init_usetokenauth_defaulttokenparams_wildcard = function(test) {
+		test.expect(4);
+		var realtime;
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true, defaultTokenParams: {clientId: '*', ttl: 12345}});
+			test.equal(realtime.auth.clientId, null);
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.tokenDetails.clientId, '*');
+				/* auth.clientId does not inherit the value '*'; it remains null as
+				* client is not identified */
+				test.equal(realtime.auth.clientId, null);
+				test.equal(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued, 12345);
+				closeAndFinish(test, realtime);
+			});
+		} catch(e) {
+			test.ok(false, 'init_usetokenauth_defaulttokenparams_wildcard failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/* init with using defaultTokenParams to set a non-wildcard clientId should set auth.clientId */
+	exports.init_defaulttokenparams_nonwildcard = function(test) {
+		test.expect(3);
+		var realtime;
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true, defaultTokenParams: {clientId: 'test'}});
+			test.equal(realtime.auth.clientId, null);
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.tokenDetails.clientId, 'test');
+				test.equal(realtime.auth.clientId, 'test');
+				closeAndFinish(test, realtime);
+			});
+		} catch(e) {
+			test.ok(false, 'init_defaulttokenparams_nonwildcard failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/* init when specifying clientId both in defaultTokenParams and in clientOptions: the latter takes precedence */
+	exports.init_conflicting_clientids = function(test) {
+		test.expect(2);
+		var realtime;
+		try {
+			var keyStr = helper.getTestApp().keys[0].keyStr;
+			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true, clientId: 'yes', defaultTokenParams: {clientId: 'no'}});
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.tokenDetails.clientId, 'yes');
+				test.equal(realtime.auth.clientId, 'yes');
+				closeAndFinish(test, realtime);
+			});
+		} catch(e) {
+			test.ok(false, 'init_conflicting_clientids failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
@@ -158,7 +222,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
-				host: 'a',
+				restHost: 'a',
 				httpMaxRetryCount: 2,
 				fallbackHosts: ['b', 'c', 'd', 'e']
 			});

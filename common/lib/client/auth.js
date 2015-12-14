@@ -40,8 +40,14 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenParams = {};
-		this.clientId = options.clientId;
+		this.tokenParams = options.defaultTokenParams || {};
+
+		/* RSA7a4: if options.clientId is provided and is not
+		 * null, it overrides defaultTokenParams.clientId */
+		if(options.clientId) {
+			this.tokenParams.clientId = options.clientId;
+			this.clientId = options.clientId
+		}
 
 		/* decide default auth method */
 		var key = options.key;
@@ -77,7 +83,6 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
-		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
@@ -132,6 +137,15 @@ var Auth = (function() {
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		var token = this.tokenDetails;
 		if(token) {
 			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
@@ -370,6 +384,15 @@ var Auth = (function() {
 	 *
 	 */
 	Auth.prototype.createTokenRequest = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 

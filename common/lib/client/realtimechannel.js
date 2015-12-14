@@ -3,21 +3,18 @@ var RealtimeChannel = (function() {
 	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 
-	var defaultOptions = {
-		queueEvents: true
-	};
-
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
-		this.presence = new RealtimePresence(this, options);
+		this.presence = new RealtimePresence(this, realtime.options);
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
 		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
+		this.realtime = realtime;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -34,9 +31,17 @@ var RealtimeChannel = (function() {
 		message: 'Channel is detached'
 	};
 
+	RealtimeChannel.processListenerArgs = function(args) {
+		/* [event], listener, [callback] */
+		if(typeof(args[0]) == 'function')
+			return [null, args[0], args[1] || noop];
+		else
+			return [args[0], args[1], (args[2] || noop)];
+	}
+
 	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		this.channelOptions = options = options || {};
 		if(options.encrypted) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
@@ -52,7 +57,7 @@ var RealtimeChannel = (function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
 			callback = arguments[argCount - 1],
-			options = this.options;
+			options = this.channelOptions;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -64,9 +69,12 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		if(argCount == 2) {
-			if(!Utils.isArray(messages))
-				messages = [messages];
-			messages = Message.fromValuesArray(messages);
+			if(Utils.isObject(messages))
+				messages = [Message.fromValues(messages)];
+			else if(Utils.isArray(messages))
+				messages = Message.fromValuesArray(messages);
+			else
+				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
@@ -79,6 +87,9 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		switch(this.state) {
+			case 'failed':
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				break;
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
 				var msg = new ProtocolMessage();
@@ -180,14 +191,16 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
-		var callback = (args[2] || (args[2] = noop));
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.on(event, listener);
@@ -198,14 +211,17 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.off(event, listener);
@@ -234,7 +250,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
-		this.connectionManager.send(msg, this.options.queueEvents, callback);
+		this.connectionManager.send(msg, this.realtime.options.queueMessages, callback);
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
@@ -267,7 +283,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < presence.length; i++) {
 				try {
@@ -289,7 +305,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < messages.length; i++) {
 				try {
@@ -390,23 +406,25 @@ var RealtimeChannel = (function() {
 		if(msgErr) {
 			/* this is an error message */
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
-			this.failPendingMessages(err);
 			this.setState('failed', err);
+			this.failPendingMessages(err);
 		} else {
-			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 			if(this.state !== 'detached') {
 				this.setState('detached');
 			}
+			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 		}
 	};
 
 	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
-		this.clearStateTimer();
-		this.failPendingMessages(err);
-		this.presence.setSuspended(err);
-		if(!suppressEvent && this.state !== 'detached') {
-			this.setState('detached');
+		if(this.state !== 'detached' && this.state !== 'failed') {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
+			this.clearStateTimer();
+			this.presence.setSuspended(err);
+			if(!suppressEvent) {
+				this.setState('detached');
+			}
+			this.failPendingMessages(err);
 		}
 	};
 
@@ -439,7 +457,7 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, this.options.timeouts.realtimeRequestTimeout);
+		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
@@ -500,7 +518,7 @@ var RealtimeChannel = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 			}
 		}
 

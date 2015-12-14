@@ -81,5 +81,21 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
+	/* init with a clientId set to '*', or anything other than a string or null,
+	* should raise an exception */
+	exports.init_wildcard_clientId = function(test) {
+		test.expect(3);
+		test.throws(function() {
+			var rest = helper.AblyRest({clientId: '*'});
+		}, 'Check can’t init library with a wildcard clientId');
+		test.throws(function() {
+			var rest = helper.AblyRest({clientId: 123});
+		}, 'Check can’t init library with a numerical clientId');
+		test.throws(function() {
+			var rest = helper.AblyRest({clientId: false});
+		}, 'Check can’t init library with a boolean clientId');
+		test.done();
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

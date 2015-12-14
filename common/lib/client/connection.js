@@ -9,6 +9,7 @@ var Connection = (function() {
 		this.key = undefined;
 		this.id = undefined;
 		this.serial = undefined;
+		this.recoveryKey = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {

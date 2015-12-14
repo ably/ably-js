@@ -10,24 +10,11 @@ For complete API documentation, see the [ably documentation](https://ably.io/doc
 
 # For node.js
 
-## Installation
+### Installation from npm
 
-### From npm
+    npm install ably
 
-    npm install ably-js
-
-### From a git url
-
-    npm install <git url>
-
-### From a local clone of this repo
-
-    cd </path/to/this/repo>
-    npm install
-
-## Usage
-
-### With Node.js
+### Usage
 
 For the realtime library:
 
@@ -41,7 +28,7 @@ For the rest-only library:
 var rest = require('ably-js').Rest;
 ```
 
-### With the Browser library
+### For browsers
 
 Include the Ably library in your HTML:
 
@@ -49,7 +36,7 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.io/lib/ably.min.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.2.js or http://cdn.ably.io/lib/ably-0.8.2.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.9.js or http://cdn.ably.io/lib/ably-0.8.9.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For the real-time library:
 
@@ -347,7 +334,7 @@ Please visit http://support.ably.io/ for access to our knowledgebase and to ask 
 
 You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
 
-To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANGELOG.md).
+To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Contributing
 
@@ -357,6 +344,12 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 4. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
+
+## Releasing
+
+- `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
+- `git push --follow-tags`
+- `npm publish .`
 
 ## License
 

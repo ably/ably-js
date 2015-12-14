@@ -1,23 +1,21 @@
 var Channel = (function() {
 	function noop() {}
 
-	var defaultOptions = {};
-
 	/* public constructor */
-	function Channel(rest, name, options) {
+	function Channel(rest, name, channelOptions) {
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
 		EventEmitter.call(this);
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
-		this.setOptions(options);
+		this.setOptions(channelOptions);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
 	Channel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		this.channelOptions = options = options || {};
 		if(options.encrypted) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
@@ -49,7 +47,7 @@ var Channel = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.options,
+			options = this.channelOptions,
 			channel = this;
 
 		if(rest.options.headers)
@@ -70,16 +68,19 @@ var Channel = (function() {
 			++argCount;
 		}
 		if(argCount == 2) {
-			if(!Utils.isArray(messages))
-				messages = [messages];
-			messages = Message.fromValuesArray(messages);
+			if(Utils.isObject(messages))
+				messages = [Message.fromValues(messages)];
+			else if(Utils.isArray(messages))
+				messages = Message.fromValuesArray(messages);
+			else
+				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			requestBody = Message.toRequestBody(messages, this.options, format),
+			requestBody = Message.toRequestBody(messages, this.channelOptions, format),
 			headers = Utils.copy(Utils.defaultPostHeaders(format));
 
 		if(rest.options.headers)

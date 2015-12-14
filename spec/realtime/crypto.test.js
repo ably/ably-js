@@ -67,7 +67,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* reset channel cipher, to ensure it uses the given iv */
 					channel.setOptions({encrypted:true, cipherParams: params});
 
-					fixtureTest(channel.options, testMessage, encryptedMessage, item.msgpack);
+					fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
 				}
 				closeAndFinish(test, realtime);
 			});

@@ -7,6 +7,25 @@ var RealtimePresence = (function() {
 		return item.clientId + ':' + item.connectionId;
 	}
 
+	function waitAttached(channel, callback, action) {
+		switch(channel.state) {
+			case 'attached':
+				action();
+				break;
+			case 'initialized':
+			case 'detached':
+			case 'detaching':
+			case 'attaching':
+				channel.attach(function(err) {
+					if(err) callback(err);
+					else action();
+				});
+				break;
+			default:
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+		}
+	}
+
 	function RealtimePresence(channel, options) {
 		EventEmitter.call(this);
 		Presence.call(this, channel);
@@ -83,16 +102,21 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
 		this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
+		if (!callback) {
+			if (typeof(data)==='function') {
+				callback = data;
+				data = null;
+			} else {
+				callback = noop;
+			}
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
@@ -111,6 +135,7 @@ var RealtimePresence = (function() {
 				};
 				break;
 			case 'initialized':
+			case 'failed':
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
@@ -132,11 +157,14 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			members = this.members;
+			callback = args[1] || noop;
 
-		members.waitSync(function() {
-			callback(null, params ? members.list(params) : members.values());
+		var self = this;
+		waitAttached(this.channel, callback, function() {
+			var members = self.members;
+			members.waitSync(function() {
+				callback(null, params ? members.list(params) : members.values());
+			});
 		});
 	};
 
@@ -157,7 +185,7 @@ var RealtimePresence = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.channel.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
 			}
 		}
 
@@ -222,6 +250,47 @@ var RealtimePresence = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
 		this.members.startSync();
 	};
+
+	var _on = RealtimePresence.prototype.on;
+	var _off = RealtimePresence.prototype.off;
+
+	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+		var self = this;
+
+		waitAttached(this.channel, callback, function() {
+			_on.call(self, event, listener);
+		});
+	}
+
+	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+
+		if(this.channel.state === 'failed')
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+
+		_off.call(this, event, listener);
+	}
+
+	RealtimePresence.prototype.on = function() {
+		Logger.deprecated('presence.on', 'presence.subscribe');
+		_on.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.off = function() {
+		Logger.deprecated('presence.off', 'presence.unsubscribe');
+		_off.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.syncComplete = function() {
+		return !this.members.syncInProgress;
+	}
 
 	function PresenceMap(presence) {
 		EventEmitter.call(this);

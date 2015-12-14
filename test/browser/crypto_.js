@@ -13,8 +13,8 @@ function mixin(target, source) {
 function createRealtime(opts) {
 	var options = {
 		//log: {level: 4},
-		host: testVars.restHost,
-		wsHost: testVars.realtimeHost,
+		restHost: testVars.restHost,
+		realtimeHost: testVars.realtimeHost,
 		port: testVars.realtimePort,
 		tlsPort: testVars.realtimeTlsPort,
 		key: testVars.key0Str,

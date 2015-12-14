@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var testchannel = rest.channels.get('persisted:history_simple_paginated_b');
 
 		/* first, send a number of events to this channel */
-		test.expect(4 * testMessages.length);
+		test.expect(5 * testMessages.length + 1);
 		var publishTasks = testMessages.map(function(event) {
 			return function(publishCb) {
 				testchannel.publish(event.name, event.data, publishCb);
@@ -166,8 +166,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
 						if(--totalMessagesExpected > 0) {
+							test.ok(resultPage.hasNext(), 'Verify next link is present');
+							test.ok(!resultPage.isLast(), 'Verify not last page');
 							nextPage = resultPage.next;
-							test.ok(!!nextPage, 'Verify next link is present');
+						} else {
+							test.ok(!resultPage.hasNext(), 'Verify next link is present');
+							test.ok(resultPage.isLast(), 'Verify not last page');
 						}
 						cb();
 					});
@@ -232,8 +236,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
 						if(--totalMessagesExpected > 0) {
+							test.ok(resultPage.hasNext(), 'Verify next link is present');
 							nextPage = resultPage.next;
-							test.ok(!!nextPage, 'Verify next link is present');
 						}
 						cb();
 					});
@@ -297,8 +301,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
 						if(--totalMessagesExpected > 0) {
+							test.ok(resultPage.hasNext(), 'Verify next link is present');
 							nextPage = resultPage.next;
-							test.ok(!!nextPage, 'Verify next link is present');
 						}
 						cb();
 					});
@@ -361,8 +365,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.deepEqual(expectedMessage.data, resultMessage.data, 'Verify expected data value present');
 
 						if(--totalMessagesExpected > 0) {
+							test.ok(resultPage.hasNext(), 'Verify next link is present');
 							nextPage = resultPage.next;
-							test.ok(!!nextPage, 'Verify next link is present');
 						}
 						cb();
 					});

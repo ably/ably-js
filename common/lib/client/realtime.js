@@ -58,11 +58,13 @@ var Realtime = (function() {
 		}
 	};
 
-	Channels.prototype.get = function(name) {
+	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
 		var channel = this.all[name];
 		if(!channel) {
-			channel = this.all[name] = new RealtimeChannel(this.realtime, name, this.realtime.options);
+			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
+		} else if(channelOptions) {
+			channel.setOptions(channelOptions);
 		}
 		return channel;
 	};
