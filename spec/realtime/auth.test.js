@@ -329,10 +329,36 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Rest token generation with clientId '*', then connecting with
+	 * tokenDetails and a clientId, should succeed (RSA15b)
+	 */
+	exports.auth_clientid_inheritance4 = function(test) {
+		test.expect(1);
+		var realtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.clientId, testClientId);
+				realtime.connection.close();
+				test.done();
+				return;
+			});
+			monitorConnection(test, realtime);
+		});
+	};
+
+	/*
 	 * Request a token using clientId, then initialize a connection using just the token string,
 	 * and check that the connection inherits the clientId from the connectionDetails
 	 */
-	exports.auth_clientid_inheritance4 = function(test) {
+	exports.auth_clientid_inheritance5 = function(test) {
 		test.expect(1);
 		var clientRealtime,
 			testClientId = 'test client id';

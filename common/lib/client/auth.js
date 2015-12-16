@@ -148,7 +148,7 @@ var Auth = (function() {
 
 		var token = this.tokenDetails;
 		if(token) {
-			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
+			if(this._tokenClientIdMismatch(token.clientId)) {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
@@ -505,6 +505,13 @@ var Auth = (function() {
 
 	Auth.prototype.getTimestamp = function() {
 		return Date.now() + (this.rest.serverTimeOffset || 0);
+	};
+
+	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
+		return this.clientId &&
+			tokenClientId &&
+			(tokenClientId !== '*') &&
+			(this.clientId !== tokenClientId);
 	};
 
 	return Auth;
