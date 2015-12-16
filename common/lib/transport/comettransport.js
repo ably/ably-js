@@ -12,13 +12,12 @@ var CometTransport = (function() {
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
 		Transport.call(this, connectionManager, auth, params);
-		/* streaming defaults to true */
-		this.stream = ('stream' in params) ? params.stream : true;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
 		this.disposed = false;
+		this.stream = true;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -46,6 +45,7 @@ var CometTransport = (function() {
 			}
 			self.authParams = authParams;
 			var connectParams = self.params.getConnectParams(authParams);
+			if('stream' in connectParams) self.stream = connectParams.stream;
 			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + Utils.toQueryString(connectParams));
 
 			/* this will be the 'recvRequest' so this connection can stream messages */

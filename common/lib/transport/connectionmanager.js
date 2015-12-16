@@ -28,8 +28,6 @@ var ConnectionManager = (function() {
 		this.connectionKey = connectionKey;
 		this.connectionSerial = connectionSerial;
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
-		if(options.transportParams && options.transportParams.stream !== undefined)
-			this.stream = options.transportParams.stream;
 	}
 
 	TransportParams.prototype.getConnectParams = function(params) {
@@ -68,8 +66,9 @@ var ConnectionManager = (function() {
 			params.echo = 'false';
 		if(this.format !== undefined)
 			params.format = this.format;
-		if(this.stream !== undefined)
-			params.stream = this.stream;
+		if(options.transportParams !== undefined) {
+			Utils.mixin(params, options.transportParams);
+		}
 		params.v = Defaults.apiVersion;
 		return params;
 	};
