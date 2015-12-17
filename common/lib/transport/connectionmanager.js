@@ -822,6 +822,8 @@ var ConnectionManager = (function() {
 		}
 		closeTransport(this.activeProtocol && this.activeProtocol.getTransport());
 
+		/* If there was an active transport, this will probably be
+		 * preempted by the notifyState call in deactivateTransport */
 		this.notifyState({state: 'closed'});
 	};
 
