@@ -1055,42 +1055,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Attach to channel, enter presence channel, disconnect and await leave event
-	 */
-	exports.presenceLeaveOnDisconnect = function(test) {
-		test.expect(3);
-
-		var channelName = 'leaveOnDisconnect';
-		var leaveOnDisconnect = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
-			clientRealtime.connection.on('connected', function() {
-				/* get channel, attach, and enter */
-				var clientChannel = clientRealtime.channels.get(channelName);
-				clientChannel.attach(function(err) {
-					if(err) {
-						cb(err, clientRealtime);
-						return;
-					}
-					clientChannel.presence.enter('Test client data (connection0)', function(err) {
-						if(err) {
-							cb(err, clientRealtime);
-							return;
-						}
-						test.ok(true, 'Presence event sent');
-						/* once enter event is confirmed as having been
-						 * delivered, close the connection */
-						clientRealtime.close();
-						cb(null, clientRealtime);
-					});
-				});
-			});
-			monitorConnection(test, clientRealtime);
-		};
-
-		runTestWithEventListener(test, channelName, listenerFor('leave', testClientId), leaveOnDisconnect);
-	};
-
-	/*
 	 * Enter presence channel (without attaching), close the connection,
 	 * reconnect, then enter again to reattach
 	 */
