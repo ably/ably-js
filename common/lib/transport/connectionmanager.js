@@ -66,6 +66,8 @@ var ConnectionManager = (function() {
 			params.echo = 'false';
 		if(this.format !== undefined)
 			params.format = this.format;
+		if(this.stream !== undefined)
+			params.stream = this.stream;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
