@@ -27,12 +27,17 @@ var JSONPTransport = (function() {
 		}
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
-		request(upUrl, null, null, null, false, function(err, response) {
+
+		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
 		});
+		Utils.nextTick(function() {
+			req.exec();
+		})
 	};
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
@@ -147,10 +152,12 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, callback) {
+	Http.Request = function(uri, headers, params, body, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
-		req.exec();
+		Utils.nextTick(function() {
+			req.exec();
+		})
 		return req;
 	};
 
