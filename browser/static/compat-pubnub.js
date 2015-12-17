@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.9
+ * Ably JavaScript Library v0.8.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -140,7 +140,7 @@
 			opts.clientId = uuid;
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
-			opts.host = opts.wsHost = p[0];
+			opts.restHost = opts.realtimeHost = p[0];
 			if (p.length > 1)
 				opts.port = p[1];
 		}
@@ -399,8 +399,8 @@
 						occupancy : ablyChannel.presence.get().length
 					});
 				} 
-				ablyChannel.presence.on('enter', function(data) { data.action = 'enter'; presenceEventCb(data); });
-				ablyChannel.presence.on('leave', function(data) { data.action = 'leave'; presenceEventCb(data); });
+				ablyChannel.presence.subscribe('enter', function(data) { data.action = 'enter'; presenceEventCb(data); });
+				ablyChannel.presence.subscribe('leave', function(data) { data.action = 'leave'; presenceEventCb(data); });
 			}
 			ablyChannel.subscribe(cb);
 

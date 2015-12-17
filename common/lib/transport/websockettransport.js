@@ -19,21 +19,22 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		var closeHandler;
+		var closeHandler = function(stateChange) {
+			if(stateChange.current === 'closing')
+				transport.close();
+		};
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
 			transport.cancelConnectTimeout();
-			connectionManager.off(closeHandler);
+			connectionManager.off('connectionstate', closeHandler);
 			callback(null, transport);
 		});
 		/* At this point connectionManager has no reference to websocketTransport.
 		* So need to handle a connect timeout and listen for close events here temporarily */
 		transport.startConnectTimeout();
-		closeHandler = connectionManager.on('connectionstate', function(stateChange) {
-			if(stateChange.current === 'closing') transport.close();
-		});
+		connectionManager.on('connectionstate', closeHandler);
 		transport.connect();
 	};
 

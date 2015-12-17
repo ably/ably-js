@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.9
+ * Ably JavaScript Library v0.8.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2548,8 +2548,8 @@ var DomEvent = (function() {
 });
 Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
-Defaults.HOST                     = 'rest.ably.io';
-Defaults.WS_HOST                  = 'realtime.ably.io';
+Defaults.REST_HOST                = 'rest.ably.io';
+Defaults.REALTIME_HOST            = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
@@ -2566,13 +2566,14 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version                  = '0.8.9';
+Defaults.version           = '0.8.10';
+Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
-		host = ((host == options.host) && options.wsHost) || host || options.wsHost;
+		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
 	else
-		host = host || options.host;
+		host = host || options.restHost;
 
 	return host;
 };
@@ -2586,7 +2587,7 @@ Defaults.getHttpScheme = function(options) {
 };
 
 Defaults.getHosts = function(options) {
-	var hosts = [options.host],
+	var hosts = [options.restHost],
 		fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
@@ -2595,13 +2596,30 @@ Defaults.getHosts = function(options) {
 };
 
 Defaults.normaliseOptions = function(options) {
+	/* Deprecated options */
 	if(options.host) {
-		options.wsHost = options.wsHost || options.host;
+		Logger.deprecated('host', 'restHost');
+		options.restHost = options.host;
+	}
+	if(options.wsHost) {
+		Logger.deprecated('wsHost', 'realtimeHost');
+		options.realtimeHost = options.wsHost;
+	}
+	if(options.queueEvents) {
+		Logger.deprecated('queueEvents', 'queueMessages');
+		options.queueMessages = options.queueEvents;
+	}
+
+	if(!('queueMessages' in options))
+		options.queueMessages = true;
+
+	if(options.restHost) {
+		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
-			production = !environment || (environment === 'production');
-		options.host = production ? Defaults.HOST : environment + '-' + Defaults.HOST;
-		options.wsHost = production ? Defaults.WS_HOST : environment + '-' + Defaults.WS_HOST;
+		production = !environment || (environment === 'production');
+		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
+		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	}
 	options.port = options.port || Defaults.PORT;
@@ -2625,6 +2643,13 @@ var EventEmitter = (function() {
 		this.events = {};
 		this.anyOnce = [];
 		this.eventsOnce = {};
+	}
+
+	/* Call the listener, catch any exceptions and log, but continue operation*/
+	function callListener(eventThis, listener, args) {
+		try { listener.apply(eventThis, args); } catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
 	}
 
 	/**
@@ -2723,18 +2748,11 @@ var EventEmitter = (function() {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
 
-		/* wrap the try/catch in a function improves performance by 30% */
-		function callListener(listener) {
-			try { listener.apply(eventThis, args); } catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
-				throw e;
-			}
-		}
 		if(this.anyOnce.length) {
 			var listeners = this.anyOnce;
 			this.anyOnce = [];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		for(var i = 0; i < this.any.length; i++)
 			this.any[i].apply(eventThis, args);
@@ -2742,12 +2760,12 @@ var EventEmitter = (function() {
 		if(listeners) {
 			delete this.eventsOnce[event];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		var listeners = this.events[event];
 		if(listeners)
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 	};
 
 	/**
@@ -2765,6 +2783,30 @@ var EventEmitter = (function() {
 			listeners.push(listener);
 		}
 	};
+
+	/**
+	 * Private API
+	 *
+	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
+	 * @param targetState the name of the state event to listen to
+	 * @param currentState the name of the current state of this object
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
+		var eventThis = {event:targetState},
+				listenerArgs = Array.prototype.slice.call(arguments, 3);
+
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+			throw("whenState requires a valid event String argument");
+		if (typeof(listener) !== 'function')
+			throw("whenState requires a valid listener argument");
+
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
+		} else {
+			this.once(targetState, listener);
+		}
+	}
 
 	return EventEmitter;
 })();
@@ -2803,6 +2845,12 @@ var Logger = (function() {
 			logHandler('Ably: ' + action + ': ' + message);
 		}
 	};
+
+	Logger.deprecated = function(original, replacement) {
+		if (Logger.shouldLog(LOG_ERROR)) {
+			logHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+		}
+	}
 
 	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
@@ -3033,7 +3081,10 @@ var Utils = (function() {
 	Utils.defaultGetHeaders = function(format) {
 		format = format || 'json';
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
-		return { accept: accept };
+		return {
+			accept: accept,
+			'X-Ably-Version': Defaults.apiVersion
+		};
 	};
 
 	Utils.defaultPostHeaders = function(format) {
@@ -3043,7 +3094,8 @@ var Utils = (function() {
 
 		return {
 			accept: accept,
-			'content-type': contentType
+			'content-type': contentType,
+			'X-Ably-Version': Defaults.apiVersion
 		};
 	};
 
@@ -3513,7 +3565,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
@@ -3796,8 +3848,6 @@ var ConnectionManager = (function() {
 		this.connectionKey = connectionKey;
 		this.connectionSerial = connectionSerial;
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
-		if(options.transportParams && options.transportParams.stream !== undefined)
-			this.stream = options.transportParams.stream;
 	}
 
 	TransportParams.prototype.getConnectParams = function(params) {
@@ -3836,8 +3886,10 @@ var ConnectionManager = (function() {
 			params.echo = 'false';
 		if(this.format !== undefined)
 			params.format = this.format;
-		if(this.stream !== undefined)
-			params.stream = this.stream;
+		if(options.transportParams !== undefined) {
+			Utils.mixin(params, options.transportParams);
+		}
+		params.v = Defaults.apiVersion;
 		return params;
 	};
 
@@ -4199,7 +4251,7 @@ var ConnectionManager = (function() {
 		}
 
 		var auth = this.realtime.auth;
-		if(clientId) {
+		if(clientId && !(clientId === '*')) {
 			if(auth.clientId && auth.clientId != clientId) {
 				/* Should never happen in normal circumstances as realtime should
 				 * recognise mismatch and return an error */
@@ -4295,6 +4347,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
 		if(this.options.recover === true)
 			this.persistConnection();
@@ -4305,6 +4358,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = undefined;
 		this.realtime.connection.key = this.connectionKey = undefined;
 		this.realtime.connection.serial = this.connectionSerial = undefined;
+		this.realtime.connection.recoveryKey = null;
 		this.msgSerial = 0;
 		this.unpersistConnection();
 	};
@@ -4692,6 +4746,7 @@ var ConnectionManager = (function() {
 			}
 			if(connectionSerial !== undefined) {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
+				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
 			this.realtime.channels.onChannelMessage(message);
 		} else {
@@ -4955,14 +5010,21 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
+		var closeHandler;
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
 			transport.cancelConnectTimeout();
+			connectionManager.off(closeHandler);
 			callback(null, transport);
 		});
+		/* At this point connectionManager has no reference to websocketTransport.
+		* So need to handle a connect timeout and listen for close events here temporarily */
 		transport.startConnectTimeout();
+		closeHandler = connectionManager.on('connectionstate', function(stateChange) {
+			if(stateChange.current === 'closing') transport.close();
+		});
 		transport.connect();
 	};
 
@@ -5106,13 +5168,12 @@ var CometTransport = (function() {
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
 		Transport.call(this, connectionManager, auth, params);
-		/* streaming defaults to true */
-		this.stream = ('stream' in params) ? params.stream : true;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
 		this.disposed = false;
+		this.stream = true;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -5140,6 +5201,7 @@ var CometTransport = (function() {
 			}
 			self.authParams = authParams;
 			var connectParams = self.params.getConnectParams(authParams);
+			if('stream' in connectParams) self.stream = connectParams.stream;
 			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + Utils.toQueryString(connectParams));
 
 			/* this will be the 'recvRequest' so this connection can stream messages */
@@ -5169,6 +5231,9 @@ var CometTransport = (function() {
 					self.finish('error', err);
 					return;
 				}
+				Utils.nextTick(function() {
+					self.recv();
+				});
 			});
 			connectRequest.exec();
 		});
@@ -5228,11 +5293,6 @@ var CometTransport = (function() {
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
-
-		var self = this;
-		Utils.nextTick(function() {
-			self.recv();
-		})
 	};
 
 	CometTransport.prototype.send = function(message, callback) {
@@ -5367,7 +5427,7 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options;
+			options = this.channel.channelOptions;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -5396,7 +5456,7 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.options,
+			options = this.channel.channelOptions,
 			channel = this.channel;
 
 		if(rest.options.headers)
@@ -5647,8 +5707,15 @@ var PaginatedResource = (function() {
 			this.first = function(cb) { self.get(relParams.first, cb); };
 		if('current' in relParams)
 			this.current = function(cb) { self.get(relParams.current, cb); };
-		if('next' in relParams)
-			this.next = function(cb) { self.get(relParams.next, cb); };
+		this.next = function(cb) {
+			if('next' in relParams)
+				self.get(relParams.next, cb);
+			else
+				cb(null, null);
+		};
+
+		this.hasNext = function() { return ('next' in relParams) };
+		this.isLast = function() { return !this.hasNext(); }
 	}
 
 	PaginatedResult.prototype.get = function(params, callback) {
@@ -5660,6 +5727,7 @@ var PaginatedResource = (function() {
 
 	return PaginatedResource;
 })();
+
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
@@ -5702,8 +5770,14 @@ var Auth = (function() {
 
 	function Auth(rest, options) {
 		this.rest = rest;
-		this.tokenParams = {};
-		this.clientId = options.clientId;
+		this.tokenParams = options.defaultTokenParams || {};
+
+		/* RSA7a4: if options.clientId is provided and is not
+		 * null, it overrides defaultTokenParams.clientId */
+		if(options.clientId) {
+			this.tokenParams.clientId = options.clientId;
+			this.clientId = options.clientId
+		}
 
 		/* decide default auth method */
 		var key = options.key;
@@ -5739,7 +5813,6 @@ var Auth = (function() {
 			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
 		}
 		this.tokenDetails = options.tokenDetails;
-		this.tokenParams.clientId = options.clientId;
 
 		if(options.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
@@ -5794,9 +5867,18 @@ var Auth = (function() {
 	 * @param callback (err, tokenDetails)
 	 */
 	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		var token = this.tokenDetails;
 		if(token) {
-			if(this.clientId && token.clientId && this.clientId !== token.clientId) {
+			if(this._tokenClientIdMismatch(token.clientId)) {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
@@ -6032,6 +6114,15 @@ var Auth = (function() {
 	 *
 	 */
 	Auth.prototype.createTokenRequest = function(tokenParams, authOptions, callback) {
+		/* shuffle and normalise arguments as necessary */
+		if(typeof(tokenParams) == 'function' && !callback) {
+			callback = tokenParams;
+			authOptions = tokenParams = null;
+		} else if(typeof(authOptions) == 'function' && !callback) {
+			callback = authOptions;
+			authOptions = null;
+		}
+
 		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
@@ -6146,6 +6237,13 @@ var Auth = (function() {
 		return Date.now() + (this.rest.serverTimeOffset || 0);
 	};
 
+	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
+		return this.clientId &&
+			tokenClientId &&
+			(tokenClientId !== '*') &&
+			(this.clientId !== tokenClientId);
+	};
+
 	return Auth;
 })();
 
@@ -6179,6 +6277,14 @@ var Rest = (function() {
 			options.keyName = keyMatch[1];
 			options.keySecret = keyMatch[2];
 		}
+
+		if('clientId' in options) {
+			if(!(typeof(options.clientId) === 'string' || options.clientId === null))
+				throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
+			else if(options.clientId === '*')
+				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
+		}
+
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
@@ -6251,17 +6357,21 @@ var Rest = (function() {
 		this.attached = {};
 	}
 
-	Channels.prototype.get = function(name) {
+	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
 		var channel = this.attached[name];
 		if(!channel) {
-			this.attached[name] = channel = new Channel(this.rest, name);
+			this.attached[name] = channel = new Channel(this.rest, name, channelOptions);
+		} else if(channelOptions) {
+			channel.setOptions(channelOptions);
 		}
+
 		return channel;
 	};
 
 	return Rest;
 })();
+
 var Realtime = (function() {
 
 	function Realtime(options) {
@@ -6322,11 +6432,13 @@ var Realtime = (function() {
 		}
 	};
 
-	Channels.prototype.get = function(name) {
+	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
 		var channel = this.all[name];
 		if(!channel) {
-			channel = this.all[name] = new RealtimeChannel(this.realtime, name, this.realtime.options);
+			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
+		} else if(channelOptions) {
+			channel.setOptions(channelOptions);
 		}
 		return channel;
 	};
@@ -6384,6 +6496,7 @@ var Connection = (function() {
 		this.key = undefined;
 		this.id = undefined;
 		this.serial = undefined;
+		this.recoveryKey = undefined;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -6395,14 +6508,9 @@ var Connection = (function() {
 	}
 	Utils.inherits(Connection, EventEmitter);
 
-	/* public instance methods */
-	Connection.prototype.on = function(state, callback) {
-		EventEmitter.prototype.on.apply(this, arguments);
-		if(this.state == state && callback)
-			try {
-				callback(new ConnectionStateChange(undefined, state));
-			} catch(e) {}
-	};
+	Connection.prototype.whenState = function(state, listener) {
+		EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
+	}
 
 	Connection.prototype.connect = function() {
 		Logger.logAction(Logger.LOG_MAJOR, 'Connection.connect()', '');
@@ -6426,23 +6534,21 @@ var Connection = (function() {
 var Channel = (function() {
 	function noop() {}
 
-	var defaultOptions = {};
-
 	/* public constructor */
-	function Channel(rest, name, options) {
+	function Channel(rest, name, channelOptions) {
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
 		EventEmitter.call(this);
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
-		this.setOptions(options);
+		this.setOptions(channelOptions);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
 	Channel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		this.channelOptions = options = options || {};
 		if(options.encrypted) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
@@ -6474,7 +6580,7 @@ var Channel = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.options,
+			options = this.channelOptions,
 			channel = this;
 
 		if(rest.options.headers)
@@ -6495,16 +6601,19 @@ var Channel = (function() {
 			++argCount;
 		}
 		if(argCount == 2) {
-			if(!Utils.isArray(messages))
-				messages = [messages];
-			messages = Message.fromValuesArray(messages);
+			if(Utils.isObject(messages))
+				messages = [Message.fromValues(messages)];
+			else if(Utils.isArray(messages))
+				messages = Message.fromValuesArray(messages);
+			else
+				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			requestBody = Message.toRequestBody(messages, this.options, format),
+			requestBody = Message.toRequestBody(messages, this.channelOptions, format),
 			headers = Utils.copy(Utils.defaultPostHeaders(format));
 
 		if(rest.options.headers)
@@ -6525,21 +6634,18 @@ var RealtimeChannel = (function() {
 	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 
-	var defaultOptions = {
-		queueEvents: true
-	};
-
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
-		this.presence = new RealtimePresence(this, options);
+		this.presence = new RealtimePresence(this, realtime.options);
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
 		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
+		this.realtime = realtime;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -6556,9 +6662,17 @@ var RealtimeChannel = (function() {
 		message: 'Channel is detached'
 	};
 
+	RealtimeChannel.processListenerArgs = function(args) {
+		/* [event], listener, [callback] */
+		if(typeof(args[0]) == 'function')
+			return [null, args[0], args[1] || noop];
+		else
+			return [args[0], args[1], (args[2] || noop)];
+	}
+
 	RealtimeChannel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
-		options = this.options = Utils.prototypicalClone(defaultOptions, options);
+		this.channelOptions = options = options || {};
 		if(options.encrypted) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 			Crypto.getCipher(options, function(err, cipher) {
@@ -6574,7 +6688,7 @@ var RealtimeChannel = (function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
 			callback = arguments[argCount - 1],
-			options = this.options;
+			options = this.channelOptions;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -6586,9 +6700,12 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		if(argCount == 2) {
-			if(!Utils.isArray(messages))
-				messages = [messages];
-			messages = Message.fromValuesArray(messages);
+			if(Utils.isObject(messages))
+				messages = [Message.fromValues(messages)];
+			else if(Utils.isArray(messages))
+				messages = Message.fromValuesArray(messages);
+			else
+				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
@@ -6601,6 +6718,9 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		switch(this.state) {
+			case 'failed':
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				break;
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
 				var msg = new ProtocolMessage();
@@ -6702,14 +6822,16 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
-		var callback = (args[2] || (args[2] = noop));
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.on(event, listener);
@@ -6720,14 +6842,17 @@ var RealtimeChannel = (function() {
 		this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
-		var args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
-
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
+		var callback = args[2];
 		var subscriptions = this.subscriptions;
+
+		if(this.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			return;
+		}
 
 		if(event === null || !Utils.isArray(event))
 			subscriptions.off(event, listener);
@@ -6756,7 +6881,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.sendMessage = function(msg, callback) {
-		this.connectionManager.send(msg, this.options.queueEvents, callback);
+		this.connectionManager.send(msg, this.realtime.options.queueMessages, callback);
 	};
 
 	RealtimeChannel.prototype.sendPresence = function(presence, callback) {
@@ -6789,7 +6914,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < presence.length; i++) {
 				try {
@@ -6811,7 +6936,7 @@ var RealtimeChannel = (function() {
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp,
-				options = this.options;
+				options = this.channelOptions;
 
 			for(var i = 0; i < messages.length; i++) {
 				try {
@@ -6912,23 +7037,25 @@ var RealtimeChannel = (function() {
 		if(msgErr) {
 			/* this is an error message */
 			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
-			this.failPendingMessages(err);
 			this.setState('failed', err);
+			this.failPendingMessages(err);
 		} else {
-			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 			if(this.state !== 'detached') {
 				this.setState('detached');
 			}
+			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
 		}
 	};
 
 	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
-		this.clearStateTimer();
-		this.failPendingMessages(err);
-		this.presence.setSuspended(err);
-		if(!suppressEvent && this.state !== 'detached') {
-			this.setState('detached');
+		if(this.state !== 'detached' && this.state !== 'failed') {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setSuspended', 'deactivating channel; name = ' + this.name + ', err ' + (err ? err.message : 'none'));
+			this.clearStateTimer();
+			this.presence.setSuspended(err);
+			if(!suppressEvent) {
+				this.setState('detached');
+			}
+			this.failPendingMessages(err);
 		}
 	};
 
@@ -6961,7 +7088,7 @@ var RealtimeChannel = (function() {
 			self.stateTimer = null;
 			/* retry */
 			self.checkPendingState();
-		}, this.options.timeouts.realtimeRequestTimeout);
+		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
@@ -7022,12 +7149,16 @@ var RealtimeChannel = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 			}
 		}
 
 		Channel.prototype._history.call(this, params, callback);
 	};
+
+	RealtimeChannel.prototype.whenState = function(state, listener) {
+		EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+	}
 
 	return RealtimeChannel;
 })();
@@ -7039,6 +7170,25 @@ var RealtimePresence = (function() {
 
 	function memberKey(item) {
 		return item.clientId + ':' + item.connectionId;
+	}
+
+	function waitAttached(channel, callback, action) {
+		switch(channel.state) {
+			case 'attached':
+				action();
+				break;
+			case 'initialized':
+			case 'detached':
+			case 'detaching':
+			case 'attaching':
+				channel.attach(function(err) {
+					if(err) callback(err);
+					else action();
+				});
+				break;
+			default:
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+		}
 	}
 
 	function RealtimePresence(channel, options) {
@@ -7117,16 +7267,21 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if (!callback && (typeof(data)==='function')) {
-			callback = data;
-			data = '';
-		}
 		if(!this.clientId)
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
 		this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
+		if (!callback) {
+			if (typeof(data)==='function') {
+				callback = data;
+				data = null;
+			} else {
+				callback = noop;
+			}
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction.LEAVE,
@@ -7145,6 +7300,7 @@ var RealtimePresence = (function() {
 				};
 				break;
 			case 'initialized':
+			case 'failed':
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
@@ -7166,11 +7322,14 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			members = this.members;
+			callback = args[1] || noop;
 
-		members.waitSync(function() {
-			callback(null, params ? members.list(params) : members.values());
+		var self = this;
+		waitAttached(this.channel, callback, function() {
+			var members = self.members;
+			members.waitSync(function() {
+				callback(null, params ? members.list(params) : members.values());
+			});
 		});
 	};
 
@@ -7191,7 +7350,7 @@ var RealtimePresence = (function() {
 				delete params.untilAttach;
 				params.from_serial = this.channel.attachSerial;
 			} else {
-				throw new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400);
+				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
 			}
 		}
 
@@ -7256,6 +7415,47 @@ var RealtimePresence = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
 		this.members.startSync();
 	};
+
+	var _on = RealtimePresence.prototype.on;
+	var _off = RealtimePresence.prototype.off;
+
+	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+		var self = this;
+
+		waitAttached(this.channel, callback, function() {
+			_on.call(self, event, listener);
+		});
+	}
+
+	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+		var args = RealtimeChannel.processListenerArgs(arguments);
+		var event = args[0];
+		var listener = args[1];
+		var callback = args[2];
+
+		if(this.channel.state === 'failed')
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+
+		_off.call(this, event, listener);
+	}
+
+	RealtimePresence.prototype.on = function() {
+		Logger.deprecated('presence.on', 'presence.subscribe');
+		_on.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.off = function() {
+		Logger.deprecated('presence.off', 'presence.unsubscribe');
+		_off.apply(this, arguments);
+	}
+
+	RealtimePresence.prototype.syncComplete = function() {
+		return !this.members.syncInProgress;
+	}
 
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
@@ -7440,7 +7640,9 @@ var JSONPTransport = (function() {
 	};
 
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		return new Request(undefined, uri, headers, params, body, requestMode, this.timeouts);
+		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
+		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+		return new Request(undefined, uri, headers, params, body, requestMode, timeouts);
 	};
 
 	function Request(id, uri, headers, params, body, requestMode, timeouts) {
@@ -7616,7 +7818,7 @@ var XHRRequest = (function() {
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
 		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) ? this.timeouts : Defaults.TIMEOUTS;
+		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
 		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
 	};
 
