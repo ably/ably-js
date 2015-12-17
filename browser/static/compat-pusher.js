@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.9
+ * Ably JavaScript Library v0.8.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -20,6 +20,13 @@ var EventEmitter = (function() {
 		this.events = {};
 		this.anyOnce = [];
 		this.eventsOnce = {};
+	}
+
+	/* Call the listener, catch any exceptions and log, but continue operation*/
+	function callListener(eventThis, listener, args) {
+		try { listener.apply(eventThis, args); } catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
 	}
 
 	/**
@@ -118,18 +125,11 @@ var EventEmitter = (function() {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
 
-		/* wrap the try/catch in a function improves performance by 30% */
-		function callListener(listener) {
-			try { listener.apply(eventThis, args); } catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
-				throw e;
-			}
-		}
 		if(this.anyOnce.length) {
 			var listeners = this.anyOnce;
 			this.anyOnce = [];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		for(var i = 0; i < this.any.length; i++)
 			this.any[i].apply(eventThis, args);
@@ -137,12 +137,12 @@ var EventEmitter = (function() {
 		if(listeners) {
 			delete this.eventsOnce[event];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		var listeners = this.events[event];
 		if(listeners)
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 	};
 
 	/**
@@ -160,6 +160,30 @@ var EventEmitter = (function() {
 			listeners.push(listener);
 		}
 	};
+
+	/**
+	 * Private API
+	 *
+	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
+	 * @param targetState the name of the state event to listen to
+	 * @param currentState the name of the current state of this object
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
+		var eventThis = {event:targetState},
+				listenerArgs = Array.prototype.slice.call(arguments, 3);
+
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+			throw("whenState requires a valid event String argument");
+		if (typeof(listener) !== 'function')
+			throw("whenState requires a valid listener argument");
+
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
+		} else {
+			this.once(targetState, listener);
+		}
+	}
 
 	return EventEmitter;
 })();
@@ -379,7 +403,10 @@ var Utils = (function() {
 	Utils.defaultGetHeaders = function(format) {
 		format = format || 'json';
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
-		return { accept: accept };
+		return {
+			accept: accept,
+			'X-Ably-Version': Defaults.apiVersion
+		};
 	};
 
 	Utils.defaultPostHeaders = function(format) {
@@ -389,7 +416,8 @@ var Utils = (function() {
 
 		return {
 			accept: accept,
-			'content-type': contentType
+			'content-type': contentType,
+			'X-Ably-Version': Defaults.apiVersion
 		};
 	};
 
@@ -511,7 +539,7 @@ var Utils = (function() {
 		if (options.auth && options.auth.headers) opts.authHeaders = options.auth.headers;
 		if (origin && (origin.length != 0)) {
 			var p = origin.split(':');
-			opts.host = opts.wsHost = p[0];
+			opts.realtimeHost = opts.restHost = p[0];
 			if (p.length > 1)
 				opts.port = p[1];
 		}
@@ -669,13 +697,13 @@ var Utils = (function() {
 		if (this.isPresence) {
 			var presence = this.channel.presence;
 			this.entered = false;
-			presence.on('enter', function(id) {
+			presence.subscribe('enter', function(id) {
 				if (!self.entered) return;
 				if (id.clientId === self.members.myID) return;
 				var member = self.members.addMember(id.clientId, id.clientInfo);
 				if (member) self.channel.emit('pusher:member_added', member);
 			});
-			presence.on('leave', function(id) {
+			presence.subscribe('leave', function(id) {
 				if (!self.entered) return;
 				var member = self.members.removeMember(id.clientId);
 				if (member) self.channel.emit('pusher:member_removed', member);

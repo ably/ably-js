@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.9
+ * Ably JavaScript Library v0.8.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -64,8 +64,8 @@ var DomEvent = (function() {
 })();
 Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
-Defaults.HOST                     = 'rest.ably.io';
-Defaults.WS_HOST                  = 'realtime.ably.io';
+Defaults.REST_HOST                = 'rest.ably.io';
+Defaults.REALTIME_HOST            = 'realtime.ably.io';
 Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
 Defaults.PORT                     = 80;
 Defaults.TLS_PORT                 = 443;
@@ -82,13 +82,14 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version                  = '0.8.9';
+Defaults.version           = '0.8.10';
+Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
-		host = ((host == options.host) && options.wsHost) || host || options.wsHost;
+		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
 	else
-		host = host || options.host;
+		host = host || options.restHost;
 
 	return host;
 };
@@ -102,7 +103,7 @@ Defaults.getHttpScheme = function(options) {
 };
 
 Defaults.getHosts = function(options) {
-	var hosts = [options.host],
+	var hosts = [options.restHost],
 		fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
@@ -111,13 +112,30 @@ Defaults.getHosts = function(options) {
 };
 
 Defaults.normaliseOptions = function(options) {
+	/* Deprecated options */
 	if(options.host) {
-		options.wsHost = options.wsHost || options.host;
+		Logger.deprecated('host', 'restHost');
+		options.restHost = options.host;
+	}
+	if(options.wsHost) {
+		Logger.deprecated('wsHost', 'realtimeHost');
+		options.realtimeHost = options.wsHost;
+	}
+	if(options.queueEvents) {
+		Logger.deprecated('queueEvents', 'queueMessages');
+		options.queueMessages = options.queueEvents;
+	}
+
+	if(!('queueMessages' in options))
+		options.queueMessages = true;
+
+	if(options.restHost) {
+		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
-			production = !environment || (environment === 'production');
-		options.host = production ? Defaults.HOST : environment + '-' + Defaults.HOST;
-		options.wsHost = production ? Defaults.WS_HOST : environment + '-' + Defaults.WS_HOST;
+		production = !environment || (environment === 'production');
+		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
+		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	}
 	options.port = options.port || Defaults.PORT;
@@ -141,6 +159,13 @@ var EventEmitter = (function() {
 		this.events = {};
 		this.anyOnce = [];
 		this.eventsOnce = {};
+	}
+
+	/* Call the listener, catch any exceptions and log, but continue operation*/
+	function callListener(eventThis, listener, args) {
+		try { listener.apply(eventThis, args); } catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
 	}
 
 	/**
@@ -239,18 +264,11 @@ var EventEmitter = (function() {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
 
-		/* wrap the try/catch in a function improves performance by 30% */
-		function callListener(listener) {
-			try { listener.apply(eventThis, args); } catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
-				throw e;
-			}
-		}
 		if(this.anyOnce.length) {
 			var listeners = this.anyOnce;
 			this.anyOnce = [];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		for(var i = 0; i < this.any.length; i++)
 			this.any[i].apply(eventThis, args);
@@ -258,12 +276,12 @@ var EventEmitter = (function() {
 		if(listeners) {
 			delete this.eventsOnce[event];
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 		}
 		var listeners = this.events[event];
 		if(listeners)
 			for(var i = 0; i < listeners.length; i++)
-				callListener((listeners[i]));
+				callListener(eventThis, listeners[i], args);
 	};
 
 	/**
@@ -281,6 +299,30 @@ var EventEmitter = (function() {
 			listeners.push(listener);
 		}
 	};
+
+	/**
+	 * Private API
+	 *
+	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
+	 * @param targetState the name of the state event to listen to
+	 * @param currentState the name of the current state of this object
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
+		var eventThis = {event:targetState},
+				listenerArgs = Array.prototype.slice.call(arguments, 3);
+
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+			throw("whenState requires a valid event String argument");
+		if (typeof(listener) !== 'function')
+			throw("whenState requires a valid listener argument");
+
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
+		} else {
+			this.once(targetState, listener);
+		}
+	}
 
 	return EventEmitter;
 })();
@@ -319,6 +361,12 @@ var Logger = (function() {
 			logHandler('Ably: ' + action + ': ' + message);
 		}
 	};
+
+	Logger.deprecated = function(original, replacement) {
+		if (Logger.shouldLog(LOG_ERROR)) {
+			logHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+		}
+	}
 
 	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
@@ -569,7 +617,10 @@ var Utils = (function() {
 	Utils.defaultGetHeaders = function(format) {
 		format = format || 'json';
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
-		return { accept: accept };
+		return {
+			accept: accept,
+			'X-Ably-Version': Defaults.apiVersion
+		};
 	};
 
 	Utils.defaultPostHeaders = function(format) {
@@ -579,7 +630,8 @@ var Utils = (function() {
 
 		return {
 			accept: accept,
-			'content-type': contentType
+			'content-type': contentType,
+			'X-Ably-Version': Defaults.apiVersion
 		};
 	};
 
@@ -701,7 +753,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags messageSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
@@ -802,7 +854,7 @@ var XHRRequest = (function() {
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
 		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) ? this.timeouts : Defaults.TIMEOUTS;
+		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
 		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
 	};
 
