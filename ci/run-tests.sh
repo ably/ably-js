@@ -10,6 +10,7 @@ main() {
   /usr/bin/Xvfb $DISPLAY &
   echo "** Started xvfb"
 
+  npm rebuild
   "${ROOT}/test/bin/ci-nodeunit.sh"
 }
 
