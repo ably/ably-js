@@ -487,10 +487,10 @@ var ConnectionManager = (function() {
 
 		/* this transport state change is a state change for the connectionmanager if
 		 * - the transport was the active transport; or
-		 * - the transport was one of the pending transports (so we were in the connecting state)
-		 *   and there are no longer any pending transports
+		 * - there is no active transport, and this is the last remaining
+		 *   pending transport (so we were in the connecting state)
 		 */
-		if(wasActive || (wasPending && this.pendingTransports.length === 0)) {
+		if(wasActive || (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
 			if((state === 'failed') && error && !isErrFatal(error)) {
