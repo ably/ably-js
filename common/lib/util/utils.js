@@ -263,5 +263,9 @@ var Utils = (function() {
 		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
 	};
 
+	Utils.randStr = function() {
+		return String(Math.random()).substr(2);
+	};
+
 	return Utils;
 })();

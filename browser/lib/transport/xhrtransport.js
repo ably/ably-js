@@ -12,7 +12,7 @@ var XHRTransport = (function() {
 		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
 		Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Sending; ' + upUrl);
 		Http.Request(upUrl, null, null, null, function(err, responseText) {
-			var result = (!err && responseText == 'yes');
+			var result = (!err && responseText.replace(/\n/, '') == 'yes');
 			Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Result: ' + result);
 			callback(null, result);
 		});
