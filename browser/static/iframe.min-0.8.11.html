@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript">
+
 /*
  Copyright 2015, Ably
 
@@ -47,3 +52,10 @@ b){l.shouldLog(l.LOG_MICRO)&&l.logAction(l.LOG_MICRO,"IframeAgent.send()","msg =
 z.createRequest(d,null,f,a(b),0),d.on("complete",function(a,b){a&&l.logAction(l.LOG_ERROR,"IframeAgent.sendItems()","on complete: err = "+n.inspectError(a));e.sendRequest=null;if(b)e.onData(b);var d=e.pendingItems;if(d){e.pendingItems=null;var f=e.pendingCallback;e.pendingCallback=null;n.nextTick(function(){e.sendItems(d,f)})}c(a)}),d.exec()):c({message:"Unable to send; not connected",code:8E4,statusCode:400})};e.prototype.recv=function(){if(!this.recvRequest&&this.isConnected){var a=this,b=this.recvRequest=
 z.createRequest(this.recvUri,null,f,null,a.stream?3:2);b.on("data",function(b){a.onData(b)});b.on("complete",function(b){a.recvRequest=null;b?a.postErrorEvent(b):n.nextTick(function(){a.recv()})});b.exec()}};e.prototype.onData=function(a){this.postMessageEvent(a)};e.prototype.postMessageEvent=function(b){h.postMessage(a(b),c)};e.prototype.postErrorEvent=function(a,b){var c=b;if(a){var d=new y.fromValues({action:q.ERROR,error:a});c&&n.mixin(d,c);c=d}this.postMessageEvent([c])};(new e).connect()})();
 "undefined"!==typeof Realtime&&(A.Rest=Rest,A.Realtime=Realtime,Realtime.ConnectionManager=ConnectionManager,Realtime.BufferUtils=Rest.BufferUtils=BufferUtils,"undefined"!==typeof Crypto&&(Realtime.Crypto=Rest.Crypto=Crypto),Realtime.Defaults=Rest.Defaults=h,Realtime.Message=Rest.Message=Message,Realtime.PresenceMessage=Rest.PresenceMessage=PresenceMessage,Realtime.ProtocolMessage=Rest.ProtocolMessage=y)}).call({});
+
+</script>
+</head>
+<body>
+<h2>Ably cross-origin iframe</h2>
+</body>
+</html>

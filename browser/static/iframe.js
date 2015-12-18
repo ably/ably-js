@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.10
+ * Ably JavaScript Library v0.8.11
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -82,7 +82,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.10';
+Defaults.version           = '0.8.11';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {

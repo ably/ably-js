@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.10
+ * Ably JavaScript Library v0.8.11
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.10';
+Defaults.version           = '0.8.11';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -3886,6 +3886,8 @@ var ConnectionManager = (function() {
 			params.echo = 'false';
 		if(this.format !== undefined)
 			params.format = this.format;
+		if(this.stream !== undefined)
+			params.stream = this.stream;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
@@ -4642,6 +4644,8 @@ var ConnectionManager = (function() {
 		}
 		closeTransport(this.activeProtocol && this.activeProtocol.getTransport());
 
+		/* If there was an active transport, this will probably be
+		 * preempted by the notifyState call in deactivateTransport */
 		this.notifyState({state: 'closed'});
 	};
 
@@ -5010,21 +5014,22 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		var closeHandler;
+		var closeHandler = function(stateChange) {
+			if(stateChange.current === 'closing')
+				transport.close();
+		};
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
 			transport.cancelConnectTimeout();
-			connectionManager.off(closeHandler);
+			connectionManager.off('connectionstate', closeHandler);
 			callback(null, transport);
 		});
 		/* At this point connectionManager has no reference to websocketTransport.
 		* So need to handle a connect timeout and listen for close events here temporarily */
 		transport.startConnectTimeout();
-		closeHandler = connectionManager.on('connectionstate', function(stateChange) {
-			if(stateChange.current === 'closing') transport.close();
-		});
+		connectionManager.on('connectionstate', closeHandler);
 		transport.connect();
 	};
 
@@ -5168,12 +5173,13 @@ var CometTransport = (function() {
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
 		Transport.call(this, connectionManager, auth, params);
+		/* streaming defaults to true */
+		this.stream = ('stream' in params) ? params.stream : true;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
 		this.disposed = false;
-		this.stream = true;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -7615,12 +7621,17 @@ var JSONPTransport = (function() {
 		}
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
-		request(upUrl, null, null, null, false, function(err, response) {
+
+		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
 			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 			checksInProgress = null;
 		});
+		Utils.nextTick(function() {
+			req.exec();
+		})
 	};
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
@@ -7735,10 +7746,12 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	var request = Http.Request = function(uri, headers, params, body, callback) {
+	Http.Request = function(uri, headers, params, body, callback) {
 		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
 		req.once('complete', callback);
-		req.exec();
+		Utils.nextTick(function() {
+			req.exec();
+		})
 		return req;
 	};
 
@@ -8281,6 +8294,9 @@ var IframeTransport = (function() {
 	IframeTransport.isAvailable = function() {
 		return (window.postMessage !== undefined);
 	};
+
+	/* No Iframe rest requests -- if xhr not supported then falls back to jsonp rest requests */
+	IframeTransport.checkConnectivity = JSONPTransport.checkConnectivity;
 
 	if(IframeTransport.isAvailable())
 		ConnectionManager.httpTransports['iframe'] = ConnectionManager.transports['iframe'] = IframeTransport;
