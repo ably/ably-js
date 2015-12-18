@@ -28,7 +28,7 @@ var JSONPTransport = (function() {
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
 
-		var req = new Request('_isTheInternetUp', upUrl, null, { rnd: Utils.randStr() }, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
 		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
@@ -68,6 +68,7 @@ var JSONPTransport = (function() {
 		this.id = id;
 		this.uri = uri;
 		this.params = params || {};
+		this.params.rnd = Utils.randStr();
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
