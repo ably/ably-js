@@ -376,6 +376,8 @@ module.exports = function (grunt) {
 				gruntConfig.dirs.common + '/lib/util/defaults.js',
 				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',
+				'bower.json',
+				'README.md',
 				'spec/support/browser_file_list.js'
 			];
 			var cmd = 'git add -A ' + generatedFiles.join(' ');
