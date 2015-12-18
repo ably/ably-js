@@ -78,6 +78,9 @@
 				self.postErrorEvent(err);
 				return;
 			}
+			Utils.nextTick(function() {
+				self.recv();
+			});
 		});
 		connectRequest.exec();
 	};
@@ -110,11 +113,6 @@
 		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.onConnect()', 'baseUri = ' + baseConnectionUri);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-
-		var self = this;
-		Utils.nextTick(function() {
-			self.recv();
-		})
 	};
 
 	IframeAgent.prototype.onMessageEvent = function(data) {
