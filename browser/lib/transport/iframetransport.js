@@ -21,6 +21,9 @@ var IframeTransport = (function() {
 		return (window.postMessage !== undefined);
 	};
 
+	/* No Iframe rest requests -- if xhr not supported then falls back to jsonp rest requests */
+	IframeTransport.checkConnectivity = JSONPTransport.checkConnectivity;
+
 	if(IframeTransport.isAvailable())
 		ConnectionManager.httpTransports['iframe'] = ConnectionManager.transports['iframe'] = IframeTransport;
 

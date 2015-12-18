@@ -23,8 +23,10 @@ var NodeCometTransport = (function() {
 	ConnectionManager.httpTransports['comet'] = ConnectionManager.transports['comet'] = NodeCometTransport;
 
 	NodeCometTransport.checkConnectivity = function(callback) {
-		new Request('http://live.cdn.ably-realtime.com/is-the-internet-up.txt', null, null, CometTransport.REQ_RECV, false, function(err, responseText) {
-			callback(null, (!err && responseText == 'yes'));
+		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		/* NodeCometTransport unsuited to rest requests; just use node http package */
+		Http.getUri(null, upUrl, null, null, function(err, responseText) {
+			callback(null, (!err && responseText.toString().trim() === 'yes'));
 		});
 	};
 
