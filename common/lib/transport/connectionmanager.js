@@ -373,8 +373,9 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			/* temporarily pause events until the sync is complete */
-			self.state = self.states.synchronizing;
+			/* If currently connected, temporarily pause events until the sync is complete */
+			if(self.state === self.states.connected)
+				self.state = self.states.synchronizing;
 
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
