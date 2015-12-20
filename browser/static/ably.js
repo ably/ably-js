@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.11
+ * Ably JavaScript Library v0.8.12
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3917,7 +3917,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.11';
+Defaults.version           = '0.8.12';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4480,6 +4480,10 @@ var Utils = (function() {
 
 	Utils.inspectError = function(x) {
 		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+	};
+
+	Utils.randStr = function() {
+		return String(Math.random()).substr(2);
 	};
 
 	return Utils;
@@ -5544,8 +5548,9 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			/* temporarily pause events until the sync is complete */
-			self.state = self.states.synchronizing;
+			/* If currently connected, temporarily pause events until the sync is complete */
+			if(self.state === self.states.connected)
+				self.state = self.states.synchronizing;
 
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
@@ -5658,10 +5663,10 @@ var ConnectionManager = (function() {
 
 		/* this transport state change is a state change for the connectionmanager if
 		 * - the transport was the active transport; or
-		 * - the transport was one of the pending transports (so we were in the connecting state)
-		 *   and there are no longer any pending transports
+		 * - there is no active transport, and this is the last remaining
+		 *   pending transport (so we were in the connecting state)
 		 */
-		if(wasActive || (wasPending && this.pendingTransports.length === 0)) {
+		if(wasActive || (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
 			if((state === 'failed') && error && !isErrFatal(error)) {
@@ -9013,6 +9018,7 @@ var JSONPTransport = (function() {
 		this.id = id;
 		this.uri = uri;
 		this.params = params || {};
+		this.params.rnd = Utils.randStr();
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
@@ -9166,7 +9172,7 @@ var XHRRequest = (function() {
 	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		params = params || {};
-		params.rnd = String(Math.random()).substr(2);
+		params.rnd = Utils.randStr();
 		if(needJsonEnvelope() && !params.envelope)
 			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);
@@ -9592,7 +9598,7 @@ var XHRTransport = (function() {
 		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
 		Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Sending; ' + upUrl);
 		Http.Request(upUrl, null, null, null, function(err, responseText) {
-			var result = (!err && responseText == 'yes');
+			var result = (!err && responseText.replace(/\n/, '') == 'yes');
 			Logger.logAction(Logger.LOG_MICRO, 'XHRTransport.checkConnectivity()', 'Result: ' + result);
 			callback(null, result);
 		});

@@ -6,7 +6,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.11
+ * Ably JavaScript Library v0.8.12
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -87,7 +87,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.11';
+Defaults.version           = '0.8.12';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -672,6 +672,10 @@ var Utils = (function() {
 		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
 	};
 
+	Utils.randStr = function() {
+		return String(Math.random()).substr(2);
+	};
+
 	return Utils;
 })();
 
@@ -843,7 +847,7 @@ var XHRRequest = (function() {
 	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		params = params || {};
-		params.rnd = String(Math.random()).substr(2);
+		params.rnd = Utils.randStr();
 		if(needJsonEnvelope() && !params.envelope)
 			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);
@@ -1335,6 +1339,9 @@ var XHRRequest = (function() {
 				self.postErrorEvent(err);
 				return;
 			}
+			Utils.nextTick(function() {
+				self.recv();
+			});
 		});
 		connectRequest.exec();
 	};
@@ -1367,11 +1374,6 @@ var XHRRequest = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'IframeAgent.onConnect()', 'baseUri = ' + baseConnectionUri);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-
-		var self = this;
-		Utils.nextTick(function() {
-			self.recv();
-		})
 	};
 
 	IframeAgent.prototype.onMessageEvent = function(data) {

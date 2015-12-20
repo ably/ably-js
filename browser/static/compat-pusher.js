@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2015, Ably
  *
- * Ably JavaScript Library v0.8.11
+ * Ably JavaScript Library v0.8.12
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -451,6 +451,10 @@ var Utils = (function() {
 
 	Utils.inspectError = function(x) {
 		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+	};
+
+	Utils.randStr = function() {
+		return String(Math.random()).substr(2);
 	};
 
 	return Utils;
