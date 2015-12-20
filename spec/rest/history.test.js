@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var testchannel = rest.channels.get('persisted:history_simple_paginated_b');
 
 		/* first, send a number of events to this channel */
-		test.expect(5 * testMessages.length + 1);
+		test.expect(5 * testMessages.length - 1);
 		var publishTasks = testMessages.map(function(event) {
 			return function(publishCb) {
 				testchannel.publish(event.name, event.data, publishCb);
@@ -169,9 +169,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.ok(resultPage.hasNext(), 'Verify next link is present');
 							test.ok(!resultPage.isLast(), 'Verify not last page');
 							nextPage = resultPage.next;
-						} else {
-							test.ok(!resultPage.hasNext(), 'Verify next link is present');
-							test.ok(resultPage.isLast(), 'Verify not last page');
 						}
 						cb();
 					});
