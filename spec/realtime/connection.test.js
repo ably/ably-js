@@ -75,14 +75,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					channel.subscribe(function() {
-						test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
-						test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
+						setTimeout(function() {
+							test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
+							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
 
-						realtime.connection.close();
-						realtime.connection.whenState('closed', function() {
-							test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
-							closeAndFinish(test, realtime);
-						});
+							realtime.connection.close();
+							realtime.connection.whenState('closed', function() {
+								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
+								closeAndFinish(test, realtime);
+							});
+						}, 0);
 					});
 					channel.publish("name", "data", function(err) {
 						if(err) {
