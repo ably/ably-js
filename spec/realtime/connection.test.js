@@ -76,6 +76,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					}
 					channel.subscribe(function() {
 						setTimeout(function() {
+							console.log("connectionAttributes test: connection serial is " + realtime.connection.serial)
 							test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
 							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
 
