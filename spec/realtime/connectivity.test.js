@@ -51,7 +51,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}),
 				function(err, realtimes) {
 					if(err) {
-						console.log("errrrr", err)
+						console.log("err", err)
 						test.ok(false, helper.displayError(err));
 					}
 					closeAndFinish(test, realtimes);

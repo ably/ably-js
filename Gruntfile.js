@@ -37,7 +37,7 @@ module.exports = function (grunt) {
 			grunt.log.ok("Executing " + cmd);
 			require('child_process').exec(cmd, function(err, stdout, stderr) {
 				if (err) {
-					grunt.log.error('Error executing "' + cmd + '": ' + stderr);
+					grunt.fatal('Error executing "' + cmd + '": ' + stderr);
 				}
 				done();
 			});
