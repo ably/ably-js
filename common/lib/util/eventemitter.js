@@ -41,7 +41,7 @@ var EventEmitter = (function() {
 	 *        supplied, all listeners are removed.
 	 */
 	EventEmitter.prototype.off = function(event, listener) {
-		if(arguments.length == 0) {
+		if(arguments.length == 0 || (!event && !listener)) {
 			this.any = [];
 			this.events = {};
 			this.anyOnce = [];
@@ -57,7 +57,7 @@ var EventEmitter = (function() {
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
 		var listeners, idx = -1;
-		if(event === null) {
+		if((event === null) || (event === undefined)) {
 			/* "any" case */
 			if(listener) {
 				if(!(listeners = this.any) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {

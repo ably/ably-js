@@ -576,7 +576,68 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 			monitorConnection(test, realtime);
 		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			test.ok(false, 'Channel subscribe failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
+	 * Subscribe, then unsubscribe listeners by event, by listener, and then all events & listener
+	 */
+	exports.channelsubscribe1 = function(test) {
+		var messagesReceived = 0;
+		test.expect(7);
+
+		try {
+			var realtime = helper.AblyRealtime();
+			var channelByEvent, channelByListener, channelAll;
+
+			var unsubscribeTest = function() {
+				channelByEvent.unsubscribe('event', listenerByEvent);
+				channelByListener.unsubscribe(listenerNoEvent);
+				channelAll.unsubscribe();
+				channelByEvent.publish('event', 'data', function(err) {
+					test.ok(!err, 'Error publishing single event: ' + err);
+					channelByListener.publish(null, 'data', function(err) {
+						test.ok(!err, 'Error publishing any event: ' + err);
+						channelAll.publish(null, 'data', function(err) {
+							test.ok(!err, 'Error publishing any event: ' + err);
+							test.equal(messagesReceived, 3, 'Only three messages should be received by the listeners');
+							closeAndFinish(test, realtime);
+						});
+					});
+				});
+			};
+
+			var listenerByEvent = function() {
+				test.ok(true, 'received event "event" on channel');
+				messagesReceived += 1;
+				if (messagesReceived == 3) { unsubscribeTest(); }
+			};
+			var listenerNoEvent = function() {
+				test.ok(true, 'received any event on channel');
+				messagesReceived += 1;
+				if (messagesReceived == 3) { unsubscribeTest(); }
+			};
+			var listenerAllEvents = function() { return listenerNoEvent(); };
+
+			realtime.connection.on('connected', function() {
+				channelByEvent = realtime.channels.get('channelsubscribe1-event');
+				channelByEvent.subscribe('event', listenerByEvent, function() {
+					channelByEvent.publish('event', 'data');
+					channelByListener = realtime.channels.get('channelsubscribe1-listener');
+					channelByListener.subscribe(null, listenerNoEvent, function() {
+						channelByListener.publish(null, 'data');
+						channelAll = realtime.channels.get('channelsubscribe1-all');
+						channelAll.subscribe(listenerAllEvents, function() {
+							channelAll.publish(null, 'data');
+						});
+					});
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel subscribe failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
