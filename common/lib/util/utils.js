@@ -31,7 +31,7 @@ var Utils = (function() {
 	 * Determine whether or not a given object is
 	 * an array.
 	 */
-	Utils.isArray = function(ob) {
+	Utils.isArray = Array.isArray || function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
 
@@ -134,8 +134,6 @@ var Utils = (function() {
 	};
 
 	Utils.intersect = function(arr, ob) { return Utils.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
-
-	Utils.isArray = Array.isArray ? Array.isArray : function(arr) { return Object.prototype.toString.call(arr) === '[object Array]'; };
 
 	Utils.arrIntersect = function(arr1, arr2) {
 		var result = [];
