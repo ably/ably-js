@@ -196,17 +196,20 @@ var RealtimeChannel = (function() {
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
+		var events;
 
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
-		if(event === null || !Utils.isArray(event))
-			subscriptions.on(event, listener);
-		else
-			for(var i = 0; i < event.length; i++)
-				subscriptions.on(event[i], listener);
+		if(Utils.isEmptyArg(event)) {
+			subscriptions.on(listener);
+		} else {
+			events = Utils.ensureArray(event);
+			for(var i = 0; i < events.length; i++)
+				subscriptions.on(events[i], listener);
+		}
 
 		this.attach(callback);
 	};
@@ -217,17 +220,20 @@ var RealtimeChannel = (function() {
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
+		var events;
 
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
-		if(event === null || !Utils.isArray(event))
-			subscriptions.off(event, listener);
-		else
-			for(var i = 0; i < event.length; i++)
-				subscriptions.off(event[i], listener);
+		if(Utils.isEmptyArg(event)) {
+			subscriptions.off(listener);
+		} else {
+			events = Utils.ensureArray(event);
+			for(var i = 0; i < events.length; i++)
+				subscriptions.off(events[i], listener);
+		}
 	};
 
 	RealtimeChannel.prototype.sync = function() {
