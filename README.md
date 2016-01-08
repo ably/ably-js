@@ -348,8 +348,7 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 ## Releasing
 
 - `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
-- `git push --follow-tags`
-- `npm publish .`
+- `grunt release:deploy`
 
 ## License
 
