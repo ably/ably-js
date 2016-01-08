@@ -31,9 +31,22 @@ var Utils = (function() {
 	 * Determine whether or not a given object is
 	 * an array.
 	 */
-	Utils.isArray = function(ob) {
+	Utils.isArray = Array.isArray || function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
+
+	/*
+	 * Ensures that an Array object is always returned
+	 * returning the original Array of obj is an Array
+	 * else wrapping the obj in a single element Array
+	 */
+	Utils.ensureArray = function(obj) {
+		if (Utils.isArray(obj)) {
+			return ob;
+		} else {
+			return [obj];
+		}
+	}
 
 	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
@@ -50,6 +63,19 @@ var Utils = (function() {
 			return false;
 		return true;
 	};
+
+	/*
+	 * Determine whether or not an argument to an overloaded function is
+	 * undefined (missing) or null.
+	 * This method is useful when constructing functions such as (WebIDL terminology):
+	 *   off([TreatUndefinedAs=Null] DOMString? event)
+	 * as you can then confirm the argument using:
+	 *   Utils.isEmptyArg(event)
+	 */
+
+	Utils.isEmptyArg = function(arg) {
+		return arg === null || arg === undefined;
+	}
 
 	/*
 	 * Perform a simple shallow clone of an object.
@@ -108,8 +134,6 @@ var Utils = (function() {
 	};
 
 	Utils.intersect = function(arr, ob) { return Utils.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
-
-	Utils.isArray = Array.isArray ? Array.isArray : function(arr) { return Object.prototype.toString.call(arr) === '[object Array]'; };
 
 	Utils.arrIntersect = function(arr1, arr2) {
 		var result = [];

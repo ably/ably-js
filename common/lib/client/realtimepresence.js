@@ -27,10 +27,10 @@ var RealtimePresence = (function() {
 	}
 
 	function RealtimePresence(channel, options) {
-		EventEmitter.call(this);
 		Presence.call(this, channel);
 		this.clientId = options.clientId;
 		this.members = new PresenceMap(this);
+		this.subscriptions = new EventEmitter();
 	}
 	Utils.inherits(RealtimePresence, Presence);
 
@@ -224,7 +224,7 @@ var RealtimePresence = (function() {
 		/* broadcast to listeners */
 		for(var i = 0; i < broadcastMessages.length; i++) {
 			var presence = broadcastMessages[i];
-			this.emit(presenceActionToEvent[presence.action], presence);
+			this.subscriptions.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
@@ -251,8 +251,17 @@ var RealtimePresence = (function() {
 		this.members.startSync();
 	};
 
-	var _on = RealtimePresence.prototype.on;
-	var _off = RealtimePresence.prototype.off;
+	/* Deprecated */
+	RealtimePresence.prototype.on = function() {
+		Logger.deprecated('presence.on', 'presence.subscribe');
+		this.subscribe.call(arguments);
+	}
+
+	/* Deprecated */
+	RealtimePresence.prototype.off = function() {
+		Logger.deprecated('presence.off', 'presence.unsubscribe');
+		this.unsubscribe.call(arguments);
+	}
 
 	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -262,7 +271,7 @@ var RealtimePresence = (function() {
 		var self = this;
 
 		waitAttached(this.channel, callback, function() {
-			_on.call(self, event, listener);
+			self.subscriptions.on(event, listener);
 		});
 	}
 
@@ -275,17 +284,7 @@ var RealtimePresence = (function() {
 		if(this.channel.state === 'failed')
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 
-		_off.call(this, event, listener);
-	}
-
-	RealtimePresence.prototype.on = function() {
-		Logger.deprecated('presence.on', 'presence.subscribe');
-		_on.apply(this, arguments);
-	}
-
-	RealtimePresence.prototype.off = function() {
-		Logger.deprecated('presence.off', 'presence.unsubscribe');
-		_off.apply(this, arguments);
+		this.subscriptions.off(event, listener);
 	}
 
 	RealtimePresence.prototype.syncComplete = function() {

@@ -24,7 +24,7 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.on = function(event, listener) {
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.any.push(event);
-		} else if(event === null) {
+		} else if(Utils.isEmptyArg(event)) {
 			this.any.push(listener);
 		} else {
 			var listeners = (this.events[event] || (this.events[event] = []));
@@ -41,7 +41,7 @@ var EventEmitter = (function() {
 	 *        supplied, all listeners are removed.
 	 */
 	EventEmitter.prototype.off = function(event, listener) {
-		if(arguments.length == 0) {
+		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
 			this.events = {};
 			this.anyOnce = [];
@@ -57,7 +57,7 @@ var EventEmitter = (function() {
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
 		var listeners, idx = -1;
-		if(event === null) {
+		if(Utils.isEmptyArg(event)) {
 			/* "any" case */
 			if(listener) {
 				if(!(listeners = this.any) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
@@ -72,7 +72,7 @@ var EventEmitter = (function() {
 			}
 			return;
 		}
-		/* "normal* case where event is an actual event */
+		/* "normal" case where event is an actual event */
 		if(listener) {
 			var listeners, idx = -1;
 			if(!(listeners = this.events[event]) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
@@ -139,7 +139,7 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.once = function(event, listener) {
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
-		} else if(event === null) {
+		} else if(Utils.isEmptyArg(event)) {
 			this.anyOnce.push(listener);
 		} else {
 			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
