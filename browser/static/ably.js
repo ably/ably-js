@@ -1,7 +1,7 @@
 /**
- * @license Copyright 2015, Ably
+ * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.12
+ * Ably JavaScript Library v0.8.13
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3917,7 +3917,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.12';
+Defaults.version           = '0.8.13';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4012,7 +4012,7 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.on = function(event, listener) {
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.any.push(event);
-		} else if(event === null) {
+		} else if(Utils.isEmptyArg(event)) {
 			this.any.push(listener);
 		} else {
 			var listeners = (this.events[event] || (this.events[event] = []));
@@ -4029,7 +4029,7 @@ var EventEmitter = (function() {
 	 *        supplied, all listeners are removed.
 	 */
 	EventEmitter.prototype.off = function(event, listener) {
-		if(arguments.length == 0) {
+		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
 			this.events = {};
 			this.anyOnce = [];
@@ -4045,7 +4045,7 @@ var EventEmitter = (function() {
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
 		var listeners, idx = -1;
-		if(event === null) {
+		if(Utils.isEmptyArg(event)) {
 			/* "any" case */
 			if(listener) {
 				if(!(listeners = this.any) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
@@ -4060,7 +4060,7 @@ var EventEmitter = (function() {
 			}
 			return;
 		}
-		/* "normal* case where event is an actual event */
+		/* "normal" case where event is an actual event */
 		if(listener) {
 			var listeners, idx = -1;
 			if(!(listeners = this.events[event]) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
@@ -4127,7 +4127,7 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.once = function(event, listener) {
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
-		} else if(event === null) {
+		} else if(Utils.isEmptyArg(event)) {
 			this.anyOnce.push(listener);
 		} else {
 			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
@@ -4250,9 +4250,22 @@ var Utils = (function() {
 	 * Determine whether or not a given object is
 	 * an array.
 	 */
-	Utils.isArray = function(ob) {
+	Utils.isArray = Array.isArray || function(ob) {
 		return Object.prototype.toString.call(ob) == '[object Array]';
 	};
+
+	/*
+	 * Ensures that an Array object is always returned
+	 * returning the original Array of obj is an Array
+	 * else wrapping the obj in a single element Array
+	 */
+	Utils.ensureArray = function(obj) {
+		if (Utils.isArray(obj)) {
+			return ob;
+		} else {
+			return [obj];
+		}
+	}
 
 	/* ...Or an Object (in the narrow sense) */
 	Utils.isObject = function(ob) {
@@ -4269,6 +4282,19 @@ var Utils = (function() {
 			return false;
 		return true;
 	};
+
+	/*
+	 * Determine whether or not an argument to an overloaded function is
+	 * undefined (missing) or null.
+	 * This method is useful when constructing functions such as (WebIDL terminology):
+	 *   off([TreatUndefinedAs=Null] DOMString? event)
+	 * as you can then confirm the argument using:
+	 *   Utils.isEmptyArg(event)
+	 */
+
+	Utils.isEmptyArg = function(arg) {
+		return arg === null || arg === undefined;
+	}
 
 	/*
 	 * Perform a simple shallow clone of an object.
@@ -4327,8 +4353,6 @@ var Utils = (function() {
 	};
 
 	Utils.intersect = function(arr, ob) { return Utils.isArray(ob) ? Utils.arrIntersect(arr, ob) : Utils.arrIntersectOb(arr, ob); };
-
-	Utils.isArray = Array.isArray ? Array.isArray : function(arr) { return Object.prototype.toString.call(arr) === '[object Array]'; };
 
 	Utils.arrIntersect = function(arr1, arr2) {
 		var result = [];
@@ -8189,17 +8213,20 @@ var RealtimeChannel = (function() {
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
+		var events;
 
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
-		if(event === null || !Utils.isArray(event))
-			subscriptions.on(event, listener);
-		else
-			for(var i = 0; i < event.length; i++)
-				subscriptions.on(event[i], listener);
+		if(Utils.isEmptyArg(event)) {
+			subscriptions.on(listener);
+		} else {
+			events = Utils.ensureArray(event);
+			for(var i = 0; i < events.length; i++)
+				subscriptions.on(events[i], listener);
+		}
 
 		this.attach(callback);
 	};
@@ -8210,17 +8237,20 @@ var RealtimeChannel = (function() {
 		var listener = args[1];
 		var callback = args[2];
 		var subscriptions = this.subscriptions;
+		var events;
 
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 			return;
 		}
 
-		if(event === null || !Utils.isArray(event))
-			subscriptions.off(event, listener);
-		else
-			for(var i = 0; i < event.length; i++)
-				subscriptions.off(event[i], listener);
+		if(Utils.isEmptyArg(event)) {
+			subscriptions.off(listener);
+		} else {
+			events = Utils.ensureArray(event);
+			for(var i = 0; i < events.length; i++)
+				subscriptions.off(events[i], listener);
+		}
 	};
 
 	RealtimeChannel.prototype.sync = function() {
@@ -8554,10 +8584,10 @@ var RealtimePresence = (function() {
 	}
 
 	function RealtimePresence(channel, options) {
-		EventEmitter.call(this);
 		Presence.call(this, channel);
 		this.clientId = options.clientId;
 		this.members = new PresenceMap(this);
+		this.subscriptions = new EventEmitter();
 	}
 	Utils.inherits(RealtimePresence, Presence);
 
@@ -8751,7 +8781,7 @@ var RealtimePresence = (function() {
 		/* broadcast to listeners */
 		for(var i = 0; i < broadcastMessages.length; i++) {
 			var presence = broadcastMessages[i];
-			this.emit(presenceActionToEvent[presence.action], presence);
+			this.subscriptions.emit(presenceActionToEvent[presence.action], presence);
 		}
 	};
 
@@ -8778,8 +8808,17 @@ var RealtimePresence = (function() {
 		this.members.startSync();
 	};
 
-	var _on = RealtimePresence.prototype.on;
-	var _off = RealtimePresence.prototype.off;
+	/* Deprecated */
+	RealtimePresence.prototype.on = function() {
+		Logger.deprecated('presence.on', 'presence.subscribe');
+		this.subscribe.call(arguments);
+	}
+
+	/* Deprecated */
+	RealtimePresence.prototype.off = function() {
+		Logger.deprecated('presence.off', 'presence.unsubscribe');
+		this.unsubscribe.call(arguments);
+	}
 
 	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -8789,7 +8828,7 @@ var RealtimePresence = (function() {
 		var self = this;
 
 		waitAttached(this.channel, callback, function() {
-			_on.call(self, event, listener);
+			self.subscriptions.on(event, listener);
 		});
 	}
 
@@ -8802,17 +8841,7 @@ var RealtimePresence = (function() {
 		if(this.channel.state === 'failed')
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 
-		_off.call(this, event, listener);
-	}
-
-	RealtimePresence.prototype.on = function() {
-		Logger.deprecated('presence.on', 'presence.subscribe');
-		_on.apply(this, arguments);
-	}
-
-	RealtimePresence.prototype.off = function() {
-		Logger.deprecated('presence.off', 'presence.unsubscribe');
-		_off.apply(this, arguments);
+		this.subscriptions.off(event, listener);
 	}
 
 	RealtimePresence.prototype.syncComplete = function() {
