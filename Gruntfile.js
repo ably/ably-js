@@ -1,5 +1,7 @@
 "use strict";
 
+var fs = require('fs');
+
 module.exports = function (grunt) {
 
 	grunt.loadNpmTasks('grunt-curl');
@@ -402,7 +404,35 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('release:ably-deploy',
 		'Deploys to ably CDN, assuming infrastructure repo is in same dir as ably-js',
-		execExternal('BUNDLE_GEMFILE="../infrastructure/Gemfile" bundle exec ../infrastructure/bin/ably-env deploy javascript')
+		function() {
+			var infrastructurePath = '../infrastructure',
+					maxTraverseDepth = 3,
+					infrastructureFound;
+
+			var folderExists = function(relativePath) {
+				try {
+					var fileStat = fs.statSync(infrastructurePath);
+					if (fileStat.isDirectory()) {
+						return true;
+					}
+				} catch (e) { /* does not exist */ }
+			}
+
+			while (infrastructurePath.length < 'infrastructure'.length + maxTraverseDepth*3) {
+				if (infrastructureFound = folderExists(infrastructurePath)) {
+					break;
+				} else {
+					infrastructurePath = "../" + infrastructurePath;
+				}
+			}
+			if (!infrastructureFound) {
+				grunt.fatal('Infrastructure repo could not be found in any parent folders up to a folder depth of ' + maxTraverseDepth);
+			}
+			var version = grunt.file.readJSON('package.json').version,
+					cmd = 'BUNDLE_GEMFILE="' + infrastructurePath + '/Gemfile" bundle exec ' + infrastructurePath + '/bin/ably-env deploy javascript --version ' + version;
+			console.log('Publishing version ' + version + ' of the library to the CDN');
+			execExternal(cmd).call(this);
+		}
 	);
 
 	grunt.registerTask('release:deploy',
