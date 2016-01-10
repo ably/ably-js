@@ -255,13 +255,13 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.on = function() {
 		Logger.deprecated('presence.on', 'presence.subscribe');
 		this.subscribe.call(arguments);
-	}
+	};
 
 	/* Deprecated */
 	RealtimePresence.prototype.off = function() {
 		Logger.deprecated('presence.off', 'presence.unsubscribe');
 		this.unsubscribe.call(arguments);
-	}
+	};
 
 	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -273,7 +273,7 @@ var RealtimePresence = (function() {
 		waitAttached(this.channel, callback, function() {
 			self.subscriptions.on(event, listener);
 		});
-	}
+	};
 
 	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -285,11 +285,11 @@ var RealtimePresence = (function() {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 
 		this.subscriptions.off(event, listener);
-	}
+	};
 
 	RealtimePresence.prototype.syncComplete = function() {
 		return !this.members.syncInProgress;
-	}
+	};
 
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
