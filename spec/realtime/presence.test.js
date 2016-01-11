@@ -1159,5 +1159,41 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check that old deprecated on/off methods still work
+	 */
+	exports.presenceOn = function(test) {
+		test.expect(1);
+		var channelName = 'enterOn';
+		var testData = 'some data';
+		var eventListener = function(test, channel, callback) {
+			var presenceHandler = function() {
+				callback();
+			};
+			channel.presence.on(presenceHandler);
+		};
+		var enterOn = function(cb) {
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+			clientRealtime.connection.on('connected', function() {
+				/* get channel, attach, and enter */
+				var clientChannel = clientRealtime.channels.get(channelName);
+				clientChannel.attach(function(err) {
+					if(err) {
+						cb(err, clientRealtime);
+						return;
+					}
+					clientChannel.presence.enter(testData, function(err) {
+						if(!err)
+							test.ok(true, 'Presence enter sent');
+						cb(err, clientRealtime);
+					});
+				});
+			});
+			monitorConnection(test, clientRealtime);
+		};
+
+		runTestWithEventListener(test, channelName, eventListener, enterOn);
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

@@ -254,13 +254,13 @@ var RealtimePresence = (function() {
 	/* Deprecated */
 	RealtimePresence.prototype.on = function() {
 		Logger.deprecated('presence.on', 'presence.subscribe');
-		this.subscribe.call(arguments);
+		this.subscribe.apply(this, arguments);
 	};
 
 	/* Deprecated */
 	RealtimePresence.prototype.off = function() {
 		Logger.deprecated('presence.off', 'presence.unsubscribe');
-		this.unsubscribe.call(arguments);
+		this.unsubscribe.apply(this, arguments);
 	};
 
 	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
