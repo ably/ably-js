@@ -122,19 +122,19 @@ var XHRRequest = (function() {
 		for(var h in headers)
 			xhr.setRequestHeader(h, headers[h]);
 
-		var onerror = xhr.onerror = function(err) {
-			err.code = 80000;
-			self.complete(err);
+		var errorHandler = function(errorEvent, message, code, statusCode) {
+			var errorMessage = message + ', errorEvent was ' + Utils.inspect(errorEvent) + ', current statusText is ' + self.xhr.statusText;
+			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
+			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
-		xhr.onabort = function() {
-			var err = new Error('Request cancelled');
-			err.statusCode = 400;
-			onerror(err);
+		xhr.onerror = function(errorEvent) {
+			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
+		}
+		xhr.onabort = function(errorEvent) {
+			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
 		};
-		xhr.ontimeout = function() {
-			var err = new Error('Request timed out');
-			err.statusCode = 408;
-			onerror(err);
+		xhr.ontimeout = function(errorEvent) {
+			errorHandler(errorEvent, 'Request timed out', 80000, 408);
 		};
 
 		var streaming,
@@ -294,24 +294,19 @@ var XHRRequest = (function() {
 		if(body)
 			if(typeof(body) == 'object') body = JSON.stringify(body);
 
-		var onerror = xhr.onerror = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onerror()', '');
-			var err = new Error('Error response');
-			err.statusCode = 400;
-			err.code = 80000;
-			self.complete(err);
+		var errorHandler = function(errorEvent, message, code, statusCode) {
+			var errorMessage = message + ', errorEvent was ' + Utils.inspect(errorEvent) + ', current statusText is ' + self.xhr.statusText;
+			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
+			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
-		xhr.onabort = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onabort()', '');
-			var err = new Error('Request cancelled');
-			err.statusCode = 400;
-			onerror(err);
+		xhr.onerror = function(errorEvent) {
+			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
+		}
+		xhr.onabort = function(errorEvent) {
+			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
 		};
-		xhr.ontimeout = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.timeout()', '');
-			var err = new Error('Request timed out');
-			err.statusCode = 408;
-			onerror(err);
+		xhr.ontimeout = function(errorEvent) {
+			errorHandler(errorEvent, 'Request timed out', 80000, 408);
 		};
 
 		var streaming,
