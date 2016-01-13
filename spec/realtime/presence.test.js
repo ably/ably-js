@@ -1247,9 +1247,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var enterInheritedClientId = function(cb) {
 			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			var channel = realtime.channels.get(channelName);
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.auth.clientId, testClientId);
-				var channel = realtime.channels.get(channelName);
 				channel.presence.enter("test data", function(err) {
 					cb(err, realtime);
 				});

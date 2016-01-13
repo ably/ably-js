@@ -7,6 +7,10 @@ var RealtimePresence = (function() {
 		return item.clientId + ':' + item.connectionId;
 	}
 
+	function getClientId(realtimePresence) {
+		return realtimePresence.channel.realtime.auth.clientId;
+	}
+
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
@@ -28,22 +32,20 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
-		this.clientId = this.channel.realtime.auth.clientId;
 		this.members = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
 	}
 	Utils.inherits(RealtimePresence, Presence);
 
 	RealtimePresence.prototype.enter = function(data, callback) {
-		if(!this.clientId)
+		if(!getClientId(this))
 			throw new Error('clientId must be specified to enter a presence channel');
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
-		if(!this.clientId) {
+		if(!getClientId(this))
 			throw new Error('clientId must be specified to update presence data');
-		}
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -66,7 +68,7 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + this.clientId);
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction[action.toUpperCase()],
@@ -105,7 +107,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if(!this.clientId)
+		if(!getClientId(this))
 			throw new Error('clientId must have been specified to enter or leave a presence channel');
 		this.leaveClient(undefined, data, callback);
 	};
