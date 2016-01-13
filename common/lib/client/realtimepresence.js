@@ -28,7 +28,7 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
-		this.clientId = options.clientId;
+		this.clientId = this.channel.realtime.auth.clientId;
 		this.members = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
 	}

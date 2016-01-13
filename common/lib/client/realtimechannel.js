@@ -7,6 +7,7 @@ var RealtimeChannel = (function() {
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
+		this.realtime = realtime;
 		this.presence = new RealtimePresence(this, realtime.options);
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
@@ -14,7 +15,6 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
-		this.realtime = realtime;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
