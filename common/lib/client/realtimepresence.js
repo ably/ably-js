@@ -39,13 +39,13 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.enter = function(data, callback) {
 		if(!getClientId(this))
-			throw new Error('clientId must be specified to enter a presence channel');
+			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(!getClientId(this))
-			throw new Error('clientId must be specified to update presence data');
+			throw new Error('clientId must be specified to update presence data', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -100,7 +100,7 @@ var RealtimePresence = (function() {
 				};
 				break;
 			default:
-				var err = new Error('Unable to ' + action + ' presence channel (incompatible state)');
+				var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
 				err.code = 90001;
 				callback(err);
 		}
@@ -108,7 +108,7 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.leave = function(data, callback) {
 		if(!getClientId(this))
-			throw new Error('clientId must have been specified to enter or leave a presence channel');
+			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		this.leaveClient(undefined, data, callback);
 	};
 
@@ -144,8 +144,7 @@ var RealtimePresence = (function() {
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
-				var err = new Error('Unable to leave presence channel (incompatible state)');
-				err.code = 90001;
+				var err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
 				callback(err);
 				break;
 			default:
