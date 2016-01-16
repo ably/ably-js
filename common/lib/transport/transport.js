@@ -116,17 +116,16 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onConnect = function(message) {
-		/* the connectionKey in a comet connected response is really
-		 * <instId>!<connectionKey>; handle generically here */
-		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)$/),
-			connectionKey = message.connectionKey = match && match[1];
-
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
-		var error = message.error, connectionManager = this.connectionManager;
-		if(error && connectionKey !== connectionManager.connectionKey)
+		var connectionKey = message.connectionKey,
+			error = message.error,
+			connectionManager = this.connectionManager;
+
+		if(error && connectionKey !== connectionManager.connectionKey) {
 			connectionManager.realtime.channels.setSuspended(error);
+		}
 
 		this.connectionKey = connectionKey;
 		this.isConnected = true;
