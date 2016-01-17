@@ -73,6 +73,9 @@ var RealtimePresence = (function() {
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
+
+		PresenceMessage.encode(presence, this.channel.channelOptions);
+
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
