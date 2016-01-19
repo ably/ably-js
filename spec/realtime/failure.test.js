@@ -6,9 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		noop = function() {},
 		simulateDroppedConnection = helper.simulateDroppedConnection,
-		// Ably.Realtime.ConnectionManager not defined in node
-		availableTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.transports : Object.keys(Ably.Realtime.ConnectionManager.transports);
-
+		availableTransports = helper.availableTransports;
 
 	exports.setupFailure = function(test) {
 		test.expect(1);

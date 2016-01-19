@@ -5,6 +5,12 @@
 
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
+		// Ably.Realtime.ConnectionManager not defined in node
+		var availableTransports = typeof clientModule.Ably.Realtime.ConnectionManager === 'undefined' ?
+			clientModule.Ably.Realtime.Defaults.transports :
+				Object.keys(clientModule.Ably.Realtime.ConnectionManager.transports),
+			bestTransport = availableTransports[0];
+
 		var displayError = function(err) {
 			if(typeof(err) == 'string')
 				return err;
@@ -82,6 +88,19 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		 )
 		};
 
+		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
+		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
+			availableTransports.forEach(function(transport) {
+				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
+				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
+			});
+			/* Plus one for no transport specified (ie use upgrade mechanism if present) */
+			if(!excludeUpgrade) {
+				exports[name + '_with_binary_transport'] = testFn({useBinaryProtocol: true});
+				exports[name + '_with_text_transport'] = testFn({useBinaryProtocol: false});
+			}
+		}
+
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
 		var withTimeout = function(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
@@ -125,6 +144,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			monitorConnection:         monitorConnection,
 			closeAndFinish:            closeAndFinish,
 			simulateDroppedConnection: simulateDroppedConnection,
-			withTimeout:               withTimeout
+			withTimeout:               withTimeout,
+			testOnAllTransports:       testOnAllTransports,
+			availableTransports:       availableTransports,
+			bestTransport:             bestTransport
 		};
 	});
