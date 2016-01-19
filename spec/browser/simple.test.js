@@ -239,27 +239,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		};
 	}
 
-	var iframeTransport = 'iframe';
-	if(isTransportAvailable(iframeTransport)) {
-		exports.iframebase0 = function (test) {
-			connectionWithTransport(test, iframeTransport);
-		};
-
-		/*
-		 * Publish and subscribe, json transport
-		 */
-		exports.iframepublish0 = function (test) {
-			publishWithTransport(test, iframeTransport);
-		};
-
-		/*
-		 * Check heartbeat
-		 */
-		exports.iframeheartbeat0 = function (test) {
-			heartbeatWithTransport(test, iframeTransport);
-		};
-	}
-
 	exports.auto_transport_base0 = function (test) {
 		connectionWithTransport(test);
 	};
