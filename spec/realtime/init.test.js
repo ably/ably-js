@@ -241,7 +241,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(4);
 		try {
 			var keyStr = helper.getTestApp().keys[0].keyStr;
-			var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true, transports: ['web_socket'] });
+			var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true });
 			realtime.connection.connectionManager.once('transport.pending', function (state) {
 				var transport = realtime.connection.connectionManager.pendingTransports[0],
 						originalOnProtocolMessage = transport.onProtocolMessage;
