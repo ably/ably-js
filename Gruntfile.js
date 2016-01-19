@@ -119,6 +119,7 @@ module.exports = function (grunt) {
 	};
 
 	var ablyFiles = [
+		'<%= dirs.browser %>/lib/util/polyfills.js',
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
 		'<%= dirs.browser %>/lib/util/cookie.js',

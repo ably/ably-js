@@ -75,6 +75,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
+      'browser/lib/util/polyfills.js',
       'spec/support/environment.vars.js',
       'spec/support/modules_helper.js',
       'spec/support/test_helper.js',
