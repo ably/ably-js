@@ -29,8 +29,8 @@ var ConnectionManager = (function() {
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 	}
 
-	TransportParams.prototype.getConnectParams = function(params) {
-		params = params ? Utils.prototypicalClone(params) : {};
+	TransportParams.prototype.getConnectParams = function(authParams) {
+		var params = authParams ? Utils.copy(authParams) : {};
 		var options = this.options;
 		switch(this.mode) {
 			case 'upgrade':
