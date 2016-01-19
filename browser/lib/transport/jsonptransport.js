@@ -94,8 +94,6 @@ var JSONPTransport = (function() {
 		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
-		else
-			delete params.body;
 
 		var script = this.script = document.createElement('script');
 		script.src = uri + Utils.toQueryString(params);
