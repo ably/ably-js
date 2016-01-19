@@ -101,21 +101,21 @@ var JSONPTransport = (function() {
 		};
 
 		_[id] = function(message) {
-			var successResponse = (message.statusCode < 400),
-				response = message.response;
-
-			if(!response) {
-				self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
-				return;
+			if(message.statusCode) {
+				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
+				var response = message.response;
+				if(!response) {
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
+				} else if(message.statusCode < 400) {
+					self.complete(null, response, message.headers);
+				} else {
+					var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+					self.complete(err);
+				}
+			} else {
+				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
+				self.complete(null, message)
 			}
-
-			if(successResponse) {
-				self.complete(null, response);
-				return;
-			}
-
-			var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
-			self.complete(err);
 		};
 
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
@@ -123,16 +123,18 @@ var JSONPTransport = (function() {
 		head.insertBefore(script, head.firstChild);
 	};
 
-	Request.prototype.complete = function(err, body) {
+	Request.prototype.complete = function(err, body, headers) {
+		headers = headers || {};
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			var contentType;
 			if(body) {
 				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
+				headers['content-type'] = contentType;
 				this.emit('data', body);
 			}
 
-			this.emit('complete', err, body, contentType && {'content-type': contentType}, true);
+			this.emit('complete', err, body, headers, /* unpacked: */ true);
 			this.dispose();
 		}
 	};
