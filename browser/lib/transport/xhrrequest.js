@@ -14,18 +14,10 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
+	var xhrSupported;
 	var isIE = window.XDomainRequest;
-	var xhrSupported, xdrSupported;
 	function isAvailable() {
-		if(window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()) {
-			return (xhrSupported = true);
-		}
-
-		if(isIE && document.domain && (window.location.protocol == 'https:')) {
-			return (xdrSupported = true);
-		}
-
-		return false;
+		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
 	};
 
 	function ieVersion() {
@@ -72,7 +64,7 @@ var XHRRequest = (function() {
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
 		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
 		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
-		return xhrSupported ? new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts) : new XDRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
+		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
@@ -272,192 +264,18 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	function XDRRequest(uri, headers, params, body, requestMode, timeouts) {
-		params.ua = 'xdr';
-		XHRRequest.call(this, uri, headers, params, body, requestMode, timeouts);
-	}
-	Utils.inherits(XDRRequest, XHRRequest);
-
-   /**
-	* References:
-	* http://ajaxian.com/archives/100-line-ajax-wrapper
-	* http://msdn.microsoft.com/en-us/library/cc288060(v=VS.85).aspx
-	*/
-	XDRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
-			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
-			body = this.body,
-			method = body ? 'POST' : 'GET',
-			xhr = this.xhr = new XDomainRequest(),
-			self = this;
-
-		if(body)
-			if(typeof(body) == 'object') body = JSON.stringify(body);
-
-		var errorHandler = function(errorEvent, message, code, statusCode) {
-			var errorMessage = message + ', errorEvent was ' + Utils.inspect(errorEvent) + ', current statusText is ' + self.xhr.statusText;
-			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
-			self.complete(new ErrorInfo(errorMessage, code, statusCode));
-		};
-		xhr.onerror = function(errorEvent) {
-			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
-		}
-		xhr.onabort = function(errorEvent) {
-			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
-		};
-		xhr.ontimeout = function(errorEvent) {
-			errorHandler(errorEvent, 'Request timed out', 80000, 408);
-		};
-
-		var streaming,
-			statusCode,
-			responseBody,
-			streamPos = 0;
-
-		function onResponse() {
-			clearTimeout(timer);
-			responseBody = xhr.responseText;
-			//Logger.logAction(Logger.LOG_MICRO, 'onResponse: ', responseBody);
-			if(responseBody) {
-				var idx = responseBody.length - 1;
-				if(responseBody[idx] == '\n' || (idx = responseBody.indexOf('\n') > -1)) {
-					var chunk = responseBody.slice(0, idx);
-					try {
-						chunk = JSON.parse(chunk);
-						var err = chunk.error;
-						if(err) {
-							statusCode = err.statusCode || 500;
-							self.complete(err);
-						} else {
-							statusCode = responseBody ? 201 : 200;
-							streaming = (self.requestMode == REQ_RECV_STREAM);
-							if(streaming) {
-								streamPos = idx;
-								if(!Utils.isEmpty(chunk)) {
-									self.emit('data', chunk);
-								}
-							}
-						}
-					} catch(e) {
-						err = new Error('Malformed response body from server: ' + e.message);
-						err.statusCode = 400;
-						self.complete(err);
-						return;
-					}
-				}
-			}
-		}
-
-		function onEnd() {
-			try {
-				responseBody = xhr.responseText;
-				//Logger.logAction(Logger.LOG_MICRO, 'onEnd: ', responseBody);
-				if(!responseBody || !responseBody.length) {
-					if(status != 204) {
-						err = new Error('Incomplete response body from server');
-						err.statusCode = 400;
-						self.complete(err);
-					}
-					return;
-				}
-				responseBody = JSON.parse(String(responseBody));
-			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
-				return;
-			}
-			self.complete(null, responseBody, {'content-type': 'application/json'}, true);
-		}
-
-		function onProgress() {
-			responseBody = xhr.responseText;
-			//Logger.logAction(Logger.LOG_MICRO, 'onProgress: ', responseBody);
-			var bodyEnd = responseBody.length - 1, idx, chunk;
-			while((streamPos < bodyEnd) && (idx = responseBody.indexOf('\n', streamPos)) > -1) {
-				chunk = responseBody.slice(streamPos, idx);
-				streamPos = idx + 1;
-				onChunk(chunk);
-			}
-		}
-
-		function onChunk(chunk) {
-			try {
-				chunk = JSON.parse(chunk);
-			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
-				return;
-			}
-			self.emit('data', chunk);
-		}
-
-		function onStreamEnd() {
-			onProgress();
-			self.streamComplete = true;
-			Utils.nextTick(function() {
-				self.complete();
-			});
-		}
-
-		xhr.onprogress = function() {
-			if(statusCode === undefined)
-				onResponse();
-			else if(streaming)
-				onProgress();
-		};
-
-		xhr.onload = function() {
-			if(statusCode === undefined) {
-				onResponse();
-				if(self.requestComplete)
-					return;
-			}
-			if(streaming)
-				onStreamEnd();
-			else
-				onEnd();
-		};
-
-		try {
-			xhr.open(method, this.uri);
-			xhr.send(body);
-		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onStreamEnd()', 'Unexpected send exception; err = ' + e);
-			onerror(e);
-		}
-	};
-
-	XDRRequest.prototype.dispose = function() {
-		var xhr = this.xhr;
-		if(xhr) {
-			xhr.onprogress = xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = noop;
-			this.xhr = null;
-			var timer = this.timer;
-			if(timer) {
-				clearTimeout(timer);
-				this.timer = null;
-			}
-			if(!this.requestComplete)
-				xhr.abort();
-		}
-		delete pendingRequests[this.id];
-	};
-
-	var isAvailable = XHRRequest.isAvailable();
-	if(isAvailable) {
-		DomEvent.addUnloadListener(clearPendingRequests);
-		if(typeof(Http) !== 'undefined') {
-			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND);
-				req.once('complete', callback);
-				req.exec();
-				return req;
-			};
-		}
-	}
+  if(isAvailable()) {
+          DomEvent.addUnloadListener(clearPendingRequests);
+          if(typeof(Http) !== 'undefined') {
+                  Http.supportsAuthHeaders = xhrSupported;
+                  Http.Request = function(uri, headers, params, body, callback) {
+                          var req = createRequest(uri, headers, params, body, REQ_SEND);
+                          req.once('complete', callback);
+                          req.exec();
+                          return req;
+                  };
+          }
+  }
 
 	return XHRRequest;
 })();
