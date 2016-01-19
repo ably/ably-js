@@ -109,7 +109,9 @@ var JSONPTransport = (function() {
 			if(message.statusCode) {
 				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
 				var response = message.response;
-				if(!response) {
+				if(message.statusCode == 204) {
+					self.complete();
+				} else if(!response) {
 					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
 				} else if(message.statusCode < 400) {
 					self.complete(null, response, message.headers);
