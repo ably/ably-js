@@ -1,10 +1,11 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection;
+		monitorConnection = helper.monitorConnection,
+		testOnAllTransports = helper.testOnAllTransports;
 
 	exports.setupchannel = function(test) {
 		test.expect(1);
@@ -21,10 +22,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/*
 	 * Channel init with options
 	 */
-	exports.channelinit0 = function(test) {
+	testOnAllTransports(exports, 'channelinit0', function(realtimeOpts) { return function(test) {
 		test.expect(4);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.on('connected', function() {
 				/* set options on init */
 				var channel0 = realtime.channels.get('channelinit0', {encrypted: true});
@@ -45,15 +46,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
-	 * Base attach case, binary transport
+	 * Base attach case
 	 */
-	exports.channelattach0 = function(test) {
+	testOnAllTransports(exports, 'channelattach0', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.on('connected', function() {
 				var channel0 = realtime.channels.get('channelattach0');
 				channel0.attach(function(err) {
@@ -69,39 +70,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
-	 * Base attach case, text/json transport
+	 * Attach before connect
 	 */
-	exports.channelattach1 = function(test) {
+	testOnAllTransports(exports, 'channelattach2', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
-			realtime.connection.on('connected', function() {
-				var channel1 = realtime.channels.get('channelattach1');
-				channel1.attach(function(err) {
-					if(err)
-						test.ok(false, 'Attach failed with error: ' + displayError(err));
-					else
-						test.ok(true, 'Attach to channel1 with no options');
-					closeAndFinish(test, realtime);
-				});
-			});
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
-
-	/*
-	 * Attach before connect, binary transport
-	 */
-	exports.channelattach2 = function(test) {
-		test.expect(1);
-		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			var channel2 = realtime.channels.get('channelattach2');
 			channel2.attach(function(err) {
 				if(err)
@@ -115,15 +92,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
-	 * Attach then detach, binary transport
+	 * Attach then detach
 	 */
-	exports.channelattach3 = function(test) {
+	testOnAllTransports(exports, 'channelattach3', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.on('connected', function() {
 				var channel0 = realtime.channels.get('channelattach3');
 				channel0.attach(function(err) {
@@ -149,16 +126,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
 	 * Attach with an empty channel and expect a channel error
 	 * and the connection to remain open
 	 */
-	exports.channelattachempty = function(test) {
+	testOnAllTransports(exports, 'channelattachempty', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
 				var channel0 = realtime.channels.get('');
 				channel0.attach(function(err) {
@@ -180,16 +157,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
 	 * Attach with an invalid channel name and expect a channel error
 	 * and the connection to remain open
 	 */
-	exports.channelattach_invalid = function(test) {
+	testOnAllTransports(exports, 'channelattachinvalid', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
 				realtime.channels.get(':hell').attach(function(err) {
 					if(err) {
@@ -210,15 +187,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
 	 * Implicit attach by publishing
 	 */
-	exports.channelattach_publish = function(test) {
+	testOnAllTransports(exports, 'channelattach_publish', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
 				realtime.channels.get('channelattach_publish').publish(function(err) {
 					if(err) {
@@ -235,15 +212,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channelattach_publish failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
 	 * Implicit attach with an invalid channel name by publishing
 	 */
-	exports.channelattach_publish_invalid = function(test) {
+	testOnAllTransports(exports, 'channelattach_publish_invalid', function(realtimeOpts) { return function(test) {
 		test.expect(2);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
 				realtime.channels.get(':hell').publish(function(err) {
 					if(err) {
@@ -261,16 +238,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channelattach_publish_invalid failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
 	/*
 	 * Attach with an invalid channel name and expect a channel error
 	 * and the connection to remain open
 	 */
-	exports.channelattach_invalid_twice = function(test) {
+	testOnAllTransports(exports, 'channelattach_invalid_twice', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
-			var realtime = helper.AblyRealtime();
+			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
 				realtime.channels.get(':hell').attach(function(err) {
 					if(err) {
@@ -301,198 +278,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	};
+	}});
 
-	if (isBrowser) {
-		/*
-		 * Base attach case, jsonp transport
-		 */
-		exports.channelattachjson1 = function(test) {
-			var transport = 'jsonp';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel3 = realtime.channels.get('channel3');
-					channel3.attach(function(err) {
-						if(err)
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-						else
-							test.ok(true, 'Attach to channel 3 with no options');
-						closeAndFinish(test, realtime);
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-
-		/*
-		 * Attach then detach, jsonp transport
-		 */
-		exports.channelattachjson2 = function(test) {
-			var transport = 'jsonp';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channelattachjson2');
-					channel5.attach(function(err) {
-						if(err) {
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-							closeAndFinish(test, realtime);
-						}
-						/* we can't get a callback on a detach, so set a timeout */
-						channel5.detach(function(err) {
-							if(err) {
-								test.ok(false, 'Attach failed with error: ' + displayError(err));
-								closeAndFinish(test, realtime);
-							}
-							if(channel5.state == 'detached')
-								test.ok(true, 'Attach then detach to channel 0 with no options');
-							else
-								test.ok(false, 'Detach failed');
-							closeAndFinish(test, realtime);
-						});
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-
-		/*
-		 * Base attach case, xhr transport
-		 */
-		exports.channelattachxhr1 = function(test) {
-			var transport = 'xhr';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel3 = realtime.channels.get('channelattachxhr1');
-					channel3.attach(function(err) {
-						if(err)
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-						else
-							test.ok(true, 'Attach to channel 3 with no options');
-						closeAndFinish(test, realtime);
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-
-		/*
-		 * Attach then detach, xhr transport
-		 */
-		exports.channelattachxhr2 = function(test) {
-			var transport = 'xhr';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channelattachxhr2');
-					channel5.attach(function(err) {
-						if(err) {
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-							closeAndFinish(test, realtime);
-						}
-						/* we can't get a callback on a detach, so set a timeout */
-						channel5.detach(function(err) {
-							if(err) {
-								test.ok(false, 'Attach failed with error: ' + displayError(err));
-								closeAndFinish(test, realtime);
-							}
-							if(channel5.state == 'detached')
-								test.ok(true, 'Attach then detach to channel 0 with no options');
-							else
-								test.ok(false, 'Detach failed');
-							closeAndFinish(test, realtime);
-						});
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-	} else {
-		/*
-		 * Base attach case, comet transport
-		 */
-		exports.channelattachcomet1 = function(test) {
-			var transport = 'comet';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel3 = realtime.channels.get('channelattachcomet1');
-					channel3.attach(function(err) {
-						if(err)
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-						else
-							test.ok(true, 'Attach to channel 3 with no options');
-						closeAndFinish(test, realtime);
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-
-		/*
-		 * Attach then detach, comet transport
-		 */
-		exports.channelattachcomet2 = function(test) {
-			var transport = 'comet';
-
-			test.expect(1);
-			try {
-				var realtime = helper.AblyRealtime({ transports: [transport] });
-				realtime.connection.on('connected', function() {
-					var channel5 = realtime.channels.get('channelattachcomet2');
-					channel5.attach(function(err) {
-						if(err) {
-							test.ok(false, 'Attach failed with error: ' + displayError(err));
-							closeAndFinish(test, realtime);
-						}
-						/* we can't get a callback on a detach, so set a timeout */
-						channel5.detach(function(err) {
-							if(err) {
-								test.ok(false, 'Attach failed with error: ' + displayError(err));
-								closeAndFinish(test, realtime);
-							}
-							if(channel5.state == 'detached')
-								test.ok(true, 'Attach then detach to channel 0 with no options');
-							else
-								test.ok(false, 'Detach failed');
-							closeAndFinish(test, realtime);
-						});
-					});
-				});
-				monitorConnection(test, realtime);
-			} catch(e) {
-				test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-				closeAndFinish(test, realtime);
-			}
-		};
-	}
 
 	/*
 	 * Attach then later call whenState which fires immediately
