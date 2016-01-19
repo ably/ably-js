@@ -5,7 +5,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		closeAndFinish = helper.closeAndFinish,
 		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection,
-		simulateDroppedConnection = helper.simulateDroppedConnection;
+		simulateDroppedConnection = helper.simulateDroppedConnection,
+		testOnAllTransports = helper.testOnAllTransports,
+		bestTransport = helper.bestTransport;
 
 	exports.setupResume = function(test) {
 		test.expect(1);
@@ -50,14 +52,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		function phase1(callback) {
 			/* subscribe to event */
-			rxChannel.subscribe('event0', function() {
-				//console.log('received message; serial = ' + msg.connectionSerial);
+			rxChannel.subscribe('event0', function(msg) {
+				console.log('received message ' + msg.data);
 				++rxCount;
 			});
 			var txCount = 0;
 			function ph1TxOnce() {
 				console.log('sending (phase 1): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
+				txChannel.publish('event0', 'phase 1, message ' + txCount + ' at ' + new Date(), function(err) {
+					if(err) callback(err);
+				});
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() {
@@ -93,7 +97,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var txCount = 0;
 			function ph4TxOnce() {
 				console.log('sending (phase 4): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
+				txChannel.publish('event0', 'phase 4, message ' + txCount + ' at ' + new Date(), function(err) {
+					if(err) callback(err);
+				});
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() {
@@ -144,34 +150,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
-	exports.resume_inactive_ws_text = function(test) {
-		resume_inactive(test, 'resume_inactive_ws_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		});
-	};
-
-	exports.resume_inactive_ws_binary = function(test) {
-		resume_inactive(test, 'resume_inactive_ws_binary', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:true
-		});
-	};
-
-	exports.resume_inactive_comet_text = function(test) {
-		resume_inactive(test, 'resume_inactive_comet_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['xhr', 'iframe', 'jsonp', 'comet']
-		});
-	};
+	testOnAllTransports(exports, 'resume_inactive', function(realtimeOpts) { return function(test) {
+		resume_inactive(test, 'resume_inactive' + String(Math.random()), {
+			transports: ['jsonp'],
+			useBinaryProtocol: false
+		}, realtimeOpts);
+	}}, /* excludeUpgrade: */ true);
 
 	/**
 	 * Simple resume case
@@ -200,7 +184,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var txCount = 0;
 			function ph1TxOnce() {
 				console.log('sending (phase 1): ' + txCount);
-				txChannel.publish('event0', 'phase 1 message ' + txCount + ' at ' + new Date());
+				txChannel.publish('event0', 'phase 1, message ' + txCount + ' at ' + new Date(), function(err) {
+					if(err) callback(err);
+				});
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() {
@@ -224,7 +210,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			function ph2TxOnce() {
 				console.log('sending (phase 2): ' + txCount);
-				txChannel.publish('event0', 'phase 2 message ' + txCount + ' at ' + new Date());
+				txChannel.publish('event0', 'phase 2, message ' + txCount + ' at ' + new Date(), function(err) {
+					if(err) callback(err);
+				});
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() { callback(null); }, 1000);
@@ -281,34 +269,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
-	exports.resume_active_ws_text = function(test) {
-		resume_active(test, 'resume_active_ws_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		});
-	};
-
-	exports.resume_active_ws_binary = function(test) {
-		resume_active(test, 'resume_active_ws_binary', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:true
-		});
-	};
-
-	exports.resume_active_comet_text = function(test) {
-		resume_active(test, 'resume_active_comet_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['xhr', 'jsonp', 'comet']
-		});
-	};
+	testOnAllTransports(exports, 'resume_active', function(realtimeOpts) { return function(test) {
+		resume_active(test, 'resume_active' + String(Math.random()), {
+			transports: ['jsonp'],
+			useBinaryProtocol: false
+		}, realtimeOpts);
+	}},/* excludeUpgrade: */ true);
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });
