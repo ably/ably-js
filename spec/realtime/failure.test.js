@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		utils = helper.Utils,
 		noop = function() {},
 		simulateDroppedConnection = helper.simulateDroppedConnection,
 		availableTransports = helper.availableTransports;
@@ -40,18 +41,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				};
 			};
 			async.parallel(
-				availableTransports.map(function(transport) {
+				utils.arrMap(availableTransports, function(transport) {
 					return failure_test([transport]);
 				}).concat(failure_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
 				function(err, realtimes) {
 					if(err) {
 						test.ok(false, helper.displayError(err));
 					}
-					/* Temp debugging: if any rt doesn't have a connection attr, log
-					 * them all to try and work out what's happening (cf failure in
-					 * https://ci.ably.io/job/realtime/279/consoleText) */
-					if(!realtimes.every(function(rt){ return rt.connection; }))
-						console.log(realtimes);
 					closeAndFinish(test, realtimes);
 				}
 			);
@@ -85,7 +81,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				};
 			};
 			async.parallel(
-				availableTransports.map(function(transport) {
+				utils.arrMap(availableTransports, function(transport) {
 					return break_test([transport]);
 				}).concat(break_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
 				function(err, realtimes) {
@@ -145,7 +141,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				};
 			};
 			async.parallel(
-				availableTransports.map(function(transport) {
+				utils.arrMap(availableTransports, function(transport) {
 					return lifecycleTest([transport]);
 				}).concat(lifecycleTest(null)), // to test not specifying a transport (so will use upgrade mechanism)
 				function(err, realtimes) {

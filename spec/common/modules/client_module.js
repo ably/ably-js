@@ -3,6 +3,7 @@
 /* Shared test helper used for creating Rest and Real-time clients */
 
 define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
+	var utils = Ably.Realtime.Utils;
 	function mixinOptions(dest, src) {
 		for (var key in src) {
 			if (src.hasOwnProperty(key)) {
@@ -20,7 +21,7 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 			mixinOptions(clientOptions, options);
 
 			/* Use a default api key if no auth methods provided */
-			if (authMethods.every(function(method) {
+			if(utils.arrEvery(authMethods, function(method) {
 				return !(method in clientOptions);
 			})) {
 				clientOptions.key = testAppHelper.getTestApp().keys[0].keyStr;

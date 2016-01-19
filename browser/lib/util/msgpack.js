@@ -481,7 +481,7 @@
 	}
 
 	function encodeableKeys(value, sparse) {
-		return Object.keys(value).filter(function (e) {
+		return Utils.keysArray(value, true).filter(function (e) {
 			var val = value[e], type = typeof(val);
 			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!val.toJSON);
 		})

@@ -224,6 +224,43 @@ var Utils = (function() {
 		return result.length ? result : undefined;
 	};
 
+	Utils.arrForEach = Array.prototype.forEach ?
+		function(arr, fn) {
+			arr.forEach(fn);
+		} :
+		function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				fn(arr[i], i, arr);
+			}
+		};
+
+	Utils.arrMap = Array.prototype.map ?
+		function(arr, fn) {
+			return arr.map(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				result.push(fn(arr[i], i, arr));
+			}
+			return result;
+		};
+
+	Utils.arrEvery = Array.prototype.every ?
+		function(arr, fn) {
+			return arr.every(fn);
+		} : function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(!fn(arr[i], i, arr)) {
+					return false;
+				};
+			}
+			return true;
+		};
+
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
 	var contentTypes = {
@@ -277,6 +314,11 @@ var Utils = (function() {
 			result[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
 
  		return result;
+	};
+
+	Utils.now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
 	};
 
 	Utils.inspect = function(x) {

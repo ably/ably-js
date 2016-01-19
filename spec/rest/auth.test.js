@@ -1,7 +1,8 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var currentTime, rest, exports = {};
+	var currentTime, rest, exports = {},
+		utils = helper.Utils;
 
 	var getServerTime = function(callback) {
 		rest.time(function(err, time) {
@@ -123,7 +124,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.authtime1 = function(test) {
 		test.expect(1);
-		var badTime = Date.now() - 30*60*1000;
+		var badTime = utils.now() - 30*60*1000;
 		rest.auth.requestToken({timestamp:badTime}, function(err, tokenDetails) {
 			if(err) {
 				test.equal(err.statusCode, 401, 'Verify token request rejected with bad timestamp');

@@ -4,8 +4,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		utils = helper.Utils,
 		// Ably.Realtime.ConnectionManager not defined in node
-		availableHttpTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.httpTransports : Object.keys(Ably.Realtime.ConnectionManager.httpTransports);
+		availableHttpTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.httpTransports : utils.keysArray(Ably.Realtime.ConnectionManager.httpTransports);
 
 
 	exports.setupConnectivity = function(test) {
