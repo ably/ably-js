@@ -1,6 +1,12 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = function(id) { return _[id] || noop; };
+	var _ = window.Ably._ = {};
+	/* express strips out parantheses from the callback!
+	 * Kludge to still alow its responses to work, while not keeping the
+	 * function form for normal use and not cluttering window.Ably
+	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 */
+	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
 	var head = document.getElementsByTagName('head')[0];
 
@@ -28,7 +34,7 @@ var JSONPTransport = (function() {
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
 
-		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
 		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
@@ -83,7 +89,8 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._(' + id + ')';
+		params.callback = 'Ably._._(' + id + ')';
+
 		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
@@ -100,7 +107,7 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		_[id] = function(message) {
+		_['_' + id] = function(message) {
 			if(message.statusCode) {
 				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
 				var response = message.response;
