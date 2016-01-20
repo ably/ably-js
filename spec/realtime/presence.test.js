@@ -1226,5 +1226,39 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
+	/*
+	 * Request a token using clientId, then initialize a connection without one,
+	 * and check that can enter presence with the clientId inherited from tokenDetails
+	 */
+	exports.presence_enter_inherited_clientid = function(test) {
+		test.expect(3);
+		var channelName = "enter_inherited_clientid"
+
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
+
+		var enterInheritedClientId = function(cb) {
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			var channel = realtime.channels.get(channelName);
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.clientId, testClientId);
+				channel.presence.enter("test data", function(err) {
+					cb(err, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		}
+
+		runTestWithEventListener(test, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
