@@ -10,6 +10,7 @@ var Connection = (function() {
 		this.id = undefined;
 		this.serial = undefined;
 		this.recoveryKey = undefined;
+		this.errorReason = null;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {

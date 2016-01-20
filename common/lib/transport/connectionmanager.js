@@ -456,6 +456,7 @@ var ConnectionManager = (function() {
 		if(existingState !== this.states.connected) {
 			this.notifyState({state: 'connected'});
 			this.errorReason = null;
+			this.realtime.connection.errorReason = null;
 		}
 
 		/* Gracefully terminate existing protocol */
@@ -591,6 +592,7 @@ var ConnectionManager = (function() {
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
 			this.errorReason = stateChange.reason;
+			this.realtime.connection.errorReason = stateChange.reason;
 		}
 		if(newState.terminal) {
 			this.clearConnection();
