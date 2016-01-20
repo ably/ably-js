@@ -107,7 +107,7 @@ var Resource = (function() {
 			}
 
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
-				if(err && isErrATokenProblem(err)) {
+				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -149,7 +149,7 @@ var Resource = (function() {
 			}
 
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
-				if(err && isErrATokenProblem(err)) {
+				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {

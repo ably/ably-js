@@ -514,5 +514,9 @@ var Auth = (function() {
 			(this.clientId !== tokenClientId);
 	};
 
+	Auth.isTokenErr = function(error) {
+		return error.code && (error.code >= 40140) && (error.code < 40150);
+	};
+
 	return Auth;
 })();
