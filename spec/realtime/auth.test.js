@@ -470,7 +470,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId, log: {level: 1} });
+		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
 		monitorConnection(test, realtime);
 		realtime.connection.once('connected', function(){
 			test.ok(true, 'Verify connection connected');
@@ -486,6 +486,38 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 
 		monitorConnection(test, realtime);
+	};
+
+	/*
+	 * Same as previous but with no way to generate a new token
+	 */
+	exports.auth_token_string_expiry_with_token = function(test) {
+		test.expect(5);
+
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		rest.auth.requestToken({ttl: 5000, clientId: clientId}, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+			realtime = helper.AblyRealtime({ token: tokenDetails.token, clientId: clientId });
+			realtime.connection.once('connected', function(){
+				test.ok(true, 'Verify connection connected');
+				realtime.connection.once('disconnected', function(stateChange){
+					test.ok(true, 'Verify connection disconnected');
+					test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+					realtime.connection.once('failed', function(stateChange){
+						/* Library has no way to generate a new token, so should fail */
+						test.ok(true, 'Verify connection failed');
+						test.equal(stateChange.reason.code, 40101, 'Verify correct failure code');
+						realtime.close();
+						test.done();
+					});
+				});
+			});
+		});
 	};
 
 	return module.exports = helper.withTimeout(exports);
