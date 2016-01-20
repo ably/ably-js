@@ -1,5 +1,8 @@
 var Resource = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var isErrATokenProblem = function(error) {
+		return error.code && (error.code >= 40140) && (error.code < 40150);
+	};
 
 	function Resource() {}
 
@@ -104,7 +107,7 @@ var Resource = (function() {
 			}
 
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
-				if(err && err.code == 40140) {
+				if(err && isErrATokenProblem(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -146,7 +149,7 @@ var Resource = (function() {
 			}
 
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
-				if(err && err.code == 40140) {
+				if(err && isErrATokenProblem(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {

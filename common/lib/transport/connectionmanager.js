@@ -8,12 +8,15 @@ var ConnectionManager = (function() {
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 
+	var isErrATokenProblem = function(error) {
+		return error.code && (error.code >= 40140) && (error.code < 40150);
+	};
+
 	var isErrFatal = function(err) {
-		var RESOLVABLE_ERROR_CODES = [40140];
 		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
 
 		if(err.code) {
-			if(Utils.arrIn(RESOLVABLE_ERROR_CODES, err.code)) return false;
+			if(isErrATokenProblem(err)) return false;
 			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
 			return (err.code >= 40000 && err.code < 50000)
 		}
@@ -94,6 +97,7 @@ var ConnectionManager = (function() {
 		};
 		this.state = this.states.initialized;
 		this.error = null;
+		this.disconnectReason = null;
 
 		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
@@ -452,6 +456,7 @@ var ConnectionManager = (function() {
 		/* notify the state change if previously not connected */
 		if(existingState !== this.states.connected) {
 			this.notifyState({state: 'connected'});
+			this.disconnectReason = null;
 		}
 
 		/* Gracefully terminate existing protocol */
@@ -585,6 +590,9 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
+		if(newState === this.states.disconnected) {
+			this.disconnectReason = stateChange.reason;
+		}
 		if(newState.terminal) {
 			this.error = stateChange.reason;
 			this.clearConnection();
@@ -755,9 +763,9 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(err.code == 40140) {
+			if(isErrATokenProblem(err)) {
 				/* re-get a token */
-				auth.authorise(null, null, function(err) {
+				auth.authorise(null, {force: true}, function(err) {
 					if(err) {
 						connectErr(err);
 						return;
@@ -769,7 +777,7 @@ var ConnectionManager = (function() {
 
 			/* Only allow connection to be 'failed' if err has a definite unrecoverable
 			 * code from realtime; otherwise err on the side of 'disconnected' so will
-			 * retry. (Note: 40140 case is dealt with above) */
+			 * retry. (Note: token problems case is dealt with above) */
 			if(err.code && isErrFatal(err))
 				self.notifyState({state: 'failed', error: err});
 			else
@@ -790,7 +798,8 @@ var ConnectionManager = (function() {
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.authorise(null, null, function(err) {
+			var authOptions = (this.disconnectReason && isErrATokenProblem(this.disconnectReason)) ? {force: true} : null;
+			auth.authorise(null, authOptions, function(err) {
 				if(err)
 					connectErr(err);
 				else

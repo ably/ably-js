@@ -395,6 +395,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			clientRealtime = helper.AblyRealtime({ tokenDetails: tokenDetails });
+			monitorConnection(test, clientRealtime);
 			clientRealtime.connection.once('connected', function(){
 				test.ok(true, 'Verify connection connected');
 				clientRealtime.connection.once('disconnected', function(stateChange){
@@ -406,6 +407,85 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				});
 			});
 		});
+	};
+
+
+	/*
+	 * If using authcallback when a token expires, should automatically request a
+	 * new token
+	 */
+	exports.auth_tokenDetails_expiry_with_authcallback = function(test) {
+		test.expect(4);
+
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		var authCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 5000;
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
+
+		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+		monitorConnection(test, realtime);
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			realtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection disconnected');
+				test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+				realtime.connection.once('connected', function(){
+					test.ok(true, 'Verify connection reconnected');
+					realtime.close();
+					test.done();
+				});
+			});
+		});
+
+		monitorConnection(test, realtime);
+	};
+
+	/*
+	 * Same as previous but with just a token, so ably-js doesn't know that the
+	 * token's expired
+	 */
+	exports.auth_token_string_expiry_with_authcallback = function(test) {
+		test.expect(4);
+
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		var authCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 5000;
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId, log: {level: 1} });
+		monitorConnection(test, realtime);
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			realtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection disconnected');
+				test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+				realtime.connection.once('connected', function(){
+					test.ok(true, 'Verify connection reconnected');
+					realtime.close();
+					test.done();
+				});
+			});
+		});
+
+		monitorConnection(test, realtime);
 	};
 
 	return module.exports = helper.withTimeout(exports);
