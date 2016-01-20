@@ -1195,5 +1195,36 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		runTestWithEventListener(test, channelName, eventListener, enterOn);
 	};
 
+	/*
+	 * Check that JSON-encodable presence messages are encoded correctly
+	 */
+	exports.presenceJsonEncoding = function(test) {
+		test.expect(3);
+		var data = {'foo': 'bar'},
+			encodedData = JSON.stringify(data);
+
+		var realtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+
+			transport.send = function(message) {
+				if(message.action === 14) {
+					var presence = message.presence[0];
+					console.log(JSON.stringify(presence))
+					test.equal(presence.action, 2, 'Enter action');
+					test.equal(presence.data, encodedData, 'Correctly encoded data');
+					test.equal(presence.encoding, 'json', 'Correct encoding');
+					closeAndFinish(test, realtime);
+				}
+				originalSend.apply(transport, arguments);
+			};
+
+			var channel = realtime.channels.get('presence-json-encoding');
+			channel.presence.enter(data);
+		});
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
