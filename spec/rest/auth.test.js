@@ -393,7 +393,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
-			},
+			}
 		], function(err) {
 			if(err) test.ok(false, "Authorise returned an error: " + helper.displayError(err));
 			test.done();

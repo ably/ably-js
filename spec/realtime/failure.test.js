@@ -219,7 +219,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(err.code, channelFailedCode, "presence get failure code");
 					callback();
 				});
-			},
+			}
 		];
 
 		try {
