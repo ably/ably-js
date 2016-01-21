@@ -186,7 +186,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			[{name: 'objectAndNumericData', data: 0}],
 			['nameAndNumericData', 0],
 			[{name: 'objectAndOtherObjectData', data: new Date()}],
-			['nameAndOtherObjectData', new Date()],
+			['nameAndOtherObjectData', new Date()]
 		];
 
 		test.expect(testArguments.length * 2);
@@ -236,7 +236,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			// valid
 			[{name: 'utf8base64', encoding: 'utf-8/base64', data: 'dGVzdERhdGE='}],
 			// invalid -- nonsense/corrupt encoding
-			[{name: 'nonsense', encoding: 'choahofhpxf', data: testData}],
+			[{name: 'nonsense', encoding: 'choahofhpxf', data: testData}]
 		];
 
 		test.expect(testArguments.length * 4); // One for sending, one for receiving, one each for data & encoding

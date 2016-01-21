@@ -104,7 +104,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							cb();
 						});
 					});
-				},
+				}
 			]
 
 			test.expect(tests.length);
