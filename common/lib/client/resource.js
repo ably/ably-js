@@ -1,8 +1,5 @@
 var Resource = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
-	var isErrATokenProblem = function(error) {
-		return error.code && (error.code >= 40140) && (error.code < 40150);
-	};
 
 	function Resource() {}
 
