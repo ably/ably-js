@@ -4,7 +4,7 @@
   "version": "0.8.13",
   "main": "./nodejs/index.js",
   "dependencies": {
-    "async": "~0.9",
+    "async": "git://github.com/ably-forks/async#requirejs",
     "buffertools": "^2.1.3",
     "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit",
     "hexy": "~0.2",
