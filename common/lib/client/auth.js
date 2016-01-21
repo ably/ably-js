@@ -290,7 +290,10 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(params, authOptions, cb); };
 		} else {
-			throw new Error('Auth.requestToken(): authOptions must include valid authentication parameters');
+			var msg = "Need a new token, but authOptions does not include any way to request one";
+			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+			callback(new ErrorInfo(msg, 40101, 401));
+			return;
 		}
 
 		/* normalise token params */
@@ -512,6 +515,10 @@ var Auth = (function() {
 			tokenClientId &&
 			(tokenClientId !== '*') &&
 			(this.clientId !== tokenClientId);
+	};
+
+	Auth.isTokenErr = function(error) {
+		return error.code && (error.code >= 40140) && (error.code < 40150);
 	};
 
 	return Auth;

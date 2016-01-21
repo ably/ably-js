@@ -8,18 +8,17 @@ var ConnectionManager = (function() {
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 
-	var isErrFatal = function(err) {
-		var RESOLVABLE_ERROR_CODES = [40140];
+	function isFatalErr(err) {
 		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
 
 		if(err.code) {
-			if(Utils.arrIn(RESOLVABLE_ERROR_CODES, err.code)) return false;
+			if(Auth.isTokenErr(err)) return false;
 			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
 			return (err.code >= 40000 && err.code < 50000)
 		}
-		// If no statusCode either, assume false
+		/* If no statusCode either, assume false */
 		return err.statusCode < 500;
-	};
+	}
 
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
@@ -93,7 +92,7 @@ var ConnectionManager = (function() {
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
 		this.state = this.states.initialized;
-		this.error = null;
+		this.errorReason = null;
 
 		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
@@ -241,7 +240,7 @@ var ConnectionManager = (function() {
 			}
 			if(err) {
 				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(isErrFatal(err)) {
+				if(isFatalErr(err)) {
 					callback(err);
 					return;
 				}
@@ -298,7 +297,7 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(isErrFatal(err)) {
+						if(isFatalErr(err)) {
 							callback(err);
 							return;
 						}
@@ -313,7 +312,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(isErrFatal(err)) {
+				if(isFatalErr(err)) {
 					callback(err);
 					return;
 				}
@@ -452,6 +451,8 @@ var ConnectionManager = (function() {
 		/* notify the state change if previously not connected */
 		if(existingState !== this.states.connected) {
 			this.notifyState({state: 'connected'});
+			this.errorReason = null;
+			this.realtime.connection.errorReason = null;
 		}
 
 		/* Gracefully terminate existing protocol */
@@ -494,7 +495,7 @@ var ConnectionManager = (function() {
 		if(wasActive || (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
-			if((state === 'failed') && error && !isErrFatal(error)) {
+			if((state === 'failed') && error && !isFatalErr(error)) {
 				state = 'disconnected';
 			}
 			this.notifyState({state: state, error: error});
@@ -585,8 +586,11 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
+		if(stateChange.reason) {
+			this.errorReason = stateChange.reason;
+			this.realtime.connection.errorReason = stateChange.reason;
+		}
 		if(newState.terminal) {
-			this.error = stateChange.reason;
 			this.clearConnection();
 		}
 		this.emit('connectionstate', stateChange);
@@ -755,9 +759,9 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(err.code == 40140) {
+			if(Auth.isTokenErr(err)) {
 				/* re-get a token */
-				auth.authorise(null, null, function(err) {
+				auth.authorise(null, {force: true}, function(err) {
 					if(err) {
 						connectErr(err);
 						return;
@@ -769,8 +773,8 @@ var ConnectionManager = (function() {
 
 			/* Only allow connection to be 'failed' if err has a definite unrecoverable
 			 * code from realtime; otherwise err on the side of 'disconnected' so will
-			 * retry. (Note: 40140 case is dealt with above) */
-			if(err.code && isErrFatal(err))
+			 * retry. (Note: token problems case is dealt with above) */
+			if(err.code && isFatalErr(err))
 				self.notifyState({state: 'failed', error: err});
 			else
 				self.notifyState({state: self.states.connecting.failState, error: err});
@@ -790,7 +794,8 @@ var ConnectionManager = (function() {
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.authorise(null, null, function(err) {
+			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
+			auth.authorise(null, authOptions, function(err) {
 				if(err)
 					connectErr(err);
 				else
@@ -875,7 +880,7 @@ var ConnectionManager = (function() {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-				callback(this.error);
+				callback(this.errorReason);
 			}
 		}
 	};
