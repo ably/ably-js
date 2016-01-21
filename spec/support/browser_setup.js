@@ -53,9 +53,6 @@ require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','
 			},
 			'browser-base64': {
 				exports: 'Base64'
-			},
-			'async': {
-				exports: 'async'
 			}
 		},
 
