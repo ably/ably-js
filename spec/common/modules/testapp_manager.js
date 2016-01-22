@@ -208,6 +208,10 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		};
 
 		httpReq(getOptions, function(err, data) {
+			if(err) {
+				callback(err);
+				return;
+			}
 			try {
 				data = JSON.parse(data);
 			} catch(e) {
