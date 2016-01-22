@@ -57,7 +57,7 @@ module.exports = function(config) {
     sl_safari_9: {
       base: 'SauceLabs',
       browserName: 'safari',
-      platform: 'OS X El Capitan',
+      platform: 'OS X 10.11',
       version: '9'
     },
     sl_ios_safari_8_4: {
@@ -125,6 +125,16 @@ module.exports = function(config) {
       'spec/support/nodeunit.js'
     ],
 
+    customHeaders: [{
+      match: '.*',
+      name: 'Access-Control-Allow-Origin',
+      value: '*'
+    },
+    {
+      match: '.*',
+      name: 'Access-Control-Allow-Methods',
+      value: '*'
+    }],
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
