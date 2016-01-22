@@ -401,7 +401,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				clientRealtime.connection.once('disconnected', function(stateChange){
 					test.ok(true, 'Verify connection disconnected');
 					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
-					test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
 					clientRealtime.close();
 					test.done();
 				});
@@ -437,7 +437,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(true, 'Verify connection connected');
 			realtime.connection.once('disconnected', function(stateChange){
 				test.ok(true, 'Verify connection disconnected');
-				test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
 				realtime.connection.once('connected', function(){
 					test.ok(true, 'Verify connection reconnected');
 					realtime.close();
@@ -476,7 +476,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(true, 'Verify connection connected');
 			realtime.connection.once('disconnected', function(stateChange){
 				test.ok(true, 'Verify connection disconnected');
-				test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
 				realtime.connection.once('connected', function(){
 					test.ok(true, 'Verify connection reconnected');
 					realtime.close();
@@ -507,7 +507,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.ok(true, 'Verify connection connected');
 				realtime.connection.once('disconnected', function(stateChange){
 					test.ok(true, 'Verify connection disconnected');
-					test.equal(stateChange.reason.code, 40140, 'Verify correct disconnect code');
+					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
 					realtime.connection.once('failed', function(stateChange){
 						/* Library has no way to generate a new token, so should fail */
 						test.ok(true, 'Verify connection failed');
