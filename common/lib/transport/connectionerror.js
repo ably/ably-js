@@ -1,32 +1,32 @@
 var ConnectionError = {
-	disconnected: {
+	disconnected: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80003,
 		message: 'Connection to server temporarily unavailable'
-	},
-	suspended: {
+	}),
+	suspended: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80002,
 		message: 'Connection to server unavailable'
-	},
-	failed: {
+	}),
+	failed: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80000,
 		message: 'Connection failed or disconnected by server'
-	},
-	closed: {
+	}),
+	closed: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80017,
 		message: 'Connection closed'
-	},
-	unknownConnectionErr: {
+	}),
+	unknownConnectionErr: ErrorInfo.fromValues({
 		statusCode: 500,
 		code: 50002,
 		message: 'Internal connection error'
-	},
-	unknownChannelErr: {
+	}),
+	unknownChannelErr: ErrorInfo.fromValues({
 		statusCode: 500,
 		code: 50001,
 		message: 'Internal channel error'
-	}
+	})
 };
