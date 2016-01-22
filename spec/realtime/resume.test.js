@@ -150,7 +150,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	testOnAllTransports(exports, 'resume_inactive', function(realtimeOpts) { return function(test) {
 		resume_inactive(test, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
-	}});
+	}}, /* excludeUpgrade: */ true);
 
 	/**
 	 * Simple resume case
@@ -262,7 +262,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	testOnAllTransports(exports, 'resume_active', function(realtimeOpts) { return function(test) {
 		resume_active(test, 'resume_active' + String(Math.random()), {}, realtimeOpts);
-	}});
+	}}, /* excludeUpgrade: */ true);
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });
