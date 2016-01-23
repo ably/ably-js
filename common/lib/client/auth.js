@@ -432,7 +432,7 @@ var Auth = (function() {
 				authoriseCb();
 				return;
 			}
-			if(authOptions.queryTime) {
+			if(authOptions.queryTime || (typeof queryTime == 'undefined' && Rest.prototype.serverTimeOffset === null )) {
 				rest.time(function(err, time) {
 					if(err) {callback(err); return;}
 					request.timestamp = time;
@@ -507,7 +507,7 @@ var Auth = (function() {
 	};
 
 	Auth.prototype.getTimestamp = function() {
-		return Date.now() + (this.rest.serverTimeOffset || 0);
+		return Date.now() + (Rest.prototype.serverTimeOffset || 0);
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
