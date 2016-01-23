@@ -10,32 +10,38 @@ define(['shared_helper'], function(helper) {
 	var path = require('path');
 	var vm   = require('vm');
 
-	var context = vm.createContext({
-		require:require,
-		console:console,
-		process:process,
-		Buffer:Buffer,
-		setTimeout:setTimeout,
-		setInterval:setInterval,
-		clearTimeout:clearTimeout,
-		clearInterval:clearInterval,
-		global:global
-	});
+	var instantiateFreshLogger = function() {
+		
+		var context = vm.createContext({
+			require:require,
+			console:console,
+			process:process,
+			Buffer:Buffer,
+			setTimeout:setTimeout,
+			setInterval:setInterval,
+			clearTimeout:clearTimeout,
+			clearInterval:clearInterval,
+			global:global
+		});
 
-	var includeScript = function(name) {
-		var filename = path.resolve(__dirname, name);
-		return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
-	};
+		var includeScript = function(name) {
+			var filename = path.resolve(__dirname, name);
+			return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+		};
 
-	includeScript('../../common/lib/util/logger.js');
+		includeScript('../../common/lib/util/logger.js');
 
-	var Logger = context.Logger;
+		return context.Logger;
+	}
+
 
 	/*
 	 * Check that the Logger was instantiated correctly for testing.
 	 */
 	exports.logger_instantiate = function(test) {
 		test.expect(1);
+		
+		var Logger = instantiateFreshLogger(); 
 
 		test.equal(typeof Logger, 'function', 'Instantiated logger');
 		
@@ -46,7 +52,13 @@ define(['shared_helper'], function(helper) {
 	 * Check that the Logger writes to stdout by default.
 	 */
 	exports.logger_writes_to_stdout = function(test) {
-		test.expect(0);
+		test.expect(1);
+
+		var Logger = instantiateFreshLogger();
+		
+		test.doesNotThrow(function() {
+			Logger.logAction(Logger.LOG_NONE,'logger_writes_to_stdout()','test message');
+		},'Logger does not throw when called');
 
 		test.done();
 	}
@@ -55,7 +67,13 @@ define(['shared_helper'], function(helper) {
 	 * Check that the default logging level is Logger.MAJOR.
 	 */
 	exports.logger_level_defaults_to_warn = function(test) {
-		test.expect(0);
+		test.expect(2);
+		
+		var Logger = instantiateFreshLogger();
+		
+		test.ok(Logger.shouldLog(Logger.LOG_MAJOR), 'Logger writes at lever MAJOR by default');
+		
+		test.equal(false,Logger.shouldLog(Logger.LOG_MINOR), 'Logger does not write at lever MINOR by default');
 
 		test.done();
 	}
@@ -65,6 +83,10 @@ define(['shared_helper'], function(helper) {
 	 */
 	exports.logger_level_change = function(test) {
 		test.expect(0);
+		
+		var Logger = instantiateFreshLogger();
+		
+		//test.ok(Logger.shouldLog)
 
 		test.done();
 	}
@@ -74,6 +96,8 @@ define(['shared_helper'], function(helper) {
 	 */
 	exports.logger_custom = function(test) {
 		test.expect(0);
+		
+		var Logger = instantiateFreshLogger();
 
 		test.done();
 	}
