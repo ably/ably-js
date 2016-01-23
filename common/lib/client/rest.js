@@ -40,7 +40,6 @@ var Rest = (function() {
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 
-		this.serverTimeOffset = null;
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
 		this.auth = new Auth(this, options);
@@ -70,6 +69,8 @@ var Rest = (function() {
 		})).get(params, callback);
 	};
 
+	Rest.prototype.serverTimeOffset = null;
+
 	Rest.prototype.time = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
@@ -98,7 +99,8 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
-			self.serverTimeOffset = (time - Utils.now());
+			/* calculate time offset only once for this device by adding to the prototype */
+			Rest.prototype.serverTimeOffset = (time - Date.now());
 			callback(null, time);
 		});
 	};
