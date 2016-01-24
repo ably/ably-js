@@ -115,7 +115,7 @@ var XHRRequest = (function() {
 			xhr.setRequestHeader(h, headers[h]);
 
 		var errorHandler = function(errorEvent, message, code, statusCode) {
-			var errorMessage = message + ', errorEvent was ' + Utils.inspect(errorEvent) + ', current statusText is ' + self.xhr.statusText;
+			var errorMessage = message + ', errorEvent type was ' + errorEvent.type + ', current statusText is ' + self.xhr.statusText;
 			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
