@@ -1,6 +1,6 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
@@ -167,9 +167,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					/* publish events */
 					var restChannel = rest.channels.get('publishVariations');
-					for(var i = 0; i < testArguments.length; i++) {
-						restChannel.publish.apply(restChannel, testArguments[i]);
-					}
+					async.eachSeries(testArguments, function iterator(item, callback) {
+						try {
+							restChannel.publish(item, function(err) {
+								callback(err);
+							});
+						} catch (e) {
+							test.ok(false, "Failed to publish");
+						}
+					}, function() {});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -287,14 +293,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					/* publish events */
 					var restChannel = rest.channels.get('publishEncodings');
-					for(var i = 0; i < testArguments.length; i++) {
+					async.eachSeries(testArguments, function iterator(item, callback) {
 						try {
-							restChannel.publish.apply(restChannel, testArguments[i]);
-							test.ok(true, "Successfully published");
+							restChannel.publish(item, function(err) {
+								test.ok(!err, "Successfully published");
+								callback(err);
+							});
 						} catch (e) {
 							test.ok(false, "Failed to publish");
 						}
-					}
+					}, function() {});
 				});
 			});
 			monitorConnection(test, realtime);
