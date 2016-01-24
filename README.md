@@ -339,11 +339,12 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 ## Contributing
 
 1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+2. When pulling to local, make sure to also pull the `ably-common` repo (`git submodule init && git submodule update`)
+3. Create your feature branch (`git checkout -b my-new-feature`)
+4. Commit your changes (`git commit -am 'Add some feature'`)
+5. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
+6. Push to the branch (`git push origin my-new-feature`)
+7. Create a new Pull Request
 
 ## Releasing
 
