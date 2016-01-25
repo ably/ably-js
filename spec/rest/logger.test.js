@@ -1,27 +1,29 @@
 "use strict";
 
 define(['shared_helper'], function(helper) {
+	var exports = {};
 
 	/* Because the Logger cannot be loaded as a module, we mimic here the loading mechanism
 	 * used in /nodejs/realtime.js and /nodejs/rest.js to get a reference to the Logger instance.
 	 * If we are in a browser, we just clone the object from the global context to get a "fresh"
 	 * instance for isolated testing.
 	 */
-	
-	var isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
+
+	var isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document);
 
 	var fs,path,vm;
-	if ((typeof(window) != 'object')) {
+	if (!isBrowser) {
 		fs   = require('fs');
 		path = require('path');
 		vm   = require('vm');
 	}
-	
-	var instantiateFreshLogger = function(customOutput) {
 
-		if (isBrowser)
-			return Object.create(Logger,customOutput);
-		
+	var instantiateFreshLogger = function() {
+
+		if (isBrowser) {
+			return Object.create(Logger);
+		}
+
 		var context = vm.createContext({
 			require:require,
 			console:console,
@@ -49,11 +51,10 @@ define(['shared_helper'], function(helper) {
 	 */
 	exports.logger_instantiate = function(test) {
 		test.expect(1);
-		
-		var Logger = instantiateFreshLogger(); 
 
-		test.equal(typeof Logger, 'function', 'Instantiated logger');
-		
+		var Logger = instantiateFreshLogger(); 
+		test.equal(typeof(Logger), 'function', 'Instantiated logger');
+
 		test.done();
 	};
 
@@ -64,7 +65,7 @@ define(['shared_helper'], function(helper) {
 		test.expect(1);
 
 		var Logger = instantiateFreshLogger();
-		
+
 		test.doesNotThrow(function() {
 			Logger.logAction(Logger.LOG_NONE,'logger_writes_to_stdout()','test message');
 		},'Logger does not throw when called');
@@ -85,7 +86,7 @@ define(['shared_helper'], function(helper) {
 
 		test.done();
 	}
-	
+
 	/*
 	 * Check that the logging level can be changed.
 	 */
