@@ -488,11 +488,14 @@ var ConnectionManager = (function() {
 		this.emit('transport.inactive', transport);
 
 		/* this transport state change is a state change for the connectionmanager if
-		 * - the transport was the active transport; or
+		 * - the transport was the active transport and there are no transports
+		 *   which are connected and scheduled for activation, just waiting for the
+		 *   active transport to finish what its doing; or
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
-		if(wasActive || (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+		if((wasActive && this.noTransportsScheduledForActivation()) ||
+			 (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
 			if((state === 'failed') && error && !isFatalErr(error)) {
@@ -500,6 +503,16 @@ var ConnectionManager = (function() {
 			}
 			this.notifyState({state: state, error: error});
 		}
+	};
+
+	/* Helper that returns true if there are no transports which are pending,
+	* have been connected, and are just waiting for onceNoPending to fire before
+	* being activated */
+	ConnectionManager.prototype.noTransportsScheduledForActivation = function() {
+		return Utils.isEmpty(this.pendingTransports) ||
+			this.pendingTransports.every(function(transport) {
+				return !transport.isConnected;
+			});
 	};
 
 	/**
