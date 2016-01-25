@@ -7,6 +7,8 @@ define(['shared_helper'], function(helper) {
 	 * If we are in a browser, we just clone the object from the global context to get a "fresh"
 	 * instance for isolated testing.
 	 */
+	
+	var isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
 
 	var fs,path,vm;
 	if ((typeof(window) != 'object')) {
@@ -17,7 +19,7 @@ define(['shared_helper'], function(helper) {
 	
 	var instantiateFreshLogger = function(customOutput) {
 
-		if (typeof(window) == 'object')
+		if (isBrowser)
 			return Object.create(Logger,customOutput);
 		
 		var context = vm.createContext({
@@ -69,7 +71,7 @@ define(['shared_helper'], function(helper) {
 
 		test.done();
 	}
-	
+
 	/*
 	 * Check that the default logging level is Logger.MAJOR.
 	 */
