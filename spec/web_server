@@ -32,6 +32,7 @@ server.get('/support/browser_file_list.js', function(req, res) {
 server.use('/node_modules', express.static(__dirname + '/../node_modules'));
 server.use('/spec', express.static(__dirname));
 server.use('/browser', express.static(__dirname + '/../browser'));
+server.use('/common/lib/util', express.static(__dirname + '/../common/lib/util'));
 server.use(express.static(__dirname));
 
 var port = process.env.PORT || 3000;
