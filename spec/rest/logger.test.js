@@ -3,26 +3,19 @@
 define(['shared_helper'], function(helper) {
 	var exports = {};
 
-	/* Because the Logger cannot be loaded as a module, we mimic here the loading mechanism
-	 * used in /nodejs/realtime.js and /nodejs/rest.js to get a reference to the Logger instance.
-	 * If we are in a browser, we just clone the object from the global context to get a "fresh"
-	 * instance for isolated testing.
+	/* Because the logger cannot be loaded as a module, we mimic here the loading mechanism
+	 * used in /nodejs/realtime.js and /nodejs/rest.js to get a reference to the logger instance.
+	 * If we are in a browser, the logger is already loaded manually via a script tag.
 	 */
 
 	var isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document);
 
-	var fs,path,vm;
-	if (!isBrowser) {
-		fs   = require('fs');
-		path = require('path');
-		vm   = require('vm');
-	}
+	var logger = isBrowser ? Logger : (function() {
 
-	var instantiateFreshLogger = function() {
-
-		if (isBrowser) {
-			return Object.create(Logger);
-		}
+		var
+			fs   = require('fs'),
+			path = require('path'),
+			vm   = require('vm');
 
 		var context = vm.createContext({
 			require:require,
@@ -43,46 +36,41 @@ define(['shared_helper'], function(helper) {
 
 		includeScript('../../common/lib/util/logger.js');
 
-		return context.Logger;
-	}
-
+		return context.logger;
+	})();
+	
 	/*
-	 * Check that the Logger was instantiated correctly for testing.
+	 * Check that the logger was instantiated correctly for testing.
 	 */
 	exports.logger_instantiate = function(test) {
 		test.expect(1);
 
-		var Logger = instantiateFreshLogger(); 
-		test.equal(typeof(Logger), 'function', 'Instantiated logger');
+		test.equal(typeof(logger), 'function', 'Instantiated logger');
 
 		test.done();
 	};
 
 	/*
-	 * Check that the Logger writes to stdout by default with no errors.
+	 * Check that the logger writes to stdout by default with no errors.
 	 */
 	exports.logger_writes_to_stdout = function(test) {
 		test.expect(1);
 
-		var Logger = instantiateFreshLogger();
-
 		test.doesNotThrow(function() {
-			Logger.logAction(Logger.LOG_NONE,'logger_writes_to_stdout()','test message');
-		},'Logger does not throw when called');
+			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
+		},'logger does not throw when called');
 
 		test.done();
 	}
 
 	/*
-	 * Check that the default logging level is Logger.MAJOR.
+	 * Check that the default logging level is logger.MAJOR.
 	 */
 	exports.logger_level_defaults_to_warn = function(test) {
 		test.expect(2);
 		
-		var Logger = instantiateFreshLogger();
-		
-		test.equal(true, Logger.shouldLog(Logger.LOG_MAJOR), 'Logger writes at level MAJOR by default');
-		test.equal(false,Logger.shouldLog(Logger.LOG_MINOR), 'Logger does not write at lever MINOR by default');
+		test.equal(true, logger.shouldLog(logger.LOG_MAJOR), 'logger writes at level MAJOR by default');
+		test.equal(false,logger.shouldLog(logger.LOG_MINOR), 'logger does not write at lever MINOR by default');
 
 		test.done();
 	}
@@ -91,22 +79,13 @@ define(['shared_helper'], function(helper) {
 	 * Check that the logging level can be changed.
 	 */
 	exports.logger_level_change = function(test) {
-		test.expect(5);
+		test.expect(3);
 		
-		var Logger = instantiateFreshLogger();
-		
-		test.equal(true, Logger.shouldLog(Logger.LOG_MAJOR), 'Logger writes at level MAJOR before changing level');
-		test.equal(false,Logger.shouldLog(Logger.LOG_MINOR), 'Logger does not write at lever MINOR before changing level');
-		
-		Logger.setLog(Logger.LOG_MICRO);
-		
-		test.equal(true, Logger.shouldLog(Logger.LOG_MICRO), 'Logger writes at level MICRO when set to MICRO');
-
-		Logger.setLog(Logger.LOG_MINOR);
-		
-		test.equal(false, Logger.shouldLog(Logger.LOG_MICRO), 'Logger does not write at level MICRO when set to MINOR');
-		test.equal(true, Logger.shouldLog(Logger.LOG_MINOR), 'Logger writes at level MINOR when set to MINOR');
-
+		logger.setLog(logger.LOG_MICRO);
+		test.equal(true, logger.shouldLog(logger.LOG_MICRO), 'logger writes at level MICRO when set to MICRO');
+		logger.setLog(logger.LOG_MINOR);
+		test.equal(false, logger.shouldLog(logger.LOG_MICRO), 'logger does not write at level MICRO when set to MINOR');
+		test.equal(true, logger.shouldLog(logger.LOG_MINOR), 'logger writes at level MINOR when set to MINOR');
 
 		test.done();
 	}
@@ -117,7 +96,7 @@ define(['shared_helper'], function(helper) {
 	exports.logger_custom = function(test) {
 		test.expect(1);
 		
-		var customLogger = (function() {
+		var customlogger = (function() {
 			return {
 				lastMessage: null,
 				log: function(message) {
@@ -126,16 +105,13 @@ define(['shared_helper'], function(helper) {
 			}
 		})();
 		
-		var Logger = instantiateFreshLogger();
+		var logger = getlogger();
 		var action = 'logger_custom';
 		var message = 'test message';
-		Logger.setLog( Logger.LOG_NONE, customLogger.log );
-		
-		Logger.logAction(Logger.LOG_NONE, action, message);
-		console.log(customLogger.lastMessage);
+		logger.setLog( logger.LOG_NONE, customlogger.log );
+		logger.logAction(logger.LOG_NONE, action, message);
+		test.equal('Ably: ' + action + ': ' + message, customlogger.lastMessage);
 
-		test.equal('Ably: ' + action + ': ' + message, customLogger.lastMessage);
-		
 		test.done();
 	}
 
