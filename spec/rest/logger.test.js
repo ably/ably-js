@@ -16,7 +16,9 @@ define(['shared_helper'], function(helper) {
 		var
 			fs   = require('fs'),
 			path = require('path'),
-			vm   = require('vm'),
+			vm   = require('vm');
+		
+		var
 			context = vm.createContext({
 				require:require,
 				console:console,
@@ -27,7 +29,9 @@ define(['shared_helper'], function(helper) {
 				clearTimeout:clearTimeout,
 				clearInterval:clearInterval,
 				global:global
-			}),
+			});
+
+		var
 			includeScript = function(name) {
 				var filename = path.resolve(__dirname, name);
 				return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
@@ -35,7 +39,7 @@ define(['shared_helper'], function(helper) {
 
 		includeScript('../../common/lib/util/logger.js');
 
-		return context.logger;
+		return context.Logger;
 	})();
 	
 	/*
