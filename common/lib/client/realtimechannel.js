@@ -467,15 +467,12 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
-		var result = false;
 		switch(this.state) {
 			case 'attaching':
 				this.attachImpl();
-				result = true;
 				break;
 			case 'detaching':
 				this.detachImpl();
-				result = true;
 				break;
 			case 'attached':
 				/* resume any sync operation that was in progress */
@@ -483,7 +480,6 @@ var RealtimeChannel = (function() {
 			default:
 				break;
 		}
-		return result;
 	};
 
 	RealtimeChannel.prototype.clearStateTimer = function() {
