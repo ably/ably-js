@@ -16,24 +16,22 @@ define(['shared_helper'], function(helper) {
 		var
 			fs   = require('fs'),
 			path = require('path'),
-			vm   = require('vm');
-
-		var context = vm.createContext({
-			require:require,
-			console:console,
-			process:process,
-			Buffer:Buffer,
-			setTimeout:setTimeout,
-			setInterval:setInterval,
-			clearTimeout:clearTimeout,
-			clearInterval:clearInterval,
-			global:global
-		});
-
-		var includeScript = function(name) {
-			var filename = path.resolve(__dirname, name);
-			return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
-		};
+			vm   = require('vm'),
+			context = vm.createContext({
+				require:require,
+				console:console,
+				process:process,
+				Buffer:Buffer,
+				setTimeout:setTimeout,
+				setInterval:setInterval,
+				clearTimeout:clearTimeout,
+				clearInterval:clearInterval,
+				global:global
+			}),
+			includeScript = function(name) {
+				var filename = path.resolve(__dirname, name);
+				return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+			};
 
 		includeScript('../../common/lib/util/logger.js');
 
@@ -84,6 +82,7 @@ define(['shared_helper'], function(helper) {
 		
 		logger.setLog(logger.LOG_MICRO);
 		test.equal(true, logger.shouldLog(logger.LOG_MICRO), 'Logger writes at level MICRO when set to MICRO');
+
 		logger.setLog(logger.LOG_MINOR);
 		test.equal(false, logger.shouldLog(logger.LOG_MICRO), 'Logger does not write at level MICRO when set to MINOR');
 		test.equal(true, logger.shouldLog(logger.LOG_MINOR), 'Logger writes at level MINOR when set to MINOR');
@@ -98,13 +97,13 @@ define(['shared_helper'], function(helper) {
 		test.expect(1);
 		
 		var lastMessage = null,
-		customlogger = function(message) {
+		customLogger = function(message) {
 			lastMessage = message;
 		},
 		action = 'logger_custom',
 		message = 'test message';
 
-		logger.setLog( logger.LOG_NONE, customlogger );
+		logger.setLog( logger.LOG_NONE, customLogger );
 		logger.logAction(logger.LOG_NONE, action, message);
 		test.equal('Ably: ' + action + ': ' + message, lastMessage, 'Logger writes correctly to custom logger');
 
