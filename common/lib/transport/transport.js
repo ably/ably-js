@@ -38,7 +38,7 @@ var Transport = (function() {
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
-			this.requestClose(true);
+			this.requestClose(false);
 		}
 		this.finish('failed', error);
 	};
