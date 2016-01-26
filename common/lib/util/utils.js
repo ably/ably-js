@@ -224,6 +224,44 @@ var Utils = (function() {
 		return result.length ? result : undefined;
 	};
 
+	Utils.arrForEach = function(arr, fn) {
+		if (Array.prototype.forEach) {
+			arr.forEach(fn);
+		} else {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				fn(arr[i], i, arr);
+			}
+		}
+	};
+
+	Utils.arrMap = function(arr, fn) {
+		if (Array.prototype.map) {
+			return arr.map(fn);
+		} else {
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				result.push(fn(arr[i], i, arr));
+			}
+			return result;
+		}
+	};
+
+	Utils.arrEvery = function(arr, fn) {
+		if (Array.prototype.every) {
+			return arr.every(fn);
+		} else {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(!fn(arr[i], i, arr)) {
+					return false;
+				};
+			}
+			return true;
+		}
+	};
+
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
 	var contentTypes = {
@@ -278,6 +316,15 @@ var Utils = (function() {
 
  		return result;
 	};
+
+	Utils.now = function() {
+		if (Date.now) {
+			return Date.now();
+		} else {
+			/* IE 8 */
+			return new Date().getTime();
+		}
+	}
 
 	Utils.inspect = function(x) {
 		return JSON.stringify(x);

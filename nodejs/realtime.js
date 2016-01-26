@@ -60,6 +60,7 @@ Realtime.BufferUtils = context.BufferUtils;
 Realtime.Crypto = context.Crypto;
 Realtime.Defaults = context.Defaults;
 Realtime.Http = context.Http;
+Realtime.Utils = context.Utils;
 Realtime.Message = context.Message;
 Realtime.PresenceMessage = context.PresenceMessage;
 Realtime.ProtocolMessage = context.ProtocolMessage;

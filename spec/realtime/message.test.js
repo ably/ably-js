@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		displayError = helper.displayError,
+		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports;
@@ -355,7 +356,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		/* subscribe to event */
 		recvchannel.subscribe('event0', function(msg) {
 			test.ok(true, 'Received event0');
-			test.notEqual(-1, messagesSent.indexOf(msg.data), 'Received unexpected message text');
+			test.notEqual(-1, utils.arrIndexOf(messagesSent, msg.data), 'Received unexpected message text');
 			if(!--count) {
 				clearInterval(timer);
 				closeAndFinish(test, realtime);

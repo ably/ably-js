@@ -39,7 +39,7 @@ var ProtocolMessage = (function() {
 	};
 
 	ProtocolMessage.ActionName = [];
-	Object.keys(ProtocolMessage.Action).forEach(function(name) {
+	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
 		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
 	});
 

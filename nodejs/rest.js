@@ -45,3 +45,4 @@ Rest.BufferUtils = context.BufferUtils;
 Rest.Crypto = context.Crypto;
 Rest.Defaults = context.Defaults;
 Rest.Http = context.Http;
+Rest.Utils = context.Utils;

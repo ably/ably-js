@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, rest, exports = {},
 			displayError = helper.displayError,
+			utils = helper.Utils,
 			testMessages = [
 				{ name: 'event0',
 					data: 'some data' },
@@ -35,7 +36,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		/* first, send a number of events to this channel */
 
-		var publishTasks = testMessages.map(function(event) {
+		var publishTasks = utils.arrMap(testMessages, function(event) {
 			return function(publishCb) {
 				testchannel.publish(event.name, event.data, publishCb);
 			};
@@ -66,8 +67,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 					/* verify message ids are unique */
 					var ids = {};
-					messages.forEach(function(msg) { ids[msg.id] = msg; });
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					utils.arrForEach(messages, function(msg) { ids[msg.id] = msg; });
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
@@ -110,8 +111,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 					/* verify message ids are unique */
 					var ids = {};
-					messages.forEach(function(msg) { ids[msg.id] = msg; });
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					utils.arrForEach(messages, function(msg) { ids[msg.id] = msg; });
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
@@ -179,7 +180,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 					/* verify message ids are unique */
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
@@ -245,7 +246,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 					/* verify message ids are unique */
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
@@ -310,7 +311,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 					/* verify message ids are unique */
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
@@ -374,7 +375,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 					/* verify message ids are unique */
-					test.equal(Object.keys(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
+					test.equal(utils.keysArray(ids).length, testMessages.length, 'Verify correct number of distinct message ids found');
 					test.done();
 				});
 			});
