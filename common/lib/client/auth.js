@@ -432,7 +432,7 @@ var Auth = (function() {
 				authoriseCb();
 				return;
 			}
-			if(authOptions.queryTime || (typeof(authOptions.queryTime) === 'undefined' && Rest.prototype.serverTimeOffset === null )) {
+			if(authOptions.queryTime) {
 				rest.time(function(err, time) {
 					if(err) {callback(err); return;}
 					request.timestamp = time;
