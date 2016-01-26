@@ -205,7 +205,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(prop);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	/*
