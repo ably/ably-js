@@ -126,7 +126,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		/* first, send a number of events to this channel */
 		test.expect(5 * testMessages.length - 1);
-		var publishTasks = testMessages.map(function(event) {
+		var publishTasks = utils.arrMap(testMessages, function(event) {
 			return function(publishCb) {
 				testchannel.publish(event.name, event.data, publishCb);
 			};
@@ -194,7 +194,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		/* first, send a number of events to this channel */
 		test.expect(4 * testMessages.length);
-		var publishTasks = testMessages.map(function(event) {
+		var publishTasks = utils.arrMap(testMessages, function(event) {
 			return function(publishCb) {
 				testchannel.publish(event.name, event.data, publishCb);
 			};
