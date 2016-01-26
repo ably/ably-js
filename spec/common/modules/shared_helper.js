@@ -6,10 +6,7 @@
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
-		// Ably.Realtime.ConnectionManager not defined in node
-		var availableTransports = typeof clientModule.Ably.Realtime.ConnectionManager === 'undefined' ?
-			clientModule.Ably.Realtime.Defaults.transports :
-				utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.transports),
+		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.transports),
 			bestTransport = availableTransports[0];
 
 		var displayError = function(err) {
