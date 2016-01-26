@@ -64,3 +64,4 @@ Realtime.Utils = context.Utils;
 Realtime.Message = context.Message;
 Realtime.PresenceMessage = context.PresenceMessage;
 Realtime.ProtocolMessage = context.ProtocolMessage;
+Realtime.ConnectionManager = context.ConnectionManager;
