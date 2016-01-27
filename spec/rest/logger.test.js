@@ -62,18 +62,33 @@ define(['shared_helper'], function(helper) {
 		test.doesNotThrow(function() {
 			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
 		},'logger does not throw when called');
+		
+		//TODO replace process.stdout with a hookable stream
 
 		test.done();
 	}
 
 	/*
-	 * Check that the default logging level is logger.MAJOR.
+	 * Check that a custom logger can be used. Check that the default logging level is logger.MAJOR.
 	 */
 	exports.logger_level_defaults_to_warn = function(test) {
-		test.expect(2);
+		test.expect(4);
 		
-		test.equal(true, logger.shouldLog(logger.LOG_MAJOR), 'Logger writes at level MAJOR by default');
-		test.equal(false,logger.shouldLog(logger.LOG_MINOR), 'Logger does not write at lever MINOR by default');
+		var lastMessage = '',
+		customLogger = function(message) {
+			lastMessage += message + "\n";
+		};
+		logger.setLog(undefined, customLogger);
+		
+		logger.logAction(logger.LOG_ERROR, 'Error level message');
+		logger.logAction(logger.LOG_MAJOR, 'Major level message');
+		logger.logAction(logger.LOG_MINOR, 'Minor level message');
+		logger.logAction(logger.LOG_MICRO, 'Micro level message');
+
+		test.ok(lastMessage.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
+		test.ok(lastMessage.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
+		test.ok(lastMessage.indexOf('Minor level message') < 0, 'Logger does not write at lever MINOR by default');
+		test.ok(lastMessage.indexOf('Micro level message') < 0, 'Logger does not write at level MICRO by default');
 
 		test.done();
 	}
@@ -82,34 +97,23 @@ define(['shared_helper'], function(helper) {
 	 * Check that the logging level can be changed.
 	 */
 	exports.logger_level_change = function(test) {
-		test.expect(3);
-		
-		logger.setLog(logger.LOG_MICRO);
-		test.equal(true, logger.shouldLog(logger.LOG_MICRO), 'Logger writes at level MICRO when set to MICRO');
+		test.expect(4);
 
-		logger.setLog(logger.LOG_MINOR);
-		test.equal(false, logger.shouldLog(logger.LOG_MICRO), 'Logger does not write at level MICRO when set to MINOR');
-		test.equal(true, logger.shouldLog(logger.LOG_MINOR), 'Logger writes at level MINOR when set to MINOR');
-
-		test.done();
-	}
-	
-	/*
-	 * Check that a custom logger can be used.
-	 */
-	exports.logger_custom = function(test) {
-		test.expect(1);
-		
-		var lastMessage = null,
+		var lastMessage = '',
 		customLogger = function(message) {
-			lastMessage = message;
-		},
-		action = 'logger_custom',
-		message = 'test message';
+			lastMessage += message + "\n";
+		};
+		logger.setLog(logger.LOG_MICRO, customLogger);
+		
+		logger.logAction(logger.LOG_ERROR, 'Error level message');
+		logger.logAction(logger.LOG_MAJOR, 'Major level message');
+		logger.logAction(logger.LOG_MINOR, 'Minor level message');
+		logger.logAction(logger.LOG_MICRO, 'Micro level message');
 
-		logger.setLog( logger.LOG_NONE, customLogger );
-		logger.logAction(logger.LOG_NONE, action, message);
-		test.equal('Ably: ' + action + ': ' + message, lastMessage, 'Logger writes correctly to custom logger');
+		test.ok(lastMessage.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
+		test.ok(lastMessage.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
+		test.ok(lastMessage.indexOf('Minor level message') >= 0, 'Logger does not write at lever MINOR by default');
+		test.ok(lastMessage.indexOf('Micro level message') >= 0, 'Logger does not write at level MICRO by default');
 
 		test.done();
 	}
