@@ -69,6 +69,9 @@ var Rest = (function() {
 		})).get(params, callback);
 	};
 
+	/* Explicitly set serverTimeOffset to null ensuring any request
+	   requiring knowledge of the server time knows to query the server
+	   as this value is null */
 	Rest.prototype.serverTimeOffset = null;
 
 	Rest.prototype.time = function(params, callback) {
@@ -100,7 +103,7 @@ var Rest = (function() {
 				return;
 			}
 			/* calculate time offset only once for this device by adding to the prototype */
-			Rest.prototype.serverTimeOffset = (time - Date.now());
+			Rest.prototype.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
 	};
