@@ -152,17 +152,22 @@ var Auth = (function() {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
-			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
-				if(!(authOptions && authOptions.force)) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-					callback(null, token);
-					return;
+			this.getTimestamp(!!authOptions.queryTime, function(err, time) {
+				if(err)
+					callback(err);
+
+				if(token.expires === undefined || (token.expires > time)) {
+					if(!(authOptions && authOptions.force)) {
+						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+						callback(null, token);
+						return;
+					}
+				} else {
+					/* expired, so remove */
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+					this.tokenDetails = null;
 				}
-			} else {
-				/* expired, so remove */
-				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				this.tokenDetails = null;
-			}
+			});
 		}
 		var self = this;
 		this.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
@@ -431,17 +436,12 @@ var Auth = (function() {
 			if(request.timestamp) {
 				authoriseCb();
 				return;
-			}
-			if(authOptions.queryTime) {
-				rest.time(function(err, time) {
-					if(err) {callback(err); return;}
-					request.timestamp = time;
-					authoriseCb();
-				});
-				return;
-			}
-			request.timestamp = self.getTimestamp();
-			authoriseCb();
+			};
+			self.getTimestamp(authOptions.queryTime, function(err, time) {
+				if(err) {callback(err); return;}
+				request.timestamp = time;
+				authoriseCb();
+			});
 		})(function() {
 			/* nonce */
 			/* NOTE: there is no expectation that the client
@@ -506,8 +506,18 @@ var Auth = (function() {
 		}
 	};
 
-	Auth.prototype.getTimestamp = function() {
-		return Date.now() + (Rest.prototype.serverTimeOffset || 0);
+	Auth.prototype.getTimestamp = function(queryTime, callback) {
+		if (queryTime) {
+			this.rest.time(function(err, time) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, time);
+			});
+		} else {
+			callback(null, Date.now() + (this.rest.serverTimeOffset || 0));
+		}
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
