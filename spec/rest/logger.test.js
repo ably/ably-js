@@ -62,10 +62,14 @@ define(['shared_helper'], function(helper) {
 	exports.logger_writes_to_stdout = function(test) {
 		test.expect(2);
 
-		var oldLog = console.log,
-		messageOut = '';
+		// TODO check to see what can be done for IE
+
+		var
+			oldLog = console.log,
+			messageOut = '';
 
 		console.log = function() {
+			// TODO check to see if can safely use slice
 			var args = Array.prototype.slice.call(arguments);
 			messageOut += args.join(' ') + "\n";
 		};
