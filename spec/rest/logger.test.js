@@ -20,21 +20,19 @@ define(['shared_helper'], function(helper) {
 		var
 			fs   = require('fs'),
 			path = require('path'),
-			vm   = require('vm'),
-			process = require('process');
+			vm   = require('vm');
 		
-		var
-			context = vm.createContext({
-				require:require,
-				console:console,
-				process:process,
-				Buffer:Buffer,
-				setTimeout:setTimeout,
-				setInterval:setInterval,
-				clearTimeout:clearTimeout,
-				clearInterval:clearInterval,
-				global:global
-			});
+		var context = vm.createContext({
+			require:require,
+			console:console,
+			process:process,
+			Buffer:Buffer,
+			setTimeout:setTimeout,
+			setInterval:setInterval,
+			clearTimeout:clearTimeout,
+			clearInterval:clearInterval,
+			global:global
+		});
 
 		var
 			includeScript = function(name) {
@@ -64,38 +62,44 @@ define(['shared_helper'], function(helper) {
 	exports.logger_writes_to_stdout = function(test) {
 		test.expect(2);
 
-		var lastMessage = '',
-		interceptStdout = function(message) {
-			lastMessage += message + "\n";
-		}
-		
-		var oldWrite;
+		var oldWrite,messageOut = '';
+
 		if (!isBrowser) {
-			var oldWrite = process.stdout.write;
-			
-			process.stdout.write = (function(write) {
+			// hook into stdout stream to monitor output
+			var	interceptStdout = function(message) {
+				messageOut += message + "\n";
+			}
+
+			oldWrite = context.process.stdout.write;
+			context.process.stdout.write = (function(write) {
 				return function(string, encoding, fd) {
-					write.apply(process.stdout, arguments);
-	
+					write.apply(context.process.stdout, arguments);
 					interceptStdout.call(interceptStdout, string);
 				};
-			}(process.stdout.write));
+			}(context.process.stdout.write));
 		} else {
-			// TODO
+			// intercept console.log function to monitor output
+			(function () {
+				oldWrite = console.log;
+				console.log = function() {
+					messageOut += arguments.join(' ') + "\n";
+					oldWrite.apply(this, arguments);
+				};
+			}());
 		}
 		
 		test.doesNotThrow(function() {
 			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
 		},'logger does not throw when called');
 
-		test.ok(lastMessage.indexOf('test message') >= 0, 'Logger writes to stdout');
-		
+		test.ok(messageOut.indexOf('test message') >= 0, 'Logger writes to stdout');
+
 		if (!isBrowser) {
 			process.stdout.write = oldWrite;
 		} else {
-			// TODO
+			console.log = oldWrite;
 		}
-		
+
 		test.done();
 	}
 
@@ -105,9 +109,9 @@ define(['shared_helper'], function(helper) {
 	exports.logger_level_defaults_to_warn = function(test) {
 		test.expect(4);
 		
-		var lastMessage = '',
+		var messageOut = '',
 		customLogger = function(message) {
-			lastMessage += message + "\n";
+			messageOut += message + "\n";
 		};
 		logger.setLog(undefined, customLogger);
 		
@@ -116,10 +120,10 @@ define(['shared_helper'], function(helper) {
 		logger.logAction(logger.LOG_MINOR, 'Minor level message');
 		logger.logAction(logger.LOG_MICRO, 'Micro level message');
 
-		test.ok(lastMessage.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
-		test.ok(lastMessage.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
-		test.ok(lastMessage.indexOf('Minor level message') < 0, 'Logger does not write at lever MINOR by default');
-		test.ok(lastMessage.indexOf('Micro level message') < 0, 'Logger does not write at level MICRO by default');
+		test.ok(messageOut.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
+		test.ok(messageOut.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
+		test.ok(messageOut.indexOf('Minor level message') < 0, 'Logger does not write at lever MINOR by default');
+		test.ok(messageOut.indexOf('Micro level message') < 0, 'Logger does not write at level MICRO by default');
 
 		test.done();
 	}
@@ -130,9 +134,9 @@ define(['shared_helper'], function(helper) {
 	exports.logger_level_change = function(test) {
 		test.expect(4);
 
-		var lastMessage = '',
+		var messageOut = '',
 		customLogger = function(message) {
-			lastMessage += message + "\n";
+			messageOut += message + "\n";
 		};
 		logger.setLog(logger.LOG_MICRO, customLogger);
 		
@@ -141,10 +145,10 @@ define(['shared_helper'], function(helper) {
 		logger.logAction(logger.LOG_MINOR, 'Minor level message');
 		logger.logAction(logger.LOG_MICRO, 'Micro level message');
 
-		test.ok(lastMessage.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
-		test.ok(lastMessage.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
-		test.ok(lastMessage.indexOf('Minor level message') >= 0, 'Logger does not write at lever MINOR by default');
-		test.ok(lastMessage.indexOf('Micro level message') >= 0, 'Logger does not write at level MICRO by default');
+		test.ok(messageOut.indexOf('Error level message') >= 0, 'Logger writes at level ERROR by default');
+		test.ok(messageOut.indexOf('Major level message') >= 0, 'Logger writes at level MAJOR by default');
+		test.ok(messageOut.indexOf('Minor level message') >= 0, 'Logger does not write at lever MINOR by default');
+		test.ok(messageOut.indexOf('Micro level message') >= 0, 'Logger does not write at level MICRO by default');
 
 		test.done();
 	}
