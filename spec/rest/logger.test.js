@@ -62,32 +62,13 @@ define(['shared_helper'], function(helper) {
 	exports.logger_writes_to_stdout = function(test) {
 		test.expect(2);
 
-		var oldWrite,messageOut = '';
-		isBrowser = true;
-		if (!isBrowser) {
-			// hook into stdout stream to monitor output
-			var	interceptStdout = function(message) {
-				messageOut += message + "\n";
-			}
+		var oldLog = console.log,
+		messageOut = '';
 
-			oldWrite = context.process.stdout.write;
-			context.process.stdout.write = (function(write) {
-				return function(string, encoding, fd) {
-					write.apply(context.process.stdout, arguments);
-					interceptStdout.call(interceptStdout, string);
-				};
-			}(context.process.stdout.write));
-		} else {
-			// intercept console.log function to monitor output
-			(function () {
-				oldWrite = console.log;
-				console.log = function() {
-					var args = Array.prototype.slice.call(arguments);
-					messageOut += args.join(' ') + "\n";
-					oldWrite.apply(this, args);
-				};
-			}());
-		}
+		console.log = function() {
+			var args = Array.prototype.slice.call(arguments);
+			messageOut += args.join(' ') + "\n";
+		};
 		
 		test.doesNotThrow(function() {
 			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
@@ -95,11 +76,7 @@ define(['shared_helper'], function(helper) {
 
 		test.ok(messageOut.indexOf('test message') >= 0, 'Logger writes to stdout');
 
-		if (!isBrowser) {
-			process.stdout.write = oldWrite;
-		} else {
-			console.log = oldWrite;
-		}
+		console.log = oldLog;
 
 		test.done();
 	}
