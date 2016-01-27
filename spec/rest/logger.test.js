@@ -11,12 +11,17 @@ define(['shared_helper'], function(helper) {
 	 * If we are in a browser, the logger is already loaded manually via a script tag in nodeunit.html.
 	 */
 
-	var logger = isBrowser ? Logger : (function() {
+	var logger;
+	
+	if (isBrowser) {
+		logger = Logger;
+	} else {
 
 		var
 			fs   = require('fs'),
 			path = require('path'),
-			vm   = require('vm');
+			vm   = require('vm'),
+			process = require('process');
 		
 		var
 			context = vm.createContext({
@@ -39,8 +44,8 @@ define(['shared_helper'], function(helper) {
 
 		includeScript('../../common/lib/util/logger.js');
 
-		return context.Logger;
-	})();
+		logger = context.Logger;
+	};
 	
 	/*
 	 * Check that the logger was instantiated correctly for testing.
@@ -57,14 +62,40 @@ define(['shared_helper'], function(helper) {
 	 * Check that the logger writes to stdout by default with no errors.
 	 */
 	exports.logger_writes_to_stdout = function(test) {
-		test.expect(1);
+		test.expect(2);
 
+		var lastMessage = '',
+		interceptStdout = function(message) {
+			lastMessage += message + "\n";
+		}
+		
+		var oldWrite;
+		if (!isBrowser) {
+			var oldWrite = process.stdout.write;
+			
+			process.stdout.write = (function(write) {
+				return function(string, encoding, fd) {
+					write.apply(process.stdout, arguments);
+	
+					interceptStdout.call(interceptStdout, string);
+				};
+			}(process.stdout.write));
+		} else {
+			// TODO
+		}
+		
 		test.doesNotThrow(function() {
 			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
 		},'logger does not throw when called');
-		
-		//TODO replace process.stdout with a hookable stream
 
+		test.ok(lastMessage.indexOf('test message') >= 0, 'Logger writes to stdout');
+		
+		if (!isBrowser) {
+			process.stdout.write = oldWrite;
+		} else {
+			// TODO
+		}
+		
 		test.done();
 	}
 
