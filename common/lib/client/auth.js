@@ -507,7 +507,7 @@ var Auth = (function() {
 	};
 
 	Auth.prototype.getTimestamp = function() {
-		return Date.now() + (this.rest.serverTimeOffset || 0);
+		return Utils.now() + (this.rest.serverTimeOffset || 0);
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {

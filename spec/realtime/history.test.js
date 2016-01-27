@@ -3,11 +3,12 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var rest, exports = {},
 		displayError = helper.displayError,
-		preAttachMessages = [1,2,3,4,5].map(function(i) {
+		utils = helper.Utils,
+		preAttachMessages = utils.arrMap([1,2,3,4,5], function(i) {
 			return { name: 'pre-attach-' + i,
 				data: 'some data' }
 		}),
-		postAttachMessages = [1,2,3,4,5].map(function(i) {
+		postAttachMessages = utils.arrMap([1,2,3,4,5], function(i) {
 			return { name: 'post-attach-' + i,
 				data: 'some data' }
 		}),
@@ -15,7 +16,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection;
 
 	var parallelPublishMessages = function(test, channel, messages, callback) {
-		var publishTasks = messages.map(function(event) {
+		var publishTasks = utils.arrMap(messages, function(event) {
 			return function(publishCb) {
 				channel.publish(event.name, event.data, publishCb);
 			};
@@ -100,7 +101,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 										/* verify only the pre-attached messages are received */
 										var messages = resultPage.items;
 										test.equal(messages.length, preAttachMessages.length, 'Verify right number of messages returned when untilAttached is true');
-										test.ok(messages.every(function(message) {
+										test.ok(utils.arrEvery(messages, function(message) {
 											return message.name.substring(0,10) == "pre-attach";
 										}), "Verify all returned messages were pre-attach ones")
 										callback();

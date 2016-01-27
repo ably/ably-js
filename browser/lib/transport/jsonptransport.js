@@ -1,6 +1,12 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = function(id) { return _[id] || noop; };
+	var _ = window.Ably._ = {};
+	/* express strips out parantheses from the callback!
+	 * Kludge to still alow its responses to work, while not keeping the
+	 * function form for normal use and not cluttering window.Ably
+	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 */
+	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
 	var head = document.getElementsByTagName('head')[0];
 
@@ -28,7 +34,7 @@ var JSONPTransport = (function() {
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
 
-		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
 		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
@@ -59,7 +65,7 @@ var JSONPTransport = (function() {
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
 		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
 		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
-		return new Request(undefined, uri, headers, params, body, requestMode, timeouts);
+		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
 	function Request(id, uri, headers, params, body, requestMode, timeouts) {
@@ -83,12 +89,11 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._(' + id + ')';
+		params.callback = 'Ably._._(' + id + ')';
+
 		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
-		else
-			delete params.body;
 
 		var script = this.script = document.createElement('script');
 		script.src = uri + Utils.toQueryString(params);
@@ -100,22 +105,24 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		_[id] = function(message) {
-			var successResponse = (message.statusCode < 400),
-				response = message.response;
-
-			if(!response) {
-				self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
-				return;
+		_['_' + id] = function(message) {
+			if(message.statusCode) {
+				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
+				var response = message.response;
+				if(message.statusCode == 204) {
+					self.complete();
+				} else if(!response) {
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
+				} else if(message.statusCode < 400) {
+					self.complete(null, response, message.headers);
+				} else {
+					var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+					self.complete(err);
+				}
+			} else {
+				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
+				self.complete(null, message)
 			}
-
-			if(successResponse) {
-				self.complete(null, response);
-				return;
-			}
-
-			var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
-			self.complete(err);
 		};
 
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
@@ -123,16 +130,18 @@ var JSONPTransport = (function() {
 		head.insertBefore(script, head.firstChild);
 	};
 
-	Request.prototype.complete = function(err, body) {
+	Request.prototype.complete = function(err, body, headers) {
+		headers = headers || {};
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			var contentType;
 			if(body) {
 				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
+				headers['content-type'] = contentType;
 				this.emit('data', body);
 			}
 
-			this.emit('complete', err, body, contentType && {'content-type': contentType}, true);
+			this.emit('complete', err, body, headers, /* unpacked: */ true);
 			this.dispose();
 		}
 	};

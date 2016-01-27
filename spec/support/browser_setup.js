@@ -9,8 +9,16 @@ var pathToModule = function(path) {
 	return path.replace(/^\/base\//, '').replace(/\.js$/, '');
 };
 
+var forEachKey = function(object, fn) {
+	for(var prop in object) {
+		if(object.hasOwnProperty(prop)) {
+			fn(prop);
+		}
+	}
+}
+//
 // Match all test files
-Object.keys(window.__karma__.files).forEach(function(file) {
+forEachKey(window.__karma__.files, function(file) {
 	if (TEST_REGEXP.test(file)) {
 		// Normalize paths to RequireJS module names.
 		allTestFiles.push(pathToModule(file));
@@ -18,7 +26,7 @@ Object.keys(window.__karma__.files).forEach(function(file) {
 });
 
 // Add the final tear down
-Object.keys(window.__karma__.files).forEach(function(file) {
+forEachKey(window.__karma__.files, function(file) {
 	if (TEAR_DOWN_REGEXP.test(file)) {
 		// Normalize paths to RequireJS module names.
 		allTestFiles.push(pathToModule(file));

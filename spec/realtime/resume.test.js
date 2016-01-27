@@ -5,7 +5,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		closeAndFinish = helper.closeAndFinish,
 		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection,
-		simulateDroppedConnection = helper.simulateDroppedConnection;
+		simulateDroppedConnection = helper.simulateDroppedConnection,
+		testOnAllTransports = helper.testOnAllTransports,
+		bestTransport = helper.bestTransport;
 
 	exports.setupResume = function(test) {
 		test.expect(1);
@@ -25,8 +27,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		return target;
 	}
 
-	function attachChannels(channels, callback) {
-		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
+	function sendAndAwait(message, sendingChannel, receivingChannel, callback) {
+		var event = String(Math.random());
+		receivingChannel.subscribe(event, function(msg) {
+			console.log('received ' + msg.data + ' at ' + (new Date()).toString());
+			receivingChannel.unsubscribe(event);
+			callback();
+		});
+		console.log('sending ' + message + ' at ' + (new Date()).toString());
+		sendingChannel.publish(event, message, function(err) {
+			if(err) callback(err);
+		});
 	}
 
 	/**
@@ -36,73 +47,66 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	function resume_inactive(test, channelName, txOpts, rxOpts) {
 		var count = 5;
 
-		var txRealtime = helper.AblyRealtime(mixin(txOpts));
+		var txRest = helper.AblyRest(mixin(txOpts));
 		var rxRealtime = helper.AblyRealtime(mixin(rxOpts));
 		test.expect(3);
 
 		var rxChannel = rxRealtime.channels.get(channelName);
-		var txChannel = txRealtime.channels.get(channelName);
+		var txChannel = txRest.channels.get(channelName);
 		var rxCount = 0;
 
 		function phase0(callback) {
-			attachChannels([rxChannel, txChannel], callback);
+			rxChannel.attach(callback);
 		}
 
 		function phase1(callback) {
-			/* subscribe to event */
-			rxChannel.subscribe('event0', function() {
-				//console.log('received message; serial = ' + msg.connectionSerial);
-				++rxCount;
-			});
-			var txCount = 0;
 			function ph1TxOnce() {
-				console.log('sending (phase 1): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
-				if(++txCount == count) {
-					/* sent all messages */
-					setTimeout(function() {
-						test.equal(rxCount, count, 'Verify Phase 1 messages all received');
+				sendAndAwait('phase 1, message ' + rxCount, txChannel, rxChannel, function(err) {
+					if(err) callback(err);
+					if(++rxCount == count) {
+						console.log("phase 1 sent all messages, time: ", (new Date()).toString())
+						test.ok(true, "phase 1: sent and received all messages")
 						callback(null);
-					}, 2000);
-					return;
-				}
-				setTimeout(ph1TxOnce, 800);
+						return;
+					}
+					setTimeout(ph1TxOnce, 800);
+				})
 			}
 			ph1TxOnce();
 		}
 
 		function phase2(callback) {
+			console.log("starting phase 2, time: ", (new Date()).toString())
 			simulateDroppedConnection(rxRealtime);
 			/* continue in 5 seconds */
 			setTimeout(callback, 5000);
 		}
 
 		function phase3(callback) {
+			console.log("starting phase 3, time: ", (new Date()).toString())
 			/* re-open the connection, verify resume mode */
 			rxRealtime.connection.connect();
 			var connectionManager = rxRealtime.connection.connectionManager;
-			connectionManager.on('transport.active', function(transport) {
+			connectionManager.once('transport.active', function(transport) {
 				test.equal(transport.params.mode, 'resume', 'Verify reconnect is resume mode');
 				callback(null);
 			});
 		}
 
 		function phase4(callback) {
-			/* subscribe to event */
+			console.log("starting phase 4, time: ", (new Date()).toString())
 			rxCount = 0;
-			var txCount = 0;
 			function ph4TxOnce() {
-				console.log('sending (phase 4): ' + txCount);
-				txChannel.publish('event0', 'Hello world at: ' + new Date());
-				if(++txCount == count) {
-					/* sent all messages */
-					setTimeout(function() {
-						test.equal(rxCount, count, 'Verify Phase 4 messages all received');
+				sendAndAwait('phase 4, message ' + rxCount, txChannel, rxChannel, function(err) {
+					if(err) callback(err);
+					if(++rxCount == count) {
+						console.log("phase 4 sent all messages, time: ", (new Date()).toString())
+						test.ok(true, "phase 4: sent and received all messages")
 						callback(null);
-					}, 2000);
-					return;
-				}
-				setTimeout(ph4TxOnce, 800);
+						return;
+					}
+					setTimeout(ph4TxOnce, 800);
+				})
 			}
 			ph4TxOnce();
 		}
@@ -136,7 +140,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								test.ok(false, 'Phase 4 failed with err: ' + displayError(err));
 								return;
 							}
-							closeAndFinish(test, [rxRealtime, txRealtime]);
+							closeAndFinish(test, rxRealtime);
 						});
 					});
 				});
@@ -144,34 +148,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
-	exports.resume_inactive_ws_text = function(test) {
-		resume_inactive(test, 'resume_inactive_ws_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		});
-	};
-
-	exports.resume_inactive_ws_binary = function(test) {
-		resume_inactive(test, 'resume_inactive_ws_binary', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:true
-		});
-	};
-
-	exports.resume_inactive_comet_text = function(test) {
-		resume_inactive(test, 'resume_inactive_comet_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['xhr', 'iframe', 'jsonp', 'comet']
-		});
-	};
+	testOnAllTransports(exports, 'resume_inactive', function(realtimeOpts) { return function(test) {
+		resume_inactive(test, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
+	}}, /* excludeUpgrade: */ true);
 
 	/**
 	 * Simple resume case
@@ -180,36 +159,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	function resume_active(test, channelName, txOpts, rxOpts) {
 		var count = 5;
 
-		var txRealtime = helper.AblyRealtime(mixin(txOpts));
+		var txRest = helper.AblyRest(mixin(txOpts));
 		var rxRealtime = helper.AblyRealtime(mixin(rxOpts));
 		test.expect(3);
 
 		var rxChannel = rxRealtime.channels.get('resume1');
-		var txChannel = txRealtime.channels.get('resume1');
+		var txChannel = txRest.channels.get('resume1');
 		var rxCount = 0;
 
 		function phase0(callback) {
-			attachChannels([rxChannel, txChannel], callback);
+			rxChannel.attach(callback);
 		}
 
 		function phase1(callback) {
-			/* subscribe to event */
-			rxChannel.subscribe('event0', function() {
-				++rxCount;
-			});
-			var txCount = 0;
 			function ph1TxOnce() {
-				console.log('sending (phase 1): ' + txCount);
-				txChannel.publish('event0', 'phase 1 message ' + txCount + ' at ' + new Date());
-				if(++txCount == count) {
-					/* sent all messages */
-					setTimeout(function() {
-						test.equal(rxCount, count, 'Verify Phase 1 messages all received');
+				sendAndAwait('phase 1, message ' + rxCount, txChannel, rxChannel, function(err) {
+					if(err) callback(err);
+					if(++rxCount == count) {
+						console.log("phase 1 sent all messages, time: ", (new Date()).toString())
+						test.ok(true, "phase 1: sent and received all messages")
 						callback(null);
-					}, 2000);
-					return;
-				}
-				setTimeout(ph1TxOnce, 800);
+						return;
+					}
+					setTimeout(ph1TxOnce, 800);
+				})
 			}
 			ph1TxOnce();
 		}
@@ -224,7 +197,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			function ph2TxOnce() {
 				console.log('sending (phase 2): ' + txCount);
-				txChannel.publish('event0', 'phase 2 message ' + txCount + ' at ' + new Date());
+				txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount, function(err) {
+					if(err) callback(err);
+				});
 				if(++txCount == count) {
 					/* sent all messages */
 					setTimeout(function() { callback(null); }, 1000);
@@ -237,14 +212,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		function phase3(callback) {
-			/* re-open the connection, verify resume mode */
+			/* subscribe, re-open the connection, verify resume mode */
+			rxChannel.subscribe('sentWhileDisconnected', function(msg) {
+				console.log('received ' + msg.data + ' at ' + (new Date()).toString());
+				++rxCount;
+			});
 			rxCount = 0;
 			rxRealtime.connection.connect();
 			var connectionManager = rxRealtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
 				test.equal(transport.params.mode, 'resume', 'Verify reconnect is resume mode');
 				setTimeout(function() {
-					test.equal(rxCount, count, 'Verify Phase 2 messages all received');
+					test.equal(rxCount, count, 'Verify Phase 3 messages all received');
 					callback(null);
 				}, 2000);
 			});
@@ -253,62 +232,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		phase0(function(err) {
 			if(err) {
 				test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
-				closeAndFinish(test, [rxRealtime, txRealtime]);
+				closeAndFinish(test, rxRealtime);
 				return;
 			}
 			phase1(function(err) {
 				if(err) {
 					test.ok(false, 'Phase 1 failed with err: ' + displayError(err));
-					closeAndFinish(test, [rxRealtime, txRealtime]);
+					closeAndFinish(test, rxRealtime);
 					return;
 				}
 				phase2(function(err) {
 					if(err) {
 						test.ok(false, 'Phase 2 failed with err: ' + displayError(err));
-						closeAndFinish(test, [rxRealtime, txRealtime]);
+						closeAndFinish(test, rxRealtime);
 						return;
 					}
 					phase3(function(err) {
 						if(err) {
 							test.ok(false, 'Phase 3 failed with err: ' + displayError(err));
-							closeAndFinish(test, [rxRealtime, txRealtime]);
+							closeAndFinish(test, rxRealtime);
 							return;
 						}
-						closeAndFinish(test, [rxRealtime, txRealtime]);
+						closeAndFinish(test, rxRealtime);
 					});
 				});
 			});
 		});
 	}
 
-	exports.resume_active_ws_text = function(test) {
-		resume_active(test, 'resume_active_ws_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		});
-	};
-
-	exports.resume_active_ws_binary = function(test) {
-		resume_active(test, 'resume_active_ws_binary', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['web_socket'],
-			useBinaryProtocol:true
-		});
-	};
-
-	exports.resume_active_comet_text = function(test) {
-		resume_active(test, 'resume_active_comet_text', {
-			transports:['web_socket'],
-			useBinaryProtocol:false
-		}, {
-			transports:['xhr', 'jsonp', 'comet']
-		});
-	};
+	testOnAllTransports(exports, 'resume_active', function(realtimeOpts) { return function(test) {
+		resume_active(test, 'resume_active' + String(Math.random()), {}, realtimeOpts);
+	}}, /* excludeUpgrade: */ true);
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });

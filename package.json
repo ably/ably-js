@@ -15,6 +15,7 @@
   "devDependencies": {
     "ejs": "~2.3",
     "express": "~4.12",
+    "cors": "~2.7",
     "glob": "~4.4",
     "grunt": "~0.4",
     "grunt-bump": "^0.3.1",
@@ -25,7 +26,7 @@
     "grunt-curl": "~2.1",
     "grunt-shell": "~1.1",
     "grunt-zip": "~0.16",
-    "karma": "~0.12",
+    "karma": "~0.13.11",
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",

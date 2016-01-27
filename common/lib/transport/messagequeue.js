@@ -25,12 +25,12 @@ var MessageQueue = (function() {
 		return this.messages.slice();
 	};
 
-	MessageQueue.prototype.append = function(messageQueue) {
-		this.messages.push.apply(this.messages, messageQueue.messages);
+	MessageQueue.prototype.append = function(messages) {
+		this.messages.push.apply(this.messages, messages);
 	};
 
-	MessageQueue.prototype.prepend = function(messageQueue) {
-		this.messages.unshift.apply(this.messages, messageQueue.messages);
+	MessageQueue.prototype.prepend = function(messages) {
+		this.messages.unshift.apply(this.messages, messages);
 	};
 
 	MessageQueue.prototype.completeMessages = function(serial, count, err) {

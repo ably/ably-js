@@ -98,7 +98,7 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
-			self.serverTimeOffset = (time - Date.now());
+			self.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
 	};

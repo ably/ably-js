@@ -9,6 +9,7 @@
 "use strict";
 
 var express = require('express'),
+    cors = require('cors'),
     browserTestFiles = require('./tasks/lib/browser_test_files');
 
 var server = express();
@@ -17,6 +18,8 @@ server.use(function(req, res, next) {
   console.log('%s %s %s', req.method, req.url, req.path);
   next();
 });
+
+server.use(cors());
 
 server.get('/', function(req, res) {
   res.redirect('/nodeunit.html');
