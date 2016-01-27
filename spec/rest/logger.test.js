@@ -63,7 +63,7 @@ define(['shared_helper'], function(helper) {
 		test.expect(2);
 
 		var oldWrite,messageOut = '';
-
+		isBrowser = true;
 		if (!isBrowser) {
 			// hook into stdout stream to monitor output
 			var	interceptStdout = function(message) {
@@ -82,8 +82,9 @@ define(['shared_helper'], function(helper) {
 			(function () {
 				oldWrite = console.log;
 				console.log = function() {
-					messageOut += arguments.join(' ') + "\n";
-					oldWrite.apply(this, arguments);
+					var args = Array.prototype.slice.call(arguments);
+					messageOut += args.join(' ') + "\n";
+					oldWrite.apply(this, args);
 				};
 			}());
 		}
