@@ -224,34 +224,34 @@ var Utils = (function() {
 		return result.length ? result : undefined;
 	};
 
-	Utils.arrForEach = function(arr, fn) {
-		if (Array.prototype.forEach) {
+	Utils.arrForEach = Array.prototype.forEach ?
+		function(arr, fn) {
 			arr.forEach(fn);
-		} else {
+		} :
+		function(arr, fn) {
 			var len = arr.length;
 			for(var i = 0; i < len; i++) {
 				fn(arr[i], i, arr);
 			}
-		}
-	};
+		};
 
-	Utils.arrMap = function(arr, fn) {
-		if (Array.prototype.map) {
+	Utils.arrMap = Array.prototype.map ?
+		function(arr, fn) {
 			return arr.map(fn);
-		} else {
+		} :
+		function(arr, fn)	{
 			var result = [],
 				len = arr.length;
 			for(var i = 0; i < len; i++) {
 				result.push(fn(arr[i], i, arr));
 			}
 			return result;
-		}
-	};
+		};
 
-	Utils.arrEvery = function(arr, fn) {
-		if (Array.prototype.every) {
+	Utils.arrEvery = Array.prototype.every ?
+		function(arr, fn) {
 			return arr.every(fn);
-		} else {
+		} : function(arr, fn) {
 			var len = arr.length;
 			for(var i = 0; i < len; i++) {
 				if(!fn(arr[i], i, arr)) {
@@ -259,8 +259,7 @@ var Utils = (function() {
 				};
 			}
 			return true;
-		}
-	};
+		};
 
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
@@ -317,14 +316,10 @@ var Utils = (function() {
  		return result;
 	};
 
-	Utils.now = function() {
-		if (Date.now) {
-			return Date.now();
-		} else {
-			/* IE 8 */
-			return new Date().getTime();
-		}
-	}
+	Utils.now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
+	};
 
 	Utils.inspect = function(x) {
 		return JSON.stringify(x);
