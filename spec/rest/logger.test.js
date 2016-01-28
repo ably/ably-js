@@ -1,8 +1,7 @@
 "use strict";
 
 define(['shared_helper'], function(helper) {
-	var exports = {},
-		isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document);
+	var exports = {};
 
 	/* If we are running node, we mimic the loading mechanism used in /nodejs/realtime.js and /nodejs/rest.js
 	 * to get a reference to the logger. We do this because its implementation is not a module.
