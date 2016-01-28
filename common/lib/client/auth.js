@@ -146,7 +146,19 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		var token = this.tokenDetails;
+		var self = this,
+			token = this.tokenDetails;
+
+		var requestToken = function() {
+			self.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, (self.tokenDetails = tokenResponse));
+			});
+		}
+
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
@@ -167,16 +179,11 @@ var Auth = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
 					self.tokenDetails = null;
 				}
+				requestToken();
 			});
+		} else {
+			requestToken();
 		}
-		var self = this;
-		this.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, (self.tokenDetails = tokenResponse));
-		});
 	};
 
 	/**
