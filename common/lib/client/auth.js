@@ -152,11 +152,11 @@ var Auth = (function() {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
-			this.getTimestamp(!!authOptions.queryTime, function(err, time) {
+			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
 				if(err)
 					callback(err);
 
-				if(token.expires === undefined || (token.expires > time)) {
+				if(token.expires === undefined || (token.expires >= time)) {
 					if(!(authOptions && authOptions.force)) {
 						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
 						callback(null, token);
@@ -437,7 +437,7 @@ var Auth = (function() {
 				authoriseCb();
 				return;
 			};
-			self.getTimestamp(authOptions.queryTime, function(err, time) {
+			self.getTimestamp(authOptions && authOptions.queryTime, function(err, time) {
 				if(err) {callback(err); return;}
 				request.timestamp = time;
 				authoriseCb();
@@ -507,7 +507,7 @@ var Auth = (function() {
 	};
 
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
-		if (queryTime) {
+		if (queryTime || this.rest.options.queryTime) {
 			this.rest.time(function(err, time) {
 				if(err) {
 					callback(err);
