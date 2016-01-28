@@ -165,7 +165,7 @@ var Auth = (function() {
 				} else {
 					/* expired, so remove */
 					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-					this.tokenDetails = null;
+					self.tokenDetails = null;
 				}
 			});
 		}
