@@ -3,7 +3,7 @@ var Logger = (function() {
 
 	/* Can't just check for console && console.log; fails in IE <=9 */
 	if((typeof window === 'undefined') /* node */ ||
-		 (window.console && window.console.log && window.console.log.apply) /* sensible browsers */) {
+		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
 		consoleLogger = function() { console.log.apply(console, arguments); };
 	} else if(window.console && window.console.log) {
 		/* IE <= 9 with the console open -- console.log does not
