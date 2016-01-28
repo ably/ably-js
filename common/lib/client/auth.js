@@ -38,8 +38,8 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	function Auth(rest, options) {
-		this.rest = rest;
+	function Auth(client, options) {
+		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
 
 		/* RSA7a4: if options.clientId is provided and is not
@@ -244,14 +244,15 @@ var Auth = (function() {
 		}
 
 		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback, rest = this.rest;
+		var tokenRequestCallback, client = this.client;
+
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = authOptions.authCallback;
@@ -292,9 +293,9 @@ var Auth = (function() {
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(rest, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
+					Http.postUri(client, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
 				} else {
-					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
+					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
 				}
 			};
 		} else if(authOptions.key) {
@@ -312,23 +313,23 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var rest = this.rest;
+		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
 				keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
+				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
-				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
+				Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
+				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
@@ -408,7 +409,7 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -436,7 +437,6 @@ var Auth = (function() {
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability,
-			rest = this.rest,
 			self = this;
 
 		(function(authoriseCb) {
@@ -514,8 +514,8 @@ var Auth = (function() {
 	};
 
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
-		if (queryTime || this.rest.options.queryTime) {
-			this.rest.time(function(err, time) {
+		if (queryTime || this.client.options.queryTime) {
+			this.client.time(function(err, time) {
 				if(err) {
 					callback(err);
 					return;
@@ -523,7 +523,7 @@ var Auth = (function() {
 				callback(null, time);
 			});
 		} else {
-			callback(null, Utils.now() + (this.rest.serverTimeOffset || 0));
+			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
 		}
 	};
 
