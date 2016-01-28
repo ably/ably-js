@@ -1,9 +1,8 @@
 "use strict";
 
 define(['shared_helper'], function(helper) {
-	var exports = {};
-
-	var isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document);
+	var exports = {},
+		isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document);
 
 	/* If we are running node, we mimic the loading mechanism used in /nodejs/realtime.js and /nodejs/rest.js
 	 * to get a reference to the logger. We do this because its implementation is not a module.
@@ -17,11 +16,10 @@ define(['shared_helper'], function(helper) {
 		logger = Logger;
 	} else {
 
-		var
-			fs   = require('fs'),
+		var fs = require('fs'),
 			path = require('path'),
-			vm   = require('vm');
-		
+			vm = require('vm');
+
 		var context = vm.createContext({
 			require:require,
 			console:console,
@@ -34,17 +32,16 @@ define(['shared_helper'], function(helper) {
 			global:global
 		});
 
-		var
-			includeScript = function(name) {
-				var filename = path.resolve(__dirname, name);
-				return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
-			};
+		var includeScript = function(name) {
+			var filename = path.resolve(__dirname, name);
+			return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+		};
 
 		includeScript('../../common/lib/util/logger.js');
 
 		logger = context.Logger;
 	};
-	
+
 	/*
 	 * Check that the logger was instantiated correctly for testing.
 	 */
@@ -64,8 +61,7 @@ define(['shared_helper'], function(helper) {
 
 		// TODO check to see what can be done for IE
 
-		var
-			oldLog = console.log,
+		var oldLog = console.log,
 			messageOut = '';
 
 		console.log = function() {
@@ -92,9 +88,9 @@ define(['shared_helper'], function(helper) {
 		test.expect(4);
 		
 		var messageOut = '',
-		customLogger = function(message) {
-			messageOut += message + "\n";
-		};
+			customLogger = function(message) {
+				messageOut += message + "\n";
+			};
 		logger.setLog(undefined, customLogger);
 		
 		logger.logAction(logger.LOG_ERROR, 'Error level message');
@@ -117,11 +113,11 @@ define(['shared_helper'], function(helper) {
 		test.expect(4);
 
 		var messageOut = '',
-		customLogger = function(message) {
-			messageOut += message + "\n";
-		};
+			customLogger = function(message) {
+				messageOut += message + "\n";
+			};
 		logger.setLog(logger.LOG_MICRO, customLogger);
-		
+
 		logger.logAction(logger.LOG_ERROR, 'Error level message');
 		logger.logAction(logger.LOG_MAJOR, 'Major level message');
 		logger.logAction(logger.LOG_MINOR, 'Minor level message');
