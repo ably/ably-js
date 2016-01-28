@@ -513,8 +513,15 @@ var Auth = (function() {
 		}
 	};
 
+	/**
+	 * Get the current time based on the local clock,
+	 * or if the option queryTime is true, return the server time.
+	 * The server time offset from the local time is stored so that
+	 * only one request to the server to get the time is ever needed
+	 */
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
-		if (queryTime || this.client.options.queryTime) {
+		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
+		if (!offsetSet && (queryTime || this.client.options.queryTime)) {
 			this.client.time(function(err, time) {
 				if(err) {
 					callback(err);

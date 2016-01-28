@@ -1,6 +1,6 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
@@ -407,6 +407,50 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.done();
 				});
 			});
+		});
+	};
+
+	/*
+	 * Check that when the queryTime option is provided
+	 * that the time from the server is only requested once
+	 * and all subsequent requests use the time offset
+	 */
+	exports.auth_query_time_once = function(test) {
+		test.expect(12);
+
+		var rest = helper.AblyRest(),
+			timeRequestCount = 0,
+			offset = 1000,
+			originalTime = rest.time;
+
+		/* stub time */
+		rest.time = function(callback) {
+			timeRequestCount += 1;
+			originalTime.call(rest, callback);
+		}
+
+		test.ok(isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset, 'Server time offset is empty and falsey until a time request has been made');
+
+		var asyncFns = [];
+		for(var i = 0; i < 10; i++) {
+			asyncFns.push(function(callback) {
+				rest.auth.createTokenRequest({}, { queryTime: true }, function(err, tokenDetails) {
+					if(err) { return callback(err); }
+					test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
+					callback();
+				});
+			});
+		}
+
+		async.series(asyncFns, function(err) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+
+			test.equals(1, timeRequestCount, 'Time function is only called once per instance');
+			test.done();
 		});
 	};
 
