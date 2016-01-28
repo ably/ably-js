@@ -122,5 +122,28 @@ define(['shared_helper'], function(helper) {
 		test.done();
 	}
 
+	/*
+	 * Check that a custom logger can be specified in the constructor.
+	 */
+	exports.logger_rest_constructor = function(test) {
+		test.expect(1);
+
+		var messageOut = '',
+		customLogger = function(message) {
+			messageOut += message + "\n";
+		};
+
+		helper.setupApp(function() {
+			var rest = helper.AblyRest({
+				log: {
+					level: logger.LOG_MINOR,
+					handler: customLogger
+				}
+			});
+			test.ok(messageOut.indexOf('Ably: Rest(): started') >= 0, 'Rest client uses custom logger specified in constructor');
+			test.done();
+		});
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
