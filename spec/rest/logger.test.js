@@ -15,27 +15,24 @@ define(['shared_helper'], function(helper) {
 	if (isBrowser) {
 		logger = Logger;
 	} else {
-
 		var fs = require('fs'),
 			path = require('path'),
-			vm = require('vm');
-
-		var context = vm.createContext({
-			require:require,
-			console:console,
-			process:process,
-			Buffer:Buffer,
-			setTimeout:setTimeout,
-			setInterval:setInterval,
-			clearTimeout:clearTimeout,
-			clearInterval:clearInterval,
-			global:global
-		});
-
-		var includeScript = function(name) {
-			var filename = path.resolve(__dirname, name);
-			return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
-		};
+			vm = require('vm'),
+			context = vm.createContext({
+				require:require,
+				console:console,
+				process:process,
+				Buffer:Buffer,
+				setTimeout:setTimeout,
+				setInterval:setInterval,
+				clearTimeout:clearTimeout,
+				clearInterval:clearInterval,
+				global:global
+			}),
+			includeScript = function(name) {
+				var filename = path.resolve(__dirname, name);
+				return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+			};
 
 		includeScript('../../common/lib/util/logger.js');
 
@@ -59,25 +56,21 @@ define(['shared_helper'], function(helper) {
 	exports.logger_writes_to_stdout = function(test) {
 		test.expect(2);
 
-		// TODO check to see what can be done for IE
-
 		var oldLog = console.log,
 			messageOut = '';
 
 		console.log = function() {
-			// TODO check to see if can safely use slice
 			var args = Array.prototype.slice.call(arguments);
 			messageOut += args.join(' ') + "\n";
 		};
 		
 		test.doesNotThrow(function() {
 			logger.logAction(logger.LOG_NONE,'logger_writes_to_stdout()','test message');
-		},'logger does not throw when called');
+		},'Logger does not throw when called');
 
 		test.ok(messageOut.indexOf('test message') >= 0, 'Logger writes to stdout');
 
 		console.log = oldLog;
-
 		test.done();
 	}
 
