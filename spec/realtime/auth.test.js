@@ -388,14 +388,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var clientRealtime,
 			rest = helper.AblyRest();
 
-		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
+		rest.auth.requestToken({ ttl: 5000 }, { queryTime: true }, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
 				return;
 			}
-			clientRealtime = helper.AblyRealtime({ tokenDetails: tokenDetails });
+			clientRealtime = helper.AblyRealtime({ tokenDetails: tokenDetails, queryTime: true });
 			monitorConnection(test, clientRealtime);
+
 			clientRealtime.connection.once('connected', function(){
 				test.ok(true, 'Verify connection connected');
 				clientRealtime.connection.once('disconnected', function(stateChange){
