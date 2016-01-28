@@ -31,14 +31,15 @@ var Transport = (function() {
 	Transport.prototype.connect = function() {};
 
 	Transport.prototype.close = function() {
-		if(this.isConnected)
-			this.requestClose(true);
+		if(this.isConnected) {
+			this.requestClose();
+		}
 		this.finish('closed', ConnectionError.closed);
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
-			this.requestClose(false);
+			this.requestDisconnect();
 		}
 		this.finish('failed', error);
 	};
@@ -143,9 +144,14 @@ var Transport = (function() {
 		this.finish('closed', err);
 	};
 
-	Transport.prototype.requestClose = function(closing) {
+	Transport.prototype.requestClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
-		this.send((closing ? closeMessage :disconnectMessage), noop);
+		this.send(closeMessage, noop);
+	};
+
+	Transport.prototype.requestDisconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
+		this.send(disconnectMessage, noop);
 	};
 
 	Transport.prototype.ping = function(callback) {

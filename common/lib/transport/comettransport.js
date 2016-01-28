@@ -86,24 +86,33 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.disconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
-		this.requestClose(false);
+		this.requestDisconnect();
 		Transport.prototype.disconnect.call(this);
 	};
 
-	CometTransport.prototype.requestClose = function(closing) {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()', 'closing = ' + closing);
-		var closeUri = this.closeUri;
-		if(closeUri) {
-			var self = this,
-				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
+	CometTransport.prototype.requestClose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()');
+		this._requestCloseOrDisconnect(true);
+	};
 
-			closeRequest.on('complete', function (err) {
+	CometTransport.prototype.requestDisconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
+		this._requestCloseOrDisconnect(false);
+	};
+
+	CometTransport.prototype._requestCloseOrDisconnect = function(closing) {
+		var closeOrDisconnectUri = closing ? this.closeUri : this.disconnectUri;
+		if(closeOrDisconnectUri) {
+			var self = this,
+				request = this.createRequest(closeOrDisconnectUri, null, this.authParams, null, REQ_SEND);
+
+			request.on('complete', function (err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.requestClose()', 'request returned err = ' + err);
+					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + err);
 					self.finish('failed', err);
 				}
 			});
-			closeRequest.exec();
+			request.exec();
 		}
 	};
 
@@ -137,7 +146,8 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
+		this.closeUri = baseConnectionUri + '/close';
+		this.disconnectUri = baseConnectionUri + '/disconnect';
 	};
 
 	CometTransport.prototype.send = function(message, callback) {
