@@ -122,8 +122,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.msgpack_128 = function(test) {
-		if(!ArrayBuffer) {
-			test.ok(false, 'Encryption or binary transport not supported');
+		if(typeof ArrayBuffer === 'undefined') {
+			/* Encryption or binary transport not supported */
 			test.done();
 			return;
 		}
@@ -145,8 +145,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.msgpack_256 = function(test) {
-		if(!ArrayBuffer) {
-			test.ok(false, 'Encryption or binary transport not supported');
+		if(typeof ArrayBuffer === 'undefined') {
+			/* Encryption or binary transport not supported */
 			test.done();
 			return;
 		}

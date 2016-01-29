@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {}, _exports = {},
 		displayError = helper.displayError,
+		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -688,7 +689,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				var presenceMessages = resultPage.items;
 				test.equal(presenceMessages.length, 2, 'Verify correct number of presence messages found');
-				var actions = presenceMessages.map(function(msg){return msg.action;}).sort();
+				var actions = utils.arrMap(presenceMessages, function(msg){return msg.action;}).sort();
 				test.deepEqual(actions, [2,3], 'Verify presenceMessages have correct actions');
 				test.equal(presenceMessages[0].data, testClientData, 'Verify first presenceMessages has correct data');
 				test.equal(presenceMessages[1].data, testClientData, 'Verify second presenceMessages has correct data');
@@ -770,7 +771,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		};
 		var sortedActions = function(presenceMessages) {
-			return presenceMessages.map(function(msg){
+			return utils.arrMap(presenceMessages, function(msg){
 				return msg.action;
 			}).sort();
 		};

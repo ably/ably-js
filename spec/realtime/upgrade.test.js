@@ -17,7 +17,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection;
+		monitorConnection = helper.monitorConnection,
+		bestTransport = helper.bestTransport;
 
 	exports.setupUpgrade = function(test) {
 		test.expect(1);
@@ -482,5 +483,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};
 });

@@ -1,7 +1,7 @@
 "use strict";
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
+define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably) {
 	var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
 			tlsPort  = ablyGlobals.tlsPort;
 
@@ -23,8 +23,11 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 		var result = new XMLHttpRequest();
 		if ('withCredentials' in result)
 			return result;
-		if(typeof XDomainRequest !== "undefined")
-			return new XDomainRequest();        /* Use IE-specific "CORS" code with XDR */
+		if(typeof XDomainRequest !== "undefined") {
+			var xdr = new XDomainRequest();        /* Use IE-specific "CORS" code with XDR */
+			xdr.isXDR = true;
+			return xdr;
+		}
 		return null;
 	}
 
@@ -36,25 +39,62 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 		}
 	}
 
+	function schemeMatchesCurrent(scheme) {
+		return scheme === window.location.protocol.slice(0, -1);
+	}
+
 	function httpReqFunction() {
 		if (isBrowser) {
 			return function(options, callback) {
-				var uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
 				var xhr = createXHR();
+				var uri;
+
+				uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
+
+				if(xhr.isXDR && !schemeMatchesCurrent(options.scheme)) {
+					/* Can't use XDR for cross-scheme. For some requests could just force
+					* the same scheme and be done with it, but not for authenticated
+					* requests to ably, can't use basic auth for non-tls endpoints.
+					* Luckily ably can handle jsonp, so just use the ably Http method,
+					* which will use the jsonp transport. Can't just do this all the time
+					* as the local express webserver serves files statically, so can't do
+					* jsonp. */
+					if(options.method === 'DELETE') {
+						/* Ignore DELETEs -- can't be done with jsonp at the moment, and
+						 * simulation apps self-delete after a while */
+						callback();
+					} else {
+						ably.Rest.Http.Request(uri, options.headers, options.paramsIfNoHeaders || {}, options.body, callback);
+					}
+					return;
+				}
+
 				xhr.open(options.method, uri);
-				if (options.headers) {
+				if(options.headers && !xhr.isXDR) {
 					for (var h in options.headers) if (h !== 'Content-Length') xhr.setRequestHeader(h, options.headers[h]);
 				}
 				xhr.onerror = function(err) { callback(err); };
-				xhr.onreadystatechange = function() {
-					if(xhr.readyState == 4) {
+				if('onreadystatechange' in xhr) {
+					/* XHR */
+					xhr.onreadystatechange = function() {
+						if(xhr.readyState == 4) {
+							if (xhr.status >= 300) {
+								callback('HTTP request failed '+xhr.status);
+								return;
+							}
+							callback(null, xhr.responseText);
+						}
+					};
+				} else {
+					/* XDR */
+					xhr.onload = function () {
 						if (xhr.status >= 300) {
 							callback('HTTP request failed '+xhr.status);
 							return;
 						}
 						callback(null, xhr.responseText);
 					}
-				};
+				}
 				xhr.send(options.body);
 			};
 		} else {
@@ -132,7 +172,8 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 				'Content-Length': postData.length,
 				'Authorization': 'Basic ' + authHeader
 			},
-			body: postData
+			body: postData,
+			paramsIfNoHeaders: {key: authKey}
 		};
 
 		httpReq(postOptions, function(err) {
@@ -167,6 +208,10 @@ define(['globals', 'browser-base64'], function(ablyGlobals, base64) {
 		};
 
 		httpReq(getOptions, function(err, data) {
+			if(err) {
+				callback(err);
+				return;
+			}
 			try {
 				data = JSON.parse(data);
 			} catch(e) {

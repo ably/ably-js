@@ -29,8 +29,8 @@ var ConnectionManager = (function() {
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 	}
 
-	TransportParams.prototype.getConnectParams = function(params) {
-		params = params ? Utils.prototypicalClone(params) : {};
+	TransportParams.prototype.getConnectParams = function(authParams) {
+		var params = authParams ? Utils.copy(authParams) : {};
 		var options = this.options;
 		switch(this.mode) {
 			case 'upgrade':
@@ -961,11 +961,11 @@ var ConnectionManager = (function() {
 				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
 			};
 
-			var pingStart = Date.now();
+			var pingStart = Utils.now();
 
 			var onHeartbeat = function () {
 				clearTimeout(timer);
-				var responseTime = Date.now() - pingStart;
+				var responseTime = Utils.now() - pingStart;
 				callback(null, responseTime);
 			};
 

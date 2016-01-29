@@ -3,6 +3,7 @@
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
 	displayError = helper.displayError,
+	utils = helper.Utils,
 	closeAndFinish = helper.closeAndFinish,
 	monitorConnection = helper.monitorConnection;
 
@@ -40,7 +41,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				'detached'
 			];
 			realtime.connection.on(function() {
-				if((index = expectedConnectionEvents.indexOf(this.event)) > -1) {
+				if((index = utils.arrIndexOf(expectedConnectionEvents, this.event)) > -1) {
 					delete expectedConnectionEvents[index];
 					test.ok(true, this.event + ' connection event received');
 					if(this.event == 'closed') {
@@ -53,7 +54,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime.connection.on('connected', function() {
 				var channel = realtime.channels.get('channel');
 				channel.on(function() {
-					if((index = expectedChannelEvents.indexOf(this.event)) > -1) {
+					if((index = utils.arrIndexOf(expectedChannelEvents, this.event)) > -1) {
 						delete expectedChannelEvents[index];
 						test.ok(true, this.event + ' channel event received');
 						switch(this.event) {

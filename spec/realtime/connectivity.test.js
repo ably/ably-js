@@ -4,8 +4,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
-		// Ably.Realtime.ConnectionManager not defined in node
-		availableHttpTransports = typeof Ably.Realtime.ConnectionManager === 'undefined' ? Ably.Realtime.Defaults.httpTransports : Object.keys(Ably.Realtime.ConnectionManager.httpTransports);
+		utils = helper.Utils,
+		availableHttpTransports = utils.keysArray(Ably.Realtime.ConnectionManager.httpTransports);
 
 
 	exports.setupConnectivity = function(test) {
@@ -26,40 +26,29 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.http_connectivity_check = function(test) {
 		test.expect(availableHttpTransports.length);
 		try {
-			var connectivity_test = function(transports) {
+			var connectivity_test = function(transport) {
 				return function(cb) {
-					var realtime = helper.AblyRealtime({transports: transports});
-					/* Not strictly necessary to connect before doing connectivity check,
-					* but it's a simple way to get a reference to the transport */
-					realtime.connection.on('connected', function() {
-						//console.log("Transport " + transports + " connected, trying connectivity check");
-						var transport = realtime.connection.connectionManager.activeProtocol.transport.constructor;
-						transport.checkConnectivity(function(err, res) {
-							//console.log("Transport " + transports + " connectivity check returned ", err, res)
-							if(err)
-								cb(err, realtime);
-							test.ok(res, 'Connectivity check for ' + transports);
-							cb(null, realtime);
-						})
-					});
-					monitorConnection(test, realtime);
+					Ably.Realtime.ConnectionManager.httpTransports[transport].checkConnectivity(function(err, res) {
+						console.log("Transport " + transport + " connectivity check returned ", err, res)
+						test.ok(res, 'Connectivity check for ' + transport);
+						cb(err);
+					})
 				};
 			};
 			async.parallel(
-				availableHttpTransports.map(function(transport) {
-					return connectivity_test([transport]);
+				utils.arrMap(availableHttpTransports, function(transport) {
+					return connectivity_test(transport);
 				}),
-				function(err, realtimes) {
+				function(err) {
 					if(err) {
-						console.log("err", err)
 						test.ok(false, helper.displayError(err));
 					}
-					closeAndFinish(test, realtimes);
+					test.done();
 				}
 			);
 		} catch(e) {
 			test.ok(false, 'connection failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
+			test.done();
 		}
 	};
 
