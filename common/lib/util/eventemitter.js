@@ -10,7 +10,9 @@ var EventEmitter = (function() {
 
 	/* Call the listener, catch any exceptions and log, but continue operation*/
 	function callListener(eventThis, listener, args) {
-		try { listener.apply(eventThis, args); } catch(e) {
+		try {
+			listener.apply(eventThis, args);
+		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
 		}
 	}
