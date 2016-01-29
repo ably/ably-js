@@ -483,8 +483,15 @@ var Auth = (function() {
 	 * based on the current auth parameters
 	 */
 	Auth.prototype.getAuthParams = function(callback) {
-		if(this.method == 'basic')
+		if(this.method == 'basic') {
+			if (!this.rest.options.tls) {
+				var msg = 'invalid use of Basic auth over non-TLS transport';
+				Logger.logAction(Logger.LOG_ERROR, 'Rest.getAuthParams()', msg );
+				callback(new ErrorInfo(msg, 40103, 401));
+				return;
+			}
 			callback(null, {key: this.key});
+		}
 		else
 			this.authorise(null, null, function(err, tokenDetails) {
 				if(err) {
@@ -501,6 +508,12 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getAuthHeaders = function(callback) {
 		if(this.method == 'basic') {
+			if (!this.rest.options.tls) {
+				var msg = 'invalid use of Basic auth over non-TLS transport';
+				Logger.logAction(Logger.LOG_ERROR, 'Rest.getAuthHeaders()', msg );
+				callback(new ErrorInfo(msg, 40103, 401));
+				return;
+			}
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
 			this.authorise(null, null, function(err, tokenDetails) {
