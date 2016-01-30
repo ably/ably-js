@@ -6,10 +6,12 @@ var Multicaster = (function() {
 		var handler = function() {
 			for(var i = 0; i < members.length; i++) {
 				var member = members[i];
-				try {
-					member.apply(null, arguments);
-				} catch(e){
-					Logger.logAction(Logger.LOG_ERROR, 'Multicaster multiple callback handler', 'Unexpected exception: ' + e + '; stack = ' + e.stack);
+				if(member) {
+					try {
+						member.apply(null, arguments);
+					} catch(e){
+						Logger.logAction(Logger.LOG_ERROR, 'Multicaster multiple callback handler', 'Unexpected exception: ' + e + '; stack = ' + e.stack);
+					}
 				}
 			}
 		};
@@ -18,7 +20,7 @@ var Multicaster = (function() {
 			Array.prototype.push.apply(members, arguments);
 		};
 		return handler;
-	};
+	}
 
 	return Multicaster;
 })();
