@@ -324,6 +324,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: secondIntervalEpoch,
+			end: anHourAgo,
 			direction: 'forwards',
 			limit: 1000
 		}, function(err, page) {
@@ -359,6 +360,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: secondIntervalEpoch,
+			end: anHourAgo,
 			direction: 'backwards',
 			limit: 1000
 		}, function(err, page) {
@@ -394,6 +396,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: secondIntervalEpoch,
+			end: anHourAgo,
 			direction: 'forwards',
 		}, function(err, page) {
 			if(err) {
@@ -428,6 +431,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: secondIntervalEpoch,
+			end: anHourAgo,
 			direction: 'backwards',
 		}, function(err, page) {
 			if(err) {
