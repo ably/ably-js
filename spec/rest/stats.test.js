@@ -10,6 +10,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	// Set last interval to 3rd Feb 20xx 16:03:00, Javascript uses zero based months
 	var firstIntervalEpoch = Date.UTC(lastYear, 1, 3, 15, 3, 0);
+	
 
 	var statsFixtures = [
 		{
@@ -33,6 +34,25 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			tokenRequests: { succeeded: 60, failed: 20 }
 		}
 	];
+
+	var MAX_LIMIT = 1000;
+	//Skip a month for the generated tests
+	var d = new Date(lastYear, 2, 3, 15, 6, 0);
+	var secondIntervalEpoch = Date.UTC(lastYear, 2, 3, 15, 6, 0);
+
+	//Add 1001 fixtures for default & max limit testing
+	for(var i = 0; i < MAX_LIMIT + 1; i++) {
+		d.setMinutes(d.getMinutes() + 1);
+    	
+    	var dateId = d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) + "-" + ('0' + d.getDate()).slice(-2) 
+    		+ ":" + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2);
+		
+		statsFixtures.push({
+			intervalId: dateId,
+			inbound:  { realtime: { messages: { count: 15, data: 4000 } } },
+			outbound: { realtime: { messages: { count: 33, data: 3000 } } }
+		});
+	}
 
 	exports.setup_stats = function(test) {
 		test.expect(1);
@@ -58,7 +78,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15:03',
-			end: anHourAgo,
+			end: lastYear + '-02-03:15:05',
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -93,7 +113,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: firstIntervalEpoch,
-			end: anHourAgo,
+			end: secondIntervalEpoch,
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -128,7 +148,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15',
-			end: anHourAgo,
+			end: lastYear + '-02-03:18',
 			direction: 'forwards',
 			by: 'hour'
 		}, function(err, page) {
@@ -230,7 +250,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/**
 	 * Check limit query param (backwards)
 	 */
-	exports.appstats_limit0 = function(test) {
+	exports.appstats_limit_backwards = function(test) {
 		test.expect(1);
 		rest.stats({
 			end: lastYear + '-02-03:15:04',
@@ -265,11 +285,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/**
 	 * Check limit query param (forwards)
 	 */
-	exports.appstats_limit1 = function(test) {
+	exports.appstats_limit_forwards = function(test) {
 		test.expect(1);
 		rest.stats({
 			end: lastYear + '-02-03:15:04',
-			direction: 'backwards',
+			direction: 'forwards',
 			limit: 1
 		}, function(err, page) {
 			if(err) {
@@ -288,8 +308,146 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					totalOutbound += stats[i].outbound.all.messages.count;
 				}
 
-				test.equal(totalInbound, 60, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 10, 'Verify all outbound messages found');
+				test.equal(totalInbound, 50, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 20, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check max limit query param (forwards)
+	 */
+	exports.appstats_limit_max_forwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			direction: 'forwards',
+			limit: 1000
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+		var stats = page.items;
+				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check max limit query param (backwards)
+	 */
+	exports.appstats_limit_max_backwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			direction: 'backwards',
+			limit: 1000
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+		var stats = page.items;
+				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check default limit query param (forwards)
+	 */
+	exports.appstats_limit_default_forwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			direction: 'forwards',
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+		var stats = page.items;
+				test.ok(stats.length == 100, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check default limit query param (backwards)
+	 */
+	exports.appstats_limit_default_backwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			direction: 'backwards',
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+		var stats = page.items;
+				test.ok(stats.length == 100, 'Verify 100 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
 				test.done();
 			} catch(e) {
 				console.log(e);
@@ -374,7 +532,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/**
-	 * Check query pagination (backwards)
+	 * Check query pagination (forwards)
 	 */
 	exports.appstats_pagination_forwards = function(test) {
 		test.expect(1);
@@ -440,6 +598,81 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 5000, 'Verify all published message data found');
+
+						/* that's it */
+						test.done();
+					});
+				});
+			});
+		});
+	};
+
+	/**
+	 * Check query pagination omitted (defaults to backwards)
+	 */
+	exports.appstats_pagination_omitted = function(test) {
+		test.expect(1);
+		rest.stats({
+			end: lastYear + '-02-03:15:05',
+			limit: 1
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+
+			test.expect(3);
+			var stats = page.items;
+			test.ok(stats.length == 1, 'Verify exactly one stats record found');
+			var totalData = 0;
+			for(var i = 0; i < stats.length; i++)
+				totalData += stats[i].inbound.all.messages.data;
+			test.equal(totalData, 7000, 'Verify all published message data found');
+
+			/* get next page */
+			test.ok(page.hasNext(), 'Verify next page rel link present');
+			page.next(function(err, page) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				test.expect(6);
+		var stats = page.items;
+				test.ok(stats.length == 1, 'Verify exactly one stats record found');
+				var totalData = 0;
+				for(var i = 0; i < stats.length; i++)
+					totalData += stats[i].inbound.all.messages.data;
+				test.equal(totalData, 6000, 'Verify all published message data found');
+
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					test.expect(9);
+	      var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					var totalData = 0;
+					for(var i = 0; i < stats.length; i++)
+						totalData += stats[i].inbound.all.messages.data;
+					test.equal(totalData, 5000, 'Verify all published message data found');
+
+					/* verify no further pages */
+					test.ok(page.isLast(), 'Verify last page');
+
+					test.expect(10);
+
+					page.first(function(err, page) {
+						var totalData = 0;
+			var stats = page.items;
+						for(var i = 0; i < stats.length; i++)
+							totalData += stats[i].inbound.all.messages.data;
+						test.equal(totalData, 7000, 'Verify all published message data found');
 
 						/* that's it */
 						test.done();
