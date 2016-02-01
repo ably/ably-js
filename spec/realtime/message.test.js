@@ -90,11 +90,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			testMsg1 = 'Hello',
 			testMsg2 = 'World!';
 
+		monitorConnection(test, rt1);
+		monitorConnection(test, rt2);
+
 		// We expect to see testMsg2 on rt1 and testMsg1 on both rt1 and rt2
 		var expectedMessages = 3;
 
 		rt1Channel.subscribe('event0', function(msg) {
-			test.equal(msg.data, testMsg2, 'Received testMsg1 or testMsg2 via rt1 instance');
+			test.equal(msg.data, testMsg2, 'Received testMsg2 via rt1 instance');
 			if (!--expectedMessages)
 				closeAndFinish(test, [rt1, rt2]);
 		});
