@@ -70,6 +70,96 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	/*
+	 * Test that a message is sent back to the same realtime client
+	 * when echoMessages is true (RTC1a and RTL7f)
+	 */
+	exports.publishEchoTrue = function(test) {
+		test.expect(1);
+		try {
+			/* set up realtime */
+			var realtime = helper.AblyRealtime({ echoMessages: true });
+
+			/* connect and attach */
+			realtime.connection.on('connected', function() {
+				var testMsg = 'Hello world';
+				var rtChannel = realtime.channels.get('publishecho');
+				rtChannel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+
+					/* if event is not echoed within reasonable time, give up */
+					var timeoutHandler = setTimeout(function() {
+						test.ok(false, 'No event received within a reasonable time');
+						closeAndFinish(test, realtime);
+					}, 15000);
+
+					/* subscribe to event */
+					rtChannel.subscribe('event0', function(msg) {
+						clearTimeout(timeoutHandler);
+						test.ok(true, 'Received event0 as expected');
+						closeAndFinish(test, realtime);
+					});
+
+					/* publish event */
+					rtChannel.publish('event0', testMsg);
+
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	/*
+	 * Test that a message is not sent back to the same realtime client
+	 * when echoMessages is false (RTC1a and RTL7f)
+	 */
+	exports.publishEchoFalse = function(test) {
+		test.expect(1);
+		try {
+			/* set up realtime */
+			var realtime = helper.AblyRealtime({ echoMessages: false });
+
+			/* connect and attach */
+			realtime.connection.on('connected', function() {
+				var testMsg = 'Hello world';
+				var rtChannel = realtime.channels.get('publishecho');
+				rtChannel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+
+					/* subscribe to event */
+					rtChannel.subscribe('event0', function(msg) {
+						test.ok(false, 'Received event0 when it should not be echoed back');
+						closeAndFinish(test, realtime);
+					});
+
+					/* publish event */
+					rtChannel.publish('event0', testMsg);
+
+					/* wait to see that event is not echoed */
+					setTimeout(function() {
+						test.ok(true, 'No event received within a reasonable time');
+						closeAndFinish(test, realtime);
+					}, 15000);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
 	exports.publishVariations = function(test) {
 		var testData = 'Some data';
 		var errorCallback = function(err){
