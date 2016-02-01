@@ -71,95 +71,44 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/*
+	 * Test that a message is not sent back to the same realtime client
+	 * when echoMessages is false (RTC1a and RTL7f)
+	 *
 	 * Test that a message is sent back to the same realtime client
 	 * when echoMessages is true (RTC1a and RTL7f)
 	 */
-	exports.publishEchoTrue = function(test) {
-		test.expect(1);
-		try {
-			/* set up realtime */
-			var realtime = helper.AblyRealtime({ echoMessages: true });
+	exports.publishEcho = function(test) {
+		test.expect(3);
 
-			/* connect and attach */
-			realtime.connection.on('connected', function() {
-				var testMsg = 'Hello world';
-				var rtChannel = realtime.channels.get('publishecho');
-				rtChannel.attach(function(err) {
-					if(err) {
-						test.ok(false, 'Attach failed with error: ' + displayError(err));
-						closeAndFinish(test, realtime);
-						return;
-					}
+		// set up two realtimes
+		var rt1 = helper.AblyRealtime({ echoMessages: false }),
+			rt2 = helper.AblyRealtime({ echoMessages: true }),
 
-					/* if event is not echoed within reasonable time, give up */
-					var timeoutHandler = setTimeout(function() {
-						test.ok(false, 'No event received within a reasonable time');
-						closeAndFinish(test, realtime);
-					}, 15000);
+			rt1Channel = rt1.channels.get('publishecho'),
+			rt2Channel = rt2.channels.get('publishecho'),
 
-					/* subscribe to event */
-					rtChannel.subscribe('event0', function(msg) {
-						clearTimeout(timeoutHandler);
-						test.ok(true, 'Received event0 as expected');
-						closeAndFinish(test, realtime);
-					});
+			testMsg1 = 'Hello',
+			testMsg2 = 'World!';
 
-					/* publish event */
-					rtChannel.publish('event0', testMsg);
+		// We expect to see testMsg2 on rt1 and testMsg1 on both rt1 and rt2
+		var expectedMessages = 3;
 
-				});
-			});
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
+		rt1Channel.subscribe('event0', function(msg) {
+			test.equal(msg.data, testMsg2, 'Received testMsg1 or testMsg2 via rt1 instance');
+			if (!--expectedMessages)
+				closeAndFinish(test, [rt1, rt2]);
+		});
 
-	/*
-	 * Test that a message is not sent back to the same realtime client
-	 * when echoMessages is false (RTC1a and RTL7f)
-	 */
-	exports.publishEchoFalse = function(test) {
-		test.expect(1);
-		try {
-			/* set up realtime */
-			var realtime = helper.AblyRealtime({ echoMessages: false });
+		rt2Channel.subscribe('event0', function(msg) {
+			test.ok( msg.data == testMsg1 || msg.data == testMsg2, 'Received testMsg1 or 2 via rt2 instance' );
+			if (!--expectedMessages)
+				closeAndFinish(test, [rt1, rt2]);
+		});
 
-			/* connect and attach */
-			realtime.connection.on('connected', function() {
-				var testMsg = 'Hello world';
-				var rtChannel = realtime.channels.get('publishecho');
-				rtChannel.attach(function(err) {
-					if(err) {
-						test.ok(false, 'Attach failed with error: ' + displayError(err));
-						closeAndFinish(test, realtime);
-						return;
-					}
-
-					/* wait to see that event is not echoed */
-					var timeoutHandler = setTimeout(function() {
-						test.ok(true, 'No event received within a reasonable time');
-						closeAndFinish(test, realtime);
-					}, 15000);
-
-					/* subscribe to event */
-					rtChannel.subscribe('event0', function(msg) {
-						clearTimeout(timeoutHandler);
-						test.ok(false, 'Received event0 when it should not be echoed back');
-						closeAndFinish(test, realtime);
-					});
-
-					/* publish event */
-					rtChannel.publish('event0', testMsg);
-
-				});
-			});
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
+		// publish testMsg1 on rt1 and testMsg2 on rt2
+		rt1Channel.publish('event0', testMsg1, function() {
+			rt2Channel.publish('event0', testMsg2);
+		});
 	};
 
 	exports.publishVariations = function(test) {
