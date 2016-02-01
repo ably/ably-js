@@ -137,8 +137,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 
+					/* wait to see that event is not echoed */
+					var timeoutHandler = setTimeout(function() {
+						test.ok(true, 'No event received within a reasonable time');
+						closeAndFinish(test, realtime);
+					}, 15000);
+
 					/* subscribe to event */
 					rtChannel.subscribe('event0', function(msg) {
+						clearTimeout(timeoutHandler);
 						test.ok(false, 'Received event0 when it should not be echoed back');
 						closeAndFinish(test, realtime);
 					});
@@ -146,11 +153,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					/* publish event */
 					rtChannel.publish('event0', testMsg);
 
-					/* wait to see that event is not echoed */
-					setTimeout(function() {
-						test.ok(true, 'No event received within a reasonable time');
-						closeAndFinish(test, realtime);
-					}, 15000);
 				});
 			});
 			monitorConnection(test, realtime);
