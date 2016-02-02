@@ -122,6 +122,23 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		}
 	}
 
+	/* IE 8/9 in a VM will sometimes fail the first request
+	   For test app creation, retry up to 3 times */
+	function withRetry(maxRetries, description, func, callback) {
+		var retries = 0,
+				retryCallback = function(err) {
+					if (err && (retries < maxRetries)) {
+						retries++;
+						console.log("TestApp:", description, "failed on attempt", retries, "; err = ", err);
+						func(retryCallback);
+					} else {
+						callback.apply(this, arguments);
+					}
+				};
+
+		func(retryCallback);
+	}
+
 	function createNewApp(callback) {
 		loadJsonData(testResourcesPath + 'test-app-setup.json', function(err, testData){
 			if(err) {
@@ -243,7 +260,9 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 	}
 
 	return module.exports = {
-		setup: createNewApp,
+		setup: function(callback) {
+			withRetry(3, "createNewApp", createNewApp, callback);
+		},
 		tearDown: deleteApp,
 		createStatsFixtureData: createStatsFixtureData,
 		httpReq: httpReq,
