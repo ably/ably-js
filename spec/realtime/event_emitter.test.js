@@ -123,7 +123,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				callbackCalled = 0,
 				eventEmitter = realtime.connection;
 
-		var callback = function() { callbackCalled += 1; }
+		var callback = function() { callbackCalled += 1; };
 
 		eventEmitter.on('custom', callback);
 		eventEmitter.once('custom', callback);
@@ -142,7 +142,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				callbackCalled = 0,
 				eventEmitter = realtime.connection;
 
-		var callback = function() { callbackCalled += 1; }
+		var callback = function() { callbackCalled += 1; };
 
 		eventEmitter.once('custom', callback);
 		eventEmitter.on('custom', callback);
@@ -164,7 +164,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				callbackCalled = 0,
 				eventEmitter = realtime.connection;
 
-		var callback = function() { callbackCalled += 1; }
+		var callback = function() { callbackCalled += 1; };
 
 		eventEmitter.once('custom', callback);
 		eventEmitter.on('custom', callback);
@@ -186,7 +186,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				callbackCalled = 0,
 				eventEmitter = realtime.connection;
 
-		var callback = function() { callbackCalled += 1; }
+		var callback = function() { callbackCalled += 1; };
 
 		eventEmitter.once('custom', callback);
 		eventEmitter.on('custom', callback);
@@ -208,7 +208,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				callbackCalled = 0,
 				eventEmitter = realtime.connection;
 
-		var callback = function() { callbackCalled += 1; }
+		var callback = function() { callbackCalled += 1; };
 
 		eventEmitter.once('custom', callback);
 		eventEmitter.on('custom', callback);
