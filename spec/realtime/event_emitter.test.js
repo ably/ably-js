@@ -86,7 +86,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.emitCallsAllCallbacksIgnoringExceptions = function(test) {
-		var realtime = helper.AblyRealtime(),
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
 				callbackCalled = false,
 				eventEmitter = realtime.connection;
 
@@ -96,6 +96,132 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		eventEmitter.emit('custom');
 		test.ok(callbackCalled, 'Last callback should have been called');
+		closeAndFinish(test, realtime);
+	}
+
+	exports.onceCalledOnlyOnce = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				onCallbackCalled = 0,
+				onceCallbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		eventEmitter.once('custom', function() { onceCallbackCalled += 1; });
+		eventEmitter.on('custom', function() { onCallbackCalled += 1; });
+
+		eventEmitter.emit('custom');
+		eventEmitter.emit('custom');
+		eventEmitter.emit('custom');
+
+		test.equals(onCallbackCalled, 3, 'On callback called every time');
+		test.equals(onceCallbackCalled, 1, 'Once callback called once');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.onceCallbackDoesNotImpactOnCallback = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; }
+
+		eventEmitter.on('custom', callback);
+		eventEmitter.once('custom', callback);
+		eventEmitter.once('custom', callback);
+
+		eventEmitter.emit('custom');
+		eventEmitter.emit('custom');
+
+		test.equals(callbackCalled, 4, 'On callback called both times but once callbacks only called once');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.offRemovesAllMatchingListeners = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; }
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		eventEmitter.on('custom', callback);
+
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+
+		callbackCalled = 0;
+		eventEmitter.off(callback);
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.offRemovesAllListeners = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; }
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		eventEmitter.on('custom', callback);
+
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+
+		callbackCalled = 0;
+		eventEmitter.off();
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.offRemovesAllMatchingEventListeners = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; }
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		eventEmitter.on('custom', callback);
+
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+
+		callbackCalled = 0;
+		eventEmitter.off('custom', callback);
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.offRemovesAllMatchingEvents = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; }
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		eventEmitter.on('custom', callback);
+
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+
+		callbackCalled = 0;
+		eventEmitter.off('custom');
+		eventEmitter.emit('custom');
+		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+
 		closeAndFinish(test, realtime);
 	}
 
