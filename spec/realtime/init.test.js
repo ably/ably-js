@@ -183,7 +183,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var realtime = helper.AblyRealtime({ key: 'not_a.real:key' });
 			var defaultHost = realtime.connection.connectionManager.httpHosts[0];
-			var hostWithoutEnv = defaultHost.replace(/^\w+\-rest/, 'rest');
+			var hostWithoutEnv = defaultHost.replace(/^[\w-]+\-rest/, 'rest');
 			test.equal(hostWithoutEnv, 'rest.ably.io', 'Verify correct default rest host chosen');
 			realtime.connection.on('failed', function (state) {
 				test.done();
