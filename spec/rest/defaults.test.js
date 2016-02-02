@@ -84,13 +84,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
-	/* init with given host */
-	exports.defaults_given_host = function(test) {
+	/* init with given rest host */
+	exports.defaults_given_rest_host = function(test) {
 		test.expect(10);
 		var normalisedOptions = Defaults.normaliseOptions({restHost: 'test.org'});
 
 		test.equal(normalisedOptions.restHost, 'test.org');
-		test.equal(normalisedOptions.realtimeHost, 'test.org');
+		test.equal(normalisedOptions.realtimeHost, 'realtime.ably.io');
 		test.equal(normalisedOptions.port, 80);
 		test.equal(normalisedOptions.tlsPort, 443);
 		test.equal(normalisedOptions.fallbackHosts, undefined);
@@ -98,7 +98,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.restHost]);
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'test.org', false), 'test.org');
-		test.deepEqual(Defaults.getHost(normalisedOptions, 'test.org', true), 'test.org');
+		test.deepEqual(Defaults.getHost(normalisedOptions, 'test.org', true), 'realtime.ably.io');
 
 		test.equal(Defaults.getPort(normalisedOptions), 443);
 		test.done();
