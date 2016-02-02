@@ -23,7 +23,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		var result = new XMLHttpRequest();
 		if ('withCredentials' in result)
 			return result;
-		if(typeof XDomainRequest !== "undefined") {
+		if(typeof XDomainRequest !== 'undefined') {
 			var xdr = new XDomainRequest();        /* Use IE-specific "CORS" code with XDR */
 			xdr.isXDR = true;
 			return xdr;
@@ -129,7 +129,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 				retryCallback = function(err) {
 					if (err && (retries < maxRetries)) {
 						retries++;
-						console.log("TestApp:", description, "failed on attempt", retries, "; err = ", err);
+						console.log('TestApp:', description, 'failed on attempt', retries, '; err = ', err);
 						func(retryCallback);
 					} else {
 						callback.apply(this, arguments);
@@ -261,7 +261,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 
 	return module.exports = {
 		setup: function(callback) {
-			withRetry(3, "createNewApp", createNewApp, callback);
+			withRetry(3, 'createNewApp', createNewApp, callback);
 		},
 		tearDown: deleteApp,
 		createStatsFixtureData: createStatsFixtureData,

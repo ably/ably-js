@@ -34,7 +34,7 @@ define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably,
 		if (!options.restHost && ablyGlobals.environment) {
 			/* Use a new host name for each REST request to avoid old browser issues
 			   where HTTP connections are no longer available */
-			clientOptions.restHost = hostPrefixes[hostPrefixIndex] + "-" + ablyGlobals.environment + "-rest.ably.io";
+			clientOptions.restHost = hostPrefixes[hostPrefixIndex] + '-' + ablyGlobals.environment + '-rest.ably.io';
 			hostPrefixIndex = (hostPrefixIndex + 1) % hostPrefixes.length;
 		}
 

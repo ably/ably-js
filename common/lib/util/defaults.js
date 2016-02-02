@@ -23,7 +23,7 @@ Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
-		host = host == options.restHost ? options.realtimeHost : host || options.realtimeHost;
+		host = (host == options.restHost ? options.realtimeHost : host) || options.realtimeHost;
 	else
 		host = host || options.restHost;
 
