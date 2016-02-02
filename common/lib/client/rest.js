@@ -42,6 +42,7 @@ var Rest = (function() {
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
+		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
@@ -68,11 +69,6 @@ var Rest = (function() {
 			return statsValues;
 		})).get(params, callback);
 	};
-
-	/* Explicitly set serverTimeOffset to null ensuring any request
-	   requiring knowledge of the server time knows to query the server
-	   as this value is null */
-	Rest.prototype.serverTimeOffset = null;
 
 	Rest.prototype.time = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
@@ -103,7 +99,7 @@ var Rest = (function() {
 				return;
 			}
 			/* calculate time offset only once for this device by adding to the prototype */
-			Rest.prototype.serverTimeOffset = (time - Utils.now());
+			self.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
 	};
