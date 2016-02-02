@@ -20,22 +20,30 @@ var EventEmitter = (function() {
 	/**
 	 * Remove listeners that match listener
 	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
-	 * @param listener the listener to remove
+	 * @param listener the listener callback to remove
+	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
 	 */
-	function removeListener(targetListeners, listener) {
+	function removeListener(targetListeners, listener, eventFilter) {
 		var listeners, idx, eventName, targetListenersIndex;
 
 		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
 			listeners = targetListeners[targetListenersIndex];
+			if (eventFilter) { listeners = listeners[eventFilter]; }
+
 			if (Utils.isArray(listeners)) {
 				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
 					listeners.splice(idx, 1);
+				}
+				/* If events object has an event name key with no listeners then
+				   remove the key to stop the list growing indefinitely */
+				if (eventFilter && (listeners.length === 0)) {
+					delete targetListeners[targetListenersIndex][eventFilter];
 				}
 			} else if (Utils.isObject(listeners)) {
 				/* events */
 				for (eventName in listeners) {
 					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
-						removeListener([listeners[eventName]], listener);
+						removeListener([listeners], listener, eventName);
 					}
 				}
 			}
@@ -96,7 +104,7 @@ var EventEmitter = (function() {
 		}
 		/* "normal" case where event is an actual event */
 		if(listener) {
-			removeListener([this.events[event], this.eventsOnce[event]], listener);
+			removeListener([this.events, this.eventsOnce], listener, event);
 		} else {
 			delete this.events[event];
 			delete this.eventsOnce[event];

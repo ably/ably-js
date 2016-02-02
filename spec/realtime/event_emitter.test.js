@@ -225,5 +225,35 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish(test, realtime);
 	}
 
+	/**
+	 * Ensures that when a listener is removed and there
+	 * are no more listeners for that event name,
+	 * the key is removed entirely from listeners to avoid the
+	 * listener object growing with unnecessary empty arrays
+	 * for each previously registered event name
+	 */
+	exports.offRemovesEmptyEventNameListeners = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				eventEmitter = realtime.connection;
+
+		var callback = function() {};
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		test.ok('custom' in eventEmitter.events, 'custom event array exists');
+
+		eventEmitter.off('custom', callback);
+		test.ok(!('custom' in eventEmitter.events), 'custom event listener array is removed from object');
+
+		eventEmitter.once('custom', callback);
+		eventEmitter.on('custom', callback);
+		test.ok('custom' in eventEmitter.events, 'custom event array exists');
+
+		eventEmitter.off(callback);
+		test.ok(!('custom' in eventEmitter.events), 'event listener array is removed from object');
+
+		closeAndFinish(test, realtime);
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
