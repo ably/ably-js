@@ -40,9 +40,9 @@ var Rest = (function() {
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 
-		this.serverTimeOffset = null;
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
+		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
@@ -98,6 +98,7 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
+			/* calculate time offset only once for this device by adding to the prototype */
 			self.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
