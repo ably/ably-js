@@ -2,6 +2,10 @@ var Rest = (function() {
 	var noop = function() {};
 
 	function Rest(options) {
+		if(!(this instanceof Rest)){
+			return new Rest(options);
+		}
+
 		/* normalise options */
 		if(!options) {
 			var msg = 'no options provided';
