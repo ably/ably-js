@@ -72,6 +72,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_minute0 = function(test) {
 		test.expect(1);
@@ -107,6 +108,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Using milliseconds since epoch, check minute-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_minute1 = function(test) {
 		test.expect(1);
@@ -142,6 +144,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check hour-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_hour0 = function(test) {
 		test.expect(1);
@@ -178,6 +181,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check day-level stats exist (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_day0 = function(test) {
 		test.expect(1);
@@ -213,6 +217,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check month-level stats exist (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_month0 = function(test) {
 		test.expect(1);
@@ -248,6 +253,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check limit query param (backwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_backwards = function(test) {
 		test.expect(1);
@@ -283,6 +289,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check limit query param (forwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_forwards = function(test) {
 		test.expect(1);
@@ -318,6 +325,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check max limit query param (forwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_max_forwards = function(test) {
 		test.expect(1);
@@ -354,6 +362,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check max limit query param (backwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_max_backwards = function(test) {
 		test.expect(1);
@@ -390,6 +399,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check default limit query param (forwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_default_forwards = function(test) {
 		test.expect(1);
@@ -425,6 +435,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check default limit query param (backwards)
+	 * @spec : (RSC6b3)
 	 */
 	exports.appstats_limit_default_backwards = function(test) {
 		test.expect(1);
@@ -460,6 +471,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check query pagination (backwards)
+	 * @spec : (RSC6b2)
 	 */
 	exports.appstats_pagination_backwards = function(test) {
 		test.expect(1);
@@ -536,6 +548,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check query pagination (forwards)
+	 * @spec : (RSC6b2)
 	 */
 	exports.appstats_pagination_forwards = function(test) {
 		test.expect(1);
@@ -612,6 +625,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check query pagination omitted (defaults to backwards)
+	 * @spec : (RSC6b2)
 	 */
 	exports.appstats_pagination_omitted = function(test) {
 		test.expect(1);
