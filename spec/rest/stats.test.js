@@ -10,7 +10,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	// Set last interval to 3rd Feb 20xx 16:03:00, Javascript uses zero based months
 	var firstIntervalEpoch = Date.UTC(lastYear, 1, 3, 15, 3, 0);
-	
 
 	var statsFixtures = [
 		{
@@ -43,9 +42,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	//Add 1001 fixtures for default & max limit testing
 	for(var i = 0; i < MAX_LIMIT + 1; i++) {
 		d.setMinutes(d.getMinutes() + 1);
-    	
-    	var dateId = d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) + "-" + ('0' + d.getDate()).slice(-2) 
-    		+ ":" + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2);
+		
+		var dateId = d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) + "-" + ('0' + d.getDate()).slice(-2) 
+			+ ":" + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2);
 		
 		statsFixtures.push({
 			intervalId: dateId,
@@ -159,7 +158,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.equal(stats.length, 1, 'Verify 1 stat record found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -194,7 +193,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -229,7 +228,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -264,7 +263,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -299,7 +298,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -335,7 +334,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -371,7 +370,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -406,7 +405,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 100, 'Verify 1000 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -441,7 +440,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 100, 'Verify 100 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -492,7 +491,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.expect(6);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify exactly one stats record found');
 				var totalData = 0;
 				for(var i = 0; i < stats.length; i++)
@@ -508,7 +507,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					test.expect(9);
-	      var stats = page.items;
+					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
 					var totalData = 0;
 					for(var i = 0; i < stats.length; i++)
@@ -522,7 +521,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					page.first(function(err, page) {
 						var totalData = 0;
-			var stats = page.items;
+						var stats = page.items;
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 7000, 'Verify all published message data found');
@@ -568,7 +567,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.expect(6);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify exactly one stats record found');
 				var totalData = 0;
 				for(var i = 0; i < stats.length; i++)
@@ -584,7 +583,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					test.expect(9);
-	      var stats = page.items;
+					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
 					var totalData = 0;
 					for(var i = 0; i < stats.length; i++)
@@ -598,7 +597,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					page.first(function(err, page) {
 						var totalData = 0;
-			var stats = page.items;
+						var stats = page.items;
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 5000, 'Verify all published message data found');
@@ -643,7 +642,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.expect(6);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify exactly one stats record found');
 				var totalData = 0;
 				for(var i = 0; i < stats.length; i++)
@@ -659,7 +658,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					test.expect(9);
-	      var stats = page.items;
+					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
 					var totalData = 0;
 					for(var i = 0; i < stats.length; i++)
@@ -673,7 +672,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					page.first(function(err, page) {
 						var totalData = 0;
-			var stats = page.items;
+						var stats = page.items;
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 7000, 'Verify all published message data found');
