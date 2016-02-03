@@ -341,7 +341,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			try {
-				test.expect(3);
+				test.expect(4);
 				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
@@ -353,6 +353,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
 				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+				});
 				test.done();
 			} catch(e) {
 				console.log(e);
@@ -378,7 +390,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			try {
-				test.expect(3);
+				test.expect(4);
 				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
@@ -390,6 +402,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
 				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+				});
 				test.done();
 			} catch(e) {
 				console.log(e);
