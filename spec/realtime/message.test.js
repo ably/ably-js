@@ -99,10 +99,14 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var finishTest = function() {
 			if (receivedMessagesNoEcho.length + receivedMessagesEcho.length == 3) {
 				test.equal(receivedMessagesNoEcho.length, 1, 'Received exactly one message on realtimeNoEcho');
-				test.equal(receivedMessagesNoEcho[0].data, testMsg2, 'Received testMsg2 on realtimeNoEcho');
 				test.equal(receivedMessagesEcho.length, 2, 'Received exactly two messages on realtimeEcho');
-				test.equal(receivedMessagesEcho[0].data, testMsg1, 'Received testMsg1 on realtimeEcho first');
-				test.equal(receivedMessagesEcho[1].data, testMsg2, 'Received testMsg2 on realtimeEcho second');
+				try {
+					test.equal(receivedMessagesNoEcho[0].data, testMsg2, 'Received testMsg2 on realtimeNoEcho');
+					test.equal(receivedMessagesEcho[0].data, testMsg1, 'Received testMsg1 on realtimeEcho first');
+					test.equal(receivedMessagesEcho[1].data, testMsg2, 'Received testMsg2 on realtimeEcho second');
+				} catch(e) {
+					test.ok(false, 'Failed to find an expected message in the received messages');
+				}
 				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
 			}
 		}
