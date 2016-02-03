@@ -78,7 +78,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * when echoMessages is true (RTC1a and RTL7f)
 	 */
 	exports.publishEcho = function(test) {
-		test.expect(3);
+		test.expect(5);
 
 		// set up two realtimes
 		var realtimeNoEcho = helper.AblyRealtime({ echoMessages: false }),
@@ -93,24 +93,39 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		monitorConnection(test, realtimeNoEcho, realtimeEcho);
 
 		// We expect to see testMsg2 on realtimeNoEcho and testMsg1 on both realtimeNoEcho and realtimeEcho
-		var expectedMessages = 3;
+		var receivedMessagesNoEcho = [],
+			receivedMessagesEcho = [];
 
+		var finishTest = function() {
+			if (receivedMessagesNoEcho.length + receivedMessagesEcho.length == 3) {
+				test.equal(receivedMessagesNoEcho.length, 1, 'Received exactly one message on realtimeNoEcho');
+				test.equal(receivedMessagesNoEcho[0].data, testMsg2, 'Received testMsg2 on realtimeNoEcho');
+				test.equal(receivedMessagesEcho.length, 2, 'Received exactly two messages on realtimeEcho');
+				test.equal(receivedMessagesEcho[0].data, testMsg1, 'Received testMsg1 on realtimeEcho first');
+				test.equal(receivedMessagesEcho[1].data, testMsg2, 'Received testMsg2 on realtimeEcho second');
+				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
+			}
+		}
+
+		// first subscribe to realtimeNoEcho's channel event0
 		realtimeNoEchoChannel.subscribe('event0', function(msg) {
-			test.equal(msg.data, testMsg2, 'Received testMsg2 via realtimeNoEcho instance');
-			if (!--expectedMessages)
-				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
+			receivedMessagesNoEcho.push(msg);
+			finishTest();
+		}, function() {
+			// then subscribe to realtimeEcho's channel event0
+			realtimeEchoChannel.subscribe('event0', function(msg) {
+				receivedMessagesEcho.push(msg);
+				finishTest();
+			}, function() {
+				// then publish testMsg1 via realtimeNoEcho
+				realtimeNoEchoChannel.publish('event0', testMsg1, function() {
+					// then publish testMsg2 via realtimeEcho
+					realtimeEchoChannel.publish('event0', testMsg2);
+				});
+			});
 		});
 
-		realtimeEchoChannel.subscribe('event0', function(msg) {
-			test.ok( msg.data == testMsg1 || msg.data == testMsg2, 'Received testMsg1 or 2 via realtimeEcho instance' );
-			if (!--expectedMessages)
-				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
-		});
 
-		// publish testMsg1 on realtimeNoEcho and testMsg2 on realtimeEcho
-		realtimeNoEchoChannel.publish('event0', testMsg1, function() {
-			realtimeEchoChannel.publish('event0', testMsg2);
-		});
 	};
 
 	exports.publishVariations = function(test) {
