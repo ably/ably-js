@@ -81,36 +81,35 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(3);
 
 		// set up two realtimes
-		var rt1 = helper.AblyRealtime({ echoMessages: false }),
-			rt2 = helper.AblyRealtime({ echoMessages: true }),
+		var realtimeNoEcho = helper.AblyRealtime({ echoMessages: false }),
+			realtimeEcho = helper.AblyRealtime({ echoMessages: true }),
 
-			rt1Channel = rt1.channels.get('publishecho'),
-			rt2Channel = rt2.channels.get('publishecho'),
+			realtimeNoEchoChannel = realtimeNoEcho.channels.get('publishecho'),
+			realtimeEchoChannel = realtimeEcho.channels.get('publishecho'),
 
 			testMsg1 = 'Hello',
 			testMsg2 = 'World!';
 
-		monitorConnection(test, rt1);
-		monitorConnection(test, rt2);
+		monitorConnection(test, realtimeNoEcho, realtimeEcho);
 
-		// We expect to see testMsg2 on rt1 and testMsg1 on both rt1 and rt2
+		// We expect to see testMsg2 on realtimeNoEcho and testMsg1 on both realtimeNoEcho and realtimeEcho
 		var expectedMessages = 3;
 
-		rt1Channel.subscribe('event0', function(msg) {
-			test.equal(msg.data, testMsg2, 'Received testMsg2 via rt1 instance');
+		realtimeNoEchoChannel.subscribe('event0', function(msg) {
+			test.equal(msg.data, testMsg2, 'Received testMsg2 via realtimeNoEcho instance');
 			if (!--expectedMessages)
-				closeAndFinish(test, [rt1, rt2]);
+				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
 		});
 
-		rt2Channel.subscribe('event0', function(msg) {
-			test.ok( msg.data == testMsg1 || msg.data == testMsg2, 'Received testMsg1 or 2 via rt2 instance' );
+		realtimeEchoChannel.subscribe('event0', function(msg) {
+			test.ok( msg.data == testMsg1 || msg.data == testMsg2, 'Received testMsg1 or 2 via realtimeEcho instance' );
 			if (!--expectedMessages)
-				closeAndFinish(test, [rt1, rt2]);
+				closeAndFinish(test, [realtimeNoEcho, realtimeEcho]);
 		});
 
-		// publish testMsg1 on rt1 and testMsg2 on rt2
-		rt1Channel.publish('event0', testMsg1, function() {
-			rt2Channel.publish('event0', testMsg2);
+		// publish testMsg1 on realtimeNoEcho and testMsg2 on realtimeEcho
+		realtimeNoEchoChannel.publish('event0', testMsg1, function() {
+			realtimeEchoChannel.publish('event0', testMsg2);
 		});
 	};
 
