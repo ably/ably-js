@@ -36,15 +36,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	var MAX_LIMIT = 1000;
 	//Skip a month for the generated tests
-	var d = new Date(lastYear, 2, 3, 15, 6, 0);
+	var date = new Date(lastYear, 2, 3, 15, 6, 0);
 	var secondIntervalEpoch = Date.UTC(lastYear, 2, 3, 15, 6, 0);
 
 	//Add 1001 fixtures for default & max limit testing
 	for(var i = 0; i < MAX_LIMIT + 1; i++) {
-		d.setMinutes(d.getMinutes() + 1);
+		date.setMinutes(date.getMinutes() + 1);
 		
-		var dateId = d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) + "-" + ('0' + d.getDate()).slice(-2) 
-			+ ":" + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2);
+		var dateId = date.getFullYear() + "-" + ('0' + (date.getMonth() + 1)).slice(-2) + "-" + ('0' + date.getDate()).slice(-2) 
+			+ ":" + ('0' + date.getHours()).slice(-2) + ":" + ('0' + date.getMinutes()).slice(-2);
 		
 		statsFixtures.push({
 			intervalId: dateId,
