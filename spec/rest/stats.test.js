@@ -402,7 +402,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
 				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
-				console.log('debug: 1st test batch complete');
 				/* get next page */
 				test.ok(page.hasNext(), 'Verify next page rel link present');
 				page.next(function(err, page) {
@@ -411,13 +410,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						test.done();
 						return;
 					}
-					console.log('debug: 2st test batch start');
 					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
-					console.log('debug: 2st test batch finished');
 					test.done();
 				});
-				console.log('debug: end of try block');
 			} catch(e) {
 				console.log(e);
 			}
