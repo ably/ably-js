@@ -36,15 +36,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	var MAX_LIMIT = 1000;
 	//Skip a month for the generated tests
-	var date = new Date(lastYear, 2, 3, 15, 6, 0);
+	var secondIntervalDate = new Date(lastYear, 2, 3, 15, 6, 0);
 	var secondIntervalEpoch = Date.UTC(lastYear, 2, 3, 15, 6, 0);
 
 	var dateId;
 
 	//Add 1001 fixtures for default & max limit testing
 	for(var i = 0; i < MAX_LIMIT + 1; i++) {
-		date.setMinutes(date.getMinutes() + 1);
-		dateId = date.getFullYear() + "-" + ('0' + (date.getMonth() + 1)).slice(-2) + "-" + ('0' + date.getDate()).slice(-2) + ":" + ('0' + date.getHours()).slice(-2) + ":" + ('0' + date.getMinutes()).slice(-2);
+		secondIntervalDate.setMinutes(secondIntervalDate.getMinutes() + 1);
+		dateId = secondIntervalDate.getFullYear() + "-" + ('0' + (secondIntervalDate.getMonth() + 1)).slice(-2) + "-" + ('0' + secondIntervalDate.getDate()).slice(-2) + ":" + ('0' + secondIntervalDate.getHours()).slice(-2) + ":" + ('0' + secondIntervalDate.getMinutes()).slice(-2);
 
 		statsFixtures.push({
 			intervalId: dateId,
@@ -341,7 +341,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			try {
-				test.expect(4);
+				test.expect(5);
 				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
@@ -364,8 +364,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					}
 					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					test.done();
 				});
-				test.done();
 			} catch(e) {
 				console.log(e);
 			}
@@ -390,7 +390,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				return;
 			}
 			try {
-				test.expect(4);
+				test.expect(5);
 				var stats = page.items;
 				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
 
@@ -412,8 +412,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					}
 					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					test.done();
 				});
-				test.done();
 			} catch(e) {
 				console.log(e);
 			}
