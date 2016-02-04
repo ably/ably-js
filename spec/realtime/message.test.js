@@ -1,10 +1,12 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		displayError = helper.displayError,
+		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection;
+		monitorConnection = helper.monitorConnection,
+		testOnAllTransports = helper.testOnAllTransports;
 
 	var publishIntervalHelper = function(currentMessageNum, channel, dataFn, onPublish){
 			return function(currentMessageNum) {
@@ -166,9 +168,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					/* publish events */
 					var restChannel = rest.channels.get('publishVariations');
-					for(var i = 0; i < testArguments.length; i++) {
-						restChannel.publish.apply(restChannel, testArguments[i]);
-					}
+					async.eachSeries(testArguments, function iterator(item, callback) {
+						try {
+							restChannel.publish(item, function(err) {
+								callback(err);
+							});
+						} catch (e) {
+							test.ok(false, "Failed to publish");
+						}
+					}, function() {});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -185,7 +193,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			[{name: 'objectAndNumericData', data: 0}],
 			['nameAndNumericData', 0],
 			[{name: 'objectAndOtherObjectData', data: new Date()}],
-			['nameAndOtherObjectData', new Date()],
+			['nameAndOtherObjectData', new Date()]
 		];
 
 		test.expect(testArguments.length * 2);
@@ -235,7 +243,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			// valid
 			[{name: 'utf8base64', encoding: 'utf-8/base64', data: 'dGVzdERhdGE='}],
 			// invalid -- nonsense/corrupt encoding
-			[{name: 'nonsense', encoding: 'choahofhpxf', data: testData}],
+			[{name: 'nonsense', encoding: 'choahofhpxf', data: testData}]
 		];
 
 		test.expect(testArguments.length * 4); // One for sending, one for receiving, one each for data & encoding
@@ -286,14 +294,16 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					/* publish events */
 					var restChannel = rest.channels.get('publishEncodings');
-					for(var i = 0; i < testArguments.length; i++) {
+					async.eachSeries(testArguments, function iterator(item, callback) {
 						try {
-							restChannel.publish.apply(restChannel, testArguments[i]);
-							test.ok(true, "Successfully published");
+							restChannel.publish(item, function(err) {
+								test.ok(!err, "Successfully published");
+								callback(err);
+							});
 						} catch (e) {
 							test.ok(false, "Failed to publish");
 						}
-					}
+					}, function() {});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -346,7 +356,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		/* subscribe to event */
 		recvchannel.subscribe('event0', function(msg) {
 			test.ok(true, 'Received event0');
-			test.notEqual(-1, messagesSent.indexOf(msg.data), 'Received unexpected message text');
+			test.notEqual(-1, utils.arrIndexOf(messagesSent, msg.data), 'Received unexpected message text');
 			if(!--count) {
 				clearInterval(timer);
 				closeAndFinish(test, realtime);
@@ -360,7 +370,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}, 500);
 	};
 
-	exports.wspublish = function(test) {
+	testOnAllTransports(exports, 'publish', function(realtimeOpts) { return function(test) {
 		var count = 10;
 		var cbCount = 10;
 		var checkFinish = function() {
@@ -372,9 +382,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			--cbCount;
 			checkFinish();
 		};
-		var realtime = helper.AblyRealtime();
+		var realtime = helper.AblyRealtime(realtimeOpts);
 		test.expect(count);
-		var channel = realtime.channels.get('wspublish');
+		var channel = realtime.channels.get('publish ' + JSON.stringify(realtimeOpts));
 		/* subscribe to event */
 		channel.subscribe('event0', function() {
 			test.ok(true, 'Received event0');
@@ -383,84 +393,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 		var dataFn = function() { return 'Hello world at: ' + new Date(); };
 		publishAtIntervals(count, channel, dataFn, onPublish);
-	};
-
-	if (isBrowser) {
-		exports.wsxhrpublish = function(test) {
-			var count = 5;
-			var cbCount = 5;
-			var checkFinish = function() {
-				if(count <= 0 && cbCount <= 0) {
-					closeAndFinish(test, realtime);
-				}
-			};
-			var onPublish = function() {
-				--cbCount;
-				checkFinish();
-			};
-			var realtime = helper.AblyRealtime({ transports : ['xhr'] });
-			test.expect(count);
-			var channel = realtime.channels.get('wsxhrpublish');
-			/* subscribe to event */
-			channel.subscribe('event0', function() {
-				test.ok(true, 'Received event0');
-				--count;
-				checkFinish();
-			});
-			var dataFn = function() { return 'Hello world at: ' + new Date(); };
-			publishAtIntervals(count, channel, dataFn, onPublish);
-		};
-
-		exports.wsjsonppublish = function(test) {
-			var count = 5;
-			var cbCount = 5;
-			var checkFinish = function() {
-				if(count <= 0 && cbCount <= 0) {
-					closeAndFinish(test, realtime);
-				}
-			};
-			var onPublish = function() {
-				--cbCount;
-				checkFinish();
-			};
-			var realtime = helper.AblyRealtime({ transports : ['jsonp'] });
-			test.expect(count);
-			var channel = realtime.channels.get('wsjsonppublish');
-			/* subscribe to event */
-			channel.subscribe('event0', function() {
-				test.ok(true, 'Received event0');
-				--count;
-				checkFinish();
-			});
-			var dataFn = function() { return 'Hello world at: ' + new Date(); };
-			publishAtIntervals(count, channel, dataFn, onPublish);
-		};
-	} else {
-		exports.wscometpublish = function(test) {
-			var count = 5;
-			var cbCount = 5;
-			var checkFinish = function() {
-				if(count <= 0 && cbCount <= 0) {
-					closeAndFinish(test, realtime);
-				}
-			};
-			var onPublish = function() {
-				--cbCount;
-				checkFinish();
-			};
-			var realtime = helper.AblyRealtime({ transports : ['comet'] });
-			test.expect(count);
-			var channel = realtime.channels.get('wscometpublish');
-			/* subscribe to event */
-			channel.subscribe('event0', function() {
-				test.ok(true, 'Received event0');
-				--count;
-				checkFinish();
-			});
-			var dataFn = function() { return 'Hello world at: ' + new Date(); };
-			publishAtIntervals(count, channel, dataFn, onPublish);
-		};
-	}
+	}});
 
 	/* Authenticate with a clientId and ensure that the clientId is not sent in the Message
 	   and is implicitly added when published */

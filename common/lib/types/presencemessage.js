@@ -64,7 +64,7 @@ var PresenceMessage = (function() {
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {
-			if (typeof(data) == 'string')
+			if (typeof(this.data) == 'string')
 				result += '; data=' + this.data;
 			else if (BufferUtils.isBuffer(this.data))
 				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);

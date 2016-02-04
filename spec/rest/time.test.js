@@ -1,7 +1,8 @@
 "use strict";
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
-	var rest, exports = {};
+	var rest, exports = {},
+		utils = helper.Utils;
 
 	exports.setuptime = function(test) {
 		test.expect(1);
@@ -26,7 +27,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				test.done();
 				return;
 			}
-			var localFiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+			var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
 			test.ok(serverTime > localFiveMinutesAgo, 'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks');
 			test.done();
 		});

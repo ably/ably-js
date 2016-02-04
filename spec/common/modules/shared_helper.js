@@ -5,6 +5,10 @@
 
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
+		var utils = clientModule.Ably.Realtime.Utils;
+		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.transports),
+			bestTransport = availableTransports[0];
+
 		var displayError = function(err) {
 			if(typeof(err) == 'string')
 				return err;
@@ -21,9 +25,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		};
 
 		var monitorConnection = function(test, realtime) {
-			['failed', 'suspended'].forEach(function(state) {
+			utils.arrForEach(['failed', 'suspended'], function(state) {
 				realtime.connection.on(state, function () {
-					test.ok(false, 'connection to server ' + state);
+					test.ok(false, 'Connection monitoring: state changed to ' + state + ', aborting test');
 					test.done();
 					realtime.close();
 				});
@@ -82,6 +86,19 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		 )
 		};
 
+		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
+		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
+			utils.arrForEach(availableTransports, function(transport) {
+				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
+				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
+			});
+			/* Plus one for no transport specified (ie use upgrade mechanism if present) */
+			if(!excludeUpgrade) {
+				exports[name + '_with_binary_transport'] = testFn({useBinaryProtocol: true});
+				exports[name + '_with_text_transport'] = testFn({useBinaryProtocol: false});
+			}
+		}
+
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
 		var withTimeout = function(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
@@ -117,6 +134,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			Ably:         clientModule.Ably,
 			AblyRest:     clientModule.AblyRest,
 			AblyRealtime: clientModule.AblyRealtime,
+			Utils:        utils,
 
 			loadTestData:      testAppManager.loadJsonData,
 			testResourcesPath: testAppManager.testResourcesPath,
@@ -125,6 +143,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			monitorConnection:         monitorConnection,
 			closeAndFinish:            closeAndFinish,
 			simulateDroppedConnection: simulateDroppedConnection,
-			withTimeout:               withTimeout
+			withTimeout:               withTimeout,
+			testOnAllTransports:       testOnAllTransports,
+			availableTransports:       availableTransports,
+			bestTransport:             bestTransport
 		};
 	});

@@ -38,8 +38,8 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	function Auth(rest, options) {
-		this.rest = rest;
+	function Auth(client, options) {
+		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
 
 		/* RSA7a4: if options.clientId is provided and is not
@@ -146,32 +146,44 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		var token = this.tokenDetails;
+		var self = this,
+			token = this.tokenDetails;
+
+		var requestToken = function() {
+			self.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, (self.tokenDetails = tokenResponse));
+			});
+		}
+
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
-			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
-				if(!(authOptions && authOptions.force)) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-					callback(null, token);
-					return;
+			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
+				if(err)
+					callback(err);
+
+				if(token.expires === undefined || (token.expires >= time)) {
+					if(!(authOptions && authOptions.force)) {
+						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+						callback(null, token);
+						return;
+					}
+				} else {
+					/* expired, so remove */
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+					self.tokenDetails = null;
 				}
-			} else {
-				/* expired, so remove */
-				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				this.tokenDetails = null;
-			}
+				requestToken();
+			});
+		} else {
+			requestToken();
 		}
-		var self = this;
-		this.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, (self.tokenDetails = tokenResponse));
-		});
 	};
 
 	/**
@@ -232,14 +244,15 @@ var Auth = (function() {
 		}
 
 		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback, rest = this.rest;
+		var tokenRequestCallback, client = this.client;
+
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = authOptions.authCallback;
@@ -280,9 +293,9 @@ var Auth = (function() {
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(rest, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
+					Http.postUri(client, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
 				} else {
-					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
+					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
 				}
 			};
 		} else if(authOptions.key) {
@@ -300,23 +313,23 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var rest = this.rest;
+		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
 				keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
+				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
-				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
+				Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
+				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
@@ -396,7 +409,7 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -424,24 +437,18 @@ var Auth = (function() {
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability,
-			rest = this.rest,
 			self = this;
 
 		(function(authoriseCb) {
 			if(request.timestamp) {
 				authoriseCb();
 				return;
-			}
-			if(authOptions.queryTime) {
-				rest.time(function(err, time) {
-					if(err) {callback(err); return;}
-					request.timestamp = time;
-					authoriseCb();
-				});
-				return;
-			}
-			request.timestamp = self.getTimestamp();
-			authoriseCb();
+			};
+			self.getTimestamp(authOptions && authOptions.queryTime, function(err, time) {
+				if(err) {callback(err); return;}
+				request.timestamp = time;
+				authoriseCb();
+			});
 		})(function() {
 			/* nonce */
 			/* NOTE: there is no expectation that the client
@@ -506,8 +513,25 @@ var Auth = (function() {
 		}
 	};
 
-	Auth.prototype.getTimestamp = function() {
-		return Date.now() + (this.rest.serverTimeOffset || 0);
+	/**
+	 * Get the current time based on the local clock,
+	 * or if the option queryTime is true, return the server time.
+	 * The server time offset from the local time is stored so that
+	 * only one request to the server to get the time is ever needed
+	 */
+	Auth.prototype.getTimestamp = function(queryTime, callback) {
+		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
+		if (!offsetSet && (queryTime || this.client.options.queryTime)) {
+			this.client.time(function(err, time) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, time);
+			});
+		} else {
+			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
+		}
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {

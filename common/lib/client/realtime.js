@@ -1,6 +1,10 @@
 var Realtime = (function() {
 
 	function Realtime(options) {
+		if(!(this instanceof Realtime)){
+			return new Realtime(options);
+		}
+
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
