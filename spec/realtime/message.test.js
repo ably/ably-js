@@ -72,6 +72,77 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
+	/*
+	 * Test that a message is not sent back to the same realtime client
+	 * when echoMessages is false (RTC1a and RTL7f)
+	 *
+	 * Test that a message is sent back to the same realtime client
+	 * when echoMessages is true (RTC1a and RTL7f)
+	 */
+	exports.publishEcho = function(test) {
+		test.expect(7);
+
+		// set up two realtimes
+		var rtNoEcho = helper.AblyRealtime({ echoMessages: false }),
+			rtEcho = helper.AblyRealtime({ echoMessages: true }),
+
+			rtNoEchoChannel = rtNoEcho.channels.get('publishecho'), 
+			rtEchoChannel = rtEcho.channels.get('publishecho'),
+
+			testMsg1 = 'Hello',
+			testMsg2 = 'World!';
+
+		// We expect to see testMsg2 on rtNoEcho and testMsg1 on both rtNoEcho and rtEcho
+		var receivedMessagesNoEcho = [],
+			receivedMessagesEcho = [];
+
+		var finishTest = function() {
+			if (receivedMessagesNoEcho.length + receivedMessagesEcho.length == 3) {
+				test.equal(receivedMessagesNoEcho.length, 1, 'Received exactly one message on rtNoEcho');
+				test.equal(receivedMessagesEcho.length, 2, 'Received exactly two messages on rtEcho');
+				try {
+					test.equal(receivedMessagesNoEcho[0], testMsg2, 'Received testMsg2 on rtNoEcho');
+					test.equal(receivedMessagesEcho[0], testMsg1, 'Received testMsg1 on rtEcho first');
+					test.equal(receivedMessagesEcho[1], testMsg2, 'Received testMsg2 on rtEcho second');
+				} catch(e) {
+					test.ok(false, 'Failed to find an expected message in the received messages');
+				}
+				closeAndFinish(test, [rtNoEcho, rtEcho]);
+			}
+		}
+
+		// attach rtNoEchoChannel
+		rtNoEchoChannel.attach(function(err) {
+			test.ok(!err,'Attached to rtNoEchoChannel with no error');
+			monitorConnection(test, rtNoEcho);
+
+			// once rtNoEchoChannel attached, subscribe to event0
+			rtNoEchoChannel.subscribe('event0', function(msg) {
+				receivedMessagesNoEcho.push(msg.data);
+				finishTest();
+			});
+
+			// attach rtEchoChannel
+			rtEchoChannel.attach(function(err) {
+				test.ok(!err,'Attached to rtEchoChannel with no error');
+				monitorConnection(test, rtEcho);
+
+				// once rtEchoChannel attached, subscribe to event0
+				rtEchoChannel.subscribe('event0', function(msg) {
+					receivedMessagesEcho.push(msg.data);
+					finishTest();
+				});
+				
+				// publish testMsg1 via rtNoEcho
+				rtNoEchoChannel.publish('event0', testMsg1, function() {
+					// publish testMsg2 via rtEcho
+					rtEchoChannel.publish('event0', testMsg2);
+				});
+				
+			});
+		});
+	};
+
 	exports.publishVariations = function(test) {
 		var testData = 'Some data';
 		var errorCallback = function(err){
