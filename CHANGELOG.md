@@ -1,8 +1,386 @@
 # Change Log
 
-## [0.8.9](https://github.com/ably/ably-js/tree/0.8.9) (2015-12-07)
+## [0.8.14](https://github.com/ably/ably-js/tree/0.8.14) (2016-02-09)
 
-[Changes since 0.8.2](https://github.com/ably/ably-js/compare/0.8.2...0.8.9)
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.13...0.8.14)
+
+**Fixed bugs:**
+
+- Token renewal does not seem to be working [\#203](https://github.com/ably/ably-js/issues/203)
+
+- clientId from token auth is ignored for presence [\#198](https://github.com/ably/ably-js/issues/198)
+
+- IE9 support [\#196](https://github.com/ably/ably-js/issues/196)
+
+- ably-js-browsers failing in mobile safari [\#164](https://github.com/ably/ably-js/issues/164)
+
+**Closed issues:**
+
+- Proposal for new transport fallback behaviour [\#217](https://github.com/ably/ably-js/issues/217)
+
+- Investigate whether encoding is being set correctly on presence data [\#200](https://github.com/ably/ably-js/issues/200)
+
+**Merged pull requests:**
+
+- enhance: Off removes all listeners for EventEmitter [\#227](https://github.com/ably/ably-js/pull/227) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- test\(realtime\): Testing echoMessages=true and echoMessages=false [\#226](https://github.com/ably/ably-js/pull/226) ([alex-georgiou](https://github.com/alex-georgiou))
+
+- Safeguard Realtime Constructor [\#222](https://github.com/ably/ably-js/pull/222) ([CrowdHailer](https://github.com/CrowdHailer))
+
+- Issue205 auth token expires fails [\#221](https://github.com/ably/ably-js/pull/221) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- Some proposed fixes for "Poor connection never attaches and reports connection to be connected \#195" [\#218](https://github.com/ably/ably-js/pull/218) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Publish messages serially [\#215](https://github.com/ably/ably-js/pull/215) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- Adding README instructions for pulling ably-common submodule [\#214](https://github.com/ably/ably-js/pull/214) ([alex-georgiou](https://github.com/alex-georgiou))
+
+- Token error update [\#209](https://github.com/ably/ably-js/pull/209) ([paddybyers](https://github.com/paddybyers))
+
+- Routable format of connectionKey now applies to all transports [\#207](https://github.com/ably/ably-js/pull/207) ([paddybyers](https://github.com/paddybyers))
+
+- Stop shimming async for requirejs [\#206](https://github.com/ably/ably-js/pull/206) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Force token rerequest if realtime indicates token problems [\#204](https://github.com/ably/ably-js/pull/204) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Fix presence data not getting encoded [\#201](https://github.com/ably/ably-js/pull/201) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Presence: get clientId from Auth, not options directly [\#199](https://github.com/ably/ably-js/pull/199) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Tweak xhr error handling [\#197](https://github.com/ably/ably-js/pull/197) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.13](https://github.com/ably/ably-js/tree/0.8.13) (2016-01-08)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.12...0.8.13)
+
+**Fixed bugs:**
+
+- Connection state incorrectly reported [\#187](https://github.com/ably/ably-js/issues/187)
+
+**Merged pull requests:**
+
+- Fix unsubscribe for all events & listeners [\#193](https://github.com/ably/ably-js/pull/193) ([mattheworiordan](https://github.com/mattheworiordan))
+
+## [0.8.12](https://github.com/ably/ably-js/tree/0.8.12) (2015-12-20)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.11...0.8.12)
+
+**Merged pull requests:**
+
+- Add script for running tests in CI [\#186](https://github.com/ably/ably-js/pull/186) ([lmars](https://github.com/lmars))
+
+## [0.8.11](https://github.com/ably/ably-js/tree/0.8.11) (2015-12-18)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.10...0.8.11)
+
+**Fixed bugs:**
+
+- No internet up test coverage [\#183](https://github.com/ably/ably-js/issues/183)
+
+**Merged pull requests:**
+
+- Remove presence leaveOnDisconnect test [\#185](https://github.com/ably/ably-js/pull/185) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Connectivity check fixes & tests [\#184](https://github.com/ably/ably-js/pull/184) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.10](https://github.com/ably/ably-js/tree/0.8.10) (2015-12-17)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.9...0.8.10)
+
+**Implemented enhancements:**
+
+- Flexible handling of callback for auth methods [\#175](https://github.com/ably/ably-js/issues/175)
+
+**Fixed bugs:**
+
+- High priority spec incompatibilities [\#170](https://github.com/ably/ably-js/issues/170)
+
+**Closed issues:**
+
+- Xhr connections not starting a /recv request after /connect connection ends [\#180](https://github.com/ably/ably-js/issues/180)
+
+**Merged pull requests:**
+
+- Fix comet connections not starting a recv after the connect req closes [\#181](https://github.com/ably/ably-js/pull/181) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Spec updates and miscellania [\#177](https://github.com/ably/ably-js/pull/177) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.9](https://github.com/ably/ably-js/tree/0.8.9) (2015-12-04)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.8...0.8.9)
+
+**Implemented enhancements:**
+
+- Spec validation [\#43](https://github.com/ably/ably-js/issues/43)
+
+**Fixed bugs:**
+
+- Highest priority item [\#172](https://github.com/ably/ably-js/issues/172)
+
+**Merged pull requests:**
+
+- Add support for authMethod: POST [\#173](https://github.com/ably/ably-js/pull/173) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.8](https://github.com/ably/ably-js/tree/0.8.8) (2015-11-20)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.7...0.8.8)
+
+**Fixed bugs:**
+
+- HTTP requests ignore `tls: false` attribute [\#166](https://github.com/ably/ably-js/issues/166)
+
+- Presence callback error following an immediate disconnect [\#161](https://github.com/ably/ably-js/issues/161)
+
+**Merged pull requests:**
+
+- REST client: respect tls clientOption [\#167](https://github.com/ably/ably-js/pull/167) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Don’t assume a callback exists if error occurs during presence enter/update [\#162](https://github.com/ably/ably-js/pull/162) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- clientId specs [\#145](https://github.com/ably/ably-js/pull/145) ([mattheworiordan](https://github.com/mattheworiordan))
+
+## [0.8.7](https://github.com/ably/ably-js/tree/0.8.7) (2015-11-13)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.6...0.8.7)
+
+**Merged pull requests:**
+
+- Include version and license [\#159](https://github.com/ably/ably-js/pull/159) ([mattheworiordan](https://github.com/mattheworiordan))
+
+## [0.8.6](https://github.com/ably/ably-js/tree/0.8.6) (2015-11-12)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.5...0.8.6)
+
+**Implemented enhancements:**
+
+- Switch arity of auth methods [\#137](https://github.com/ably/ably-js/issues/137)
+
+- PresenceMessage action [\#45](https://github.com/ably/ably-js/issues/45)
+
+- Emit errors [\#39](https://github.com/ably/ably-js/issues/39)
+
+- README to include code examples and follow common format [\#38](https://github.com/ably/ably-js/issues/38)
+
+- Share test app set up & encoding fixture data [\#34](https://github.com/ably/ably-js/issues/34)
+
+- Integrate SauceLabs browser tests into ably-js [\#31](https://github.com/ably/ably-js/issues/31)
+
+- License & CHANGELOG needs to be included [\#2](https://github.com/ably/ably-js/issues/2)
+
+**Fixed bugs:**
+
+- MsgPack cipher workaround [\#142](https://github.com/ably/ably-js/issues/142)
+
+- Switch arity of auth methods [\#137](https://github.com/ably/ably-js/issues/137)
+
+- connection.close does not always free up resources  [\#136](https://github.com/ably/ably-js/issues/136)
+
+- XHR requests timing out leads to connection going into failed state [\#134](https://github.com/ably/ably-js/issues/134)
+
+- connection\#ping throws exception if you don't pass it a callback [\#133](https://github.com/ably/ably-js/issues/133)
+
+- Invalid encoding should not result in the data vanishing [\#121](https://github.com/ably/ably-js/issues/121)
+
+- jsonp transport needs to set `envelope=json` param [\#113](https://github.com/ably/ably-js/issues/113)
+
+- Token Params are not being sent through to authUrl [\#108](https://github.com/ably/ably-js/issues/108)
+
+- Channels stay attached even if connection can't be resumed [\#105](https://github.com/ably/ably-js/issues/105)
+
+- Calling channel.presence.enter doesn't attach to the channel if connectino has been closed and reopened [\#104](https://github.com/ably/ably-js/issues/104)
+
+- Authentication etc. failures with comet incorrectly put connection into 'disconnected' state \(should be 'failed'\) [\#101](https://github.com/ably/ably-js/issues/101)
+
+- Connection recovery after connect causing presence to fail [\#95](https://github.com/ably/ably-js/issues/95)
+
+- Exception / error should be shown if trying to publish or modify presence on a closed connection [\#94](https://github.com/ably/ably-js/issues/94)
+
+- Hard coded transport to work around bugs need to be removed [\#86](https://github.com/ably/ably-js/issues/86)
+
+- Ably-js does not call error callback when channel attach fails when using comet transport [\#81](https://github.com/ably/ably-js/issues/81)
+
+- When attach fails with 'superseded transport handle', ably-js retries immediately forever [\#71](https://github.com/ably/ably-js/issues/71)
+
+- iFrame tests are failing in CI [\#62](https://github.com/ably/ably-js/issues/62)
+
+- WsData exception [\#61](https://github.com/ably/ably-js/issues/61)
+
+- Incorrect error shown in clients when account limits are hit [\#57](https://github.com/ably/ably-js/issues/57)
+
+- IFrameTransport errors when connecting with tls: false [\#55](https://github.com/ably/ably-js/issues/55)
+
+- ToJson bug [\#44](https://github.com/ably/ably-js/issues/44)
+
+- No transport handle [\#40](https://github.com/ably/ably-js/issues/40)
+
+- Bug on current master when running `karma` [\#36](https://github.com/ably/ably-js/issues/36)
+
+- Travis CI builds failing consistenly [\#30](https://github.com/ably/ably-js/issues/30)
+
+- Comet transport error [\#27](https://github.com/ably/ably-js/issues/27)
+
+- Test client library with explicit binary protocol in JSBin [\#18](https://github.com/ably/ably-js/issues/18)
+
+- iPad iOS6 timing issues [\#12](https://github.com/ably/ably-js/issues/12)
+
+- Firefox 10 with Windows 7 fails because of incorrect mime type [\#11](https://github.com/ably/ably-js/issues/11)
+
+- Internet Up URL & use of HTTPS [\#4](https://github.com/ably/ably-js/issues/4)
+
+**Closed issues:**
+
+- requestToken sending key? [\#157](https://github.com/ably/ably-js/issues/157)
+
+- Wrong state change reason with token expiry [\#149](https://github.com/ably/ably-js/issues/149)
+
+- On jsbin, get an exception creating websocket if tls: false [\#129](https://github.com/ably/ably-js/issues/129)
+
+- Auth differences between ably-js and ably-ruby [\#116](https://github.com/ably/ably-js/issues/116)
+
+- ably-js doesn't dispose of the websocket resource if the connection attempt times out [\#98](https://github.com/ably/ably-js/issues/98)
+
+- Use the correct internet-up CDN [\#42](https://github.com/ably/ably-js/issues/42)
+
+**Merged pull requests:**
+
+- Presence map: normalise enter/update actions to present in \#put [\#152](https://github.com/ably/ably-js/pull/152) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- ably-js-browsers-all [\#151](https://github.com/ably/ably-js/pull/151) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Pass on DISCONNECT errs; a few test fixes [\#150](https://github.com/ably/ably-js/pull/150) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Allow iframe transport to work with local \(file://\) pages [\#148](https://github.com/ably/ably-js/pull/148) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Connection\#ping: allow no callback, return a responseTime, add tests [\#146](https://github.com/ably/ably-js/pull/146) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Convert WordArrays to ArrayBuffers when msgpack-encoding [\#143](https://github.com/ably/ably-js/pull/143) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- NodeCometTransport: clear request timeout on request error [\#141](https://github.com/ably/ably-js/pull/141) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Use the correct internet up URL [\#140](https://github.com/ably/ably-js/pull/140) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- Log protocol messages at micro level [\#139](https://github.com/ably/ably-js/pull/139) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- Transport failures don’t necessarily imply connection failures [\#135](https://github.com/ably/ably-js/pull/135) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Avoid ambiguity in received transport protocol message [\#132](https://github.com/ably/ably-js/pull/132) ([mattheworiordan](https://github.com/mattheworiordan))
+
+- Various new-upgrade and test fixes [\#131](https://github.com/ably/ably-js/pull/131) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Connection state events 3 [\#130](https://github.com/ably/ably-js/pull/130) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Presence update when connection closed [\#128](https://github.com/ably/ably-js/pull/128) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Tests no force ws; fix failure to callback on presence event causing implicit attach [\#127](https://github.com/ably/ably-js/pull/127) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Ensure websocket object is disposed if it fails to connect [\#125](https://github.com/ably/ably-js/pull/125) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Add some rest presence tests [\#124](https://github.com/ably/ably-js/pull/124) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Invalid encodings [\#123](https://github.com/ably/ably-js/pull/123) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Don't process duplicate messages or messages on inactive transports [\#122](https://github.com/ably/ably-js/pull/122) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- CipherParams conform to latest spec \(separate algorithm and keyLength\) [\#120](https://github.com/ably/ably-js/pull/120) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Use ably-common submodule instead of inline json for test app setup [\#119](https://github.com/ably/ably-js/pull/119) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Don’t include timestamp/connectionid in string/json representations of messages [\#117](https://github.com/ably/ably-js/pull/117) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- If client lib initialised with clientid, use that for auth if no new tokenParams object is supplied [\#115](https://github.com/ably/ably-js/pull/115) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- JSONP transport: use jsonp envelope [\#114](https://github.com/ably/ably-js/pull/114) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Define error codes that result in failed rather than disconnected [\#112](https://github.com/ably/ably-js/pull/112) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Explicitly disallow empty string clientIds [\#111](https://github.com/ably/ably-js/pull/111) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Allow connection to inherit clientId from connectionDetails [\#110](https://github.com/ably/ably-js/pull/110) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Some small connection, channel, and presence fixes [\#109](https://github.com/ably/ably-js/pull/109) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Standardise on tabs [\#107](https://github.com/ably/ably-js/pull/107) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.5](https://github.com/ably/ably-js/tree/0.8.5) (2015-08-20)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.3...0.8.5)
+
+**Implemented enhancements:**
+
+- untilAttach for presence history is missing [\#93](https://github.com/ably/ably-js/issues/93)
+
+**Closed issues:**
+
+- presence\#history only available for rest channels, not realtime ones [\#84](https://github.com/ably/ably-js/issues/84)
+
+- Saucelabs websockets support apparently sucks..? [\#82](https://github.com/ably/ably-js/issues/82)
+
+**Merged pull requests:**
+
+- support untilAttach for realtime presence history requests [\#96](https://github.com/ably/ably-js/pull/96) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Force saucelabs to use varnish rather than squid as a proxy [\#90](https://github.com/ably/ably-js/pull/90) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Fix a race condition in realtime publish tests [\#89](https://github.com/ably/ably-js/pull/89) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Add grunt release:\[releasetype\] task [\#88](https://github.com/ably/ably-js/pull/88) ([SimonWoolf](https://github.com/SimonWoolf))
+
+## [0.8.3](https://github.com/ably/ably-js/tree/0.8.3) (2015-08-04)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.2...0.8.3)
+
+**Implemented enhancements:**
+
+- authCallback bug, test coverage & additional type support [\#72](https://github.com/ably/ably-js/issues/72)
+
+- Does not support useTokenAuth client options [\#70](https://github.com/ably/ably-js/issues/70)
+
+- No updateClient method [\#67](https://github.com/ably/ably-js/issues/67)
+
+- createTokenRequest without key option [\#21](https://github.com/ably/ably-js/issues/21)
+
+**Fixed bugs:**
+
+- attaching and detaching events are not emitted [\#74](https://github.com/ably/ably-js/issues/74)
+
+- attach on a channel for a failed client does not fail the attach [\#73](https://github.com/ably/ably-js/issues/73)
+
+- authCallback bug, test coverage & additional type support [\#72](https://github.com/ably/ably-js/issues/72)
+
+- Does not support useTokenAuth client options [\#70](https://github.com/ably/ably-js/issues/70)
+
+- Calling attach twice on an invalid channels fails [\#66](https://github.com/ably/ably-js/issues/66)
+
+- authUrl tests fail in Firefox [\#63](https://github.com/ably/ably-js/issues/63)
+
+- Better error message for an invalid token from the authUrl or callback [\#56](https://github.com/ably/ably-js/issues/56)
+
+- createTokenRequest without key option [\#21](https://github.com/ably/ably-js/issues/21)
+
+**Closed issues:**
+
+- Various functions require a callback with \(err, result\) but docs imply should work with just \(result\) [\#69](https://github.com/ably/ably-js/issues/69)
+
+**Merged pull requests:**
+
+- Presence history 3 [\#87](https://github.com/ably/ably-js/pull/87) ([paddybyers](https://github.com/paddybyers))
+
+- createTokenRequest tweaks [\#83](https://github.com/ably/ably-js/pull/83) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Add tests for authCallback and update its docstring [\#80](https://github.com/ably/ably-js/pull/80) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Emit attaching [\#79](https://github.com/ably/ably-js/pull/79) ([paddybyers](https://github.com/paddybyers))
+
+- Support untilAttach param in history requests for realtime channels [\#78](https://github.com/ably/ably-js/pull/78) ([paddybyers](https://github.com/paddybyers))
+
+- Add useTokenAuth option [\#77](https://github.com/ably/ably-js/pull/77) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Add Presence\#update and Presence\#updateClient methods [\#76](https://github.com/ably/ably-js/pull/76) ([SimonWoolf](https://github.com/SimonWoolf))
+
+- Correct checks for existence of channel name in received message [\#68](https://github.com/ably/ably-js/pull/68) ([paddybyers](https://github.com/paddybyers))
+
+- Auth url fixes2 [\#65](https://github.com/ably/ably-js/pull/65) ([paddybyers](https://github.com/paddybyers))
 
 ## [0.8.2](https://github.com/ably/ably-js/tree/0.8.2) (2015-07-01)
 
@@ -44,8 +422,6 @@
 
 ## [0.8.0](https://github.com/ably/ably-js/tree/0.8.0) (2015-04-29)
 
-[First implementation of client library specification 0.8](http://docs.ably.io/client-lib-development-guide/features/)
-
 [Full Changelog](https://github.com/ably/ably-js/compare/0.7.9...0.8.0)
 
 **Implemented enhancements:**
@@ -67,6 +443,101 @@
 - Time function on Realtime blocks Node from exiting [\#9](https://github.com/ably/ably-js/issues/9)
 
 - iFrame loading [\#8](https://github.com/ably/ably-js/issues/8)
+
+## [0.7.9](https://github.com/ably/ably-js/tree/0.7.9) (2015-04-03)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.8...0.7.9)
+
+## [0.7.8](https://github.com/ably/ably-js/tree/0.7.8) (2015-04-03)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.7...0.7.8)
+
+## [0.7.7](https://github.com/ably/ably-js/tree/0.7.7) (2015-04-03)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.6...0.7.7)
+
+## [0.7.6](https://github.com/ably/ably-js/tree/0.7.6) (2015-04-03)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.5...0.7.6)
+
+**Fixed bugs:**
+
+- Nodeunit tests in the browser [\#23](https://github.com/ably/ably-js/issues/23)
+
+**Closed issues:**
+
+- TypeError on presence.subscribe\(\) [\#26](https://github.com/ably/ably-js/issues/26)
+
+## [0.7.5](https://github.com/ably/ably-js/tree/0.7.5) (2015-03-21)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.4...0.7.5)
+
+## [0.7.4](https://github.com/ably/ably-js/tree/0.7.4) (2015-03-20)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.3...0.7.4)
+
+**Closed issues:**
+
+- Time out tests [\#15](https://github.com/ably/ably-js/issues/15)
+
+## [0.7.3](https://github.com/ably/ably-js/tree/0.7.3) (2015-03-12)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.2...0.7.3)
+
+## [0.7.2](https://github.com/ably/ably-js/tree/0.7.2) (2015-03-10)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.1...0.7.2)
+
+**Fixed bugs:**
+
+- Swallowing errors [\#6](https://github.com/ably/ably-js/issues/6)
+
+**Closed issues:**
+
+- Logger [\#14](https://github.com/ably/ably-js/issues/14)
+
+- PhantomJS issues [\#13](https://github.com/ably/ably-js/issues/13)
+
+- Node.js 0.12 [\#10](https://github.com/ably/ably-js/issues/10)
+
+## [0.7.1](https://github.com/ably/ably-js/tree/0.7.1) (2015-02-11)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.7.0...0.7.1)
+
+## [0.7.0](https://github.com/ably/ably-js/tree/0.7.0) (2015-01-12)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.6.3...0.7.0)
+
+## [0.6.3](https://github.com/ably/ably-js/tree/0.6.3) (2014-12-09)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.6.1...0.6.3)
+
+## [0.6.1](https://github.com/ably/ably-js/tree/0.6.1) (2014-11-27)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.6.0...0.6.1)
+
+## [0.6.0](https://github.com/ably/ably-js/tree/0.6.0) (2014-11-27)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.5.0...0.6.0)
+
+## [0.5.0](https://github.com/ably/ably-js/tree/0.5.0) (2014-01-13)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.2.1...0.5.0)
+
+## [0.2.1](https://github.com/ably/ably-js/tree/0.2.1) (2013-04-29)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.2.0...0.2.1)
+
+## [0.2.0](https://github.com/ably/ably-js/tree/0.2.0) (2013-04-17)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.1.1...0.2.0)
+
+## [0.1.1](https://github.com/ably/ably-js/tree/0.1.1) (2012-12-05)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.1.0...0.1.1)
+
+## [0.1.0](https://github.com/ably/ably-js/tree/0.1.0) (2012-12-04)
+
 
 
 \* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
