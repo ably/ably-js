@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.13
+ * Ably JavaScript Library v0.8.14
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -1160,8 +1160,8 @@ var CryptoJS = CryptoJS || (function (Math, undefined) {
 
 var Defaults = {
 	internetUpUrlWithoutExtension: 'https://internet-up.ably-realtime.com/is-the-internet-up',
-	httpTransports: ['xhr', 'iframe', 'jsonp'],
-	transports: ['web_socket', 'xhr', 'iframe', 'jsonp'],
+	httpTransports: ['xhr', 'jsonp'],
+	transports: ['web_socket', 'xhr', 'jsonp'],
 	minified: !(function _(){}).name
 };
 
@@ -2201,7 +2201,7 @@ var DomEvent = (function() {
 	}
 
 	function encodeableKeys(value, sparse) {
-		return Object.keys(value).filter(function (e) {
+		return Utils.keysArray(value, true).filter(function (e) {
 			var val = value[e], type = typeof(val);
 			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!val.toJSON);
 		})
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.13';
+Defaults.version           = '0.8.14';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -2647,8 +2647,43 @@ var EventEmitter = (function() {
 
 	/* Call the listener, catch any exceptions and log, but continue operation*/
 	function callListener(eventThis, listener, args) {
-		try { listener.apply(eventThis, args); } catch(e) {
+		try {
+			listener.apply(eventThis, args);
+		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
+	}
+
+	/**
+	 * Remove listeners that match listener
+	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
+	 * @param listener the listener callback to remove
+	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
+	 */
+	function removeListener(targetListeners, listener, eventFilter) {
+		var listeners, idx, eventName, targetListenersIndex;
+
+		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
+			listeners = targetListeners[targetListenersIndex];
+			if (eventFilter) { listeners = listeners[eventFilter]; }
+
+			if (Utils.isArray(listeners)) {
+				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
+					listeners.splice(idx, 1);
+				}
+				/* If events object has an event name key with no listeners then
+				   remove the key to stop the list growing indefinitely */
+				if (eventFilter && (listeners.length === 0)) {
+					delete targetListeners[targetListenersIndex][eventFilter];
+				}
+			} else if (Utils.isObject(listeners)) {
+				/* events */
+				for (eventName in listeners) {
+					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+						removeListener([listeners], listener, eventName);
+					}
+				}
+			}
 		}
 	}
 
@@ -2693,16 +2728,11 @@ var EventEmitter = (function() {
 			}
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
-		var listeners, idx = -1;
+
 		if(Utils.isEmptyArg(event)) {
 			/* "any" case */
 			if(listener) {
-				if(!(listeners = this.any) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
-					if(listeners = this.anyOnce)
-						idx = Utils.arrIndexOf(listeners, listener);
-				}
-				if(idx > -1)
-					listeners.splice(idx, 1);
+				removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
 			} else {
 				this.any = [];
 				this.anyOnce = [];
@@ -2711,13 +2741,7 @@ var EventEmitter = (function() {
 		}
 		/* "normal" case where event is an actual event */
 		if(listener) {
-			var listeners, idx = -1;
-			if(!(listeners = this.events[event]) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
-				if(listeners = this.eventsOnce[event])
-					idx = Utils.arrIndexOf(listeners, listener);
-			}
-			if(idx > -1)
-				listeners.splice(idx, 1);
+			removeListener([this.events, this.eventsOnce], listener, event);
 		} else {
 			delete this.events[event];
 			delete this.eventsOnce[event];
@@ -2812,7 +2836,20 @@ var EventEmitter = (function() {
 })();
 
 var Logger = (function() {
-	var consoleLogger = console && function() { console.log.apply(console, arguments); };
+	var consoleLogger;
+
+	/* Can't just check for console && console.log; fails in IE <=9 */
+	if((typeof window === 'undefined') /* node */ ||
+		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
+		consoleLogger = function() { console.log.apply(console, arguments); };
+	} else if(window.console && window.console.log) {
+		/* IE <= 9 with the console open -- console.log does not
+		 * inherit from Function, so has no apply method */
+		consoleLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
+	} else {
+		/* IE <= 9 when dev tools are closed - window.console not even defined */
+		consoleLogger = function() {};
+	}
 
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
@@ -3073,7 +3110,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(prop);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	/*
@@ -3091,6 +3128,43 @@ var Utils = (function() {
 		}
 		return result.length ? result : undefined;
 	};
+
+	Utils.arrForEach = Array.prototype.forEach ?
+		function(arr, fn) {
+			arr.forEach(fn);
+		} :
+		function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				fn(arr[i], i, arr);
+			}
+		};
+
+	Utils.arrMap = Array.prototype.map ?
+		function(arr, fn) {
+			return arr.map(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				result.push(fn(arr[i], i, arr));
+			}
+			return result;
+		};
+
+	Utils.arrEvery = Array.prototype.every ?
+		function(arr, fn) {
+			return arr.every(fn);
+		} : function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(!fn(arr[i], i, arr)) {
+					return false;
+				};
+			}
+			return true;
+		};
 
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
@@ -3147,6 +3221,11 @@ var Utils = (function() {
  		return result;
 	};
 
+	Utils.now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
+	};
+
 	Utils.inspect = function(x) {
 		return JSON.stringify(x);
 	};
@@ -3170,14 +3249,21 @@ var Multicaster = (function() {
 		var handler = function() {
 			for(var i = 0; i < members.length; i++) {
 				var member = members[i];
-				try { member.apply(null, arguments); } catch(e){} };
-			};
+				if(member) {
+					try {
+						member.apply(null, arguments);
+					} catch(e){
+						Logger.logAction(Logger.LOG_ERROR, 'Multicaster multiple callback handler', 'Unexpected exception: ' + e + '; stack = ' + e.stack);
+					}
+				}
+			}
+		};
 
 		handler.push = function() {
 			Array.prototype.push.apply(members, arguments);
 		};
 		return handler;
-	};
+	}
 
 	return Multicaster;
 })();
@@ -3464,7 +3550,7 @@ var PresenceMessage = (function() {
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
 		if(this.data) {
-			if (typeof(data) == 'string')
+			if (typeof(this.data) == 'string')
 				result += '; data=' + this.data;
 			else if (BufferUtils.isBuffer(this.data))
 				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
@@ -3551,7 +3637,7 @@ var ProtocolMessage = (function() {
 	};
 
 	ProtocolMessage.ActionName = [];
-	Object.keys(ProtocolMessage.Action).forEach(function(name) {
+	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
 		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
 	});
 
@@ -3682,36 +3768,36 @@ var Stats = (function() {
 	return Stats;
 })();
 var ConnectionError = {
-	disconnected: {
+	disconnected: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80003,
 		message: 'Connection to server temporarily unavailable'
-	},
-	suspended: {
+	}),
+	suspended: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80002,
 		message: 'Connection to server unavailable'
-	},
-	failed: {
+	}),
+	failed: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80000,
 		message: 'Connection failed or disconnected by server'
-	},
-	closed: {
+	}),
+	closed: ErrorInfo.fromValues({
 		statusCode: 408,
 		code: 80017,
 		message: 'Connection closed'
-	},
-	unknownConnectionErr: {
+	}),
+	unknownConnectionErr: ErrorInfo.fromValues({
 		statusCode: 500,
 		code: 50002,
 		message: 'Internal connection error'
-	},
-	unknownChannelErr: {
+	}),
+	unknownChannelErr: ErrorInfo.fromValues({
 		statusCode: 500,
 		code: 50001,
 		message: 'Internal channel error'
-	}
+	})
 };
 
 var MessageQueue = (function() {
@@ -3741,12 +3827,12 @@ var MessageQueue = (function() {
 		return this.messages.slice();
 	};
 
-	MessageQueue.prototype.append = function(messageQueue) {
-		this.messages.push.apply(this.messages, messageQueue.messages);
+	MessageQueue.prototype.append = function(messages) {
+		this.messages.push.apply(this.messages, messages);
 	};
 
-	MessageQueue.prototype.prepend = function(messageQueue) {
-		this.messages.unshift.apply(this.messages, messageQueue.messages);
+	MessageQueue.prototype.prepend = function(messages) {
+		this.messages.unshift.apply(this.messages, messages);
 	};
 
 	MessageQueue.prototype.completeMessages = function(serial, count, err) {
@@ -3856,18 +3942,17 @@ var ConnectionManager = (function() {
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 
-	var isErrFatal = function(err) {
-		var RESOLVABLE_ERROR_CODES = [40140];
+	function isFatalErr(err) {
 		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
 
 		if(err.code) {
-			if(Utils.arrIn(RESOLVABLE_ERROR_CODES, err.code)) return false;
+			if(Auth.isTokenErr(err)) return false;
 			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
 			return (err.code >= 40000 && err.code < 50000)
 		}
-		// If no statusCode either, assume false
+		/* If no statusCode either, assume false */
 		return err.statusCode < 500;
-	};
+	}
 
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
@@ -3878,8 +3963,8 @@ var ConnectionManager = (function() {
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
 	}
 
-	TransportParams.prototype.getConnectParams = function(params) {
-		params = params ? Utils.prototypicalClone(params) : {};
+	TransportParams.prototype.getConnectParams = function(authParams) {
+		var params = authParams ? Utils.copy(authParams) : {};
 		var options = this.options;
 		switch(this.mode) {
 			case 'upgrade':
@@ -3941,7 +4026,7 @@ var ConnectionManager = (function() {
 			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
 		};
 		this.state = this.states.initialized;
-		this.error = null;
+		this.errorReason = null;
 
 		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
@@ -4089,7 +4174,7 @@ var ConnectionManager = (function() {
 			}
 			if(err) {
 				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(isErrFatal(err)) {
+				if(isFatalErr(err)) {
 					callback(err);
 					return;
 				}
@@ -4146,7 +4231,7 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(isErrFatal(err)) {
+						if(isFatalErr(err)) {
 							callback(err);
 							return;
 						}
@@ -4161,7 +4246,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(isErrFatal(err)) {
+				if(isFatalErr(err)) {
 					callback(err);
 					return;
 				}
@@ -4300,6 +4385,8 @@ var ConnectionManager = (function() {
 		/* notify the state change if previously not connected */
 		if(existingState !== this.states.connected) {
 			this.notifyState({state: 'connected'});
+			this.errorReason = null;
+			this.realtime.connection.errorReason = null;
 		}
 
 		/* Gracefully terminate existing protocol */
@@ -4335,18 +4422,31 @@ var ConnectionManager = (function() {
 		this.emit('transport.inactive', transport);
 
 		/* this transport state change is a state change for the connectionmanager if
-		 * - the transport was the active transport; or
+		 * - the transport was the active transport and there are no transports
+		 *   which are connected and scheduled for activation, just waiting for the
+		 *   active transport to finish what its doing; or
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
-		if(wasActive || (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+		if((wasActive && this.noTransportsScheduledForActivation()) ||
+			 (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
-			if((state === 'failed') && error && !isErrFatal(error)) {
+			if((state === 'failed') && error && !isFatalErr(error)) {
 				state = 'disconnected';
 			}
 			this.notifyState({state: state, error: error});
 		}
+	};
+
+	/* Helper that returns true if there are no transports which are pending,
+	* have been connected, and are just waiting for onceNoPending to fire before
+	* being activated */
+	ConnectionManager.prototype.noTransportsScheduledForActivation = function() {
+		return Utils.isEmpty(this.pendingTransports) ||
+			this.pendingTransports.every(function(transport) {
+				return !transport.isConnected;
+			});
 	};
 
 	/**
@@ -4433,8 +4533,11 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
+		if(stateChange.reason) {
+			this.errorReason = stateChange.reason;
+			this.realtime.connection.errorReason = stateChange.reason;
+		}
 		if(newState.terminal) {
-			this.error = stateChange.reason;
 			this.clearConnection();
 		}
 		this.emit('connectionstate', stateChange);
@@ -4603,9 +4706,9 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(err.code == 40140) {
+			if(Auth.isTokenErr(err)) {
 				/* re-get a token */
-				auth.authorise(null, null, function(err) {
+				auth.authorise(null, {force: true}, function(err) {
 					if(err) {
 						connectErr(err);
 						return;
@@ -4617,8 +4720,8 @@ var ConnectionManager = (function() {
 
 			/* Only allow connection to be 'failed' if err has a definite unrecoverable
 			 * code from realtime; otherwise err on the side of 'disconnected' so will
-			 * retry. (Note: 40140 case is dealt with above) */
-			if(err.code && isErrFatal(err))
+			 * retry. (Note: token problems case is dealt with above) */
+			if(err.code && isFatalErr(err))
 				self.notifyState({state: 'failed', error: err});
 			else
 				self.notifyState({state: self.states.connecting.failState, error: err});
@@ -4638,7 +4741,8 @@ var ConnectionManager = (function() {
 		if(auth.method == 'basic') {
 			tryConnect();
 		} else {
-			auth.authorise(null, null, function(err) {
+			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
+			auth.authorise(null, authOptions, function(err) {
 				if(err)
 					connectErr(err);
 				else
@@ -4723,7 +4827,7 @@ var ConnectionManager = (function() {
 				this.queue(msg, callback);
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-				callback(this.error);
+				callback(this.errorReason);
 			}
 		}
 	};
@@ -4804,11 +4908,11 @@ var ConnectionManager = (function() {
 				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
 			};
 
-			var pingStart = Date.now();
+			var pingStart = Utils.now();
 
 			var onHeartbeat = function () {
 				clearTimeout(timer);
-				var responseTime = Date.now() - pingStart;
+				var responseTime = Utils.now() - pingStart;
 				callback(null, responseTime);
 			};
 
@@ -4892,14 +4996,15 @@ var Transport = (function() {
 	Transport.prototype.connect = function() {};
 
 	Transport.prototype.close = function() {
-		if(this.isConnected)
-			this.requestClose(true);
+		if(this.isConnected) {
+			this.requestClose();
+		}
 		this.finish('closed', ConnectionError.closed);
 	};
 
 	Transport.prototype.abort = function(error) {
 		if(this.isConnected) {
-			this.requestClose(true);
+			this.requestDisconnect();
 		}
 		this.finish('failed', error);
 	};
@@ -4977,17 +5082,16 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onConnect = function(message) {
-		/* the connectionKey in a comet connected response is really
-		 * <instId>!<connectionKey>; handle generically here */
-		var match = message.connectionKey.match(/^(?:[\w\-]+\!)?([^!]+)$/),
-			connectionKey = message.connectionKey = match && match[1];
-
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
-		var error = message.error, connectionManager = this.connectionManager;
-		if(error && connectionKey !== connectionManager.connectionKey)
+		var connectionKey = message.connectionKey,
+			error = message.error,
+			connectionManager = this.connectionManager;
+
+		if(error && connectionKey !== connectionManager.connectionKey) {
 			connectionManager.realtime.channels.setSuspended(error);
+		}
 
 		this.connectionKey = connectionKey;
 		this.isConnected = true;
@@ -5005,9 +5109,14 @@ var Transport = (function() {
 		this.finish('closed', err);
 	};
 
-	Transport.prototype.requestClose = function(closing) {
+	Transport.prototype.requestClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
-		this.send((closing ? closeMessage :disconnectMessage), noop);
+		this.send(closeMessage, noop);
+	};
+
+	Transport.prototype.requestDisconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
+		this.send(disconnectMessage, noop);
 	};
 
 	Transport.prototype.ping = function(callback) {
@@ -5276,24 +5385,33 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.disconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
-		this.requestClose(false);
+		this.requestDisconnect();
 		Transport.prototype.disconnect.call(this);
 	};
 
-	CometTransport.prototype.requestClose = function(closing) {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()', 'closing = ' + closing);
-		var closeUri = this.closeUri;
-		if(closeUri) {
-			var self = this,
-				closeRequest = this.createRequest(closeUri(closing), null, this.authParams, null, REQ_SEND);
+	CometTransport.prototype.requestClose = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()');
+		this._requestCloseOrDisconnect(true);
+	};
 
-			closeRequest.on('complete', function (err) {
+	CometTransport.prototype.requestDisconnect = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
+		this._requestCloseOrDisconnect(false);
+	};
+
+	CometTransport.prototype._requestCloseOrDisconnect = function(closing) {
+		var closeOrDisconnectUri = closing ? this.closeUri : this.disconnectUri;
+		if(closeOrDisconnectUri) {
+			var self = this,
+				request = this.createRequest(closeOrDisconnectUri, null, this.authParams, null, REQ_SEND);
+
+			request.on('complete', function (err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.requestClose()', 'request returned err = ' + err);
+					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + err);
 					self.finish('failed', err);
 				}
 			});
-			closeRequest.exec();
+			request.exec();
 		}
 	};
 
@@ -5327,7 +5445,8 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
-		this.closeUri = function(closing) { return baseConnectionUri + (closing ? '/close' : '/disconnect'); };
+		this.closeUri = baseConnectionUri + '/close';
+		this.disconnectUri = baseConnectionUri + '/disconnect';
 	};
 
 	CometTransport.prototype.send = function(message, callback) {
@@ -5611,7 +5730,7 @@ var Resource = (function() {
 			}
 
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
-				if(err && err.code == 40140) {
+				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -5653,7 +5772,7 @@ var Resource = (function() {
 			}
 
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
-				if(err && err.code == 40140) {
+				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -5803,8 +5922,8 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	function Auth(rest, options) {
-		this.rest = rest;
+	function Auth(client, options) {
+		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
 
 		/* RSA7a4: if options.clientId is provided and is not
@@ -5911,32 +6030,44 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		var token = this.tokenDetails;
+		var self = this,
+			token = this.tokenDetails;
+
+		var requestToken = function() {
+			self.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, (self.tokenDetails = tokenResponse));
+			});
+		}
+
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
 				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
 				return;
 			}
-			if(token.expires === undefined || (token.expires > this.getTimestamp())) {
-				if(!(authOptions && authOptions.force)) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-					callback(null, token);
-					return;
+			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
+				if(err)
+					callback(err);
+
+				if(token.expires === undefined || (token.expires >= time)) {
+					if(!(authOptions && authOptions.force)) {
+						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+						callback(null, token);
+						return;
+					}
+				} else {
+					/* expired, so remove */
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+					self.tokenDetails = null;
 				}
-			} else {
-				/* expired, so remove */
-				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-				this.tokenDetails = null;
-			}
+				requestToken();
+			});
+		} else {
+			requestToken();
 		}
-		var self = this;
-		this.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, (self.tokenDetails = tokenResponse));
-		});
 	};
 
 	/**
@@ -5997,14 +6128,15 @@ var Auth = (function() {
 		}
 
 		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback, rest = this.rest;
+		var tokenRequestCallback, client = this.client;
+
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
 			tokenRequestCallback = authOptions.authCallback;
@@ -6045,9 +6177,9 @@ var Auth = (function() {
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(rest, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
+					Http.postUri(client, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
 				} else {
-					Http.getUri(rest, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
+					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
 				}
 			};
 		} else if(authOptions.key) {
@@ -6055,30 +6187,33 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(params, authOptions, cb); };
 		} else {
-			throw new Error('Auth.requestToken(): authOptions must include valid authentication parameters');
+			var msg = "Need a new token, but authOptions does not include any way to request one";
+			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+			callback(new ErrorInfo(msg, 40101, 401));
+			return;
 		}
 
 		/* normalise token params */
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var rest = this.rest;
+		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var requestHeaders,
 				keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return rest.baseUri(host) + '/keys/' + keyName + '/requestToken';};
+				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken';};
 
 			if(Http.post) {
 				requestHeaders = Utils.defaultPostHeaders(format);
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
 				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
-				Http.post(rest, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
+				Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 			} else {
 				requestHeaders = Utils.defaultGetHeaders();
 				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				Http.get(rest, tokenUri, requestHeaders, signedTokenParams, tokenCb);
+				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
@@ -6158,7 +6293,7 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.rest.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -6186,24 +6321,18 @@ var Auth = (function() {
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability,
-			rest = this.rest,
 			self = this;
 
 		(function(authoriseCb) {
 			if(request.timestamp) {
 				authoriseCb();
 				return;
-			}
-			if(authOptions.queryTime) {
-				rest.time(function(err, time) {
-					if(err) {callback(err); return;}
-					request.timestamp = time;
-					authoriseCb();
-				});
-				return;
-			}
-			request.timestamp = self.getTimestamp();
-			authoriseCb();
+			};
+			self.getTimestamp(authOptions && authOptions.queryTime, function(err, time) {
+				if(err) {callback(err); return;}
+				request.timestamp = time;
+				authoriseCb();
+			});
 		})(function() {
 			/* nonce */
 			/* NOTE: there is no expectation that the client
@@ -6268,8 +6397,25 @@ var Auth = (function() {
 		}
 	};
 
-	Auth.prototype.getTimestamp = function() {
-		return Date.now() + (this.rest.serverTimeOffset || 0);
+	/**
+	 * Get the current time based on the local clock,
+	 * or if the option queryTime is true, return the server time.
+	 * The server time offset from the local time is stored so that
+	 * only one request to the server to get the time is ever needed
+	 */
+	Auth.prototype.getTimestamp = function(queryTime, callback) {
+		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
+		if (!offsetSet && (queryTime || this.client.options.queryTime)) {
+			this.client.time(function(err, time) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, time);
+			});
+		} else {
+			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
+		}
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
@@ -6279,6 +6425,10 @@ var Auth = (function() {
 			(this.clientId !== tokenClientId);
 	};
 
+	Auth.isTokenErr = function(error) {
+		return error.code && (error.code >= 40140) && (error.code < 40150);
+	};
+
 	return Auth;
 })();
 
@@ -6286,6 +6436,10 @@ var Rest = (function() {
 	var noop = function() {};
 
 	function Rest(options) {
+		if(!(this instanceof Rest)){
+			return new Rest(options);
+		}
+
 		/* normalise options */
 		if(!options) {
 			var msg = 'no options provided';
@@ -6324,9 +6478,9 @@ var Rest = (function() {
 			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
 
-		this.serverTimeOffset = null;
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
+		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
 	}
@@ -6382,7 +6536,8 @@ var Rest = (function() {
 				callback(err);
 				return;
 			}
-			self.serverTimeOffset = (time - Date.now());
+			/* calculate time offset only once for this device by adding to the prototype */
+			self.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
 	};
@@ -6410,6 +6565,10 @@ var Rest = (function() {
 var Realtime = (function() {
 
 	function Realtime(options) {
+		if(!(this instanceof Realtime)){
+			return new Realtime(options);
+		}
+
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
@@ -6532,6 +6691,7 @@ var Connection = (function() {
 		this.id = undefined;
 		this.serial = undefined;
 		this.recoveryKey = undefined;
+		this.errorReason = null;
 
 		var self = this;
 		this.connectionManager.on('connectionstate', function(stateChange) {
@@ -6673,6 +6833,7 @@ var RealtimeChannel = (function() {
 	function RealtimeChannel(realtime, name, options) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
+		this.realtime = realtime;
 		this.presence = new RealtimePresence(this, realtime.options);
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
@@ -6680,7 +6841,6 @@ var RealtimeChannel = (function() {
 		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
-		this.realtime = realtime;
 		this.setOptions(options);
 	}
 	Utils.inherits(RealtimeChannel, Channel);
@@ -6838,6 +6998,7 @@ var RealtimeChannel = (function() {
 							callback();
 							break;
 						case 'failed':
+						case 'attached':
 							callback(err || connectionManager.getStateError());
 							break;
 						default:
@@ -7127,21 +7288,17 @@ var RealtimeChannel = (function() {
 		this.stateTimer = setTimeout(function() {
 			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'timer expired');
 			self.stateTimer = null;
-			/* retry */
-			self.checkPendingState();
+			self.timeoutPendingState();
 		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
-		var result = false;
 		switch(this.state) {
 			case 'attaching':
 				this.attachImpl();
-				result = true;
 				break;
 			case 'detaching':
 				this.detachImpl();
-				result = true;
 				break;
 			case 'attached':
 				/* resume any sync operation that was in progress */
@@ -7149,7 +7306,23 @@ var RealtimeChannel = (function() {
 			default:
 				break;
 		}
-		return result;
+	};
+
+	RealtimeChannel.prototype.timeoutPendingState = function() {
+		switch(this.state) {
+			case 'attaching':
+				var err = new ErrorInfo('Channel attach timed out', 90000, 408);
+				this.setState('detached', err);
+				this.failPendingMessages(err);
+				break;
+			case 'detaching':
+				var err = new ErrorInfo('Channel detach timed out', 90000, 408);
+				this.setState('attached', err);
+				break;
+			default:
+				this.checkPendingState();
+				break;
+		}
 	};
 
 	RealtimeChannel.prototype.clearStateTimer = function() {
@@ -7213,6 +7386,10 @@ var RealtimePresence = (function() {
 		return item.clientId + ':' + item.connectionId;
 	}
 
+	function getClientId(realtimePresence) {
+		return realtimePresence.channel.realtime.auth.clientId;
+	}
+
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
@@ -7234,22 +7411,20 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
-		this.clientId = options.clientId;
 		this.members = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
 	}
 	Utils.inherits(RealtimePresence, Presence);
 
 	RealtimePresence.prototype.enter = function(data, callback) {
-		if(!this.clientId)
-			throw new Error('clientId must be specified to enter a presence channel');
+		if(!getClientId(this))
+			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
-		if(!this.clientId) {
-			throw new Error('clientId must be specified to update presence data');
-		}
+		if(!getClientId(this))
+			throw new Error('clientId must be specified to update presence data', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -7272,13 +7447,16 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + this.clientId);
+		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
 			action : presenceAction[action.toUpperCase()],
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
+
+		PresenceMessage.encode(presence, this.channel.channelOptions);
+
 		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
@@ -7301,15 +7479,15 @@ var RealtimePresence = (function() {
 				};
 				break;
 			default:
-				var err = new Error('Unable to ' + action + ' presence channel (incompatible state)');
+				var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
 				err.code = 90001;
 				callback(err);
 		}
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if(!this.clientId)
-			throw new Error('clientId must have been specified to enter or leave a presence channel');
+		if(!getClientId(this))
+			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		this.leaveClient(undefined, data, callback);
 	};
 
@@ -7345,8 +7523,7 @@ var RealtimePresence = (function() {
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
 				this.pendingPresence = null;
-				var err = new Error('Unable to leave presence channel (incompatible state)');
-				err.code = 90001;
+				var err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
 				callback(err);
 				break;
 			default:
@@ -7460,14 +7637,14 @@ var RealtimePresence = (function() {
 	/* Deprecated */
 	RealtimePresence.prototype.on = function() {
 		Logger.deprecated('presence.on', 'presence.subscribe');
-		this.subscribe.call(arguments);
-	}
+		this.subscribe.apply(this, arguments);
+	};
 
 	/* Deprecated */
 	RealtimePresence.prototype.off = function() {
 		Logger.deprecated('presence.off', 'presence.unsubscribe');
-		this.unsubscribe.call(arguments);
-	}
+		this.unsubscribe.apply(this, arguments);
+	};
 
 	RealtimePresence.prototype.subscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -7479,7 +7656,7 @@ var RealtimePresence = (function() {
 		waitAttached(this.channel, callback, function() {
 			self.subscriptions.on(event, listener);
 		});
-	}
+	};
 
 	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
@@ -7491,11 +7668,11 @@ var RealtimePresence = (function() {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
 
 		this.subscriptions.off(event, listener);
-	}
+	};
 
 	RealtimePresence.prototype.syncComplete = function() {
 		return !this.members.syncInProgress;
-	}
+	};
 
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
@@ -7628,7 +7805,13 @@ var RealtimePresence = (function() {
 
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = function(id) { return _[id] || noop; };
+	var _ = window.Ably._ = {};
+	/* express strips out parantheses from the callback!
+	 * Kludge to still alow its responses to work, while not keeping the
+	 * function form for normal use and not cluttering window.Ably
+	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 */
+	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
 	var head = document.getElementsByTagName('head')[0];
 
@@ -7656,7 +7839,7 @@ var JSONPTransport = (function() {
 		checksInProgress = [callback];
 		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
 
-		var req = new Request('_isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
 		req.once('complete', function(err, response) {
 			var result = !err && response;
 			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
@@ -7687,7 +7870,7 @@ var JSONPTransport = (function() {
 	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
 		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
 		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
-		return new Request(undefined, uri, headers, params, body, requestMode, timeouts);
+		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
 	function Request(id, uri, headers, params, body, requestMode, timeouts) {
@@ -7711,12 +7894,11 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._(' + id + ')';
+		params.callback = 'Ably._._(' + id + ')';
+
 		params.envelope = 'jsonp';
 		if(body)
 			params.body = body;
-		else
-			delete params.body;
 
 		var script = this.script = document.createElement('script');
 		script.src = uri + Utils.toQueryString(params);
@@ -7728,22 +7910,24 @@ var JSONPTransport = (function() {
 			self.complete(err);
 		};
 
-		_[id] = function(message) {
-			var successResponse = (message.statusCode < 400),
-				response = message.response;
-
-			if(!response) {
-				self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
-				return;
+		_['_' + id] = function(message) {
+			if(message.statusCode) {
+				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
+				var response = message.response;
+				if(message.statusCode == 204) {
+					self.complete();
+				} else if(!response) {
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
+				} else if(message.statusCode < 400) {
+					self.complete(null, response, message.headers);
+				} else {
+					var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+					self.complete(err);
+				}
+			} else {
+				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
+				self.complete(null, message)
 			}
-
-			if(successResponse) {
-				self.complete(null, response);
-				return;
-			}
-
-			var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
-			self.complete(err);
 		};
 
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
@@ -7751,16 +7935,18 @@ var JSONPTransport = (function() {
 		head.insertBefore(script, head.firstChild);
 	};
 
-	Request.prototype.complete = function(err, body) {
+	Request.prototype.complete = function(err, body, headers) {
+		headers = headers || {};
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			var contentType;
 			if(body) {
 				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
+				headers['content-type'] = contentType;
 				this.emit('data', body);
 			}
 
-			this.emit('complete', err, body, contentType && {'content-type': contentType}, true);
+			this.emit('complete', err, body, headers, /* unpacked: */ true);
 			this.dispose();
 		}
 	};
@@ -7809,18 +7995,10 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
+	var xhrSupported;
 	var isIE = window.XDomainRequest;
-	var xhrSupported, xdrSupported;
 	function isAvailable() {
-		if(window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()) {
-			return (xhrSupported = true);
-		}
-
-		if(isIE && document.domain && (window.location.protocol == 'https:')) {
-			return (xdrSupported = true);
-		}
-
-		return false;
+		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
 	};
 
 	function ieVersion() {
@@ -7867,7 +8045,7 @@ var XHRRequest = (function() {
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
 		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
 		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
-		return xhrSupported ? new XHRRequest(uri, headers, params, body, requestMode, timeouts) : new XDRRequest(uri, headers, params, body, requestMode, timeouts);
+		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
@@ -7917,19 +8095,19 @@ var XHRRequest = (function() {
 		for(var h in headers)
 			xhr.setRequestHeader(h, headers[h]);
 
-		var onerror = xhr.onerror = function(err) {
-			err.code = 80000;
-			self.complete(err);
+		var errorHandler = function(errorEvent, message, code, statusCode) {
+			var errorMessage = message + ', errorEvent type was ' + errorEvent.type + ', current statusText is ' + self.xhr.statusText;
+			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
+			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
-		xhr.onabort = function() {
-			var err = new Error('Request cancelled');
-			err.statusCode = 400;
-			onerror(err);
+		xhr.onerror = function(errorEvent) {
+			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
+		}
+		xhr.onabort = function(errorEvent) {
+			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
 		};
-		xhr.ontimeout = function() {
-			var err = new Error('Request timed out');
-			err.statusCode = 408;
-			onerror(err);
+		xhr.ontimeout = function(errorEvent) {
+			errorHandler(errorEvent, 'Request timed out', 80000, 408);
 		};
 
 		var streaming,
@@ -8067,197 +8245,18 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	function XDRRequest(uri, headers, params, body, requestMode, timeouts) {
-		params.ua = 'xdr';
-		XHRRequest.call(this, uri, headers, params, body, requestMode, timeouts);
-	}
-	Utils.inherits(XDRRequest, XHRRequest);
-
-   /**
-	* References:
-	* http://ajaxian.com/archives/100-line-ajax-wrapper
-	* http://msdn.microsoft.com/en-us/library/cc288060(v=VS.85).aspx
-	*/
-	XDRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
-			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
-			body = this.body,
-			method = body ? 'POST' : 'GET',
-			xhr = this.xhr = new XDomainRequest(),
-			self = this;
-
-		if(body)
-			if(typeof(body) == 'object') body = JSON.stringify(body);
-
-		var onerror = xhr.onerror = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onerror()', '');
-			var err = new Error('Error response');
-			err.statusCode = 400;
-			err.code = 80000;
-			self.complete(err);
-		};
-		xhr.onabort = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onabort()', '');
-			var err = new Error('Request cancelled');
-			err.statusCode = 400;
-			onerror(err);
-		};
-		xhr.ontimeout = function() {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.timeout()', '');
-			var err = new Error('Request timed out');
-			err.statusCode = 408;
-			onerror(err);
-		};
-
-		var streaming,
-			statusCode,
-			responseBody,
-			streamPos = 0;
-
-		function onResponse() {
-			clearTimeout(timer);
-			responseBody = xhr.responseText;
-			//Logger.logAction(Logger.LOG_MICRO, 'onResponse: ', responseBody);
-			if(responseBody) {
-				var idx = responseBody.length - 1;
-				if(responseBody[idx] == '\n' || (idx = responseBody.indexOf('\n') > -1)) {
-					var chunk = responseBody.slice(0, idx);
-					try {
-						chunk = JSON.parse(chunk);
-						var err = chunk.error;
-						if(err) {
-							statusCode = err.statusCode || 500;
-							self.complete(err);
-						} else {
-							statusCode = responseBody ? 201 : 200;
-							streaming = (self.requestMode == REQ_RECV_STREAM);
-							if(streaming) {
-								streamPos = idx;
-								if(!Utils.isEmpty(chunk)) {
-									self.emit('data', chunk);
-								}
-							}
-						}
-					} catch(e) {
-						err = new Error('Malformed response body from server: ' + e.message);
-						err.statusCode = 400;
-						self.complete(err);
-						return;
-					}
-				}
-			}
-		}
-
-		function onEnd() {
-			try {
-				responseBody = xhr.responseText;
-				//Logger.logAction(Logger.LOG_MICRO, 'onEnd: ', responseBody);
-				if(!responseBody || !responseBody.length) {
-					if(status != 204) {
-						err = new Error('Incomplete response body from server');
-						err.statusCode = 400;
-						self.complete(err);
-					}
-					return;
-				}
-				responseBody = JSON.parse(String(responseBody));
-			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
-				return;
-			}
-			self.complete(null, responseBody, {'content-type': 'application/json'}, true);
-		}
-
-		function onProgress() {
-			responseBody = xhr.responseText;
-			//Logger.logAction(Logger.LOG_MICRO, 'onProgress: ', responseBody);
-			var bodyEnd = responseBody.length - 1, idx, chunk;
-			while((streamPos < bodyEnd) && (idx = responseBody.indexOf('\n', streamPos)) > -1) {
-				chunk = responseBody.slice(streamPos, idx);
-				streamPos = idx + 1;
-				onChunk(chunk);
-			}
-		}
-
-		function onChunk(chunk) {
-			try {
-				chunk = JSON.parse(chunk);
-			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
-				return;
-			}
-			self.emit('data', chunk);
-		}
-
-		function onStreamEnd() {
-			onProgress();
-			self.streamComplete = true;
-			Utils.nextTick(function() {
-				self.complete();
-			});
-		}
-
-		xhr.onprogress = function() {
-			if(statusCode === undefined)
-				onResponse();
-			else if(streaming)
-				onProgress();
-		};
-
-		xhr.onload = function() {
-			if(statusCode === undefined) {
-				onResponse();
-				if(self.requestComplete)
-					return;
-			}
-			if(streaming)
-				onStreamEnd();
-			else
-				onEnd();
-		};
-
-		try {
-			xhr.open(method, this.uri);
-			xhr.send(body);
-		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Request.onStreamEnd()', 'Unexpected send exception; err = ' + e);
-			onerror(e);
-		}
-	};
-
-	XDRRequest.prototype.dispose = function() {
-		var xhr = this.xhr;
-		if(xhr) {
-			xhr.onprogress = xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = noop;
-			this.xhr = null;
-			var timer = this.timer;
-			if(timer) {
-				clearTimeout(timer);
-				this.timer = null;
-			}
-			if(!this.requestComplete)
-				xhr.abort();
-		}
-		delete pendingRequests[this.id];
-	};
-
-	var isAvailable = XHRRequest.isAvailable();
-	if(isAvailable) {
-		DomEvent.addUnloadListener(clearPendingRequests);
-		if(typeof(Http) !== 'undefined') {
-			Http.supportsAuthHeaders = xhrSupported;
-			Http.Request = function(uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND);
-				req.once('complete', callback);
-				req.exec();
-				return req;
-			};
-		}
-	}
+  if(isAvailable()) {
+          DomEvent.addUnloadListener(clearPendingRequests);
+          if(typeof(Http) !== 'undefined') {
+                  Http.supportsAuthHeaders = xhrSupported;
+                  Http.Request = function(uri, headers, params, body, callback) {
+                          var req = createRequest(uri, headers, params, body, REQ_SEND);
+                          req.once('complete', callback);
+                          req.exec();
+                          return req;
+                  };
+          }
+  }
 
 	return XHRRequest;
 })();
@@ -8307,197 +8306,6 @@ var XHRTransport = (function() {
 	return XHRTransport;
 })();
 
-var IframeTransport = (function() {
-	var origin = location.origin || location.protocol + "//" + location.hostname + (location.port ? ':' + location.port: '');
-
-	/* Allows iframe to work from local (file://) files - firefox sets to origin
-	* to 'null', chrome to 'file://', neither of which are valid security
-	* restrictions. */
-	if (origin === 'null' || origin === 'file://') origin = '*';
-
-	/* public constructor */
-	function IframeTransport(connectionManager, auth, params) {
-		params.binary = false;
-		Transport.call(this, connectionManager, auth, params);
-		this.wrapIframe = null;
-		this.wrapWindow = null;
-		this.destWindow = null;
-		this.destOrigin = null;
-	}
-	Utils.inherits(IframeTransport, Transport);
-
-	IframeTransport.isAvailable = function() {
-		return (window.postMessage !== undefined);
-	};
-
-	/* No Iframe rest requests -- if xhr not supported then falls back to jsonp rest requests */
-	IframeTransport.checkConnectivity = JSONPTransport.checkConnectivity;
-
-	if(IframeTransport.isAvailable())
-		ConnectionManager.httpTransports['iframe'] = ConnectionManager.transports['iframe'] = IframeTransport;
-
-	IframeTransport.tryConnect = function(connectionManager, auth, params, callback) {
-		var transport = new IframeTransport(connectionManager, auth, params);
-		var errorCb = callback;
-		transport.on('iferror', errorCb);
-		transport.on('ifopen', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'IframeTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('iferror', errorCb);
-			callback(null, transport);
-		});
-		transport.connect();
-	};
-
-	IframeTransport.prototype.toString = function() {
-		return 'IframeTransport; uri=' + this.uri;
-	};
-
-	IframeTransport.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'IframeTransport.connect()', 'starting');
-		Transport.prototype.connect.call(this);
-		var self = this;
-
-		this.auth.getAuthParams(function(err, authParams) {
-			if(err) {
-				self.abort(err);
-				return;
-			}
-			var connectParams = self.params.getConnectParams(authParams);
-			connectParams.origin = origin;
-			self.createIframe(connectParams, function(err) {
-				if(err) {
-					self.emit('iferror', err);
-					return;
-				}
-				self.emit('ifopen');
-			});
-		});
-	};
-
-	IframeTransport.prototype.send = function(message) {
-		var destWindow = this.destWindow;
-		if(destWindow)
-			destWindow.postMessage(JSON.stringify(message), this.destOrigin);
-	};
-
-	IframeTransport.prototype.createIframe = function(params, callback) {
-		var wrapIframe = this.wrapIframe = document.createElement('iframe'),
-			options = this.params.options,
-			destOrigin = this.destOrigin = 'https://' + Defaults.getHost(options) + ':' + Defaults.getPort(options, true),
-			minQualifier = Defaults.minified ? '.min' : '',
-			versionQualifier = Defaults.version ? ('-' + Defaults.version) : '',
-			destUri = destOrigin + '/static/iframe' + minQualifier+ versionQualifier + '.html' + Utils.toQueryString(params),
-			iframeComplete = false,
-			wrapWindow = null,
-			self = this;
-
-		Logger.logAction(Logger.LOG_MINOR, 'IframeTransport.createIframe()', 'destUri: ' + destUri);
-		DomEvent.addUnloadListener(clearIframe);
-
-		function clearIframe() {
-			self.dispose();
-		}
-
-		function onload() {
-			var wrapWindow = wrapWindow || this.contentWindow || this.contentDocument.parentWindow,
-				destWindow = self.destWindow = wrapWindow.destWindow;
-
-			/* if we got a load event before the HTML content was added to the iframe,
-			 * ignore it because we will get a second event when the document content loads */
-			if(!destWindow) return;
-
-			DomEvent.addMessageListener(wrapWindow, self.messageListener = messageListener);
-			iframeComplete = true;
-			callback(null, wrapIframe);
-		}
-
-		function onerror(e) {
-			clearIframe();
-			if(!iframeComplete) {
-				iframeComplete = true;
-				e = e || new Error('Unknown error loading iframe');
-				callback(e);
-			}
-		}
-
-		function messageListener(ev) {
-			self.onData(ev.data);
-		}
-
-		wrapIframe.style.display = 'none';
-		wrapIframe.style.position = 'absolute';
-		wrapIframe.onerror = onerror;
-
-		DomEvent.addListener(wrapIframe, 'load', (self.onloadListener = onload));
-		document.body.appendChild(wrapIframe);
-		wrapWindow = self.wrapWindow = wrapIframe.contentWindow;
-
-		var wrapDocument = wrapWindow.document;
-		wrapDocument.open();
-		wrapDocument.write(wrapIframeContent(destUri));
-		wrapDocument.close();
-	};
-
-	IframeTransport.prototype.onData = function(data) {
-		Logger.logAction(Logger.LOG_MICRO, 'IframeTransport.onData()', 'length = ' + data.length);
-		try {
-			var items = JSON.parse(String(data));
-			if(items && items.length)
-				for(var i = 0; i < items.length; i++)
-					this.onProtocolMessage(items[i]);
-		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'IframeTransport.onData()', 'Unexpected exception handing channel event: ' + e);
-		}
-	};
-
-	IframeTransport.prototype.dispose = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'IframeTransport.dispose()', '');
-
-		var messageListener = this.messageListener;
-		if(messageListener) {
-			DomEvent.removeMessageListener(this.wrapWindow, messageListener);
-			this.messageListener = null;
-		}
-
-		var wrapIframe = this.wrapIframe;
-		if(wrapIframe) {
-			var onloadListener = this.onloadListener;
-			if(onloadListener)
-				DomEvent.removeListener(wrapIframe, 'load', onloadListener);
-
-			wrapIframe.onerror = null;
-			this.wrapIframe = null;
-			/* This timeout makes chrome fire onbeforeunload event
-			 * within iframe. Without the timeout it goes straight to
-			 * addUnloadListener. */
-			setTimeout(function() {
-				wrapIframe.parentNode.removeChild(wrapIframe);
-			}, 0);
-		}
-		this.emit('disposed');
-	};
-
-	function wrapIframeContent(src) {
-		return '<!DOCTYPE html>\n'
-			+	'<html>\n'
-			+	'  <head>\n'
-			+	'    <script type="text/javascript">\n'
-			+	'    var destWindow;\n'
-			+	'    function onIframeLoaded() {\n'
-			+	'      destWindow = document.getElementById("dest").contentWindow;\n'
-			+	'    }\n'
-			+	'    </script>\n'
-			+	'  </head>\n'
-			+	'  <body>\n'
-			+	'    <iframe id="dest" src="' + src + '" onload="onIframeLoaded();">\n'
-			+	'    </iframe>\n'
-			+	'  </body>\n'
-			+	'</html>\n';
-	}
-
-	return IframeTransport;
-})();
-
 if(typeof Realtime !== 'undefined') {
 	Ably.Rest = Rest;
 	Ably.Realtime = Realtime;
@@ -8505,6 +8313,9 @@ if(typeof Realtime !== 'undefined') {
 	Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
 	if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
 	Realtime.Defaults = Rest.Defaults = Defaults;
+	Realtime.Http = Rest.Http = Http;
+	Realtime.Utils = Rest.Utils = Utils;
+	Realtime.Http = Rest.Http = Http;
 	Realtime.Message = Rest.Message = Message;
 	Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 	Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;

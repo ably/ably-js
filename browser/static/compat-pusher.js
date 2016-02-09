@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.13
+ * Ably JavaScript Library v0.8.14
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -24,8 +24,43 @@ var EventEmitter = (function() {
 
 	/* Call the listener, catch any exceptions and log, but continue operation*/
 	function callListener(eventThis, listener, args) {
-		try { listener.apply(eventThis, args); } catch(e) {
+		try {
+			listener.apply(eventThis, args);
+		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+		}
+	}
+
+	/**
+	 * Remove listeners that match listener
+	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
+	 * @param listener the listener callback to remove
+	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
+	 */
+	function removeListener(targetListeners, listener, eventFilter) {
+		var listeners, idx, eventName, targetListenersIndex;
+
+		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
+			listeners = targetListeners[targetListenersIndex];
+			if (eventFilter) { listeners = listeners[eventFilter]; }
+
+			if (Utils.isArray(listeners)) {
+				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
+					listeners.splice(idx, 1);
+				}
+				/* If events object has an event name key with no listeners then
+				   remove the key to stop the list growing indefinitely */
+				if (eventFilter && (listeners.length === 0)) {
+					delete targetListeners[targetListenersIndex][eventFilter];
+				}
+			} else if (Utils.isObject(listeners)) {
+				/* events */
+				for (eventName in listeners) {
+					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+						removeListener([listeners], listener, eventName);
+					}
+				}
+			}
 		}
 	}
 
@@ -70,16 +105,11 @@ var EventEmitter = (function() {
 			}
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
-		var listeners, idx = -1;
+
 		if(Utils.isEmptyArg(event)) {
 			/* "any" case */
 			if(listener) {
-				if(!(listeners = this.any) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
-					if(listeners = this.anyOnce)
-						idx = Utils.arrIndexOf(listeners, listener);
-				}
-				if(idx > -1)
-					listeners.splice(idx, 1);
+				removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
 			} else {
 				this.any = [];
 				this.anyOnce = [];
@@ -88,13 +118,7 @@ var EventEmitter = (function() {
 		}
 		/* "normal" case where event is an actual event */
 		if(listener) {
-			var listeners, idx = -1;
-			if(!(listeners = this.events[event]) || (idx = Utils.arrIndexOf(listeners, listener)) == -1) {
-				if(listeners = this.eventsOnce[event])
-					idx = Utils.arrIndexOf(listeners, listener);
-			}
-			if(idx > -1)
-				listeners.splice(idx, 1);
+			removeListener([this.events, this.eventsOnce], listener, event);
 		} else {
 			delete this.events[event];
 			delete this.eventsOnce[event];
@@ -395,7 +419,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(prop);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	/*
@@ -413,6 +437,43 @@ var Utils = (function() {
 		}
 		return result.length ? result : undefined;
 	};
+
+	Utils.arrForEach = Array.prototype.forEach ?
+		function(arr, fn) {
+			arr.forEach(fn);
+		} :
+		function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				fn(arr[i], i, arr);
+			}
+		};
+
+	Utils.arrMap = Array.prototype.map ?
+		function(arr, fn) {
+			return arr.map(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				result.push(fn(arr[i], i, arr));
+			}
+			return result;
+		};
+
+	Utils.arrEvery = Array.prototype.every ?
+		function(arr, fn) {
+			return arr.every(fn);
+		} : function(arr, fn) {
+			var len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(!fn(arr[i], i, arr)) {
+					return false;
+				};
+			}
+			return true;
+		};
 
 	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
 
@@ -467,6 +528,11 @@ var Utils = (function() {
 			result[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
 
  		return result;
+	};
+
+	Utils.now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
 	};
 
 	Utils.inspect = function(x) {
