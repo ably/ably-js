@@ -34,6 +34,25 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	];
 
+	var MAX_LIMIT = 1000;
+	//Skip a month for the generated tests
+	var secondIntervalDate = new Date(lastYear, 2, 3, 15, 6, 0);
+	var secondIntervalEpoch = Date.UTC(lastYear, 2, 3, 15, 6, 0);
+
+	var dateId;
+
+	//Add 1001 fixtures for default & max limit testing
+	for(var i = 0; i < MAX_LIMIT + 1; i++) {
+		secondIntervalDate.setMinutes(secondIntervalDate.getMinutes() + 1);
+		dateId = secondIntervalDate.getFullYear() + "-" + ('0' + (secondIntervalDate.getMonth() + 1)).slice(-2) + "-" + ('0' + secondIntervalDate.getDate()).slice(-2) + ":" + ('0' + secondIntervalDate.getHours()).slice(-2) + ":" + ('0' + secondIntervalDate.getMinutes()).slice(-2);
+
+		statsFixtures.push({
+			intervalId: dateId,
+			inbound:  { realtime: { messages: { count: 15, data: 4000 } } },
+			outbound: { realtime: { messages: { count: 33, data: 3000 } } }
+		});
+	}
+
 	exports.setup_stats = function(test) {
 		test.expect(1);
 		// force a new app to be created with first argument true so that stats are not effected by other tests
@@ -53,12 +72,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_minute0 = function(test) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15:03',
-			end: anHourAgo,
+			end: lastYear + '-02-03:15:05',
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -88,12 +108,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Using milliseconds since epoch, check minute-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_minute1 = function(test) {
 		test.expect(1);
 		rest.stats({
 			start: firstIntervalEpoch,
-			end: anHourAgo,
+			end: secondIntervalEpoch,
 			direction: 'forwards'
 		}, function(err, page) {
 			if(err) {
@@ -123,12 +144,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check hour-level inbound and outbound stats match fixture data (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_hour0 = function(test) {
 		test.expect(1);
 		rest.stats({
 			start: lastYear + '-02-03:15',
-			end: anHourAgo,
+			end: lastYear + '-02-03:18',
 			direction: 'forwards',
 			by: 'hour'
 		}, function(err, page) {
@@ -139,7 +161,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.equal(stats.length, 1, 'Verify 1 stat record found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -159,6 +181,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check day-level stats exist (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_day0 = function(test) {
 		test.expect(1);
@@ -174,7 +197,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -194,6 +217,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check month-level stats exist (forwards)
+	 * @spec : (RSC6b4)
 	 */
 	exports.appstats_month0 = function(test) {
 		test.expect(1);
@@ -209,7 +233,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -229,8 +253,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check limit query param (backwards)
+	 * @spec : (RSC6b3)
 	 */
-	exports.appstats_limit0 = function(test) {
+	exports.appstats_limit_backwards = function(test) {
 		test.expect(1);
 		rest.stats({
 			end: lastYear + '-02-03:15:04',
@@ -244,7 +269,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -264,12 +289,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check limit query param (forwards)
+	 * @spec : (RSC6b3)
 	 */
-	exports.appstats_limit1 = function(test) {
+	exports.appstats_limit_forwards = function(test) {
 		test.expect(1);
 		rest.stats({
 			end: lastYear + '-02-03:15:04',
-			direction: 'backwards',
+			direction: 'forwards',
 			limit: 1
 		}, function(err, page) {
 			if(err) {
@@ -279,7 +305,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			try {
 				test.expect(3);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify 1 stat records found');
 
 				var totalInbound = 0, totalOutbound = 0;
@@ -288,8 +314,177 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					totalOutbound += stats[i].outbound.all.messages.count;
 				}
 
-				test.equal(totalInbound, 60, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 10, 'Verify all outbound messages found');
+				test.equal(totalInbound, 50, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 20, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check max limit query param (forwards)
+	 * @spec : (RSC6b3)
+	 */
+	exports.appstats_limit_max_forwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			end: anHourAgo,
+			direction: 'forwards',
+			limit: 1000
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(5);
+				var stats = page.items;
+				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					test.done();
+				});
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check max limit query param (backwards)
+	 * @spec : (RSC6b3)
+	 */
+	exports.appstats_limit_max_backwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			end: anHourAgo,
+			direction: 'backwards',
+			limit: 1000
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(5);
+				var stats = page.items;
+				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					test.done();
+				});
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check default limit query param (forwards)
+	 * @spec : (RSC6b3)
+	 */
+	exports.appstats_limit_default_forwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			end: anHourAgo,
+			direction: 'forwards',
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+				var stats = page.items;
+				test.ok(stats.length == 100, 'Verify 1000 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
+				test.done();
+			} catch(e) {
+				console.log(e);
+			}
+		});
+	};
+
+	/**
+	 * Check default limit query param (backwards)
+	 * @spec : (RSC6b3)
+	 */
+	exports.appstats_limit_default_backwards = function(test) {
+		test.expect(1);
+		rest.stats({
+			start: secondIntervalEpoch,
+			end: anHourAgo,
+			direction: 'backwards',
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			try {
+				test.expect(3);
+				var stats = page.items;
+				test.ok(stats.length == 100, 'Verify 100 stat records found');
+
+				var totalInbound = 0, totalOutbound = 0;
+				for(var i = 0; i < stats.length; i++) {
+					totalInbound += stats[i].inbound.all.messages.count;
+					totalOutbound += stats[i].outbound.all.messages.count;
+				}
+
+				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
+				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
 				test.done();
 			} catch(e) {
 				console.log(e);
@@ -299,6 +494,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/**
 	 * Check query pagination (backwards)
+	 * @spec : (RSC6b2)
 	 */
 	exports.appstats_pagination_backwards = function(test) {
 		test.expect(1);
@@ -330,7 +526,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.expect(6);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify exactly one stats record found');
 				var totalData = 0;
 				for(var i = 0; i < stats.length; i++)
@@ -346,7 +542,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					test.expect(9);
-	      var stats = page.items;
+					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
 					var totalData = 0;
 					for(var i = 0; i < stats.length; i++)
@@ -360,7 +556,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					page.first(function(err, page) {
 						var totalData = 0;
-			var stats = page.items;
+						var stats = page.items;
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 7000, 'Verify all published message data found');
@@ -374,7 +570,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	/**
-	 * Check query pagination (backwards)
+	 * Check query pagination (forwards)
+	 * @spec : (RSC6b2)
 	 */
 	exports.appstats_pagination_forwards = function(test) {
 		test.expect(1);
@@ -406,7 +603,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					return;
 				}
 				test.expect(6);
-		var stats = page.items;
+				var stats = page.items;
 				test.ok(stats.length == 1, 'Verify exactly one stats record found');
 				var totalData = 0;
 				for(var i = 0; i < stats.length; i++)
@@ -422,7 +619,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 						return;
 					}
 					test.expect(9);
-	      var stats = page.items;
+					var stats = page.items;
 					test.ok(stats.length == 1, 'Verify exactly one stats record found');
 					var totalData = 0;
 					for(var i = 0; i < stats.length; i++)
@@ -436,10 +633,86 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 					page.first(function(err, page) {
 						var totalData = 0;
-			var stats = page.items;
+						var stats = page.items;
 						for(var i = 0; i < stats.length; i++)
 							totalData += stats[i].inbound.all.messages.data;
 						test.equal(totalData, 5000, 'Verify all published message data found');
+
+						/* that's it */
+						test.done();
+					});
+				});
+			});
+		});
+	};
+
+	/**
+	 * Check query pagination omitted (defaults to backwards)
+	 * @spec : (RSC6b2)
+	 */
+	exports.appstats_pagination_omitted = function(test) {
+		test.expect(1);
+		rest.stats({
+			end: lastYear + '-02-03:15:05',
+			limit: 1
+		}, function(err, page) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+
+			test.expect(3);
+			var stats = page.items;
+			test.ok(stats.length == 1, 'Verify exactly one stats record found');
+			var totalData = 0;
+			for(var i = 0; i < stats.length; i++)
+				totalData += stats[i].inbound.all.messages.data;
+			test.equal(totalData, 7000, 'Verify all published message data found');
+
+			/* get next page */
+			test.ok(page.hasNext(), 'Verify next page rel link present');
+			page.next(function(err, page) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				test.expect(6);
+				var stats = page.items;
+				test.ok(stats.length == 1, 'Verify exactly one stats record found');
+				var totalData = 0;
+				for(var i = 0; i < stats.length; i++)
+					totalData += stats[i].inbound.all.messages.data;
+				test.equal(totalData, 6000, 'Verify all published message data found');
+
+				/* get next page */
+				test.ok(page.hasNext(), 'Verify next page rel link present');
+				page.next(function(err, page) {
+					if(err) {
+						test.ok(false, displayError(err));
+						test.done();
+						return;
+					}
+					test.expect(9);
+					var stats = page.items;
+					test.ok(stats.length == 1, 'Verify exactly one stats record found');
+					var totalData = 0;
+					for(var i = 0; i < stats.length; i++)
+						totalData += stats[i].inbound.all.messages.data;
+					test.equal(totalData, 5000, 'Verify all published message data found');
+
+					/* verify no further pages */
+					test.ok(page.isLast(), 'Verify last page');
+
+					test.expect(10);
+
+					page.first(function(err, page) {
+						var totalData = 0;
+						var stats = page.items;
+						for(var i = 0; i < stats.length; i++)
+							totalData += stats[i].inbound.all.messages.data;
+						test.equal(totalData, 7000, 'Verify all published message data found');
 
 						/* that's it */
 						test.done();
