@@ -305,7 +305,7 @@ var NodeCometTransport = (function() {
 			req.abort();
 			this.req = null;
 		}
-		this.complete({statusCode: 400, code: 40000, message: 'Cancelled'})
+		this.complete({statusCode: 400, code: 80000, message: 'Cancelled'})
 	};
 
 	return NodeCometTransport;

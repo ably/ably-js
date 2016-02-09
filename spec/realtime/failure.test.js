@@ -239,5 +239,26 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
+	exports.attach_timeout = function(test) {
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 3000}),
+			channel = realtime.channels.get('failed_attach'),
+			originalOnMessage = channel.onMessage;
+
+		channel.onMessage = function(message) {
+				if(message.action === 11) { return; }
+				originalOnMessage(message);
+			};
+
+		test.expect(3);
+		realtime.connection.once('connected', function() {
+			channel.attach(function(err) {
+				test.equal(err.code, 90000, 'check channel error code');
+				test.equal(err.statusCode, 408, 'check timeout statusCode');
+				test.equal(channel.state, 'detached', 'check channel reverts to being detached');
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

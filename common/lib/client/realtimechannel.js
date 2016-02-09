@@ -172,6 +172,7 @@ var RealtimeChannel = (function() {
 							callback();
 							break;
 						case 'failed':
+						case 'attached':
 							callback(err || connectionManager.getStateError());
 							break;
 						default:
@@ -461,21 +462,17 @@ var RealtimeChannel = (function() {
 		this.stateTimer = setTimeout(function() {
 			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'timer expired');
 			self.stateTimer = null;
-			/* retry */
-			self.checkPendingState();
+			self.timeoutPendingState();
 		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
-		var result = false;
 		switch(this.state) {
 			case 'attaching':
 				this.attachImpl();
-				result = true;
 				break;
 			case 'detaching':
 				this.detachImpl();
-				result = true;
 				break;
 			case 'attached':
 				/* resume any sync operation that was in progress */
@@ -483,7 +480,23 @@ var RealtimeChannel = (function() {
 			default:
 				break;
 		}
-		return result;
+	};
+
+	RealtimeChannel.prototype.timeoutPendingState = function() {
+		switch(this.state) {
+			case 'attaching':
+				var err = new ErrorInfo('Channel attach timed out', 90000, 408);
+				this.setState('detached', err);
+				this.failPendingMessages(err);
+				break;
+			case 'detaching':
+				var err = new ErrorInfo('Channel detach timed out', 90000, 408);
+				this.setState('attached', err);
+				break;
+			default:
+				this.checkPendingState();
+				break;
+		}
 	};
 
 	RealtimeChannel.prototype.clearStateTimer = function() {
