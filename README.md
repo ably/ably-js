@@ -60,8 +60,13 @@ All examples assume a client has been created as follows:
 // basic auth with an API key
 var client = new Ably.Realtime(<key string>)
 
-// using token auth
+// using a token string
 var client = new Ably.Realtime(<token string>)
+
+// using an Options object, see https://www.ably.io/documentation/rest/usage#options
+// which must contain at least one auth option, i.e. at least
+// one of: key, token, tokenDetails, authUrl, or authCallback
+var client = new Ably.Realtime(<options>)
 ```
 
 ### Connection
@@ -110,8 +115,22 @@ channel.subscribe('myEvent', function(message) {
 
 ### Publishing to a channel
 
+
 ```javascript
-channel.publish('greeting', 'Hello World!')
+// Publish a single message with name and data
+channel.publish('greeting', 'Hello World!');
+
+// Optionally, you can use a callback to be notified of success or failure
+channel.publish('greeting', 'Hello World!', function(err) {
+  if(err) {
+    console.log('publish failed with error ' + err);
+  } else {
+    console.log('publish succeeded');
+  }
+})
+
+// Publish several messages at once
+channel.publish([{name: 'greeting', data: 'Hello World!'}, ...], callback);
 ```
 
 ### Querying the History
@@ -122,24 +141,54 @@ channel.history(function(err, messagesPage) {
   messagesPage.items                              // array of Message
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.hasNext()                          // true if there are further pages
+  messagesPage.isLast()                           // true if this page is the last page
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  messagesPage.next == undefined                  // there are no more pages
 });
+
+// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Presence on a channel
+
+Getting presence:
 
 ```javascript
 channel.presence.get(function(err, presenceSet) {
   presenceSet                                     // array of PresenceMessages
 });
-
-channel.presence.enter('my status', function() {
-  // now I am entered
-});
 ```
 Note that presence#get on a realtime channel does not return a
 PaginatedResult, as the library maintains a local copy of the presence set.
+
+Entering (and leaving) the presence set:
+
+```javascript
+channel.presence.enter('my status', function(err) {
+  // now I am entered
+});
+
+channel.presence.update('new status', function(err) {
+  // my presence data is updated
+});
+
+channel.presence.leave(function(err) {
+  // I've left the presence set
+});
+```
+
+If you are using a client which is allowed to use any clientId --
+that is, if you didn't specify a clientId when initializing the
+client, and are using basic auth or a token witha wildcard clientId (see
+https://www.ably.io/documentation/general/authentication for more information), you
+can use
+
+```javascript
+channel.presence.enterClient('myClientId', 'status', function(err) { ... });
+// and similiarly, updateClient and leaveClient
+```
+
 
 ### Querying the Presence History
 
@@ -148,9 +197,13 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.items                              // array of PresenceMessage
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.hasNext()                           // true if there are further pages
+  messagesPage.isLast()                           // true if this page is the last page
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  messagesPage.next == undefined                  // there are no more pages
 });
+
+// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ## Using the REST API
@@ -165,6 +218,11 @@ var client = new Ably.Realtime(<key string>)
 
 // using token auth
 var client = new Ably.Realtime(<token string>)
+
+// using an Options object, see https://www.ably.io/documentation/realtime/usage#client-options
+// which must contain at least one auth option, i.e. at least
+// one of: key, token, tokenDetails, authUrl, or authCallback
+var client = new Ably.Realtime(<options>)
 ```
 
 Given:
@@ -176,7 +234,20 @@ var channel = client.channels.get('test');
 ### Publishing to a channel
 
 ```javascript
-channel.publish('greeting', 'Hello World!')
+// Publish a single message with name and data
+channel.publish('greeting', 'Hello World!');
+
+// Optionally, you can use a callback to be notified of success or failure
+channel.publish('greeting', 'Hello World!', function(err) {
+  if(err) {
+    console.log('publish failed with error ' + err);
+  } else {
+    console.log('publish succeeded');
+  }
+})
+
+// Publish several messages at once
+channel.publish([{name: 'greeting', data: 'Hello World!'}, ...], callback);
 ```
 
 ### Querying the History
@@ -187,9 +258,13 @@ channel.history(function(err, messagesPage) {
   messagesPage.items                              // array of Message
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.hasNext()                          // true if there are further pages
+  messagesPage.isLast()                           // true if this page is the last page
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  messagesPage.next == undefined                  // there are no more pages
 });
+
+// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Presence on a channel
@@ -199,8 +274,9 @@ channel.presence.get(function(err, presencePage) { // PaginatedResult
   presencePage.items                              // array of PresenceMessage
   presencePage.items[0].data                      // payload for first message
   presencePage.items.length                       // number of messages in the current page of members
+  presencePage.hasNext()                          // true if there are further pages
+  presencePage.isLast()                           // true if this page is the last page
   presencePage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  presencePage.next == undefined                  // there are no more pages
 });
 ```
 
@@ -211,28 +287,49 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.items                              // array of PresenceMessage
   messagesPage.items[0].data                      // payload for first message
   messagesPage.items.length                       // number of messages in the current page of history
+  messagesPage.hasNext()                          // true if there are further pages
+  messagesPage.isLast()                           // true if this page is the last page
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-  messagesPage.next == undefined                  // there are no more pages
 });
+
+// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Generate Token and Token Request
 
+See https://www.ably.io/documentation/general/authentication for an
+explanation of Ably's authentication mechanism.
+
+Requesting a token:
 ```javascript
 client.auth.requestToken(function(err, tokenDetails) {
   // tokenDetails is instance of TokenDetails
-  token_details.token // token string, eg 'xVLyHw.CLchevH3hF....MDh9ZC_Q'
-});
-var clientUsingToken = new Ably.Rest(token_details.token);
+  // see https://www.ably.io/documentation/rest/authentication/#token-details for its properties
 
+  // Now we have the token, we can send it to someone who can instantiate a client with it:
+  var clientUsingToken = new Ably.Realtime(tokenDetails.token);
+});
+
+// requestToken can take two optional params
+// tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
+// authOptions: https://www.ably.io/documentation/rest/authentication/#auth-options
+client.auth.requestToken(tokenParams, authOptions, function(err, tokenDetails) { ... });
+```
+
+Creating a token request (for example, on a server in response to a
+request by a client using the `authCallback` or `authUrl` mechanisms):
+
+```javascript
 client.auth.createTokenRequest(function(err, tokenRequest) {
-  tokenRequest.keyName     // name of key used to derive token
-  tokenRequest.clientId    // name of a clientId to be bound to the token
-  tokenRequest.ttl         // time to live for token, in ms
-  tokenRequest.timestamp   // timestamp of this request, in ms since epoch
-  tokenRequest.capability  // capability string for this token
-  tokenRequest.nonce       // non-replayable random string
-  tokenRequest.mac         // HMAC of these params, generated with keyValue
+  // now send the tokenRequest back to the client, which will
+  // use it to request a token and connect to Ably
+}
+
+// createTokenRequest can take two optional params
+// tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
+// authOptions: https://www.ably.io/documentation/rest/authentication/#auth-options
+client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequest) { ... });
 ```
 
 ### Fetching your application's stats
@@ -240,6 +337,10 @@ client.auth.createTokenRequest(function(err, tokenRequest) {
 ```javascript
 client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
   statsPage.items                              // array of Stats
+  statsPage.items[0].data                      // payload for first message
+  statsPage.items.length                       // number of messages in the current page of history
+  statsPage.hasNext()                          // true if there are further pages
+  statsPage.isLast()                           // true if this page is the last page
   statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 ```
@@ -348,6 +449,8 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Releasing
 
+- Make sure you have the closure compiler installed, needed to generate
+  the minified library. You can install it with `grunt compiler`
 - `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
 - `grunt release:deploy`
 
