@@ -7984,7 +7984,6 @@ var XHRRequest = (function() {
 	var idCounter = 0;
 	var pendingRequests = {};
 
-	/* duplicated here; because this is included standalone in iframe.js */
 	var REQ_SEND = 0,
 		REQ_RECV = 1,
 		REQ_RECV_POLL = 2,
