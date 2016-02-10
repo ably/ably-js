@@ -146,6 +146,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,
-			bestTransport:             bestTransport
+			bestTransport:             bestTransport,
 		};
 	});

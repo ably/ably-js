@@ -1,6 +1,10 @@
 var PresenceMessage = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
 
+	function toActionValue(actionString) {
+		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
+	}
+
 	function PresenceMessage() {
 		this.action = undefined;
 		this.id = undefined;
@@ -11,13 +15,13 @@ var PresenceMessage = (function() {
 		this.encoding = undefined;
 	}
 
-	PresenceMessage.Action = {
-		'ABSENT' : 0,
-		'PRESENT' : 1,
-		'ENTER' : 2,
-		'LEAVE' : 3,
-		'UPDATE' : 4
-	};
+	PresenceMessage.Actions = [
+		'absent',
+		'present',
+		'enter',
+		'leave',
+		'update'
+	];
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
@@ -26,7 +30,8 @@ var PresenceMessage = (function() {
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
 			clientId: this.clientId,
-			action: this.action,
+			/* Convert presence action back to an int for sending to Ably */
+			action: toActionValue(this.action),
 			encoding: this.encoding
 		};
 
@@ -93,10 +98,14 @@ var PresenceMessage = (function() {
 		return body;
 	};
 
+	/* Creates a PresenceMessage from values obtained from an Ably protocol
+	* message; in particular, with a numeric presence action */
 	PresenceMessage.fromDecoded = function(values) {
+		values.action = PresenceMessage.Actions[values.action]
 		return Utils.mixin(new PresenceMessage(), values);
 	};
 
+	/* Creates a PresenceMessage from specified values, with a string presence action */
 	PresenceMessage.fromValues = function(values) {
 		return Utils.mixin(new PresenceMessage(), values);
 	};
