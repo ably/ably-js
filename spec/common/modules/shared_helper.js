@@ -99,14 +99,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
-		function mixin(target, src) {
-			for(var prop in src) {
-				if(src.hasOwnProperty(prop))
-					target[prop] = src[prop];
-			}
-			return target;
-		}
-
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
 		function withTimeout(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
@@ -155,6 +147,5 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
-			mixin:                     mixin
 		};
 	});

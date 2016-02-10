@@ -1,6 +1,4 @@
 var RealtimePresence = (function() {
-	var presenceAction = PresenceMessage.Action;
-
 	var noop = function() {};
 
 	function memberKey(item) {
@@ -71,7 +69,7 @@ var RealtimePresence = (function() {
 		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction[action.toUpperCase()],
+			action : action,
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
@@ -124,7 +122,7 @@ var RealtimePresence = (function() {
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction.LEAVE,
+			action : 'leave',
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
@@ -326,7 +324,7 @@ var RealtimePresence = (function() {
 
 		for(var key in map) {
 			var item = map[key];
-			if(item.action === presenceAction.ABSENT) continue;
+			if(item.action === 'absent') continue;
 			if(clientId && clientId != item.clientId) continue;
 			if(connectionId && connectionId != item.connectionId) continue;
 			result.push(item);

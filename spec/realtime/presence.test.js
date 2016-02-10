@@ -1225,8 +1225,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		    encodedData = JSON.stringify(data),
 		    options = { clientId: testClientId, tokenDetails: authToken, autoConnect: false }
 
-		var realtimeBin = helper.AblyRealtime(helper.mixin(options, { useBinaryProtocol: true }));
-		var realtimeJson = helper.AblyRealtime(helper.mixin(options, { useBinaryProtocol: false }));
+		var realtimeBin = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: true }));
+		var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
 
 		var runTest = function(realtime, callback) {
 			realtime.connection.once('connected', function() {
@@ -1235,7 +1235,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				transport.send = function(message) {
 					if(message.action === 14) {
-						var presence = message.presence[0];
+						/* Message is formatted for Ably by the toJSON method, so need to
+						* stringify and parse to see what actually gets sent */
+						var presence = JSON.parse(JSON.stringify(message.presence[0]));
 						test.equal(presence.action, 2, 'Enter action');
 						test.equal(presence.data, encodedData, 'Correctly encoded data');
 						test.equal(presence.encoding, 'json', 'Correct encoding');
