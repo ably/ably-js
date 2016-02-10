@@ -19,6 +19,13 @@ var PresenceMessage = (function() {
 		'UPDATE' : 4
 	};
 
+	/* Contains an Enum like Array of presence actions
+	   in lower case format i.e. [0] => 'absent' */
+	PresenceMessage.ActionEvents = [];
+	for (var action in PresenceMessage.Action) {
+		PresenceMessage.ActionEvents.push(action.toLowerCase())
+	}
+
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
@@ -26,7 +33,7 @@ var PresenceMessage = (function() {
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
 			clientId: this.clientId,
-			action: this.action,
+			action: this.getActionNumeric(),
 			encoding: this.encoding
 		};
 
@@ -49,6 +56,15 @@ var PresenceMessage = (function() {
 		result.data = data;
 		return result;
 	};
+
+	/* When a PresenceMessage object is created using functions from*
+	   the action numeric is converted to a string value making it
+	   easier for developers to undersatnd what the action represents.
+	   This method gets the numeric value */
+	PresenceMessage.prototype.getActionNumeric = function() {
+		var actionNum = PresenceMessage.Action[String(this.action).toUpperCase()];
+		return typeof(actionNum) === 'number' ? actionNum : this.action;
+	}
 
 	PresenceMessage.prototype.toString = function() {
 		var result = '[PresenceMessage';
@@ -94,11 +110,32 @@ var PresenceMessage = (function() {
 	};
 
 	PresenceMessage.fromDecoded = function(values) {
-		return Utils.mixin(new PresenceMessage(), values);
+		return PresenceMessage.fromValues(values);
 	};
 
 	PresenceMessage.fromValues = function(values) {
-		return Utils.mixin(new PresenceMessage(), values);
+		var presenceMessage = Utils.mixin(new PresenceMessage(), values);
+		if (values && (typeof(values.action) == 'number')) {
+			// As PresenceMessage.Action is not available in the global scope
+			// convert action to a string value instead of a meaningless
+			// index of the PresenceMessage.Action enum
+			// Use lower case for consistency with events emitted i.e. subscribe('enter')
+			if (PresenceMessage.ActionEvents[values.action])
+				presenceMessage.action = PresenceMessage.ActionEvents[values.action].toLowerCase();
+		}
+		return presenceMessage;
+	};
+
+	/* Ably uses a numeric enum for actions, see PresenceMessage.Action above
+	   The client library API exposes PresenceMessage.action as a meaningful string
+	   whereas Ably requires the number. This method is called before the message
+	   is pushed to Ably to ensure the action value is a number */
+	PresenceMessage.fromValuesWithNumericAction = function(values) {
+		var presenceMessage = Utils.mixin(new PresenceMessage(), values);
+		if (presenceMessage && (typeof(presenceMessage.action) !== 'number')) {
+			presenceMessage.action = presenceMessage.getActionNumeric();
+		}
+		return presenceMessage;
 	};
 
 	PresenceMessage.fromValuesArray = function(values) {

@@ -264,7 +264,7 @@ var RealtimeChannel = (function() {
 		var msg = ProtocolMessage.fromValues({
 			action: actions.PRESENCE,
 			channel: this.name,
-			presence: [PresenceMessage.fromValues(presence)]
+			presence: [PresenceMessage.fromValuesWithNumericAction(presence)]
 		});
 		this.sendMessage(msg, callback);
 	};
