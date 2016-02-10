@@ -51,7 +51,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 *  A stats request is a good example of this.
 	 */
 	exports.basic_auth_no_tls_error = function(test) {
-		test.expect(5);
+		test.expect(6);
 
 		var rest,
 			keyStr = helper.getTestApp().keys[0].keyStr;
@@ -69,8 +69,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			},
 			function(cb) {
 				rest.stats(function(err, stats) {
-					test.ok(err, 'A stats request causes error with basic auth over https because it would have to send the secret key');
+					test.ok(err, 'A stats request causes error with basic auth over a non-tls connection because it would have to send the secret key');
 					test.equals(err.code, 40103, 'The error thrown is 40103');
+					test.ok(typeof(err.serverId) === 'undefined', 'The error did not come from a server');
 					cb();
 				});
 			}
