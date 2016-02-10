@@ -351,6 +351,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Attach to channel, enter presence channel and ensure PresenceMessage
+	 * has valid action string
+	 */
+	exports.presenceMessageAction = function(test) {
+		test.expect(1);
+
+		var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		var channelName = 'presenceMessageAction';
+		var clientChannel = clientRealtime.channels.get(channelName);
+		var presence = clientChannel.presence;
+		presence.subscribe(function(presenceMessage) {
+			test.equals(presenceMessage.action, 'enter', 'Action should contain string "enter"');
+			closeAndFinish(test, clientRealtime);
+		});
+		clientChannel.presence.enter();
+		monitorConnection(test, clientRealtime);
+	};
+
+	/*
 	 * Enter presence channel (without attaching), detach, then enter again to reattach
 	 */
 	exports.presenceEnterDetachEnter = function(test) {
@@ -690,7 +709,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				var presenceMessages = resultPage.items;
 				test.equal(presenceMessages.length, 2, 'Verify correct number of presence messages found');
 				var actions = utils.arrMap(presenceMessages, function(msg){return msg.action;}).sort();
-				test.deepEqual(actions, [2,3], 'Verify presenceMessages have correct actions');
+				test.deepEqual(actions, ['enter','leave'], 'Verify presenceMessages have correct actions');
 				test.equal(presenceMessages[0].data, testClientData, 'Verify first presenceMessages has correct data');
 				test.equal(presenceMessages[1].data, testClientData, 'Verify second presenceMessages has correct data');
 				closeAndFinish(test, clientRealtime);
@@ -780,7 +799,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientChannel.presence.history({untilAttach: false}, function(err, resultPage) {
 					if(err) { callback(err); }
 					test.equal(resultPage.items.length, 4, 'Verify both sets of presence messages returned when untilAttached is false');
-					test.deepEqual(sortedActions(resultPage.items), [2,2,3,3], 'Verify presenceMessages have correct actions');
+					test.deepEqual(sortedActions(resultPage.items), ['enter','enter','leave','leave'], 'Verify presenceMessages have correct actions');
 					callback();
 				});
 			},
@@ -788,7 +807,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientChannel.presence.history({untilAttach: true}, function(err, resultPage) {
 					if(err) { callback(err); }
 					test.equal(resultPage.items.length, 2, 'Verify only the first set of presence messages returned when untilAttached is true');
-					test.deepEqual(sortedActions(resultPage.items), [2,3], 'Verify presenceMessages have correct actions');
+					test.deepEqual(sortedActions(resultPage.items), ['enter','leave'], 'Verify presenceMessages have correct actions');
 					callback();
 				});
 			},
@@ -796,7 +815,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientChannel.presence.history(function(err, resultPage) {
 					if(err) { callback(err); }
 					test.equal(resultPage.items.length, 4, 'Verify both sets of presence messages returned when untilAttached is not present');
-					test.deepEqual(sortedActions(resultPage.items), [2,2,3,3], 'Verify presenceMessages have correct actions');
+					test.deepEqual(sortedActions(resultPage.items), ['enter','enter','leave','leave'], 'Verify presenceMessages have correct actions');
 					callback();
 				});
 			}
@@ -892,6 +911,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 												closeAndFinish(test, [clientRealtime1, clientRealtime2]);
 												return;
 											}
+											console.log(presenceMembers1, presenceMembers2);
 											test.deepEqual(presenceMembers1, presenceMembers2, 'Verify member presence is indicated after attach');
 											closeAndFinish(test, [clientRealtime1, clientRealtime2]);
 										});
@@ -1197,33 +1217,46 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Check that JSON-encodable presence messages are encoded correctly
+	 * Check that encodable presence messages are encoded correctly
 	 */
-	exports.presenceJsonEncoding = function(test) {
-		test.expect(3);
+	exports.presenceEncoding = function(test) {
+		test.expect(6);
 		var data = {'foo': 'bar'},
-			encodedData = JSON.stringify(data);
+		    encodedData = JSON.stringify(data),
+		    options = { clientId: testClientId, tokenDetails: authToken, autoConnect: false }
 
-		var realtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		var realtimeBin = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: true }));
+		var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
 
-		realtime.connection.once('connected', function() {
-			var transport = realtime.connection.connectionManager.activeProtocol.transport,
-					originalSend = transport.send;
+		var runTest = function(realtime, callback) {
+			realtime.connection.once('connected', function() {
+				var transport = realtime.connection.connectionManager.activeProtocol.transport,
+						originalSend = transport.send;
 
-			transport.send = function(message) {
-				if(message.action === 14) {
-					var presence = message.presence[0];
-					console.log(JSON.stringify(presence))
-					test.equal(presence.action, 2, 'Enter action');
-					test.equal(presence.data, encodedData, 'Correctly encoded data');
-					test.equal(presence.encoding, 'json', 'Correct encoding');
-					closeAndFinish(test, realtime);
-				}
-				originalSend.apply(transport, arguments);
-			};
+				transport.send = function(message) {
+					if(message.action === 14) {
+						/* Message is formatted for Ably by the toJSON method, so need to
+						* stringify and parse to see what actually gets sent */
+						var presence = JSON.parse(JSON.stringify(message.presence[0]));
+						test.equal(presence.action, 2, 'Enter action');
+						test.equal(presence.data, encodedData, 'Correctly encoded data');
+						test.equal(presence.encoding, 'json', 'Correct encoding');
+						callback();
+					}
+					originalSend.apply(transport, arguments);
+				};
 
-			var channel = realtime.channels.get('presence-json-encoding');
-			channel.presence.enter(data);
+				var channel = realtime.channels.get('presence-json-encoding');
+				channel.presence.enter(data);
+			});
+			realtime.connect();
+		}
+
+		async.series([
+			function(callback) { runTest(realtimeBin, callback); },
+			function(callback) { console.log('test two'); runTest(realtimeJson, callback); },
+		], function() {
+			closeAndFinish(test, realtimeBin, realtimeJson);
 		});
 	}
 

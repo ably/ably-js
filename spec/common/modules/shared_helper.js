@@ -9,7 +9,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.transports),
 			bestTransport = availableTransports[0];
 
-		var displayError = function(err) {
+		function displayError(err) {
 			if(typeof(err) == 'string')
 				return err;
 
@@ -22,9 +22,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				result += JSON.stringify(err.message);
 
 			return result;
-		};
+		}
 
-		var monitorConnection = function(test, realtime) {
+		function monitorConnection(test, realtime) {
 			utils.arrForEach(['failed', 'suspended'], function(state) {
 				realtime.connection.on(state, function () {
 					test.ok(false, 'Connection monitoring: state changed to ' + state + ', aborting test');
@@ -32,9 +32,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 					realtime.close();
 				});
 			});
-		};
+		}
 
-		var closeAndFinish = function(test, realtime) {
+		function closeAndFinish(test, realtime) {
 			if(typeof realtime === 'undefined') {
 				// Likely called in a catch block for an exception
 				// that occured before realtime was initialised
@@ -46,9 +46,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				return;
 			}
 			callbackOnClose(realtime, function(){ test.done(); })
-		};
+		}
 
-		var simulateDroppedConnection = function(realtime) {
+		function simulateDroppedConnection(realtime) {
 			// Go into the 'disconnected' state before actually disconnecting the transports
 			// to avoid the instantaneous reconnect attempt that would be triggered in
 			// notifyState by the active transport getting disconnected from a connected state
@@ -84,7 +84,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				});
 			}
 		 )
-		};
+		}
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
 		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
@@ -100,7 +100,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		}
 
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
-		var withTimeout = function(exports, defaultTimeout) {
+		function withTimeout(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
 
 			for (var needle in exports) {
@@ -123,7 +123,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 
 			return exports;
-		};
+		}
 
 		return module.exports = {
 			setupApp:     testAppModule.setup,
@@ -146,6 +146,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,
-			bestTransport:             bestTransport
+			bestTransport:             bestTransport,
 		};
 	});
