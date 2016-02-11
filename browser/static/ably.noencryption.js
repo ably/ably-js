@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.14
+ * Ably JavaScript Library v0.8.15
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.14';
+Defaults.version           = '0.8.15';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -3487,6 +3487,10 @@ var Message = (function() {
 var PresenceMessage = (function() {
 	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
 
+	function toActionValue(actionString) {
+		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
+	}
+
 	function PresenceMessage() {
 		this.action = undefined;
 		this.id = undefined;
@@ -3497,13 +3501,13 @@ var PresenceMessage = (function() {
 		this.encoding = undefined;
 	}
 
-	PresenceMessage.Action = {
-		'ABSENT' : 0,
-		'PRESENT' : 1,
-		'ENTER' : 2,
-		'LEAVE' : 3,
-		'UPDATE' : 4
-	};
+	PresenceMessage.Actions = [
+		'absent',
+		'present',
+		'enter',
+		'leave',
+		'update'
+	];
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
@@ -3512,7 +3516,8 @@ var PresenceMessage = (function() {
 	PresenceMessage.prototype.toJSON = function() {
 		var result = {
 			clientId: this.clientId,
-			action: this.action,
+			/* Convert presence action back to an int for sending to Ably */
+			action: toActionValue(this.action),
 			encoding: this.encoding
 		};
 
@@ -3579,10 +3584,14 @@ var PresenceMessage = (function() {
 		return body;
 	};
 
+	/* Creates a PresenceMessage from values obtained from an Ably protocol
+	* message; in particular, with a numeric presence action */
 	PresenceMessage.fromDecoded = function(values) {
+		values.action = PresenceMessage.Actions[values.action]
 		return Utils.mixin(new PresenceMessage(), values);
 	};
 
+	/* Creates a PresenceMessage from specified values, with a string presence action */
 	PresenceMessage.fromValues = function(values) {
 		return Utils.mixin(new PresenceMessage(), values);
 	};
@@ -7378,8 +7387,6 @@ var RealtimeChannel = (function() {
 })();
 
 var RealtimePresence = (function() {
-	var presenceAction = PresenceMessage.Action;
-	var presenceActionToEvent = ['absent', 'present', 'enter', 'leave', 'update'];
 	var noop = function() {};
 
 	function memberKey(item) {
@@ -7450,7 +7457,7 @@ var RealtimePresence = (function() {
 		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction[action.toUpperCase()],
+			action : action,
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
@@ -7503,7 +7510,7 @@ var RealtimePresence = (function() {
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
-			action : presenceAction.LEAVE,
+			action : 'leave',
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
@@ -7584,14 +7591,14 @@ var RealtimePresence = (function() {
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = PresenceMessage.fromValues(presenceSet[i]);
 			switch(presence.action) {
-				case presenceAction.LEAVE:
+				case 'leave':
 					if(members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
 					break;
-				case presenceAction.UPDATE:
-				case presenceAction.ENTER:
-				case presenceAction.PRESENT:
+				case 'update':
+				case 'enter':
+				case 'present':
 					if(members.put(presence)) {
 						broadcastMessages.push(presence);
 					}
@@ -7607,7 +7614,7 @@ var RealtimePresence = (function() {
 		/* broadcast to listeners */
 		for(var i = 0; i < broadcastMessages.length; i++) {
 			var presence = broadcastMessages[i];
-			this.subscriptions.emit(presenceActionToEvent[presence.action], presence);
+			this.subscriptions.emit(presence.action, presence);
 		}
 	};
 
@@ -7691,7 +7698,7 @@ var RealtimePresence = (function() {
 		var map = this.map, result = [];
 		for(var key in map) {
 			var item = map[key];
-			if(item.clientId == clientId && item.action != presenceAction.ABSENT)
+			if(item.clientId == clientId && item.action != 'absent')
 				result.push(item);
 		}
 		return result;
@@ -7705,7 +7712,7 @@ var RealtimePresence = (function() {
 
 		for(var key in map) {
 			var item = map[key];
-			if(item.action == presenceAction.ABSENT) continue;
+			if(item.action === 'absent') continue;
 			if(clientId && clientId != item.clientId) continue;
 			if(connectionId && connectionId != item.connectionId) continue;
 			result.push(item);
@@ -7714,9 +7721,9 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.put = function(item) {
-		if(item.action === presenceAction.ENTER || item.action === presenceAction.UPDATE) {
+		if(item.action === 'enter' || item.action === 'update') {
 			item = PresenceMessage.fromValues(item);
-			item.action = presenceAction.PRESENT;
+			item.action = 'present';
 		}
 		var map = this.map, key = memberKey(item);
 		/* we've seen this member, so do not remove it at the end of sync */
@@ -7740,7 +7747,7 @@ var RealtimePresence = (function() {
 		var map = this.map, result = [];
 		for(var key in map) {
 			var item = map[key];
-			if(item.action != presenceAction.ABSENT)
+			if(item.action != 'absent')
 				result.push(item);
 		}
 		return result;
@@ -7751,7 +7758,7 @@ var RealtimePresence = (function() {
 		var existingItem = map[key];
 		if(existingItem) {
 			delete map[key];
-			if(existingItem.action == PresenceMessage.Action.ABSENT)
+			if(existingItem.action === 'absent')
 				return false;
 		}
 		return true;
@@ -7775,7 +7782,7 @@ var RealtimePresence = (function() {
 			 * received all of the out-of-order sync messages */
 			for(var memberKey in map) {
 				var entry = map[memberKey];
-				if(entry.action == presenceAction.ABSENT) {
+				if(entry.action === 'absent') {
 					delete map[memberKey];
 				}
 			}
