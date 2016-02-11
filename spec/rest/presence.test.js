@@ -41,7 +41,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.presence_get_simple = function(test) {
-		test.expect(6);
+		test.expect(7);
 		try {
 			var cipherParams = cipherParamsFromConfig(cipherConfig);
 			var channel = rest.channels.get('persisted:presence_fixtures',
@@ -58,16 +58,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				var decodedMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_decoded'});
 				var boolMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_bool'});
 				var intMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_int'});
-				test.deepEqual(encodedMessage.data, decodedMessage.data, 'Verify message decoding works correctly')
-				test.equal(encodedMessage.encoding, null, 'Decoding should remove encoding field')
-				test.equal(decodedMessage.encoding, null, 'Decoding should remove encoding field')
-				test.equal(boolMessage.data, 'true', 'should not attempt to parse string data when no encoding field')
-				test.equal(intMessage.data, '24', 'should not attempt to parse string data when no encoding field')
+				test.deepEqual(encodedMessage.data, decodedMessage.data, 'Verify message decoding works correctly');
+				test.equal(encodedMessage.encoding, null, 'Decoding should remove encoding field');
+				test.equal(decodedMessage.encoding, null, 'Decoding should remove encoding field');
+				test.equal(boolMessage.data, 'true', 'should not attempt to parse string data when no encoding field');
+				test.equal(intMessage.data, '24', 'should not attempt to parse string data when no encoding field');
+				test.equal(boolMessage.action, 'present', 'member should have "present" action');
 				test.done();
 			});
 		} catch(e) {
 			console.log(e.stack);
 		}
+	};
+
+	/* Ensure that calling JSON strinfigy on the Presence object
+	   converts the action string value back to a numeric value which the API requires */
+	exports.presence_message_json_serialisation = function(test) {
+		test.expect(2);
+		var channel = rest.channels.get('persisted:presence_fixtures');
+		channel.presence.get(function(err, resultPage) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			var presenceMessages = resultPage.items;
+			var presenceBool = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_bool'});
+			test.equal(JSON.parse(JSON.stringify(presenceBool)).action, 1); // present
+			presenceBool.action = 'leave';
+			test.equal(JSON.parse(JSON.stringify(presenceBool)).action, 3); // leave
+			test.done();
+		});
 	};
 
 	exports.presence_get_limits_and_filtering = function(test) {
