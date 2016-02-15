@@ -43,7 +43,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		var channel = rest.channels.get('persisted:presence_fixtures');
 		channel.publish();
-		channel.presence.get(function(){});
+		channel.presence.get();
 
 		test.done();
 	};
