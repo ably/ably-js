@@ -13,6 +13,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	}
 
+	/**
+	 * Check presence of X-Ably-Version headers in get&post requests
+	 * @spec : (RSC7a)
+	 */
 	exports.apiVersionHeader = function(test) {
 
 		//Intercept get&post methods with test
@@ -26,7 +30,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		Ably.Rest.Http.post_inner = Ably.Rest.Http.post;
 		Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
-			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify for current version number');
+			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
 			return this.post_inner(rest, path, headers, body, params, callback);
 		};
 
@@ -39,7 +43,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		rest.channels.get().publish();
 
 		test.done();
-
 	};
 
 	return module.exports = helper.withTimeout(exports);
