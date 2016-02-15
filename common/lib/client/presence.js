@@ -1,9 +1,9 @@
 var Presence = (function() {
+	function noop() {}
 	function Presence(channel) {
 		this.channel = channel;
 		this.basePath = channel.basePath + '/presence';
 	}
-
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.get = function(params, callback) {
