@@ -35,12 +35,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		};
 
 		//Call all methods that use rest http calls
-		test.expect(8);
+		test.expect(10);
 
 		rest.auth.requestToken();
 		rest.time();
 		rest.stats();
-		rest.channels.get().publish();
+
+		var channel = rest.channels.get('persisted:presence_fixtures');
+		channel.publish();
+		channel.presence.get(function(){});
 
 		test.done();
 	};
