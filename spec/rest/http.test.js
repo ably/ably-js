@@ -41,8 +41,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		rest.time();
 		rest.stats();
 
-		var channel = rest.channels.get('persisted:presence_fixtures');
-		channel.publish();
+		var channel = rest.channels.get('http_test_channel');
+		channel.publish('test', 'Testing http headers');
 		channel.presence.get();
 
 		test.done();
