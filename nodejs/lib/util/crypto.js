@@ -28,6 +28,16 @@ var Crypto = (function() {
 		return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
 	}
 
+	function verify_supported_params(params, algorithm) {
+		if(params.algorithm === 'aes' && params.mode === 'cbc') {
+			if(params.keyLength === 128 || params.keyLength === 256) {
+				return;
+			}
+			throw new Error("Unsupported key length " + params.keyLength + " for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)");
+		}
+		throw new Error("Unsupported encryption algorithm " + algorithm + ". Currently, only aes-128-cbc and aes-256-cbc are supported.");
+	}
+
 	/**
 	 * Internal: a block containing zeros
 	 */
@@ -154,6 +164,7 @@ var Crypto = (function() {
 
 	function CBCCipher(params) {
 		var algorithm = this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
+		verify_supported_params(params, this.algorithm);
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
