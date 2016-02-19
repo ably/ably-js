@@ -157,17 +157,20 @@ var Crypto = (function() {
 	 * @param callback (err, cipher)
 	 */
 	Crypto.getCipher = function(channelOpts, callback) {
-		var params = channelOpts && channelOpts.cipherParams;
-		if(params) {
+		var params = Utils.copy(channelOpts && channelOpts.cipherParams);
+		if(params instanceof CipherParams) {
 			callback(null, new CBCCipher(params));
 			return;
 		}
-		Crypto.getDefaultParams(function(err, params) {
+		Crypto.getDefaultParams(params.key, function(err, cipherParams) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			callback(null, new CBCCipher(params));
+			/* Allow caller to overwrite the defaults (except key, which has already been incorporated) */
+			delete params.key;
+			Utils.mixin(cipherParams, params);
+			callback(null, new CBCCipher(cipherParams));
 		});
 	};
 

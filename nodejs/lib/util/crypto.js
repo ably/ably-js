@@ -132,17 +132,23 @@ var Crypto = (function() {
 	 * @param callback (err, cipher)
 	 */
 	Crypto.getCipher = function(channelOpts, callback) {
-		var params = channelOpts && channelOpts.cipherParams;
-		if(params) {
+		var params = Utils.copy(channelOpts && channelOpts.cipherParams);
+		/* In node, can't use instanceof CipherParams due to the vm context problem (see
+		* https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
+		* So just test for presence of all necessary attributes */
+		if(params.algorithm && params.key && params.keyLength && params.mode && params.iv) {
 			callback(null, new CBCCipher(params));
 			return;
 		}
-		Crypto.getDefaultParams(function(err, params) {
+		Crypto.getDefaultParams(params.key, function(err, cipherParams) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			callback(null, new CBCCipher(params));
+			/* Allow caller to overwrite the defaults (except key, which has already been incorporated) */
+			delete params.key;
+			Utils.mixin(cipherParams, params);
+			callback(null, new CBCCipher(cipherParams));
 		});
 	};
 
