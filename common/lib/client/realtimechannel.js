@@ -39,20 +39,6 @@ var RealtimeChannel = (function() {
 			return [args[0], args[1], (args[2] || noop)];
 	}
 
-	RealtimeChannel.prototype.setOptions = function(options, callback) {
-		callback = callback || noop;
-		this.channelOptions = options = options || {};
-		if(options.encrypted) {
-			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			Crypto.getCipher(options, function(err, cipher) {
-				options.cipher = cipher;
-				callback(null);
-			});
-		} else {
-			callback(null, (options.cipher = null));
-		}
-	};
-
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],

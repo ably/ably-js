@@ -28,6 +28,16 @@ var Crypto = (function() {
 		return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
 	}
 
+	function verify_supported_params(params, algorithm) {
+		if(params.algorithm === 'aes' && params.mode === 'cbc') {
+			if(params.keyLength === 128 || params.keyLength === 256) {
+				return;
+			}
+			throw new Error("Unsupported key length " + params.keyLength + " for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)");
+		}
+		throw new Error("Unsupported encryption algorithm " + algorithm + ". Currently, only aes-128-cbc and aes-256-cbc are supported.");
+	}
+
 	/**
 	 * Internal: a block containing zeros
 	 */
@@ -132,22 +142,29 @@ var Crypto = (function() {
 	 * @param callback (err, cipher)
 	 */
 	Crypto.getCipher = function(channelOpts, callback) {
-		var params = channelOpts && channelOpts.cipherParams;
-		if(params) {
+		var params = Utils.copy(channelOpts && channelOpts.cipherParams);
+		/* In node, can't use instanceof CipherParams due to the vm context problem (see
+		* https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
+		* So just test for presence of all necessary attributes */
+		if(params.algorithm && params.key && params.keyLength && params.mode && params.iv) {
 			callback(null, new CBCCipher(params));
 			return;
 		}
-		Crypto.getDefaultParams(function(err, params) {
+		Crypto.getDefaultParams(params.key, function(err, cipherParams) {
 			if(err) {
 				callback(err);
 				return;
 			}
-			callback(null, new CBCCipher(params));
+			/* Allow caller to overwrite the defaults (except key, which has already been incorporated) */
+			delete params.key;
+			Utils.mixin(cipherParams, params);
+			callback(null, new CBCCipher(cipherParams));
 		});
 	};
 
 	function CBCCipher(params) {
 		var algorithm = this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
+		verify_supported_params(params, this.algorithm);
 		var key = this.key = params.key;
 		var iv = this.iv = params.iv;
 		this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);

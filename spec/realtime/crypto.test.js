@@ -581,7 +581,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * - publish with an updated key on the tx connection and verify that it is not decrypted by the rx connection;
 	 * - publish with an updated key on the rx connection and verify connect receipt
 	 */
-	exports.set_cipher_params = function(test) {
+	exports.set_cipher_params0 = function(test) {
 		if(!Crypto) {
 			test.ok(false, 'Encryption not supported');
 			test.done();
@@ -664,6 +664,89 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([
 			waitAttach,
 			setInitialOptions,
+			sendFirstMessage,
+			createSecondKey,
+			sendSecondMessage,
+			setSecondKey,
+			sendThirdMessage
+		], function(err) {
+			if(err) {
+				test.ok(false, 'Unexpected error running test; err = ' + displayError(err));
+				closeAndFinish(test, [txRealtime, rxRealtime]);
+				return;
+			}
+			closeAndFinish(test, [txRealtime, rxRealtime]);
+		});
+	};
+
+	/**
+	 * Check CipherParams can be correctly created by passing an options hash
+	 * straight to the constructor without calling getDefaultParams, and
+	 * similarly for setOptions
+	 */
+	exports.set_cipher_params1 = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
+		var txRealtime = helper.AblyRealtime();
+		var rxRealtime = helper.AblyRealtime();
+		test.expect(3);
+		var channelName = 'set_cipher_params1',
+			key0 = '11111111111111111111111111111111',
+			key1 = '11111111111111111111111111111112',
+			txChannel = txRealtime.channels.get(channelName, {encrypted: true, cipherParams: {key: key0}}),
+			messageText = 'Test message (' + channelName + ')',
+			rxChannel = rxRealtime.channels.get(channelName, {encrypted: true, cipherParams: {key: key0}}),
+			firstParams, secondParams;
+
+		var waitAttach = function(cb) { attachChannels([txChannel, rxChannel], cb); };
+
+		var sendFirstMessage = function(cb) {
+			var handler = function(msg) {
+				test.ok(msg.data == messageText, 'Check message data expected value');
+				rxChannel.unsubscribe('event0', handler);
+				cb(null);
+			};
+			rxChannel.subscribe('event0', handler);
+			txChannel.publish('event0', messageText);
+		};
+
+		var createSecondKey = function(cb) {
+			rxChannel.setOptions({encrypted: false}, function() {
+				txChannel.setOptions({encrypted: true, cipherParams: {key: key1}}, cb);
+			});
+		};
+
+		var sendSecondMessage = function(cb) {
+			var handler = function(msg) {
+				test.ok(msg.encoding.indexOf('cipher') > -1, 'Message does not have cipher transform');
+				rxChannel.unsubscribe('event0', handler);
+				cb(null);
+			};
+			rxChannel.subscribe('event0', handler);
+			txChannel.publish('event0', messageText);
+		};
+
+		var setSecondKey = function(cb) {
+			rxChannel.setOptions({encrypted: true, cipherParams: {key: key1}});
+			cb(null);
+		};
+
+		var sendThirdMessage = function(cb) {
+			var handler = function(msg) {
+				test.ok(msg.data == messageText, 'Message data not expected (third message)');
+				rxChannel.unsubscribe('event0', handler);
+				cb(null);
+			};
+			rxChannel.subscribe('event0', handler);
+			txChannel.publish('event0', messageText);
+		};
+
+		async.series([
+			waitAttach,
 			sendFirstMessage,
 			createSecondKey,
 			sendSecondMessage,
