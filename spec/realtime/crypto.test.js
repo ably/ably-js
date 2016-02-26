@@ -9,6 +9,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		testResourcesPath = helper.testResourcesPath,
 		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('msgpack-js'),
+		testOnAllTransports = helper.testOnAllTransports,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -41,36 +42,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get(channelName);
 			var key = BufferUtils.base64Decode(testData.key);
 			var iv = BufferUtils.base64Decode(testData.iv);
+			var channel = realtime.channels.get(channelName, {cipher: {key: key, iv: iv}});
 
-			Crypto.getDefaultParams(key, function(err, params) {
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				params.iv = iv;
+			test.expect(testData.items.length * testsPerFixture);
+			for(var i = 0; i < testData.items.length; i++) {
+				var item = testData.items[i];
 
-				test.expect(testData.items.length * testsPerFixture);
-				for(var i = 0; i < testData.items.length; i++) {
-					var item = testData.items[i];
+				/* read messages from test data */
+				var testMessage = Message.fromValues(item.encoded);
+				var encryptedMessage = Message.fromValues(item.encrypted);
+				/* decode (ie remove any base64 encoding). Will throw when
+				 * it gets to the cipher part of the encoding, so wrap in try/catch */
+				try { Message.decode(testMessage); } catch(_) {}
+				try { Message.decode(encryptedMessage); } catch(_) {}
+				/* reset channel cipher, to ensure it uses the given iv */
+				channel.setOptions({cipher: {key: key, iv: iv}});
 
-					/* read messages from test data */
-					var testMessage = Message.fromValues(item.encoded);
-					var encryptedMessage = Message.fromValues(item.encrypted);
-					/* decode (ie remove any base64 encoding). Will throw when
-					 * it gets to the cipher part of the encoding, so wrap in try/catch */
-					try { Message.decode(testMessage); } catch(_) {}
-					try { Message.decode(encryptedMessage); } catch(_) {}
-					/* reset channel cipher, to ensure it uses the given iv */
-					channel.setOptions({encrypted:true, cipherParams: params});
-
-					fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
-				}
-				closeAndFinish(test, realtime);
-			});
+				fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
+			}
+			closeAndFinish(test, realtime);
 		});
 	}
 
@@ -84,6 +76,80 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.done();
 		});
 	};
+
+	/* generateRandomKey with an explicit keyLength */
+	exports.generateRandomKey0 = function(test) {
+		test.expect(1);
+		Crypto.generateRandomKey(64, function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			/* .length for a nodejs buffer, .sigbytes for a browser CryptoJS WordArray */
+			test.equal(key.length || key.sigBytes, 8, "generated key is the correct length");
+			test.done();
+		})
+	}
+
+	/* generateRandomKey with no keyLength should generate 256-bit keys */
+	exports.generateRandomKey1 = function(test) {
+		test.expect(1);
+		Crypto.generateRandomKey(function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			test.equal(key.length || key.sigBytes, 32, "generated key is the default length");
+			test.done();
+		})
+	}
+
+	exports.getDefaultParams_wordArray_key = function(test) {
+		test.expect(3);
+		Crypto.generateRandomKey(function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			var params = Crypto.getDefaultParams({key: key});
+			test.equal(params.key, key);
+			test.equal(params.algorithm, 'aes', 'check default algorithm');
+			test.equal(params.mode, 'cbc', 'check default mode');
+			test.done();
+		});
+	}
+
+	exports.getDefaultParams_base64_key = function(test) {
+		test.expect(1);
+		Crypto.generateRandomKey(function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			var b64key = Ably.Realtime.BufferUtils.base64Encode(key);
+			var params = Crypto.getDefaultParams({key: b64key});
+			test.equal(BufferUtils.bufferCompare(params.key, key), 0);
+			test.done();
+		});
+	}
+
+	exports.getDefaultParams_check_keylength = function(test) {
+		test.expect(1);
+		Crypto.generateRandomKey(64, function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			try {
+				Crypto.getDefaultParams({key: key});
+			} catch(e) {
+				test.ok(true, 'getDefaultParams with a 64-bit key threw an exception');
+				test.done();
+			}
+		});
+	}
+
+	exports.getDefaultParams_preserves_custom_algorithms = function(test) {
+		test.expect(4);
+		Crypto.generateRandomKey(64, function(err, key) {
+			if(err) test.ok(false, helper.displayError(err));
+			try {
+				var params = Crypto.getDefaultParams({key: key, algorithm: 'foo', mode: 'bar'});
+				test.equal(params.key, key);
+				test.equal(params.algorithm, 'foo');
+				test.equal(params.mode, 'bar');
+				test.equal(params.keyLength, 64);
+				test.done();
+			} catch(e) {
+				test.ok(false, 'getDefaultParams should not have thrown exception ' + e +' as it doesn’t recognise the algorithm');
+			}
+		});
+	}
 
 	exports.encrypt_message_128 = function(test) {
 		testEachFixture(test, 'crypto-data-128.json', 'encrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
@@ -167,138 +233,54 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/**
-	 * Publish and subscribe, binary transport
-	 */
-	exports.single_send_binary = function(test) {
+	function single_send(test, realtimeOpts, keyLength) {
 		if(!Crypto) {
 			test.ok(false, 'Encryption not supported');
 			test.done();
 			return;
 		}
 
-		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
 		test.expect(3);
-		var channel = realtime.channels.get('single_send_binary'),
-			messageText = 'Test message (single_send_binary)';
-
-		Crypto.getDefaultParams(function(err, params) {
+		Crypto.generateRandomKey(keyLength, function(err, key) {
 			if(err) {
-				test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
+				test.ok(false, 'Unable to generate key; err = ' + displayError(err));
 				closeAndFinish(test, realtime);
 				return;
 			}
+			/* For single_send tests we test the 'shortcut' way of setting the cipher
+			* in channels.get. No callback, but that's ok even for node which has
+			* async iv generation since the publish is on an attach cb */
+			var realtime = helper.AblyRealtime(realtimeOpts),
+				channel = realtime.channels.get('single_send', {cipher: {key: key}}),
+				messageText = 'Test message for single_send -	' + JSON.stringify(realtimeOpts);
 
-			test.equal(params.algorithm, 'aes');
-			test.equal(params.keyLength, 128);
-			channel.setOptions({encrypted:true, cipherParams: params});
-			channel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				closeAndFinish(test, realtime);
-			});
-			channel.publish('event0', messageText);
-		});
-	};
-
-	/**
-	 * Publish and subscribe, text transport
-	 */
-	exports.single_send_text = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
-		test.expect(3);
-		var channel = realtime.channels.get('single_send_text'),
-			messageText = 'Test message (single_send_text)';
-
-		Crypto.getDefaultParams(function(err, params) {
-			test.equal(params.algorithm, 'aes');
-			test.equal(params.keyLength, 128);
-			if(err) {
-				test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-			channel.setOptions({encrypted:true, cipherParams: params});
-			channel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				closeAndFinish(test, realtime);
-			});
-			channel.publish('event0', messageText);
-		});
-	};
-
-	/**
-	 * Publish and subscribe, binary transport, 256-bit key
-	 */
-	exports.single_send_binary_256 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
-		test.expect(3);
-		var channel = realtime.channels.get('single_send_binary_256'),
-			messageText = 'Test message (single_send_binary_256)';
-
-		Crypto.generateRandom(256 / 8, function(err, key) {
-			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes');
-				test.equal(params.keyLength, 256);
+			channel.attach(function(err) {
 				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
+					test.ok(false, 'Unable to attach; err = ' + displayError(err));
 					closeAndFinish(test, realtime);
 					return;
 				}
-				channel.setOptions({encrypted:true, cipherParams: params});
+				test.equal(channel.channelOptions.cipher.algorithm, 'aes');
+				test.equal(channel.channelOptions.cipher.keyLength, keyLength);
 				channel.subscribe('event0', function(msg) {
 					test.ok(msg.data == messageText);
 					closeAndFinish(test, realtime);
 				});
 				channel.publish('event0', messageText);
-			});
+			})
 		});
-	};
+	}
 
 	/**
-	 * Publish and subscribe, text transport, 256-bit key
+	 * Publish and subscribe, various transport, 128 and 256-bit
 	 */
-	exports.single_send_text_256 = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
+	testOnAllTransports(exports, 'single_send_128', function(realtimeOpts) { return function(test) {
+		single_send(test, realtimeOpts, 128);
+	}})
 
-		var realtime = helper.AblyRealtime({ useBinaryProtocol: false });
-		test.expect(3);
-		var channel = realtime.channels.get('single_send_text_256'),
-			messageText = 'Test message (single_send_text_256)';
-
-		Crypto.generateRandom(256 / 8, function(err, key) {
-			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes');
-				test.equal(params.keyLength, 256);
-				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				channel.setOptions({encrypted:true, cipherParams: params});
-				channel.subscribe('event0', function(msg) {
-					test.ok(msg.data == messageText);
-					closeAndFinish(test, realtime);
-				});
-				channel.publish('event0', messageText);
-			});
-		});
-	};
+	testOnAllTransports(exports, 'single_send_256', function(realtimeOpts) { return function(test) {
+		single_send(test, realtimeOpts, 256);
+	}})
 
 	function _multiple_send(test, text, iterations, delay) {
 		if(!Crypto) {
@@ -313,16 +295,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel = realtime.channels.get(channelName),
 			messageText = 'Test message (' + channelName + ')';
 
-		Crypto.generateRandom(128 / 8, function(err, key) {
-			Crypto.getDefaultParams(key, function(err, params) {
-				test.equal(params.algorithm, 'aes');
-				test.equal(params.keyLength, 128);
+		Crypto.generateRandomKey(128, function(err, key) {
+			channel.setOptions({cipher: {key: key}}, function(err) {
 				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
+					test.ok(false, 'Unable to set channel options; err = ' + displayError(err));
 					closeAndFinish(test, realtime);
 					return;
 				}
-				channel.setOptions({encrypted:true, cipherParams: params});
+				test.equal(channel.channelOptions.cipher.algorithm, 'aes');
+				test.equal(channel.channelOptions.cipher.keyLength, 128);
 				function sendAll(sendCb) {
 					var sent = 0;
 					var sendOnce = function() {
@@ -359,48 +340,55 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.multiple_send_binary_20_100 = function(test) { _multiple_send(test, false, 20, 100); };
 	exports.multiple_send_text_20_100 = function(test) { _multiple_send(test, true, 20, 100); };
 
-	/**
-	 * Connect twice to the service, using the binary protocol
-	 * and the text protocol. Publish an encrypted message on that channel using
-	 * the default cipher params and verify correct receipt.
-	 */
-	exports.single_send_binary_text = function(test) {
+	function _single_send_separate_realtimes(test, txOpts, rxOpts) {
 		if(!Crypto) {
 			test.ok(false, 'Encryption not supported');
 			test.done();
 			return;
 		}
 
-		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
-		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
+		var txRealtime = helper.AblyRealtime(txOpts),
+			rxRealtime = helper.AblyRealtime(rxOpts),
+			channelName = 'single_send_separate_realtimes';
 		test.expect(3);
-		var channelName = 'single_send_binary_text',
-			messageText = 'Test message (' + channelName + ')',
+		var messageText = 'Test message for single_send_separate_realtimes',
 			txChannel = txRealtime.channels.get(channelName),
 			rxChannel = rxRealtime.channels.get(channelName);
 
-		async.parallel([
-			Crypto.getDefaultParams,
-			function(cb) { attachChannels([txChannel, rxChannel], cb); }
-		], function(err, res) {
-			if (err) {
-				test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
-				closeAndFinish(test, [txRealtime, rxRealtime]);
+		Crypto.generateRandomKey(function(err, key) {
+			if(err) {
+				test.ok(false, 'Unable to generate key; err = ' + displayError(err));
+				closeAndFinish(test, realtime);
 				return;
 			}
-			var params = res[0];
-			test.equal(params.algorithm, 'aes');
-			test.equal(params.keyLength, 128);
+			async.parallel([
+				function(cb) { txChannel.setOptions({cipher: {key: key}}, cb) },
+				function(cb) { rxChannel.setOptions({cipher: {key: key}}, cb) }
+			], function(err) {
+				if(err) {
+					test.ok(false, 'Unable to set cipher; err = ' + displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				test.equal(txChannel.channelOptions.cipher.algorithm, 'aes');
+				test.equal(rxChannel.channelOptions.cipher.algorithm, 'aes');
 
-			txChannel.setOptions({encrypted:true, cipherParams: params});
-			rxChannel.setOptions({encrypted:true, cipherParams: params});
-
-			rxChannel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				closeAndFinish(test, [txRealtime, rxRealtime]);
+				rxChannel.subscribe('event0', function(msg) {
+					test.ok(msg.data == messageText);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
+				});
+				txChannel.publish('event0', messageText);
 			});
-			txChannel.publish('event0', messageText);
 		});
+	}
+
+	/**
+	 * Connect twice to the service, using the binary protocol
+	 * and the text protocol. Publish an encrypted message on that channel using
+	 * the default cipher params and verify correct receipt.
+	 */
+	exports.single_send_binary_text = function(test) {
+		_single_send_separate_realtimes(test, { useBinaryProtocol: true }, { useBinaryProtocol: false });
 	};
 
 	/**
@@ -408,43 +396,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * binary protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
-	exports.single_send_text_binary = function(test) {
-		if(!Crypto) {
-			test.ok(false, 'Encryption not supported');
-			test.done();
-			return;
-		}
-
-		var txRealtime = helper.AblyRealtime({ useBinaryProtocol: false });
-		var rxRealtime = helper.AblyRealtime({ useBinaryProtocol: true });
-		test.expect(3);
-		var channelName = 'single_send_text_binary',
-			messageText = 'Test message (' + channelName + ')',
-			txChannel = txRealtime.channels.get(channelName),
-			rxChannel = rxRealtime.channels.get(channelName);
-
-		async.parallel([
-			Crypto.getDefaultParams,
-			function(cb) { attachChannels([txChannel, rxChannel], cb); }
-		], function(err, res) {
-			if (err) {
-				test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
-				closeAndFinish(test, [txRealtime, rxRealtime]);
-				return;
-			}
-			var params = res[0];
-			test.equal(params.algorithm, 'aes');
-			test.equal(params.keyLength, 128);
-
-			txChannel.setOptions({encrypted:true, cipherParams: params});
-			rxChannel.setOptions({encrypted:true, cipherParams: params});
-
-			rxChannel.subscribe('event0', function(msg) {
-				test.ok(msg.data == messageText);
-				closeAndFinish(test, [txRealtime, rxRealtime]);
-			});
-			txChannel.publish('event0', messageText);
-		});
+	exports.single_send_binary_text = function(test) {
+		_single_send_separate_realtimes(test, { useBinaryProtocol: false }, { useBinaryProtocol: true });
 	};
 
 	/**
@@ -469,8 +422,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rxChannel = rxRealtime.channels.get(channelName);
 
 		async.parallel([
-			Crypto.getDefaultParams,
-			Crypto.getDefaultParams,
+			Crypto.generateRandomKey,
+			Crypto.generateRandomKey,
 			function(cb) { attachChannels([txChannel, rxChannel], cb); }
 		], function(err, res) {
 			if(err) {
@@ -478,16 +431,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
-			var txParams = res[0],
-				rxParams = res[1];
+			var txKey = res[0],
+				rxKey = res[1];
 
-			txChannel.setOptions({encrypted:true, cipherParams: txParams});
-			rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
-			rxChannel.subscribe('event0', function(msg) {
-				test.ok(msg.data != messageText);
-				closeAndFinish(test, [txRealtime, rxRealtime]);
+			async.parallel([
+				function(cb) { txChannel.setOptions({cipher: {key: txKey}}, cb) },
+				function(cb) { rxChannel.setOptions({cipher: {key: rxKey}}, cb) }
+			], function() {
+				rxChannel.subscribe('event0', function(msg) {
+					test.ok(msg.data != messageText);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
+				});
+				txChannel.publish('event0', messageText);
 			});
-			txChannel.publish('event0', messageText);
 		});
 	};
 
@@ -517,26 +473,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
-			Crypto.getDefaultParams(function(err, rxParams) {
+			Crypto.generateRandomKey(function(err, rxKey) {
 				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
+					test.ok(false, 'Unable to generate key; err = ' + displayError(err));
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				rxChannel.setOptions({encrypted:true, cipherParams: rxParams});
-				rxChannel.subscribe('event0', function(msg) {
-					test.ok(msg.data == messageText);
-					closeAndFinish(test, [txRealtime, rxRealtime]);
+				rxChannel.setOptions({cipher: {key: rxKey}}, function() {
+					rxChannel.subscribe('event0', function(msg) {
+						test.ok(msg.data == messageText);
+						closeAndFinish(test, [txRealtime, rxRealtime]);
+					});
+					txChannel.publish('event0', messageText);
 				});
-				txChannel.publish('event0', messageText);
 			});
 		});
 	};
 
 	/**
 	 * Connect twice to the service, one with and one without encryption.
-	 * Publish an unencrypted message and verify that the receiving connection
-	 * does not attempt to decrypt it.
+	 * Publish an encrypted message and verify that the receiving connection
+	 * handles the encrypted message correctly.
 	 */
 	exports.single_send_encrypted_unhandled = function(test) {
 		if(!Crypto) {
@@ -559,18 +516,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				closeAndFinish(test, [txRealtime, rxRealtime]);
 				return;
 			}
-			Crypto.getDefaultParams(function(err, txParams) {
+			Crypto.generateRandomKey(function(err, txKey) {
 				if(err) {
-					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
+					test.ok(false, 'Unable to generate key; err = ' + displayError(err));
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				txChannel.setOptions({encrypted:true, cipherParams: txParams});
-				rxChannel.subscribe('event0', function(msg) {
-					test.ok(msg.encoding.indexOf('cipher') > -1);
-					closeAndFinish(test, [txRealtime, rxRealtime]);
+				txChannel.setOptions({cipher: {key: txKey}}, function() {
+					rxChannel.subscribe('event0', function(msg) {
+						test.ok(msg.encoding.indexOf('cipher') > -1);
+						closeAndFinish(test, [txRealtime, rxRealtime]);
+					});
+					txChannel.publish('event0', messageText);
 				});
-				txChannel.publish('event0', messageText);
 			});
 		});
 	};
@@ -581,7 +539,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * - publish with an updated key on the tx connection and verify that it is not decrypted by the rx connection;
 	 * - publish with an updated key on the rx connection and verify connect receipt
 	 */
-	exports.set_cipher_params = function(test) {
+	exports.set_cipher_params0 = function(test) {
 		if(!Crypto) {
 			test.ok(false, 'Encryption not supported');
 			test.done();
@@ -595,20 +553,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			txChannel = txRealtime.channels.get(channelName),
 			messageText = 'Test message (' + channelName + ')',
 			rxChannel = rxRealtime.channels.get(channelName),
-			firstParams, secondParams;
+			firstKey, secondKey;
 
 		var waitAttach = function(cb) { attachChannels([txChannel, rxChannel], cb); };
 		var setInitialOptions = function(cb) {
-			Crypto.getDefaultParams(function(err, params) {
+			Crypto.generateRandomKey(function(err, key) {
 				if(err) {
 					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				firstParams = params;
-				txChannel.setOptions({encrypted:true, cipherParams: firstParams});
-				rxChannel.setOptions({encrypted:true, cipherParams: firstParams});
-				cb(null);
+				firstKey = key;
+				async.parallel([
+					function(innercb) {rxChannel.setOptions({cipher: {key: key}}, innercb);},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);},
+				], cb)
 			});
 		};
 
@@ -623,42 +582,42 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		};
 
 		var createSecondKey = function(cb) {
-			Crypto.getDefaultParams(function(err, params) {
+			Crypto.generateRandomKey(function(err, key) {
 				if(err) {
 					test.ok(false, 'Unable to get cipher params; err = ' + displayError(err));
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				secondParams = params;
-				txChannel.setOptions({encrypted: true, cipherParams: secondParams});
-				rxChannel.setOptions({encrypted: false});
-				cb(null);
+				secondKey = key;
+				async.parallel([
+					function(innercb) {rxChannel.setOptions({cipher: null}, innercb);},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);},
+				], cb)
 			});
 		};
 
 		var sendSecondMessage = function(cb) {
 			var handler = function(msg) {
 				test.ok(msg.encoding.indexOf('cipher') > -1, 'Message does not have cipher transform');
-				rxChannel.unsubscribe('event0', handler);
+				rxChannel.unsubscribe('event1', handler);
 				cb(null);
 			};
-			rxChannel.subscribe('event0', handler);
-			txChannel.publish('event0', messageText);
+			rxChannel.subscribe('event1', handler);
+			txChannel.publish('event1', messageText);
 		};
 
 		var setSecondKey = function(cb) {
-			rxChannel.setOptions({encrypted: true, cipherParams: secondParams});
-			cb(null);
+			rxChannel.setOptions({cipher: {key: secondKey}}, cb);
 		};
 
 		var sendThirdMessage = function(cb) {
 			var handler = function(msg) {
 				test.ok(msg.data == messageText, 'Message data not expected (third message)');
-				rxChannel.unsubscribe('event0', handler);
+				rxChannel.unsubscribe('event2', handler);
 				cb(null);
 			};
-			rxChannel.subscribe('event0', handler);
-			txChannel.publish('event0', messageText);
+			rxChannel.subscribe('event2', handler);
+			txChannel.publish('event2', messageText);
 		};
 
 		async.series([

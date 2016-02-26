@@ -28,17 +28,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.on('connected', function() {
 				/* set options on init */
-				var channel0 = realtime.channels.get('channelinit0', {encrypted: true});
-				test.equal(channel0.channelOptions.encrypted, true);
+				var channel0 = realtime.channels.get('channelinit0', {fakeOption: true});
+				test.equal(channel0.channelOptions.fakeOption, true);
 
 				/* set options on fetch */
-				var channel1 = realtime.channels.get('channelinit0', {encrypted: false});
-				test.equal(channel0.channelOptions.encrypted, false);
-				test.equal(channel1.channelOptions.encrypted, false);
+				var channel1 = realtime.channels.get('channelinit0', {fakeOption: false});
+				test.equal(channel0.channelOptions.fakeOption, false);
+				test.equal(channel1.channelOptions.fakeOption, false);
 
 				/* set options with setOptions */
-				channel1.setOptions({encrypted: true});
-				test.equal(channel1.channelOptions.encrypted, true);
+				channel1.setOptions({fakeOption: true});
+				test.equal(channel1.channelOptions.fakeOption, true);
 				closeAndFinish(test, realtime);
 			});
 			monitorConnection(test, realtime);

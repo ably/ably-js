@@ -1,6 +1,6 @@
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
-	var DEFAULT_KEYLENGTH = 128; // bits
+	var DEFAULT_KEYLENGTH = 256; // bits
 	var DEFAULT_MODE = 'cbc';
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
@@ -23,7 +23,7 @@ var Crypto = (function() {
 		};
 	} else {
 		generateRandom = function(bytes, callback) {
-			console.log('Ably.Crypto.generateRandom(): WARNING: using insecure Math.random() to generate key or iv; see http://ably.io/documentation for how to fix this');
+			Logger.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
 			var words = bytes / 4, array = new Array(words);
 			for(var i = 0; i < words; i++)
 				array[i] = Math.floor(Math.random() * VAL32);
@@ -40,6 +40,24 @@ var Crypto = (function() {
 	 */
 	function getPaddedLength(plaintextLength) {
 		return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
+	}
+
+	/**
+	 * Internal: checks that the cipherParams are a valid combination. Currently
+	 * just checks that the calculated keyLength is a valid one for aes-cbc
+	 */
+	function validateCipherParams(params) {
+		if(params.algorithm === 'aes' && params.mode === 'cbc') {
+			if(params.keyLength === 128 || params.keyLength === 256) {
+				return;
+			}
+			throw new Error('Unsupported key length ' + params.keyLength + ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)');
+		}
+	}
+
+	function normaliseBase64(string) {
+		/* url-safe base64 strings use _ and - instread of / and + */
+		return string.replace('_', '/').replace('-', '+');
 	}
 
 	/**
@@ -89,7 +107,6 @@ var Crypto = (function() {
 	 * data passed to the recipient.
 	 */
 	function Crypto() {}
-	Crypto.generateRandom = generateRandom;
 
 	/**
 	 * A class encapsulating the client-specifiable parameters for
@@ -98,84 +115,101 @@ var Crypto = (function() {
 	 * algorithm is the name of the algorithm in the default system provider,
 	 * or the lower-cased version of it; eg "aes" or "AES".
 	 *
-	 * Clients may instance a CipherParams directly and populate it, or may
-	 * query the implementation to obtain a default system CipherParams.
+	 * Clients are recommended to not call this directly, but instead to use the
+	 * Crypto.getDefaultParams helper, which will fill in any fields not supplied
+	 * with default values and validation the result.
 	 */
 	function CipherParams() {
 		this.algorithm = null;
 		this.keyLength = null;
 		this.mode = null;
 		this.key = null;
-		this.iv = null;
 	}
 	Crypto.CipherParams = CipherParams;
 
 	/**
-	 * Obtain a default CipherParams. This uses default algorithm, mode and
-	 * padding. If a key is specified this is used; otherwise a new key is generated
-	 * for the default key length. An IV is generated using the default
-	 * system SecureRandom.
-	 * A generated key may be obtained from the returned CipherParams
-	 * for out-of-band distribution to other clients.
-	 * @param key (optional) ArrayBuffer, Array, WordArray or base64 string, containing key
-	 * @param callback (err, params)
+	 * Obtain a complete CipherParams instance from the provided params, filling
+	 * in any not provided with default values, calculating a keyLength from
+	 * the supplied key, and validating the result.
+	 * @param params an object containing at a minimum a `key` key with value the
+	 * key, as either a binary (ArrayBuffer, Array, WordArray) or a
+	 * base64-encoded string. May optionally also contain: algorithm (defaults to
+	 * AES), mode (defaults to 'cbc')
 	 */
-	Crypto.getDefaultParams = function(key, callback) {
-		if(arguments.length == 1 && typeof(key) == 'function') {
-			callback = key;
-			key = undefined;
-		}
-		if(!key) {
-			generateRandom(DEFAULT_KEYLENGTH / 8, function(err, buf) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				Crypto.getDefaultParams(buf, callback);
-			});
+	Crypto.getDefaultParams = function(params) {
+		var key;
+		/* Backward compatibility */
+		if((typeof(params) === 'function') || (typeof(params) === 'string')) {
+			Logger.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
+			if(typeof(params) === 'function') {
+				Crypto.generateRandomKey(function(key) {
+					params(null, Crypto.getDefaultParams({key: key}));
+				})
+			} else {
+				callback = arguments[1];
+				callback(null, Crypto.getDefaultParams({key: params}));
+			}
 			return;
 		}
-		if (typeof(key) === 'string')
-			key = CryptoJS.enc.Hex.parse(key);
-		else
-			key = BufferUtils.toWordArray(key);   // Expect key to be an Array, ArrayBuffer, or WordArray at this point
 
-		var params = new CipherParams();
-		params.algorithm = DEFAULT_ALGORITHM;
-		params.key = key;
-		params.keyLength = key.words.length * (4 * 8);
-		params.mode = DEFAULT_MODE;
-		generateRandom(DEFAULT_BLOCKLENGTH, function(err, buf) {
-			params.iv = buf;
-			callback(null, params);
-		});
+		if(!params.key) {
+			throw new Error('Crypto.getDefaultParams: a key is required');
+		}
+
+		if (typeof(params.key) === 'string') {
+			key = CryptoJS.enc.Base64.parse(normaliseBase64(params.key));
+		} else {
+			key = BufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
+		}
+
+		var cipherParams = new CipherParams();
+		cipherParams.key = key;
+		cipherParams.algorithm = params.algorithm || DEFAULT_ALGORITHM;
+		cipherParams.keyLength = key.words.length * (4 * 8);
+		cipherParams.mode = params.mode || DEFAULT_MODE;
+		validateCipherParams(cipherParams);
+		return cipherParams;
 	};
 
 	/**
-	 * Internal; get a ChannelCipher instance based on the given ChannelOptions
-	 * @param channelOpts a ChannelOptions instance
-	 * @param callback (err, cipher)
+	 * Generate a random encryption key from the supplied keylength (or the
+	 * default keyLength if none supplied) as a CryptoJS WordArray
+	 * @param keyLength (optional) the required keyLength in bits
+	 * @param callback (err, key)
 	 */
-	Crypto.getCipher = function(channelOpts, callback) {
-		var params = channelOpts && channelOpts.cipherParams;
-		if(params) {
-			callback(null, new CBCCipher(params));
-			return;
+	Crypto.generateRandomKey = function(keyLength, callback) {
+		if(arguments.length == 1 && typeof(keyLength) == 'function') {
+			callback = keyLength;
+			keyLength = undefined;
 		}
-		Crypto.getDefaultParams(function(err, params) {
-			if(err) {
-				callback(err);
-				return;
-			}
-			callback(null, new CBCCipher(params));
-		});
+		generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, callback);
 	};
 
-	function CBCCipher(params) {
+	/**
+	 * Internal; get a ChannelCipher instance based on the given cipherParams
+	 * @param params either a CipherParams instance or some subset of its
+	 * fields that includes a key
+	 * @param callback (err, cipherParams, channelCipher)
+	 */
+	Crypto.getCipher = function(params, callback) {
+		var cipherParams = (params instanceof CipherParams) ?
+		                   params :
+		                   Crypto.getDefaultParams(params);
+
+		if(params.iv) {
+			callback(null, cipherParams, new CBCCipher(cipherParams, params.iv));
+		} else {
+			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
+				callback(null, cipherParams, new CBCCipher(cipherParams, iv));
+			});
+		}
+	};
+
+	function CBCCipher(params, iv) {
 		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
 		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = BufferUtils.toWordArray(params.key);
-		var iv = this.iv = BufferUtils.toWordArray(params.iv);
+		var iv = this.iv = BufferUtils.toWordArray(iv);
 		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
 		this.blockLengthWords = iv.words.length;
 	}
