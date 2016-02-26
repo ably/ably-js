@@ -378,26 +378,28 @@ var ConnectionManager = (function() {
 
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-			self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId);
+			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
+			if(self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId)) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+				self.sync(transport, function(err, connectionSerial, connectionId) {
+					if(err) {
+						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+						return;
+					}
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
 
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(err, connectionSerial, connectionId) {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
-					return;
-				}
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
-
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
-				self.state = self.states.connected;
-				self.sendQueuedMessages();
-			});
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+					self.state = self.states.connected;
+					self.sendQueuedMessages();
+				});
+			}
 		});
 	};
 
 	/**
 	 * Called when a transport is connected, and the connectionmanager decides that
-	 * it will now be the active transport.
+	 * it will now be the active transport. Returns whether or not it activated
+	 * the transport (if the connection is closing/closed it will choose not to).
 	 * @param transport the transport instance
 	 * @param connectionKey the key of the new active connection
 	 * @param connectionSerial the current connectionSerial
@@ -418,7 +420,7 @@ var ConnectionManager = (function() {
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
 		if(existingState == this.states.closing || existingState == this.states.closed)
-			return;
+			return false;
 
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
@@ -464,6 +466,7 @@ var ConnectionManager = (function() {
 		for(var i = 0; i < this.pendingTransports.length; i++) {
 			this.pendingTransports[i].disconnect();
 		}
+		return true;
 	};
 
 	/**
