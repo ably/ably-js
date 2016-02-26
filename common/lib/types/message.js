@@ -167,7 +167,7 @@ var Message = (function() {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel.emit('error', e);
+				channel && channel.emit('error', e);
 			}
 		}
 		return body;
