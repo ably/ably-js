@@ -1256,7 +1256,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(callback) { runTest(realtimeBin, callback); },
 			function(callback) { console.log('test two'); runTest(realtimeJson, callback); },
 		], function() {
-			closeAndFinish(test, realtimeBin, realtimeJson);
+			closeAndFinish(test, [realtimeBin, realtimeJson]);
 		});
 	}
 
