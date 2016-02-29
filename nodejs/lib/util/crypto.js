@@ -131,9 +131,10 @@ var Crypto = (function() {
 				Crypto.generateRandomKey(function(key) {
 					params(null, Crypto.getDefaultParams({key: key}));
 				})
+			} else if(typeof arguments[1] === 'function') {
+				arguments[1](null, Crypto.getDefaultParams({key: params}));
 			} else {
-				callback = arguments[1];
-				callback(null, Crypto.getDefaultParams({key: params}));
+				throw new Error('Invalid arguments for Crypto.getDefaultParams');
 			}
 			return;
 		}
@@ -153,6 +154,11 @@ var Crypto = (function() {
 		cipherParams.algorithm = params.algorithm || DEFAULT_ALGORITHM;
 		cipherParams.keyLength = key.length * 8;
 		cipherParams.mode = params.mode || DEFAULT_MODE;
+
+		if(params.keyLength && params.keyLength !== cipherParams.keyLength) {
+			throw new Error('Crypto.getDefaultParams: a keyLength of ' + params.keyLength + ' was specified, but the key actually has length ' + cipherParams.keyLength);
+		}
+
 		validateCipherParams(cipherParams);
 		return cipherParams;
 	};
