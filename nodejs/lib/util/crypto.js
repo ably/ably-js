@@ -183,18 +183,13 @@ var Crypto = (function() {
 	 * fields that includes a key
 	 * @param callback (err, cipherParams, channelCipher)
 	 */
-	Crypto.getCipher = function(params, callback) {
+	Crypto.getCipher = function(params) {
 		var cipherParams = (isInstCipherParams(params)) ?
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
-		if(params.iv) {
-			callback(null, cipherParams, new CBCCipher(cipherParams, params.iv));
-		} else {
-			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
-				callback(null, cipherParams, new CBCCipher(cipherParams, iv));
-			});
-		}
+		var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
+		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)};
 	};
 
 	function CBCCipher(params, iv) {
