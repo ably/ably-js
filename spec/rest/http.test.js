@@ -45,6 +45,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		channel.publish('test', 'Testing http headers');
 		channel.presence.get();
 
+		//Clean interceptors from get&post methods
+		Ably.Rest.Http.get = Ably.Rest.Http.get_inner;
+		Ably.Rest.Http.post = Ably.Rest.Http.post_inner;
+
 		test.done();
 	};
 
