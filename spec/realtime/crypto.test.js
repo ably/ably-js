@@ -400,6 +400,36 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		_single_send_separate_realtimes(test, { useBinaryProtocol: false }, { useBinaryProtocol: true });
 	};
 
+	exports.publish_immediately = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
+		var txRealtime = helper.AblyRealtime(),
+			rxRealtime = helper.AblyRealtime(),
+			channelName = 'publish_immediately',
+			messageText = 'Test message';
+		test.expect(1);
+
+		Crypto.generateRandomKey(function(err, key) {
+			if(err) {
+				test.ok(false, 'Unable to generate key; err = ' + displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+			var rxChannel = rxRealtime.channels.get(channelName, {cipher: {key: key}});
+			rxChannel.subscribe('event0', function(msg) {
+				test.ok(msg.data == messageText);
+				closeAndFinish(test, [txRealtime, rxRealtime]);
+			}, function() {
+				var txChannel = txRealtime.channels.get(channelName, {cipher: {key: key}});
+				txChannel.publish('event0', messageText);
+			})
+		});
+	}
+
 	/**
 	 * Connect twice to the service, using different cipher keys.
 	 * Publish an encrypted message on that channel using

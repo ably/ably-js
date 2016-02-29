@@ -196,19 +196,14 @@ var Crypto = (function() {
 	 * Internal; get a ChannelCipher instance based on the given cipherParams
 	 * @param params either a CipherParams instance or some subset of its
 	 * fields that includes a key
-	 * @param callback (err, cipherParams, channelCipher)
 	 */
-	Crypto.getCipher = function(params, callback) {
+	Crypto.getCipher = function(params) {
 		var cipherParams = (params instanceof CipherParams) ?
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
-		if(params.iv) {
-			callback(null, cipherParams, new CBCCipher(cipherParams, params.iv));
-		} else {
-			var iv = generateRandom(DEFAULT_BLOCKLENGTH);
-			callback(null, cipherParams, new CBCCipher(cipherParams, iv));
-		}
+		var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
+		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)};
 	};
 
 	function CBCCipher(params, iv) {

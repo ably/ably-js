@@ -18,11 +18,10 @@ var Channel = (function() {
 		this.channelOptions = options = options || {};
 		if(options.cipher) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			Crypto.getCipher(options.cipher, function(err, cipherParams, channelCipher) {
-				options.cipher = cipherParams;
-				options.channelCipher = channelCipher;
-				callback(null);
-			});
+			var cipherResult = Crypto.getCipher(options.cipher);
+			options.cipher = cipherResult.cipherParams;
+			options.channelCipher = cipherResult.cipher;
+			callback(null);
 		} else if('cipher' in options) {
 			/* Don't deactivate an existing cipher unless options
 			 * has a 'cipher' key that's falsey */
