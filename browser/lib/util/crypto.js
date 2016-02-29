@@ -256,12 +256,18 @@ var Crypto = (function() {
 	};
 
 	CBCCipher.prototype.getIv = function() {
-		if(!this.iv)
-			return this.encryptCipher.process(emptyBlock);
+		if(this.iv) {
+			var iv = this.iv;
+			this.iv = null;
+			return iv;
+		}
 
-		var result = this.iv;
-		this.iv = null;
-		return result;
+		var randomBlock = generateRandom(DEFAULT_BLOCKLENGTH);
+		/* Since the iv for a new block is the ciphertext of the last, this
+		* sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
+		* returning it */
+		return this.encryptCipher.process(randomBlock);
+
 	};
 
 	return Crypto;
