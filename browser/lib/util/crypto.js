@@ -16,19 +16,20 @@ var Crypto = (function() {
 	var browsercrypto = window.crypto || window.msCrypto; // mscrypto for IE11
 	if(window.Uint32Array && browsercrypto && browsercrypto.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
-		generateRandom = function(bytes, callback) {
+		generateRandom = function(bytes) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
 			browsercrypto.getRandomValues(nativeArray);
-			callback(null, BufferUtils.toWordArray(nativeArray));
+			return BufferUtils.toWordArray(nativeArray);
 		};
 	} else {
-		generateRandom = function(bytes, callback) {
+		generateRandom = function(bytes) {
 			Logger.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
 			var words = bytes / 4, array = new Array(words);
-			for(var i = 0; i < words; i++)
+			for(var i = 0; i < words; i++) {
 				array[i] = Math.floor(Math.random() * VAL32);
+			}
 
-			callback(null, WordArray.create(array));
+			return WordArray.create(array);
 		};
 	}
 
@@ -182,7 +183,7 @@ var Crypto = (function() {
 			callback = keyLength;
 			keyLength = undefined;
 		}
-		generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, callback);
+		callback(null, generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8));
 	};
 
 	/**
@@ -199,9 +200,8 @@ var Crypto = (function() {
 		if(params.iv) {
 			callback(null, cipherParams, new CBCCipher(cipherParams, params.iv));
 		} else {
-			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
-				callback(null, cipherParams, new CBCCipher(cipherParams, iv));
-			});
+			var iv = generateRandom(DEFAULT_BLOCKLENGTH);
+			callback(null, cipherParams, new CBCCipher(cipherParams, iv));
 		}
 	};
 
