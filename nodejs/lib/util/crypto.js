@@ -12,7 +12,7 @@ var Crypto = (function() {
 	/**
 	 * Internal: generate a buffer of secure random bytes of the given length
 	 * @param bytes
-	 * @param callback
+	 * @param callback (optional)
 	 */
 	function generateRandom(bytes, callback) {
 		return crypto.randomBytes(bytes, callback);
