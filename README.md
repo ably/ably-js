@@ -206,6 +206,32 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
+### Symmetrical end-to-end encrypted payloads on a channel
+
+When a 128 bit or 256 bit key is provided to the library, the `data` attributes of all messages are encrypted and decrypted automatically using that key. The secret key is never transmitted to Ably. See https://www.ably.io/documentation/realtime/encryption
+
+```javascript
+// Generate a random 256-bit key for demonstration purposes (in
+// practice you need to create one and distribute it to clients yourselves)
+Ably.Realtime.Crypto.generateRandomKey(function(err, key) {
+	var channel = client.channels.get('channelName', cipher: { key: key })
+
+	channel.subscribe(function(message) {
+		message.name // 'name is not encrypted'
+		message.data // 'sensitive data is encrypted'
+	});
+
+	channel.publish('name is not encrypted', 'sensitive data is encrypted');
+})
+```
+
+You can also change the key on an existing channel using setOptions (which takes a callback which is called after the new encryption settings have taken effect):
+```javascript
+channel.setOptions({cipher: {key: <key>}}, function() {
+	// New encryption settings are in effect
+})
+```
+
 ## Using the REST API
 
 ### Introduction
