@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.15
+ * Ably JavaScript Library v0.8.16
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -60,7 +60,7 @@
 		if (!channel) {
 			channel = PUBNUB.ably.channels.get(name);
 			if (PUBNUB.ablyCipherParams)
-				channel.setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
+				channel.setOptions({cipher: PUBNUB.ablyCipherParams});
 			channels[name] = channel;
 		}
 		return channel;
@@ -74,7 +74,7 @@
 
 		// Set up cipher params on any channels that have been created already
 		for (var name in channels)
-			channels[name].setOptions({encrypted:true, cipherParams: PUBNUB.ablyCipherParams});
+			channels[name].setOptions({cipher: PUBNUB.ablyCipherParams});
 
 		// Send any messages which were waiting for the cipherParams to be returned
 		for (var i=0; i<cipherParamsPendingMessages.length; i++) {
@@ -156,7 +156,7 @@
 		PUBNUB.ably = new Ably.Realtime(opts);
 		if (args.cipher_key) {
 			PUBNUB.ablyCipherParamsPending = true;
-			PUBNUB.Ably.Realtime.Crypto.getDefaultParams(args.cipher_key, cipherParamsResponse);
+			cipherParamsResponse(null, PUBNUB.Ably.Realtime.Crypto.getDefaultParams({key: args.cipher_key}));
 		}
 
 		PUBNUB.ably.connection.on(function(stateChange) {

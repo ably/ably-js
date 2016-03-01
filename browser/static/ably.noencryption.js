@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.15
+ * Ably JavaScript Library v0.8.16
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.15';
+Defaults.version           = '0.8.16';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -3368,7 +3368,7 @@ var Message = (function() {
 	Message.encrypt = function(msg, options) {
 		var data = msg.data,
 			encoding = msg.encoding,
-			cipher = options.cipher;
+			cipher = options.channelCipher;
 
 		encoding = encoding ? (encoding + '/') : '';
 		if(!BufferUtils.isBuffer(data)) {
@@ -3392,7 +3392,7 @@ var Message = (function() {
 			}
 		}
 
-		if(options != null && options.encrypted)
+		if(options != null && options.cipher)
 			Message.encrypt(msg, options);
 	};
 
@@ -3426,8 +3426,8 @@ var Message = (function() {
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
-							if(options != null && options.encrypted) {
-								var xformAlgorithm = match[3], cipher = options.cipher;
+							if(options != null && options.cipher) {
+								var xformAlgorithm = match[3], cipher = options.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -3461,7 +3461,7 @@ var Message = (function() {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel.emit('error', e);
+				channel && channel.emit('error', e);
 			}
 		}
 		return body;
@@ -3578,7 +3578,7 @@ var PresenceMessage = (function() {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
-				channel.emit('error', e);
+				channel && channel.emit('error', e);
 			}
 		}
 		return body;
@@ -4321,26 +4321,28 @@ var ConnectionManager = (function() {
 
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-			self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId);
+			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
+			if(self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId)) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+				self.sync(transport, function(err, connectionSerial, connectionId) {
+					if(err) {
+						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+						return;
+					}
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
 
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(err, connectionSerial, connectionId) {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
-					return;
-				}
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
-
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
-				self.state = self.states.connected;
-				self.sendQueuedMessages();
-			});
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+					self.state = self.states.connected;
+					self.sendQueuedMessages();
+				});
+			}
 		});
 	};
 
 	/**
 	 * Called when a transport is connected, and the connectionmanager decides that
-	 * it will now be the active transport.
+	 * it will now be the active transport. Returns whether or not it activated
+	 * the transport (if the connection is closing/closed it will choose not to).
 	 * @param transport the transport instance
 	 * @param connectionKey the key of the new active connection
 	 * @param connectionSerial the current connectionSerial
@@ -4361,7 +4363,7 @@ var ConnectionManager = (function() {
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
 		if(existingState == this.states.closing || existingState == this.states.closed)
-			return;
+			return false;
 
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
@@ -4407,6 +4409,7 @@ var ConnectionManager = (function() {
 		for(var i = 0; i < this.pendingTransports.length; i++) {
 			this.pendingTransports[i].disconnect();
 		}
+		return true;
 	};
 
 	/**
@@ -5596,7 +5599,7 @@ var Presence = (function() {
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
 		})).get(params, callback);
 	};
 
@@ -6753,14 +6756,20 @@ var Channel = (function() {
 	Channel.prototype.setOptions = function(options, callback) {
 		callback = callback || noop;
 		this.channelOptions = options = options || {};
-		if(options.encrypted) {
+		if(options.cipher) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			Crypto.getCipher(options, function(err, cipher) {
-				options.cipher = cipher;
-				callback(null);
-			});
+			var cipherResult = Crypto.getCipher(options.cipher);
+			options.cipher = cipherResult.cipherParams;
+			options.channelCipher = cipherResult.cipher;
+			callback(null);
+		} else if('cipher' in options) {
+			/* Don't deactivate an existing cipher unless options
+			 * has a 'cipher' key that's falsey */
+			options.cipher = null;
+			options.channelCipher = null;
+			callback(null);
 		} else {
-			callback(null, (options.cipher = null));
+			callback(null);
 		}
 	};
 
@@ -6873,20 +6882,6 @@ var RealtimeChannel = (function() {
 		else
 			return [args[0], args[1], (args[2] || noop)];
 	}
-
-	RealtimeChannel.prototype.setOptions = function(options, callback) {
-		callback = callback || noop;
-		this.channelOptions = options = options || {};
-		if(options.encrypted) {
-			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			Crypto.getCipher(options, function(err, cipher) {
-				options.cipher = cipher;
-				callback(null);
-			});
-		} else {
-			callback(null, (options.cipher = null));
-		}
-	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
