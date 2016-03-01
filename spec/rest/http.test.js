@@ -24,14 +24,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			return get_inner(rest, path, headers, params, callback);
 		};
 
 		var post_inner = Ably.Rest.Http.post;
 		Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			return post_inner(rest, path, headers, body, params, callback);
 		};
 
 		//Call all methods that use rest http calls
