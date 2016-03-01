@@ -136,7 +136,6 @@ var Crypto = (function() {
 	 * key, as either a binary (ArrayBuffer, Array, WordArray) or a
 	 * base64-encoded string. May optionally also contain: algorithm (defaults to
 	 * AES), mode (defaults to 'cbc')
-	 * @param callback (err, params)
 	 */
 	Crypto.getDefaultParams = function(params) {
 		var key;
