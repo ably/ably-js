@@ -25,15 +25,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Connect with invalid credentials on various transports; connection state should be 'failed'
 	 */
 	exports.invalid_cred_failure = function(test) {
-		test.expect((availableTransports.length + 1)*3);
+		test.expect((availableTransports.length + 1)*4);
 		try {
 			var failure_test = function(transports) {
 				return function(cb) {
 					var realtime = helper.AblyRealtime({key: "this.is:wrong", transports: transports});
 					realtime.connection.on('failed', function(connectionStateChange) {
 						test.ok(true, 'connection state for ' + transports + ' was failed, as expected');
-						test.notEqual(realtime.connection.errorReason, null, 'error reason was not set on connection');
-						test.notEqual(connectionStateChange.reason, null, 'error reason was not set on connectionStateChange');
+						test.equal(realtime.connection.errorReason.constructor.name, 'ErrorInfo', 'error reason set on connection was not of type ErrorInfo.');
+						test.equal(connectionStateChange.reason.constructor.name, 'ErrorInfo', 'error reason set on connectionStateChange was not of type ErrorInfo');
+						test.deepEqual(connectionStateChange.reason, realtime.connection.errorReason, 'error reason was not equally set on connection and connectionStateChange');
 						cb(null, realtime);
 					});
 					realtime.connection.on('disconnected', function() {
