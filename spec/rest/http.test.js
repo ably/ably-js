@@ -20,18 +20,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.apiVersionHeader = function(test) {
 
 		//Intercept get&post methods with test
-		Ably.Rest.Http.get_inner = Ably.Rest.Http.get;
+		var get_inner = Ably.Rest.Http.get;
 		Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			return this.get_inner(rest, path, headers, params, callback);
+			return get_inner(rest, path, headers, params, callback);
 		};
 
-		Ably.Rest.Http.post_inner = Ably.Rest.Http.post;
+		var post_inner = Ably.Rest.Http.post;
 		Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			return this.post_inner(rest, path, headers, body, params, callback);
+			return post_inner(rest, path, headers, body, params, callback);
 		};
 
 		//Call all methods that use rest http calls
@@ -46,8 +46,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		channel.presence.get();
 
 		//Clean interceptors from get&post methods
-		Ably.Rest.Http.get = Ably.Rest.Http.get_inner;
-		Ably.Rest.Http.post = Ably.Rest.Http.post_inner;
+		Ably.Rest.Http.get = get_inner;
+		Ably.Rest.Http.post = post_inner;
 
 		test.done();
 	};
