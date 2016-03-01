@@ -210,7 +210,9 @@ var Crypto = (function() {
 		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
 		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		var key = this.key = BufferUtils.toWordArray(params.key);
-		var iv = this.iv = BufferUtils.toWordArray(iv);
+		/* clone the iv as CryptoJS's concat method mutates the receiver; don't want to
+		* mutate something that may have been passed in by the user */
+		var iv = this.iv = BufferUtils.toWordArray(iv).clone();
 		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
 		this.blockLengthWords = iv.words.length;
 	}
@@ -222,7 +224,7 @@ var Crypto = (function() {
 		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
 			paddedLength = getPaddedLength(plaintextLength),
-			iv = this.getIv().clone();
+			iv = this.getIv();
 		var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
 		var ciphertext = iv.concat(cipherOut);
 		//console.log('encrypt: ciphertext:');
