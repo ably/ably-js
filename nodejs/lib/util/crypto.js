@@ -180,7 +180,6 @@ var Crypto = (function() {
 	 * Internal; get a ChannelCipher instance based on the given cipherParams
 	 * @param params either a CipherParams instance or some subset of its
 	 * fields that includes a key
-	 * @param callback (err, cipherParams, channelCipher)
 	 */
 	Crypto.getCipher = function(params) {
 		var cipherParams = (isInstCipherParams(params)) ?
