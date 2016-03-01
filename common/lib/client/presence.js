@@ -27,7 +27,7 @@ var Presence = (function() {
 			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
 		})).get(params, callback);
 	};
 

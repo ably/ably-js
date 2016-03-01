@@ -74,7 +74,7 @@ var Message = (function() {
 	Message.encrypt = function(msg, options) {
 		var data = msg.data,
 			encoding = msg.encoding,
-			cipher = options.cipher;
+			cipher = options.channelCipher;
 
 		encoding = encoding ? (encoding + '/') : '';
 		if(!BufferUtils.isBuffer(data)) {
@@ -98,7 +98,7 @@ var Message = (function() {
 			}
 		}
 
-		if(options != null && options.encrypted)
+		if(options != null && options.cipher)
 			Message.encrypt(msg, options);
 	};
 
@@ -132,8 +132,8 @@ var Message = (function() {
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
-							if(options != null && options.encrypted) {
-								var xformAlgorithm = match[3], cipher = options.cipher;
+							if(options != null && options.cipher) {
+								var xformAlgorithm = match[3], cipher = options.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -167,7 +167,7 @@ var Message = (function() {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel.emit('error', e);
+				channel && channel.emit('error', e);
 			}
 		}
 		return body;

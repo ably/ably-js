@@ -92,7 +92,7 @@ var PresenceMessage = (function() {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
-				channel.emit('error', e);
+				channel && channel.emit('error', e);
 			}
 		}
 		return body;
