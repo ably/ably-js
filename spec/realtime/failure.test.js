@@ -31,9 +31,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return function(cb) {
 					var realtime = helper.AblyRealtime({key: "this.is:wrong", transports: transports});
 					realtime.connection.on('failed', function(connectionStateChange) {
+						console.log("connectionStateChange.errorReason");
+						console.log(connectionStateChange.errorReason);
+						console.log("realtime.connection.errorReason");
+						console.log(realtime.connection.errorReason);
+						console.log("realtime.connection.errorReason fin");
+						
 						test.ok(true, 'connection state for ' + transports + ' was failed, as expected');
 						test.equal(realtime.connection.errorReason.constructor.name, 'ErrorInfo', 'error reason set on connection was not of type ErrorInfo.');
-						test.equal(connectionStateChange.reason.constructor.name, 'ErrorInfo', 'error reason set on connectionStateChange was not of type ErrorInfo');
+						test.equal(connectionStateChange.errorReason.constructor.name, 'ErrorInfo', 'error reason set on connectionStateChange was not of type ErrorInfo');
 						test.deepEqual(connectionStateChange.reason, realtime.connection.errorReason, 'error reason was not equally set on connection and connectionStateChange');
 						cb(null, realtime);
 					});

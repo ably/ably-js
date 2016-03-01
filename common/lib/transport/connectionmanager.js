@@ -600,8 +600,8 @@ var ConnectionManager = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
-			this.errorReason = stateChange.reason;
-			this.realtime.connection.errorReason = stateChange.reason;
+			this.errorReason = ErrorInfo.fromValues(stateChange.reason);
+			this.realtime.connection.errorReason = ErrorInfo.fromValues(stateChange.reason);
 		}
 		if(newState.terminal) {
 			this.clearConnection();
