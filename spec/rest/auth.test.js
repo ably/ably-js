@@ -465,7 +465,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * createTokenRequest uses the key it was initialised with if authOptions is null
+	 * createTokenRequest uses the key it was initialized with if authOptions is null
 	 */
 	exports.auth_createTokenRequest_given_key = function(test) {
 		test.expect(1);
@@ -513,7 +513,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * createTokenRequest uses the key it was initialised with if authOptions does not have a "key" key
+	 * createTokenRequest uses the key it was initialized with if authOptions does not have a "key" key
 	 */
 	exports.auth_createTokenRequest_given_key2 = function(test) {
 		test.expect(1);

@@ -75,7 +75,7 @@ var Crypto = (function() {
 	 * not supported directly, but supportable by extending/implementing the base
 	 * classes and interfaces here.
 	 *
-	 * Secure random data for creation of Initialisation Vectors (IVs) and keys
+	 * Secure random data for creation of Initialization Vectors (IVs) and keys
 	 * is obtained from the default system SecureRandom. Future extensions of this
 	 * class might make the SecureRandom pluggable or at least seedable with
 	 * client-provided entropy.

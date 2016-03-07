@@ -179,7 +179,7 @@
 	}
 
 	/**
-	 * Get the uuid that PUBNUB was initialised with. Implemented in standard PUBNUB library but not documented.
+	 * Get the uuid that PUBNUB was initialized with. Implemented in standard PUBNUB library but not documented.
 	 *
 	 * Compatibility:
 	 * TBD
