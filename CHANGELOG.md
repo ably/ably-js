@@ -288,7 +288,7 @@
 
 - Don’t include timestamp/connectionid in string/json representations of messages [\#117](https://github.com/ably/ably-js/pull/117) ([SimonWoolf](https://github.com/SimonWoolf))
 
-- If client lib initialised with clientid, use that for auth if no new tokenParams object is supplied [\#115](https://github.com/ably/ably-js/pull/115) ([SimonWoolf](https://github.com/SimonWoolf))
+- If client lib initialized with clientid, use that for auth if no new tokenParams object is supplied [\#115](https://github.com/ably/ably-js/pull/115) ([SimonWoolf](https://github.com/SimonWoolf))
 
 - JSONP transport: use jsonp envelope [\#114](https://github.com/ably/ably-js/pull/114) ([SimonWoolf](https://github.com/SimonWoolf))
 

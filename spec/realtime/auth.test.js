@@ -167,7 +167,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	/*
 	 * Use authCallback for authentication with tokenDetails response,
-	 * also check that clientId lib is initialised with is passed through
+	 * also check that clientId lib is initialized with is passed through
 	 * to the auth callback
 	 */
 	exports.auth_useAuthCallback_tokenDetailsResponse = function(test) {

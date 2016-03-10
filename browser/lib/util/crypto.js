@@ -97,7 +97,7 @@ var Crypto = (function() {
 	 * not supported directly, but supportable by extending/implementing the base
 	 * classes and interfaces here.
 	 *
-	 * Secure random data for creation of Initialisation Vectors (IVs) and keys
+	 * Secure random data for creation of Initialization Vectors (IVs) and keys
 	 * is obtained from window.crypto.getRandomValues if available, or from
 	 * Math.random() if not. Clients who do not want to depend on Math.random()
 	 * should polyfill window.crypto.getRandomValues with a library that seeds

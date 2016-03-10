@@ -2380,7 +2380,7 @@ var Crypto = (function() {
 	 * not supported directly, but supportable by extending/implementing the base
 	 * classes and interfaces here.
 	 *
-	 * Secure random data for creation of Initialisation Vectors (IVs) and keys
+	 * Secure random data for creation of Initialization Vectors (IVs) and keys
 	 * is obtained from window.crypto.getRandomValues if available, or from
 	 * Math.random() if not. Clients who do not want to depend on Math.random()
 	 * should polyfill window.crypto.getRandomValues with a library that seeds
@@ -8465,7 +8465,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.sync = function() {
 		/* check preconditions */
 		switch(this.state) {
-			case 'initialised':
+			case 'initialized':
 			case 'detaching':
 			case 'detached':
 				throw new ErrorInfo("Unable to sync to channel; not attached", 40000);

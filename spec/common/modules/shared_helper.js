@@ -37,7 +37,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		function closeAndFinish(test, realtime) {
 			if(typeof realtime === 'undefined') {
 				// Likely called in a catch block for an exception
-				// that occured before realtime was initialised
+				// that occured before realtime was initialized
 				test.done();
 				return;
 			}

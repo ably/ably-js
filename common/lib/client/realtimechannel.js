@@ -226,7 +226,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.sync = function() {
 		/* check preconditions */
 		switch(this.state) {
-			case 'initialised':
+			case 'initialized':
 			case 'detaching':
 			case 'detached':
 				throw new ErrorInfo("Unable to sync to channel; not attached", 40000);
