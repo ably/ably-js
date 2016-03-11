@@ -40,13 +40,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.presence_get_simple = function(test) {
+	function presence_simple(operation) { return function(test) {
 		test.expect(7);
 		try {
 			var cipherParams = cipherParamsFromConfig(cipherConfig);
 			var channel = rest.channels.get('persisted:presence_fixtures',
 			                                {cipher: cipherParams});
-			channel.presence.get(function(err, resultPage) {
+			channel.presence[operation](function(err, resultPage) {
 				if(err) {
 					test.ok(false, displayError(err));
 					test.done();
@@ -63,13 +63,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(decodedMessage.encoding, null, 'Decoding should remove encoding field');
 				test.equal(boolMessage.data, 'true', 'should not attempt to parse string data when no encoding field');
 				test.equal(intMessage.data, '24', 'should not attempt to parse string data when no encoding field');
-				test.equal(boolMessage.action, 'present', 'member should have "present" action');
+				test.equal(boolMessage.action, (operation === 'get') ? 'present' : 'enter', 'appropriate action');
 				test.done();
 			});
 		} catch(e) {
 			console.log(e.stack);
 		}
-	};
+	}}
+
+	exports.presence_get_simple = presence_simple('get');
+	exports.presence_history_simple = presence_simple('history')
 
 	/* Ensure that calling JSON strinfigy on the Presence object
 	   converts the action string value back to a numeric value which the API requires */
