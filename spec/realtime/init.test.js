@@ -218,17 +218,36 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* check changing the default fallback hosts and changing httpMaxRetryCount */
 	exports.init_fallbacks = function(test) {
-		test.expect(1);
+		test.expect(5);
 		try {
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
 				restHost: 'a',
 				httpMaxRetryCount: 2,
+				autoConnect: false,
 				fallbackHosts: ['b', 'c', 'd', 'e']
 			});
 			/* Note: uses internal knowledge of connectionManager */
 			test.deepEqual(realtime.connection.connectionManager.httpHosts, ['a', 'b', 'c'], 'Verify hosts list is as expected');
-			closeAndFinish(test, realtime);
+			/* Replace chooseTransportForHost with a spy, then try calling
+			* chooseHttpTransport to see what host is picked */
+			realtime.connection.connectionManager.chooseTransportForHost = function(transportParams, transports, cb) {
+				switch(transportParams.host) {
+					case 'a':
+						test.ok('Tries first with restHost');
+						cb({'code': 50000});
+						break;
+					case 'b':
+					case 'c':
+						/* should be called twice */
+						test.ok('Tries each of the fallback hosts in turn');
+						cb({'code': 50000});
+				}
+			};
+			realtime.connection.connectionManager.chooseHttpTransport({}, function(err) {
+				test.equal(err.code, 80000, 'Expected error code after no fallback host works');
+				closeAndFinish(test, realtime);
+			})
 		} catch(e) {
 			test.ok(false, 'init_defaulthost failed with exception: ' + e.stack);
 			test.done();
