@@ -301,7 +301,7 @@ var ConnectionManager = (function() {
 				/* the network is there, so there's a problem with the main host, or
 				 * its dns. Try the fallback hosts. We could try them simultaneously but
 				 * that would potentially cause a huge spike in load on the load balancer */
-				transportParams.host = Utils.arrRandomElement(candidateHosts);
+				transportParams.host = Utils.arrPopRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
 						if(isFatalOrTokenErr(err)) {

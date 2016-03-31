@@ -292,8 +292,8 @@ var Utils = (function() {
 		};
 	};
 
-	Utils.arrRandomElement = function(arr) {
-		return arr.splice(Math.floor(Math.random() * arr.length));
+	Utils.arrPopRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
 	};
 
 	Utils.toQueryString = function(params) {
