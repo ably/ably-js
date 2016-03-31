@@ -419,7 +419,8 @@ var ConnectionManager = (function() {
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
-		if(existingState == this.states.closing || existingState == this.states.closed)
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
+		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state)
 			return false;
 
 		/* remove this transport from pending transports */
