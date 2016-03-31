@@ -389,8 +389,17 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
 
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
-					self.state = self.states.connected;
-					self.sendQueuedMessages();
+					/* Restore pre-sync state. If state has changed in the meantime,
+					 * don't touch it -- since the websocket transport waits a tick before
+					 * disposing itself, it's possible for it to have happily synced
+					 * without err while, unknown to it, the connection has closed in the
+					 * meantime and the ws transport is scheduled for death */
+					if(self.state === self.states.synchronizing) {
+						self.state = self.states.connected;
+					}
+					if(self.state.sendEvents) {
+						self.sendQueuedMessages();
+					}
 				});
 			}
 		});
@@ -419,7 +428,8 @@ var ConnectionManager = (function() {
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
-		if(existingState == this.states.closing || existingState == this.states.closed)
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
+		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state)
 			return false;
 
 		/* remove this transport from pending transports */
