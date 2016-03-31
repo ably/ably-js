@@ -20,6 +20,10 @@ var ConnectionManager = (function() {
 		return err.statusCode < 500;
 	}
 
+	function isFatalOrTokenErr(err) {
+		return isFatalErr(err) || Auth.isTokenErr(err);
+	}
+
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
 		this.host = host;
@@ -239,8 +243,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(err) {
-				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(isFatalErr(err)) {
+				/* a 4XX error, such as 401, signifies that there is an error that will
+				* not be resolved by another transport. Token errors are included as
+				* another transport won't help; need to callback(err) to let the
+				* connectErr handler in connectImpl deal with it */
+				if(isFatalOrTokenErr(err)) {
 					callback(err);
 					return;
 				}
@@ -297,7 +304,7 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(isFatalErr(err)) {
+						if(isFatalOrTokenErr(err)) {
 							callback(err);
 							return;
 						}
@@ -312,7 +319,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(isFatalErr(err)) {
+				if(isFatalOrTokenErr(err)) {
 					callback(err);
 					return;
 				}

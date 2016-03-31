@@ -2,6 +2,8 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, exports = {},
+		_exports = {},
+		utils = helper.Utils,
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
@@ -562,6 +564,39 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					});
 				});
 			});
+		});
+	};
+
+	/*
+	 * Try to connect with an expired token string
+	 */
+	exports.auth_expired_token_string = function(test) {
+		test.expect(2);
+
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		rest.auth.requestToken({ttl: 1, clientId: clientId}, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+			setTimeout(function() {
+				realtime = helper.AblyRealtime({ token: tokenDetails.token, clientId: clientId });
+				realtime.connection.once('failed', function(stateChange){
+					test.ok(true, 'Verify connection failed');
+					test.equal(stateChange.reason.code, 40101, 'Verify correct failure code');
+					realtime.close();
+					test.done();
+				});
+				utils.arrForEach(['connected', 'disconnected', 'suspended'], function(state) {
+					realtime.connection.on(state, function () {
+						test.ok(false, 'State changed to ' + state + ', should have gone to failed immediately');
+						test.done();
+						realtime.close();
+					});
+				});
+			}, 100)
 		});
 	};
 
