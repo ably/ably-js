@@ -99,11 +99,7 @@ var Transport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				/* a transport error */
-				var err = {
-					statusCode: msgErr.statusCode,
-					code: msgErr.code,
-					message: msgErr.message
-				};
+				var err = ErrorInfo.fromValues(msgErr);
 				this.abort(err);
 				break;
 			}

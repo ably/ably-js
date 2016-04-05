@@ -779,7 +779,8 @@ var ConnectionManager = (function() {
 		var self = this;
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + ErrorInfo.fromValues(err).toString());
+			err = ErrorInfo.fromValues(err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + err.toString());
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				/* do nothing */
