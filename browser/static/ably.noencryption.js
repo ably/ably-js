@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.16
+ * Ably JavaScript Library v0.8.17
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2566,7 +2566,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.16';
+Defaults.version           = '0.8.17';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -3197,8 +3197,8 @@ var Utils = (function() {
 		};
 	};
 
-	Utils.arrRandomElement = function(arr) {
-		return arr.splice(Math.floor(Math.random() * arr.length));
+	Utils.arrPopRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
 	};
 
 	Utils.toQueryString = function(params) {
@@ -3963,6 +3963,10 @@ var ConnectionManager = (function() {
 		return err.statusCode < 500;
 	}
 
+	function isFatalOrTokenErr(err) {
+		return isFatalErr(err) || Auth.isTokenErr(err);
+	}
+
 	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
 		this.options = options;
 		this.host = host;
@@ -4182,8 +4186,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 			if(err) {
-				/* a 4XX error, such as 401, signifies that there is an error that will not be resolved by another transport */
-				if(isFatalErr(err)) {
+				/* a 4XX error, such as 401, signifies that there is an error that will
+				* not be resolved by another transport. Token errors are included as
+				* another transport won't help; need to callback(err) to let the
+				* connectErr handler in connectImpl deal with it */
+				if(isFatalOrTokenErr(err)) {
 					callback(err);
 					return;
 				}
@@ -4237,10 +4244,10 @@ var ConnectionManager = (function() {
 				/* the network is there, so there's a problem with the main host, or
 				 * its dns. Try the fallback hosts. We could try them simultaneously but
 				 * that would potentially cause a huge spike in load on the load balancer */
-				transportParams.host = Utils.arrRandomElement(candidateHosts);
+				transportParams.host = Utils.arrPopRandomElement(candidateHosts);
 				self.chooseTransportForHost(transportParams, self.httpTransports.slice(), function(err, httpTransport) {
 					if(err) {
-						if(isFatalErr(err)) {
+						if(isFatalOrTokenErr(err)) {
 							callback(err);
 							return;
 						}
@@ -4255,7 +4262,7 @@ var ConnectionManager = (function() {
 
 		this.chooseTransportForHost(transportParams, this.httpTransports.slice(), function(err, httpTransport) {
 			if(err) {
-				if(isFatalErr(err)) {
+				if(isFatalOrTokenErr(err)) {
 					callback(err);
 					return;
 				}
@@ -4332,8 +4339,17 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
 
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
-					self.state = self.states.connected;
-					self.sendQueuedMessages();
+					/* Restore pre-sync state. If state has changed in the meantime,
+					 * don't touch it -- since the websocket transport waits a tick before
+					 * disposing itself, it's possible for it to have happily synced
+					 * without err while, unknown to it, the connection has closed in the
+					 * meantime and the ws transport is scheduled for death */
+					if(self.state === self.states.synchronizing) {
+						self.state = self.states.connected;
+					}
+					if(self.state.sendEvents) {
+						self.sendQueuedMessages();
+					}
 				});
 			}
 		});
@@ -4362,11 +4378,19 @@ var ConnectionManager = (function() {
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
-		if(existingState == this.states.closing || existingState == this.states.closed)
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
+		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state)
 			return false;
 
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
+
+		/* if the transport is not connected (eg because it failed during a
+		 * scheduleTransportActivation#onceNoPending wait) then don't activate it */
+		if(!transport.isConnected) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Declining to activate transport ' + transport + ' since it appears to no longer be connected');
+			return false;
+		}
 
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
@@ -4712,7 +4736,8 @@ var ConnectionManager = (function() {
 		var self = this;
 		var auth = this.realtime.auth;
 		var connectErr = function(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + ErrorInfo.fromValues(err).toString());
+			err = ErrorInfo.fromValues(err);
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + err.toString());
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				/* do nothing */
@@ -5073,14 +5098,10 @@ var Transport = (function() {
 			break;
 		case actions.ERROR:
 			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr));
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				/* a transport error */
-				var err = {
-					statusCode: msgErr.statusCode,
-					code: msgErr.code,
-					message: msgErr.message
-				};
+				var err = ErrorInfo.fromValues(msgErr);
 				this.abort(err);
 				break;
 			}
@@ -5571,11 +5592,11 @@ var CometTransport = (function() {
 })();
 
 var Presence = (function() {
+	function noop() {}
 	function Presence(channel) {
 		this.channel = channel;
 		this.basePath = channel.basePath + '/presence';
 	}
-
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.get = function(params, callback) {
@@ -7392,6 +7413,15 @@ var RealtimePresence = (function() {
 		return realtimePresence.channel.realtime.auth.clientId;
 	}
 
+	function isAnonymous(realtimePresence) {
+		var realtime = realtimePresence.channel.realtime;
+		/* If not currently connected, we can't assume that we're an anonymous
+		 * client, as realtime may inform us of our clientId in the CONNECTED
+		 * message. So assume we're not anonymous and leave it to realtime to
+		 * return an error if we are */
+		return !realtime.auth.clientId && realtime.connection.state === 'connected';
+	}
+
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
@@ -7419,14 +7449,14 @@ var RealtimePresence = (function() {
 	Utils.inherits(RealtimePresence, Presence);
 
 	RealtimePresence.prototype.enter = function(data, callback) {
-		if(!getClientId(this))
+		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
-		if(!getClientId(this))
-			throw new Error('clientId must be specified to update presence data', 40012, 400);
+		if(isAnonymous(this))
+			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -7488,7 +7518,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if(!getClientId(this))
+		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		this.leaveClient(undefined, data, callback);
 	};

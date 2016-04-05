@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.16
+ * Ably JavaScript Library v0.8.17
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -506,8 +506,8 @@ var Utils = (function() {
 		};
 	};
 
-	Utils.arrRandomElement = function(arr) {
-		return arr.splice(Math.floor(Math.random() * arr.length));
+	Utils.arrPopRandomElement = function(arr) {
+		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
 	};
 
 	Utils.toQueryString = function(params) {
