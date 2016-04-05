@@ -442,6 +442,13 @@ var ConnectionManager = (function() {
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
 
+		/* if the transport is not connected (eg because it failed during a
+		 * scheduleTransportActivation#onceNoPending wait) then don't activate it */
+		if(!transport.isConnected) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Declining to activate transport ' + transport + ' since it appears to no longer be connected');
+			return false;
+		}
+
 		/* the given transport is connected; this will immediately
 		 * take over as the active transport */
 		var existingActiveProtocol = this.activeProtocol;
