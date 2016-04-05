@@ -1294,5 +1294,36 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		runTestWithEventListener(test, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
 	};
 
+	/*
+	 * Request a token using clientId, then initialize a connection without one,
+	 * and check that can enter presence with the clientId inherited from tokenDetails
+	 * before we're connected, so before we know our clientId
+	 */
+	exports.presence_enter_before_know_clientid = function(test) {
+		test.expect(4);
+		var channelName = "enter_before_know_clientid"
+
+		var enterInheritedClientId = function(cb) {
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				var realtime = helper.AblyRealtime({ token: tokenDetails.token, autoConnect: false });
+				var channel = realtime.channels.get(channelName);
+				test.equal(realtime.auth.clientId, null, 'no clientId when entering');
+				channel.presence.enter("test data", function(err) {
+					test.equal(realtime.auth.clientId, testClientId, 'clientId has been set by the time we entered');
+					cb(err, realtime);
+				});
+				realtime.connect()
+				monitorConnection(test, realtime);
+			});
+		}
+
+		runTestWithEventListener(test, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
