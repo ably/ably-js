@@ -9,6 +9,15 @@ var RealtimePresence = (function() {
 		return realtimePresence.channel.realtime.auth.clientId;
 	}
 
+	function isAnonymous(realtimePresence) {
+		var realtime = realtimePresence.channel.realtime;
+		/* If not currently connected, we can't assume that we're an anonymous
+		 * client, as realtime may inform us of our clientId in the CONNECTED
+		 * message. So assume we're not anonymous and leave it to realtime to
+		 * return an error if we are */
+		return !realtime.auth.clientId && realtime.connection.state === 'connected';
+	}
+
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
@@ -36,14 +45,14 @@ var RealtimePresence = (function() {
 	Utils.inherits(RealtimePresence, Presence);
 
 	RealtimePresence.prototype.enter = function(data, callback) {
-		if(!getClientId(this))
+		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
-		if(!getClientId(this))
-			throw new Error('clientId must be specified to update presence data', 40012, 400);
+		if(isAnonymous(this))
+			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -105,7 +114,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if(!getClientId(this))
+		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		this.leaveClient(undefined, data, callback);
 	};
