@@ -545,5 +545,75 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Reissue token and success reattempt request on token error
+	 * @spec : (RSC14d)
+	 */
+	exports.auth_reissue_token_success = function(test) {
+		test.expect(3);
+		var expiredCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 1000;
+			rest.auth.requestToken(tokenParams, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					test.done();
+					return;
+				}
+				test.ok(true, "Request token success");
+				callback(err, tokenDetails);
+			});
+		}
+		var authOptions = {authCallback: expiredCallback};
+		var token_rest = helper.AblyRest(authOptions);
+		var channel = token_rest.channels.get('reissue_token_channel');
+		channel.publish('first message', 'message data',function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			var first_token = token_rest.auth.tokenDetails;
+			setTimeout(function() {
+				channel.publish('second message', 'message data',function(err) {
+					if(err) {
+						test.ok(false, helper.displayError(err));
+						test.done();
+						return;
+					}
+					var second_token = token_rest.auth.tokenDetails;
+					test.notDeepEqual(first_token, second_token, "Verify new token was set");
+					test.done();
+				});
+			}, 2000);
+		});
+	};
+
+	/*
+	 * Reissue token and fail reattempt request on token error
+	 * @spec : (RSC14d)
+	 */
+	exports.auth_reissue_token_failure = function(test) {
+		test.expect(1);
+		rest.auth.requestToken({ttl:1}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				test.done();
+				return;
+			}
+			var authOptions = {token: tokenDetails};
+			var token_rest = helper.AblyRest(authOptions);
+			var channel = token_rest.channels.get('reissue_token_channel');
+			channel.publish('first message', 'message data',function(err) {
+				if(err) {
+					test.ok(err.code == 40101 && err.statusCode == 401, 'Publish rejected on expired token and no way to request a new one');
+					test.done();
+					return;
+				}
+				test.ok(false, "Publish message was not rejected");
+				test.done();
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
