@@ -600,5 +600,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Try to connect over http
+	 * @spec : (RSA1)
+	 */
+	exports.auth_connect_unsecure = function(test) {
+		test.expect(2);
+
+		var realtime = helper.AblyRealtime({ tls: false });
+		realtime.connection.once('failed', function(stateChange){
+			test.ok(true, 'Verify connection failed');
+			test.equal(stateChange.reason.code, 40103, 'Verify correct failure code');
+			realtime.close();
+			test.done();
+		});
+
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
