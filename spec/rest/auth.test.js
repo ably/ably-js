@@ -554,15 +554,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var rest = helper.AblyRest({ tls: false });
 
-		rest.auth.createTokenRequest(function(err, tokenDetails) {
-
-		if(err) {
-			test.ok(true, 'Verify connection failed');
-			test.equal(err.statusCode, 401, 'Verify error code');
-		} else {
-			test.ok(false, 'Connected unsecure');
-		}
-		test.done();
+		rest.stats({}, function(err, page) {
+			if(err) {
+				test.ok(true, 'Verify connection failed');
+				test.equal(err.code, 40103, 'Verify error code');
+			} else {
+				test.ok(false, 'Connected unsecure');
+			}
+			test.done();
 		});
 	};
 
