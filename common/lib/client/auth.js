@@ -40,23 +40,31 @@ var Auth = (function() {
 
 	function Auth(client, options) {
 		this.client = client;
-		this.tokenParams = options.defaultTokenParams || {};
+		this._setOptions(options);
+	}
 
-		/* RSA7a4: if options.clientId is provided and is not
-		 * null, it overrides defaultTokenParams.clientId */
+	Auth.prototype._setOptions = function(options) {
+		this.tokenParams = this.tokenParams || options.defaultTokenParams || {};
+
 		if(options.clientId) {
-			this.tokenParams.clientId = options.clientId;
-			this.clientId = options.clientId
+			var err = this.setClientId(options.clientId);
+			if(err) { throw err; }
 		}
 
 		/* decide default auth method */
 		var key = options.key;
 		if(key) {
-			if(!options.clientId && !options.useTokenAuth) {
+			if(!this.clientId && !options.useTokenAuth) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
+				if(this.method && this.method !== 'basic') {
+					throw new Error('Unable to update auth options with incompatible auth method');
+				}
 				this.method = 'basic';
+				if(this.key && this.key !== key) {
+					throw new Error('Unable to update auth options with incompatible key');
+				}
 				this.key = key;
 				this.basicKey = toBase64(key);
 				return;
@@ -77,6 +85,9 @@ var Auth = (function() {
 			throw new Error(msg);
 		}
 		/* using token auth, but decide the method */
+		if(this.method && this.method !== 'token') {
+			throw new Error('Unable to update auth options with incompatible auth method');
+		}
 		this.method = 'token';
 		if(options.token) {
 			/* options.token may contain a token string or, for convenience, a TokenDetails */
@@ -97,7 +108,33 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 			throw new Error(msg);
 		}
-	}
+	};
+
+	/**
+	 * Update the authentication options for this client;
+	 * this will also update these options on the realtime connection
+	 * so that they take effect immediately
+	 * @param options
+	 */
+	Auth.prototype.setOptions = function(options) {
+		this._setOptions(options);
+		if(this.client instanceof Realtime) {
+			this.client.connection.connectionManager.onAuthUpdated();
+		}
+	};
+
+	Auth.prototype.setClientId = function(clientId) {
+		if(clientId !== '*') {
+			if(this.clientId && this.clientId !== clientId) {
+				var msg = 'Unable to set incompatible clientId';
+				return new ErrorInfo(msg, 40102, 401);
+			}
+			/* RSA7a4: if options.clientId is provided and is not
+			 * null, it overrides defaultTokenParams.clientId */
+			this.clientId = this.tokenParams.clientId = clientId;
+		}
+		return null;
+	};
 
 	/**
 	 * Ensure valid auth credentials are present. This may rely in an already-known
@@ -157,7 +194,7 @@ var Auth = (function() {
 				}
 				callback(null, (self.tokenDetails = tokenResponse));
 			});
-		}
+		};
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
