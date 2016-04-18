@@ -38,16 +38,34 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
+	function containsAuthInfo(options) {
+		return options.authUrl ||
+		  options.authCallback ||
+		  options.token        ||
+		  options.tokenDetails ||
+		  options.key;
+	}
+
+	function logAndValidateTokenAuthMethod(authOptions) {
+		if(authOptions.authCallback) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
+		} else if(authOptions.authUrl) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
+		} else if(authOptions.key) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
+		} else if(authOptions.tokenDetails) {
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
+		} else {
+			var msg = 'authOptions must include valid authentication parameters';
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+			throw new Error(msg);
+		}
+	}
+
+
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
-
-		/* RSA7a4: if options.clientId is provided and is not
-		 * null, it overrides defaultTokenParams.clientId */
-		if(options.clientId) {
-			this.tokenParams.clientId = options.clientId;
-			this.clientId = options.clientId
-		}
 
 		/* decide default auth method */
 		var key = options.key;
@@ -56,9 +74,7 @@ var Auth = (function() {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
-				this.method = 'basic';
-				this.key = key;
-				this.basicKey = toBase64(key);
+				this._saveBasicOptions(options);
 				return;
 			}
 			/* token auth, but we have the key so we can authorise
@@ -76,35 +92,17 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 			throw new Error(msg);
 		}
-		/* using token auth, but decide the method */
-		this.method = 'token';
-		if(options.token) {
-			/* options.token may contain a token string or, for convenience, a TokenDetails */
-			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
-		}
-		this.tokenDetails = options.tokenDetails;
 
-		if(options.authCallback) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
-		} else if(options.authUrl) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
-		} else if(options.keySecret) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
-		} else if(options.tokenDetails) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
-		} else {
-			var msg = 'options must include valid authentication parameters';
-			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-			throw new Error(msg);
-		}
+		/* using token auth */
+		this._saveTokenOptions(options.defaultTokenParams, options);
+		logAndValidateTokenAuthMethod(this.authOptions);
 	}
 
 	/**
-	 * Ensure valid auth credentials are present. This may rely in an already-known
-	 * and valid token, and will obtain a new token if necessary or explicitly
-	 * requested.
-	 * Authorisation will use the parameters supplied on construction except
-	 * where overridden with the options supplied in the call.
+	 * Instructs the library to use token auth, storing the tokenParams and
+	 * authOptions given as the new defaults for subsequent use.
+	 * Ensures a valid token is present, requesting one if necessary or if
+	 * explicitly requested.
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
@@ -124,15 +122,37 @@ var Auth = (function() {
 	 *               the system will be queried for a time value to use.
 	 *
 	 * @param authOptions
-	 * an object containing the request params:
-	 * - key:        (optional) the key to use; if not specified, a key
-	 *               passed in constructing the Rest interface may be used
+	 * an object containing auth options relevant to token auth:
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
 	 *
 	 * - force       (optional) boolean indicating that a new token should be requested,
 	 *               even if a current token is still valid.
+	 *
+	 * - tokenDetails: (optional) object: An authenticated TokenDetails object.
+	 *
+	 * - token:        (optional) string: the `token` property of a tokenDetails object
+	 *
+	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 *                  authCallback should be a function of (tokenParams, callback) that calls
+	 *                  the callback with (err, result), where result is any of:
+	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
+	 *                  - a tokenDetails object (ie the result of a rest.auth.requestToken call),
+	 *                  - a token string
+	 *
+	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
+	 *                  params, to obtain a signed token request.
+	 *
+	 * - authHeaders:   (optional) a set of application-specific headers to be added to any request
+	 *                  made to the authUrl.
+	 *
+	 * - authParams:    (optional) a set of application-specific query params to be added to any
+	 *                  request made to the authUrl.
+	 *
+	 *
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
+	 *                  requestToken request
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
@@ -145,45 +165,28 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
+		callback = callback || noop;
+		var self = this;
 
-		var self = this,
-			token = this.tokenDetails;
-
-		var requestToken = function() {
-			self.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				callback(null, (self.tokenDetails = tokenResponse));
-			});
+		/* RSA10a: authorise() call implies token auth. If a key is passed it, we
+		 * just check if it doesn't clash and assume we're generating a token from it */
+		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
+			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
+		this._saveTokenOptions(tokenParams, authOptions);
 
-		if(token) {
-			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
-				return;
+		/* _save normalises the tokenParams and authOptions and updates the auth
+		 * object. All subsequent operations should use the values on `this`,
+		 * not the passed in ones. */
+
+		logAndValidateTokenAuthMethod(this.authOptions);
+
+		this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			if(self.force && !err && (self.client instanceof Realtime)) {
+				self.client.connection.connectionManager.onAuthUpdated();
 			}
-			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
-				if(err)
-					callback(err);
-
-				if(token.expires === undefined || (token.expires >= time)) {
-					if(!(authOptions && authOptions.force)) {
-						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-						callback(null, token);
-						return;
-					}
-				} else {
-					/* expired, so remove */
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-					self.tokenDetails = null;
-				}
-				requestToken();
-			});
-		} else {
-			requestToken();
-		}
+			callback(err, tokenDetails);
+		});
 	};
 
 	/**
@@ -211,7 +214,7 @@ var Auth = (function() {
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
 	 *
-	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
 	 *                  requestToken request
 	 *
 	 * @param tokenParams
@@ -244,7 +247,7 @@ var Auth = (function() {
 		}
 
 		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
@@ -254,10 +257,10 @@ var Auth = (function() {
 		var tokenRequestCallback, client = this.client;
 
 		if(authOptions.authCallback) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
+			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
+			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			/* if no authParams given, check if they were given in the URL */
 			if(!authOptions.authParams) {
 				var queryIdx = authOptions.authUrl.indexOf('?');
@@ -379,7 +382,7 @@ var Auth = (function() {
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
 	 *
-	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
 	 *                  requestToken request
 	 *
 	 * @param tokenParams
@@ -409,7 +412,7 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -521,7 +524,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
 		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
-		if (!offsetSet && (queryTime || this.client.options.queryTime)) {
+		if (!offsetSet && (queryTime || this.authOptions.queryTime)) {
 			this.client.time(function(err, time) {
 				if(err) {
 					callback(err);
@@ -531,6 +534,129 @@ var Auth = (function() {
 			});
 		} else {
 			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
+		}
+	};
+
+	Auth.prototype._saveBasicOptions = function(authOptions) {
+		this.method = 'basic';
+		this.key = authOptions.key;
+		this.basicKey = toBase64(authOptions.key);
+		this.authOptions = authOptions || {};
+		this.authOptions.force = false;
+		if('clientId' in authOptions) {
+			this._userSetClientId(authOptions.clientId);
+		}
+	}
+
+	Auth.prototype._saveTokenOptions = function(tokenParams, authOptions) {
+		this.method = 'token';
+
+		this.tokenParams = tokenParams || this.tokenParams || {};
+
+		/* If an authOptions object is passed in that contains new auth info (ie
+		* isn't just {force: true} or something), it becomes the new default, with
+		* the exception of the force attribute (RSA10g), which is set anew on each
+		* call to authorise (defaulting to false) */
+		this.force = false;
+		if(authOptions) {
+			this.force = authOptions.force;
+
+			if(containsAuthInfo(authOptions)) {
+				this.authOptions = authOptions || {};
+				this.authOptions.force = false;
+			} else if('queryTime' in authOptions) {
+				/* queryTime isn't an authInfo so can't replace the current
+				* authOptions, but per RSA10g, should still be stored */
+				this.authOptions.queryTime = authOptions.queryTime;
+			}
+
+			if(this.force) {
+				/* get rid of current token even if still valid */
+				this.tokenDetails = null;
+			}
+
+			if(authOptions.token) {
+				/* options.token may contain a token string or, for convenience, a TokenDetails */
+				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
+			}
+			if(authOptions.tokenDetails) {
+				this.tokenDetails = authOptions.tokenDetails;
+			}
+
+			if('clientId' in authOptions) {
+				this._userSetClientId(authOptions.clientId);
+			}
+		}
+	};
+
+	Auth.prototype._ensureValidAuthCredentials = function(callback) {
+		var self = this,
+			token = this.tokenDetails;
+
+		var requestToken = function() {
+			self.requestToken(self.tokenParams, self.authOptions, function(err, tokenResponse) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, (self.tokenDetails = tokenResponse));
+			});
+		};
+
+		if(token) {
+			if(this._tokenClientIdMismatch(token.clientId)) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
+				return;
+			}
+			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
+				if(err)
+					callback(err);
+
+				if(token.expires === undefined || (token.expires >= time)) {
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+					callback(null, token);
+					return;
+				} else {
+					/* expired, so remove */
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+					self.tokenDetails = null;
+				}
+				requestToken();
+			});
+		} else {
+			requestToken();
+		}
+	};
+
+
+	/* User-set: check types, '*' is disallowed, throw any errors */
+	Auth.prototype._userSetClientId = function(clientId) {
+		if(!(typeof(clientId) === 'string' || clientId === null)) {
+			throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
+		} else if(clientId === '*') {
+			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorise(), pass it in as a tokenParam: authorise({clientId: "*"}, authOptions)', 40012, 400);
+		} else {
+			var err = this._uncheckedSetClientId(clientId);
+			if(err) throw err;
+		}
+	};
+
+	/* Ably-set: no typechecking, '*' is allowed but not set on this.clientId), return errors to the caller */
+	Auth.prototype._uncheckedSetClientId = function(clientId) {
+		if(this._tokenClientIdMismatch(clientId)) {
+			/* Should never happen in normal circumstances as realtime should
+			 * recognise mismatch and return an error */
+			var msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
+			var err = new ErrorInfo(msg, 40102, 401);
+			Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
+			return err;
+		} else if(clientId === '*') {
+			this.tokenParams.clientId = clientId;
+		} else {
+			/* RSA7a4: if options.clientId is provided and is not
+			 * null, it overrides defaultTokenParams.clientId */
+			this.clientId = this.tokenParams.clientId = clientId;
+			return null;
 		}
 	};
 
