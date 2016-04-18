@@ -600,5 +600,113 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * use authorise({force: true}) to reauth with a token with a different set of capabilities
+	 */
+	exports.reauth_tokenDetails = function(test) {
+		test.expect(2)
+		var rest = helper.AblyRest(),
+			realtime,
+			channel,
+			clientId = 'testClientId';
+
+		var getFirstToken = function(callback) {
+			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*']}}, null, function(err, tokenDetails) {
+				callback(err, tokenDetails);
+			})
+		},
+
+		connect = function(tokenDetails, callback) {
+			realtime = helper.AblyRealtime({tokenDetails: tokenDetails});
+			realtime.connection.once('connected', function() { callback() })
+		},
+
+		checkCantAttach = function(callback) {
+			channel = realtime.channels.get('rightchannel');
+			channel.attach(function(err) {
+				test.ok(err && err.code === 40160, 'check channel is denied access')
+				callback()
+			})
+		},
+
+		getSecondToken = function(callback) {
+			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*'], 'rightchannel': ['*']}}, null, function(err, tokenDetails) {
+				callback(err, tokenDetails);
+			})
+		},
+
+		reAuth = function(tokenDetails, callback) {
+			realtime.auth.authorise(null, {force: true, tokenDetails: tokenDetails}, callback);
+		},
+
+		checkCanNowAttach = function(stateChange, callback) {
+			channel.attach(function(err) {
+				callback(err);
+			})
+		};
+
+		async.waterfall([
+			getFirstToken,
+			connect,
+			checkCantAttach,
+			getSecondToken,
+			reAuth,
+			checkCanNowAttach,
+		], function(err) {
+			test.ok(!err, err && displayError(err))
+			closeAndFinish(test, realtime);
+		})
+	}
+
+	/*
+	 * use authorise({force: true}) to force a reauth using an existing authCallback
+	 */
+	exports.reauth_authCallback = function(test) {
+		test.expect(5);
+
+		var realtime, rest = helper.AblyRest();
+		var clientId = "testclientid";
+		var authCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 5000;
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
+
+		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+		realtime.connection.once('connected', function(){
+			/* 3s after original token issued, reauth */
+			setTimeout(function(){
+				realtime.auth.authorise(null, {force: true}, function(err) {
+					test.ok(!err, err && displayError(err));
+				})
+			}, 3000)
+			test.ok(true, 'Verify connection connected');
+
+			/* statechanges due to the reauth */
+			realtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection disconnected');
+				test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
+				realtime.connection.once('connected', function(){
+					test.ok(true, 'Verify connection reconnected');
+					/* after another 3s (>=1s after would be disconnected under the original token), we're done */
+					setTimeout(function(){
+						closeAndFinish(test, realtime);
+					}, 3000)
+					realtime.connection.once('disconnected', function(stateChange){
+						test.ok(false, 'should not be disconnected a second time, as new token should last till test ends')
+					})
+				});
+			});
+		});
+
+		monitorConnection(test, realtime);
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
