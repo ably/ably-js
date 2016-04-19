@@ -458,18 +458,13 @@ var ConnectionManager = (function() {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
-		var auth = this.realtime.auth;
-		if(clientId && !(clientId === '*')) {
-			if(auth.clientId && auth.clientId != clientId) {
-				/* Should never happen in normal circumstances as realtime should
-				 * recognise mismatch and return an error */
-				var msg = 'Unexpected mismatch between expected and received clientId'
-				var err = new ErrorInfo(msg, 40102, 401);
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+		if(clientId) {
+			var err = this.realtime.auth.setClientId(clientId);
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', err.message);
 				transport.abort(err);
 				return;
 			}
-			auth.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
@@ -874,6 +869,15 @@ var ConnectionManager = (function() {
 		/* If there was an active transport, this will probably be
 		 * preempted by the notifyState call in deactivateTransport */
 		this.notifyState({state: 'closed'});
+	};
+
+	ConnectionManager.prototype.onAuthUpdated = function() {
+		var state = this.state.state;
+		if(state == 'connected' || state == 'connecting') {
+			/* in the current protocol version we are not able to update auth params on the fly;
+			 * so disconnect, and the new auth params will be used for subsequent reconnection */
+			this.disconnectAllTransports();
+		}
 	};
 
 	ConnectionManager.prototype.disconnectAllTransports = function() {
