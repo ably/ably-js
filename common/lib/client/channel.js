@@ -21,16 +21,13 @@ var Channel = (function() {
 			var cipherResult = Crypto.getCipher(options.cipher);
 			options.cipher = cipherResult.cipherParams;
 			options.channelCipher = cipherResult.cipher;
-			callback(null);
 		} else if('cipher' in options) {
 			/* Don't deactivate an existing cipher unless options
 			 * has a 'cipher' key that's falsey */
 			options.cipher = null;
 			options.channelCipher = null;
-			callback(null);
-		} else {
-			callback(null);
 		}
+		callback(null);
 	};
 
 	Channel.prototype.history = function(params, callback) {
