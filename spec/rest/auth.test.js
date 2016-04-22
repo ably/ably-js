@@ -615,5 +615,57 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Reissue token and success reattempt request on token error
+	 * @spec : (RSC14d)
+	 */
+	exports.auth_reissue_token_single = function(test) {
+		test.expect(3);
+		var single_token = null;
+		var request_counter = 0;
+
+		var staticTokenCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 1;
+			//Always return the same token
+			if(single_token == null) {
+				rest.auth.requestToken(tokenParams, function(err, tokenDetails) {
+					if(err) {
+						console.log("Token error");
+
+						test.ok(false, helper.displayError(err));
+						test.done();
+						return;
+					}
+					single_token = tokenDetails;
+					test.ok(true, "Request token success");
+					callback(err, single_token);
+				});
+			} else {
+				request_counter++;
+				if(request_counter > 1) {
+					test.ok(false, "Request was repeated more than once");
+					test.done();
+					return;
+				}
+				test.ok(true, "Request token return same token");
+				callback(null, single_token);
+			}
+		}
+
+		var authOptions = {authCallback: staticTokenCallback};
+		var token_rest = helper.AblyRest(authOptions);
+		var channel = token_rest.channels.get('reissue_token_channel');
+
+		channel.publish('first message', 'message data', function(err) {
+			if(err) {
+				test.ok(err.code == 40101 && err.statusCode == 401, 'Publish rejected on expired token and no way to request a new one');
+				test.done();
+				return;
+			}
+			test.ok(false, "Message was published with expired token.");
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
