@@ -62,40 +62,46 @@ var Auth = (function() {
 		}
 	}
 
+	function basicAuthForced(options) {
+		return 'useTokenAuth' in options && !options.useTokenAuth;
+	}
+
+	/* RSA4 */
+	function useTokenAuth(options) {
+		return options.useTokenAuth ||
+			(!basicAuthForced(options) &&
+			 (options.clientId     ||
+			  options.authCallback ||
+			  options.authUrl      ||
+			  options.token        ||
+			  options.tokenDetails))
+	}
 
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
 
-		/* decide default auth method */
-		var key = options.key;
-		if(key) {
-			if(!options.clientId && !options.useTokenAuth) {
-				/* we have the key and do not need to authenticate the client,
-				 * so default to using basic auth */
-				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
-				this._saveBasicOptions(options);
-				return;
-			}
-			/* token auth, but we have the key so we can authorise
-			 * ourselves */
-			if(!hmac) {
+		if(useTokenAuth(options)) {
+			/* Token auth */
+			if(options.key && !hmac) {
 				var msg = 'client-side token request signing not supported';
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 				throw new Error(msg);
 			}
+			this._saveTokenOptions(options.defaultTokenParams, options);
+			logAndValidateTokenAuthMethod(this.authOptions);
+		} else {
+			/* Basic auth */
+			if(options.clientId || !options.key) {
+				var msg = 'Cannot authenticate with basic auth' +
+					(options.clientId ? ' as a clientId implies token auth' :
+					 (!options.key ? ' as no key was given' : ''));
+					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+					 throw new Error(msg);
+			}
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
+			this._saveBasicOptions(options);
 		}
-		if('useTokenAuth' in options && !options.useTokenAuth) {
-			var msg = 'option useTokenAuth was falsey, but basic auth cannot be used' +
-				(options.clientId ? ' as a clientId implies token auth' :
-				(!options.key ? ' as a key was not given' : ''));
-			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-			throw new Error(msg);
-		}
-
-		/* using token auth */
-		this._saveTokenOptions(options.defaultTokenParams, options);
-		logAndValidateTokenAuthMethod(this.authOptions);
 	}
 
 	/**
