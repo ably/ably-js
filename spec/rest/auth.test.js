@@ -630,8 +630,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			if(single_token == null) {
 				rest.auth.requestToken(tokenParams, function(err, tokenDetails) {
 					if(err) {
-						console.log("Token error");
-
 						test.ok(false, helper.displayError(err));
 						test.done();
 						return;
