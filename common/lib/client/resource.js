@@ -3,20 +3,20 @@ var Resource = (function() {
 
 	function Resource() {}
 
-	function withAuthDetails(rest, headers, params, errCallback, opCallback) {
+	function withAuthDetails(rest, headers, params, errCallback, opCallback, allowReauth) {
 		if (Http.supportsAuthHeaders) {
 			rest.auth.getAuthHeaders(function(err, authHeaders) {
 				if(err)
 					errCallback(err);
 				else
-					opCallback(Utils.mixin(authHeaders, headers), params);
+					opCallback(Utils.mixin(authHeaders, headers), params, allowReauth);
 			});
 		} else {
 			rest.auth.getAuthParams(function(err, authParams) {
 				if(err)
 					errCallback(err);
 				else
-					opCallback(headers, Utils.mixin(authParams, params));
+					opCallback(headers, Utils.mixin(authParams, params), allowReauth);
 			});
 		}
 	}
@@ -98,13 +98,13 @@ var Resource = (function() {
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
-		function doGet(headers, params) {
+		function doGet(headers, params, allowReauth) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
 			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
-				if(err && Auth.isTokenErr(err)) {
+				if(err && Auth.isTokenErr(err) && allowReauth) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -112,14 +112,14 @@ var Resource = (function() {
 							return;
 						}
 						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+						withAuthDetails(rest, origheaders, origparams, callback, doGet, false);
 					});
 					return;
 				}
 				callback(err, res, headers, unpacked);
 			});
 		}
-		withAuthDetails(rest, origheaders, origparams, callback, doGet);
+		withAuthDetails(rest, origheaders, origparams, callback, doGet, true);
 	};
 
 	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
@@ -132,7 +132,7 @@ var Resource = (function() {
 			origparams['envelope'] = envelope;
 		}
 
-		function doPost(headers, params) {
+		function doPost(headers, params, allowReauth) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
@@ -146,7 +146,7 @@ var Resource = (function() {
 			}
 
 			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
-				if(err && Auth.isTokenErr(err)) {
+				if(err && Auth.isTokenErr(err) && allowReauth) {
 					/* token has expired, so get a new one */
 					rest.auth.authorise(null, {force:true}, function(err) {
 						if(err) {
@@ -154,14 +154,14 @@ var Resource = (function() {
 							return;
 						}
 						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doPost);
+						withAuthDetails(rest, origheaders, origparams, callback, doPost, false);
 					});
 					return;
 				}
 				callback(err, res, headers, unpacked);
 			});
 		}
-		withAuthDetails(rest, origheaders, origparams, callback, doPost);
+		withAuthDetails(rest, origheaders, origparams, callback, doPost, true);
 	};
 
 	return Resource;
