@@ -38,12 +38,16 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	function containsAuthInfo(options) {
-		return options.authUrl ||
-		  options.authCallback ||
-		  options.token        ||
-		  options.tokenDetails ||
-		  options.key;
+	/* RSA10j/d */
+	function persistAuthOptions(options) {
+		for(var prop in options) {
+			if(!(prop === 'force'       ||
+			     options[prop] === null ||
+			     options[prop] === undefined)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function logAndValidateTokenAuthMethod(authOptions) {
@@ -188,6 +192,9 @@ var Auth = (function() {
 		logAndValidateTokenAuthMethod(this.authOptions);
 
 		this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			/* RSA10g */
+			self.tokenParams.timestamp = null;
+			/* RTC8 */
 			if(self.force && !err && (self.client instanceof Realtime)) {
 				self.client.connection.connectionManager.onAuthUpdated();
 			}
@@ -557,6 +564,9 @@ var Auth = (function() {
 	Auth.prototype._saveTokenOptions = function(tokenParams, authOptions) {
 		this.method = 'token';
 
+		/* We temporarily persist tokenParams.timestamp in case a new token needs
+		 * to be requested, then null it out in the callback of
+		 * _ensureValidAuthCredentials for RSA10g compliance */
 		this.tokenParams = tokenParams || this.tokenParams || {};
 
 		/* If an authOptions object is passed in that contains new auth info (ie
@@ -567,30 +577,26 @@ var Auth = (function() {
 		if(authOptions) {
 			this.force = authOptions.force;
 
-			if(containsAuthInfo(authOptions)) {
-				this.authOptions = authOptions || {};
-				this.authOptions.force = false;
-			} else if('queryTime' in authOptions) {
-				/* queryTime isn't an authInfo so can't replace the current
-				* authOptions, but per RSA10g, should still be stored */
-				this.authOptions.queryTime = authOptions.queryTime;
-			}
-
 			if(this.force) {
 				/* get rid of current token even if still valid */
 				this.tokenDetails = null;
 			}
 
-			if(authOptions.token) {
-				/* options.token may contain a token string or, for convenience, a TokenDetails */
-				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
-			}
-			if(authOptions.tokenDetails) {
-				this.tokenDetails = authOptions.tokenDetails;
-			}
+			if(persistAuthOptions(authOptions)) {
+				this.authOptions = authOptions;
+				this.authOptions.force = false;
 
-			if('clientId' in authOptions) {
-				this._userSetClientId(authOptions.clientId);
+				if(authOptions.token) {
+					/* options.token may contain a token string or, for convenience, a TokenDetails */
+					this.authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
+				}
+				if(authOptions.tokenDetails) {
+					this.tokenDetails = authOptions.tokenDetails;
+				}
+
+				if('clientId' in authOptions) {
+					this._userSetClientId(authOptions.clientId);
+				}
 			}
 		}
 	};
