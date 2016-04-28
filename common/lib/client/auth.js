@@ -194,8 +194,10 @@ var Auth = (function() {
 		this._ensureValidAuthCredentials(function(err, tokenDetails) {
 			/* RSA10g */
 			self.tokenParams.timestamp = null;
-			/* RTC8 */
-			if(self.force && !err && (self.client instanceof Realtime)) {
+			/* RTC8
+			 * use self.client.connection as a proxy for (self.client instanceof Realtime),
+			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
+			if(self.force && !err && self.client.connection) {
 				self.client.connection.connectionManager.onAuthUpdated();
 			}
 			callback(err, tokenDetails);
