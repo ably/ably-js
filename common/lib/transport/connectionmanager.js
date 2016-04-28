@@ -900,11 +900,18 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onAuthUpdated = function() {
+		/* in the current protocol version we are not able to update auth params on the fly;
+		 * so disconnect, and the new auth params will be used for subsequent reconnection */
 		var state = this.state.state;
-		if(state == 'connected' || state == 'connecting') {
-			/* in the current protocol version we are not able to update auth params on the fly;
-			 * so disconnect, and the new auth params will be used for subsequent reconnection */
+		if(state == 'connected') {
 			this.disconnectAllTransports();
+		} else if(state == 'connecting' || state == 'disconnected') {
+			/* the instant auto-reconnect is only for connected->disconnected transition */
+			this.disconnectAllTransports();
+			var self = this;
+			Utils.nextTick(function() {
+				self.requestState({state: 'connecting'});
+			});
 		}
 	};
 
