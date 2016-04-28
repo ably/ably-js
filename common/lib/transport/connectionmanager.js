@@ -787,7 +787,7 @@ var ConnectionManager = (function() {
 
 		var self = this;
 		var auth = this.realtime.auth;
-		var connectErr = function(err) {
+		var connectErr = function(err, allowReauth) {
 			err = ErrorInfo.fromValues(err);
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.connectImpl()', 'Connection attempt failed with error; err = ' + err.toString());
 			var state = self.state;
@@ -795,11 +795,11 @@ var ConnectionManager = (function() {
 				/* do nothing */
 				return;
 			}
-			if(Auth.isTokenErr(err)) {
+			if(Auth.isTokenErr(err) && allowReauth) {
 				/* re-get a token */
 				auth.authorise(null, {force: true}, function(err) {
 					if(err) {
-						connectErr(err);
+						connectErr(err, false);
 						return;
 					}
 					self.connectImpl();
@@ -819,7 +819,7 @@ var ConnectionManager = (function() {
 		var tryConnect = function() {
 			self.chooseTransport(function(err) {
 				if(err) {
-					connectErr(err);
+					connectErr(err, true);
 					return;
 				}
 				/* nothing to do .. as transport connection is initiated
@@ -833,7 +833,7 @@ var ConnectionManager = (function() {
 			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
 			auth.authorise(null, authOptions, function(err) {
 				if(err)
-					connectErr(err);
+					connectErr(err, false);
 				else
 					tryConnect();
 			});
