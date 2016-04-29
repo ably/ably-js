@@ -354,6 +354,11 @@ var ConnectionManager = (function() {
 			} else {
 				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
 			}
+			if(mode === 'recover' && self.options.onPageRefresh === 'persist') {
+				/* After a successful recovery, we remove the recover cookie we used to
+				* connect, so other browser tabs don't try to reuse the same connection params */
+				self.unpersistConnection();
+			}
 		});
 
 		var eventHandler = function(event) {
@@ -577,9 +582,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
-		if(this.options.recover === true)
-			this.persistConnection();
-
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -588,7 +590,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = undefined;
 		this.realtime.connection.recoveryKey = null;
 		this.msgSerial = 0;
-		this.unpersistConnection();
 	};
 
 	/**
