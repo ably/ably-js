@@ -123,6 +123,74 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
+	/* uses internal realtime knowledge of the format of the connection key to
+	* check if a connection key is the result of a successful recovery of another */
+	function sameConnection(keyA, keyB) {
+		return keyA.split("-")[0] === keyB.split("-")[0];
+	}
+
+	exports.page_refresh_with_onpagerefresh_persist = function(test) {
+		var realtime = helper.AblyRealtime({ onPageRefresh: 'persist' }),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'connected', 'check connection state initially unaffected by page refresh');
+			simulateDroppedConnection(realtime);
+
+			var newRealtime = helper.AblyRealtime({ onPageRefresh: 'persist' });
+			newRealtime.connection.once('connected', function() {
+				test.ok(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the connection from the cookie');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
+		});
+	};
+
+	exports.page_refresh_with_onpagerefresh_close = function(test) {
+		var realtime = helper.AblyRealtime({ onPageRefresh: 'close' }),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'closing', 'check page refresh triggered a close');
+
+			var newRealtime = helper.AblyRealtime({ onPageRefresh: 'persist' });
+			newRealtime.connection.once('connected', function() {
+				test.ok(!sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime could not recover old even if it tries');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
+		});
+	};
+
+	exports.page_refresh_with_onpagerefresh_none = function(test) {
+		var realtime = helper.AblyRealtime({ onPageRefresh: 'none' }),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'connected', 'check connection state initially unaffected by page refresh');
+			simulateDroppedConnection(realtime);
+
+			var newRealtime = helper.AblyRealtime({ onPageRefresh: 'persist' });
+			newRealtime.connection.once('connected', function() {
+				test.ok(!sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime could not recover old even if it tries');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
+		});
+	};
+
 	return module.exports = supportedBrowser() ? helper.withTimeout(exports) : {};
 
 });

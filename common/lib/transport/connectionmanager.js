@@ -46,18 +46,18 @@ var ConnectionManager = (function() {
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
-				if(options.recover === true) {
+				if(options.recover) {
+					var match = options.recover.match(/^(\w+):(\w+)$/);
+					if(match) {
+						params.recover = match[1];
+						params.connection_serial = match[2];
+					}
+				} else {
 					var connectionKey = readCookie(connectionKeyCookie),
 						connectionSerial = readCookie(connectionSerialCookie);
 					if(connectionKey !== null && connectionSerial !== null) {
 						params.recover = connectionKey;
 						params.connection_serial = connectionSerial;
-					}
-				} else {
-					var match = options.recover.match(/^(\w+):(\w+)$/);
-					if(match) {
-						params.recover = match[1];
-						params.connection_serial = match[2];
 					}
 				}
 				break;
@@ -125,13 +125,17 @@ var ConnectionManager = (function() {
 			throw new Error(msg);
 		}
 
+		var self = this;
+
 		/* intercept close event in browser to persist connection id if requested */
-		if(createCookie && options.recover === true && window.addEventListener)
+		if(createCookie && options.onPageRefresh === 'persist' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		if(createCookie && options.onPageRefresh === 'close' && window.addEventListener)
+			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}) });
 
 		/* Listen for online and offline events */
 		if(typeof window === "object" && window.addEventListener) {
-			var self = this;
 			window.addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
@@ -170,7 +174,7 @@ var ConnectionManager = (function() {
 		/* set up the transport params */
 		/* first attempt the main host; no need to check for general connectivity first.
 		 * Inherit any connection state */
-		var mode = this.connectionKey ? 'resume' : (this.options.recover ? 'recover' : 'clean');
+		var mode = this.connectionKey ? 'resume' : ((this.options.onPageRefresh === 'persist') ? 'recover' : 'clean');
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionKey, this.connectionSerial);
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + this.connectionKey + '; connectionSerial = ' + this.connectionSerial));
 		var self = this;
