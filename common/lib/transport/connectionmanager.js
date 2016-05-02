@@ -4,6 +4,7 @@ var ConnectionManager = (function() {
 	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
 	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
+	var clientIdCookie = 'ably-connection-clientid';
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -54,10 +55,16 @@ var ConnectionManager = (function() {
 					}
 				} else {
 					var connectionKey = readCookie(connectionKeyCookie),
-						connectionSerial = readCookie(connectionSerialCookie);
+						connectionSerial = readCookie(connectionSerialCookie),
+						formerClientId = readCookie(clientIdCookie);
 					if(connectionKey !== null && connectionSerial !== null) {
-						params.recover = connectionKey;
-						params.connection_serial = connectionSerial;
+						if(formerClientId == options.clientId) {
+							/* Loose equality is deliberate; want null to compare eq to undefined */
+							params.recover = connectionKey;
+							params.connection_serial = connectionSerial;
+						} else {
+							Logger.logAction(Logger.LOG_MAJOR, 'TransportParams.getConnectParams()', 'Can’t recover connection as clientIds were incompatible: old was "' + formerClientId + '", new was "' + options.clientId + '"');
+						}
 					}
 				}
 				break;
@@ -601,6 +608,9 @@ var ConnectionManager = (function() {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
 				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
 				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
+				if(this.realtime.auth.clientId) {
+					createCookie(clientIdCookie, this.realtime.auth.clientId, this.options.timeouts.connectionPersistTimeout);
+				}
 			}
 		}
 	};
@@ -613,6 +623,7 @@ var ConnectionManager = (function() {
 		if(eraseCookie) {
 			eraseCookie(connectionKeyCookie);
 			eraseCookie(connectionSerialCookie);
+			eraseCookie(clientIdCookie);
 		}
 	};
 
