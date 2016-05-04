@@ -1,6 +1,7 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
+	var binaryType = isBrowser ? 'arraybuffer' : 'nodebuffer';
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -69,7 +70,7 @@ var WebSocketTransport = (function() {
 			var connectParams = params.getConnectParams(authParams);
 			try {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
-				wsConnection.binaryType = 'arraybuffer';
+				wsConnection.binaryType = binaryType;
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
