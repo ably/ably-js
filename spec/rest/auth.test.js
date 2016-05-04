@@ -465,7 +465,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * createTokenRequest uses the key it was initialized with if authOptions is null
+	 * createTokenRequest uses the key it was initialised with if authOptions is null
 	 */
 	exports.auth_createTokenRequest_given_key = function(test) {
 		test.expect(1);
@@ -513,7 +513,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * createTokenRequest uses the key it was initialized with if authOptions does not have a "key" key
+	 * createTokenRequest uses the key it was initialised with if authOptions does not have a "key" key
 	 */
 	exports.auth_createTokenRequest_given_key2 = function(test) {
 		test.expect(1);
@@ -636,7 +636,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					}
 					single_token = tokenDetails;
 					test.ok(true, "Request token success");
-					callback(err, single_token);
+					callback(err, single_token.token);
 				});
 			} else {
 				request_counter++;
@@ -646,7 +646,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					return;
 				}
 				test.ok(true, "Request token return same token");
-				callback(null, single_token);
+				callback(null, single_token.token);
 			}
 		}
 
@@ -656,7 +656,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		channel.publish('first message', 'message data', function(err) {
 			if(err) {
-				test.ok(err.code == 40101 && err.statusCode == 401, 'Publish rejected on expired token and no way to request a new one');
+				test.ok(err.code == 40142 && err.statusCode == 401, 'Publish rejected on expired token and no way to request a new one');
 				test.done();
 				return;
 			}
