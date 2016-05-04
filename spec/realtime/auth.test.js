@@ -608,10 +608,24 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(2);
 
 		var realtime = helper.AblyRealtime({ tls: false });
+		var def_chooseTransportForHost = realtime.connection.connectionManager.chooseTransportForHost;
+
+		realtime.connection.connectionManager.chooseTransportForHost = function(transportParams, candidateTransports, callback) {
+			test.ok(false, 'Attempt to establish connection');
+
+			//Clean intercepted method
+			realtime.connection.connectionManager.chooseTransportForHost = def_chooseTransportForHost;
+			test.done();
+			return;
+		};
+
 		realtime.connection.once('failed', function(stateChange){
 			test.ok(true, 'Verify connection failed');
 			test.equal(stateChange.reason.code, 40103, 'Verify correct failure code');
 			realtime.close();
+
+			//Clean intercepted method
+			realtime.connection.connectionManager.chooseTransportForHost = def_chooseTransportForHost;
 			test.done();
 		});
 
