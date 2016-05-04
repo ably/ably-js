@@ -1,6 +1,7 @@
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
+	var hexy = require('hexy');
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -93,8 +94,16 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.onWsData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
+		var message;
 		try {
-			this.onProtocolMessage(ProtocolMessage.decode(data, this.format));
+			message = ProtocolMessage.decode(data, this.format);
+		} catch (e) {
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception decoding channel message: ' + e.stack);
+			console.log('data: ');
+			console.log(data);
+		}
+		try {
+			this.onProtocolMessage(message);
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
