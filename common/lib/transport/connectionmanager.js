@@ -1,9 +1,8 @@
 var ConnectionManager = (function() {
-	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
-	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
-	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
-	var connectionKeyCookie = 'ably-connection-key';
-	var connectionSerialCookie = 'ably-connection-serial';
+	var getFromSession    = (typeof(SessionStorage) !== 'undefined' && SessionStorage.get);
+	var setInSession      = (typeof(SessionStorage) !== 'undefined' && SessionStorage.set);
+	var removeFromSession = (typeof(SessionStorage) !== 'undefined' && SessionStorage.remove);
+	var sessionRecoveryName = 'ably-connection-recovery';
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -47,11 +46,10 @@ var ConnectionManager = (function() {
 				break;
 			case 'recover':
 				if(options.recover === true) {
-					var connectionKey = readCookie(connectionKeyCookie),
-						connectionSerial = readCookie(connectionSerialCookie);
-					if(connectionKey !== null && connectionSerial !== null) {
-						params.recover = connectionKey;
-						params.connection_serial = connectionSerial;
+					var session = getFromSession(sessionRecoveryName);
+					if(session !== null) {
+						params.recover = session.connectionKey;
+						params.connection_serial = session.connectionSerial;
 					}
 				} else {
 					var match = options.recover.match(/^(\w+):(\w+)$/);
@@ -126,7 +124,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(createCookie && options.recover === true && window.addEventListener)
+		if(setInSession && options.recover === true && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
 		/* Listen for online and offline events */
@@ -592,10 +590,9 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(createCookie) {
+		if(setInSession) {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
-				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
-				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
+				setInSession(sessionRecoveryName, {connectionKey: this.connectionKey, connectionSerial: this.connectionSerial}, this.options.timeouts.connectionPersistTimeout);
 			}
 		}
 	};
@@ -605,9 +602,8 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.unpersistConnection = function() {
-		if(eraseCookie) {
-			eraseCookie(connectionKeyCookie);
-			eraseCookie(connectionSerialCookie);
+		if(removeFromSession) {
+			removeFromSession(sessionRecoveryName);
 		}
 	};
 
