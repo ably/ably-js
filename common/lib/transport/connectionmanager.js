@@ -370,6 +370,13 @@ var ConnectionManager = (function() {
 			} else {
 				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
 			}
+
+			if(mode === 'recover' && self.options.recover) {
+				/* After a successful recovery, we unpersist, as a recovery key cannot
+				* be used more than once */
+				self.options.recover = null;
+				self.unpersistConnection();
+			}
 		});
 
 		var eventHandler = function(event) {
@@ -593,8 +600,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
-		if(this.options.recover === true)
-			this.persistConnection();
 
 	};
 
