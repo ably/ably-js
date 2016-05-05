@@ -62,6 +62,19 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = options.queueEvents;
 	}
 
+	if(options.recover === true) {
+		Logger.deprecated('{recover: true}', '{onPageRefresh: "persist"}');
+		options.recover = undefined;
+		options.onPageRefresh = 'persist';
+	} else if(!('onPageRefresh' in options)) {
+		options.onPageRefresh = 'none';
+	} else if(options.onPageRefresh !== 'none' &&
+	          options.onPageRefresh !== 'close' &&
+	          options.onPageRefresh !== 'persist') {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions()', options.onPageRefresh.toString() + ' is an invalid value for options.onPageRefresh. Valid values are: "none", "close", or "persist".');
+		options.onPageRefresh = 'none';
+	}
+
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 

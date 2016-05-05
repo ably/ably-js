@@ -4,6 +4,7 @@ var ConnectionManager = (function() {
 	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
 	var connectionKeyCookie = 'ably-connection-key';
 	var connectionSerialCookie = 'ably-connection-serial';
+	var clientIdCookie = 'ably-connection-clientid';
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -46,18 +47,24 @@ var ConnectionManager = (function() {
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
-				if(options.recover === true) {
-					var connectionKey = readCookie(connectionKeyCookie),
-						connectionSerial = readCookie(connectionSerialCookie);
-					if(connectionKey !== null && connectionSerial !== null) {
-						params.recover = connectionKey;
-						params.connection_serial = connectionSerial;
-					}
-				} else {
+				if(options.recover) {
 					var match = options.recover.match(/^(\w+):(\w+)$/);
 					if(match) {
 						params.recover = match[1];
 						params.connection_serial = match[2];
+					}
+				} else {
+					var connectionKey = readCookie(connectionKeyCookie),
+						connectionSerial = readCookie(connectionSerialCookie),
+						formerClientId = readCookie(clientIdCookie);
+					if(connectionKey !== null && connectionSerial !== null) {
+						if(formerClientId == options.clientId) {
+							/* Loose equality is deliberate; want null to compare eq to undefined */
+							params.recover = connectionKey;
+							params.connection_serial = connectionSerial;
+						} else {
+							Logger.logAction(Logger.LOG_MAJOR, 'TransportParams.getConnectParams()', 'Can’t recover connection as clientIds were incompatible: old was "' + formerClientId + '", new was "' + options.clientId + '"');
+						}
 					}
 				}
 				break;
@@ -125,13 +132,17 @@ var ConnectionManager = (function() {
 			throw new Error(msg);
 		}
 
+		var self = this;
+
 		/* intercept close event in browser to persist connection id if requested */
-		if(createCookie && options.recover === true && window.addEventListener)
+		if(createCookie && options.onPageRefresh === 'persist' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		if(createCookie && options.onPageRefresh === 'close' && window.addEventListener)
+			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}) });
 
 		/* Listen for online and offline events */
 		if(typeof window === "object" && window.addEventListener) {
-			var self = this;
 			window.addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
@@ -170,7 +181,7 @@ var ConnectionManager = (function() {
 		/* set up the transport params */
 		/* first attempt the main host; no need to check for general connectivity first.
 		 * Inherit any connection state */
-		var mode = this.connectionKey ? 'resume' : (this.options.recover ? 'recover' : 'clean');
+		var mode = this.connectionKey ? 'resume' : ((this.options.onPageRefresh === 'persist') ? 'recover' : 'clean');
 		var transportParams = new TransportParams(this.options, null, mode, this.connectionKey, this.connectionSerial);
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + this.connectionKey + '; connectionSerial = ' + this.connectionSerial));
 		var self = this;
@@ -349,6 +360,11 @@ var ConnectionManager = (function() {
 				self.scheduleTransportActivation(transport);
 			} else {
 				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
+			}
+			if(mode === 'recover' && self.options.onPageRefresh === 'persist') {
+				/* After a successful recovery, we remove the recover cookie we used to
+				* connect, so other browser tabs don't try to reuse the same connection params */
+				self.unpersistConnection();
 			}
 		});
 
@@ -573,9 +589,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
-		if(this.options.recover === true)
-			this.persistConnection();
-
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -584,7 +597,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = undefined;
 		this.realtime.connection.recoveryKey = null;
 		this.msgSerial = 0;
-		this.unpersistConnection();
 	};
 
 	/**
@@ -596,6 +608,9 @@ var ConnectionManager = (function() {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
 				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
 				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
+				if(this.realtime.auth.clientId) {
+					createCookie(clientIdCookie, this.realtime.auth.clientId, this.options.timeouts.connectionPersistTimeout);
+				}
 			}
 		}
 	};
@@ -608,6 +623,7 @@ var ConnectionManager = (function() {
 		if(eraseCookie) {
 			eraseCookie(connectionKeyCookie);
 			eraseCookie(connectionSerialCookie);
+			eraseCookie(clientIdCookie);
 		}
 	};
 
