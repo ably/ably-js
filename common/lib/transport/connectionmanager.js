@@ -45,18 +45,10 @@ var ConnectionManager = (function() {
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
-				if(options.recover === true) {
-					var session = getFromSession(sessionRecoveryName);
-					if(session !== null) {
-						params.recover = session.connectionKey;
-						params.connection_serial = session.connectionSerial;
-					}
-				} else {
-					var match = options.recover.match(/^(\w+):(\w+)$/);
-					if(match) {
-						params.recover = match[1];
-						params.connection_serial = match[2];
-					}
+				var match = options.recover.match(/^(\w+):(\w+)$/);
+				if(match) {
+					params.recover = match[1];
+					params.connection_serial = match[2];
 				}
 				break;
 			default:
@@ -124,7 +116,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(setInSession && options.recover === true && window.addEventListener)
+		if(setInSession && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
 		/* Listen for online and offline events */
@@ -157,6 +149,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.transports = {};
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
+		var self = this;
 		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
 		if(this.activeProtocol) {
@@ -165,51 +158,77 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		/* set up the transport params */
-		/* first attempt the main host; no need to check for general connectivity first.
-		 * Inherit any connection state */
-		var mode = this.connectionKey ? 'resume' : (this.options.recover ? 'recover' : 'clean');
-		var transportParams = new TransportParams(this.options, null, mode, this.connectionKey, this.connectionSerial);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + this.connectionKey + '; connectionSerial = ' + this.connectionSerial));
-		var self = this;
-
-		/* if there are no http transports, just choose from the available transports,
-		 * falling back to the first host only;
-		 * NOTE: this behaviour will never apply with a default configuration. */
-		if(!this.httpTransports.length) {
-			transportParams.host = this.httpHosts[0];
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
-			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
-			return;
-		}
-
-		/* first try to establish an http transport */
-		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
-			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
-				/* http failed, or terminal, so nothing's going to work */
-				callback(err);
+		function decideMode(modeCb) {
+			if(self.connectionKey) {
+				modeCb('resume');
 				return;
 			}
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
-			callback(null, httpTransport);
 
-			/* we have the http transport; if there is a potential upgrade
-			 * transport, lets see if we can upgrade to that. We won't
-			  * be trying any fallback hosts, so we know the host to use */
-			if(self.upgradeTransports.length) {
-				/* we can't initiate the selection of the upgrade transport until we have
-				 * the actual connection, since we need the connectionKey */
-				httpTransport.once('connected', function(error, connectionKey) {
-					/* we allow other event handlers, including activating the transport, to run first */
-					Utils.nextTick(function() {
-						Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
-						transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
-						self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
-					});
-				});
+			if(typeof self.options.recover === 'string') {
+				modeCb('recover');
+				return;
 			}
+
+			var recoverFn = self.options.recover,
+				lastSessionData = getFromSession && getFromSession(sessionRecoveryName);
+			if(lastSessionData && lastSessionData.host === window.location.host && typeof(recoverFn) === 'function') {
+				recoverFn(lastSessionData, function(shouldRecover) {
+					if(shouldRecover) {
+						self.options.recover = lastSessionData.recoveryKey;
+						modeCb('recover');
+					} else {
+						modeCb('clean');
+					}
+				});
+				return;
+			}
+			modeCb('clean');
+		}
+
+		/* set up the transport params */
+		/* first attempt the main host; no need to check for general connectivity first. */
+		decideMode(function(mode) {
+			var transportParams = new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial);
+			Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+
+			/* if there are no http transports, just choose from the available transports,
+			 * falling back to the first host only;
+			 * NOTE: self behaviour will never apply with a default configuration. */
+			if(!self.httpTransports.length) {
+				transportParams.host = self.httpHosts[0];
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
+				self.chooseTransportForHost(transportParams, self.transports.slice(), callback);
+				return;
+			}
+
+			/* first try to establish an http transport */
+			self.chooseHttpTransport(transportParams, function(err, httpTransport) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
+					/* http failed, or terminal, so nothing's going to work */
+					callback(err);
+					return;
+				}
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
+				callback(null, httpTransport);
+
+				/* we have the http transport; if there is a potential upgrade
+				 * transport, lets see if we can upgrade to that. We won't
+					* be trying any fallback hosts, so we know the host to use */
+				if(self.upgradeTransports.length) {
+					/* we can't initiate the selection of the upgrade transport until we have
+					 * the actual connection, since we need the connectionKey */
+					httpTransport.once('connected', function(error, connectionKey) {
+						/* we allow other event handlers, including activating the transport, to run first */
+						Utils.nextTick(function() {
+							Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
+							transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
+							self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
+						});
+					});
+				}
 			});
+		})
 	};
 
 	/**
@@ -592,7 +611,13 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.persistConnection = function() {
 		if(setInSession) {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
-				setInSession(sessionRecoveryName, {connectionKey: this.connectionKey, connectionSerial: this.connectionSerial}, this.options.timeouts.connectionPersistTimeout);
+				setInSession(sessionRecoveryName, {
+					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
+					disconnectedAt: Utils.now(),
+					url: window.location.href,
+					host: window.location.host,
+					clientId: this.realtime.auth.clientId,
+				}, this.options.timeouts.connectionPersistTimeout);
 			}
 		}
 	};
