@@ -624,7 +624,7 @@ var ConnectionManager = (function() {
 					disconnectedAt: Utils.now(),
 					url: window.location.href,
 					clientId: this.realtime.auth.clientId,
-				}, this.options.timeouts.connectionPersistTimeout);
+				}, this.options.timeouts.connectionStateTtl);
 			}
 		}
 	};
