@@ -74,6 +74,7 @@ var ConnectionManager = (function() {
 		this.realtime = realtime;
 		this.options = options;
 		var timeouts = options.timeouts;
+		var self = this;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
@@ -119,9 +120,11 @@ var ConnectionManager = (function() {
 		if(setInSession && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
+		if(setInSession && options.closeOnUnload === true && window.addEventListener)
+			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'})});
+
 		/* Listen for online and offline events */
 		if(typeof window === "object" && window.addEventListener) {
-			var self = this;
 			window.addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');

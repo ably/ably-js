@@ -67,6 +67,11 @@ Defaults.normaliseOptions = function(options) {
 		options.recover = function(lastConnectionDetails, cb) { cb(true); };
 	}
 
+	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
+		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		options.recover = null;
+	}
+
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
