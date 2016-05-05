@@ -13,8 +13,7 @@ Defaults.TIMEOUTS = {
 	/* Not documented: */
 	connectionStateTtl         : 60000,
 	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
-	connectionPersistTimeout   : 15000
+	recvTimeout                : 90000
 };
 Defaults.httpMaxRetryCount = 3;
 

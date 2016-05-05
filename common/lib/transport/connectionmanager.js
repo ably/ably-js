@@ -625,7 +625,7 @@ var ConnectionManager = (function() {
 					url: window.location.href,
 					host: window.location.host,
 					clientId: this.realtime.auth.clientId,
-				}, this.options.timeouts.connectionPersistTimeout);
+				}, this.options.timeouts.connectionStateTtl);
 			}
 		}
 	};
