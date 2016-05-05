@@ -11,7 +11,7 @@ Defaults.TIMEOUTS = {
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
 	/* Not documented: */
-	connectionStateTtl         : 60000,
+	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000
 };
