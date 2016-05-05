@@ -45,10 +45,10 @@ var ConnectionManager = (function() {
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
-				var match = options.recover.match(/^(\w+):(\w+)$/);
+				var match = options.recover.split(':');
 				if(match) {
-					params.recover = match[1];
-					params.connection_serial = match[2];
+					params.recover = match[0];
+					params.connection_serial = match[1];
 				}
 				break;
 			default:
