@@ -62,6 +62,11 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = options.queueEvents;
 	}
 
+	if(options.recover === true) {
+		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+		options.recover = function(lastConnectionDetails, cb) { cb(true); };
+	}
+
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
