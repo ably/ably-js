@@ -24,6 +24,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		return true;
 	}
 
+	function eraseSession(name) {
+		window.sessionStorage && window.sessionStorage.removeItem(name);
+	}
+
 	exports.setup_realtime = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
@@ -34,6 +38,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			}
 			test.done();
 		});
+
+		/* Ensure session is clean for persistance tests */
+		eraseSession('ably-connection-recovery');
 	};
 
 	exports.device_going_offline_causes_disconnected_state = function(test) {
@@ -109,7 +116,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'connection to server failed');
 			closeAndFinish(test, realtime);
 		});
-		connection.on(function(){console.log(this.event)})
 
 		connection.once('suspended', function() {
 			var suspendedAt = new Date();
@@ -120,6 +126,95 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 			// simulate online event
 			document.dispatchEvent(onlineEvent);
+		});
+	};
+
+	/* uses internal realtime knowledge of the format of the connection key to
+	* check if a connection key is the result of a successful recovery of another */
+	function sameConnection(keyA, keyB) {
+		return keyA.split("-")[0] === keyB.split("-")[0];
+	}
+
+	exports.page_refresh_with_recovery = function(test) {
+		var realtimeOpts = { recover: function(lastConnectionDetails, cb) { cb(true); } },
+			realtime = helper.AblyRealtime(realtimeOpts),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'connected', 'check connection state initially unaffected by page refresh');
+			simulateDroppedConnection(realtime);
+
+			var newRealtime = helper.AblyRealtime(realtimeOpts);
+			newRealtime.connection.once('connected', function() {
+				test.ok(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the connection from the cookie');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
+		});
+	};
+
+	exports.page_refresh_persist_with_denied_recovery = function(test) {
+		var realtimeOpts = { recover: function(lastConnectionDetails, cb) { cb(false); } };
+		var realtime = helper.AblyRealtime(realtimeOpts),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'connected', 'check connection state initially unaffected by page refresh');
+			simulateDroppedConnection(realtime);
+
+			var newRealtime = helper.AblyRealtime(realtimeOpts);
+			newRealtime.connection.once('connected', function() {
+				test.ok(!sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime created a new connection');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
+			monitorConnection(test, newRealtime);
+		});
+	};
+
+	exports.page_refresh_with_close_on_unload = function(test) {
+		var realtime = helper.AblyRealtime({ closeOnUnload: true }),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(1);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key;
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'closing', 'check page refresh triggered a close');
+			test.done();
+		});
+	};
+
+	exports.page_refresh_with_manual_recovery = function(test) {
+		var realtime = helper.AblyRealtime(),
+			refreshEvent = new Event('beforeunload', {'bubbles': true});
+
+		test.expect(2);
+		monitorConnection(test, realtime);
+
+		realtime.connection.once('connected', function() {
+			var connectionKey = realtime.connection.key,
+				recoveryKey = realtime.connection.recoveryKey;
+
+			document.dispatchEvent(refreshEvent);
+			test.equal(realtime.connection.state, 'connected', 'check connection state initially unaffected by page refresh');
+			simulateDroppedConnection(realtime);
+
+			var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
+			newRealtime.connection.once('connected', function() {
+				test.ok(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the old');
+				closeAndFinish(test, [realtime, newRealtime]);
+			});
 		});
 	};
 
