@@ -174,7 +174,7 @@ var ConnectionManager = (function() {
 
 			var recoverFn = self.options.recover,
 				lastSessionData = getFromSession && getFromSession(sessionRecoveryName);
-			if(lastSessionData && lastSessionData.host === window.location.host && typeof(recoverFn) === 'function') {
+			if(lastSessionData && typeof(recoverFn) === 'function') {
 				recoverFn(lastSessionData, function(shouldRecover) {
 					if(shouldRecover) {
 						self.options.recover = lastSessionData.recoveryKey;
@@ -623,7 +623,6 @@ var ConnectionManager = (function() {
 					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 					disconnectedAt: Utils.now(),
 					url: window.location.href,
-					host: window.location.host,
 					clientId: this.realtime.auth.clientId,
 				}, this.options.timeouts.connectionStateTtl);
 			}
