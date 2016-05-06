@@ -623,7 +623,7 @@ var ConnectionManager = (function() {
 					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 					disconnectedAt: Utils.now(),
 					url: window.location.href,
-					clientId: this.realtime.auth.clientId,
+					clientId: this.realtime.auth.clientId
 				}, this.options.timeouts.connectionStateTtl);
 			}
 		}
