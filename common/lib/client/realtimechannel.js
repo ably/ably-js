@@ -16,6 +16,7 @@ var RealtimeChannel = (function() {
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
 		this.setOptions(options);
+		this.errorReason = null;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -424,6 +425,9 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
 		this.state = state;
 		this.setInProgress(inProgress);
+		if(err) {
+			this.errorReason = err;
+		}
 		this.emit(state, err);
 	};
 
