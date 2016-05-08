@@ -366,7 +366,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
 			if(mode == 'upgrade' && self.activeProtocol) {
-				self.scheduleTransportActivation(transport);
+				self.scheduleTransportActivation(transport, connectionKey);
 			} else {
 				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
 			}
@@ -397,7 +397,7 @@ var ConnectionManager = (function() {
 	 * to schedule the activation of that transport.
 	 * @param transport the transport instance
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(transport) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(transport, connectionKey) {
 		var self = this;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport; transport = ' + transport);
 		this.realtime.channels.onceNopending(function(err) {
@@ -413,7 +413,7 @@ var ConnectionManager = (function() {
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
 			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
-			if(self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId)) {
+			if(self.activateTransport(transport, connectionKey, self.connectionSerial, self.connectionId)) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
 				self.sync(transport, function(err, connectionSerial, connectionId) {
 					if(err) {
