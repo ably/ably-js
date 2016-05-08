@@ -173,7 +173,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					if(err) {
 						test.expect(4);
 						test.ok(true, 'Attach failed as expected');
-						test.equal(channel.errorReason.code, 40010, 'Attach error was set as the channel errorreason');
+						test.equal(channel.errorReason.code, 40010, 'Attach error was set as the channel errorReason');
 						test.equal(err.code, 40010, 'Attach error was passed to the attach callback');
 						setTimeout(function() {
 							test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
