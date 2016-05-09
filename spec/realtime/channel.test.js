@@ -168,10 +168,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		try {
 			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
-				realtime.channels.get(':hell').attach(function(err) {
+				var channel = realtime.channels.get(':hell')
+				channel.attach(function(err) {
 					if(err) {
-						test.expect(2);
+						test.expect(4);
 						test.ok(true, 'Attach failed as expected');
+						test.equal(channel.errorReason.code, 40010, 'Attach error was set as the channel errorreason');
+						test.equal(err.code, 40010, 'Attach error was passed to the attach callback');
 						setTimeout(function() {
 							test.ok(realtime.connection.state === 'connected', 'Client should still be connected');
 							closeAndFinish(test, realtime);
