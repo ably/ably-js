@@ -20,7 +20,7 @@ var Logger = (function() {
 	LOG_MINOR = 3,
 	LOG_MICRO = 4;
 
-	var LOG_DEFAULT = LOG_MAJOR,
+	var LOG_DEFAULT = LOG_ERROR,
 	LOG_DEBUG   = LOG_MICRO;
 
 	var logLevel = LOG_DEFAULT;
