@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.17
+ * Ably JavaScript Library v0.8.18
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -1314,40 +1314,37 @@ var BufferUtils = (function() {
 
 	return BufferUtils;
 })();
-var Cookie = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	function noop() {}
+var SessionStorage = (function() {
+	var supported = (typeof(window) == 'object') && window.sessionStorage;
+	function SessionStorage() {}
 
-	function Cookie() {}
-
-	if(isBrowser) {
-		Cookie.create = function(name, value, ttl) {
-			var expires = '';
+	if(supported) {
+		SessionStorage.set = function(name, value, ttl) {
+			var wrappedValue = {value: value};
 			if(ttl) {
-				var date = new Date();
-				date.setTime(date.getTime() + ttl);
-				expires = '; expires=' + date.toGMTString();
+				wrappedValue.expires = Utils.now() + ttl;
 			}
-			document.cookie = name + '=' + value + expires + '; path=/';
+			return window.sessionStorage.setItem(name, JSON.stringify(wrappedValue));
+		}
+
+		SessionStorage.get = function(name) {
+			var rawItem = window.sessionStorage.getItem(name);
+			if(!rawItem) return null;
+			var wrappedValue = JSON.parse(rawItem);
+			if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
+				var now = Utils.now()
+				window.sessionStorage.removeItem(name);
+				return null;
+			}
+			return wrappedValue.value;
 		};
 
-		Cookie.read = function(name) {
-			var nameEQ = name + '=';
-			var ca = document.cookie.split(';');
-			for(var i=0; i < ca.length; i++) {
-				var c = ca[i];
-				while(c.charAt(0)==' ') c = c.substring(1, c.length);
-				if(c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-			}
-			return null;
-		};
-
-		Cookie.erase = function(name) {
-			Cookie.create(name, '', -1 * 3600 * 1000);
+		SessionStorage.remove = function(name) {
+			return window.sessionStorage.removeItem(name);
 		};
 	}
 
-	return Cookie;
+	return SessionStorage;
 })();
 
 var Http = (function() {
@@ -2559,14 +2556,13 @@ Defaults.TIMEOUTS = {
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
 	/* Not documented: */
-	connectionStateTtl         : 60000,
+	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
-	connectionPersistTimeout   : 15000
+	recvTimeout                : 90000
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.17';
+Defaults.version           = '0.8.18';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -2608,6 +2604,16 @@ Defaults.normaliseOptions = function(options) {
 	if(options.queueEvents) {
 		Logger.deprecated('queueEvents', 'queueMessages');
 		options.queueMessages = options.queueEvents;
+	}
+
+	if(options.recover === true) {
+		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+		options.recover = function(lastConnectionDetails, cb) { cb(true); };
+	}
+
+	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
+		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		options.recover = null;
 	}
 
 	if(!('queueMessages' in options))
@@ -2857,7 +2863,7 @@ var Logger = (function() {
 	LOG_MINOR = 3,
 	LOG_MICRO = 4;
 
-	var LOG_DEFAULT = LOG_MAJOR,
+	var LOG_DEFAULT = LOG_ERROR,
 	LOG_DEBUG   = LOG_MICRO;
 
 	var logLevel = LOG_DEFAULT;
@@ -3942,11 +3948,10 @@ var Protocol = (function() {
 })();
 
 var ConnectionManager = (function() {
-	var readCookie = (typeof(Cookie) !== 'undefined' && Cookie.read);
-	var createCookie = (typeof(Cookie) !== 'undefined' && Cookie.create);
-	var eraseCookie = (typeof(Cookie) !== 'undefined' && Cookie.erase);
-	var connectionKeyCookie = 'ably-connection-key';
-	var connectionSerialCookie = 'ably-connection-serial';
+	var getFromSession    = (typeof(SessionStorage) !== 'undefined' && SessionStorage.get);
+	var setInSession      = (typeof(SessionStorage) !== 'undefined' && SessionStorage.set);
+	var removeFromSession = (typeof(SessionStorage) !== 'undefined' && SessionStorage.remove);
+	var sessionRecoveryName = 'ably-connection-recovery';
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -3989,19 +3994,10 @@ var ConnectionManager = (function() {
 					params.connection_serial = this.connectionSerial;
 				break;
 			case 'recover':
-				if(options.recover === true) {
-					var connectionKey = readCookie(connectionKeyCookie),
-						connectionSerial = readCookie(connectionSerialCookie);
-					if(connectionKey !== null && connectionSerial !== null) {
-						params.recover = connectionKey;
-						params.connection_serial = connectionSerial;
-					}
-				} else {
-					var match = options.recover.match(/^(\w+):(\w+)$/);
-					if(match) {
-						params.recover = match[1];
-						params.connection_serial = match[2];
-					}
+				var match = options.recover.split(':');
+				if(match) {
+					params.recover = match[0];
+					params.connection_serial = match[1];
 				}
 				break;
 			default:
@@ -4027,6 +4023,7 @@ var ConnectionManager = (function() {
 		this.realtime = realtime;
 		this.options = options;
 		var timeouts = options.timeouts;
+		var self = this;
 		this.states = {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'disconnected'},
@@ -4069,12 +4066,14 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(createCookie && options.recover === true && window.addEventListener)
+		if(setInSession && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+
+		if(setInSession && options.closeOnUnload === true && window.addEventListener)
+			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'})});
 
 		/* Listen for online and offline events */
 		if(typeof window === "object" && window.addEventListener) {
-			var self = this;
 			window.addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
@@ -4102,6 +4101,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.transports = {};
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
+		var self = this;
 		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
 		if(this.activeProtocol) {
@@ -4110,51 +4110,77 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		/* set up the transport params */
-		/* first attempt the main host; no need to check for general connectivity first.
-		 * Inherit any connection state */
-		var mode = this.connectionKey ? 'resume' : (this.options.recover ? 'recover' : 'clean');
-		var transportParams = new TransportParams(this.options, null, mode, this.connectionKey, this.connectionSerial);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + this.connectionKey + '; connectionSerial = ' + this.connectionSerial));
-		var self = this;
-
-		/* if there are no http transports, just choose from the available transports,
-		 * falling back to the first host only;
-		 * NOTE: this behaviour will never apply with a default configuration. */
-		if(!this.httpTransports.length) {
-			transportParams.host = this.httpHosts[0];
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
-			this.chooseTransportForHost(transportParams, self.transports.slice(), callback);
-			return;
-		}
-
-		/* first try to establish an http transport */
-		this.chooseHttpTransport(transportParams, function(err, httpTransport) {
-			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
-				/* http failed, or terminal, so nothing's going to work */
-				callback(err);
+		function decideMode(modeCb) {
+			if(self.connectionKey) {
+				modeCb('resume');
 				return;
 			}
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
-			callback(null, httpTransport);
 
-			/* we have the http transport; if there is a potential upgrade
-			 * transport, lets see if we can upgrade to that. We won't
-			  * be trying any fallback hosts, so we know the host to use */
-			if(self.upgradeTransports.length) {
-				/* we can't initiate the selection of the upgrade transport until we have
-				 * the actual connection, since we need the connectionKey */
-				httpTransport.once('connected', function(error, connectionKey) {
-					/* we allow other event handlers, including activating the transport, to run first */
-					Utils.nextTick(function() {
-						Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
-						transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
-						self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
-					});
-				});
+			if(typeof self.options.recover === 'string') {
+				modeCb('recover');
+				return;
 			}
+
+			var recoverFn = self.options.recover,
+				lastSessionData = getFromSession && getFromSession(sessionRecoveryName);
+			if(lastSessionData && typeof(recoverFn) === 'function') {
+				recoverFn(lastSessionData, function(shouldRecover) {
+					if(shouldRecover) {
+						self.options.recover = lastSessionData.recoveryKey;
+						modeCb('recover');
+					} else {
+						modeCb('clean');
+					}
+				});
+				return;
+			}
+			modeCb('clean');
+		}
+
+		/* set up the transport params */
+		/* first attempt the main host; no need to check for general connectivity first. */
+		decideMode(function(mode) {
+			var transportParams = new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial);
+			Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+
+			/* if there are no http transports, just choose from the available transports,
+			 * falling back to the first host only;
+			 * NOTE: self behaviour will never apply with a default configuration. */
+			if(!self.httpTransports.length) {
+				transportParams.host = self.httpHosts[0];
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'No http transports available; ignoring fallback hosts');
+				self.chooseTransportForHost(transportParams, self.transports.slice(), callback);
+				return;
+			}
+
+			/* first try to establish an http transport */
+			self.chooseHttpTransport(transportParams, function(err, httpTransport) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.chooseTransport()', 'Unexpected error establishing transport; err = ' + Utils.inspectError(err));
+					/* http failed, or terminal, so nothing's going to work */
+					callback(err);
+					return;
+				}
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Establishing http transport: ' + httpTransport);
+				callback(null, httpTransport);
+
+				/* we have the http transport; if there is a potential upgrade
+				 * transport, lets see if we can upgrade to that. We won't
+					* be trying any fallback hosts, so we know the host to use */
+				if(self.upgradeTransports.length) {
+					/* we can't initiate the selection of the upgrade transport until we have
+					 * the actual connection, since we need the connectionKey */
+					httpTransport.once('connected', function(error, connectionKey) {
+						/* we allow other event handlers, including activating the transport, to run first */
+						Utils.nextTick(function() {
+							Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
+							transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
+							self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
+						});
+					});
+				}
 			});
+		})
 	};
 
 	/**
@@ -4289,9 +4315,16 @@ var ConnectionManager = (function() {
 		var self = this;
 		transport.on('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
 			if(mode == 'upgrade' && self.activeProtocol) {
-				self.scheduleTransportActivation(transport);
+				self.scheduleTransportActivation(transport, connectionKey);
 			} else {
 				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
+			}
+
+			if(mode === 'recover' && self.options.recover) {
+				/* After a successful recovery, we unpersist, as a recovery key cannot
+				* be used more than once */
+				self.options.recover = null;
+				self.unpersistConnection();
 			}
 		});
 
@@ -4313,7 +4346,7 @@ var ConnectionManager = (function() {
 	 * to schedule the activation of that transport.
 	 * @param transport the transport instance
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(transport) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(transport, connectionKey) {
 		var self = this;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport; transport = ' + transport);
 		this.realtime.channels.onceNopending(function(err) {
@@ -4329,7 +4362,7 @@ var ConnectionManager = (function() {
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
 			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
-			if(self.activateTransport(transport, self.connectionKey, self.connectionSerial, self.connectionId)) {
+			if(self.activateTransport(transport, connectionKey, self.connectionSerial, self.connectionId)) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
 				self.sync(transport, function(err, connectionSerial, connectionId) {
 					if(err) {
@@ -4401,18 +4434,13 @@ var ConnectionManager = (function() {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
-		var auth = this.realtime.auth;
-		if(clientId && !(clientId === '*')) {
-			if(auth.clientId && auth.clientId != clientId) {
-				/* Should never happen in normal circumstances as realtime should
-				 * recognise mismatch and return an error */
-				var msg = 'Unexpected mismatch between expected and received clientId'
-				var err = new ErrorInfo(msg, 40102, 401);
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+		if(clientId) {
+			var err = this.realtime.auth._uncheckedSetClientId(clientId);
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', err.message);
 				transport.abort(err);
 				return;
 			}
-			auth.clientId = clientId;
 		}
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
@@ -4516,8 +4544,6 @@ var ConnectionManager = (function() {
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 		this.msgSerial = 0;
-		if(this.options.recover === true)
-			this.persistConnection();
 
 	};
 
@@ -4535,10 +4561,14 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(createCookie) {
+		if(setInSession) {
 			if(this.connectionKey && this.connectionSerial !== undefined) {
-				createCookie(connectionKeyCookie, this.connectionKey, this.options.timeouts.connectionPersistTimeout);
-				createCookie(connectionSerialCookie, this.connectionSerial, this.options.timeouts.connectionPersistTimeout);
+				setInSession(sessionRecoveryName, {
+					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
+					disconnectedAt: Utils.now(),
+					location: window.location,
+					clientId: this.realtime.auth.clientId,
+				}, this.options.timeouts.connectionStateTtl);
 			}
 		}
 	};
@@ -4548,9 +4578,8 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.unpersistConnection = function() {
-		if(eraseCookie) {
-			eraseCookie(connectionKeyCookie);
-			eraseCookie(connectionSerialCookie);
+		if(removeFromSession) {
+			removeFromSession(sessionRecoveryName);
 		}
 	};
 
@@ -4817,6 +4846,22 @@ var ConnectionManager = (function() {
 		/* If there was an active transport, this will probably be
 		 * preempted by the notifyState call in deactivateTransport */
 		this.notifyState({state: 'closed'});
+	};
+
+	ConnectionManager.prototype.onAuthUpdated = function() {
+		/* in the current protocol version we are not able to update auth params on the fly;
+		 * so disconnect, and the new auth params will be used for subsequent reconnection */
+		var state = this.state.state;
+		if(state == 'connected') {
+			this.disconnectAllTransports();
+		} else if(state == 'connecting' || state == 'disconnected') {
+			/* the instant auto-reconnect is only for connected->disconnected transition */
+			this.disconnectAllTransports();
+			var self = this;
+			Utils.nextTick(function() {
+				self.requestState({state: 'connecting'});
+			});
+		}
 	};
 
 	ConnectionManager.prototype.disconnectAllTransports = function() {
@@ -5167,6 +5212,7 @@ var Transport = (function() {
 var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
+	var binaryType = isBrowser ? 'arraybuffer' : 'nodebuffer';
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
@@ -5235,7 +5281,7 @@ var WebSocketTransport = (function() {
 			var connectParams = params.getConnectParams(authParams);
 			try {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
-				wsConnection.binaryType = 'arraybuffer';
+				wsConnection.binaryType = binaryType;
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
@@ -5955,73 +6001,81 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	function Auth(client, options) {
-		this.client = client;
-		this.tokenParams = options.defaultTokenParams || {};
-
-		/* RSA7a4: if options.clientId is provided and is not
-		 * null, it overrides defaultTokenParams.clientId */
-		if(options.clientId) {
-			this.tokenParams.clientId = options.clientId;
-			this.clientId = options.clientId
-		}
-
-		/* decide default auth method */
-		var key = options.key;
-		if(key) {
-			if(!options.clientId && !options.useTokenAuth) {
-				/* we have the key and do not need to authenticate the client,
-				 * so default to using basic auth */
-				Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
-				this.method = 'basic';
-				this.key = key;
-				this.basicKey = toBase64(key);
-				return;
-			}
-			/* token auth, but we have the key so we can authorise
-			 * ourselves */
-			if(!hmac) {
-				var msg = 'client-side token request signing not supported';
-				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-				throw new Error(msg);
+	/* RSA10j/d */
+	function persistAuthOptions(options) {
+		for(var prop in options) {
+			if(!(prop === 'force'       ||
+			     options[prop] === null ||
+			     options[prop] === undefined)) {
+				return true;
 			}
 		}
-		if('useTokenAuth' in options && !options.useTokenAuth) {
-			var msg = 'option useTokenAuth was falsey, but basic auth cannot be used' +
-				(options.clientId ? ' as a clientId implies token auth' :
-				(!options.key ? ' as a key was not given' : ''));
-			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-			throw new Error(msg);
-		}
-		/* using token auth, but decide the method */
-		this.method = 'token';
-		if(options.token) {
-			/* options.token may contain a token string or, for convenience, a TokenDetails */
-			options.tokenDetails = (typeof(options.token) === 'string') ? {token: options.token} : options.token;
-		}
-		this.tokenDetails = options.tokenDetails;
+		return false;
+	}
 
-		if(options.authCallback) {
+	function logAndValidateTokenAuthMethod(authOptions) {
+		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
-		} else if(options.authUrl) {
+		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
-		} else if(options.keySecret) {
+		} else if(authOptions.key) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
-		} else if(options.tokenDetails) {
+		} else if(authOptions.tokenDetails) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
 		} else {
-			var msg = 'options must include valid authentication parameters';
+			var msg = 'authOptions must include valid authentication parameters';
 			Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 			throw new Error(msg);
 		}
 	}
 
+	function basicAuthForced(options) {
+		return 'useTokenAuth' in options && !options.useTokenAuth;
+	}
+
+	/* RSA4 */
+	function useTokenAuth(options) {
+		return options.useTokenAuth ||
+			(!basicAuthForced(options) &&
+			 (options.clientId     ||
+			  options.authCallback ||
+			  options.authUrl      ||
+			  options.token        ||
+			  options.tokenDetails))
+	}
+
+	function Auth(client, options) {
+		this.client = client;
+		this.tokenParams = options.defaultTokenParams || {};
+
+		if(useTokenAuth(options)) {
+			/* Token auth */
+			if(options.key && !hmac) {
+				var msg = 'client-side token request signing not supported';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
+			}
+			this._saveTokenOptions(options.defaultTokenParams, options);
+			logAndValidateTokenAuthMethod(this.authOptions);
+		} else {
+			/* Basic auth */
+			if(options.clientId || !options.key) {
+				var msg = 'Cannot authenticate with basic auth' +
+					(options.clientId ? ' as a clientId implies token auth' :
+					 (!options.key ? ' as no key was given' : ''));
+					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+					 throw new Error(msg);
+			}
+			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
+			this._saveBasicOptions(options);
+		}
+	}
+
 	/**
-	 * Ensure valid auth credentials are present. This may rely in an already-known
-	 * and valid token, and will obtain a new token if necessary or explicitly
-	 * requested.
-	 * Authorisation will use the parameters supplied on construction except
-	 * where overridden with the options supplied in the call.
+	 * Instructs the library to use token auth, storing the tokenParams and
+	 * authOptions given as the new defaults for subsequent use.
+	 * Ensures a valid token is present, requesting one if necessary or if
+	 * explicitly requested.
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
@@ -6041,15 +6095,37 @@ var Auth = (function() {
 	 *               the system will be queried for a time value to use.
 	 *
 	 * @param authOptions
-	 * an object containing the request params:
-	 * - key:        (optional) the key to use; if not specified, a key
-	 *               passed in constructing the Rest interface may be used
+	 * an object containing auth options relevant to token auth:
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
 	 *
 	 * - force       (optional) boolean indicating that a new token should be requested,
 	 *               even if a current token is still valid.
+	 *
+	 * - tokenDetails: (optional) object: An authenticated TokenDetails object.
+	 *
+	 * - token:        (optional) string: the `token` property of a tokenDetails object
+	 *
+	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 *                  authCallback should be a function of (tokenParams, callback) that calls
+	 *                  the callback with (err, result), where result is any of:
+	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
+	 *                  - a tokenDetails object (ie the result of a rest.auth.requestToken call),
+	 *                  - a token string
+	 *
+	 * - authUrl:       (optional) a URL to be used to GET or POST a set of token request
+	 *                  params, to obtain a signed token request.
+	 *
+	 * - authHeaders:   (optional) a set of application-specific headers to be added to any request
+	 *                  made to the authUrl.
+	 *
+	 * - authParams:    (optional) a set of application-specific query params to be added to any
+	 *                  request made to the authUrl.
+	 *
+	 *
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
+	 *                  requestToken request
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
@@ -6062,45 +6138,33 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
+		callback = callback || noop;
+		var self = this;
 
-		var self = this,
-			token = this.tokenDetails;
-
-		var requestToken = function() {
-			self.requestToken(tokenParams, authOptions, function(err, tokenResponse) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				callback(null, (self.tokenDetails = tokenResponse));
-			});
+		/* RSA10a: authorise() call implies token auth. If a key is passed it, we
+		 * just check if it doesn't clash and assume we're generating a token from it */
+		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
+			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
+		this._saveTokenOptions(tokenParams, authOptions);
 
-		if(token) {
-			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
-				return;
+		/* _save normalises the tokenParams and authOptions and updates the auth
+		 * object. All subsequent operations should use the values on `this`,
+		 * not the passed in ones. */
+
+		logAndValidateTokenAuthMethod(this.authOptions);
+
+		this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			/* RSA10g */
+			self.tokenParams.timestamp = null;
+			/* RTC8
+			 * use self.client.connection as a proxy for (self.client instanceof Realtime),
+			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
+			if(self.force && !err && self.client.connection) {
+				self.client.connection.connectionManager.onAuthUpdated();
 			}
-			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
-				if(err)
-					callback(err);
-
-				if(token.expires === undefined || (token.expires >= time)) {
-					if(!(authOptions && authOptions.force)) {
-						Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-						callback(null, token);
-						return;
-					}
-				} else {
-					/* expired, so remove */
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-					self.tokenDetails = null;
-				}
-				requestToken();
-			});
-		} else {
-			requestToken();
-		}
+			callback(err, tokenDetails);
+		});
 	};
 
 	/**
@@ -6128,7 +6192,7 @@ var Auth = (function() {
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
 	 *
-	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
 	 *                  requestToken request
 	 *
 	 * @param tokenParams
@@ -6161,7 +6225,7 @@ var Auth = (function() {
 		}
 
 		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
@@ -6171,10 +6235,10 @@ var Auth = (function() {
 		var tokenRequestCallback, client = this.client;
 
 		if(authOptions.authCallback) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_callback');
+			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
-			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with auth_url');
+			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			/* if no authParams given, check if they were given in the URL */
 			if(!authOptions.authParams) {
 				var queryIdx = authOptions.authUrl.indexOf('?');
@@ -6296,7 +6360,7 @@ var Auth = (function() {
 	 * - queryTime      (optional) boolean indicating that the ably system should be
 	 *                  queried for the current time when none is specified explicitly
 	 *
-	 * - requestHeaders (optional, unsuported, for testing only) extra headers to add to the
+	 * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
 	 *                  requestToken request
 	 *
 	 * @param tokenParams
@@ -6326,7 +6390,7 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.client.options), authOptions);
+		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -6438,7 +6502,7 @@ var Auth = (function() {
 	 */
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
 		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
-		if (!offsetSet && (queryTime || this.client.options.queryTime)) {
+		if (!offsetSet && (queryTime || this.authOptions.queryTime)) {
 			this.client.time(function(err, time) {
 				if(err) {
 					callback(err);
@@ -6448,6 +6512,128 @@ var Auth = (function() {
 			});
 		} else {
 			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
+		}
+	};
+
+	Auth.prototype._saveBasicOptions = function(authOptions) {
+		this.method = 'basic';
+		this.key = authOptions.key;
+		this.basicKey = toBase64(authOptions.key);
+		this.authOptions = authOptions || {};
+		this.authOptions.force = false;
+		if('clientId' in authOptions) {
+			this._userSetClientId(authOptions.clientId);
+		}
+	}
+
+	Auth.prototype._saveTokenOptions = function(tokenParams, authOptions) {
+		this.method = 'token';
+
+		/* We temporarily persist tokenParams.timestamp in case a new token needs
+		 * to be requested, then null it out in the callback of
+		 * _ensureValidAuthCredentials for RSA10g compliance */
+		this.tokenParams = tokenParams || this.tokenParams || {};
+
+		/* If an authOptions object is passed in that contains new auth info (ie
+		* isn't just {force: true} or something), it becomes the new default, with
+		* the exception of the force attribute (RSA10g), which is set anew on each
+		* call to authorise (defaulting to false) */
+		this.force = false;
+		if(authOptions) {
+			this.force = authOptions.force;
+
+			if(this.force) {
+				/* get rid of current token even if still valid */
+				this.tokenDetails = null;
+			}
+
+			if(persistAuthOptions(authOptions)) {
+				this.authOptions = authOptions;
+				this.authOptions.force = false;
+
+				if(authOptions.token) {
+					/* options.token may contain a token string or, for convenience, a TokenDetails */
+					this.authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
+				}
+				if(authOptions.tokenDetails) {
+					this.tokenDetails = authOptions.tokenDetails;
+				}
+
+				if('clientId' in authOptions) {
+					this._userSetClientId(authOptions.clientId);
+				}
+			}
+		}
+	};
+
+	Auth.prototype._ensureValidAuthCredentials = function(callback) {
+		var self = this,
+			token = this.tokenDetails;
+
+		var requestToken = function() {
+			self.requestToken(self.tokenParams, self.authOptions, function(err, tokenResponse) {
+				if(err) {
+					callback(err);
+					return;
+				}
+				callback(null, (self.tokenDetails = tokenResponse));
+			});
+		};
+
+		if(token) {
+			if(this._tokenClientIdMismatch(token.clientId)) {
+				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
+				return;
+			}
+			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
+				if(err)
+					callback(err);
+
+				if(token.expires === undefined || (token.expires >= time)) {
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+					callback(null, token);
+					return;
+				} else {
+					/* expired, so remove */
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+					self.tokenDetails = null;
+				}
+				requestToken();
+			});
+		} else {
+			requestToken();
+		}
+	};
+
+
+	/* User-set: check types, '*' is disallowed, throw any errors */
+	Auth.prototype._userSetClientId = function(clientId) {
+		if(!(typeof(clientId) === 'string' || clientId === null)) {
+			throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
+		} else if(clientId === '*') {
+			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorise(), pass it in as a tokenParam: authorise({clientId: "*"}, authOptions)', 40012, 400);
+		} else {
+			var err = this._uncheckedSetClientId(clientId);
+			if(err) throw err;
+		}
+	};
+
+	/* Ably-set: no typechecking, '*' is allowed but not set on this.clientId), return errors to the caller */
+	Auth.prototype._uncheckedSetClientId = function(clientId) {
+		if(this._tokenClientIdMismatch(clientId)) {
+			/* Should never happen in normal circumstances as realtime should
+			 * recognise mismatch and return an error */
+			var msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
+			var err = new ErrorInfo(msg, 40102, 401);
+			Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
+			return err;
+		} else if(clientId === '*') {
+			this.tokenParams.clientId = clientId;
+		} else {
+			/* RSA7a4: if options.clientId is provided and is not
+			 * null, it overrides defaultTokenParams.clientId */
+			this.clientId = this.tokenParams.clientId = clientId;
+			return null;
 		}
 	};
 
@@ -6782,16 +6968,13 @@ var Channel = (function() {
 			var cipherResult = Crypto.getCipher(options.cipher);
 			options.cipher = cipherResult.cipherParams;
 			options.channelCipher = cipherResult.cipher;
-			callback(null);
 		} else if('cipher' in options) {
 			/* Don't deactivate an existing cipher unless options
 			 * has a 'cipher' key that's falsey */
 			options.cipher = null;
 			options.channelCipher = null;
-			callback(null);
-		} else {
-			callback(null);
 		}
+		callback(null);
 	};
 
 	Channel.prototype.history = function(params, callback) {
@@ -6881,6 +7064,7 @@ var RealtimeChannel = (function() {
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
 		this.setOptions(options);
+		this.errorReason = null;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -7289,6 +7473,9 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
 		this.state = state;
 		this.setInProgress(inProgress);
+		if(err) {
+			this.errorReason = err;
+		}
 		this.emit(state, err);
 	};
 
