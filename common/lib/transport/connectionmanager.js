@@ -622,7 +622,7 @@ var ConnectionManager = (function() {
 				setInSession(sessionRecoveryName, {
 					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 					disconnectedAt: Utils.now(),
-					url: window.location.href,
+					location: window.location,
 					clientId: this.realtime.auth.clientId,
 				}, this.options.timeouts.connectionStateTtl);
 			}
