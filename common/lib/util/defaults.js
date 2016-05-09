@@ -11,10 +11,9 @@ Defaults.TIMEOUTS = {
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
 	/* Not documented: */
-	connectionStateTtl         : 60000,
+	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
-	connectionPersistTimeout   : 15000
+	recvTimeout                : 90000
 };
 Defaults.httpMaxRetryCount = 3;
 
@@ -60,6 +59,16 @@ Defaults.normaliseOptions = function(options) {
 	if(options.queueEvents) {
 		Logger.deprecated('queueEvents', 'queueMessages');
 		options.queueMessages = options.queueEvents;
+	}
+
+	if(options.recover === true) {
+		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+		options.recover = function(lastConnectionDetails, cb) { cb(true); };
+	}
+
+	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
+		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		options.recover = null;
 	}
 
 	if(!('queueMessages' in options))
