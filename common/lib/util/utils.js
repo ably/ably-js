@@ -10,9 +10,11 @@ var Utils = (function() {
 	 *         added, by reference only
 	 */
 	Utils.mixin = function(target, src) {
-		for(var prop in src) {
-			if(src.hasOwnProperty(prop))
-				target[prop] = src[prop];
+		var hasOwnProperty = src.hasOwnProperty;
+		for(var key in src) {
+			if(!hasOwnProperty || hasOwnProperty.call(src, key)) {
+				target[key] = src[key];
+			}
 		}
 		return target;
 	};
