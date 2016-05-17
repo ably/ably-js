@@ -27,7 +27,7 @@ var Connection = (function() {
 	}
 
 	Connection.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.connect()', '');
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
 		this.connectionManager.requestState({state: 'connecting'});
 	};
 
@@ -38,7 +38,7 @@ var Connection = (function() {
 	};
 
 	Connection.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionKey = ' + this.key);
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
 	};
 

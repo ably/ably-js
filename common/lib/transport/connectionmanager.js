@@ -153,7 +153,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		var self = this;
-		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport already established');
@@ -192,7 +192,7 @@ var ConnectionManager = (function() {
 		/* first attempt the main host; no need to check for general connectivity first. */
 		decideMode(function(mode) {
 			var transportParams = new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial);
-			Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
 
 			/* if there are no http transports, just choose from the available transports,
 			 * falling back to the first host only;
@@ -224,7 +224,7 @@ var ConnectionManager = (function() {
 					httpTransport.once('connected', function(error, connectionKey) {
 						/* we allow other event handlers, including activating the transport, to run first */
 						Utils.nextTick(function() {
-							Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
+							Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
 							transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
 							self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
 						});
@@ -647,6 +647,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
+		var logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
+		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason.message + ', code: ' + stateChange.reason.code) : ''));
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
