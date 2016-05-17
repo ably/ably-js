@@ -428,6 +428,8 @@ var RealtimeChannel = (function() {
 		if(err) {
 			this.errorReason = err;
 		}
+		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
+		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (err ? ('; reason: ' + err.message + ', code: ' + err.code) : ''));
 		this.emit(state, err);
 	};
 
