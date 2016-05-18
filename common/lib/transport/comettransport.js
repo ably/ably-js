@@ -67,7 +67,7 @@ var CometTransport = (function() {
 			connectRequest.on('complete', function(err) {
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
-					err = err || new ErrorInfo('Request cancelled', 400, 80000);
+					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
 				if(err) {
