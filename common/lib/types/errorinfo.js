@@ -16,7 +16,12 @@ var ErrorInfo = (function() {
 	};
 
 	ErrorInfo.fromValues = function(values) {
-		return Utils.mixin(new ErrorInfo(), values);
+		var result = Utils.mixin(new ErrorInfo(), values);
+		if (values instanceof Error) {
+			/* Error.message is not enumerable, so mixin loses the message */
+			result.message = values.message;
+		}
+		return result;
 	};
 
 	return ErrorInfo;
