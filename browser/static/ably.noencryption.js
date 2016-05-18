@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.18
+ * Ably JavaScript Library v0.8.19
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2562,7 +2562,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.18';
+Defaults.version           = '0.8.19';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -2921,9 +2921,13 @@ var Utils = (function() {
 	 *         added, by reference only
 	 */
 	Utils.mixin = function(target, src) {
-		for(var prop in src) {
-			if(src.hasOwnProperty(prop))
-				target[prop] = src[prop];
+		if(src) {
+			var hasOwnProperty = src.hasOwnProperty;
+			for(var key in src) {
+				if(!hasOwnProperty || hasOwnProperty.call(src, key)) {
+					target[key] = src[key];
+				}
+			}
 		}
 		return target;
 	};
@@ -3292,7 +3296,12 @@ var ErrorInfo = (function() {
 	};
 
 	ErrorInfo.fromValues = function(values) {
-		return Utils.mixin(new ErrorInfo(), values);
+		var result = Utils.mixin(new ErrorInfo(), values);
+		if (values instanceof Error) {
+			/* Error.message is not enumerable, so mixin loses the message */
+			result.message = values.message;
+		}
+		return result;
 	};
 
 	return ErrorInfo;
@@ -4102,7 +4111,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.chooseTransport = function(callback) {
 		var self = this;
-		Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', '');
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', '');
 		/* if there's already a transport, we're done */
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport already established');
@@ -4141,7 +4150,7 @@ var ConnectionManager = (function() {
 		/* first attempt the main host; no need to check for general connectivity first. */
 		decideMode(function(mode) {
 			var transportParams = new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial);
-			Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
 
 			/* if there are no http transports, just choose from the available transports,
 			 * falling back to the first host only;
@@ -4173,7 +4182,7 @@ var ConnectionManager = (function() {
 					httpTransport.once('connected', function(error, connectionKey) {
 						/* we allow other event handlers, including activating the transport, to run first */
 						Utils.nextTick(function() {
-							Logger.logAction(Logger.LOG_MAJOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
+							Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransport()', 'upgrading ... connectionKey = ' + connectionKey);
 							transportParams = new TransportParams(self.options, transportParams.host, 'upgrade', connectionKey);
 							self.chooseTransportForHost(transportParams, self.upgradeTransports.slice(), noop);
 						});
@@ -4208,7 +4217,7 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
 					transport.close();
 				}
-				callback(new ErrorInfo('Connection already closed', 400, 80017));
+				callback(new ErrorInfo('Connection already closed', 80017, 400));
 				return;
 			}
 			if(err) {
@@ -4250,7 +4259,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
+				callback(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80000, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
@@ -4500,6 +4509,11 @@ var ConnectionManager = (function() {
 				state = 'disconnected';
 			}
 			this.notifyState({state: state, error: error});
+		} else if(wasActive) {
+			/* If we were active but there is another transport scheduled for
+			* activation, go into to the connecting state until that transport
+			* activates and sets us back to connected */
+			this.notifyState({state: 'connecting', error: error});
 		}
 	};
 
@@ -4596,6 +4610,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
+		var logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
+		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason.message + ', code: ' + stateChange.reason.code) : ''));
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
@@ -5143,7 +5159,7 @@ var Transport = (function() {
 			break;
 		case actions.ERROR:
 			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'error; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				/* a transport error */
 				var err = ErrorInfo.fromValues(msgErr);
@@ -5445,7 +5461,7 @@ var CometTransport = (function() {
 			connectRequest.on('complete', function(err) {
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
-					err = err || new ErrorInfo('Request cancelled', 400, 80000);
+					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
 				if(err) {
@@ -6927,7 +6943,7 @@ var Connection = (function() {
 	}
 
 	Connection.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.connect()', '');
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
 		this.connectionManager.requestState({state: 'connecting'});
 	};
 
@@ -6938,7 +6954,7 @@ var Connection = (function() {
 	};
 
 	Connection.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MAJOR, 'Connection.close()', 'connectionKey = ' + this.key);
+		Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
 	};
 
@@ -7476,6 +7492,8 @@ var RealtimeChannel = (function() {
 		if(err) {
 			this.errorReason = err;
 		}
+		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
+		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (err ? ('; reason: ' + err.message + ', code: ' + err.code) : ''));
 		this.emit(state, err);
 	};
 
