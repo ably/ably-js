@@ -551,6 +551,11 @@ var ConnectionManager = (function() {
 				state = 'disconnected';
 			}
 			this.notifyState({state: state, error: error});
+		} else if(wasActive) {
+			/* If we were active but there is another transport scheduled for
+			* activation, go into to the connecting state until that transport
+			* activates and sets us back to connected */
+			this.notifyState({state: 'connecting', error: error});
 		}
 	};
 
