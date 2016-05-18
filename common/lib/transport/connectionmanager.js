@@ -259,7 +259,7 @@ var ConnectionManager = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.chooseTransportForHost()', 'closing transport = ' + transport);
 					transport.close();
 				}
-				callback(new ErrorInfo('Connection already closed', 400, 80017));
+				callback(new ErrorInfo('Connection already closed', 80017, 400));
 				return;
 			}
 			if(err) {
