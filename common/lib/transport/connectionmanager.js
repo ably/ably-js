@@ -301,7 +301,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				callback(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
+				callback(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80000, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
