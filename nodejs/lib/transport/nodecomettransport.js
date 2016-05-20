@@ -99,19 +99,18 @@ var NodeCometTransport = (function() {
 
 	function Request(uri, headers, params, body, requestMode, format, timeouts, transport) {
 		EventEmitter.call(this);
-		if(typeof(uri) == 'string') uri = url.parse(uri);
-		var tls = (uri.protocol == 'https:');
-		this.client = tls ? https : http;
+		this.params = params;
 		this.requestMode = requestMode;
+		this.format = format;
 		this.timeouts = timeouts;
 		this.transport = transport;
 		this.requestComplete = false;
-		this.req = this.res = null;
+		this.req = this.res = this.client = this.requestOptions = null;
 
 		var method = 'GET',
 			contentType = (format == 'msgpack') ? 'application/x-msgpack' : 'application/json';
 
-		headers = headers ? Utils.mixin({}, headers) : {};
+		headers = this.headers = headers ? Utils.mixin({}, headers) : {};
 		headers['accept'] = contentType;
 
 		if(body) {
@@ -124,17 +123,28 @@ var NodeCometTransport = (function() {
 			headers['Content-Length'] = body.length;
 			headers['Content-Type'] = contentType;
 		}
+		this.method = method;
+
+		this.setUri(uri);
+	}
+	Utils.inherits(Request, EventEmitter);
+
+	Request.prototype.setUri = function(uri) {
+		if(typeof(uri) == 'string') uri = url.parse(uri);
+		var tls = (uri.protocol == 'https:');
+		this.client = tls ? https : http;
+
 		var requestOptions = this.requestOptions = {
 			hostname: uri.hostname,
 			port: uri.port,
-			path: uri.path + Utils.toQueryString(params),
-			method: method,
-			headers: headers
+			path: uri.path + Utils.toQueryString(this.params),
+			method: this.method,
+			headers: this.headers
 		};
+		var transport = this.transport;
 		if(transport)
 			requestOptions.agent = transport.getAgent(tls);
-	}
-	Utils.inherits(Request, EventEmitter);
+	};
 
 	Request.prototype.exec = function() {
 		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
@@ -167,7 +177,7 @@ var NodeCometTransport = (function() {
 
 			self.res = res;
 			/* responses with an non-success statusCode are never streamed */
-			if(self.requestMode == CometTransport.REQ_RECV_STREAM && statusCode < 400) {
+			if(self.requestMode == CometTransport.REQ_RECV_STREAM && statusCode < 300) {
 				self.readStream();
 			} else {
 				self.readFully();
@@ -257,14 +267,21 @@ var NodeCometTransport = (function() {
 					return;
 				}
 
-				if(statusCode < 400) {
+				if(statusCode < 300) {
 					self.complete(err, body);
+					return;
+				}
+
+				if(statusCode === 307) {
+					self.transport.removePending();
+					self.setUri(res.headers.location);
+					self.exec();
 					return;
 				}
 
 				err = body.error;
 				if(!err) {
-					err = new Error('Error response received from server: ' + statusCode);
+					err = new Error('Error or unexpected response received from server: ' + statusCode);
 					err.statusCode = statusCode;
 				}
 				self.complete(err);
