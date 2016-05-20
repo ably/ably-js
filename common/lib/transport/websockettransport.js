@@ -53,12 +53,11 @@ var WebSocketTransport = (function() {
 		return 'WebSocketTransport; uri=' + this.uri;
 	};
 
-	WebSocketTransport.prototype.connect = function() {
+	WebSocketTransport.prototype.connect = function(wsUri) {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
-		var wsScheme = options.tls ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
+		wsUri = wsUri ||  (options.tls ? 'wss://' : 'ws://') + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
@@ -75,6 +74,11 @@ var WebSocketTransport = (function() {
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
+				if(!isBrowser) {
+					wsConnection.on('unexpected-response', function (req, res) {
+						self.onUnexpectedResponse(req, res);
+					});
+				}
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
 				self.onWsError(e);
@@ -129,6 +133,17 @@ var WebSocketTransport = (function() {
 		this.emit('wserror', err);
 		/* FIXME: this should not be fatal */
 		this.abort();
+	};
+
+	WebSocketTransport.prototype.onUnexpectedResponse = function(req, res) {
+		const statusCode = res.statusCode;
+		const uri = res.headers.location;
+		this.wsConnection.terminate();
+		if(statusCode === 307 && uri) {
+			this.connect(uri);
+			return;
+		}
+		this.onWsError(new ErrorInfo('Unexpected server response (' + statusCode + ')', 50000, statusCode));
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
