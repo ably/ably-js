@@ -595,12 +595,15 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
+		if(connectionId !== this.connectionId) {
+			/* if connectionKey changes but connectionId stays the same, then just a
+			* transport change on the same connection, so msgSerial should not reset */
+			this.msgSerial = 0;
+		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
 		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
-		this.msgSerial = 0;
-
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
