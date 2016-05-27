@@ -1,11 +1,30 @@
 var ConnectionManager = (function() {
-	var getFromSession    = (typeof(SessionStorage) !== 'undefined' && SessionStorage.get);
-	var setInSession      = (typeof(SessionStorage) !== 'undefined' && SessionStorage.set);
-	var removeFromSession = (typeof(SessionStorage) !== 'undefined' && SessionStorage.remove);
-	var sessionRecoveryName = 'ably-connection-recovery';
+	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
+
+	var transportPreferenceName = 'ably-transport-preference';
+	function getTransportPreference() {
+		return haveWebStorage && WebStorage.get(transportPreferenceName);
+	}
+	function setTransportPreference(value) {
+		return haveWebStorage && WebStorage.set(transportPreferenceName, value);
+	}
+	function clearTransportPreference() {
+		return haveWebStorage && WebStorage.remove(transportPreferenceName);
+	}
+
+	var sessionRecoveryName = 'ably-connection-recovery';
+	function getSessionRecoverData() {
+		return haveWebStorage && WebStorage.getSession(sessionRecoveryName);
+	}
+	function setSessionRecoverData(value) {
+		return haveWebStorage && WebStorage.setSession(sessionRecoveryName, value);
+	}
+	function clearSessionRecoverData() {
+		return haveWebStorage && WebStorage.removeSession(sessionRecoveryName);
+	}
 
 	function isFatalErr(err) {
 		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
@@ -117,11 +136,11 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(setInSession && typeof options.recover === 'function' && window.addEventListener)
+		if(haveWebStorage && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
-		if(setInSession && options.closeOnUnload === true && window.addEventListener)
-			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'})});
+		if(options.closeOnUnload === true && window.addEventListener)
+			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
 
 		/* Listen for online and offline events */
 		if(typeof window === "object" && window.addEventListener) {
@@ -173,7 +192,7 @@ var ConnectionManager = (function() {
 			}
 
 			var recoverFn = self.options.recover,
-				lastSessionData = getFromSession && getFromSession(sessionRecoveryName);
+				lastSessionData = getSessionRecoverData();
 			if(lastSessionData && typeof(recoverFn) === 'function') {
 				recoverFn(lastSessionData, function(shouldRecover) {
 					if(shouldRecover) {
@@ -620,15 +639,13 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(setInSession) {
-			if(this.connectionKey && this.connectionSerial !== undefined) {
-				setInSession(sessionRecoveryName, {
-					recoveryKey: this.connectionKey + ':' + this.connectionSerial,
-					disconnectedAt: Utils.now(),
-					location: window.location,
-					clientId: this.realtime.auth.clientId,
-				}, this.options.timeouts.connectionStateTtl);
-			}
+		if(haveWebStorage && this.connectionKey && this.connectionSerial !== undefined) {
+			setSessionRecoverData({
+				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
+				disconnectedAt: Utils.now(),
+				location: window.location,
+				clientId: this.realtime.auth.clientId,
+			}, this.options.timeouts.connectionStateTtl);
 		}
 	};
 
@@ -637,9 +654,7 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.unpersistConnection = function() {
-		if(removeFromSession) {
-			removeFromSession(sessionRecoveryName);
-		}
+		clearSessionRecoverData();
 	};
 
 	/*********************
