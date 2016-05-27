@@ -694,7 +694,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Attach to channel, enter+leave presence, detatch again, and get presence history
 	 */
 	exports.presenceHistory = function(test) {
-		test.expect(4);
+		test.expect(3);
 		var clientRealtime;
 		var channelName = 'history';
 		var testClientData = 'Test client data (history0)';
@@ -710,8 +710,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(presenceMessages.length, 2, 'Verify correct number of presence messages found');
 				var actions = utils.arrMap(presenceMessages, function(msg){return msg.action;}).sort();
 				test.deepEqual(actions, ['enter','leave'], 'Verify presenceMessages have correct actions');
-				test.equal(presenceMessages[0].data, testClientData, 'Verify first presenceMessages has correct data');
-				test.equal(presenceMessages[1].data, testClientData, 'Verify second presenceMessages has correct data');
+				test.equal(presenceMessages[0].data || presenceMessages[1].data, testClientData, 'Verify correct data (from whichever message was the "enter")');
 				closeAndFinish(test, clientRealtime);
 			});
 		};
