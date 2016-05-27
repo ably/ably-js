@@ -19,6 +19,7 @@ var Transport = (function() {
 	function Transport(connectionManager, auth, params) {
 		EventEmitter.call(this);
 		this.connectionManager = connectionManager;
+		connectionManager.registerProposedTransport(this);
 		this.auth = auth;
 		this.params = params;
 		this.timeouts = params.options.timeouts;
@@ -61,12 +62,12 @@ var Transport = (function() {
 
 	Transport.prototype.onProtocolMessage = function(message) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received; ' + ProtocolMessage.stringify(message));
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
 			this.emit('heartbeat');
 			break;
 		case actions.CONNECTED:

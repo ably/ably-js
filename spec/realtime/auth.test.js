@@ -6,7 +6,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		utils = helper.Utils,
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection;
+		monitorConnection = helper.monitorConnection,
+		testOnAllTransports = helper.testOnAllTransports,
+		mixin = helper.Utils.mixin;
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -385,7 +387,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check state change reason is propogated during a disconnect
 	 * (when connecting with a token that expires while connected)
 	 */
-	exports.auth_token_expires = function(test) {
+	testOnAllTransports(exports, 'auth_token_expires', function(realtimeOpts) { return function(test) {
 		test.expect(4);
 		var clientRealtime,
 			rest = helper.AblyRest();
@@ -396,7 +398,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			clientRealtime = helper.AblyRealtime({ tokenDetails: tokenDetails, queryTime: true });
+			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, authCallback: function(){}, queryTime: true }));
 			monitorConnection(test, clientRealtime);
 
 			clientRealtime.connection.once('connected', function(){
@@ -410,7 +412,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 			});
 		});
-	};
+	}});
 
 	/*
 	 * Check that when the queryTime option is provided
@@ -461,7 +463,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * If using authcallback when a token expires, should automatically request a
 	 * new token
 	 */
-	exports.auth_tokenDetails_expiry_with_authcallback = function(test) {
+	testOnAllTransports(exports, 'auth_tokenDetails_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
 		test.expect(4);
 
 		var realtime, rest = helper.AblyRest();
@@ -478,7 +480,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
 		monitorConnection(test, realtime);
 		realtime.connection.once('connected', function(){
 			test.ok(true, 'Verify connection connected');
@@ -494,13 +496,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 
 		monitorConnection(test, realtime);
-	};
+	}});
 
 	/*
 	 * Same as previous but with just a token, so ably-js doesn't know that the
 	 * token's expired
 	 */
-	exports.auth_token_string_expiry_with_authcallback = function(test) {
+	testOnAllTransports(exports, 'auth_token_string_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
 		test.expect(4);
 
 		var realtime, rest = helper.AblyRest();
@@ -517,7 +519,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
 		monitorConnection(test, realtime);
 		realtime.connection.once('connected', function(){
 			test.ok(true, 'Verify connection connected');
@@ -533,12 +535,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 
 		monitorConnection(test, realtime);
-	};
+	}});
 
 	/*
 	 * Same as previous but with no way to generate a new token
 	 */
-	exports.auth_token_string_expiry_with_token = function(test) {
+	testOnAllTransports(exports, 'auth_token_string_expiry_with_token', function(realtimeOpts) { return function(test) {
 		test.expect(5);
 
 		var realtime, rest = helper.AblyRest();
@@ -549,7 +551,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				closeAndFinish(test, realtime);
 				return;
 			}
-			realtime = helper.AblyRealtime({ token: tokenDetails.token, clientId: clientId });
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
 			realtime.connection.once('connected', function(){
 				test.ok(true, 'Verify connection connected');
 				realtime.connection.once('disconnected', function(stateChange){
@@ -565,12 +567,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 			});
 		});
-	};
+	}});
 
 	/*
 	 * Try to connect with an expired token string
 	 */
-	exports.auth_expired_token_string = function(test) {
+	testOnAllTransports(exports, 'auth_expired_token_string', function(realtimeOpts) { return function(test) {
 		test.expect(2);
 
 		var realtime, rest = helper.AblyRest();
@@ -582,29 +584,33 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			setTimeout(function() {
-				realtime = helper.AblyRealtime({ token: tokenDetails.token, clientId: clientId });
+				realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
 				realtime.connection.once('failed', function(stateChange){
 					test.ok(true, 'Verify connection failed');
 					test.equal(stateChange.reason.code, 40101, 'Verify correct failure code');
 					realtime.close();
 					test.done();
 				});
-				utils.arrForEach(['connected', 'disconnected', 'suspended'], function(state) {
+				/* Note: ws transport indicates viability when websocket is
+				* established, before realtime sends error response. So token error
+				* goes through the same path as a connected transport, so goes to
+				* disconnected first */
+				utils.arrForEach(['connected', 'suspended'], function(state) {
 					realtime.connection.on(state, function () {
-						test.ok(false, 'State changed to ' + state + ', should have gone to failed immediately');
+						test.ok(false, 'State changed to ' + state + ', should have gone to failed');
 						test.done();
 						realtime.close();
 					});
 				});
 			}, 100)
 		});
-	};
+	}});
 
 	/*
 	 * use authorise({force: true}) to reauth with a token with a different set of capabilities
 	 */
-	exports.reauth_tokenDetails = function(test) {
-		test.expect(2)
+	testOnAllTransports(exports, 'reauth_tokendetails', function(realtimeOpts) { return function(test) {
+		test.expect(2);
 		var rest = helper.AblyRest(),
 			realtime,
 			channel,
@@ -613,26 +619,26 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var getFirstToken = function(callback) {
 			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*']}}, null, function(err, tokenDetails) {
 				callback(err, tokenDetails);
-			})
+			});
 		},
 
 		connect = function(tokenDetails, callback) {
-			realtime = helper.AblyRealtime({tokenDetails: tokenDetails});
-			realtime.connection.once('connected', function() { callback() })
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, {tokenDetails: tokenDetails}));
+			realtime.connection.once('connected', function() { callback() });
 		},
 
 		checkCantAttach = function(callback) {
 			channel = realtime.channels.get('rightchannel');
 			channel.attach(function(err) {
 				test.ok(err && err.code === 40160, 'check channel is denied access')
-				callback()
-			})
+				callback();
+			});
 		},
 
 		getSecondToken = function(callback) {
 			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*'], 'rightchannel': ['*']}}, null, function(err, tokenDetails) {
 				callback(err, tokenDetails);
-			})
+			});
 		},
 
 		reAuth = function(tokenDetails, callback) {
@@ -642,7 +648,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		checkCanNowAttach = function(stateChange, callback) {
 			channel.attach(function(err) {
 				callback(err);
-			})
+			});
 		};
 
 		async.waterfall([
@@ -653,21 +659,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			reAuth,
 			checkCanNowAttach,
 		], function(err) {
-			test.ok(!err, err && displayError(err))
+			test.ok(!err, err && displayError(err));
 			closeAndFinish(test, realtime);
-		})
-	}
+		});
+	}});
 
 	/*
 	 * use authorise({force: true}) to force a reauth using an existing authCallback
 	 */
-	exports.reauth_authCallback = function(test) {
+	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
 		test.expect(5);
-
 		var realtime, rest = helper.AblyRest();
+		var firstTime = true;
 		var clientId = "testclientid";
 		var authCallback = function(tokenParams, callback) {
-			tokenParams.ttl = 5000;
+			tokenParams.ttl = firstTime ? 5000 : 60000;
+			firstTime = false;
 			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, displayError(err));
@@ -678,14 +685,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
 		realtime.connection.once('connected', function(){
-			/* 3s after original token issued, reauth */
+			/* soon after connected, reauth */
 			setTimeout(function(){
 				realtime.auth.authorise(null, {force: true}, function(err) {
 					test.ok(!err, err && displayError(err));
-				})
-			}, 3000)
+				});
+			}, 200);
 			test.ok(true, 'Verify connection connected');
 
 			/* statechanges due to the reauth */
@@ -694,19 +701,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
 				realtime.connection.once('connected', function(){
 					test.ok(true, 'Verify connection reconnected');
-					/* after another 3s (>=1s after would be disconnected under the original token), we're done */
+					/* after another 5s (after would be disconnected under the original token), we're done */
 					setTimeout(function(){
 						closeAndFinish(test, realtime);
-					}, 3000)
-					realtime.connection.once('disconnected', function(stateChange){
-						test.ok(false, 'should not be disconnected a second time, as new token should last till test ends')
-					})
+					}, 5000);
+					realtime.connection.once('disconnected', function(){
+						test.ok(false, 'should not be disconnected a second time, as new token should last till test ends');
+					});
 				});
 			});
 		});
 
 		monitorConnection(test, realtime);
-	}
+	}});
 
 	return module.exports = helper.withTimeout(exports);
 });

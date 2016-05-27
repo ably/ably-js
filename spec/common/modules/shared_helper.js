@@ -6,7 +6,7 @@
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
-		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.transports),
+		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
 			bestTransport = availableTransports[0];
 
 		function displayError(err) {
@@ -104,7 +104,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			var timeout = defaultTimeout || 60 * 1000;
 
 			for (var needle in exports) {
-				if (exports.hasOwnProperty(needle)) {
+				if (exports.hasOwnProperty(needle) && needle !== 'setUp') {
 					(function(originalFn) {
 						exports[needle] = function(test) {
 							var originalDone = test.done;
@@ -123,6 +123,12 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 
 			return exports;
+		}
+
+		function clearTransportPreference() {
+			if(isBrowser && window.localStorage) {
+				window.localStorage.removeItem('ably-transport-preference');
+			}
 		}
 
 		return module.exports = {
@@ -147,5 +153,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
+			clearTransportPreference:  clearTransportPreference,
 		};
 	});

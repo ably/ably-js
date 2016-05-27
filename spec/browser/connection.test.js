@@ -5,11 +5,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
-		simulateDroppedConnection = helper.simulateDroppedConnection;
+		simulateDroppedConnection = helper.simulateDroppedConnection,
+		transportPreferenceName = 'ably-transport-preference';
 
 	function supportedBrowser(test) {
 		if(document.body.ononline === undefined) {
 			console.log("Online events not supported; skipping connection.test.js");
+			return false;
+		}
+
+		if(!window.WebSocket || !window.localStorage) {
+			console.log("Websockets or local storage not supported; skipping connection.test.js");
 			return false;
 		}
 
@@ -80,11 +86,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.expect(3);
 		monitorConnection(test, realtime);
 
-		// simulate the internet being failed by stubbing out chooseTransport to foil
+		// simulate the internet being failed by stubbing out tryATransport to foil
 		// the initial connection. (No immediate reconnect attempt since it was never
 		// connected in the first place)
-		var oldTransport = connection.connectionManager.chooseTransport;
-		connection.connectionManager.chooseTransport = function(){};
+		var oldTransport = connection.connectionManager.tryATransport;
+		connection.connectionManager.tryATransport = function(){};
 
 		connection.once('disconnected', function() {
 			var disconnectedAt = new Date();
@@ -97,7 +103,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				})
 			});
 			// restore the 'internet' and simulate an online event
-			connection.connectionManager.chooseTransport = oldTransport;
+			connection.connectionManager.tryATransport= oldTransport;
 			document.dispatchEvent(onlineEvent);
 		});
 	};
@@ -108,8 +114,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		connection = realtime.connection,
 		onlineEvent = new Event('online', {'bubbles': true});
 
-		// Easiest way to have all transports attempt fail it to stub out chooseTransport
-		connection.connectionManager.chooseTransport = function(){};
+		// Easiest way to have all transports attempt fail it to stub out tryATransport
+		connection.connectionManager.tryATransport = function(){};
 
 		test.expect(2);
 		connection.on('failed', function () {
@@ -217,6 +223,61 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			});
 		});
 	};
+
+	exports.persist_preferred_transport = function(test) {
+		test.expect(1);
+		/* ensure we start with a blank slate */
+		helper.clearTransportPreference();
+
+		var realtime = helper.AblyRealtime();
+
+		realtime.connection.connectionManager.on(function(transport) {
+			if(this.event === "transport.active" && transport.shortName === 'web_socket') {
+				test.equal(window.localStorage.getItem(transportPreferenceName), JSON.stringify({value: 'web_socket'}));
+				closeAndFinish(test, realtime);
+			}
+		});
+		monitorConnection(test, realtime);
+	};
+
+	exports.use_persisted_transport0 = function(test) {
+		test.expect(1);
+		var transportPreferenceName = 'ably-transport-preference';
+		window.localStorage.setItem(transportPreferenceName, JSON.stringify({value: 'web_socket'}));
+
+		var realtime = helper.AblyRealtime();
+
+		realtime.connection.connectionManager.on(function(transport) {
+			if(this.event === "transport.active") {
+				test.equal(transport.shortName, 'web_socket');
+				closeAndFinish(test, realtime);
+			}
+		});
+		monitorConnection(test, realtime);
+	};
+
+	exports.use_persisted_transport1 = function(test) {
+		test.expect(1);
+		window.localStorage.setItem(transportPreferenceName, JSON.stringify({value: 'xhr_streaming'}));
+
+		var realtime = helper.AblyRealtime();
+
+		realtime.connection.connectionManager.on(function(transport) {
+			if(this.event === "transport.active") {
+				test.equal(transport.shortName, 'xhr_streaming');
+				closeAndFinish(test, realtime);
+			}
+		});
+		monitorConnection(test, realtime);
+	};
+
+	exports.browser_transports = function(test) {
+		test.expect(2);
+		var realtime = helper.AblyRealtime();
+		test.equal(realtime.connection.connectionManager.baseTransport, 'xhr_polling');
+		test.deepEqual(realtime.connection.connectionManager.upgradeTransports, ['xhr_streaming', 'web_socket']);
+		closeAndFinish(test, realtime);
+	}
 
 	return module.exports = supportedBrowser() ? helper.withTimeout(exports) : {};
 
