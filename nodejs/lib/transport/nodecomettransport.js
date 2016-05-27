@@ -6,6 +6,7 @@ var NodeCometTransport = (function() {
 	var url = require('url');
 	var util = require('util');
 	var noop = function(){};
+	var shortName = 'comet';
 
 	/*
 	 * A transport to use with nodejs
@@ -16,11 +17,12 @@ var NodeCometTransport = (function() {
 		this.httpAgent = null;
 		this.httpsAgent = null;
 		this.pendingRequests = 0;
+		this.shortName = shortName;
 	}
 	util.inherits(NodeCometTransport, CometTransport);
 
 	NodeCometTransport.isAvailable = function() { return true; };
-	ConnectionManager.httpTransports['comet'] = ConnectionManager.transports['comet'] = NodeCometTransport;
+	ConnectionManager.supportedTransports[shortName] = NodeCometTransport;
 
 	NodeCometTransport.checkConnectivity = function(callback) {
 		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';

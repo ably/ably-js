@@ -148,7 +148,8 @@ module.exports = function (grunt) {
 
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
-		'<%= dirs.browser %>/lib/transport/xhrtransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrstreamingtransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js',
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(

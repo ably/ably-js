@@ -39,6 +39,15 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
+	if(isBrowser && window.localStorage) {
+		/* run before each test to ensure starting from a fresh state */
+		exports.setUp = function(callback) {
+			console.log('Clearing transport preference from localstorage');
+			helper.clearTransportPreference();
+			callback();
+		};
+	}
+
 	/*
 	 * Publish once with REST, before upgrade, verify message received
 	 */

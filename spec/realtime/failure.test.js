@@ -121,8 +121,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						* the suspended timeout trips before three connection cycles */
 						disconnectedRetryTimeout: 1000,
 						realtimeRequestTimeout: 50,
+						preferenceConnectTimeout: 50,
 						suspendedRetryTimeout: 1000,
-						connectionStateTtl: 2900
+						connectionStateTtl: 2900,
 					});
 					realtime.connection.on(function() {
 						connectionEvents.push(this.event);

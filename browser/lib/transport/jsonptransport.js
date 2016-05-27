@@ -9,16 +9,18 @@ var JSONPTransport = (function() {
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
 	var head = document.getElementsByTagName('head')[0];
+	var shortName = 'jsonp';
 
 	/* public constructor */
 	function JSONPTransport(connectionManager, auth, params) {
 		params.stream = false;
 		CometTransport.call(this, connectionManager, auth, params);
+		this.shortName = shortName;
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
 	JSONPTransport.isAvailable = function() { return true; };
-	ConnectionManager.httpTransports['jsonp'] = ConnectionManager.transports['jsonp'] = JSONPTransport;
+	ConnectionManager.supportedTransports[shortName] = JSONPTransport;
 
 	/* connectivity check; since this has a hard-coded callback id,
 	 * we just make sure that we handle concurrent requests (but the
