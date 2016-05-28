@@ -54,6 +54,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				var presenceMessages = resultPage.items;
 				test.equal(presenceMessages.length, 6, 'Verify correct number of messages found');
+				if(presenceMessages.length != 6) {
+					console.log('presenceMessages: ', JSON.stringify(presenceMessages));
+				}
 				var encodedMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_encoded'});
 				var decodedMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_decoded'});
 				var boolMessage = arrFind(presenceMessages, function(msg) {return msg.clientId == 'client_bool'});
