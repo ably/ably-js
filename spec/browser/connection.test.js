@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
@@ -10,20 +10,20 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	function supportedBrowser(test) {
 		if(document.body.ononline === undefined) {
-			console.log("Online events not supported; skipping connection.test.js");
+			console.log('Online events not supported; skipping connection.test.js');
 			return false;
 		}
 
 		if(!window.WebSocket || !window.localStorage) {
-			console.log("Websockets or local storage not supported; skipping connection.test.js");
+			console.log('Websockets or local storage not supported; skipping connection.test.js');
 			return false;
 		}
 
 		// IE doesn't support creating your own events with new
 		try {
-			var testEvent = new Event("foo");
+			var testEvent = new Event('foo');
 		} catch(e) {
-			console.log("On IE; skipping connection.test.js");
+			console.log('On IE; skipping connection.test.js');
 			return false;
 		}
 
@@ -138,7 +138,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	/* uses internal realtime knowledge of the format of the connection key to
 	* check if a connection key is the result of a successful recovery of another */
 	function sameConnection(keyA, keyB) {
-		return keyA.split("-")[0] === keyB.split("-")[0];
+		return keyA.split('-')[0] === keyB.split('-')[0];
 	}
 
 	exports.page_refresh_with_recovery = function(test) {
@@ -232,7 +232,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime = helper.AblyRealtime();
 
 		realtime.connection.connectionManager.on(function(transport) {
-			if(this.event === "transport.active" && transport.shortName === 'web_socket') {
+			if(this.event === 'transport.active' && transport.shortName === 'web_socket') {
 				test.equal(window.localStorage.getItem(transportPreferenceName), JSON.stringify({value: 'web_socket'}));
 				closeAndFinish(test, realtime);
 			}
@@ -248,7 +248,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime = helper.AblyRealtime();
 
 		realtime.connection.connectionManager.on(function(transport) {
-			if(this.event === "transport.active") {
+			if(this.event === 'transport.active') {
 				test.equal(transport.shortName, 'web_socket');
 				closeAndFinish(test, realtime);
 			}
@@ -263,7 +263,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		var realtime = helper.AblyRealtime();
 
 		realtime.connection.connectionManager.on(function(transport) {
-			if(this.event === "transport.active") {
+			if(this.event === 'transport.active') {
 				test.equal(transport.shortName, 'xhr_streaming');
 				closeAndFinish(test, realtime);
 			}

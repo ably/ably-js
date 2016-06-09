@@ -3,6 +3,8 @@ var ConnectionManager = (function() {
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
+	var transportPreferenceOrder = Defaults.transportPreferenceOrder;
+	var optimalTransport = transportPreferenceOrder[transportPreferenceOrder.length - 1];
 
 	var transportPreferenceName = 'ably-transport-preference';
 	function getTransportPreference() {
@@ -39,8 +41,6 @@ var ConnectionManager = (function() {
 	}
 
 	function betterTransportThan(a, b) {
-		var transportPreferenceOrder = Defaults.transportPreferenceOrder;
-
 		return Utils.arrIndexOf(transportPreferenceOrder, a.shortName) >
 		   Utils.arrIndexOf(transportPreferenceOrder, b.shortName);
 	}
@@ -125,7 +125,7 @@ var ConnectionManager = (function() {
 		/* baseTransports selects the leftmost transport in the Defaults.transports list
 		* that's both requested and supported. Normally this will be xhr_polling;
 		* if xhr isn't supported it will be jsonp. If the user has forced a
-			* transport, it'll just be that one. */
+		* transport, it'll just be that one. */
 		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
 
@@ -154,7 +154,7 @@ var ConnectionManager = (function() {
 			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
 
 		/* Listen for online and offline events */
-		if(typeof window === "object" && window.addEventListener) {
+		if(typeof window === 'object' && window.addEventListener) {
 			window.addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
@@ -284,7 +284,7 @@ var ConnectionManager = (function() {
 		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
 			if(mode == 'upgrade' && self.activeProtocol) {
 				/*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
-				if(transport.shortName !== 'web_socket' && Utils.arrIn(self.getUpgradePossibilities(), 'web_socket')) {
+				if(transport.shortName !== optimalTransport && Utils.arrIn(self.getUpgradePossibilities(), optimalTransport)) {
 					setTimeout(function() {
 						self.scheduleTransportActivation(transport, connectionKey);
 					}, self.options.timeouts.parallelUpgradeDelay);
@@ -800,7 +800,7 @@ var ConnectionManager = (function() {
 		this.startSuspendTimer();
 		this.startTransitionTimer(this.states.connecting);
 
-		if(auth.method == 'basic') {
+		if(auth.method === 'basic') {
 			connect();
 		} else {
 			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
@@ -817,15 +817,17 @@ var ConnectionManager = (function() {
 
 	/**
 	 * There are three stages in connecting:
-	 * - preference: if there is a cached transport preference, we try to
-	 *   connect on that. If that fails we remove the preference and fall back
-	 *   to base.
+	 * - preference: if there is a cached transport preference, we try to connect
+	 *   on that. If that fails or times out we abort the attempt, remove the
+	 *   preference and fall back to base. If it succeeds, we try upgrading it if
+	 *   needed (will only be in the case where the preference is xhrs and the
+	 *   browser supports ws).
 	 * - base: we try to connect with the best transport that we think will
 	 *   never fail for this browser (usually this is xhr_polling; for very old
 	 *   browsers will be jsonp, for node will be comet). If it doesn't work, we
 	 *   try fallback hosts.
 	 * - upgrade: given a connected transport, we see if there are any better
-	 *   ones, and try to upgrade to them.
+	 *   ones, and if so, try to upgrade to them.
 	 *
 	 * connectImpl works out what stage you're at (which is purely a function of
 	 * the current connection state and whether there are any stored preferences),
@@ -971,15 +973,12 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.getUpgradePossibilities = function() {
+		/* returns the subset of upgradeTransports to the right of the current
+		 * transport in upgradeTransports (if it's in there - if not, currentPosition
+		 * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
 		var current = this.activeProtocol.getTransport().shortName;
-
-		if(current === 'web_socket') {
-			return [];
-		}
-		if(current === 'xhr_streaming' || current === 'comet') {
-			return Utils.intersect(this.upgradeTransports, ['web_socket']);
-		}
-		return this.upgradeTransports;
+		var currentPosition = Utils.arrIndexOf(this.upgradeTransports, current);
+		return this.upgradeTransports.slice(currentPosition + 1);
 	};
 
 
