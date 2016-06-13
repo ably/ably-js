@@ -108,7 +108,7 @@ module.exports = function (grunt) {
 	var ablyFiles = [
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
-		'<%= dirs.browser %>/lib/util/sessionstorage.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
 		'<%= dirs.browser %>/lib/util/domevent.js',
@@ -148,7 +148,8 @@ module.exports = function (grunt) {
 
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
-		'<%= dirs.browser %>/lib/transport/xhrtransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrstreamingtransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js',
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(

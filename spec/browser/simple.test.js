@@ -16,7 +16,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	function isTransportAvailable(transport) {
-		return (transport in Ably.Realtime.ConnectionManager.transports);
+		return (transport in Ably.Realtime.ConnectionManager.supportedTransports);
 	}
 
 	function realtimeConnection(transports) {

@@ -13,7 +13,9 @@ Defaults.TIMEOUTS = {
 	/* Not documented: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000
+	recvTimeout                : 90000,
+	preferenceConnectTimeout   : 6000,
+	parallelUpgradeDelay       : 4000,
 };
 Defaults.httpMaxRetryCount = 3;
 
@@ -69,6 +71,12 @@ Defaults.normaliseOptions = function(options) {
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
 		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
 		options.recover = null;
+	}
+
+	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
+		Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
+		Utils.arrDeleteValue(options.transports, 'xhr');
+		options.transports.push('xhr_streaming');
 	}
 
 	if(!('queueMessages' in options))

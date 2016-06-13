@@ -220,6 +220,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.init_fallbacks = function(test) {
 		test.expect(5);
 		try {
+			helper.clearTransportPreference();
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
 				restHost: 'a',
@@ -231,27 +232,45 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.deepEqual(realtime.connection.connectionManager.httpHosts, ['a', 'b', 'c'], 'Verify hosts list is as expected');
 			/* Replace chooseTransportForHost with a spy, then try calling
 			* chooseHttpTransport to see what host is picked */
-			realtime.connection.connectionManager.chooseTransportForHost = function(transportParams, transports, cb) {
+			realtime.connection.connectionManager.tryATransport = function(transportParams, transport, cb) {
 				switch(transportParams.host) {
 					case 'a':
-						test.ok('Tries first with restHost');
+						test.ok(true, 'Tries first with restHost');
 						cb({'code': 50000});
 						break;
 					case 'b':
 					case 'c':
 						/* should be called twice */
-						test.ok('Tries each of the fallback hosts in turn');
+						test.ok(true, 'Tries each of the fallback hosts in turn');
 						cb({'code': 50000});
 				}
 			};
-			realtime.connection.connectionManager.chooseHttpTransport({}, function(err) {
-				test.equal(err.code, 80000, 'Expected error code after no fallback host works');
+			realtime.connection.on('disconnected', function(stateChange) {
+				test.equal(stateChange.reason.code, 80000, 'Expected error code after no fallback host works');
 				closeAndFinish(test, realtime);
 			})
+			realtime.connection.connect();
 		} catch(e) {
 			test.ok(false, 'init_defaulthost failed with exception: ' + e.stack);
 			test.done();
 		}
+	}
+
+	/* Check base and upgrade transports (nodejs only; browser tests in their own section) */
+	if(!isBrowser) {
+		exports.node_transports = function(test) {
+			test.expect(2);
+			var realtime;
+			try {
+				realtime = helper.AblyRealtime();
+				test.equal(realtime.connection.connectionManager.baseTransport, 'comet');
+				test.deepEqual(realtime.connection.connectionManager.upgradeTransports, ['web_socket']);
+				closeAndFinish(test, realtime);
+			} catch(e) {
+				test.ok(false, 'Init with key failed with exception: ' + e.stack);
+				closeAndFinish(test, realtime);
+			}
+		};
 	}
 
 	/* Check that the connectionKey in ConnectionDetails takes precedence over connectionKey in ProtocolMessage,

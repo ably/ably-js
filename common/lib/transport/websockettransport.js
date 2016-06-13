@@ -2,9 +2,11 @@ var WebSocketTransport = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
 	var binaryType = isBrowser ? 'arraybuffer' : 'nodebuffer';
+	var shortName = 'web_socket';
 
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
+		this.shortName = shortName;
 		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
@@ -15,27 +17,17 @@ var WebSocketTransport = (function() {
 	};
 
 	if(WebSocketTransport.isAvailable())
-		ConnectionManager.transports['web_socket'] = WebSocketTransport;
+		ConnectionManager.supportedTransports[shortName] = WebSocketTransport;
 
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		var closeHandler = function(stateChange) {
-			if(stateChange.current === 'closing')
-				transport.close();
-		};
 		transport.on('wserror', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off('wserror', errorCb);
-			transport.cancelConnectTimeout();
-			connectionManager.off('connectionstate', closeHandler);
 			callback(null, transport);
 		});
-		/* At this point connectionManager has no reference to websocketTransport.
-		* So need to handle a connect timeout and listen for close events here temporarily */
-		transport.startConnectTimeout();
-		connectionManager.on('connectionstate', closeHandler);
 		transport.connect();
 	};
 
@@ -142,23 +134,6 @@ var WebSocketTransport = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
 				wsConnection.close();
 			});
-		}
-	};
-
-	WebSocketTransport.prototype.startConnectTimeout = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()')
-		var self = this;
-		this.connectTimeout = setTimeout(function() {
-			Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.startConnectTimeout()',
-				'Websocket failed to open after connectTimeout expired; disposing');
-			self.dispose();
-		}, this.timeouts.realtimeRequestTimeout);
-	};
-
-	WebSocketTransport.prototype.cancelConnectTimeout = function() {
-		if(this.connectTimeout) {
-			clearTimeout(this.connectTimeout);
-			this.connectTimeout = null;
 		}
 	};
 
