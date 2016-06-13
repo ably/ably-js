@@ -1,10 +1,10 @@
 # [Ably](https://www.ably.io)
 
-## Version: 0.8.19
+## Version: 0.8.20
 
 [![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
 
-This repo contains the ably javascript client libraries, both for the browser and nodejs.
+This repo contains the Ably javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
 
 For complete API documentation, see the [ably documentation](https://ably.io/documentation).
 
@@ -36,7 +36,7 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.io/lib/ably.min.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.17.js or http://cdn.ably.io/lib/ably-0.8.17.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.20.js or http://cdn.ably.io/lib/ably-0.8.20.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For the real-time library:
 

@@ -19,7 +19,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.19';
+Defaults.version           = '0.8.20';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
