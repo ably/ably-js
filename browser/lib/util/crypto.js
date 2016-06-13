@@ -4,7 +4,8 @@ var Crypto = (function() {
 	var DEFAULT_MODE = 'cbc';
 	var DEFAULT_BLOCKLENGTH = 16; // bytes
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
-	var VAL32 = 0x100000000;
+	var UINT32_SUP = 0x100000000;
+	var INT32_SUP = 0x80000000;
 	var WordArray = CryptoJS.lib.WordArray;
 
 	/**
@@ -26,7 +27,11 @@ var Crypto = (function() {
 			Logger.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
 			var words = bytes / 4, array = new Array(words);
 			for(var i = 0; i < words; i++) {
-				array[i] = Math.floor(Math.random() * VAL32);
+				/* cryptojs wordarrays use signed ints. When WordArray.create is fed a
+				* Uint32Array unsigned are converted to signed automatically, but when
+				* fed a normal array they aren't, so need to do so ourselves by
+				* subtracting INT32_SUP */
+				array[i] = Math.floor(Math.random() * UINT32_SUP) - INT32_SUP;
 			}
 
 			return WordArray.create(array);
