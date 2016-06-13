@@ -1324,5 +1324,78 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		runTestWithEventListener(test, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
 	};
 
+	/*
+	 * Check that, on a reattach when presence map has changed since last attach,
+	 * all members are emitted and map is in the correct state
+	 */
+	exports.presence_refresh_on_detach = function(test) {
+		test.expect(7);
+		var channelName = "presence_refresh_on_detach";
+		var realtime = helper.AblyRealtime();
+		var observer = helper.AblyRealtime({log: {level: 4}});
+		var realtimeChannel = realtime.channels.get(channelName);
+		var observerChannel = observer.channels.get(channelName);
+
+		function waitForBothConnect(cb) {
+			async.parallel([
+				function(connectCb) { realtime.connection.on('connected', connectCb); },
+				function(connectCb) { observer.connection.on('connected', connectCb); }
+			], function() { cb(); });
+		}
+
+		function enterOneAndTwo(cb) {
+			async.parallel([
+				function(enterCb) { realtimeChannel.presence.enterClient('one', enterCb); },
+				function(enterCb) { realtimeChannel.presence.enterClient('two', enterCb); },
+			], cb);
+		}
+
+		function checkPresence(first, second, cb) {
+			observerChannel.presence.get(function(err, presenceMembers) {
+				var clientIds = utils.arrMap(presenceMembers, function(msg){return msg.clientId;}).sort();
+				test.equal(clientIds.length, 2, 'Two members present');
+				test.equal(clientIds[0], first, 'Member ' + first + ' present');
+				test.equal(clientIds[1], second, 'Member ' + second + ' present');
+				cb(err);
+			});
+		}
+
+		function swapTwoForThree(cb) {
+			async.parallel([
+				function(innerCb) { realtimeChannel.presence.leaveClient('two', innerCb); },
+				function(innerCb) { realtimeChannel.presence.enterClient('three', innerCb); },
+			], cb);
+		}
+
+		function attachAndListen(cb) {
+			var here = [];
+			observerChannel.presence.subscribe(function(pm) {
+				here.push(pm.clientId);
+				if(here.length == 2) {
+					test.deepEqual(here.sort(), ['one', 'three']);
+					cb();
+				}
+			});
+			observerChannel.attach();
+		}
+
+		async.series([
+			waitForBothConnect,
+			function(cb) { realtimeChannel.attach(cb); },
+			enterOneAndTwo,
+			function(cb) { observerChannel.attach(cb); },
+			function(cb) { checkPresence('one', 'two', cb); },
+			function(cb) { observerChannel.detach(cb); },
+			swapTwoForThree,
+			attachAndListen,
+			function(cb) { checkPresence('one', 'three', cb); },
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, [realtime, observer]);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
