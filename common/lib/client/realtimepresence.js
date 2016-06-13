@@ -255,6 +255,7 @@ var RealtimePresence = (function() {
 			pendingPresence.callback(err);
 			this.pendingPresence = null;
 		}
+		this.members.clear();
 	};
 
 	RealtimePresence.prototype.awaitSync = function() {
@@ -426,6 +427,12 @@ var RealtimePresence = (function() {
 			return;
 		}
 		this.once('sync', callback);
+	};
+
+	PresenceMap.prototype.clear = function(callback) {
+		this.map = {};
+		this.syncInProgress = false;
+		this.residualMembers = null;
 	};
 
 	return RealtimePresence;
