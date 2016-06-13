@@ -8,7 +8,8 @@ var JSONPTransport = (function() {
 	 */
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
-	var head = document.getElementsByTagName('head')[0];
+	var isSupported = (typeof(document) !== 'undefined');
+	var head = isSupported ? document.getElementsByTagName('head')[0] : null;
 	var shortName = 'jsonp';
 
 	/* public constructor */
@@ -19,8 +20,10 @@ var JSONPTransport = (function() {
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
-	JSONPTransport.isAvailable = function() { return true; };
-	ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+	JSONPTransport.isAvailable = function() { return isSupported; };
+	if(isSupported) {
+		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+	}
 
 	/* connectivity check; since this has a hard-coded callback id,
 	 * we just make sure that we handle concurrent requests (but the
@@ -45,7 +48,7 @@ var JSONPTransport = (function() {
 		});
 		Utils.nextTick(function() {
 			req.exec();
-		})
+		});
 	};
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
