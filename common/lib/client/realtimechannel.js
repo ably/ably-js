@@ -2,6 +2,8 @@ var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
 	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
+	var statechangeOp = 'statechange';
+	var syncOp = 'sync';
 
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
@@ -24,6 +26,11 @@ var RealtimeChannel = (function() {
 		statusCode: 400,
 		code: 90001,
 		message: 'Channel operation failed (invalid channel state)'
+	};
+
+	RealtimeChannel.progressOps = {
+		statechange: statechangeOp,
+		sync: syncOp
 	};
 
 	RealtimeChannel.channelDetachedErr = {
@@ -133,8 +140,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-			var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-			this.sendMessage(msg, (callback || noop));
+		this.setInProgress(statechangeOp, true);
+		var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
@@ -174,8 +182,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-			var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
-			this.sendMessage(msg, (callback || noop));
+		this.setInProgress(statechangeOp, true);
+		var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
+		this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
@@ -387,10 +396,12 @@ var RealtimeChannel = (function() {
 			this.sendMessage(msg, multicaster);
 		}
 		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
-		if(syncInProgress)
+		if(syncInProgress) {
 			this.presence.awaitSync();
+		}
+		this.setInProgress(syncOp, syncInProgress);
 		this.presence.setAttached();
-		this.setState('attached', null, syncInProgress);
+		this.setState('attached');
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -422,14 +433,19 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
+	RealtimeChannel.prototype.setState = function(state, err) {
 		this.state = state;
-		this.setInProgress(inProgress);
 		if(err) {
 			this.errorReason = err;
 		}
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
 		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (err ? ('; reason: ' + err.message + ', code: ' + err.code) : ''));
+		if(state === 'attached') {
+			this.setInProgress(statechangeOp, false);
+		} else if(state === 'detached' || state === 'failed') {
+			this.setInProgress(statechangeOp, false);
+			this.setInProgress(syncOp, false);
+		}
 		this.emit(state, err);
 	};
 
@@ -437,33 +453,29 @@ var RealtimeChannel = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'name = ' + this.name + ', state = ' + state);
 		this.clearStateTimer();
 
-		/* notify the state change */
-		this.setState(state, null, true);
-
-		/* if not currently connected, do nothing */
-		if(this.connectionManager.state.state != 'connected') {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'not connected');
-			return;
-		}
+		/* notify the state change, but don't set inProgress until the request is actually in progress */
+		this.setState(state);
 
 		/* send the event and await response */
 		this.checkPendingState();
-
-		/* set a timer to handle no response */
-		var self = this;
-		this.stateTimer = setTimeout(function() {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'timer expired');
-			self.stateTimer = null;
-			self.timeoutPendingState();
-		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
+		/* if can't send events, do nothing */
+		if(!this.connectionManager.state.sendEvents) {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'not connected');
+			return;
+		}
+
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'name = ' + this.name + ', state = ' + this.state);
+		/* Only start the state timer running when actually sending the event */
 		switch(this.state) {
 			case 'attaching':
+				this.startStateTimerIfNotRunning();
 				this.attachImpl();
 				break;
 			case 'detaching':
+				this.startStateTimerIfNotRunning();
 				this.detachImpl();
 				break;
 			case 'attached':
@@ -491,6 +503,17 @@ var RealtimeChannel = (function() {
 		}
 	};
 
+	RealtimeChannel.prototype.startStateTimerIfNotRunning = function() {
+		var self = this;
+		if(!this.stateTimer) {
+			this.stateTimer = setTimeout(function() {
+				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
+				self.stateTimer = null;
+				self.timeoutPendingState();
+			}, this.realtime.options.timeouts.realtimeRequestTimeout);
+		}
+	};
+
 	RealtimeChannel.prototype.clearStateTimer = function() {
 		var stateTimer = this.stateTimer;
 		if(stateTimer) {
@@ -499,8 +522,8 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setInProgress = function(inProgress) {
-		this.rest.channels.setInProgress(this, inProgress);
+	RealtimeChannel.prototype.setInProgress = function(operation, value) {
+		this.rest.channels.setInProgress(this, operation, value);
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {

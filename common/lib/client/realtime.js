@@ -30,7 +30,12 @@ var Realtime = (function() {
 		this.all = {};
 		this.inProgress = {};
 		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
+		realtime.connection.connectionManager.on('transport.active', function() {
+			/* nextTick to allow connectionManager to set the connection state to 'connected' if necessary */
+			Utils.nextTick(function() {
+				self.onTransportActive();
+			});
+		});
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -48,11 +53,17 @@ var Realtime = (function() {
 		channel.onMessage(msg);
 	};
 
-	/* called when a transport becomes connected; reattempt attach()
-	 * for channels that may have been inProgress from a previous transport */
+	/* called when a transport becomes connected; reattempt attach/detach
+	 * for channels that are attaching or detaching.
+	 * Note that this does not use inProgress as inProgress is only channels which have already made
+	* at least one attempt to attach/detach */
 	Channels.prototype.onTransportActive = function() {
-		for(var channelId in this.inProgress)
-			this.inProgress[channelId].checkPendingState();
+		for(var channelName in this.all) {
+			var channel = this.all[channelName];
+			if(channel.state === 'attaching' || channel.state === 'detaching') {
+				channel.checkPendingState();
+			}
+		}
 	};
 
 	Channels.prototype.setSuspended = function(err) {
@@ -80,23 +91,31 @@ var Realtime = (function() {
 		}
 	};
 
-	Channels.prototype.setInProgress = function(channel, inProgress) {
-		if(inProgress) {
-			this.inProgress[channel.name] = channel;
-		} else {
-			delete this.inProgress[channel.name];
-			if(Utils.isEmpty(this.inProgress)) {
-				this.emit('nopending');
-			}
+	/* Records operations currently pending on a transport; used by connectionManager to decide when
+	 * it's safe to upgrade. Note that a channel might be in the attaching state without any pending
+	 * operations (eg if attached while the connection state is connecting) - such a channel must not
+	 * hold up an upgrade, so is not considered inProgress.
+	 * Operation is currently one of either 'statechange' or 'sync' */
+	Channels.prototype.setInProgress = function(channel, operation, inProgress) {
+		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
+		this.inProgress[channel.name][operation] = inProgress;
+		if(!inProgress && this.hasNopending) {
+			this.emit('nopending');
 		}
 	};
 
 	Channels.prototype.onceNopending = function(listener) {
-		if(Utils.isEmpty(this.inProgress)) {
+		if(this.hasNopending()) {
 			listener();
 			return;
 		}
 		this.once('nopending', listener);
+	};
+
+	Channels.prototype.hasNopending = function() {
+		return Utils.arrEvery(Utils.valuesArray(this.inProgress, true), function(operations) {
+			return !Utils.containsValue(operations, true);
+		});
 	};
 
 	return Realtime;

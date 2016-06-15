@@ -225,7 +225,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(ob[prop]);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	Utils.arrForEach = Array.prototype.forEach ?
