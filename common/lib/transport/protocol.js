@@ -19,10 +19,7 @@ var Protocol = (function() {
 	Protocol.prototype.onNack = function(serial, count, err) {
 		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 		if(!err) {
-			err = new Error('Unknown error');
-			err.statusCode = 500;
-			err.code = 50001;
-			err.message = 'Unable to send message; channel not responding';
+			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
 		}
 		this.messageQueue.completeMessages(serial, count, err);
 	};
@@ -52,6 +49,10 @@ var Protocol = (function() {
 
 	Protocol.prototype.getPendingMessages = function() {
 		return this.messageQueue.copyAll();
+	};
+
+	Protocol.prototype.clearPendingMessages = function() {
+		return this.messageQueue.clear();
 	};
 
 	Protocol.prototype.finish = function() {
