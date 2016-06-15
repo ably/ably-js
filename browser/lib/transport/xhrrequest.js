@@ -54,6 +54,7 @@ var XHRRequest = (function() {
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
+		this.timedOut = false;
 		this.requestComplete = false;
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
@@ -82,12 +83,15 @@ var XHRRequest = (function() {
 
 	XHRRequest.prototype.exec = function() {
 		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
-			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
+			self = this,
+			timer = this.timer = setTimeout(function() {
+				self.timedOut = true;
+				xhr.abort();
+			}, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
-			self = this,
 			accept = headers['accept'],
 			responseType = 'text';
 
@@ -114,7 +118,7 @@ var XHRRequest = (function() {
 			xhr.setRequestHeader(h, headers[h]);
 
 		var errorHandler = function(errorEvent, message, code, statusCode) {
-			var errorMessage = message + ', errorEvent type was ' + errorEvent.type + ', current statusText is ' + self.xhr.statusText;
+			var errorMessage = message + ' (event type: ' + errorEvent.type + ')' + (self.xhr.statusText ? ', current statusText is ' + self.xhr.statusText : '');
 			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
@@ -122,7 +126,11 @@ var XHRRequest = (function() {
 			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
 		}
 		xhr.onabort = function(errorEvent) {
-			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+			if(self.timedOut) {
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 400);
+			} else {
+				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+			}
 		};
 		xhr.ontimeout = function(errorEvent) {
 			errorHandler(errorEvent, 'Request timed out', 80000, 408);
