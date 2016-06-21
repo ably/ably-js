@@ -1,5 +1,87 @@
 # Change Log
 
+## [0.8.21](https://github.com/ably/ably-js/tree/0.8.21) (2116-05-09)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.20...0.8.21)
+
+**Biggest changes:**
+
+- Fix bug where comet transports would occasionally send messages out of order if the sending rate is very high [\#290](https://github.com/ably/ably-js/pull/290)
+
+## [0.8.20](https://github.com/ably/ably-js/tree/0.8.20) (2016-05-09)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.19...0.8.20)
+
+**Biggest changes:**
+
+- Rewrite the transport fallback sequence. It now starts with a polling transport (since some proxies break streaming transports) and then tries to upgrade to a websocket and streaming transport in parallel, picking the websocket if possible. It also remembers the best transport that worked (using HTML5 localstorage) and jumps straight to that if it can. [\#279](https://github.com/ably/ably-js/pull/279)
+
+- Fix crypto bug when generating random data in IE 8 and 9 [\#282](https://github.com/ably/ably-js/pull/282)
+
+- Disable JSONP transport when document is undefined, for React Native support [\#283](https://github.com/ably/ably-js/pull/283)
+
+- Clear presence set on detach [\#287](https://github.com/ably/ably-js/pull/287)
+
+## [0.8.19](https://github.com/ably/ably-js/tree/0.8.19) (2016-05-09)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.18...0.8.19)
+
+**Biggest changes:**
+
+- Fix connection state race condition when one transport drops while another is pending [\#274](https://github.com/ably/ably-js/pull/274)
+
+- Make LOG\_MAJOR log level (i.e. level 3) much more friendly [\#275](https://github.com/ably/ably-js/pull/275)
+
+- A few minor fixes to ErrorInfo [\#276](https://github.com/ably/ably-js/pull/276)
+
+## [0.8.18](https://github.com/ably/ably-js/tree/0.8.18) (2016-05-09)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.17...0.8.18)
+
+**Biggest changes:**
+
+- Change default log level to LOG\_ERROR [c122a1f](https://github.com/ably/ably-js/commit/c122a1f)
+
+- Add channel#errorReason [\#267](https://github.com/ably/ably-js/pull/267)
+
+- Allow automatic re-authing (eg to use a new token) using auth#authorise() [\#261](https://github.com/ably/ably-js/pull/261)
+
+- Allow ClientOptions#recover to take a callback (so you can decide whether to recover at the time) rather than just a boolean [\#266](https://github.com/ably/ably-js/pull/266)
+
+## [0.8.17](https://github.com/ably/ably-js/tree/0.8.17) (2016-04-05)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.16...0.8.17)
+
+**Biggest changes:**
+
+- Don’t activate a transport that isn’t connected [\#255](https://github.com/ably/ably-js/pull/255)
+
+- Don't try host fallbacks for token errors [\#251](https://github.com/ably/ably-js/pull/251)
+
+- Standardise on 'initialize' event spelling [\#244](https://github.com/ably/ably-js/pull/244)
+
+- Stop assuming that connection state won't change during a transport sync [\#249](https://github.com/ably/ably-js/pull/249)
+
+- Don't reject a presence enter for lacking a clientId unless we're absolutely certain we're anonymous [\#256](https://github.com/ably/ably-js/pull/256)
+
+## [0.8.16](https://github.com/ably/ably-js/tree/0.8.16) (2016-03-01)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.15...0.8.16)
+
+**Biggest changes:**
+
+- Implement latest version of the crypto spec [\#240](https://github.com/ably/ably-js/pull/240)
+
+- Don't sync an upgrade transport that never got activated [\#241](https://github.com/ably/ably-js/pull/241)
+
+## [0.8.15](https://github.com/ably/ably-js/tree/0.8.14) (2016-02-11)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.14...0.8.15)
+
+**Biggest changes:**
+
+- Expose presence message action as a string in the API [\#227](https://github.com/ably/ably-js/pull/233)
+
 ## [0.8.14](https://github.com/ably/ably-js/tree/0.8.14) (2016-02-09)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.13...0.8.14)
