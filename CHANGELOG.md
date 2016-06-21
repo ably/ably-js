@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.8.21](https://github.com/ably/ably-js/tree/0.8.21) (2116-05-09)
+## [0.8.21](https://github.com/ably/ably-js/tree/0.8.21) (2016-06-21)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.20...0.8.21)
 
@@ -8,7 +8,7 @@
 
 - Fix bug where comet transports would occasionally send messages out of order if the sending rate is very high [\#290](https://github.com/ably/ably-js/pull/290)
 
-## [0.8.20](https://github.com/ably/ably-js/tree/0.8.20) (2016-05-09)
+## [0.8.20](https://github.com/ably/ably-js/tree/0.8.20) (2016-06-13)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.19...0.8.20)
 
@@ -22,7 +22,7 @@
 
 - Clear presence set on detach [\#287](https://github.com/ably/ably-js/pull/287)
 
-## [0.8.19](https://github.com/ably/ably-js/tree/0.8.19) (2016-05-09)
+## [0.8.19](https://github.com/ably/ably-js/tree/0.8.19) (2016-05-18)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.18...0.8.19)
 
