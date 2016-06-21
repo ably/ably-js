@@ -73,6 +73,59 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Test publishes in quick succession (on successive ticks of the event loop)
+	 */
+	testOnAllTransports(exports, 'publishfast', function(realtimeOpts) { return function(test) {
+		test.expect(100);
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var channel = realtime.channels.get('publishfast_' + String(Math.random()).substr(2));
+				channel.attach(function(err) {
+					if(err) {
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+
+					async.parallel([
+						function(cb) {
+							channel.subscribe('event', function(msg) {
+								test.ok(true, 'Received event ' + msg.data);
+								if(msg.data === '49') {
+									cb();
+								}
+							});
+						},
+						function(cb) {
+							var ackd = 0;
+							var publish = function(i) {
+								channel.publish('event', i.toString(), function(err) {
+									test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + helper.display(err) : ''));
+									ackd++;
+									if(ackd === 50) cb();
+								});
+								if(i < 49) {
+									setTimeout(function() {
+										publish(i + 1);
+									}, 0);
+								}
+							};
+							publish(0);
+						}
+					], function() {
+						closeAndFinish(test, realtime);
+					});
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'test failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};});
+
+	/*
 	 * Test that a message is not sent back to the same realtime client
 	 * when echoMessages is false (RTC1a and RTL7f)
 	 *
