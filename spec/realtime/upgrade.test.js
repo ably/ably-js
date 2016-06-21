@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {},
+		_exports = {},
 		rest,
 		publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
 			for(var i = numMessages; i > 0; i--) {
@@ -488,6 +489,46 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'upgrade connect with key failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	exports.unrecoverableUpgrade = function(test) {
+		test.expect(6);
+		var realtime,
+			fakeConnectionKey = '_____!ablyjs_test_fake-key____',
+			fakeConnectionId = 'ablyjs_tes';
+
+		try {
+			/* on base transport active */
+			realtime = helper.AblyRealtime();
+			realtime.connection.connectionManager.once('transport.active', function(transport) {
+				test.ok(transport.toString().indexOf('/comet/') > -1, 'assert first transport to become active is a comet transport');
+				test.equal(realtime.connection.errorReason, null, 'Check connection.errorReason is initially null');
+				/* sabotage the upgrade */
+				realtime.connection.connectionManager.connectionKey = fakeConnectionKey;
+				realtime.connection.connectionManager.connectionId = fakeConnectionId;
+
+				/* on upgrade failure */
+				realtime.connection.once('error', function(error) {
+					test.equal(error.code, 80008, 'Check correct (unrecoverable connection) error');
+					test.equal(realtime.connection.errorReason.code, 80008, 'Check error set in connection.errorReason');
+					test.equal(realtime.connection.state, 'connected', 'Check still connected');
+
+					/* Check events not still paused */
+					var channel = realtime.channels.get('unrecoverableUpgrade');
+					channel.attach(function(err) {
+						if(err) { test.ok(false, 'Attach error ' + helper.displayError(err)); }
+						channel.subscribe(function(msg) {
+							test.ok(true, 'Successfully received message');
+							closeAndFinish(test, realtime);
+						});
+						channel.publish('msg', null);
+					});
+				});
+			});
+		} catch(e) {
+			test.ok(false, 'test failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	};
