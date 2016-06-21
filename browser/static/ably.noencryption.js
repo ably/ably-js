@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.20
+ * Ably JavaScript Library v0.8.21
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2590,7 +2590,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.20';
+Defaults.version           = '0.8.21';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -5743,6 +5743,19 @@ var CometTransport = (function() {
 		this.sendItems(pendingItems, callback);
 	};
 
+	CometTransport.prototype.sendAnyPending = function() {
+		var pendingItems = this.pendingItems,
+			pendingCallback = this.pendingCallback;
+
+		if(!pendingItems) {
+			return;
+		}
+
+		this.pendingItems = null;
+		this.pendingCallback = null;
+		this.sendItems(pendingItems, pendingCallback);
+	}
+
 	CometTransport.prototype.sendItems = function(items, callback) {
 		var self = this,
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
@@ -5759,13 +5772,14 @@ var CometTransport = (function() {
 				err = null;
 			}
 
-			var pendingItems = self.pendingItems;
-			if(pendingItems) {
-				self.pendingItems = null;
-				var pendingCallback = self.pendingCallback;
-				self.pendingCallback = null;
+			if(self.pendingItems) {
 				Utils.nextTick(function() {
-					self.sendItems(pendingItems, pendingCallback);
+					/* If there's a new send request by now, any pending items will have
+					 * been picked up by that; any new ones added since then will be
+					 * picked up after that one completes */
+					if(!self.sendRequest) {
+						self.sendAnyPending();
+					}
 				});
 			}
 			callback && callback(err);
