@@ -220,7 +220,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.init_fallbacks = function(test) {
 		test.expect(5);
 		try {
-			helper.clearTransportPreference();
 			var realtime = helper.AblyRealtime({
 				key: 'not_a.real:key',
 				restHost: 'a',

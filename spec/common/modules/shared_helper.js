@@ -100,6 +100,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		}
 
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
+		/* Also clears transport preferences, so each test starts fresh */
 		function withTimeout(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
 
@@ -116,6 +117,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 								test.ok(false, "Test timed out after " + (timeout / 1000) + "s");
 								test.done();
 							}, timeout);
+							clearTransportPreference();
 							originalFn(test);
 						};
 					})(exports[needle]);
