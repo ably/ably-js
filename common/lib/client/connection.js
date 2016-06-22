@@ -19,6 +19,11 @@ var Connection = (function() {
 				self.emit(state, stateChange);
 			});
 		});
+		this.connectionManager.on('error', function(error) {
+			Utils.nextTick(function() {
+				self.emit('error', error);
+			});
+		});
 	}
 	Utils.inherits(Connection, EventEmitter);
 

@@ -286,13 +286,13 @@ var ConnectionManager = (function() {
 				/*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
 				if(transport.shortName !== optimalTransport && Utils.arrIn(self.getUpgradePossibilities(), optimalTransport)) {
 					setTimeout(function() {
-						self.scheduleTransportActivation(transport, connectionKey);
+						self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, clientId);
 					}, self.options.timeouts.parallelUpgradeDelay);
 				} else {
-					self.scheduleTransportActivation(transport, connectionKey);
+					self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, clientId);
 				}
 			} else {
-				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
+				self.activateTransport(error, transport, connectionKey, connectionSerial, connectionId, clientId);
 
 				/* allow connectImpl to start the upgrade process if needed, but allow
 				 * other event handlers, including activating the transport, to run first */
@@ -324,7 +324,7 @@ var ConnectionManager = (function() {
 	 * @param transport, the transport instance
 	 * @param connectionKey
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(transport, connectionKey) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, clientId) {
 		if(this.state.state !== 'connected') {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + ') is not valid to upgrade in; abandoning upgrade');
@@ -355,17 +355,28 @@ var ConnectionManager = (function() {
 			if(self.state === self.states.connected)
 				self.state = self.states.synchronizing;
 
+			/* If the connectionId has changed, the upgrade hasn't worked. But as
+			* it's still an upgrade, realtime still expects a sync - it just needs to
+			* be a sync with the new connectionSerial (which will be -1). (And it
+			* needs to be set in the library, which is done by activateTransport). */
+			var connectionReset = connectionId !== self.connectionId,
+				newConnectionSerial = connectionReset ? connectionSerial : self.connectionSerial;
+
+			if(connectionReset) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
+			}
+
 			/* make this the active transport */
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
 			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
-			if(self.activateTransport(transport, connectionKey, self.connectionSerial, self.connectionId)) {
+			if(self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, clientId)) {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-				self.sync(transport, function(err, connectionSerial, connectionId) {
+				self.sync(transport, function(err, newConnectionSerial, connectionId) {
 					if(err) {
 						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
 						return;
 					}
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful on upgraded transport; transport = ' + transport + '; connectionSerial = ' + newConnectionSerial + '; connectionId = ' + connectionId);
 
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
 					/* Restore pre-sync state. If state has changed in the meantime,
@@ -393,8 +404,11 @@ var ConnectionManager = (function() {
 	 * @param connectionSerial the current connectionSerial
 	 * @param connectionId the id of the new active connection
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId, clientId) {
+	ConnectionManager.prototype.activateTransport = function(error, transport, connectionKey, connectionSerial, connectionId, clientId) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+		if(error) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
+		}
 		if(connectionKey)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
 		if(connectionSerial !== undefined)
@@ -443,11 +457,18 @@ var ConnectionManager = (function() {
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
 
-		/* notify the state change if previously not connected */
-		if(existingState !== this.states.connected) {
-			this.notifyState({state: 'connected'});
-			this.errorReason = null;
-			this.realtime.connection.errorReason = null;
+		/* If previously not connected, notify the state change (including any
+		 * error).  If previously connected (ie upgrading), no state change, so
+		* emit any error as a standalone event */
+		if(existingState.state === this.states.connected.state) {
+			if(error) {
+				this.emit('error', error);
+				/* if upgrading without error, leave any existing errorReason alone */
+				this.errorReason = this.realtime.connection.errorReason = error;
+			}
+		} else {
+			this.notifyState({state: 'connected', error: error});
+			this.errorReason = this.realtime.connection.errorReason = error || null;
 		}
 
 		/* Gracefully terminate existing protocol */
