@@ -7,7 +7,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
-			bestTransport = availableTransports[0];
+			bestTransport = availableTransports[0],
+			/* IANA reserved; requests to it will hang forever */
+			unroutableAddress = 'http://10.255.255.1/';
 
 		function displayError(err) {
 			if(typeof(err) == 'string')
@@ -133,6 +135,14 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
+		function isComet(transport) {
+			return transport.toString().indexOf('/comet/') > -1;
+		}
+
+		function isWebsocket(transport) {
+			return !!transport.toString().match(/wss?\:/);
+		}
+
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -156,5 +166,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
 			clearTransportPreference:  clearTransportPreference,
+			isComet:                   isComet,
+			isWebsocket:               isWebsocket,
+			unroutableAddress:         unroutableAddress
 		};
 	});
