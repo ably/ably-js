@@ -268,7 +268,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.awaitSync = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync()', 'channel = ' + this.channel.name);
 		this.members.startSync();
 	};
 
@@ -397,7 +397,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.startSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
@@ -407,7 +407,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.endSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		if(syncInProgress) {
 			/* we can now strip out the ABSENT members, as we have
 			 * received all of the out-of-order sync messages */
@@ -432,7 +432,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.waitSync = function(callback) {
 		var syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		if(!syncInProgress) {
 			callback();
 			return;
