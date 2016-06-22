@@ -281,18 +281,18 @@ var ConnectionManager = (function() {
 		this.pendingTransports.push(transport);
 
 		var self = this;
-		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
+		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, connectionDetails) {
 			if(mode == 'upgrade' && self.activeProtocol) {
 				/*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
 				if(transport.shortName !== optimalTransport && Utils.arrIn(self.getUpgradePossibilities(), optimalTransport)) {
 					setTimeout(function() {
-						self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, clientId);
+						self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 					}, self.options.timeouts.parallelUpgradeDelay);
 				} else {
-					self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, clientId);
+					self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 				}
 			} else {
-				self.activateTransport(error, transport, connectionKey, connectionSerial, connectionId, clientId);
+				self.activateTransport(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 
 				/* allow connectImpl to start the upgrade process if needed, but allow
 				 * other event handlers, including activating the transport, to run first */
@@ -324,7 +324,7 @@ var ConnectionManager = (function() {
 	 * @param transport, the transport instance
 	 * @param connectionKey
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, clientId) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
 		var self = this,
 			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
 			abandon = function() {
@@ -386,7 +386,7 @@ var ConnectionManager = (function() {
 				}
 				var finishUpgrade = function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-					self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, clientId);
+					self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, connectionDetails);
 					/* Restore pre-sync state. If state has changed in the meantime,
 					 * don't touch it -- since the websocket transport waits a tick before
 					 * disposing itself, it's possible for it to have happily synced
@@ -435,7 +435,7 @@ var ConnectionManager = (function() {
 	 * @param connectionSerial the current connectionSerial
 	 * @param connectionId the id of the new active connection
 	 */
-	ConnectionManager.prototype.activateTransport = function(error, transport, connectionKey, connectionSerial, connectionId, clientId) {
+	ConnectionManager.prototype.activateTransport = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
 		if(error) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
@@ -446,8 +446,8 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
 		if(connectionId)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
-		if(clientId)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'clientId =  ' + clientId);
+		if(connectionDetails)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
 
 		this.persistTransportPreferences(transport);
 
@@ -477,6 +477,7 @@ var ConnectionManager = (function() {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
+		var clientId = connectionDetails && connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
