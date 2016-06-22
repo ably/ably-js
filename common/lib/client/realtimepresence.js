@@ -169,7 +169,7 @@ var RealtimePresence = (function() {
 
 		var params = args[0],
 			callback = args[1] || noop,
-			waitForSync = !params || params.waitForSync;
+			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true)
 
 		function returnMembers(members) {
 			callback(null, params ? members.list(params) : members.values());
