@@ -1228,9 +1228,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
 
 		var runTest = function(realtime, callback) {
-			realtime.connection.once('connected', function() {
-				var transport = realtime.connection.connectionManager.activeProtocol.transport,
-						originalSend = transport.send;
+			realtime.connection.connectionManager.on('transport.active', function(transport) {
+				var originalSend = transport.send;
 
 				transport.send = function(message) {
 					if(message.action === 14) {
@@ -1240,20 +1239,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.equal(presence.action, 2, 'Enter action');
 						test.equal(presence.data, encodedData, 'Correctly encoded data');
 						test.equal(presence.encoding, 'json', 'Correct encoding');
+						transport.send = originalSend;
 						callback();
 					}
 					originalSend.apply(transport, arguments);
 				};
 
-				var channel = realtime.channels.get('presence-json-encoding');
+				var channel = realtime.channels.get('presence-' + (realtime.options.useBinaryProtocol ? 'bin' : 'json') + '-encoding');
 				channel.presence.enter(data);
 			});
 			realtime.connect();
 		}
 
 		async.series([
-			function(callback) { runTest(realtimeBin, callback); },
-			function(callback) { console.log('test two'); runTest(realtimeJson, callback); },
+			function(callback) { console.log('realtimeBin'); runTest(realtimeBin, callback); },
+			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); },
 		], function() {
 			closeAndFinish(test, [realtimeBin, realtimeJson]);
 		});
