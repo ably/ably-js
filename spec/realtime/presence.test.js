@@ -1397,5 +1397,34 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.presence_detach_during_sync = function(test) {
+		test.expect(1);
+		var channelName = "presence_detach_during_sync";
+		var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		var detacher = helper.AblyRealtime();
+		var entererChannel = enterer.channels.get(channelName);
+		var detacherChannel = detacher.channels.get(channelName);
+
+		function waitForBothConnect(cb) {
+			async.parallel([
+				function(connectCb) { enterer.connection.on('connected', connectCb); },
+				function(connectCb) { detacher.connection.on('connected', connectCb); }
+			], function() { cb(); });
+		}
+
+		async.series([
+			waitForBothConnect,
+			function(cb) { entererChannel.presence.enter(cb); },
+			function(cb) { detacherChannel.attach(cb); },
+			function(cb) { detacherChannel.detach(cb); },
+			function(cb) { test.equal(detacherChannel.state, 'detached', 'Check detacher properly detached'); cb(); }
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, [enterer, detacher]);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
