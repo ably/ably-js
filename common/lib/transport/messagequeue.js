@@ -52,5 +52,11 @@ var MessageQueue = (function() {
 		}
 	};
 
+	MessageQueue.prototype.clear = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
+		this.messages = [];
+		this.emit('idle');
+	};
+
 	return MessageQueue;
 })();

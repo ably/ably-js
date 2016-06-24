@@ -325,35 +325,47 @@ var ConnectionManager = (function() {
 	 * @param connectionKey
 	 */
 	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, clientId) {
-		if(this.state.state !== 'connected') {
+		var self = this,
+			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
+			abandon = function() {
+				transport.disconnect();
+				Utils.arrDeleteValue(self.pendingTransports, transport);
+			};
+
+		if(this.state !== this.states.connected) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + ') is not valid to upgrade in; abandoning upgrade');
-			transport.disconnect();
-			Utils.arrDeleteValue(this.pendingTransports, transport);
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade');
+			abandon();
 			return;
 		}
-
-		var self = this,
-			currentTransport = this.activeProtocol && this.activeProtocol.getTransport();
-
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
 
 		if(!betterTransportThan(transport, currentTransport)) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
-			transport.disconnect();
-			Utils.arrDeleteValue(this.pendingTransports, transport);
+			abandon();
 			return;
 		}
 
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
+
 		this.realtime.channels.onceNopending(function(err) {
+			var oldProtocol;
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
 				return;
 			}
 
-			/* If currently connected, temporarily pause events until the sync is complete */
-			if(self.state === self.states.connected)
+			/* Possible race condition if two upgrade transports were both hanging on for nopending */
+			if(self.state === self.states.synchronizing) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Abandoning proposed transport ' + transport.shortName + ' as an upgrade is already in progress');
+				abandon();
+				return;
+			}
+
+			if(self.state === self.states.connected) {
+				/* If currently connected, temporarily pause events until the sync is complete. */
 				self.state = self.states.synchronizing;
+				oldProtocol = self.activeProtocol;
+			}
 
 			/* If the connectionId has changed, the upgrade hasn't worked. But as
 			* it's still an upgrade, realtime still expects a sync - it just needs to
@@ -366,32 +378,51 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
 			}
 
-			/* make this the active transport */
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
-			if(self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, clientId)) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-				self.sync(transport, function(err, newConnectionSerial, connectionId) {
-					if(err) {
-						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
-						return;
-					}
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful on upgraded transport; transport = ' + transport + '; connectionSerial = ' + newConnectionSerial + '; connectionId = ' + connectionId);
-
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+			self.sync(transport, function(err, newConnectionSerial, connectionId) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+					return;
+				}
+				var finishUpgrade = function() {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
+					self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, clientId);
 					/* Restore pre-sync state. If state has changed in the meantime,
 					 * don't touch it -- since the websocket transport waits a tick before
 					 * disposing itself, it's possible for it to have happily synced
 					 * without err while, unknown to it, the connection has closed in the
 					 * meantime and the ws transport is scheduled for death */
 					if(self.state === self.states.synchronizing) {
+						Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport);
 						self.state = self.states.connected;
+					} else {
+						Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, but state is now ' + self.state.state + ', so leaving unchanged');
 					}
 					if(self.state.sendEvents) {
 						self.sendQueuedMessages();
 					}
-				});
-			}
+				};
+
+				/* Wait until sync is done and old transport is idle before activating new transport. This
+				 * guarantees that messages arrive at realtime in the same order they are sent.
+				 *
+				 * If a message times out on the old transport, since it's still the active transport the
+				 * message will be requeued. deactivateTransport will see the pending transport and notify
+				 * the `connecting` state without starting a new connection, so the new transport can take
+				 * over once deactivateTransport clears the old protocol's queue.
+				 *
+				 * If there is no old protocol, that meant that we weren't in the connected state at the
+				 * beginning of the sync - likely the base transport died just before the sync. So can just
+				 * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
+				 * fine, activatetransport will deal with that. */
+				if(oldProtocol) {
+				 /* Most of the time this will be already true: the new-transport sync will have given
+				 * enough time for in-flight messages on the old transport to complete. */
+					oldProtocol.onceIdle(finishUpgrade);
+				} else {
+					finishUpgrade();
+				}
+			});
 		});
 	};
 
@@ -499,11 +530,20 @@ var ConnectionManager = (function() {
 		if(error && error.message)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
-		var wasActive = this.activeProtocol && this.activeProtocol.getTransport() === transport,
+		var currentProtocol = this.activeProtocol,
+			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
 			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
 
 		if(wasActive) {
-			this.queuePendingMessages(this.activeProtocol.getPendingMessages());
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
+			this.queuePendingMessages(currentProtocol.getPendingMessages());
+			/* Clear any messages we requeue to allow the protocol to become idle.
+			 * In case of an upgrade, this will trigger an immediate activation of
+			 * the upgrade transport, so delay a tick so this transport can finish
+			 * deactivating */
+			Utils.nextTick(function() {
+				currentProtocol.clearPendingMessages();
+			});
 			this.activeProtocol = this.host = null;
 		}
 
@@ -517,7 +557,7 @@ var ConnectionManager = (function() {
 		 *   pending transport (so we were in the connecting state)
 		 */
 		if((wasActive && this.noTransportsScheduledForActivation()) ||
-			 (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
 			if((state === 'failed') && error && !isFatalErr(error)) {
@@ -528,6 +568,7 @@ var ConnectionManager = (function() {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected */
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
 			this.notifyState({state: 'connecting', error: error});
 		}
 	};
@@ -1178,7 +1219,13 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(this.activeProtocol && transport === this.activeProtocol.getTransport()) {
+		var onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
+			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+
+		/* As the lib now has a period where the upgrade transport is synced but
+		 * before it's become active (while waiting for the old one to become
+		 * idle), message can validly arrive on it even though it isn't active */
+		if(onActiveTransport || onUpgradeTransport) {
 			var connectionSerial = message.connectionSerial;
 			if(connectionSerial <= this.connectionSerial) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');

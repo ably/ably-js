@@ -229,7 +229,7 @@ var RealtimePresence = (function() {
 		/* if this is the last message in a sequence of sync updates, end the sync */
 		if(!syncCursor) {
 			members.endSync();
-			this.channel.setInProgress(false);
+			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
 
 		/* broadcast to listeners */

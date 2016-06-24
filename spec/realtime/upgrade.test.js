@@ -1,6 +1,6 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		_exports = {},
 		rest,
@@ -39,15 +39,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.ok(true, 'rest client set up');
 		test.done();
 	};
-
-	if(isBrowser && window.localStorage) {
-		/* run before each test to ensure starting from a fresh state */
-		exports.setUp = function(callback) {
-			console.log('Clearing transport preference from localstorage');
-			helper.clearTransportPreference();
-			callback();
-		};
-	}
 
 	/*
 	 * Publish once with REST, before upgrade, verify message received
@@ -184,7 +175,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			var restChannel = rest.channels.get('publishpostupgrade1');
 			var connectionManager = realtime.connection.connectionManager;
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().indexOf('/comet/') > -1) {
+				if(helper.isComet(transport)) {
 					/* override the processing of incoming messages on this channel
 					 * so we can see if a message arrived.
 					 * NOTE: this relies on knowledge of the internal implementation
@@ -199,7 +190,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				}
 			});
 			connectionManager.on('transport.active', function(transport) {
-				if(transport.toString().match(/wss?\:/)) {
+				if(helper.isWebsocket(transport)) {
 					if(rtChannel.state == 'attached') {
 						//console.log('*** publishing (channel attached on transport active) ...');
 						restChannel.publish('event0', testMsg);
@@ -531,6 +522,73 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'test failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
+	};
+
+	/*
+	 * Check that an attach that times out on the base transport does not prevent an upgrade
+	 */
+	exports.attach_timeout_on_base_transport = function(test) {
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 3000}),
+			channel = realtime.channels.get('timeout0'),
+			connectionManager = realtime.connection.connectionManager;
+
+		connectionManager.once('transport.active', function(transport) {
+			test.ok(helper.isComet(transport), 'Check first transport to become active is comet');
+			transport.sendUri = helper.unroutableAddress;
+		});
+
+		realtime.connection.once('connected', function() {
+			channel.attach(function(err){
+				test.ok(err.code, 90000, 'Check error code for channel attach timing out');
+				test.ok(channel.state, 'detached', 'Check channel reverts to detach');
+				test.ok(realtime.connection.state, 'connected', 'Check connection state is still connected');
+				channel.attach(function(err){
+					test.ok(!err, 'Check a second attach works fine');
+					closeAndFinish(test, realtime)
+				});
+			});
+		});
+	};
+
+	/*
+	 * Check that a message that fails to publish on a comet transport can be
+	 * seamlessly transferred to the websocket transport and published there
+	 */
+	exports.message_timeout_stalling_upgrade = function(test) {
+		var realtime = helper.AblyRealtime({httpRequestTimeout: 3000}),
+			channel = realtime.channels.get('timeout1'),
+			connectionManager = realtime.connection.connectionManager;
+
+		realtime.connection.once('connected', function() {
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, 'Attach failed with error: ' + helper.displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				/* Sabotage comet sending */
+				var transport = connectionManager.activeProtocol.getTransport();
+				test.ok(helper.isComet(transport), 'Check active transport is still comet');
+				transport.sendUri = helper.unroutableAddress;
+
+				async.parallel([
+					function(cb) {
+						channel.subscribe('event', function() {
+							test.ok(true, 'Received message');
+							cb();
+						});
+					},
+					function(cb) {
+						channel.publish('event', null, function(err) {
+							test.ok(!err, 'Successfully published message');
+							cb();
+						});
+					}
+				], function() {
+					closeAndFinish(test, realtime);
+				});
+			});
+		});
 	};
 
 	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};

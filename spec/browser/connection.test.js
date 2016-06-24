@@ -226,8 +226,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	exports.persist_preferred_transport = function(test) {
 		test.expect(1);
-		/* ensure we start with a blank slate */
-		helper.clearTransportPreference();
 
 		var realtime = helper.AblyRealtime();
 

@@ -7,7 +7,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
-			bestTransport = availableTransports[0];
+			bestTransport = availableTransports[0],
+			/* IANA reserved; requests to it will hang forever */
+			unroutableAddress = 'http://10.255.255.1/';
 
 		function displayError(err) {
 			if(typeof(err) == 'string')
@@ -100,6 +102,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		}
 
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
+		/* Also clears transport preferences, so each test starts fresh */
 		function withTimeout(exports, defaultTimeout) {
 			var timeout = defaultTimeout || 60 * 1000;
 
@@ -116,6 +119,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 								test.ok(false, "Test timed out after " + (timeout / 1000) + "s");
 								test.done();
 							}, timeout);
+							clearTransportPreference();
 							originalFn(test);
 						};
 					})(exports[needle]);
@@ -129,6 +133,14 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			if(isBrowser && window.localStorage) {
 				window.localStorage.removeItem('ably-transport-preference');
 			}
+		}
+
+		function isComet(transport) {
+			return transport.toString().indexOf('/comet/') > -1;
+		}
+
+		function isWebsocket(transport) {
+			return !!transport.toString().match(/wss?\:/);
 		}
 
 		return module.exports = {
@@ -154,5 +166,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
 			clearTransportPreference:  clearTransportPreference,
+			isComet:                   isComet,
+			isWebsocket:               isWebsocket,
+			unroutableAddress:         unroutableAddress
 		};
 	});

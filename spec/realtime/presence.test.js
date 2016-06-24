@@ -1228,9 +1228,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
 
 		var runTest = function(realtime, callback) {
-			realtime.connection.once('connected', function() {
-				var transport = realtime.connection.connectionManager.activeProtocol.transport,
-						originalSend = transport.send;
+			realtime.connection.connectionManager.on('transport.active', function(transport) {
+				var originalSend = transport.send;
 
 				transport.send = function(message) {
 					if(message.action === 14) {
@@ -1240,20 +1239,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						test.equal(presence.action, 2, 'Enter action');
 						test.equal(presence.data, encodedData, 'Correctly encoded data');
 						test.equal(presence.encoding, 'json', 'Correct encoding');
+						transport.send = originalSend;
 						callback();
 					}
 					originalSend.apply(transport, arguments);
 				};
 
-				var channel = realtime.channels.get('presence-json-encoding');
+				var channel = realtime.channels.get('presence-' + (realtime.options.useBinaryProtocol ? 'bin' : 'json') + '-encoding');
 				channel.presence.enter(data);
 			});
 			realtime.connect();
 		}
 
 		async.series([
-			function(callback) { runTest(realtimeBin, callback); },
-			function(callback) { console.log('test two'); runTest(realtimeJson, callback); },
+			function(callback) { console.log('realtimeBin'); runTest(realtimeBin, callback); },
+			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); },
 		], function() {
 			closeAndFinish(test, [realtimeBin, realtimeJson]);
 		});
@@ -1394,6 +1394,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.ok(false, helper.displayError(err));
 			}
 			closeAndFinish(test, [realtime, observer]);
+		});
+	};
+
+	exports.presence_detach_during_sync = function(test) {
+		test.expect(1);
+		var channelName = "presence_detach_during_sync";
+		var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+		var detacher = helper.AblyRealtime();
+		var entererChannel = enterer.channels.get(channelName);
+		var detacherChannel = detacher.channels.get(channelName);
+
+		function waitForBothConnect(cb) {
+			async.parallel([
+				function(connectCb) { enterer.connection.on('connected', connectCb); },
+				function(connectCb) { detacher.connection.on('connected', connectCb); }
+			], function() { cb(); });
+		}
+
+		async.series([
+			waitForBothConnect,
+			function(cb) { entererChannel.presence.enter(cb); },
+			function(cb) { detacherChannel.attach(cb); },
+			function(cb) { detacherChannel.detach(cb); },
+			function(cb) { test.equal(detacherChannel.state, 'detached', 'Check detacher properly detached'); cb(); }
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, [enterer, detacher]);
 		});
 	};
 

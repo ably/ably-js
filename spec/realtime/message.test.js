@@ -101,7 +101,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							var ackd = 0;
 							var publish = function(i) {
 								channel.publish('event', i.toString(), function(err) {
-									test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + helper.display(err) : ''));
+									test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
 									ackd++;
 									if(ackd === 50) cb();
 								});
@@ -117,6 +117,58 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						closeAndFinish(test, realtime);
 					});
 				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, 'test failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};});
+
+	/*
+	 * Test queuing: publishing a series of messages that start before the lib is connected
+	 * Also checks they arrive in the right order
+	 */
+	testOnAllTransports(exports, 'publishQueued', function(realtimeOpts) { return function(test) {
+		test.expect(150);
+		var realtime;
+		try {
+			realtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
+			var channel = realtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
+
+			async.parallel([
+				function(cb) {
+					var expectedMsgNum = 0;
+					channel.subscribe('event', function(msg) {
+						var num = msg.data.num;
+						test.ok(true, 'Received event ' + num);
+						test.equal(expectedMsgNum, num, 'Event ' + num + ' was in the right order');
+						expectedMsgNum++;
+						if(num === 49) cb();
+					});
+				},
+				function(cb) {
+					var ackd = 0;
+					var publish = function(i) {
+						channel.publish('event', {num: i}, function(err) {
+							test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
+							ackd++;
+							if(ackd === 50) cb();
+						});
+						if(i < 49) {
+							setTimeout(function() {
+								publish(i + 1);
+							}, 20);
+						}
+					};
+					publish(0);
+				},
+				function(cb) {
+					realtime.connection.on('connected', function() { cb(); });
+					realtime.connection.connect();
+				}
+			], function() {
+				closeAndFinish(test, realtime);
 			});
 			monitorConnection(test, realtime);
 		} catch(e) {
