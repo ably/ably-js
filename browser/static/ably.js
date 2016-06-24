@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.21
+ * Ably JavaScript Library v0.8.22
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3990,7 +3990,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.21';
+Defaults.version           = '0.8.22';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4570,7 +4570,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(ob[prop]);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	Utils.arrForEach = Array.prototype.forEach ?
@@ -5312,6 +5312,12 @@ var MessageQueue = (function() {
 		}
 	};
 
+	MessageQueue.prototype.clear = function() {
+		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
+		this.messages = [];
+		this.emit('idle');
+	};
+
 	return MessageQueue;
 })();
 
@@ -5336,10 +5342,7 @@ var Protocol = (function() {
 	Protocol.prototype.onNack = function(serial, count, err) {
 		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 		if(!err) {
-			err = new Error('Unknown error');
-			err.statusCode = 500;
-			err.code = 50001;
-			err.message = 'Unable to send message; channel not responding';
+			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
 		}
 		this.messageQueue.completeMessages(serial, count, err);
 	};
@@ -5369,6 +5372,10 @@ var Protocol = (function() {
 
 	Protocol.prototype.getPendingMessages = function() {
 		return this.messageQueue.copyAll();
+	};
+
+	Protocol.prototype.clearPendingMessages = function() {
+		return this.messageQueue.clear();
 	};
 
 	Protocol.prototype.finish = function() {
@@ -5673,18 +5680,18 @@ var ConnectionManager = (function() {
 		this.pendingTransports.push(transport);
 
 		var self = this;
-		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, clientId) {
+		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, connectionDetails) {
 			if(mode == 'upgrade' && self.activeProtocol) {
 				/*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
 				if(transport.shortName !== optimalTransport && Utils.arrIn(self.getUpgradePossibilities(), optimalTransport)) {
 					setTimeout(function() {
-						self.scheduleTransportActivation(transport, connectionKey);
+						self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 					}, self.options.timeouts.parallelUpgradeDelay);
 				} else {
-					self.scheduleTransportActivation(transport, connectionKey);
+					self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 				}
 			} else {
-				self.activateTransport(transport, connectionKey, connectionSerial, connectionId, clientId);
+				self.activateTransport(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
 
 				/* allow connectImpl to start the upgrade process if needed, but allow
 				 * other event handlers, including activating the transport, to run first */
@@ -5716,63 +5723,105 @@ var ConnectionManager = (function() {
 	 * @param transport, the transport instance
 	 * @param connectionKey
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(transport, connectionKey) {
-		if(this.state.state !== 'connected') {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
+		var self = this,
+			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
+			abandon = function() {
+				transport.disconnect();
+				Utils.arrDeleteValue(self.pendingTransports, transport);
+			};
+
+		if(this.state !== this.states.connected) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + ') is not valid to upgrade in; abandoning upgrade');
-			transport.disconnect();
-			Utils.arrDeleteValue(this.pendingTransports, transport);
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade');
+			abandon();
 			return;
 		}
-
-		var self = this,
-			currentTransport = this.activeProtocol && this.activeProtocol.getTransport();
-
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
 
 		if(!betterTransportThan(transport, currentTransport)) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
-			transport.disconnect();
-			Utils.arrDeleteValue(this.pendingTransports, transport);
+			abandon();
 			return;
 		}
 
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
+
 		this.realtime.channels.onceNopending(function(err) {
+			var oldProtocol;
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
 				return;
 			}
 
-			/* If currently connected, temporarily pause events until the sync is complete */
-			if(self.state === self.states.connected)
+			/* Possible race condition if two upgrade transports were both hanging on for nopending */
+			if(self.state === self.states.synchronizing) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Abandoning proposed transport ' + transport.shortName + ' as an upgrade is already in progress');
+				abandon();
+				return;
+			}
+
+			if(self.state === self.states.connected) {
+				/* If currently connected, temporarily pause events until the sync is complete. */
 				self.state = self.states.synchronizing;
+				oldProtocol = self.activeProtocol;
+			}
 
-			/* make this the active transport */
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-			/* if activateTransport returns that it has not done anything (eg because the connection is closing), don't bother syncing */
-			if(self.activateTransport(transport, connectionKey, self.connectionSerial, self.connectionId)) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-				self.sync(transport, function(err, connectionSerial, connectionId) {
-					if(err) {
-						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
-						return;
-					}
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'sync successful upgraded transport; transport = ' + transport + '; connectionSerial = ' + connectionSerial + '; connectionId = ' + connectionId);
+			/* If the connectionId has changed, the upgrade hasn't worked. But as
+			* it's still an upgrade, realtime still expects a sync - it just needs to
+			* be a sync with the new connectionSerial (which will be -1). (And it
+			* needs to be set in the library, which is done by activateTransport). */
+			var connectionReset = connectionId !== self.connectionId,
+				newConnectionSerial = connectionReset ? connectionSerial : self.connectionSerial;
 
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Sending queued messages on upgraded transport; transport = ' + transport);
+			if(connectionReset) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
+			}
+
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+			self.sync(transport, function(err, newConnectionSerial, connectionId) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+					return;
+				}
+				var finishUpgrade = function() {
+					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
+					self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, connectionDetails);
 					/* Restore pre-sync state. If state has changed in the meantime,
 					 * don't touch it -- since the websocket transport waits a tick before
 					 * disposing itself, it's possible for it to have happily synced
 					 * without err while, unknown to it, the connection has closed in the
 					 * meantime and the ws transport is scheduled for death */
 					if(self.state === self.states.synchronizing) {
+						Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport);
 						self.state = self.states.connected;
+					} else {
+						Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, but state is now ' + self.state.state + ', so leaving unchanged');
 					}
 					if(self.state.sendEvents) {
 						self.sendQueuedMessages();
 					}
-				});
-			}
+				};
+
+				/* Wait until sync is done and old transport is idle before activating new transport. This
+				 * guarantees that messages arrive at realtime in the same order they are sent.
+				 *
+				 * If a message times out on the old transport, since it's still the active transport the
+				 * message will be requeued. deactivateTransport will see the pending transport and notify
+				 * the `connecting` state without starting a new connection, so the new transport can take
+				 * over once deactivateTransport clears the old protocol's queue.
+				 *
+				 * If there is no old protocol, that meant that we weren't in the connected state at the
+				 * beginning of the sync - likely the base transport died just before the sync. So can just
+				 * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
+				 * fine, activatetransport will deal with that. */
+				if(oldProtocol) {
+				 /* Most of the time this will be already true: the new-transport sync will have given
+				 * enough time for in-flight messages on the old transport to complete. */
+					oldProtocol.onceIdle(finishUpgrade);
+				} else {
+					finishUpgrade();
+				}
+			});
 		});
 	};
 
@@ -5785,16 +5834,19 @@ var ConnectionManager = (function() {
 	 * @param connectionSerial the current connectionSerial
 	 * @param connectionId the id of the new active connection
 	 */
-	ConnectionManager.prototype.activateTransport = function(transport, connectionKey, connectionSerial, connectionId, clientId) {
+	ConnectionManager.prototype.activateTransport = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+		if(error) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
+		}
 		if(connectionKey)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
 		if(connectionSerial !== undefined)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
 		if(connectionId)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
-		if(clientId)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'clientId =  ' + clientId);
+		if(connectionDetails)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
 
 		this.persistTransportPreferences(transport);
 
@@ -5824,6 +5876,7 @@ var ConnectionManager = (function() {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
+		var clientId = connectionDetails && connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
@@ -5835,11 +5888,18 @@ var ConnectionManager = (function() {
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
 
-		/* notify the state change if previously not connected */
-		if(existingState !== this.states.connected) {
-			this.notifyState({state: 'connected'});
-			this.errorReason = null;
-			this.realtime.connection.errorReason = null;
+		/* If previously not connected, notify the state change (including any
+		 * error).  If previously connected (ie upgrading), no state change, so
+		* emit any error as a standalone event */
+		if(existingState.state === this.states.connected.state) {
+			if(error) {
+				this.emit('error', error);
+				/* if upgrading without error, leave any existing errorReason alone */
+				this.errorReason = this.realtime.connection.errorReason = error;
+			}
+		} else {
+			this.notifyState({state: 'connected', error: error});
+			this.errorReason = this.realtime.connection.errorReason = error || null;
 		}
 
 		/* Gracefully terminate existing protocol */
@@ -5870,11 +5930,20 @@ var ConnectionManager = (function() {
 		if(error && error.message)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
-		var wasActive = this.activeProtocol && this.activeProtocol.getTransport() === transport,
+		var currentProtocol = this.activeProtocol,
+			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
 			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
 
 		if(wasActive) {
-			this.queuePendingMessages(this.activeProtocol.getPendingMessages());
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
+			this.queuePendingMessages(currentProtocol.getPendingMessages());
+			/* Clear any messages we requeue to allow the protocol to become idle.
+			 * In case of an upgrade, this will trigger an immediate activation of
+			 * the upgrade transport, so delay a tick so this transport can finish
+			 * deactivating */
+			Utils.nextTick(function() {
+				currentProtocol.clearPendingMessages();
+			});
 			this.activeProtocol = this.host = null;
 		}
 
@@ -5888,7 +5957,7 @@ var ConnectionManager = (function() {
 		 *   pending transport (so we were in the connecting state)
 		 */
 		if((wasActive && this.noTransportsScheduledForActivation()) ||
-			 (this.activeProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
 			if((state === 'failed') && error && !isFatalErr(error)) {
@@ -5899,6 +5968,7 @@ var ConnectionManager = (function() {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected */
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
 			this.notifyState({state: 'connecting', error: error});
 		}
 	};
@@ -6549,7 +6619,13 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
-		if(this.activeProtocol && transport === this.activeProtocol.getTransport()) {
+		var onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
+			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+
+		/* As the lib now has a period where the upgrade transport is synced but
+		 * before it's become active (while waiting for the old one to become
+		 * idle), message can validly arrive on it even though it isn't active */
+		if(onActiveTransport || onUpgradeTransport) {
 			var connectionSerial = message.connectionSerial;
 			if(connectionSerial <= this.connectionSerial) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
@@ -6731,7 +6807,7 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', null, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, (message.connectionDetails ? message.connectionDetails.clientId : null));
+			this.emit('connected', message.error, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, message.connectionDetails);
 			break;
 		case actions.CLOSED:
 			this.onClose(message);
@@ -8415,7 +8491,12 @@ var Realtime = (function() {
 		this.all = {};
 		this.inProgress = {};
 		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function(transport) { self.onTransportActive(transport); });
+		realtime.connection.connectionManager.on('transport.active', function() {
+			/* nextTick to allow connectionManager to set the connection state to 'connected' if necessary */
+			Utils.nextTick(function() {
+				self.onTransportActive();
+			});
+		});
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -8433,11 +8514,17 @@ var Realtime = (function() {
 		channel.onMessage(msg);
 	};
 
-	/* called when a transport becomes connected; reattempt attach()
-	 * for channels that may have been inProgress from a previous transport */
+	/* called when a transport becomes connected; reattempt attach/detach
+	 * for channels that are attaching or detaching.
+	 * Note that this does not use inProgress as inProgress is only channels which have already made
+	* at least one attempt to attach/detach */
 	Channels.prototype.onTransportActive = function() {
-		for(var channelId in this.inProgress)
-			this.inProgress[channelId].checkPendingState();
+		for(var channelName in this.all) {
+			var channel = this.all[channelName];
+			if(channel.state === 'attaching' || channel.state === 'detaching') {
+				channel.checkPendingState();
+			}
+		}
 	};
 
 	Channels.prototype.setSuspended = function(err) {
@@ -8465,23 +8552,31 @@ var Realtime = (function() {
 		}
 	};
 
-	Channels.prototype.setInProgress = function(channel, inProgress) {
-		if(inProgress) {
-			this.inProgress[channel.name] = channel;
-		} else {
-			delete this.inProgress[channel.name];
-			if(Utils.isEmpty(this.inProgress)) {
-				this.emit('nopending');
-			}
+	/* Records operations currently pending on a transport; used by connectionManager to decide when
+	 * it's safe to upgrade. Note that a channel might be in the attaching state without any pending
+	 * operations (eg if attached while the connection state is connecting) - such a channel must not
+	 * hold up an upgrade, so is not considered inProgress.
+	 * Operation is currently one of either 'statechange' or 'sync' */
+	Channels.prototype.setInProgress = function(channel, operation, inProgress) {
+		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
+		this.inProgress[channel.name][operation] = inProgress;
+		if(!inProgress && this.hasNopending) {
+			this.emit('nopending');
 		}
 	};
 
 	Channels.prototype.onceNopending = function(listener) {
-		if(Utils.isEmpty(this.inProgress)) {
+		if(this.hasNopending()) {
 			listener();
 			return;
 		}
 		this.once('nopending', listener);
+	};
+
+	Channels.prototype.hasNopending = function() {
+		return Utils.arrEvery(Utils.valuesArray(this.inProgress, true), function(operations) {
+			return !Utils.containsValue(operations, true);
+		});
 	};
 
 	return Realtime;
@@ -8519,6 +8614,11 @@ var Connection = (function() {
 			var state = self.state = stateChange.current;
 			Utils.nextTick(function() {
 				self.emit(state, stateChange);
+			});
+		});
+		this.connectionManager.on('error', function(error) {
+			Utils.nextTick(function() {
+				self.emit('error', error);
 			});
 		});
 	}
@@ -8652,6 +8752,8 @@ var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
 	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
+	var statechangeOp = 'statechange';
+	var syncOp = 'sync';
 
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
@@ -8674,6 +8776,11 @@ var RealtimeChannel = (function() {
 		statusCode: 400,
 		code: 90001,
 		message: 'Channel operation failed (invalid channel state)'
+	};
+
+	RealtimeChannel.progressOps = {
+		statechange: statechangeOp,
+		sync: syncOp
 	};
 
 	RealtimeChannel.channelDetachedErr = {
@@ -8783,8 +8890,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.attachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-			var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-			this.sendMessage(msg, (callback || noop));
+		this.setInProgress(statechangeOp, true);
+		var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
@@ -8824,8 +8932,9 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-			var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
-			this.sendMessage(msg, (callback || noop));
+		this.setInProgress(statechangeOp, true);
+		var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
+		this.sendMessage(msg, (callback || noop));
 	};
 
 	RealtimeChannel.prototype.subscribe = function(/* [event], listener, [callback] */) {
@@ -9037,10 +9146,12 @@ var RealtimeChannel = (function() {
 			this.sendMessage(msg, multicaster);
 		}
 		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
-		if(syncInProgress)
+		if(syncInProgress) {
 			this.presence.awaitSync();
+		}
+		this.setInProgress(syncOp, syncInProgress);
 		this.presence.setAttached();
-		this.setState('attached', null, syncInProgress);
+		this.setState('attached');
 	};
 
 	RealtimeChannel.prototype.setDetached = function(message) {
@@ -9072,14 +9183,19 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setState = function(state, err, inProgress) {
+	RealtimeChannel.prototype.setState = function(state, err) {
 		this.state = state;
-		this.setInProgress(inProgress);
 		if(err) {
 			this.errorReason = err;
 		}
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
 		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (err ? ('; reason: ' + err.message + ', code: ' + err.code) : ''));
+		if(state === 'attached') {
+			this.setInProgress(statechangeOp, false);
+		} else if(state === 'detached' || state === 'failed') {
+			this.setInProgress(statechangeOp, false);
+			this.setInProgress(syncOp, false);
+		}
 		this.emit(state, err);
 	};
 
@@ -9087,33 +9203,29 @@ var RealtimeChannel = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'name = ' + this.name + ', state = ' + state);
 		this.clearStateTimer();
 
-		/* notify the state change */
-		this.setState(state, null, true);
-
-		/* if not currently connected, do nothing */
-		if(this.connectionManager.state.state != 'connected') {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'not connected');
-			return;
-		}
+		/* notify the state change, but don't set inProgress until the request is actually in progress */
+		this.setState(state);
 
 		/* send the event and await response */
 		this.checkPendingState();
-
-		/* set a timer to handle no response */
-		var self = this;
-		this.stateTimer = setTimeout(function() {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setPendingState', 'timer expired');
-			self.stateTimer = null;
-			self.timeoutPendingState();
-		}, this.realtime.options.timeouts.realtimeRequestTimeout);
 	};
 
 	RealtimeChannel.prototype.checkPendingState = function() {
+		/* if can't send events, do nothing */
+		if(!this.connectionManager.state.sendEvents) {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'not connected');
+			return;
+		}
+
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'name = ' + this.name + ', state = ' + this.state);
+		/* Only start the state timer running when actually sending the event */
 		switch(this.state) {
 			case 'attaching':
+				this.startStateTimerIfNotRunning();
 				this.attachImpl();
 				break;
 			case 'detaching':
+				this.startStateTimerIfNotRunning();
 				this.detachImpl();
 				break;
 			case 'attached':
@@ -9141,6 +9253,17 @@ var RealtimeChannel = (function() {
 		}
 	};
 
+	RealtimeChannel.prototype.startStateTimerIfNotRunning = function() {
+		var self = this;
+		if(!this.stateTimer) {
+			this.stateTimer = setTimeout(function() {
+				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
+				self.stateTimer = null;
+				self.timeoutPendingState();
+			}, this.realtime.options.timeouts.realtimeRequestTimeout);
+		}
+	};
+
 	RealtimeChannel.prototype.clearStateTimer = function() {
 		var stateTimer = this.stateTimer;
 		if(stateTimer) {
@@ -9149,8 +9272,8 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.setInProgress = function(inProgress) {
-		this.rest.channels.setInProgress(this, inProgress);
+	RealtimeChannel.prototype.setInProgress = function(operation, value) {
+		this.rest.channels.setInProgress(this, operation, value);
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {
@@ -9363,14 +9486,23 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop;
+			callback = args[1] || noop,
+			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true)
+
+		function returnMembers(members) {
+			callback(null, params ? members.list(params) : members.values());
+		}
 
 		var self = this;
 		waitAttached(this.channel, callback, function() {
 			var members = self.members;
-			members.waitSync(function() {
-				callback(null, params ? members.list(params) : members.values());
-			});
+			if(waitForSync) {
+				members.waitSync(function() {
+					returnMembers(members);
+				});
+			} else {
+				returnMembers(members);
+			}
 		});
 	};
 
@@ -9424,7 +9556,7 @@ var RealtimePresence = (function() {
 		/* if this is the last message in a sequence of sync updates, end the sync */
 		if(!syncCursor) {
 			members.endSync();
-			this.channel.setInProgress(false);
+			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
 
 		/* broadcast to listeners */
@@ -9454,7 +9586,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.awaitSync = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync(); channel = ' + this.channel.name);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync()', 'channel = ' + this.channel.name);
 		this.members.startSync();
 	};
 
@@ -9583,7 +9715,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.startSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
@@ -9593,7 +9725,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.endSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync(); channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		if(syncInProgress) {
 			/* we can now strip out the ABSENT members, as we have
 			 * received all of the out-of-order sync messages */
@@ -9617,7 +9749,9 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.waitSync = function(callback) {
-		if(!this.syncInProgress) {
+		var syncInProgress = this.syncInProgress;
+		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		if(!syncInProgress) {
 			callback();
 			return;
 		}
@@ -9870,6 +10004,7 @@ var XHRRequest = (function() {
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
+		this.timedOut = false;
 		this.requestComplete = false;
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
@@ -9898,12 +10033,15 @@ var XHRRequest = (function() {
 
 	XHRRequest.prototype.exec = function() {
 		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
-			timer = this.timer = setTimeout(function() { xhr.abort(); }, timeout),
+			self = this,
+			timer = this.timer = setTimeout(function() {
+				self.timedOut = true;
+				xhr.abort();
+			}, timeout),
 			body = this.body,
 			method = body ? 'POST' : 'GET',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
-			self = this,
 			accept = headers['accept'],
 			responseType = 'text';
 
@@ -9930,7 +10068,7 @@ var XHRRequest = (function() {
 			xhr.setRequestHeader(h, headers[h]);
 
 		var errorHandler = function(errorEvent, message, code, statusCode) {
-			var errorMessage = message + ', errorEvent type was ' + errorEvent.type + ', current statusText is ' + self.xhr.statusText;
+			var errorMessage = message + ' (event type: ' + errorEvent.type + ')' + (self.xhr.statusText ? ', current statusText is ' + self.xhr.statusText : '');
 			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
@@ -9938,7 +10076,11 @@ var XHRRequest = (function() {
 			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
 		}
 		xhr.onabort = function(errorEvent) {
-			errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+			if(self.timedOut) {
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 400);
+			} else {
+				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+			}
 		};
 		xhr.ontimeout = function(errorEvent) {
 			errorHandler(errorEvent, 'Request timed out', 80000, 408);

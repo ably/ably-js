@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.21
+ * Ably JavaScript Library v0.8.22
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -439,7 +439,7 @@ var Utils = (function() {
 			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
 			result.push(ob[prop]);
 		}
-		return result.length ? result : undefined;
+		return result;
 	};
 
 	Utils.arrForEach = Array.prototype.forEach ?
