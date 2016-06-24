@@ -1,5 +1,21 @@
 # Change Log
 
+## [0.8.22](https://github.com/ably/ably-js/tree/0.8.22) (2016-06-24)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.22...0.8.22)
+
+**Biggest changes:**
+
+- Log and emit errors that occur on-connect (resume failures and upgrade failures) [\#291](https://github.com/ably/ably-js/pull/291)
+
+- Rework upgrade flow so that all messages complete on one transport before switching to another, to avoid 'Invalid transport ID' message race condition [\#291](https://github.com/ably/ably-js/pull/291)
+
+- Fix issue [\#285](https://github.com/ably/ably-js/issues/285) where a detach that happens during a presence sync could fail (also [\#291](https://github.com/ably/ably-js/pull/291))
+
+- Log all connectionDetails on transport active (including the server you're connected to), not just clientId [\#294](https://github.com/ably/ably-js/pull/294)
+
+- Implement `waitForSync` option in (realtime form of) `presence.get()` [\#295](https://github.com/ably/ably-js/pull/295)
+
 ## [0.8.21](https://github.com/ably/ably-js/tree/0.8.21) (2016-06-21)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.20...0.8.21)
