@@ -3,7 +3,7 @@
 define(function(require) {
 	var defaultLogLevel = 2,
 		environment = isBrowser ? (window.__env__ || {}) : process.env,
-		ablyEnvironment = environment.ABLY_ENV || 'sandbox',
+		ablyEnvironment = environment.ABLY_ENV || 'staging',
 		realtimeHost = environment.ABLY_REALTIME_HOST,
 		restHost = environment.ABLY_REST_HOST,
 		port = environment.ABLY_PORT || 80,
