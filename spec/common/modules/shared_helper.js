@@ -90,7 +90,15 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
 		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
-			utils.arrForEach(availableTransports, function(transport) {
+			/* Don't include jsonp if possible. Why? Because you can't abort requests. So recv's
+			* stick around for 90s till realtime ends them. So in a test, the
+			* browsers max-connections-per-host limit fills up quickly, which messes
+			* up other comet transports too */
+			var transports = utils.arrIn(availableTransports, 'xhr_polling') ?
+				utils.arrWithoutValue(availableTransports, 'jsonp') :
+				availableTransports;
+
+			utils.arrForEach(transports, function(transport) {
 				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
 				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
 			});
