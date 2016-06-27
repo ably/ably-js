@@ -239,6 +239,11 @@ var Utils = (function() {
 			}
 		};
 
+	/* Useful when the function may mutate the array */
+	Utils.safeArrForEach = function(arr, fn) {
+		return Utils.arrForEach(arr.slice(), fn);
+	};
+
 	Utils.arrMap = Array.prototype.map ?
 		function(arr, fn) {
 			return arr.map(fn);
