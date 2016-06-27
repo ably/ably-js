@@ -954,15 +954,12 @@ var ConnectionManager = (function() {
 				transport.disconnect();
 				Utils.arrDeleteValue(this.pendingTransports, transport);
 			} else {
+				clearTimeout(preferenceTimeout);
 				if(err) {
-					clearTimeout(preferenceTimeout);
 					clearTransportPreference();
 					self.failConnectionIfFatal(err);
 					self.connectImpl(transportParams);
 				}
-				/* If no err then transport is viable (=> pending), so allow
-				 * preferenceTimeout to keep ticking while transport waits to be
-				 * connected */
 			}
 		});
 	};
