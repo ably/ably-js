@@ -510,10 +510,10 @@ var ConnectionManager = (function() {
 
 		/* Terminate any other pending transport(s), and
 		 * abort any not-yet-pending transport attempts */
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			transport.disconnect();
 		});
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			transport.dispose();
 		});
 
@@ -1076,17 +1076,15 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
 			closeTransport(transport);
 		});
-		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});
-		this.proposedTransports = [];
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
@@ -1129,13 +1127,13 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
 			disconnectTransport(transport);
 		});
 		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});
