@@ -196,6 +196,12 @@ var Utils = (function() {
 		return res;
 	};
 
+	Utils.arrWithoutValue = function(arr, val) {
+		var newArr = arr.slice();
+		Utils.arrDeleteValue(newArr, val);
+		return newArr;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
