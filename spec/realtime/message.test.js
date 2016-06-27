@@ -250,16 +250,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.publishVariations = function(test) {
 		var testData = 'Some data';
-		var errorCallback = function(err){
-			if(err) {
-				test.ok(false, 'Error received by publish callback ' + displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-		};
 		var testArguments = [
 			[{name: 'objectWithName'}],
-			[{name: 'objectWithNameAndCallback'}, errorCallback],
 			[{name: 'objectWithNameAndNullData', data: null}],
 			[{name: 'objectWithNameAndUndefinedData', data: undefined}],
 			[{name: 'objectWithNameAndEmptyStringData', data: ''}],
@@ -267,22 +259,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			['nameAndUndefinedData', undefined],
 			['nameAndEmptyStringData', ''],
 			['nameAndData', testData],
-			['nameAndDataAndCallback', testData, errorCallback],
 			[{name: 'objectWithNameAndData', data: testData}],
-			[{name: 'objectWithNameAndDataAndCallback', data: testData}, errorCallback],
-			// 6 messages with null name,
+			// 5 messages with null name,
 			[null, testData],
-			[null, testData, errorCallback],
 			[{name: null, data: testData}],
 			[null, null],
 			[{name: null}],
 			[{name: null, data: null}]
 		];
+		var realtime;
 
 		test.expect(testArguments.length * 2);
 		try {
 			/* set up realtime */
-			var realtime = helper.AblyRealtime();
+			realtime = helper.AblyRealtime();
 			var rest = helper.AblyRest();
 
 			/* connect and attach */
@@ -338,21 +328,24 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						}
 
 						if (messagesReceived == testArguments.length) {
-							closeAndFinish(test, realtime);
+							setTimeout(function() {
+								closeAndFinish(test, realtime);
+							}, 2000);
 						}
 					});
 
 					/* publish events */
 					var restChannel = rest.channels.get('publishVariations');
-					async.eachSeries(testArguments, function iterator(item, callback) {
-						try {
-							restChannel.publish(item, function(err) {
-								callback(err);
-							});
-						} catch (e) {
-							test.ok(false, "Failed to publish");
+					async.eachSeries(testArguments, function iterator(args, callback) {
+						args.push(callback);
+						restChannel.publish.apply(restChannel, args);
+					}, function(err) {
+						if(err) {
+							test.ok(false, 'Error received by publish callback ' + displayError(err));
+							closeAndFinish(test, realtime);
+							return;
 						}
-					}, function() {});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
