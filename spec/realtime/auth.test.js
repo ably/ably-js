@@ -398,17 +398,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, authCallback: function(){}, queryTime: true }));
-			monitorConnection(test, clientRealtime);
+			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
 
+			clientRealtime.connection.on('failed', function(){
+				test.ok(false, 'Failed to connect before token expired');
+				closeAndFinish(test, clientRealtime);
+			});
 			clientRealtime.connection.once('connected', function(){
+				clientRealtime.connection.off('failed');
 				test.ok(true, 'Verify connection connected');
 				clientRealtime.connection.once('disconnected', function(stateChange){
 					test.ok(true, 'Verify connection disconnected');
 					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
 					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-					clientRealtime.close();
-					test.done();
+					closeAndFinish(test, clientRealtime);
 				});
 			});
 		});
