@@ -526,14 +526,15 @@ var ConnectionManager = (function() {
 	 * @param transport
 	 */
 	ConnectionManager.prototype.deactivateTransport = function(transport, state, error) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state);
-		if(error && error.message)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
-
 		var currentProtocol = this.activeProtocol,
 			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
-			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
+			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
+			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport);
+
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : ''));
+		if(error && error.message)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
 		if(wasActive) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
