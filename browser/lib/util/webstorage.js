@@ -1,5 +1,29 @@
 var WebStorage = (function() {
-	var supported = (typeof(window) == 'object') && window.sessionStorage && window.localStorage;
+	var sessionSupported,
+		localSupported,
+		test = 'ablyjs-storage-test';
+
+	/* Even just accessing the session/localStorage object can throw a
+	 * security exception in some circumstances with some browsers. In
+	 * others, calling setItem will throw. So have to check in this
+	 * somewhat roundabout way. (If unsupported or no window object,
+	 * will throw on accessing a property of undefined) */
+	try {
+		window.sessionStorage.setItem(test, test);
+		window.sessionStorage.removeItem(test);
+		sessionSupported = true;
+	} catch(e) {
+		sessionSupported = false;
+	}
+
+	try {
+		window.localStorage.setItem(test, test);
+		window.localStorage.removeItem(test);
+		localSupported = true;
+	} catch(e) {
+		localSupported = false;
+	}
+
 	function WebStorage() {}
 
 	function storageInterface(session) {
@@ -29,11 +53,13 @@ var WebStorage = (function() {
 		return storageInterface(session).removeItem(name);
 	}
 
-	if(supported) {
+	if(localSupported) {
 		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
 		WebStorage.get    = function(name) { return get(name, false); };
 		WebStorage.remove = function(name) { return remove(name, false); };
+	}
 
+	if(sessionSupported) {
 		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
 		WebStorage.getSession    = function(name) { return get(name, true); };
 		WebStorage.removeSession = function(name) { return remove(name, true); };
