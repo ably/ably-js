@@ -640,7 +640,7 @@ var ConnectionManager = (function() {
 				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 				disconnectedAt: Utils.now(),
 				location: window.location,
-				clientId: this.realtime.auth.clientId,
+				clientId: this.realtime.auth.clientId
 			}, this.options.timeouts.connectionStateTtl);
 		}
 	};

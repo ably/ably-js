@@ -15,7 +15,7 @@ Defaults.TIMEOUTS = {
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000,
 	preferenceConnectTimeout   : 6000,
-	parallelUpgradeDelay       : 4000,
+	parallelUpgradeDelay       : 4000
 };
 Defaults.httpMaxRetryCount = 3;
 
