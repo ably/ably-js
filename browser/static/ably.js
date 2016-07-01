@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.22
+ * Ably JavaScript Library v0.8.23
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2730,7 +2730,31 @@ var BufferUtils = (function() {
 	return BufferUtils;
 })();
 var WebStorage = (function() {
-	var supported = (typeof(window) == 'object') && window.sessionStorage && window.localStorage;
+	var sessionSupported,
+		localSupported,
+		test = 'ablyjs-storage-test';
+
+	/* Even just accessing the session/localStorage object can throw a
+	 * security exception in some circumstances with some browsers. In
+	 * others, calling setItem will throw. So have to check in this
+	 * somewhat roundabout way. (If unsupported or no window object,
+	 * will throw on accessing a property of undefined) */
+	try {
+		window.sessionStorage.setItem(test, test);
+		window.sessionStorage.removeItem(test);
+		sessionSupported = true;
+	} catch(e) {
+		sessionSupported = false;
+	}
+
+	try {
+		window.localStorage.setItem(test, test);
+		window.localStorage.removeItem(test);
+		localSupported = true;
+	} catch(e) {
+		localSupported = false;
+	}
+
 	function WebStorage() {}
 
 	function storageInterface(session) {
@@ -2760,11 +2784,13 @@ var WebStorage = (function() {
 		return storageInterface(session).removeItem(name);
 	}
 
-	if(supported) {
+	if(localSupported) {
 		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
 		WebStorage.get    = function(name) { return get(name, false); };
 		WebStorage.remove = function(name) { return remove(name, false); };
+	}
 
+	if(sessionSupported) {
 		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
 		WebStorage.getSession    = function(name) { return get(name, true); };
 		WebStorage.removeSession = function(name) { return remove(name, true); };
@@ -3986,11 +4012,11 @@ Defaults.TIMEOUTS = {
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000,
 	preferenceConnectTimeout   : 6000,
-	parallelUpgradeDelay       : 4000,
+	parallelUpgradeDelay       : 4000
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.22';
+Defaults.version           = '0.8.23';
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4541,6 +4567,12 @@ var Utils = (function() {
 		return res;
 	};
 
+	Utils.arrWithoutValue = function(arr, val) {
+		var newArr = arr.slice();
+		Utils.arrDeleteValue(newArr, val);
+		return newArr;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
@@ -4583,6 +4615,11 @@ var Utils = (function() {
 				fn(arr[i], i, arr);
 			}
 		};
+
+	/* Useful when the function may mutate the array */
+	Utils.safeArrForEach = function(arr, fn) {
+		return Utils.arrForEach(arr.slice(), fn);
+	};
 
 	Utils.arrMap = Array.prototype.map ?
 		function(arr, fn) {
@@ -5399,6 +5436,7 @@ var Protocol = (function() {
 
 var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
+	var haveSessionStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.getSession);
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -5418,13 +5456,13 @@ var ConnectionManager = (function() {
 
 	var sessionRecoveryName = 'ably-connection-recovery';
 	function getSessionRecoverData() {
-		return haveWebStorage && WebStorage.getSession(sessionRecoveryName);
+		return haveSessionStorage && WebStorage.getSession(sessionRecoveryName);
 	}
 	function setSessionRecoverData(value) {
-		return haveWebStorage && WebStorage.setSession(sessionRecoveryName, value);
+		return haveSessionStorage && WebStorage.setSession(sessionRecoveryName, value);
 	}
 	function clearSessionRecoverData() {
-		return haveWebStorage && WebStorage.removeSession(sessionRecoveryName);
+		return haveSessionStorage && WebStorage.removeSession(sessionRecoveryName);
 	}
 
 	function isFatalErr(err) {
@@ -5546,7 +5584,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(haveWebStorage && typeof options.recover === 'function' && window.addEventListener)
+		if(haveSessionStorage && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
 		if(options.closeOnUnload === true && window.addEventListener)
@@ -5909,10 +5947,10 @@ var ConnectionManager = (function() {
 
 		/* Terminate any other pending transport(s), and
 		 * abort any not-yet-pending transport attempts */
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			transport.disconnect();
 		});
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			transport.dispose();
 		});
 
@@ -5925,14 +5963,15 @@ var ConnectionManager = (function() {
 	 * @param transport
 	 */
 	ConnectionManager.prototype.deactivateTransport = function(transport, state, error) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state);
-		if(error && error.message)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
-
 		var currentProtocol = this.activeProtocol,
 			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
-			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
+			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
+			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport);
+
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : ''));
+		if(error && error.message)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
 		if(wasActive) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
@@ -6034,12 +6073,12 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(haveWebStorage && this.connectionKey && this.connectionSerial !== undefined) {
+		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
 			setSessionRecoverData({
 				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 				disconnectedAt: Utils.now(),
 				location: window.location,
-				clientId: this.realtime.auth.clientId,
+				clientId: this.realtime.auth.clientId
 			}, this.options.timeouts.connectionStateTtl);
 		}
 	};
@@ -6353,15 +6392,12 @@ var ConnectionManager = (function() {
 				transport.disconnect();
 				Utils.arrDeleteValue(this.pendingTransports, transport);
 			} else {
+				clearTimeout(preferenceTimeout);
 				if(err) {
-					clearTimeout(preferenceTimeout);
 					clearTransportPreference();
 					self.failConnectionIfFatal(err);
 					self.connectImpl(transportParams);
 				}
-				/* If no err then transport is viable (=> pending), so allow
-				 * preferenceTimeout to keep ticking while transport waits to be
-				 * connected */
 			}
 		});
 	};
@@ -6477,17 +6513,15 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
 			closeTransport(transport);
 		});
-		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});
-		this.proposedTransports = [];
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
@@ -6530,13 +6564,13 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
 			disconnectTransport(transport);
 		});
 		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});

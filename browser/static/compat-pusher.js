@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.22
+ * Ably JavaScript Library v0.8.23
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -410,6 +410,12 @@ var Utils = (function() {
 		return res;
 	};
 
+	Utils.arrWithoutValue = function(arr, val) {
+		var newArr = arr.slice();
+		Utils.arrDeleteValue(newArr, val);
+		return newArr;
+	};
+
 	/*
 	 * Construct an array of the keys of the enumerable
 	 * properties of a given object, optionally limited
@@ -452,6 +458,11 @@ var Utils = (function() {
 				fn(arr[i], i, arr);
 			}
 		};
+
+	/* Useful when the function may mutate the array */
+	Utils.safeArrForEach = function(arr, fn) {
+		return Utils.arrForEach(arr.slice(), fn);
+	};
 
 	Utils.arrMap = Array.prototype.map ?
 		function(arr, fn) {
