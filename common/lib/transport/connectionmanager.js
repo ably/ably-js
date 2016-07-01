@@ -510,10 +510,10 @@ var ConnectionManager = (function() {
 
 		/* Terminate any other pending transport(s), and
 		 * abort any not-yet-pending transport attempts */
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			transport.disconnect();
 		});
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			transport.dispose();
 		});
 
@@ -526,14 +526,15 @@ var ConnectionManager = (function() {
 	 * @param transport
 	 */
 	ConnectionManager.prototype.deactivateTransport = function(transport, state, error) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state);
-		if(error && error.message)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
-
 		var currentProtocol = this.activeProtocol,
 			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
-			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport);
+			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
+			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport);
+
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : ''));
+		if(error && error.message)
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
 		if(wasActive) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
@@ -954,15 +955,12 @@ var ConnectionManager = (function() {
 				transport.disconnect();
 				Utils.arrDeleteValue(this.pendingTransports, transport);
 			} else {
+				clearTimeout(preferenceTimeout);
 				if(err) {
-					clearTimeout(preferenceTimeout);
 					clearTransportPreference();
 					self.failConnectionIfFatal(err);
 					self.connectImpl(transportParams);
 				}
-				/* If no err then transport is viable (=> pending), so allow
-				 * preferenceTimeout to keep ticking while transport waits to be
-				 * connected */
 			}
 		});
 	};
@@ -1078,17 +1076,15 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
 			closeTransport(transport);
 		});
-		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});
-		this.proposedTransports = [];
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
@@ -1131,13 +1127,13 @@ var ConnectionManager = (function() {
 			}
 		}
 
-		Utils.arrForEach(this.pendingTransports, function(transport) {
+		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
 			disconnectTransport(transport);
 		});
 		this.pendingTransports = [];
 
-		Utils.arrForEach(this.proposedTransports, function(transport) {
+		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
 			transport.dispose();
 		});

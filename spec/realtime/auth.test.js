@@ -398,17 +398,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, authCallback: function(){}, queryTime: true }));
-			monitorConnection(test, clientRealtime);
+			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
 
+			clientRealtime.connection.on('failed', function(){
+				test.ok(false, 'Failed to connect before token expired');
+				closeAndFinish(test, clientRealtime);
+			});
 			clientRealtime.connection.once('connected', function(){
+				clientRealtime.connection.off('failed');
 				test.ok(true, 'Verify connection connected');
 				clientRealtime.connection.once('disconnected', function(stateChange){
 					test.ok(true, 'Verify connection disconnected');
 					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
 					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-					clientRealtime.close();
-					test.done();
+					closeAndFinish(test, clientRealtime);
 				});
 			});
 		});
@@ -668,12 +671,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * use authorise({force: true}) to force a reauth using an existing authCallback
 	 */
 	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
-		test.expect(5);
+		test.expect(8);
 		var realtime, rest = helper.AblyRest();
 		var firstTime = true;
-		var clientId = "testclientid";
 		var authCallback = function(tokenParams, callback) {
-			tokenParams.ttl = firstTime ? 5000 : 60000;
+			tokenParams.clientId = '*';
+			tokenParams.capability = firstTime ? {'wrong': ['*']} : {'right': ['*']};
 			firstTime = false;
 			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 				if(err) {
@@ -685,30 +688,32 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		};
 
-		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback }));
 		realtime.connection.once('connected', function(){
-			/* soon after connected, reauth */
-			setTimeout(function(){
+			test.ok(true, 'Verify connection connected');
+			var channel = realtime.channels.get('right');
+			channel.attach(function(err) {
+				test.ok(err, 'Check using first token, without channel attach capability');
+				test.equal(err.code, 40160, 'Check expected error code');
+
+				/* soon after connected, reauth */
 				realtime.auth.authorise(null, {force: true}, function(err) {
 					test.ok(!err, err && displayError(err));
 				});
-			}, 200);
-			test.ok(true, 'Verify connection connected');
 
-			/* statechanges due to the reauth */
-			realtime.connection.once('disconnected', function(stateChange){
-				test.ok(true, 'Verify connection disconnected');
-				test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
-				realtime.connection.once('connected', function(){
-					test.ok(true, 'Verify connection reconnected');
-					/* after another 5s (after would be disconnected under the original token), we're done */
-					setTimeout(function(){
-						closeAndFinish(test, realtime);
-					}, 5000);
-					realtime.connection.once('disconnected', function(){
-						test.ok(false, 'should not be disconnected a second time, as new token should last till test ends');
+				/* statechanges due to the reauth */
+				realtime.connection.once('disconnected', function(stateChange){
+					test.ok(true, 'Verify connection disconnected');
+					test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
+					realtime.connection.once('connected', function(){
+						test.ok(true, 'Verify connection reconnected');
+
+						channel.attach(function(err) {
+							test.ok(!err, 'Check using second token, with channel attach capability');
+							closeAndFinish(test, realtime);
+						});
 					});
-				});
+				})
 			});
 		});
 
