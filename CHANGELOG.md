@@ -1,8 +1,20 @@
 # Change Log
 
+## [0.8.23](https://github.com/ably/ably-js/tree/0.8.23) (2016-07-01)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.22...0.8.23)
+
+**Biggest changes:**
+
+- Fix exception on accessing localStorage in Safari in private mode [\#298](https://github.com/ably/ably-js/pull/298)
+
+- Fix bug causing transports to occasionally stick around after they should have been disconnected in some circumstances [\#296](https://github.com/ably/ably-js/pull/296)
+
+- Sacrifice commas to appease IE8 [479152f](https://github.com/ably/ably-js/commit/479152f)
+
 ## [0.8.22](https://github.com/ably/ably-js/tree/0.8.22) (2016-06-24)
 
-[Full Changelog](https://github.com/ably/ably-js/compare/0.8.22...0.8.22)
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.21...0.8.22)
 
 **Biggest changes:**
 
