@@ -1,5 +1,6 @@
 var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
+	var haveSessionStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.getSession);
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -19,13 +20,13 @@ var ConnectionManager = (function() {
 
 	var sessionRecoveryName = 'ably-connection-recovery';
 	function getSessionRecoverData() {
-		return haveWebStorage && WebStorage.getSession(sessionRecoveryName);
+		return haveSessionStorage && WebStorage.getSession(sessionRecoveryName);
 	}
 	function setSessionRecoverData(value) {
-		return haveWebStorage && WebStorage.setSession(sessionRecoveryName, value);
+		return haveSessionStorage && WebStorage.setSession(sessionRecoveryName, value);
 	}
 	function clearSessionRecoverData() {
-		return haveWebStorage && WebStorage.removeSession(sessionRecoveryName);
+		return haveSessionStorage && WebStorage.removeSession(sessionRecoveryName);
 	}
 
 	function isFatalErr(err) {
@@ -147,7 +148,7 @@ var ConnectionManager = (function() {
 		}
 
 		/* intercept close event in browser to persist connection id if requested */
-		if(haveWebStorage && typeof options.recover === 'function' && window.addEventListener)
+		if(haveSessionStorage && typeof options.recover === 'function' && window.addEventListener)
 			window.addEventListener('beforeunload', this.persistConnection.bind(this));
 
 		if(options.closeOnUnload === true && window.addEventListener)
@@ -636,7 +637,7 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(haveWebStorage && this.connectionKey && this.connectionSerial !== undefined) {
+		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
 			setSessionRecoverData({
 				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
 				disconnectedAt: Utils.now(),
