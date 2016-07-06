@@ -619,7 +619,7 @@ var Auth = (function() {
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
+				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 401));
 				return;
 			}
 			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
