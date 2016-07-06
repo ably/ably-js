@@ -591,5 +591,46 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check that a lack of response to an upgrade sync doesn't stall things forever
+	 */
+	exports.unresponsive_upgrade_sync = function(test) {
+		test.expect(5);
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 2000}),
+			connection = realtime.connection;
+
+		connection.connectionManager.on('transport.pending', function(transport) {
+			if(!helper.isWebsocket(transport)) return;
+
+			var originalOnProtocolMessage = transport.onProtocolMessage;
+			/* Stub out sync message one time */
+			transport.onProtocolMessage = function(message) {
+				if(message.action === 16) {
+					connection.connectionManager.off('transport.pending');
+					test.ok(true, 'sync received');
+					transport.onProtocolMessage = originalOnProtocolMessage;
+				} else {
+					originalOnProtocolMessage.call(transport, message);
+				}
+			};
+		});
+
+		connection.once('connected', function() {
+			test.ok(true, 'First connected');
+			connection.once('disconnected', function() {
+				test.ok(true, 'After sync times out, disconnected');
+				connection.once('connected', function() {
+					test.ok(true, 'Connect again');
+					connection.connectionManager.on('transport.active', function(transport) {
+						if(helper.isWebsocket(transport)) {
+							test.ok(true, 'Check upgrade is tried again, and this time, succeeds');
+							closeAndFinish(test, realtime);
+						}
+					});
+				});
+			});
+		});
+	};
+
 	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};
 });
