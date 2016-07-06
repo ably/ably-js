@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.23
+ * Ably JavaScript Library v0.8.24
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4016,7 +4016,8 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version           = '0.8.23';
+Defaults.version          = '0.8.24';
+Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4662,7 +4663,8 @@ var Utils = (function() {
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
 		return {
 			accept: accept,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
@@ -4674,7 +4676,8 @@ var Utils = (function() {
 		return {
 			accept: accept,
 			'content-type': contentType,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
@@ -5442,17 +5445,7 @@ var ConnectionManager = (function() {
 	var noop = function() {};
 	var transportPreferenceOrder = Defaults.transportPreferenceOrder;
 	var optimalTransport = transportPreferenceOrder[transportPreferenceOrder.length - 1];
-
 	var transportPreferenceName = 'ably-transport-preference';
-	function getTransportPreference() {
-		return haveWebStorage && WebStorage.get(transportPreferenceName);
-	}
-	function setTransportPreference(value) {
-		return haveWebStorage && WebStorage.set(transportPreferenceName, value);
-	}
-	function clearTransportPreference() {
-		return haveWebStorage && WebStorage.remove(transportPreferenceName);
-	}
 
 	var sessionRecoveryName = 'ably-connection-recovery';
 	function getSessionRecoverData() {
@@ -5524,6 +5517,7 @@ var ConnectionManager = (function() {
 			Utils.mixin(params, options.transportParams);
 		}
 		params.v = Defaults.apiVersion;
+		params.lib = Defaults.libstring;
 		return params;
 	};
 
@@ -5565,6 +5559,7 @@ var ConnectionManager = (function() {
 		* transport, it'll just be that one. */
 		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
+		this.transportPreference = null;
 
 		this.httpHosts = Defaults.getHosts(options);
 		this.activeProtocol = null;
@@ -5769,9 +5764,9 @@ var ConnectionManager = (function() {
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			};
 
-		if(this.state !== this.states.connected) {
+		if(this.state !== this.states.connected && this.state !== this.states.connecting) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade');
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 			abandon();
 			return;
 		}
@@ -5791,17 +5786,24 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			/* Possible race condition if two upgrade transports were both hanging on for nopending */
-			if(self.state === self.states.synchronizing) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Abandoning proposed transport ' + transport.shortName + ' as an upgrade is already in progress');
+			if(!transport.isConnected) {
+				/* This is only possible if the xhr streaming transport was disconnected during the parallelUpgradeDelay */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade');
 				abandon();
 				return;
 			}
 
 			if(self.state === self.states.connected) {
-				/* If currently connected, temporarily pause events until the sync is complete. */
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Currently connected, so temporarily pausing events until the upgrade is complete');
 				self.state = self.states.synchronizing;
 				oldProtocol = self.activeProtocol;
+			} else if(self.state !== self.states.connecting) {
+				/* Note: upgrading from the connecting state is valid if the old active
+				* transport was deactivated after the upgrade transport first connected;
+				* see logic in deactivateTransport */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+				abandon();
+				return;
 			}
 
 			/* If the connectionId has changed, the upgrade hasn't worked. But as
@@ -5816,9 +5818,14 @@ var ConnectionManager = (function() {
 			}
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(err, newConnectionSerial, connectionId) {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
+				/* If there's been some problem with syncing, we have a problem -- we
+				* can't just fall back on the old transport, as we don't know whether
+				* realtime got the sync -- if it did, the old transport is no longer
+				* valid. To be safe, we disconnect both and start again from scratch. */
+				if(syncErr) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
+					self.disconnectAllTransports();
 					return;
 				}
 				var finishUpgrade = function() {
@@ -5886,7 +5893,7 @@ var ConnectionManager = (function() {
 		if(connectionDetails)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
 
-		this.persistTransportPreferences(transport);
+		this.persistTransportPreference(transport);
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
@@ -6027,9 +6034,10 @@ var ConnectionManager = (function() {
 	 * on the new transport synchronises with the messages already received
 	 */
 	ConnectionManager.prototype.sync = function(transport, callback) {
-		/* check preconditions */
-		if(!transport.isConnected)
-				throw new ErrorInfo('Unable to sync connection; not connected', 40000, 400);
+		var timeout = setTimeout(function () {
+			transport.off('sync');
+			callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
+		}, this.options.timeouts.realtimeRequestTimeout);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
@@ -6037,12 +6045,17 @@ var ConnectionManager = (function() {
 			connectionKey: this.connectionKey,
 			connectionSerial: this.connectionSerial
 		});
+
 		transport.send(syncMessage, function(err) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
+				transport.off('sync');
+				clearTimeout(timeout);
+				callback(ErrorInfo.fromValues(err));
 			}
 		});
+
 		transport.once('sync', function(connectionSerial, connectionId) {
+			clearTimeout(timeout);
 			callback(null, connectionSerial, connectionId);
 		});
 	};
@@ -6202,7 +6215,8 @@ var ConnectionManager = (function() {
 		 * - a viable (but not yet active) transport fails due to a token error (so
 		 *   this.errorReason will be set, and startConnect will do a forced authorise) */
 		var retryImmediately = (state === 'disconnected' &&
-			(this.state === this.states.connected ||
+			(this.state === this.states.connected     ||
+			 this.state === this.states.synchronizing ||
 				(this.state === this.states.connecting  &&
 					indicated.error && Auth.isTokenErr(indicated.error))));
 
@@ -6347,7 +6361,7 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action');
 		} else if(state == this.states.connected.state) {
 			this.upgradeIfNeeded(transportParams);
-		} else if(this.transports.length > 1 && getTransportPreference()) {
+		} else if(this.transports.length > 1 && this.getTransportPreference()) {
 			this.connectPreference(transportParams);
 		} else {
 			this.connectBase(transportParams);
@@ -6356,12 +6370,12 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.connectPreference = function(transportParams) {
-		var preference = getTransportPreference(),
+		var preference = this.getTransportPreference(),
 			self = this,
 			preferenceTimeoutExpired = false;
 
 		if(!Utils.arrIn(this.transports, preference)) {
-			clearTransportPreference();
+			this.unpersistTransportPreference();
 			this.connectImpl(transportParams);
 		}
 
@@ -6375,7 +6389,7 @@ var ConnectionManager = (function() {
 				 * protocol, but none exists if we're not in the connected state) */
 				self.disconnectAllTransports();
 				/* Be quite agressive about clearing the stored preference if ever it doesn't work */
-				clearTransportPreference();
+				self.unpersistTransportPreference();
 			}
 			self.connectImpl(transportParams);
 		}, this.options.timeouts.preferenceConnectTimeout);
@@ -6394,7 +6408,7 @@ var ConnectionManager = (function() {
 			} else {
 				clearTimeout(preferenceTimeout);
 				if(err) {
-					clearTransportPreference();
+					self.unpersistTransportPreference();
 					self.failConnectionIfFatal(err);
 					self.connectImpl(transportParams);
 				}
@@ -6758,9 +6772,23 @@ var ConnectionManager = (function() {
 		this.proposedTransports.push(transport);
 	};
 
-	ConnectionManager.prototype.persistTransportPreferences = function(transport) {
+	ConnectionManager.prototype.getTransportPreference = function() {
+		return this.transportPreference || (haveWebStorage && WebStorage.get(transportPreferenceName));
+	};
+
+	ConnectionManager.prototype.persistTransportPreference = function(transport) {
 		if(Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
-			setTransportPreference(transport.shortName);
+			this.transportPreference = transport.shortName;
+			if(haveWebStorage) {
+				WebStorage.set(transportPreferenceName, transport.shortName);
+			}
+		}
+	};
+
+	ConnectionManager.prototype.unpersistTransportPreference = function() {
+		this.transportPreference = null;
+		if(haveWebStorage) {
+			WebStorage.remove(transportPreferenceName);
 		}
 	};
 
@@ -8294,7 +8322,7 @@ var Auth = (function() {
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('ClientId in token was ' + token.clientId + ', but library was instantiated with clientId ' + this.clientId, 40102, 401));
+				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 401));
 				return;
 			}
 			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
