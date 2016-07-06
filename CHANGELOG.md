@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.8.24](https://github.com/ably/ably-js/tree/0.8.24) (2016-07-06)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.23...0.8.24)
+
+**Biggest changes:**
+
+- Store transport preferences in memory not just localstorage, for node clients [\#303](https://github.com/ably/ably-js/pull/303)
+
+- Fix issues with sync failures leading to lib sticking in the `synchronizing` state [\#302](https://github.com/ably/ably-js/pull/302)
+
+- Add lib version string to connect querystring an as a header for REST [\#304](https://github.com/ably/ably-js/pull/304)
+
 ## [0.8.23](https://github.com/ably/ably-js/tree/0.8.23) (2016-07-01)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.22...0.8.23)
