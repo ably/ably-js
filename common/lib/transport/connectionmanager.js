@@ -334,9 +334,9 @@ var ConnectionManager = (function() {
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			};
 
-		if(this.state !== this.states.connected) {
+		if(this.state !== this.states.connected && this.state !== this.states.connecting) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade');
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 			abandon();
 			return;
 		}
@@ -356,17 +356,24 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			/* Possible race condition if two upgrade transports were both hanging on for nopending */
-			if(self.state === self.states.synchronizing) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Abandoning proposed transport ' + transport.shortName + ' as an upgrade is already in progress');
+			if(!transport.isConnected) {
+				/* This is only possible if the xhr streaming transport was disconnected during the parallelUpgradeDelay */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade');
 				abandon();
 				return;
 			}
 
 			if(self.state === self.states.connected) {
-				/* If currently connected, temporarily pause events until the sync is complete. */
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Currently connected, so temporarily pausing events until the upgrade is complete');
 				self.state = self.states.synchronizing;
 				oldProtocol = self.activeProtocol;
+			} else if(self.state !== self.states.connecting) {
+				/* Note: upgrading from the connecting state is valid if the old active
+				* transport was deactivated after the upgrade transport first connected;
+				* see logic in deactivateTransport */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+				abandon();
+				return;
 			}
 
 			/* If the connectionId has changed, the upgrade hasn't worked. But as
@@ -381,9 +388,14 @@ var ConnectionManager = (function() {
 			}
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(err, newConnectionSerial, connectionId) {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + err);
+			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
+				/* If there's been some problem with syncing, we have a problem -- we
+				* can't just fall back on the old transport, as we don't know whether
+				* realtime got the sync -- if it did, the old transport is no longer
+				* valid. To be safe, we disconnect both and start again from scratch. */
+				if(syncErr) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
+					self.disconnectAllTransports();
 					return;
 				}
 				var finishUpgrade = function() {
@@ -592,9 +604,10 @@ var ConnectionManager = (function() {
 	 * on the new transport synchronises with the messages already received
 	 */
 	ConnectionManager.prototype.sync = function(transport, callback) {
-		/* check preconditions */
-		if(!transport.isConnected)
-				throw new ErrorInfo('Unable to sync connection; not connected', 40000, 400);
+		var timeout = setTimeout(function () {
+			transport.off('sync');
+			callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
+		}, this.options.timeouts.realtimeRequestTimeout);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
@@ -602,12 +615,17 @@ var ConnectionManager = (function() {
 			connectionKey: this.connectionKey,
 			connectionSerial: this.connectionSerial
 		});
+
 		transport.send(syncMessage, function(err) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
+				transport.off('sync');
+				clearTimeout(timeout);
+				callback(ErrorInfo.fromValues(err));
 			}
 		});
+
 		transport.once('sync', function(connectionSerial, connectionId) {
+			clearTimeout(timeout);
 			callback(null, connectionSerial, connectionId);
 		});
 	};
@@ -767,7 +785,8 @@ var ConnectionManager = (function() {
 		 * - a viable (but not yet active) transport fails due to a token error (so
 		 *   this.errorReason will be set, and startConnect will do a forced authorise) */
 		var retryImmediately = (state === 'disconnected' &&
-			(this.state === this.states.connected ||
+			(this.state === this.states.connected     ||
+			 this.state === this.states.synchronizing ||
 				(this.state === this.states.connecting  &&
 					indicated.error && Auth.isTokenErr(indicated.error))));
 
