@@ -784,7 +784,8 @@ var ConnectionManager = (function() {
 		 * - a viable (but not yet active) transport fails due to a token error (so
 		 *   this.errorReason will be set, and startConnect will do a forced authorise) */
 		var retryImmediately = (state === 'disconnected' &&
-			(this.state === this.states.connected ||
+			(this.state === this.states.connected     ||
+			 this.state === this.states.synchronizing ||
 				(this.state === this.states.connecting  &&
 					indicated.error && Auth.isTokenErr(indicated.error))));
 
