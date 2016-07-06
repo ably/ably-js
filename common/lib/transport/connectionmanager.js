@@ -334,9 +334,9 @@ var ConnectionManager = (function() {
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			};
 
-		if(this.state !== this.states.connected) {
+		if(this.state !== this.states.connected && this.state !== this.states.connecting) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade');
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 			abandon();
 			return;
 		}
@@ -356,17 +356,24 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			/* Possible race condition if two upgrade transports were both hanging on for nopending */
-			if(self.state === self.states.synchronizing) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Abandoning proposed transport ' + transport.shortName + ' as an upgrade is already in progress');
+			if(!transport.isConnected) {
+				/* This is only possible if the xhr streaming transport was disconnected during the parallelUpgradeDelay */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade');
 				abandon();
 				return;
 			}
 
 			if(self.state === self.states.connected) {
-				/* If currently connected, temporarily pause events until the sync is complete. */
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Currently connected, so temporarily pausing events until the upgrade is complete');
 				self.state = self.states.synchronizing;
 				oldProtocol = self.activeProtocol;
+			} else if(self.state !== self.states.connecting) {
+				/* Note: upgrading from the connecting state is valid if the old active
+				* transport was deactivated after the upgrade transport first connected;
+				* see logic in deactivateTransport */
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+				abandon();
+				return;
 			}
 
 			/* If the connectionId has changed, the upgrade hasn't worked. But as
@@ -592,9 +599,6 @@ var ConnectionManager = (function() {
 	 * on the new transport synchronises with the messages already received
 	 */
 	ConnectionManager.prototype.sync = function(transport, callback) {
-		/* check preconditions */
-		if(!transport.isConnected)
-				throw new ErrorInfo('Unable to sync connection; not connected', 40000, 400);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
