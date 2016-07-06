@@ -591,5 +591,48 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check that after a successful upgrade, the transport pref is persisted,
+	 * and subsequent connections do not upgrade
+	 */
+	exports.persist_transport_prefs = function(test) {
+		var realtime = helper.AblyRealtime(),
+			connection = realtime.connection,
+			connectionManager = connection.connectionManager;
+
+		async.series([
+			function(cb) {
+				connectionManager.once('transport.active', function(transport) {
+					test.ok(helper.isComet(transport), 'Check first transport to become active is comet');
+					cb();
+				});
+			},
+			function(cb) {
+				connectionManager.once('transport.active', function(transport) {
+					test.ok(helper.isWebsocket(transport), 'Check second transport to become active is ws');
+					cb();
+				});
+			},
+			function(cb) {
+				connection.once('closed', function() {
+					test.ok(true, 'closed');
+					cb();
+				});
+				helper.Utils.nextTick(function() {
+					connection.close();
+				});
+			},
+			function(cb) {
+				connectionManager.once('transport.active', function(transport) {
+					test.ok(helper.isWebsocket(transport), 'Check first transport to become active the second time round is websocket');
+					cb();
+				});
+				connection.connect();
+			},
+		], function() {
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};
 });
