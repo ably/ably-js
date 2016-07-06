@@ -6,17 +6,7 @@ var ConnectionManager = (function() {
 	var noop = function() {};
 	var transportPreferenceOrder = Defaults.transportPreferenceOrder;
 	var optimalTransport = transportPreferenceOrder[transportPreferenceOrder.length - 1];
-
 	var transportPreferenceName = 'ably-transport-preference';
-	function getTransportPreference() {
-		return haveWebStorage && WebStorage.get(transportPreferenceName);
-	}
-	function setTransportPreference(value) {
-		return haveWebStorage && WebStorage.set(transportPreferenceName, value);
-	}
-	function clearTransportPreference() {
-		return haveWebStorage && WebStorage.remove(transportPreferenceName);
-	}
 
 	var sessionRecoveryName = 'ably-connection-recovery';
 	function getSessionRecoverData() {
@@ -129,6 +119,7 @@ var ConnectionManager = (function() {
 		* transport, it'll just be that one. */
 		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
+		this.transportPreference = null;
 
 		this.httpHosts = Defaults.getHosts(options);
 		this.activeProtocol = null;
@@ -450,7 +441,7 @@ var ConnectionManager = (function() {
 		if(connectionDetails)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
 
-		this.persistTransportPreferences(transport);
+		this.persistTransportPreference(transport);
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
@@ -911,7 +902,7 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action');
 		} else if(state == this.states.connected.state) {
 			this.upgradeIfNeeded(transportParams);
-		} else if(this.transports.length > 1 && getTransportPreference()) {
+		} else if(this.transports.length > 1 && this.getTransportPreference()) {
 			this.connectPreference(transportParams);
 		} else {
 			this.connectBase(transportParams);
@@ -920,12 +911,12 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.connectPreference = function(transportParams) {
-		var preference = getTransportPreference(),
+		var preference = this.getTransportPreference(),
 			self = this,
 			preferenceTimeoutExpired = false;
 
 		if(!Utils.arrIn(this.transports, preference)) {
-			clearTransportPreference();
+			this.unpersistTransportPreference();
 			this.connectImpl(transportParams);
 		}
 
@@ -939,7 +930,7 @@ var ConnectionManager = (function() {
 				 * protocol, but none exists if we're not in the connected state) */
 				self.disconnectAllTransports();
 				/* Be quite agressive about clearing the stored preference if ever it doesn't work */
-				clearTransportPreference();
+				self.unpersistTransportPreference();
 			}
 			self.connectImpl(transportParams);
 		}, this.options.timeouts.preferenceConnectTimeout);
@@ -958,7 +949,7 @@ var ConnectionManager = (function() {
 			} else {
 				clearTimeout(preferenceTimeout);
 				if(err) {
-					clearTransportPreference();
+					self.unpersistTransportPreference();
 					self.failConnectionIfFatal(err);
 					self.connectImpl(transportParams);
 				}
@@ -1322,9 +1313,23 @@ var ConnectionManager = (function() {
 		this.proposedTransports.push(transport);
 	};
 
-	ConnectionManager.prototype.persistTransportPreferences = function(transport) {
+	ConnectionManager.prototype.getTransportPreference = function() {
+		return this.transportPreference || (haveWebStorage && WebStorage.get(transportPreferenceName));
+	};
+
+	ConnectionManager.prototype.persistTransportPreference = function(transport) {
 		if(Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
-			setTransportPreference(transport.shortName);
+			this.transportPreference = transport.shortName;
+			if(haveWebStorage) {
+				WebStorage.set(transportPreferenceName, transport.shortName);
+			}
+		}
+	};
+
+	ConnectionManager.prototype.unpersistTransportPreference = function() {
+		this.transportPreference = null;
+		if(haveWebStorage) {
+			WebStorage.remove(transportPreferenceName);
 		}
 	};
 
