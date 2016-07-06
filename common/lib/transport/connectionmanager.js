@@ -88,6 +88,7 @@ var ConnectionManager = (function() {
 			Utils.mixin(params, options.transportParams);
 		}
 		params.v = Defaults.apiVersion;
+		params.lib = Defaults.libstring;
 		return params;
 	};
 
