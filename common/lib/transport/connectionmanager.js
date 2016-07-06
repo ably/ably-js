@@ -599,6 +599,10 @@ var ConnectionManager = (function() {
 	 * on the new transport synchronises with the messages already received
 	 */
 	ConnectionManager.prototype.sync = function(transport, callback) {
+		var timeout = setTimeout(function () {
+			transport.off('sync');
+			callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
+		}, this.options.timeouts.realtimeRequestTimeout);
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
@@ -606,12 +610,17 @@ var ConnectionManager = (function() {
 			connectionKey: this.connectionKey,
 			connectionSerial: this.connectionSerial
 		});
+
 		transport.send(syncMessage, function(err) {
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sync()', 'Unexpected error sending sync message; err = ' + ErrorInfo.fromValues(err).toString());
+				transport.off('sync');
+				clearTimeout(timeout);
+				callback(ErrorInfo.fromValues(err));
 			}
 		});
+
 		transport.once('sync', function(connectionSerial, connectionId) {
+			clearTimeout(timeout);
 			callback(null, connectionSerial, connectionId);
 		});
 	};
