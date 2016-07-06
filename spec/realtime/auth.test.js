@@ -291,18 +291,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
 			clientRealtime.connection.once('failed', function(stateChange){
 				test.ok(true, 'Verify connection failed');
-				test.deepEqual(stateChange.reason, {statusCode: 401, code: 40102, message: 'ClientId in token was ' + testClientId + ', but library was instantiated with clientId WRONG' })
+				test.equal(stateChange.reason.code, 40102);
 				clientRealtime.close();
 				test.done();
-			})
+			});
 			// Workaround for ably-js issue 101 (comet transport goes into disconnected
 			// rather than failed). TODO remove next 5 lines when that's fixed
 			clientRealtime.connection.once('disconnected', function(stateChange){
 				test.ok(true, 'Verify connection failed');
-				test.deepEqual(stateChange.reason, {statusCode: 401, code: 40102, message: 'ClientId in token was ' + testClientId + ', but library was instantiated with clientId WRONG' })
+				test.equal(stateChange.reason.code, 40102);
 				clientRealtime.close();
 				test.done();
-			})
+			});
 		});
 	};
 
