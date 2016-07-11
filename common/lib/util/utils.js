@@ -291,7 +291,8 @@ var Utils = (function() {
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
 		return {
 			accept: accept,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
@@ -303,7 +304,8 @@ var Utils = (function() {
 		return {
 			accept: accept,
 			'content-type': contentType,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
