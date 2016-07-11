@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.8.26](https://github.com/ably/ably-js/tree/0.8.26) (2016-07-11)
+## [0.8.25](https://github.com/ably/ably-js/tree/0.8.25) (2016-07-06)
+
+No net changes. 0.8.25 reverted a new header addition due to Ably not yet sending the correct `access-control-allow-headers` CORS headers for it; 0.8.26 re-adds it.
+
 ## [0.8.24](https://github.com/ably/ably-js/tree/0.8.24) (2016-07-06)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.23...0.8.24)
