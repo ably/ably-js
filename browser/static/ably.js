@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.25
+ * Ably JavaScript Library v0.8.26
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4016,7 +4016,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.25';
+Defaults.version          = '0.8.26';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4663,7 +4663,8 @@ var Utils = (function() {
 		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
 		return {
 			accept: accept,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
@@ -4675,7 +4676,8 @@ var Utils = (function() {
 		return {
 			accept: accept,
 			'content-type': contentType,
-			'X-Ably-Version': Defaults.apiVersion
+			'X-Ably-Version': Defaults.apiVersion,
+			'X-Ably-Lib': Defaults.libstring
 		};
 	};
 
