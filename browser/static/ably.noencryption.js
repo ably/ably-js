@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.26
+ * Ably JavaScript Library v0.8.27
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2616,7 +2616,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.26';
+Defaults.version          = '0.8.27';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4401,7 +4401,7 @@ var ConnectionManager = (function() {
 				/* Note: upgrading from the connecting state is valid if the old active
 				* transport was deactivated after the upgrade transport first connected;
 				* see logic in deactivateTransport */
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + self.state.state + (self.state === self.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 				abandon();
 				return;
 			}
