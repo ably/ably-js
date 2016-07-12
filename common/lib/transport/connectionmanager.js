@@ -1187,7 +1187,9 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
 		var msg = pendingMessage.message;
-		if(pendingMessage.ackRequired) {
+		/* If have already attempted to send this, resend with the same msgSerial,
+		 * so Ably can dedup if the previous send succeeded */
+		if(pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
 			msg.msgSerial = this.msgSerial++;
 		}
 		try {
@@ -1202,7 +1204,10 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.queue = function(msg, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
 		var lastQueued = this.queuedMessages.last();
-		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
+		/* If have already attempted to send a message, don't merge more messages
+		 * into it, as if the previous send actually succeeded and realtime ignores
+		 * the dup, they'll be lost */
+		if(lastQueued && !lastQueued.sendAttempted && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
 			if(!lastQueued.merged) {
 				lastQueued.callback = Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;

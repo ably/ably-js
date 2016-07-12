@@ -1,7 +1,8 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
@@ -122,6 +123,69 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(false, 'test failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
+	};
+
+	/*
+	 * Check that a message published on one transport that has not yet been
+	 * acked will be republished with the same msgSerial on a new transport (eg
+		* after a resume or an upgrade), before any new messages are send (and
+		* without being merged with new messages)
+	 */
+	exports.connectionQueuing = function(test) {
+		test.expect(5);
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
+			channel = realtime.channels.get('connectionQueuing'),
+			connectionManager = realtime.connection.connectionManager;
+
+		connectionManager.once('transport.active', function(transport) {
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, 'Attach failed with error: ' + helper.displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				/* Sabotage sending the message */
+				transport.send = function(msg) {
+					test.equal(msg.msgSerial, 0, 'Expect msgSerial to be 0');
+				};
+
+				async.parallel([
+					function(cb) {
+						/* Sabotaged publish */
+						channel.publish('first', null, function(err) {
+							test.ok(!err, "Check publish happened (eventually) without err");
+							cb();
+						});
+					},
+					function(cb) {
+						/* After the disconnect, on reconnect, spy on transport.send again */
+						connectionManager.once('transport.active', function(transport) {
+							var oldSend = transport.send;
+
+							transport.send = function(msg, msgCb) {
+								if(msg.action === 15) {
+									if(msg.messages[0].name === 'first') {
+										test.equal(msg.msgSerial, 0, 'Expect msgSerial of original message to still be 0');
+										test.equal(msg.messages.length, 1, 'Expect second message to not have been merged with the attempted message');
+									} else if(msg.messages[0].name === 'second') {
+										test.equal(msg.msgSerial, 1, 'Expect msgSerial of new message to be 0');
+										cb();
+									}
+								}
+								oldSend.call(transport, msg, msgCb);
+							};
+							channel.publish('second', null);
+						});
+
+						/* Disconnect the transport (will automatically reconnect and resume) () */
+						connectionManager.disconnectAllTransports();
+					}
+				], function() {
+					closeAndFinish(test, realtime);
+				});
+
+			});
+		});
 	};
 
 	return module.exports = helper.withTimeout(exports);
