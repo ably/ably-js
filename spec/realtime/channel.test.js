@@ -202,7 +202,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			realtime.connection.once('connected', function() {
 				realtime.channels.get('channelattach_publish').publish(function(err) {
 					if(err) {
-						test.ok(false, 'Unexpected attach failure');
+						test.ok(false, 'Unexpected attach failure: ' + helper.displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
