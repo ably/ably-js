@@ -621,12 +621,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.ok(true, 'After sync times out, disconnected');
 				connection.once('connected', function() {
 					test.ok(true, 'Connect again');
-					connection.connectionManager.on('transport.active', function(transport) {
-						if(helper.isWebsocket(transport)) {
-							test.ok(true, 'Check upgrade is tried again, and this time, succeeds');
-							closeAndFinish(test, realtime);
-						}
-					});
+					if(helper.isWebsocket(connection.connectionManager.activeProtocol.getTransport())) {
+						/* Must be running multiple tests at once and another one set the transport preference */
+						test.ok(true, 'Upgrade not tried again because of test parallelism');
+						closeAndFinish(test, realtime);
+					} else {
+						connection.connectionManager.on('transport.active', function(transport) {
+							if(helper.isWebsocket(transport)) {
+								test.ok(true, 'Check upgrade is tried again, and this time, succeeds');
+								closeAndFinish(test, realtime);
+							}
+						});
+					}
 				});
 			});
 		});
