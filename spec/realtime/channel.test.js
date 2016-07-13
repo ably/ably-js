@@ -202,7 +202,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			realtime.connection.once('connected', function() {
 				realtime.channels.get('channelattach_publish').publish(function(err) {
 					if(err) {
-						test.ok(false, 'Unexpected attach failure');
+						test.ok(false, 'Unexpected attach failure: ' + helper.displayError(err));
 						closeAndFinish(test, realtime);
 						return;
 					}
@@ -430,6 +430,62 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(false, 'Channel subscribe failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
+	};
+
+	/*
+	 * A server-sent DETACHED, with err, should detach the channel
+	 */
+	exports.server_sent_detached = function(test) {
+		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+			channelName = 'server_sent_detached',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(2);
+		realtime.connection.once('connected', function() {
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+
+				channel.on('detached', function(err) {
+					test.ok(true, 'Channel was detached');
+					test.equal(err.code, 50000, 'check error is propogated');
+					closeAndFinish(test, realtime);
+				});
+				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+				transport.onProtocolMessage({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+			});
+		});
+	};
+
+	/*
+	 * A server-sent ERROR, with channel field, should fail the channel
+	 */
+	exports.server_sent_error = function(test) {
+		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+			channelName = 'server_sent_error',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(2);
+		realtime.connection.once('connected', function() {
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+
+				channel.on('failed', function(err) {
+					test.ok(true, 'Channel was failed');
+					test.equal(err.code, 50000, 'check error is propogated');
+					closeAndFinish(test, realtime);
+				});
+				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+				transport.onProtocolMessage({action: 9, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+			});
+		});
 	};
 
 	return module.exports = helper.withTimeout(exports);
