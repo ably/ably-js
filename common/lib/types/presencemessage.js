@@ -23,11 +23,7 @@ var PresenceMessage = (function() {
 		'update'
 	];
 
-	/**
-	 * Overload toJSON() to intercept JSON.stringify()
-	 * @return {*}
-	 */
-	PresenceMessage.prototype.toJSON = function() {
+	PresenceMessage.prototype.prepareForSending = function(format) {
 		var result = {
 			clientId: this.clientId,
 			/* Convert presence action back to an int for sending to Ably */
@@ -35,18 +31,15 @@ var PresenceMessage = (function() {
 			encoding: this.encoding
 		};
 
-		/* encode data to base64 if present and we're returning real JSON;
-		 * although msgpack calls toJSON(), we know it is a stringify()
-		 * call if it has a non-empty arguments list */
+		/* encode data to base64 if present and we're returning real JSON */
 		var data = this.data;
 		if(data && BufferUtils.isBuffer(data)) {
-			if(arguments.length > 0) {
-				/* stringify call */
+			if(format === 'json') {
 				var encoding = this.encoding;
 				result.encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
-			} else {
-				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
+			} else if(format === 'msgpack') {
+				/* msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
 				* understand WordArrays */
 				data = BufferUtils.toArrayBuffer(data);
 			}

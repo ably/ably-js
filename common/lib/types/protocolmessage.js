@@ -49,6 +49,10 @@ var ProtocolMessage = (function() {
 	};
 
 	ProtocolMessage.encode = function(msg, format) {
+		var messages = msg.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = messages[i].prepareForSending(format);
+		var presence = msg.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = presence[i].prepareForSending(format);
 		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
