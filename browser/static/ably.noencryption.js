@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.27
+ * Ably JavaScript Library v0.8.28
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2616,7 +2616,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.27';
+Defaults.version          = '0.8.28';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -7745,7 +7745,7 @@ var RealtimeChannel = (function() {
 				/* attach/detach operation attempted on superseded transport handle */
 				this.checkPendingState();
 			} else {
-				this.setDetached(message);
+				this.setFailed(message);
 			}
 			break;
 
@@ -7821,16 +7821,23 @@ var RealtimeChannel = (function() {
 
 		var msgErr = message.error;
 		if(msgErr) {
-			/* this is an error message */
-			var err = {statusCode: msgErr.statusCode, code: msgErr.code, message: msgErr.message};
-			this.setState('failed', err);
+			var err = ErrorInfo.fromValues(message.error);
+			this.setState('detached', err);
 			this.failPendingMessages(err);
 		} else {
+			/* Don't bother with setState if there's no err and no statechange */
 			if(this.state !== 'detached') {
 				this.setState('detached');
 			}
-			this.failPendingMessages({statusCode: 404, code: 90001, message: 'Channel detached'});
+			this.failPendingMessages(new ErrorInfo('Channel detached', 90001, 404));
 		}
+	};
+
+	RealtimeChannel.prototype.setFailed = function(message) {
+		this.clearStateTimer();
+		var err = ErrorInfo.fromValues(message.error || {statusCode: 400, code: 90000, message: 'Channel failed'});
+		this.setState('failed', err);
+		this.failPendingMessages(err);
 	};
 
 	RealtimeChannel.prototype.setSuspended = function(err, suppressEvent) {
