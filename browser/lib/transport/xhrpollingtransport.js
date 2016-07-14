@@ -14,10 +14,10 @@ var XHRPollingTransport = (function() {
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRPollingTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('error', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'XHRPollingTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('error', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();

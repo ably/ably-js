@@ -22,10 +22,10 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('wserror', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('wserror', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -54,7 +54,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr);
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
 				self.abort(err);
 				return;
@@ -118,9 +118,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.onWsError = function(err) {
 		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
-		this.emit('wserror', err);
-		/* FIXME: this should not be fatal */
-		this.abort();
+		this.abort(err);
 	};
 
 	WebSocketTransport.prototype.dispose = function() {

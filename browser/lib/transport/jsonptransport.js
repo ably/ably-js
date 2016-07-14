@@ -54,10 +54,10 @@ var JSONPTransport = (function() {
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('error', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('error', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -126,7 +126,7 @@ var JSONPTransport = (function() {
 				}
 			} else {
 				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
-				self.complete(null, message)
+				self.complete(null, message);
 			}
 		};
 
@@ -172,7 +172,7 @@ var JSONPTransport = (function() {
 		req.once('complete', callback);
 		Utils.nextTick(function() {
 			req.exec();
-		})
+		});
 		return req;
 	};
 
