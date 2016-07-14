@@ -69,7 +69,7 @@ var WebSocketTransport = (function() {
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
-				self.onWsError(e);
+				self.abort(e);
 			}
 		});
 	};
@@ -109,16 +109,28 @@ var WebSocketTransport = (function() {
 			code = ev;
 			wasClean = (code == 1000);
 		}
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'closed WebSocket; wasClean = ' + wasClean + '; code = ' + code);
 		delete this.wsConnection;
-		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
-		Transport.prototype.onDisconnect.call(this, err);
+		if(wasClean) {
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
+			Transport.prototype.onDisconnect.call(this);
+		} else {
+			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
+				err = new ErrorInfo(msg, 80003, 400);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsClose()', msg);
+			this.finish('failed', err);
+		}
 		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
 		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
-		this.abort(err);
+		/* Wait a tick before aborting: if the websocket was connected, this event
+		 * will be immediately followed by an onclose event with a close code. Allow
+		 * that to close it (so we see the close code) rather than anticipating it */
+		var self = this;
+		Utils.nextTick(function() {
+			self.abort(err);
+		});
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
