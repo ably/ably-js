@@ -118,10 +118,11 @@ var Transport = (function() {
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		var connectionKey = message.connectionKey,
+			connectionId = message.connectionId,
 			error = message.error,
 			connectionManager = this.connectionManager;
 
-		if(error && connectionKey !== connectionManager.connectionKey) {
+		if(error && connectionId !== connectionManager.connectionId) {
 			connectionManager.realtime.channels.setSuspended(error);
 		}
 
