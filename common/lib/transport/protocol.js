@@ -40,6 +40,7 @@ var Protocol = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
 		}
+		pendingMessage.sendAttempted = true;
 		this.transport.send(pendingMessage.message, callback);
 	};
 
@@ -67,6 +68,7 @@ var Protocol = (function() {
 		this.callback = callback;
 		this.merged = false;
 		var action = message.action;
+		this.sendAttempted = false;
 		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
 	}
 	Protocol.PendingMessage = PendingMessage;
