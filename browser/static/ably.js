@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.28
+ * Ably JavaScript Library v0.8.29
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4016,7 +4016,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.28';
+Defaults.version          = '0.8.29';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -5403,6 +5403,7 @@ var Protocol = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
 		}
+		pendingMessage.sendAttempted = true;
 		this.transport.send(pendingMessage.message, callback);
 	};
 
@@ -5430,6 +5431,7 @@ var Protocol = (function() {
 		this.callback = callback;
 		this.merged = false;
 		var action = message.action;
+		this.sendAttempted = false;
 		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
 	}
 	Protocol.PendingMessage = PendingMessage;
@@ -6626,7 +6628,9 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
 		var msg = pendingMessage.message;
-		if(pendingMessage.ackRequired) {
+		/* If have already attempted to send this, resend with the same msgSerial,
+		 * so Ably can dedup if the previous send succeeded */
+		if(pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
 			msg.msgSerial = this.msgSerial++;
 		}
 		try {
@@ -6641,7 +6645,10 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.queue = function(msg, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
 		var lastQueued = this.queuedMessages.last();
-		if(lastQueued && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
+		/* If have already attempted to send a message, don't merge more messages
+		 * into it, as if the previous send actually succeeded and realtime ignores
+		 * the dup, they'll be lost */
+		if(lastQueued && !lastQueued.sendAttempted && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
 			if(!lastQueued.merged) {
 				lastQueued.callback = Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
@@ -6984,10 +6991,10 @@ var WebSocketTransport = (function() {
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('wserror', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('wserror', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -7016,7 +7023,7 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr);
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
 				self.abort(err);
 				return;
@@ -7031,7 +7038,7 @@ var WebSocketTransport = (function() {
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
-				self.onWsError(e);
+				self.abort(e);
 			}
 		});
 	};
@@ -7071,18 +7078,28 @@ var WebSocketTransport = (function() {
 			code = ev;
 			wasClean = (code == 1000);
 		}
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'closed WebSocket; wasClean = ' + wasClean + '; code = ' + code);
 		delete this.wsConnection;
-		var err = wasClean ? null : new ErrorInfo('Unclean disconnection of websocket', 80003);
-		Transport.prototype.onDisconnect.call(this, err);
+		if(wasClean) {
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
+			Transport.prototype.onDisconnect.call(this);
+		} else {
+			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
+				err = new ErrorInfo(msg, 80003, 400);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsClose()', msg);
+			this.finish('failed', err);
+		}
 		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
 		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
-		this.emit('wserror', err);
-		/* FIXME: this should not be fatal */
-		this.abort();
+		/* Wait a tick before aborting: if the websocket was connected, this event
+		 * will be immediately followed by an onclose event with a close code. Allow
+		 * that to close it (so we see the close code) rather than anticipating it */
+		var self = this;
+		Utils.nextTick(function() {
+			self.abort(err);
+		});
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
@@ -7177,7 +7194,7 @@ var CometTransport = (function() {
 				if(err) {
 					/* If connect errors before the preconnect, connectionManager is
 					 * never given the transport, so need to dispose of it ourselves */
-					self.finish('error', err);
+					self.abort(err);
 					return;
 				}
 				Utils.nextTick(function() {
@@ -9892,10 +9909,10 @@ var JSONPTransport = (function() {
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('error', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('error', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -9964,7 +9981,7 @@ var JSONPTransport = (function() {
 				}
 			} else {
 				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
-				self.complete(null, message)
+				self.complete(null, message);
 			}
 		};
 
@@ -10010,7 +10027,7 @@ var JSONPTransport = (function() {
 		req.once('complete', callback);
 		Utils.nextTick(function() {
 			req.exec();
-		})
+		});
 		return req;
 	};
 
@@ -10331,10 +10348,10 @@ var XHRStreamingTransport = (function() {
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRStreamingTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('error', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'XHRStreamingTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('error', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -10369,10 +10386,10 @@ var XHRPollingTransport = (function() {
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRPollingTransport(connectionManager, auth, params);
 		var errorCb = function(err) { callback(err); };
-		transport.on('error', errorCb);
+		transport.on('failed', errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'XHRPollingTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('error', errorCb);
+			transport.off('failed', errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
