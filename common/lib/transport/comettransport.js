@@ -73,7 +73,7 @@ var CometTransport = (function() {
 				if(err) {
 					/* If connect errors before the preconnect, connectionManager is
 					 * never given the transport, so need to dispose of it ourselves */
-					self.finish('error', err);
+					self.abort(err);
 					return;
 				}
 				Utils.nextTick(function() {
