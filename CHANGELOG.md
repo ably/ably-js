@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.8.29](https://github.com/ably/ably-js/tree/0.8.29) (2016-07-15)
+
+- Fix an issue where messages retried across a transport upgrade could theoretically lead to duplicate messages [\#308](https://github.com/ably/ably-js/pull/308)
+
+- Fix an issue where a client-detectable auth error on connect could cause the connect attempt to fail after the connect timeout (15s) rather than immediately [\#314](https://github.com/ably/ably-js/pull/314)
+
+## [0.8.28](https://github.com/ably/ably-js/tree/0.8.28) (2016-07-13)
+
+- Fix an issue where a server-sent channel detached message could cause the channel to go into the failed state [\#313](https://github.com/ably/ably-js/pull/313)
+
 ## [0.8.26](https://github.com/ably/ably-js/tree/0.8.26) (2016-07-11)
 ## [0.8.25](https://github.com/ably/ably-js/tree/0.8.25) (2016-07-06)
 
