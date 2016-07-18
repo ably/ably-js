@@ -1208,8 +1208,9 @@ var ConnectionManager = (function() {
 				}
 				this.queue(msg, callback);
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-				callback(this.errorReason);
+				var err = 'rejecting event as queueMessages was disabled; state = ' + state.state;
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+				callback(this.errorReason || new ErrorInfo(err, 90000, 400));
 			}
 		}
 	};
