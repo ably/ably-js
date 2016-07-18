@@ -681,5 +681,47 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check that upgrades succeed even if the original transport dies before the sync
+	 */
+	exports.upgrade_original_transport_dies = function(test) {
+		var realtime = helper.AblyRealtime(),
+			connection = realtime.connection,
+			connectionManager = connection.connectionManager;
+
+		async.series([
+			function(cb) {
+				connectionManager.once('transport.active', function(transport) {
+					test.ok(helper.isComet(transport), 'Check first transport to become active is comet');
+					cb();
+				});
+			},
+			function(cb) {
+				connectionManager.on('transport.pending', function(transport) {
+					if(!helper.isWebsocket(transport)) return; // in browser, might be xhr_streaming
+					connectionManager.off('transport.pending');
+					/* Abort comet transport nonfatally */
+					var baseTransport = connectionManager.activeProtocol.getTransport();
+					test.ok(helper.isComet(baseTransport), 'Check original transport is still comet');
+					connection.once(function(stateChange) {
+						test.equal(stateChange.current, 'connecting', 'check that deactivateTransport only drops us to connecting as another transport is ready for activation');
+						cb();
+					});
+					transport.once('connected', function() {
+						baseTransport.abort({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
+					});
+				});
+			},
+			function(cb) {
+				connection.once(function(stateChange) {
+					test.equal(stateChange.current, 'connected', 'check we transition to connected after the sync');
+					cb();
+				});
+			}
+		], function() {
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};
 });
