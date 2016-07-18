@@ -266,7 +266,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onMessage = function(message) {
-		var syncChannelSerial;
+		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.setAttached(message);
@@ -277,6 +277,8 @@ var RealtimeChannel = (function() {
 			break;
 
 		case actions.SYNC:
+			/* syncs can have channelSerials, but might not if the sync is one page long */
+			isSync = true;
 			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
 			/* syncs can happen on channels with no presence data as part of connection
 			 * resuming, in which case protocol message has no presence property */
@@ -300,7 +302,7 @@ var RealtimeChannel = (function() {
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 			}
-			this.presence.setPresence(presence, true, syncChannelSerial);
+			this.presence.setPresence(presence, isSync, syncChannelSerial);
 			break;
 
 		case actions.MESSAGE:
