@@ -95,8 +95,14 @@ var RealtimeChannel = (function() {
 			default:
 				this.attach();
 			case 'attaching':
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-				this.pendingEvents.push({messages: messages, callback: callback});
+				if(this.realtime.options.queueMessages) {
+					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
+					this.pendingEvents.push({messages: messages, callback: callback});
+				} else {
+					var msg = 'Cannot publish messages while channel is attaching as queueMessages was disabled';
+					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', msg);
+					callback(new ErrorInfo(msg, 90001, 409));
+				}
 				break;
 		}
 	};

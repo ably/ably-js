@@ -488,5 +488,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check that queueMessages: false disables queuing both for channel and connection queue states
+	 */
+	exports.publish_no_queueing = function(test) {
+		test.expect(3);
+		var realtime = helper.AblyRealtime({ queueMessages: false }),
+			channel = realtime.channels.get('publish_no_queueing');
+
+		realtime.connection.once('connected', function() {
+			/* First try a publish while connected but attaching */
+			channel.publish('foo', 'bar', function(err) {
+				test.ok(err, 'Check publish while still attaching was rejected');
+				test.equal(err.code, 90001, 'Check correct error code');
+
+				channel.attach(function(err) {
+					if(err) {
+						test.ok(false, helper.displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+					realtime.connection.connectionManager.disconnectAllTransports();
+					/* now try a publish while attached but disconnected */
+					channel.publish('foo', 'bar', function(err) {
+						test.ok(err, 'Check publish while disconnected/connecting is rejected');
+						closeAndFinish(test, realtime);
+					});
+				});
+			});
+			monitorConnection(test, realtime);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
