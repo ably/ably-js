@@ -35,7 +35,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.channelDetachedErr = {
 		statusCode: 409,
-		code: 90006,
+		code: 90001,
 		message: 'Channel is detached'
 	};
 
