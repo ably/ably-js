@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.29
+ * Ably JavaScript Library v0.8.30
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2616,7 +2616,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.29';
+Defaults.version          = '0.8.30';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -5522,10 +5522,11 @@ var Transport = (function() {
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		var connectionKey = message.connectionKey,
+			connectionId = message.connectionId,
 			error = message.error,
 			connectionManager = this.connectionManager;
 
-		if(error && connectionKey !== connectionManager.connectionKey) {
+		if(error && connectionId !== connectionManager.connectionId) {
 			connectionManager.realtime.channels.setSuspended(error);
 		}
 
@@ -7695,7 +7696,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onMessage = function(message) {
-		var syncChannelSerial;
+		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.setAttached(message);
@@ -7706,6 +7707,8 @@ var RealtimeChannel = (function() {
 			break;
 
 		case actions.SYNC:
+			/* syncs can have channelSerials, but might not if the sync is one page long */
+			isSync = true;
 			syncChannelSerial = this.syncChannelSerial = message.channelSerial;
 			/* syncs can happen on channels with no presence data as part of connection
 			 * resuming, in which case protocol message has no presence property */
@@ -7729,7 +7732,7 @@ var RealtimeChannel = (function() {
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
 				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
 			}
-			this.presence.setPresence(presence, true, syncChannelSerial);
+			this.presence.setPresence(presence, isSync, syncChannelSerial);
 			break;
 
 		case actions.MESSAGE:
@@ -8216,11 +8219,16 @@ var RealtimePresence = (function() {
 		Presence.prototype._history.call(this, params, callback);
 	};
 
-	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
+	RealtimePresence.prototype.setPresence = function(presenceSet, isSync, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
 		var syncCursor, match, members = this.members, broadcastMessages = [];
-		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
+
+		if(isSync) {
 			this.members.startSync();
+			if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/))) {
+				syncCursor = match[1];
+			}
+		}
 
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = PresenceMessage.fromValues(presenceSet[i]);
@@ -8239,8 +8247,8 @@ var RealtimePresence = (function() {
 					break;
 			}
 		}
-		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(!syncCursor) {
+		/* if this is the last (or only) message in a sequence of sync updates, end the sync */
+		if(isSync && !syncCursor) {
 			members.endSync();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
