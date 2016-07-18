@@ -212,11 +212,16 @@ var RealtimePresence = (function() {
 		Presence.prototype._history.call(this, params, callback);
 	};
 
-	RealtimePresence.prototype.setPresence = function(presenceSet, broadcast, syncChannelSerial) {
+	RealtimePresence.prototype.setPresence = function(presenceSet, isSync, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
 		var syncCursor, match, members = this.members, broadcastMessages = [];
-		if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/)) && (syncCursor = match[1]))
+
+		if(isSync) {
 			this.members.startSync();
+			if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/))) {
+				syncCursor = match[1];
+			}
+		}
 
 		for(var i = 0; i < presenceSet.length; i++) {
 			var presence = PresenceMessage.fromValues(presenceSet[i]);
@@ -235,8 +240,8 @@ var RealtimePresence = (function() {
 					break;
 			}
 		}
-		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(!syncCursor) {
+		/* if this is the last (or only) message in a sequence of sync updates, end the sync */
+		if(isSync && !syncCursor) {
 			members.endSync();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
