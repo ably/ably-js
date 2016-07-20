@@ -1,6 +1,6 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = {};
+	var _ = Ably._ = {};
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably

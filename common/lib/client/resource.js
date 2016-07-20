@@ -1,5 +1,5 @@
 var Resource = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function Resource() {}
 
