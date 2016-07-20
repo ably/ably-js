@@ -4782,7 +4782,7 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;
@@ -4974,7 +4974,7 @@ var Message = (function() {
 })();
 
 var PresenceMessage = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -5095,7 +5095,7 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -7463,7 +7463,7 @@ var Presence = (function() {
 })();
 
 var Resource = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function Resource() {}
 
@@ -7723,7 +7723,7 @@ var PaginatedResource = (function() {
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
