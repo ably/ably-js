@@ -4782,7 +4782,7 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;
@@ -4974,7 +4974,7 @@ var Message = (function() {
 })();
 
 var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -5095,7 +5095,7 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -7463,7 +7463,7 @@ var Presence = (function() {
 })();
 
 var Resource = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function Resource() {}
 
@@ -7723,7 +7723,7 @@ var PaginatedResource = (function() {
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = isBrowser ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
@@ -9864,7 +9864,7 @@ var RealtimePresence = (function() {
 
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = {};
+	var _ = Ably._ = {};
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
