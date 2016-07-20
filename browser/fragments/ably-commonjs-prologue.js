@@ -1,1 +1,1 @@
-var Ably;
+var Ably = {};
