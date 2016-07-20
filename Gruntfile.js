@@ -73,6 +73,14 @@ module.exports = function (grunt) {
 		'ably.noencryption': {
 			dest: '<%= dirs.dest %>/ably.noencryption.js',
 			nonull: true
+		},
+		'ably-commonjs': {
+			dest: '<%= dirs.dest %>/ably-commonjs.js',
+			nonull: true
+		},
+		'ably-commonjs.noencryption': {
+			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
+			nonull: true
 		}
 	};
 
@@ -145,6 +153,23 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
 
+	gruntConfig.concat['ably-commonjs'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		'<%= dirs.browser %>/lib/util/crypto.js',
+		ablyFiles,
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
+
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
 		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/ably-prologue.js',
@@ -156,6 +181,19 @@ module.exports = function (grunt) {
 		ablyFiles,
 
 		'<%= dirs.fragments %>/ably-epilogue.js'
+	);
+
+	gruntConfig.concat['ably-commonjs.noencryption'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+
+		ablyFiles,
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
 	);
 
 	gruntConfig.bump = {
