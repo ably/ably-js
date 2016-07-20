@@ -50,6 +50,15 @@ For the rest-only library:
 var rest = Ably.Rest;
 ```
 
+### Using WebPack
+
+WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require` Ably. Alternatively, you can reference the `ably-commonjs.js` static file directly if not in your `node_modules` folder.
+
+```javascript
+var Ably = require('ably/browser/static/ably-commonjs.js');
+var realtime = new Ably.Realtime(options);
+```
+
 ## Using the Realtime API
 
 ### Introduction
