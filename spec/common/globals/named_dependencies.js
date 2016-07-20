@@ -4,8 +4,6 @@ define(function() {
 		// Ably modules
 		'ably':              { browser: 'browser/static/ably',                node: 'nodejs/index' },
 		'ably.noencryption': { browser: 'browser/static/ably.noencryption' },
-		'compat-pubnub':     { browser: 'browser/static/compat-pubnub' },
-		'compat-pusher':     { browser: 'browser/static/compat-pusher' },
 		'browser-base64':    { browser: 'browser/lib/util/base64',            node: 'skip' },
 
 		// test modules
