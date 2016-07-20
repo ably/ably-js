@@ -5773,7 +5773,7 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		if(!betterTransportThan(transport, currentTransport)) {
+		if(currentTransport && !betterTransportThan(transport, currentTransport)) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
 			abandon();
 			return;
@@ -5975,10 +5975,11 @@ var ConnectionManager = (function() {
 		var currentProtocol = this.activeProtocol,
 			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
 			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
-			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport);
+			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport),
+			noTransportsScheduledForActivation = this.noTransportsScheduledForActivation();
 
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : ''));
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') + (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'));
 		if(error && error.message)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
@@ -6004,7 +6005,7 @@ var ConnectionManager = (function() {
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
-		if((wasActive && this.noTransportsScheduledForActivation()) ||
+		if((wasActive && noTransportsScheduledForActivation) ||
 			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
