@@ -1,5 +1,5 @@
 var ProtocolMessage = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;

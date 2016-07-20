@@ -1,5 +1,5 @@
 var PresenceMessage = (function() {
-	var msgpack = (typeof define !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
