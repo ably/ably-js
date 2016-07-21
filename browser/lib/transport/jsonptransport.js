@@ -1,6 +1,17 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = Ably._ = {};
+	var jsonpcb, _;
+	/* If we're using the static version, the global object is at windows.Ably.
+	 * If using webpack etc it might not be, but we still need something on the
+		* window object for jsonp to work, so we define one that isn't likely to
+		* clash. */
+	if(typeof define !== "function") {
+		_ = window.Ably._ = {};
+		jsonpcb = 'Ably._';
+	} else {
+		_ = window._ablyjs_jsonp = {};
+		jsonpcb = '_ablyjs_jsonp';
+	}
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
@@ -94,7 +105,7 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._._(' + id + ')';
+		params.callback = jsonpcb + '._(' + id + ')';
 
 		params.envelope = 'jsonp';
 		if(body)
