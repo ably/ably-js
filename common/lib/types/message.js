@@ -1,5 +1,5 @@
 var Message = (function() {
-	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;

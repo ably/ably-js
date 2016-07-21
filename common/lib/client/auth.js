@@ -1,7 +1,7 @@
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = (typeof require !== "function") ? Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 

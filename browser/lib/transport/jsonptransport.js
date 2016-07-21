@@ -5,7 +5,7 @@ var JSONPTransport = (function() {
 	 * If using webpack etc it might not be, but we still need something on the
 		* window object for jsonp to work, so we define one that isn't likely to
 		* clash. */
-	if(typeof define !== "function") {
+	if(typeof define !== 'function') {
 		_ = window.Ably._ = {};
 		jsonpcb = 'Ably._';
 	} else {
