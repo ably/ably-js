@@ -80,6 +80,11 @@ var JSONPTransport = (function() {
 		this.uri = uri;
 		this.params = params || {};
 		this.params.rnd = Utils.randStr();
+		if(headers) {
+			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
+			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
+			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
+		}
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
