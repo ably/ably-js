@@ -600,12 +600,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				};
 				realtime.options.timeouts.realtimeRequestTimeout = 100;
 
-				realtime.connection.connectionManager.disconnectAllTransports();
-				realtime.connection.once('disconnected', function() {
-					realtime.connection.connectionManager.notifyState({state: 'suspended'});
-				});
-
-				realtime.connection.once('suspended', function(stateChange) {
+				helper.becomeSuspended(realtime, function() {
 					/* nextTick as connection event is emitted before channel state is changed */
 					helper.Utils.nextTick(function() {
 						test.equal(channel.state, 'suspended', 'check channel state is suspended');

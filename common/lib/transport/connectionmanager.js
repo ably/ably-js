@@ -520,6 +520,13 @@ var ConnectionManager = (function() {
 
 		/* Gracefully terminate existing protocol */
 		if(existingActiveProtocol) {
+			if(existingActiveProtocol.messageQueue.count() > 0) {
+				/* We could just requeue pending messages on the new transport, but
+				 * actually this should never happen: transports should only take over
+				 * from other active transports when upgrading, and upgrading waits for
+				 * the old transport to be idle. So log an error. */
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
+			}
 			existingActiveProtocol.finish();
 		}
 
@@ -862,6 +869,7 @@ var ConnectionManager = (function() {
 			this.sendQueuedMessages();
 		} else if(!this.state.queueEvents) {
 			this.realtime.channels.propogateConnectionInterruption(state, change.reason);
+			this.failQueuedMessages(change.reason); // RTN7c
 		}
 	};
 
@@ -1269,6 +1277,11 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
 			this.queuedMessages.prepend(pendingMessages);
 		}
+	};
+
+	ConnectionManager.prototype.failQueuedMessages = function(err) {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.failQueuedMessages()', 'failing ' + this.queuedMessages.count() + ' queued messages');
+		this.queuedMessages.completeAllMessages(err);
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
