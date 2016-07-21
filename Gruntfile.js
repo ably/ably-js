@@ -219,16 +219,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'set-library-version',
-		'ably.js',
-		'ably.noencryption.js'
-	]);
-
-	grunt.registerTask('ably.js', [
-		'concat:ably'
-	]);
-
-	grunt.registerTask('ably.noencryption.js', [
-		'concat:ably.noencryption'
+		'concat'
 	]);
 
 	grunt.registerTask('minify', [
