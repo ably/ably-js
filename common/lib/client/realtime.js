@@ -62,14 +62,39 @@ var Realtime = (function() {
 			var channel = this.all[channelName];
 			if(channel.state === 'attaching' || channel.state === 'detaching') {
 				channel.checkPendingState();
+			} else if(channel.state === 'suspended') {
+				channel.autonomousAttach();
 			}
 		}
 	};
 
-	Channels.prototype.setSuspended = function(err) {
+	Channels.prototype.reattach = function(reason) {
 		for(var channelId in this.all) {
 			var channel = this.all[channelId];
-			channel.setSuspended(err);
+      if(channel.state === 'attaching' || channel.state === 'attached') {
+				channel.requestState('attaching', reason);
+			}
+		}
+	};
+
+	/* Connection interruptions (ie when the connection will no longer queue
+	 * events) imply connection state changes for any channel which is either
+	 * attached, pending, or will attempt to become attached in the future */
+	Channels.prototype.propogateConnectionInterruption = function(connectionState, reason) {
+		var connectionStateToChannelState = {
+			'closing'  : 'detached',
+			'closed'   : 'detached',
+			'failed'   : 'failed',
+			'suspended': 'suspended'
+		};
+		var fromChannelStates = ['attaching', 'attached', 'detaching', 'suspended'];
+		var toChannelState = connectionStateToChannelState[connectionState];
+
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
+			if(Utils.arrIn(fromChannelStates, channel.state)) {
+				 channel.notifyState(toChannelState, reason);
+			}
 		}
 	};
 

@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
@@ -432,31 +433,45 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	/*
-	 * A server-sent DETACHED, with err, should detach the channel
+	/* RTL13
+	 * A server-sent DETACHED, with err, should cause the channel to attempt an
+	 * immediate reattach. If that fails, it should go into suspended
 	 */
 	exports.server_sent_detached = function(test) {
 		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
 			channelName = 'server_sent_detached',
 			channel = realtime.channels.get(channelName);
 
-		test.expect(2);
-		realtime.connection.once('connected', function() {
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, helper.displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-
-				channel.on('detached', function(err) {
-					test.ok(true, 'Channel was detached');
-					test.equal(err.code, 50000, 'check error is propogated');
-					closeAndFinish(test, realtime);
+		test.expect(4);
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(cb);
+			},
+			function(cb) {
+				/* Sabotage the reattach attempt, then simulate a server-sent detach */
+				channel.sendMessage = function() {};
+				realtime.options.timeouts.realtimeRequestTimeout = 100;
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'attaching', 'Channel reattach attempt happens immediately');
+					test.equal(stateChange.reason.code, 50000, 'check error is propogated in the reason');
+					cb();
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
 				transport.onProtocolMessage({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
-			});
+			},
+			function(cb) {
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'suspended', 'Channel we go into suspended');
+					test.equal(stateChange.reason.code, 90000, 'check error is now the timeout');
+					cb();
+				});
+			},
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
 		});
 	};
 
@@ -477,9 +492,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					return;
 				}
 
-				channel.on('failed', function(err) {
+				channel.on('failed', function(stateChange) {
 					test.ok(true, 'Channel was failed');
-					test.equal(err.code, 50000, 'check error is propogated');
+					test.equal(stateChange.reason.code, 50000, 'check error is propogated');
 					closeAndFinish(test, realtime);
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
@@ -519,6 +534,112 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			monitorConnection(test, realtime);
 		});
 	};
+
+	/*
+	 * A channel attach that times out should be retried
+	 */
+	exports.channel_attach_timeout = function(test) {
+		test.expect(4);
+		/* Use a fixed transport as attaches are resent when the transport changes */
+		var realtime = helper.AblyRealtime({transport: [helper.bestTransport], realtimeRequestTimeout: 100, channelRetryTimeout: 100}),
+			channelName = 'channel_attach_timeout',
+			channel = realtime.channels.get(channelName);
+
+		/* Stub out the channel's ability to communicate */
+		channel.sendMessage = function() {};
+
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(function(err) {
+					test.ok(err, 'Channel attach timed out as expected');
+					test.equal(err && err.code, 90000, 'Attach timeout err passed to attach callback');
+					test.equal(channel.state, 'suspended', 'Check channel state goes to suspended');
+					cb();
+				});
+			},
+			function(cb) {
+				/* nexttick so that it doesn't pick up the suspended event */
+				helper.Utils.nextTick(function() {
+					channel.once(function(stateChange) {
+						test.equal(stateChange.current, 'attaching', 'Check channel tries again after a bit');
+						cb();
+					});
+				});
+			}
+		], function() {
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* RTL3c, RTL3d
+	 * Check channel state implications of connection going into suspended
+	 */
+	exports.suspended_connection = function(test) {
+		/* Use a fixed transport as attaches are resent when the transport changes */
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], channelRetryTimeout: 100, suspendedRetryTimeout: 1000}),
+			channelName = 'suspended_connection',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(5);
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(cb);
+			},
+			function(cb) {
+				/* Have the connection go into the suspended state, and check that the
+				 * channel goes into the suspended state and doesn't try to reattach
+				 * until the connection reconnects */
+				channel.sendMessage = function(msg) {
+					test.ok(false, 'Channel tried to send a message ' + JSON.stringify(msg));
+				};
+				realtime.options.timeouts.realtimeRequestTimeout = 100;
+
+				realtime.connection.connectionManager.disconnectAllTransports();
+				realtime.connection.once('disconnected', function() {
+					realtime.connection.connectionManager.notifyState({state: 'suspended'});
+				});
+
+				realtime.connection.once('suspended', function(stateChange) {
+					/* nextTick as connection event is emitted before channel state is changed */
+					helper.Utils.nextTick(function() {
+						test.equal(channel.state, 'suspended', 'check channel state is suspended');
+						cb();
+					});
+				});
+			},
+			function(cb) {
+				realtime.connection.once(function(stateChange) {
+					test.equal(stateChange.current, 'connecting', 'Check we try to connect again');
+					/* We no longer want to fail the test for an attach, but still want to sabotage it */
+					channel.sendMessage = function() {};
+					cb();
+				});
+			},
+			function(cb) {
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'attaching', 'Check that once connected we try to attach again');
+					cb();
+				});
+			},
+			function(cb) {
+				channel.once('error', function(error) {
+					test.ok(true, 'Check that the failure to reattach is emitted as an error');
+					test.equal(error.code, 91200, 'Check correct error code');
+					cb();
+				});
+			},
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
+
 
 	return module.exports = helper.withTimeout(exports);
 });

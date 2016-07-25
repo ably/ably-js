@@ -74,8 +74,14 @@ var RealtimePresence = (function() {
 			}
 		}
 
+		var channel = this.channel;
+		if(!channel.connectionManager.activeState()) {
+			callback(channel.connectionManager.getStateError());
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,
@@ -83,23 +89,15 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
-		PresenceMessage.encode(presence, this.channel.channelOptions);
+		PresenceMessage.encode(presence, channel.channelOptions);
 
-		var channel = this.channel;
 		switch(channel.state) {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
 			case 'initialized':
 			case 'detached':
-				var self = this;
-				channel.attach(function(err) {
-					// If error in attaching, callback immediately
-					if(err) {
-						self.pendingPresence = null;
-						callback(err);
-					}
-				});
+				channel.autonomousAttach();
 			case 'attaching':
 				this.pendingPresence = {
 					presence : presence,
@@ -129,13 +127,19 @@ var RealtimePresence = (function() {
 			}
 		}
 
+		var channel = this.channel;
+		if(!channel.connectionManager.activeState()) {
+			callback(channel.connectionManager.getStateError());
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : 'leave',
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
-		var channel = this.channel;
+
 		switch(channel.state) {
 			case 'attached':
 				channel.sendPresence(presence, callback);
