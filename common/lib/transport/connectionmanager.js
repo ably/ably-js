@@ -19,18 +19,6 @@ var ConnectionManager = (function() {
 		return haveSessionStorage && WebStorage.removeSession(sessionRecoveryName);
 	}
 
-	function isFatalErr(err) {
-		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
-
-		if(err.code) {
-			if(Auth.isTokenErr(err)) return false;
-			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
-			return (err.code >= 40000 && err.code < 50000);
-		}
-		/* If no statusCode either, assume false */
-		return err.statusCode < 500;
-	}
-
 	function betterTransportThan(a, b) {
 		return Utils.arrIndexOf(transportPreferenceOrder, a.shortName) >
 		   Utils.arrIndexOf(transportPreferenceOrder, b.shortName);
@@ -220,37 +208,41 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.tryATransport = function(transportParams, candidate, callback) {
 		var self = this;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
-		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
+		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(wrappedErr, transport) {
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				if(transport) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'connection ' + state.state + ' while we were attempting the transport; closing ' + transport);
 					transport.close();
 				}
-				callback(new ErrorInfo('Connection ' + state.state, 80017, 400));
+				callback(true);
 				return;
 			}
 
-			if(err) {
-				err = ErrorInfo.fromValues(err);
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' returned err: ' + err.toString());
+			if(wrappedErr) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString());
 
 				/* Comet transport onconnect token errors can be dealt with here.
 				* Websocket ones only happen after the transport claims to be viable,
 				* so are dealt with as non-onconnect token errors */
-				if(Auth.isTokenErr(err)) {
+				if(Auth.isTokenErr(wrappedErr.error)) {
 					/* re-get a token and try again */
 					self.realtime.auth.authorise(null, {force: true}, function(err) {
 						if(err) {
-							callback(err);
+							/* Errors in authorise are fatal */
+							self.notifyState({state: 'failed', error: err});
 							return;
 						}
 						self.tryATransport(transportParams, candidate, callback);
 					});
-					return;
+				} else if(wrappedErr.event === 'failed') {
+					/* Error that's fatal to the connection */
+					self.notifyState({state: 'failed', error: wrappedErr.error});
+					callback(true);
+				} else if(wrappedErr.event === 'disconnected') {
+					/* Error with that transport only */
+					callback(false);
 				}
-
-				callback(err);
 				return;
 			}
 
@@ -303,10 +295,8 @@ var ConnectionManager = (function() {
 			}
 		});
 
-		Utils.arrForEach(['disconnected', 'closed', 'failed'], function(event) {
-			transport.on(event, function(error) {
-				self.deactivateTransport(transport, event, error);
-			});
+		transport.on(['disconnected', 'closed', 'failed'], function(error) {
+			self.deactivateTransport(transport, this.event, error);
 		});
 
 		this.emit('transport.pending', transport);
@@ -491,7 +481,8 @@ var ConnectionManager = (function() {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', err.message);
-				transport.abort(err);
+				/* Errors setting the clientId are fatal to the connection */
+				transport.fail(err);
 				return;
 			}
 		}
@@ -572,18 +563,18 @@ var ConnectionManager = (function() {
 		 * - the transport was the active transport and there are no transports
 		 *   which are connected and scheduled for activation, just waiting for the
 		 *   active transport to finish what its doing; or
+		 * - the transport was the active transport and the error was fatal (so
+		 *   unhealable by another transport); or
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
 		if((wasActive && noTransportsScheduledForActivation) ||
-			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
-			/* Transport failures only imply a connection failure
-			 * if the reason for the failure is fatal */
-			if((state === 'failed') && error && !isFatalErr(error)) {
-				state = 'disconnected';
-			}
+			(wasActive && (state === 'failed') || (state === 'closed')) ||
+			(currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
+			if(state === 'failed' && Auth.isTokenErr(error)) { state = 'disconnected' }
 			this.notifyState({state: state, error: error});
-		} else if(wasActive) {
+		} else if(wasActive && (state === 'disconnected')) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
@@ -998,7 +989,8 @@ var ConnectionManager = (function() {
 		/* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
 		 * The wstransport it will substitute the httphost for an appropriate wshost */
 		transportParams.host = self.httpHosts[0];
-		self.tryATransport(transportParams, preference, function(err, transport) {
+		self.tryATransport(transportParams, preference, function(fatal, transport) {
+			clearTimeout(preferenceTimeout);
 			if(preferenceTimeoutExpired && transport) {
 				/* Viable, but too late - connectImpl() will already be trying
 				* connectBase, and we weren't in upgrade mode. Just remove the
@@ -1006,14 +998,12 @@ var ConnectionManager = (function() {
 				transport.off();
 				transport.disconnect();
 				Utils.arrDeleteValue(this.pendingTransports, transport);
-			} else {
-				clearTimeout(preferenceTimeout);
-				if(err) {
-					self.unpersistTransportPreference();
-					self.failConnectionIfFatal(err);
-					self.connectImpl(transportParams);
-				}
+			} else if(!transport && !fatal) {
+				/* Preference failed in a transport-specific way. Try more */
+				self.unpersistTransportPreference();
+				self.connectImpl(transportParams);
 			}
+			/* If suceeded, or failed fatally, nothing to do */
 		});
 	};
 
@@ -1031,13 +1021,9 @@ var ConnectionManager = (function() {
 				self.notifyState({state: self.states.connecting.failState, error: err});
 			},
 			candidateHosts = this.httpHosts.slice(),
-			hostAttemptCb = function(err) {
-				if(err) {
-					var wasFatal = self.failConnectionIfFatal(err);
-					if(!wasFatal) {
-						tryFallbackHosts();
-						return;
-					}
+			hostAttemptCb = function(fatal, transport) {
+				if(!transport && !fatal) {
+					tryFallbackHosts();
 				}
 			};
 
@@ -1343,17 +1329,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.abort = function(error) {
-		this.activeProtocol.getTransport().abort(error);
-	};
-
-	ConnectionManager.prototype.failConnectionIfFatal = function(err) {
-		/* Only allow connection to go into 'failed' if the has a definite
-		 * unrecoverable code from realtime */
-		var unrecoverable = err.code && isFatalErr(err);
-		if(unrecoverable) {
-			this.notifyState({state: 'failed', error: err});
-		}
-		return unrecoverable;
+		this.activeProtocol.getTransport().fail(error);
 	};
 
 	ConnectionManager.prototype.registerProposedTransport = function(transport) {

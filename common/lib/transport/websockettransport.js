@@ -21,11 +21,11 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback(err); };
-		transport.on('failed', errorCb);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('failed', errorCb);
+			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -56,7 +56,7 @@ var WebSocketTransport = (function() {
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
-				self.abort(err);
+				self.disconnect(err);
 				return;
 			}
 			var connectParams = params.getConnectParams(authParams);
@@ -69,7 +69,7 @@ var WebSocketTransport = (function() {
 				wsConnection.onerror = function(ev) { self.onWsError(ev); };
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
-				self.abort(e);
+				self.disconnect(e);
 			}
 		});
 	};
@@ -117,7 +117,7 @@ var WebSocketTransport = (function() {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsClose()', msg);
-			this.finish('failed', err);
+			this.finish('disconnected', err);
 		}
 		this.emit('disposed');
 	};
@@ -129,7 +129,7 @@ var WebSocketTransport = (function() {
 		 * that to close it (so we see the close code) rather than anticipating it */
 		var self = this;
 		Utils.nextTick(function() {
-			self.abort(err);
+			self.disconnect(err);
 		});
 	};
 

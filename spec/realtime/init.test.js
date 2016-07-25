@@ -235,13 +235,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				switch(transportParams.host) {
 					case 'a':
 						test.ok(true, 'Tries first with restHost');
-						cb({'code': 50000});
+						cb(false);
 						break;
 					case 'b':
 					case 'c':
 						/* should be called twice */
 						test.ok(true, 'Tries each of the fallback hosts in turn');
-						cb({'code': 50000});
+						cb(false);
 				}
 			};
 			realtime.connection.on('disconnected', function(stateChange) {

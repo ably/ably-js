@@ -146,7 +146,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				/* Sabotage sending the message */
 				transport.send = function(msg) {
-					test.equal(msg.msgSerial, 0, 'Expect msgSerial to be 0');
+					if(msg.action == 15) {
+						test.equal(msg.msgSerial, 0, 'Expect msgSerial to be 0');
+					}
 				};
 
 				async.parallel([

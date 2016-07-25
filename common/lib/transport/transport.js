@@ -38,15 +38,21 @@ var Transport = (function() {
 		this.finish('closed', ConnectionError.closed);
 	};
 
-	Transport.prototype.abort = function(error) {
+	Transport.prototype.disconnect = function(err) {
+		/* Used for network/transport issues that need to result in the transport
+		 * being disconnected, but should not affect the connection */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('failed', error);
+		this.finish('disconnected', err || ConnectionError.disconnected);
 	};
 
-	Transport.prototype.disconnect = function(err) {
-		this.finish('disconnected', err || ConnectionError.disconnected);
+	Transport.prototype.fail = function(err) {
+		/* Used for client-side-detected fatal connection issues */
+		if(this.isConnected) {
+			this.requestDisconnect();
+		}
+		this.finish('failed', err || ConnectionError.failed);
 	};
 
 	Transport.prototype.finish = function(event, err) {
@@ -96,11 +102,9 @@ var Transport = (function() {
 			this.connectionManager.onChannelMessage(message, this);
 			break;
 		case actions.ERROR:
-			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
-				/* a transport error */
-				this.abort(err);
+				this.onFatalError(message);
 				break;
 			}
 			/* otherwise it's a channel-specific error, so handle it in the channel */
@@ -117,9 +121,20 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
+		/* Used for when the server has disconnected the client (usually with a
+		 * DISCONNECTED action) */
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.finish('disconnected', err);
+	};
+
+	Transport.prototype.onFatalError = function(message) {
+		/* On receipt of a fatal connection error, we can assume that the server
+		 * will close the connection and the transport, and do not need to request
+		 * a disconnection - RTN15i */
+		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
+		this.finish('failed', err);
 	};
 
 	Transport.prototype.onClose = function(message) {

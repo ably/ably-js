@@ -53,11 +53,11 @@ var JSONPTransport = (function() {
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback(err); };
-		transport.on('failed', errorCb);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('failed', errorCb);
+			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -111,8 +111,7 @@ var JSONPTransport = (function() {
 		script.type = 'text/javascript';
 		script.charset = 'UTF-8';
 		script.onerror = function(err) {
-			err.code = 80000;
-			self.complete(err);
+			self.complete(new ErrorInfo('JSONP script error (event: ' + Utils.inspect(err) + ')', null, 400));
 		};
 
 		_['_' + id] = function(message) {
@@ -122,11 +121,15 @@ var JSONPTransport = (function() {
 				if(message.statusCode == 204) {
 					self.complete();
 				} else if(!response) {
-					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
-				} else if(message.statusCode < 400) {
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
+				} else if(message.statusCode < 400 || Utils.isArray(response)) {
+					/* If response is an array, it's an array of protocol messages -- even if
+					 * it contains an error action (hence the nonsuccess statuscode), we can
+					 * consider the request to have succeeded, just pass it on to
+					 * onProtocolMessage to decide what to do */
 					self.complete(null, response, message.headers);
 				} else {
-					var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+					var err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
 					self.complete(err);
 				}
 			} else {
