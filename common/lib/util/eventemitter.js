@@ -61,6 +61,11 @@ var EventEmitter = (function() {
 			this.any.push(event);
 		} else if(Utils.isEmptyArg(event)) {
 			this.any.push(listener);
+		} else if(Utils.isArray(event)) {
+			var self = this;
+			Utils.arrForEach(event, function(ev) {
+				self.on(ev, listener);
+			});
 		} else {
 			var listeners = (this.events[event] || (this.events[event] = []));
 			listeners.push(listener);
@@ -102,6 +107,14 @@ var EventEmitter = (function() {
 			}
 			return;
 		}
+
+		if(Utils.isArray(event)) {
+			var self = this;
+			Utils.arrForEach(event, function(ev) {
+				self.off(ev, listener);
+			});
+		}
+
 		/* "normal" case where event is an actual event */
 		if(listener) {
 			removeListener([this.events, this.eventsOnce], listener, event);
@@ -165,6 +178,8 @@ var EventEmitter = (function() {
 			this.anyOnce.push(event);
 		} else if(Utils.isEmptyArg(event)) {
 			this.anyOnce.push(listener);
+		} else if(Utils.isArray(event)){
+			throw("Arrays of events can only be used with on(), not once()");
 		} else {
 			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);
