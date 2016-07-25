@@ -264,5 +264,116 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		resume_active(test, 'resume_active' + String(Math.random()), {}, realtimeOpts);
 	}}, /* excludeUpgrade: */ true);
 
+
+	/* RTN15c3
+	 * Resume with loss of continuity
+	 */
+	testOnAllTransports(exports, 'resume_lost_continuity', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(realtimeOpts),
+			connection = realtime.connection,
+			attachedChannelName = 'resume_lost_continuity_attached',
+			suspendedChannelName = 'resume_lost_continuity_suspended',
+			attachedChannel = realtime.channels.get(attachedChannelName),
+			suspendedChannel = realtime.channels.get(suspendedChannelName);
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				suspendedChannel.state = 'suspended';
+				attachedChannel.attach(cb);
+			},
+			function(cb) {
+				/* Sabotage the resume */
+				connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____',
+				connection.connectionManager.connectionId = 'ablyjs_tes';
+				connection.once('disconnected', function() { cb(); });
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('connected', function(stateChange) {
+					test.equal(stateChange.reason && stateChange.reason.code, 80008, 'Unable to recover connection correctly set in the stateChange');
+					test.equal(attachedChannel.state, 'attaching', 'Attached channel went into attaching');
+					test.equal(suspendedChannel.state, 'attaching', 'Suspended channel went into attaching');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true /* Use a fixed transport as attaches are resent when the transport changes */);
+
+	/* RTN15c5
+	 * Resume with token error
+	 */
+	testOnAllTransports(exports, 'resume_token_error', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(mixin(realtimeOpts, {useTokenAuth: true})),
+			connection = realtime.connection;
+
+		test.expect(2);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				/* Sabotage the resume */
+				var appId = realtime.auth.tokenDetails.token.slice(0, 6);
+				/* A valid but incorrect token */
+				realtime.auth.tokenDetails.token = appId + '.CbAUghzOIKgR6H7gR-1eZBFhkg0j1SOgBJalziRkMfLSkFZnPae7wuv37ozoY0eshNI4oc7WjTs-yTSsrwCI6ebL4hzbh0G8rUVPHwDER17g'
+				connection.once(function(stateChange) {
+					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
+					cb();
+				});
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('connected', function(stateChange) {
+					test.ok(true, 'successfully reconnected after getting a new token');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true);
+
+	/* RTN15c4
+	 * Resume with fatal error
+	 */
+	testOnAllTransports(exports, 'resume_fatal_error', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(realtimeOpts),
+			connection = realtime.connection;
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				var keyName = realtime.auth.key.slice(0, 13);
+				realtime.auth.key = keyName+ ':wrong';
+				connection.once(function(stateChange) {
+					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
+					cb();
+				});
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('failed', function(stateChange) {
+					test.ok(true, 'check connection failed');
+					test.equal(stateChange.reason.code, 40101, 'check correct code propogated');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true);
+
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });

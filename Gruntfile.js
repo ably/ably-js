@@ -125,6 +125,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/rest.js',
 		'<%= dirs.common %>/lib/client/realtime.js',
 		'<%= dirs.common %>/lib/client/connectionstatechange.js',
+		'<%= dirs.common %>/lib/client/channelstatechange.js',
 		'<%= dirs.common %>/lib/client/connection.js',
 		'<%= dirs.common %>/lib/client/channel.js',
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
