@@ -371,13 +371,16 @@ var ConnectionManager = (function() {
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
 			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
-				/* If there's been some problem with syncing, we have a problem -- we
-				* can't just fall back on the old transport, as we don't know whether
-				* realtime got the sync -- if it did, the old transport is no longer
-				* valid. To be safe, we disconnect both and start again from scratch. */
+				/* If there's been some problem with syncing (and the connection hasn't
+				 * closed or something in the meantime), we have a problem -- we can't
+				 * just fall back on the old transport, as we don't know whether
+				 * realtime got the sync -- if it did, the old transport is no longer
+				 * valid. To be safe, we disconnect both and start again from scratch. */
 				if(syncErr) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
-					self.disconnectAllTransports();
+					if(self.state === self.states.synchronizing) {
+						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
+						self.disconnectAllTransports();
+					}
 					return;
 				}
 				var finishUpgrade = function() {
