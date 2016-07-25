@@ -1122,31 +1122,19 @@ var ConnectionManager = (function() {
 		this.cancelSuspendTimer();
 		this.startTransitionTimer(this.states.closing);
 
-		function closeTransport(transport) {
-			if(transport) {
-				try {
-					transport.close();
-				} catch(e) {
-					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-					transport.abort(new ErrorInfo(msg, 50000, 500));
-				}
-			}
-		}
-
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
-			closeTransport(transport);
+			if(transport) transport.close();
 		});
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
-			transport.dispose();
+			if(transport) transport.dispose();
 		});
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
-			closeTransport(this.activeProtocol.getTransport());
+			this.activeProtocol.getTransport().close();
 		}
 
 		/* If there was an active transport, this will probably be
@@ -1173,33 +1161,21 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.disconnectAllTransports = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports');
 
-		function disconnectTransport(transport) {
-			if(transport) {
-				try {
-					transport.disconnect();
-				} catch(e) {
-					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
-					transport.abort(new ErrorInfo(msg, 50000, 500));
-				}
-			}
-		}
-
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
-			disconnectTransport(transport);
+			if(transport) transport.disconnect();
 		});
 		this.pendingTransports = [];
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
-			transport.dispose();
+			if(transport) transport.dispose();
 		});
 		this.proposedTransports = [];
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting active transport: ' + this.activeProtocol.getTransport());
-			disconnectTransport(this.activeProtocol.getTransport());
+			this.activeProtocol.getTransport().disconnect();
 		}
 		/* No need to notify state disconnected; disconnecting the active transport
 		 * will have that effect */
