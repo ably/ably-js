@@ -127,6 +127,7 @@ var ConnectionManager = (function() {
 		this.proposedTransports = [];
 		this.pendingTransports = [];
 		this.host = null;
+		this.lastAutoReconnectAttempt = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
@@ -808,11 +809,19 @@ var ConnectionManager = (function() {
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 
 		if(retryImmediately) {
-			Utils.nextTick(function() {
+			var autoReconnect = function() {
 				if(self.state === self.states.disconnected) {
+					self.lastAutoReconnectAttempt = Utils.now();
 					self.requestState({state: 'connecting'});
 				}
-			});
+			};
+			var sinceLast = this.lastAutoReconnectAttempt && (Utils.now() - this.lastAutoReconnectAttempt + 1);
+			if(sinceLast && (sinceLast < 1000)) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.notifyState()', 'Last reconnect attempt was only ' + sinceLast + 'ms ago, waiting another ' + (1000 - sinceLast) + 'ms before trying again');
+				setTimeout(autoReconnect, 1000 - sinceLast);
+			} else {
+				Utils.nextTick(autoReconnect);
+			}
 		} else if(state === 'disconnected' || state === 'suspended') {
 			this.startRetryTimer(newState.retryDelay);
 		}
