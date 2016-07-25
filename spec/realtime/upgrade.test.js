@@ -708,7 +708,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						cb();
 					});
 					transport.once('connected', function() {
-						baseTransport.abort({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
+						baseTransport.disconnect({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
 					});
 				});
 			},

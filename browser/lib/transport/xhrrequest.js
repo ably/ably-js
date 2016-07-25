@@ -125,17 +125,17 @@ var XHRRequest = (function() {
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
 		xhr.onerror = function(errorEvent) {
-			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
+			errorHandler(errorEvent, 'XHR error occurred', null, 400);
 		}
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
-				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 408);
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 408);
 			} else {
-				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+				errorHandler(errorEvent, 'Request cancelled', null, 400);
 			}
 		};
 		xhr.ontimeout = function(errorEvent) {
-			errorHandler(errorEvent, 'Request timed out', 80000, 408);
+			errorHandler(errorEvent, 'Request timed out', null, 408);
 		};
 
 		var streaming,
@@ -180,21 +180,22 @@ var XHRRequest = (function() {
 					responseBody = responseBody.response;
 				}
 			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
+				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
 				return;
 			}
 
-			if(successResponse) {
+			/* If response is an array, it's an array of protocol messages -- even if
+			 * is contains an error action (hence the nonsuccess statuscode), we can
+			 * consider the request to have succeeded, just pass it on to
+			 * onProtocolMessage to decide what to do */
+			if(successResponse || Utils.isArray(responseBody)) {
 				self.complete(null, responseBody, headers || (contentType && {'content-type': contentType}), unpacked);
 				return;
 			}
 
 			var err = responseBody.error;
 			if(!err) {
-				err = new Error('Error response received from server: ' + statusCode);
-				err.statusCode = statusCode;
+				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}
 			self.complete(err);
 		}
@@ -213,9 +214,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
+				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
 				return;
 			}
 			self.emit('data', chunk);
