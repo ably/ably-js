@@ -613,13 +613,7 @@ var ConnectionManager = (function() {
 			connectionSerial: this.connectionSerial
 		});
 
-		transport.send(syncMessage, function(err) {
-			if(err) {
-				transport.off('sync');
-				clearTimeout(timeout);
-				callback(ErrorInfo.fromValues(err));
-			}
-		});
+		transport.send(syncMessage);
 
 		transport.once('sync', function(connectionSerial, connectionId) {
 			clearTimeout(timeout);
@@ -1196,9 +1190,7 @@ var ConnectionManager = (function() {
 			msg.msgSerial = this.msgSerial++;
 		}
 		try {
-			this.activeProtocol.send(pendingMessage, function(err) {
-				/* FIXME: schedule a retry directly if we get a send error */
-			});
+			this.activeProtocol.send(pendingMessage);
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
 		}

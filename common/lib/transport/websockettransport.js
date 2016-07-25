@@ -74,14 +74,13 @@ var WebSocketTransport = (function() {
 		});
 	};
 
-	WebSocketTransport.prototype.send = function(message, callback) {
+	WebSocketTransport.prototype.send = function(message) {
 		var wsConnection = this.wsConnection;
 		if(!wsConnection) {
-			callback && callback(new ErrorInfo('No socket connection'));
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
 		wsConnection.send(ProtocolMessage.encode(message, this.params.format));
-		callback && callback(null);
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {

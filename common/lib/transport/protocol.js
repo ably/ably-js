@@ -33,7 +33,7 @@ var Protocol = (function() {
 		messageQueue.once('idle', listener);
 	};
 
-	Protocol.prototype.send = function(pendingMessage, callback) {
+	Protocol.prototype.send = function(pendingMessage) {
 		if(pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
@@ -41,7 +41,7 @@ var Protocol = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
 		}
 		pendingMessage.sendAttempted = true;
-		this.transport.send(pendingMessage.message, callback);
+		this.transport.send(pendingMessage.message);
 	};
 
 	Protocol.prototype.getTransport = function() {
