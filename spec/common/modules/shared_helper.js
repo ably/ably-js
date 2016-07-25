@@ -60,6 +60,14 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			realtime.connection.connectionManager.requestState({state: 'disconnected'});
 		}
 
+		function becomeSuspended(realtime, cb) {
+			realtime.connection.connectionManager.disconnectAllTransports();
+			realtime.connection.once('disconnected', function() {
+				realtime.connection.connectionManager.notifyState({state: 'suspended'});
+			});
+			if(cb) realtime.connection.once('suspended', cb);
+		}
+
 		function callbackOnClose(realtime, callback) {
 			if(!realtime.connection.connectionManager.activeProtocol) {
 				console.log("No transport established; closing connection and calling test.done()")
@@ -169,6 +177,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			monitorConnection:         monitorConnection,
 			closeAndFinish:            closeAndFinish,
 			simulateDroppedConnection: simulateDroppedConnection,
+			becomeSuspended:           becomeSuspended,
 			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,

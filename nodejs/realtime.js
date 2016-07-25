@@ -46,6 +46,7 @@ includeScript('../common/lib/client/resource.js');
 includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/connectionstatechange.js');
+includeScript('../common/lib/client/channelstatechange.js');
 includeScript('../common/lib/client/connection.js');
 includeScript('../common/lib/client/presence.js');
 includeScript('../common/lib/client/channel.js');

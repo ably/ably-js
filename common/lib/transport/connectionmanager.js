@@ -630,10 +630,18 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
-		if(connectionId !== this.connectionId) {
-			/* if connectionKey changes but connectionId stays the same, then just a
-			* transport change on the same connection, so msgSerial should not reset */
+		/* if connectionKey changes but connectionId stays the same, then just a
+		 * transport change on the same connection. If connectionId changes, we're
+		 * on a new connection, with implications for msgSerial and channel state */
+		var self = this;
+		if(this.connectionId && this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
 			this.msgSerial = 0;
+			/* Wait till next tick before reattaching channels so that connection
+			 * state will be updated */
+			Utils.nextTick(function() {
+				self.realtime.channels.reattach();
+			});
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
@@ -681,8 +689,8 @@ var ConnectionManager = (function() {
 		return ConnectionError[this.state.state];
 	};
 
-	ConnectionManager.activeState = function(state) {
-		return state.queueEvents || state.sendEvents;
+	ConnectionManager.prototype.activeState = function() {
+		return this.state.queueEvents || this.state.sendEvents;
 	};
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
@@ -844,10 +852,11 @@ var ConnectionManager = (function() {
 
 		/* implement the change and notify */
 		this.enactStateChange(change);
-		if(this.state.sendEvents)
+		if(this.state.sendEvents) {
 			this.sendQueuedMessages();
-		else if(!this.state.queueEvents)
-			this.realtime.channels.setSuspended(change.reason);
+		} else if(!this.state.queueEvents) {
+			this.realtime.channels.propogateConnectionInterruption(state, change.reason);
+		}
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {

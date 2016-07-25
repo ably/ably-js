@@ -55,6 +55,7 @@
     "Rest": true,
     "Realtime": true,
     "ConnectionStateChange": true,
+    "ChannelStateChange": true,
     "Connection": true,
     "Channel": true,
     "RealtimeChannel": true,
