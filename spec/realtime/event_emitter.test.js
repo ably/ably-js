@@ -255,5 +255,37 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish(test, realtime);
 	}
 
+	exports.arrayOfEvents = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; };
+
+		callbackCalled = 0;
+		eventEmitter.on(['a', 'b', 'c'], callback);
+		eventEmitter.emit('a');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 3, 'listener listens to all events in array');
+
+		eventEmitter.off(['a', 'b', 'c'], callback);
+		eventEmitter.emit('a');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 3, 'All callbacks should have been removed');
+
+		callbackCalled = 0;
+		eventEmitter.on(['a', 'b', 'c'], callback);
+		eventEmitter.off('a', callback);
+		eventEmitter.emit('a');
+		test.equals(callbackCalled, 0, 'callback ‘a’ should have been removed');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 2, 'callbacks b and c should not have been removed');
+
+		closeAndFinish(test, realtime);
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
