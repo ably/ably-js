@@ -188,16 +188,11 @@ var CometTransport = (function() {
 		this.disconnectUri = baseConnectionUri + '/disconnect';
 	};
 
-	CometTransport.prototype.send = function(message, callback) {
+	CometTransport.prototype.send = function(message) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
 			this.pendingItems.push(message);
-
-			if(callback) {
-				this.pendingCallback = this.pendingCallback || Multicaster();
-				this.pendingCallback.push(callback);
-			}
 			return;
 		}
 		/* send this, plus any pending, now */
@@ -205,30 +200,21 @@ var CometTransport = (function() {
 		pendingItems.push(message);
 		this.pendingItems = null;
 
-		var pendingCallback = this.pendingCallback;
-		if(pendingCallback) {
-			if(callback) pendingCallback.push(callback);
-			callback = pendingCallback;
-			this.pendingCallback = null;
-		}
-
-		this.sendItems(pendingItems, callback);
+		this.sendItems(pendingItems);
 	};
 
 	CometTransport.prototype.sendAnyPending = function() {
-		var pendingItems = this.pendingItems,
-			pendingCallback = this.pendingCallback;
+		var pendingItems = this.pendingItems;
 
 		if(!pendingItems) {
 			return;
 		}
 
 		this.pendingItems = null;
-		this.pendingCallback = null;
-		this.sendItems(pendingItems, pendingCallback);
+		this.sendItems(pendingItems);
 	}
 
-	CometTransport.prototype.sendItems = function(items, callback) {
+	CometTransport.prototype.sendItems = function(items) {
 		var self = this,
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
 
@@ -260,7 +246,6 @@ var CometTransport = (function() {
 					}
 				});
 			}
-			callback && callback(err);
 		});
 		sendRequest.exec();
 	};
