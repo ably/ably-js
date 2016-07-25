@@ -19,6 +19,28 @@ var CometTransport = (function() {
 		}
 	}
 
+	/* TODO: can remove once realtime sends protocol message responses for comet errors */
+	function shouldBeErrorAction(err) {
+		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
+		if(err.code) {
+			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+			return (err.code >= 40000 && err.code < 50000);
+		} else {
+			/* Likely a network or transport error of some kind. Certainly not fatal to the connection */
+			return false;
+		}
+	}
+
+	function protocolMessageFromRawError(err) {
+		/* err will be either a legacy (non-protocolmessage) comet error response
+		 * (which will have an err.code), or a xhr/network error (which won't). */
+		if(shouldBeErrorAction(err)) {
+			return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})];
+		} else {
+			return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.DISCONNECTED, error: err})];
+		}
+	}
+
 	/*
 	 * A base comet transport class
 	 */
@@ -55,7 +77,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
-				self.abort(err);
+				self.disconnect(err);
 				return;
 			}
 			self.authParams = authParams;
@@ -86,9 +108,16 @@ var CometTransport = (function() {
 				}
 				self.recvRequest = null;
 				if(err) {
-					/* If connect errors before the preconnect, connectionManager is
-					 * never given the transport, so need to dispose of it ourselves */
-					self.abort(err);
+					if(err.code) {
+						/* A protocol error received from realtime. TODO: once realtime
+						 * consistendly sends errors wrapped in protocol messages, should be
+						 * able to remove this */
+						self.onData(protocolMessageFromRawError(err));
+					} else {
+						/* A network/xhr error. Don't bother wrapping in a protocol message,
+						 * just disconnect the transport */
+						self.disconnect(err);
+					}
 					return;
 				}
 				Utils.nextTick(function() {
@@ -97,12 +126,6 @@ var CometTransport = (function() {
 			});
 			connectRequest.exec();
 		});
-	};
-
-	CometTransport.prototype.disconnect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
-		this.requestDisconnect();
-		Transport.prototype.disconnect.call(this);
 	};
 
 	CometTransport.prototype.requestClose = function() {
@@ -124,7 +147,7 @@ var CometTransport = (function() {
 			request.on('complete', function (err) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + err);
-					self.finish('failed', err);
+					self.finish('disconnected', err);
 				}
 			});
 			request.exec();
@@ -217,8 +240,14 @@ var CometTransport = (function() {
 			if(data) {
 				self.onData(data);
 			} else if(err && err.code) {
-				self.onData([ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})]);
-				err = null;
+				/* A protocol error received from realtime. TODO: once realtime
+				 * consistendly sends errors wrapped in protocol messages, should be
+				 * able to remove this */
+				self.onData(protocolMessageFromRawError(err));
+			} else {
+				/* A network/xhr error. Don't bother wrapping in a protocol message,
+				 * just disconnect the transport */
+				self.disconnect(err);
 			}
 
 			if(self.pendingItems) {
@@ -254,7 +283,16 @@ var CometTransport = (function() {
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
 			if(err) {
-				self.finish('failed', err);
+				if(err.code) {
+					/* A protocol error received from realtime. TODO: once realtime
+					 * consistendly sends errors wrapped in protocol messages, should be
+					 * able to remove this */
+					self.onData(protocolMessageFromRawError(err));
+				} else {
+					/* A network/xhr error. Don't bother wrapping in a protocol message,
+					 * just disconnect the transport */
+					self.disconnect(err);
+				}
 				return;
 			}
 			Utils.nextTick(function() {
