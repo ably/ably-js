@@ -4,7 +4,7 @@ var ChannelStateChange = (function() {
 	function ChannelStateChange(previous, current, resumed, reason) {
 		this.previous = previous;
 		this.current = current;
-		this.resumed = resumed;
+		if(current === 'attached') this.resumed = resumed;
 		if(reason) this.reason = reason;
 	}
 
