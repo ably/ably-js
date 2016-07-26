@@ -418,15 +418,16 @@ var RealtimeChannel = (function() {
 			this.sendMessage(msg, multicaster);
 		}
 		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
+		var resumed = ((message.flags & ( 1 << flags.RESUMED)) > 0);
 		if(syncInProgress) {
 			this.presence.awaitSync();
 		}
 		this.setInProgress(syncOp, syncInProgress);
 		this.presence.setAttached();
-		this.notifyState('attached');
+		this.notifyState('attached', null, resumed);
 	};
 
-	RealtimeChannel.prototype.notifyState = function(state, reason) {
+	RealtimeChannel.prototype.notifyState = function(state, reason, resumed) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
     this.clearStateTimer();
 
@@ -445,7 +446,7 @@ var RealtimeChannel = (function() {
 		if(reason) {
 			this.errorReason = reason;
 		}
-    var change = new ChannelStateChange(this.state, state, false /* TODO resumed */, reason);
+    var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
 		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.toString()) : ''));
 

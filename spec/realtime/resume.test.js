@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection,
@@ -374,6 +375,57 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			closeAndFinish(test, realtime);
 		});
 	}}, true);
+
+	/* RTL2f
+	 * Check channel resumed flag
+	 * TODO: enable once realtime supports this
+	 */
+	_exports.channel_resumed_flag = function(test) {
+		var realtime = helper.AblyRealtime(),
+			realtimeTwo,
+			recoveryKey,
+			connection = realtime.connection,
+			channelName = 'channel_resumed_flag',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach();
+				channel.once('attached', function(stateChange) {
+					test.equal(stateChange.resumed, false, 'Check channel not resumed when first attached');
+					recoveryKey = connection.recoveryKey;
+					cb();
+				});
+			},
+			function(cb) {
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtimeTwo = helper.AblyRealtime({recover: recoveryKey});
+				realtimeTwo.connection.once('connected', function(stateChange) {
+					if(stateChange.reason) {
+						test.ok(false, 'Error while recovering: ' + JSON.stringify(stateChange.reason));
+					}
+					cb();
+				});
+			},
+			function(cb) {
+				var channelTwo = realtimeTwo.channels.get(channelName);
+				channelTwo.attach();
+				channelTwo.once('attached', function(stateChange) {
+					test.equal(stateChange.resumed, true, 'Check resumed flag is true');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });

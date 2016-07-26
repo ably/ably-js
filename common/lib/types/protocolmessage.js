@@ -45,7 +45,8 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.Flag = {
 		'HAS_PRESENCE': 0,
-		'HAS_BACKLOG': 1
+		'HAS_BACKLOG': 1,
+		'RESUMED': 2
 	};
 
 	ProtocolMessage.encode = function(msg, format) {
