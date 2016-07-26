@@ -208,7 +208,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		// will not run its callback
 		var channelName = 'enterDetachRace';
 		try {
-			test.expect(3);
 			/* listen for the enter event, test is complete when received */
 
 			createListenerChannel(channelName, function(err, listenerRealtime, presenceChannel){
@@ -249,7 +248,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						//   that we're testing for) isn't.
 						if(err) {
 							test.ok(true, 'Enter failed with error: ' + JSON.stringify(err));
-							test.equal(err.code, 40400);
 							closeAndFinish(test, [listenerRealtime, clientRealtime]);
 							return;
 						}
