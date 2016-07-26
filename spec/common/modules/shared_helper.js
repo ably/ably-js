@@ -65,7 +65,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			realtime.connection.once('disconnected', function() {
 				realtime.connection.connectionManager.notifyState({state: 'suspended'});
 			});
-			if(cb) realtime.connection.once('suspended', cb);
+			if(cb) realtime.connection.once('suspended', function() { cb(); });
 		}
 
 		function callbackOnClose(realtime, callback) {
