@@ -285,7 +285,13 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
-			this.setAttached(message);
+			if(this.state === 'attached') {
+				if(message.error) {
+					this.emit('error', message.error);
+				}
+			} else {
+				this.setAttached(message);
+			}
 			break;
 
 		case actions.DETACHED:
@@ -424,7 +430,7 @@ var RealtimeChannel = (function() {
 		}
 		this.setInProgress(syncOp, syncInProgress);
 		this.presence.setAttached();
-		this.notifyState('attached', null, resumed);
+		this.notifyState('attached', message.reason, resumed);
 	};
 
 	RealtimeChannel.prototype.notifyState = function(state, reason, resumed) {
