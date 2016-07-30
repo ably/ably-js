@@ -503,6 +503,39 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RTL12
+	 * A server-sent ATTACHED with err on an attached channel should emit an
+	 * ERROR event on the channel
+	 */
+	exports.server_sent_attached_err = function(test) {
+		var realtime = helper.AblyRealtime(),
+			channelName = 'server_sent_attached_err',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(cb);
+			},
+			function(cb) {
+				channel.once(function(err) {
+					test.equal(this.event, 'error', 'check is error event');
+					test.equal(err.code, 50000, 'check error propogated');
+					test.equal(channel.state, 'attached', 'check channel still attached');
+					cb();
+				});
+				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+				transport.onProtocolMessage({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+			},
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	/*
 	 * Check that queueMessages: false disables queuing both for channel and connection queue states
 	 */
