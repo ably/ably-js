@@ -159,6 +159,20 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			return !!transport.toString().match(/wss?\:/);
 		}
 
+		var arrFind = Array.prototype.find
+			? function(arr, predicate) {
+				return arr.find(predicate);
+			} : function(arr, predicate) {
+				var value;
+				for (var i = 0; i < arr.length; i++) {
+					value = arr[i];
+					if (predicate(value)) {
+						return value;
+					}
+				}
+				return undefined;
+			};
+
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -185,6 +199,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			clearTransportPreference:  clearTransportPreference,
 			isComet:                   isComet,
 			isWebsocket:               isWebsocket,
-			unroutableAddress:         unroutableAddress
+			unroutableAddress:         unroutableAddress,
+			arrFind:                   arrFind
 		};
 	});
