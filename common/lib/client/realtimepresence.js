@@ -360,6 +360,23 @@ var RealtimePresence = (function() {
 		return result;
 	};
 
+	function newerThan(item, existing) {
+		/* RTP2b1: if either is synthesised, compare by timestamp */
+		if(item.isSynthesized() || existing.isSynthesized()) {
+			console.log("one is synth, returning ", item.timestamp > existing.timestamp)
+			return item.timestamp > existing.timestamp;
+		}
+
+		/* RTP2b2 */
+		var itemOrderings = item.parseId(),
+			existingOrderings = existing.parseId();
+		if(itemOrderings.msgSerial === existingOrderings.msgSerial) {
+			return itemOrderings.index > existingOrderings.index;
+		} else {
+			return itemOrderings.msgSerial > existingOrderings.msgSerial;
+		}
+	}
+
 	PresenceMap.prototype.put = function(item) {
 		if(item.action === 'enter' || item.action === 'update') {
 			item = PresenceMessage.fromValues(item);
@@ -372,11 +389,8 @@ var RealtimePresence = (function() {
 
 		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
 		var existingItem = map[key];
-		if(existingItem) {
-			/* no item supersedes a newer item with the same key */
-			if(item.id <= existingItem.id) {
-				return false;
-			}
+		if(existingItem && !newerThan(item, existingItem)) {
+			return false;
 		}
 		map[key] = item;
 		return true;
@@ -396,11 +410,20 @@ var RealtimePresence = (function() {
 	PresenceMap.prototype.remove = function(item) {
 		var map = this.map, key = memberKey(item);
 		var existingItem = map[key];
-		if(existingItem) {
-			delete map[key];
-			if(existingItem.action === 'absent')
-				return false;
+
+		if(existingItem && !newerThan(item, existingItem)) {
+			return false;
 		}
+
+		/* RTP2f */
+		if(this.syncInProgress) {
+			item = PresenceMessage.fromValues(item);
+			item.action = 'absent';
+			map[key] = item;
+		} else {
+			delete map[key];
+		}
+
 		return true;
 	};
 
