@@ -40,6 +40,7 @@ var RealtimePresence = (function() {
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
 		this.members = new PresenceMap(this);
+		this._myMembers = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
 	}
 	Utils.inherits(RealtimePresence, Presence);
@@ -218,7 +219,8 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, isSync, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
-		var syncCursor, match, members = this.members, broadcastMessages = [];
+		var syncCursor, match, members = this.members, myMembers = this._myMembers,
+			broadcastMessages = [], connId = this.channel.connectionManager.connectionId;
 
 		if(isSync) {
 			this.members.startSync();
@@ -234,12 +236,18 @@ var RealtimePresence = (function() {
 					if(members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
+					if(presence.connectionId === connId && !presence.isSynthesized) {
+						myMembers.remove(presence);
+					}
 					break;
-				case 'update':
 				case 'enter':
 				case 'present':
+				case 'update':
 					if(members.put(presence)) {
 						broadcastMessages.push(presence);
+					}
+					if(presence.connectionId === connId) {
+						myMembers.put(presence);
 					}
 					break;
 			}
@@ -247,6 +255,8 @@ var RealtimePresence = (function() {
 		/* if this is the last (or only) message in a sequence of sync updates, end the sync */
 		if(isSync && !syncCursor) {
 			members.endSync();
+			/* RTP5c2: re-enter our own members if they haven't shown up in the sync */
+			this._ensureMyMembersPresent();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
 
@@ -274,6 +284,30 @@ var RealtimePresence = (function() {
 			this.pendingPresence = null;
 		}
 		this.members.clear();
+	};
+
+	RealtimePresence.prototype._clearMyMembers = function() {
+		this._myMembers.clear();
+	};
+
+	RealtimePresence.prototype._ensureMyMembersPresent = function() {
+		var self = this, members = this.members, myMembers = this._myMembers,
+			reenterCb = function(err) {
+				if(err) {
+					var msg = 'Presence auto-re-enter failed: ' + err.toString();
+					Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+					self.channel.emit('error', new ErrorInfo(msg, 91201, 400));
+				}
+			};
+
+		for(var memberKey in myMembers.map) {
+			if(!(memberKey in members.map)) {
+				var entry = myMembers.map[memberKey];
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
+				this._enterOrUpdateClient(entry.clientId, entry.data, reenterCb, 'enter');
+				delete myMembers.map[memberKey];
+			}
+		}
 	};
 
 	RealtimePresence.prototype.awaitSync = function() {

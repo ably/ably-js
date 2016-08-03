@@ -435,15 +435,18 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.notifyState = function(state, reason, resumed) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
-    this.clearStateTimer();
+		this.clearStateTimer();
 
 		if(state === this.state) {
 			return;
 		}
-    if(state !== 'attached' && state !== 'attaching') {
-      this.presence.setSuspended(reason || RealtimeChannel.invalidStateError);
-      this.failPendingMessages(reason || RealtimeChannel.invalidStateError);
-    }
+		if(state !== 'attached' && state !== 'attaching') {
+			this.presence.setSuspended(reason || RealtimeChannel.invalidStateError);
+			this.failPendingMessages(reason || RealtimeChannel.invalidStateError);
+			if(state === 'detached' || state === 'failed') {
+				this.presence._clearMyMembers();
+			}
+		}
 		if(state === 'suspended' && this.connectionManager.state.sendEvents) {
 			this.startRetryTimer();
 		} else {
@@ -452,7 +455,7 @@ var RealtimeChannel = (function() {
 		if(reason) {
 			this.errorReason = reason;
 		}
-    var change = new ChannelStateChange(this.state, state, resumed, reason);
+		var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
 		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.toString()) : ''));
 
@@ -470,7 +473,7 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.requestState = function(state, reason) {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
-    this.notifyState(state, reason);
+		this.notifyState(state, reason);
 		/* send the event and await response */
 		this.checkPendingState();
 	};
