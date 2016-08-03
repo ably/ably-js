@@ -7,6 +7,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
+	function extractClientIds(presenceSet) {
+		return utils.arrMap(presenceSet, function(presmsg) {
+			return presmsg.clientId;
+		}).sort();
+	}
+
+	function extractMember(presenceSet, clientId) {
+		return helper.arrFind(presenceSet, function(member) {
+			return member.clientId === clientId;
+		});
+	}
+
+
 	var rest, authToken, authToken2;
 	var testClientId = 'testclient', testClientId2 = 'testclient2';
 
@@ -1421,6 +1434,81 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.ok(false, helper.displayError(err));
 			}
 			closeAndFinish(test, [enterer, detacher]);
+		});
+	};
+
+	/* Check the RTP5c/RTP17 auto-re-enter functionality by injecting a member
+	 * into the private _myMembers set while suspended. Expect on re-attach and
+	 * sync that member to be sent to realtime and, with luck, make its way into
+	 * the normal presence set */
+	exports.presence_auto_reenter = function(test) {
+		test.expect(7);
+		var channelName = "presence_auto_reenter";
+		var realtime = helper.AblyRealtime({log: {level: 4}});
+		var channel = realtime.channels.get(channelName);
+
+		async.series([
+			function(cb) { realtime.connection.once('connected', function() { cb(); }); },
+			function(cb) { channel.attach(cb); },
+			function(cb) { channel.presence.members.waitSync(cb); },
+			function(cb) {
+				channel.presence.enterClient('one', 'onedata');
+				channel.presence.subscribe('enter', function() {
+					channel.presence.unsubscribe('enter');
+					cb();
+				});
+			},
+			function(cb) {
+				/* inject an additional member into the myMember set, then force a suspended state */
+				var connId = realtime.connection.connectionManager.connectionId;
+				channel.presence._myMembers.put({
+					action: 'enter',
+					clientId: 'two',
+					connectionId: connId,
+					id: connId + ':0:0',
+					data: 'twodata'
+				});
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				test.equal(channel.state, 'suspended', 'sanity-check channel state');
+				/* Reconnect */
+				realtime.connection.connect();
+				channel.once('attached', function() { cb(); });
+			},
+			function(cb) {
+				/* Since we haven't been gone for two minutes, we don't know for sure
+				 * that realtime will feel it necessary to do a sync - if it doesn't,
+					* we request one */
+				if(channel.presence.syncComplete()) {
+					channel.presence.awaitSync();
+					channel.sync();
+				}
+				channel.presence.members.waitSync(cb);
+			},
+			function(cb) {
+				/* Now just wait for an enter! */
+				channel.presence.subscribe('enter', function(presmsg) {
+					test.equal(presmsg.clientId, 'two', 'Check expected clientId');
+					channel.presence.unsubscribe('enter');
+					cb();
+				});
+			},
+			function(cb) {
+				channel.presence.get(function(err, results) {
+					test.ok(channel.presence.syncComplete, 'Check in sync');
+					test.equal(results.length, 2, 'Check correct number of results');
+					test.deepEqual(extractClientIds(results), ['one', 'two'], 'check correct members');
+					test.equal(extractMember(results, 'one').data, 'onedata', 'check correct data on one');
+					test.equal(extractMember(results, 'two').data, 'twodata', 'check correct data on two');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
 		});
 	};
 
