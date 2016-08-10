@@ -431,79 +431,56 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 
-					var messagesReceived = 0;
-					rtChannel.subscribe(function(msg) {
-						test.ok(true, 'Received ' + msg.name);
-						++messagesReceived;
-						switch(msg.name) {
-							case 'justJson':
-								test.deepEqual(msg.data, {foo: "bar"}, 'justJson: correct decoded data');
-								test.equal(msg.encoding, null, 'justJson: encoding stripped on decoding');
-								break;
-							case 'jsonUtf8string':
-								test.equal(msg.data, '{\"foo\":\"bar\"}', 'justJsonUTF8string: data should be untouched');
-								test.equal(msg.encoding, 'json/utf-8', 'justJsonUTF8string: encoding should be untouched');
-								break;
-							case 'utf8base64':
-								test.equal(msg.data, "testData", 'utf8base64: correct decoded data');
-								test.equal(msg.encoding, null, 'utf8base64: encoding stripped on decoding');
-								break;
-							case 'nonsense':
-								test.deepEqual(msg.data, testData, 'nonsense: data untouched');
-								test.equal(msg.encoding, 'choahofhpxf', 'nonsense: encoding untouched');
-								break;
-							default:
-								test.ok(false, 'Unexpected message ' + msg.name + ' received');
-								closeAndFinish(test, realtime);
-						}
-						if (messagesReceived == testArguments.length) {
-							closeAndFinish(test, realtime);
-						}
-					});
-
-					/* publish events */
-					var restChannel = rest.channels.get('publishEncodings');
-					async.eachSeries(testArguments, function iterator(item, callback) {
-						try {
-							restChannel.publish(item, function(err) {
-								test.ok(!err, "Successfully published");
-								callback(err);
-							});
-						} catch (e) {
-							test.ok(false, "Failed to publish");
-						}
-					}, function() {});
-				});
-			});
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
-
-	exports.publishEncodingsErrorEmitted = function(test) {
-		test.expect(2);
-		try {
-			var realtime = helper.AblyRealtime();
-			realtime.connection.on('connected', function() {
-				var rtChannel = realtime.channels.get('publishEncodingsErrorEmitted0');
-
-				rtChannel.attach(function(err) {
-					if(err) {
-						test.ok(false, 'Attach failed with error: ' + displayError(err));
-						closeAndFinish(test, realtime);
-						return;
+					var subscribefn = function(cb) {
+						var messagesReceived = 0;
+						rtChannel.subscribe(function(msg) {
+							test.ok(true, 'Received ' + msg.name);
+							++messagesReceived;
+							switch(msg.name) {
+								case 'justJson':
+									test.deepEqual(msg.data, {foo: "bar"}, 'justJson: correct decoded data');
+									test.equal(msg.encoding, null, 'justJson: encoding stripped on decoding');
+									break;
+								case 'jsonUtf8string':
+									test.equal(msg.data, '{\"foo\":\"bar\"}', 'justJsonUTF8string: data should be untouched');
+									test.equal(msg.encoding, 'json/utf-8', 'justJsonUTF8string: encoding should be untouched');
+									break;
+								case 'utf8base64':
+									test.equal(msg.data, "testData", 'utf8base64: correct decoded data');
+									test.equal(msg.encoding, null, 'utf8base64: encoding stripped on decoding');
+									break;
+								case 'nonsense':
+									test.deepEqual(msg.data, testData, 'nonsense: data untouched');
+									test.equal(msg.encoding, 'choahofhpxf', 'nonsense: encoding untouched');
+									break;
+								default:
+									test.ok(false, 'Unexpected message ' + msg.name + ' received');
+									cb();
+							}
+							if (messagesReceived == testArguments.length) {
+								cb();
+							}
+						});
 					}
 
-					/* Add channel error event listeners */
-					rtChannel.on('error', function(err) {
-						test.equal(err.code, 40013, "Error emitted has correct error code");
-						test.ok(err.message.indexOf("utf-8") > -1, "Error emitted contains correct encoding component");
-						closeAndFinish(test, realtime);
-					});
+					/* publish events */
+					var publishfn = function(cb) {
+						var restChannel = rest.channels.get('publishEncodings');
+						async.eachSeries(testArguments, function iterator(item, callback) {
+							try {
+								restChannel.publish(item, function(err) {
+									test.ok(!err, "Successfully published");
+									callback(err);
+								});
+							} catch (e) {
+								test.ok(false, "Failed to publish");
+							}
+						}, cb);
+					}
 
-					rtChannel.publish({name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'});
+					async.parallel([subscribefn, publishfn], function() {
+						closeAndFinish(test, realtime);
+					})
 				});
 			});
 			monitorConnection(test, realtime);

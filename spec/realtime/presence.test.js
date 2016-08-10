@@ -1221,14 +1221,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.presenceEncoding = function(test) {
 		test.expect(6);
 		var data = {'foo': 'bar'},
-		    encodedData = JSON.stringify(data),
-		    options = { clientId: testClientId, tokenDetails: authToken, autoConnect: false }
+			encodedData = JSON.stringify(data),
+			options = { clientId: testClientId, tokenDetails: authToken, autoConnect: false, transports: [helper.bestTransport] };
 
 		var realtimeBin = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: true }));
 		var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
 
 		var runTest = function(realtime, callback) {
-			realtime.connection.connectionManager.on('transport.active', function(transport) {
+			realtime.connection.connectionManager.once('transport.active', function(transport) {
 				var originalSend = transport.send;
 
 				transport.send = function(message) {
