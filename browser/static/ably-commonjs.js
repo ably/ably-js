@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.30
+ * Ably JavaScript Library v0.8.31
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -10,7 +10,7 @@
  * Released under the Apache Licence v2.0
  */
 
-var Ably;
+var Ably = {};
 
 /**
  * CryptoJS core components.
@@ -4006,7 +4006,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.30';
+Defaults.version          = '0.8.31';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4772,7 +4772,7 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;
@@ -4964,7 +4964,7 @@ var Message = (function() {
 })();
 
 var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -5085,7 +5085,7 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -7453,7 +7453,7 @@ var Presence = (function() {
 })();
 
 var Resource = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function Resource() {}
 
@@ -7713,7 +7713,7 @@ var PaginatedResource = (function() {
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = isBrowser ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
@@ -9854,7 +9854,9 @@ var RealtimePresence = (function() {
 
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = {};
+	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
+	var _ = window._ablyjs_jsonp = {};
+
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
@@ -9948,7 +9950,7 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._._(' + id + ')';
+		params.callback = '_ablyjs_jsonp._(' + id + ')';
 
 		params.envelope = 'jsonp';
 		if(body)

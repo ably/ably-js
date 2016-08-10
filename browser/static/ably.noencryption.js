@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.30
+ * Ably JavaScript Library v0.8.31
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2616,7 +2616,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.30';
+Defaults.version          = '0.8.31';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -3382,7 +3382,7 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function Message() {
 		this.name = undefined;
@@ -3574,7 +3574,7 @@ var Message = (function() {
 })();
 
 var PresenceMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -3695,7 +3695,7 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -4373,7 +4373,7 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		if(!betterTransportThan(transport, currentTransport)) {
+		if(currentTransport && !betterTransportThan(transport, currentTransport)) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
 			abandon();
 			return;
@@ -4575,10 +4575,11 @@ var ConnectionManager = (function() {
 		var currentProtocol = this.activeProtocol,
 			wasActive = currentProtocol && currentProtocol.getTransport() === transport,
 			wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
-			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport);
+			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport),
+			noTransportsScheduledForActivation = this.noTransportsScheduledForActivation();
 
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : ''));
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') + (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'));
 		if(error && error.message)
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
@@ -4604,7 +4605,7 @@ var ConnectionManager = (function() {
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
-		if((wasActive && this.noTransportsScheduledForActivation()) ||
+		if((wasActive && noTransportsScheduledForActivation) ||
 			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
 			/* Transport failures only imply a connection failure
 			 * if the reason for the failure is fatal */
@@ -6062,7 +6063,7 @@ var Presence = (function() {
 })();
 
 var Resource = (function() {
-	var msgpack = (typeof(window) == 'object') ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 
 	function Resource() {}
 
@@ -6322,7 +6323,7 @@ var PaginatedResource = (function() {
 var Auth = (function() {
 	var isBrowser = (typeof(window) == 'object');
 	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = isBrowser ? window.Ably.msgpack : require('msgpack-js');
+	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
@@ -8463,7 +8464,9 @@ var RealtimePresence = (function() {
 
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = {};
+	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
+	var _ = window._ablyjs_jsonp = {};
+
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
@@ -8557,7 +8560,7 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._._(' + id + ')';
+		params.callback = '_ablyjs_jsonp._(' + id + ')';
 
 		params.envelope = 'jsonp';
 		if(body)

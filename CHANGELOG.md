@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.30](https://github.com/ably/ably-js/tree/0.8.30) (2016-08-10)
+
+- Add webpack/commonjs support [\#321](https://github.com/ably/ably-js/pull/321)
+
 ## [0.8.30](https://github.com/ably/ably-js/tree/0.8.30) (2016-07-18)
 
 - Fix an issue where channels with large numbers of presence members (>100) could occasionally see a reduced presence set [\#319](https://github.com/ably/ably-js/pull/319)
