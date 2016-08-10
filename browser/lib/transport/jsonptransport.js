@@ -1,6 +1,8 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	var _ = window.Ably._ = {};
+	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
+	var _ = window._ablyjs_jsonp = {};
+
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
@@ -94,7 +96,7 @@ var JSONPTransport = (function() {
 			params = this.params,
 			self = this;
 
-		params.callback = 'Ably._._(' + id + ')';
+		params.callback = '_ablyjs_jsonp._(' + id + ')';
 
 		params.envelope = 'jsonp';
 		if(body)

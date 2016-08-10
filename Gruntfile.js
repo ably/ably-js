@@ -6,7 +6,6 @@ module.exports = function (grunt) {
 
 	grunt.loadNpmTasks('grunt-curl');
 	grunt.loadNpmTasks('grunt-zip');
-	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-bump');
@@ -66,19 +65,6 @@ module.exports = function (grunt) {
 		}
 	};
 
-	gruntConfig.copy = {
-		'compat-pubnub-md': {
-			src: '<%= dirs.compat %>/pubnub.md',
-			dest: '<%= dirs.dest %>/compat-pubnub.md',
-			flatten: true
-		},
-		'compat-pusher-md': {
-			src: '<%= dirs.compat %>/pusher.md',
-			dest: '<%= dirs.dest %>/compat-pusher.md',
-			flatten: true
-		}
-	};
-
 	gruntConfig.concat = {
 		ably: {
 			dest: '<%= dirs.dest %>/ably.js',
@@ -88,21 +74,19 @@ module.exports = function (grunt) {
 			dest: '<%= dirs.dest %>/ably.noencryption.js',
 			nonull: true
 		},
-		pubnub: {
-			dest: '<%= dirs.dest %>/compat-pubnub.js',
+		'ably-commonjs': {
+			dest: '<%= dirs.dest %>/ably-commonjs.js',
 			nonull: true
 		},
-		pusher: {
-			dest: '<%= dirs.dest %>/compat-pusher.js',
+		'ably-commonjs.noencryption': {
+			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
 			nonull: true
 		}
 	};
 
 	gruntConfig['closure-compiler'] = {
 		'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
-		'ably.noencryption.js': compilerSpec('<%= dirs.static %>/ably.noencryption.js'),
-		'pubnub.js': compilerSpec('<%= dirs.static %>/compat-pubnub.js'),
-		'pusher.js': compilerSpec('<%= dirs.static %>/compat-pusher.js')
+		'ably.noencryption.js': compilerSpec('<%= dirs.static %>/ably.noencryption.js')
 	};
 
 	var ablyFiles = [
@@ -169,6 +153,23 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
 
+	gruntConfig.concat['ably-commonjs'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		'<%= dirs.browser %>/lib/util/crypto.js',
+		ablyFiles,
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
+
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
 		'<%= dirs.fragments %>/license.js',
 		'<%= dirs.fragments %>/ably-prologue.js',
@@ -182,19 +183,18 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
 
-	gruntConfig.concat['pubnub'].src = [
+	gruntConfig.concat['ably-commonjs.noencryption'].src = [].concat(
 		'<%= dirs.fragments %>/license.js',
-		'<%= dirs.browser %>/compat/pubnub.js'
-	];
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
 
-	gruntConfig.concat['pusher'].src = [
-		'<%= dirs.fragments %>/license.js',
-		'<%= dirs.fragments %>/prologue.js',
-		'<%= dirs.common %>/lib/util/eventemitter.js',
-		'<%= dirs.common %>/lib/util/utils.js',
-		'<%= dirs.browser %>/compat/pusher.js',
-		'<%= dirs.fragments %>/epilogue.js'
-	];
+		ablyFiles,
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
 
 	gruntConfig.bump = {
 		options: {
@@ -219,35 +219,12 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'set-library-version',
-		'ably.js',
-		'ably.noencryption.js',
-		'pusher',
-		'pubnub'
-	]);
-
-	grunt.registerTask('ably.js', [
-		'concat:ably'
-	]);
-
-	grunt.registerTask('ably.noencryption.js', [
-		'concat:ably.noencryption'
-	]);
-
-	grunt.registerTask('pusher', [
-		'concat:pusher',
-		'copy:compat-pusher-md'
-	]);
-
-	grunt.registerTask('pubnub', [
-		'concat:pubnub',
-		'copy:compat-pubnub-md'
+		'concat'
 	]);
 
 	grunt.registerTask('minify', [
 		'closure-compiler:ably.js',
-		'closure-compiler:ably.noencryption.js',
-		'closure-compiler:pubnub.js',
-		'closure-compiler:pusher.js'
+		'closure-compiler:ably.noencryption.js'
 	]);
 
 	grunt.registerTask('all', ['build', 'minify', 'requirejs']);
@@ -284,17 +261,17 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test:karma:run',
 		'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
-		['copy', 'concat', 'requirejs', 'karma:run']
+		['concat', 'requirejs', 'karma:run']
 	);
 
 	grunt.registerTask('test:nodeunit',
 		'Concat files and then run the Nodeunit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['copy', 'concat', 'requirejs', 'nodeunit']
+		['concat', 'requirejs', 'nodeunit']
 	);
 
 	grunt.registerTask('test:webserver',
 		'Launch the Nodeunit test web server on http://localhost:3000/',
-		['copy', 'concat', 'requirejs', 'nodeunit:webserver']
+		['concat', 'requirejs', 'nodeunit:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',

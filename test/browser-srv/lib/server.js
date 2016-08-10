@@ -23,9 +23,7 @@ var external = {
 	'ably.noencryption.min.js' : path.resolve(ably_js, 'browser/static/ably.noencryption.min.js'),
 	'nodeunit.js' : path.resolve(ably_js, 'node_modules/nodeunit/examples/browser/nodeunit.js'),
 	'nodeunit.css' : path.resolve(ably_js, 'node_modules/nodeunit/share/nodeunit.css'),
-	'async.js' : path.resolve(ably_js, 'node_modules/async/lib/async.js'),
-	'compat-pubnub.js' : path.resolve(ably_js, 'browser/static/compat-pubnub.js'),
-	'compat-pusher.js' : path.resolve(ably_js, 'browser/static/compat-pusher.js')
+	'async.js' : path.resolve(ably_js, 'node_modules/async/lib/async.js')
 };
 
 var startsWith = function(string, substr) {
