@@ -235,8 +235,7 @@ var ConnectionManager = (function() {
 					/* re-get a token and try again */
 					self.realtime.auth.authorise(null, {force: true}, function(err) {
 						if(err) {
-							/* Errors in authorise are fatal */
-							self.notifyState({state: 'failed', error: err});
+							self.actOnErrorFromAuthorize(err);
 							return;
 						}
 						self.tryATransport(transportParams, candidate, callback);
@@ -916,7 +915,7 @@ var ConnectionManager = (function() {
 			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
 			auth.authorise(null, authOptions, function(err) {
 				if(err) {
-					self.notifyState({state: 'failed', error: err});
+					self.actOnErrorFromAuthorize(err);
 				} else {
 					connect();
 				}
@@ -1354,6 +1353,17 @@ var ConnectionManager = (function() {
 		this.transportPreference = null;
 		if(haveWebStorage) {
 			WebStorage.remove(transportPreferenceName);
+		}
+	};
+
+	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
+		if(err.code === 40170) {
+			/* Special-case problems with the client auth callback - unlike other
+			 * auth errors these may be nonfatal. (RSA4c) */
+			err.code = 80019;
+			this.notifyState({state: this.state.failState, error: err});
+		} else {
+			this.notifyState({state: 'failed', error: err});
 		}
 	};
 

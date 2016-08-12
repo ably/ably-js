@@ -350,13 +350,27 @@ var Auth = (function() {
 				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
+
+		var tokenRequestCallbackTimeoutExpired = false,
+			timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
+			tokenRequestCallbackTimeout = setTimeout(function() {
+				tokenRequestCallbackTimeoutExpired = true;
+				var msg = 'Token request callback timed out after ' + (timeoutLength / 1000) + ' seconds';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
+			}, timeoutLength);
+
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
+			if(tokenRequestCallbackTimeoutExpired) return;
+			clearTimeout(tokenRequestCallbackTimeout);
+
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
-				if(!('code' in err))
-					err.code = 40170;
-				if(!('statusCode' in err))
-					err.statusCode = 401;
+				if(!(err && err.code)) {
+					/* network errors don't have an error code, so assign them
+					 * 40170 so they'll by connectionManager as nonfatal */
+					err = new ErrorInfo(err.toString(), 40170, 401);
+				}
 				callback(err);
 				return;
 			}
@@ -365,8 +379,21 @@ var Auth = (function() {
 				callback(null, {token: tokenRequestOrDetails});
 				return;
 			}
+			if(typeof(tokenRequestOrDetails) !== 'object') {
+				var msg = 'Expected token request callback to call back with a token string or token request/details object, but got a ' + typeof(tokenRequestOrDetails);
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
+				return;
+			}
 			if('issued' in tokenRequestOrDetails) {
+				/* a tokenDetails object */
 				callback(null, tokenRequestOrDetails);
+				return;
+			}
+			if(!('keyName' in tokenRequestOrDetails)) {
+				var msg = 'Expected token request callback to call back with a token string, token request object, or token details object';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
 				return;
 			}
 			/* it's a token request, so make the request */
