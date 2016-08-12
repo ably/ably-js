@@ -184,7 +184,6 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.autonomousAttach = function() {
-		console.log("Trying to autoreattaach")
 		var self = this;
 		this.attach(function(err) {
 			if(err) {
@@ -276,7 +275,9 @@ var RealtimeChannel = (function() {
 		var msg = ProtocolMessage.fromValues({
 			action: actions.PRESENCE,
 			channel: this.name,
-			presence: [PresenceMessage.fromValues(presence)]
+			presence: (Utils.isArray(presence) ?
+				PresenceMessage.fromValuesArray(presence) :
+				[PresenceMessage.fromValues(presence)])
 		});
 		this.sendMessage(msg, callback);
 	};
@@ -429,7 +430,6 @@ var RealtimeChannel = (function() {
 			this.presence.awaitSync();
 		}
 		this.setInProgress(syncOp, syncInProgress);
-		this.presence.setAttached();
 		this.notifyState('attached', message.reason, resumed);
 	};
 
@@ -440,8 +440,8 @@ var RealtimeChannel = (function() {
 		if(state === this.state) {
 			return;
 		}
+		this.presence.actOnChannelState(state, reason);
 		if(state !== 'attached' && state !== 'attaching') {
-			this.presence.setSuspended(reason || RealtimeChannel.invalidStateError);
 			this.failPendingMessages(reason || RealtimeChannel.invalidStateError);
 			if(state === 'detached' || state === 'failed') {
 				this.presence._clearMyMembers();
