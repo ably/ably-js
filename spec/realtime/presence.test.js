@@ -1512,5 +1512,47 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
+	exports.multiple_pending = function(test) {
+		/* single transport to avoid upgrade stalling due to the stubbed attachImpl */
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], log: {level: 4}}),
+			channel = realtime.channels.get('multiple_pending'),
+			originalAttachImpl = channel.attachImpl;
+
+		async.series([
+			function(cb) { realtime.connection.once('connected', function() { cb(); }); },
+			function(cb) {
+				/* stub out attachimpl */
+				channel.attachImpl = function() {};
+				channel.attach();
+
+				for(var i=0; i<10; i++) {
+					channel.presence.enterClient('client_' + i.toString(), i.toString());
+				}
+
+				channel.attachImpl = originalAttachImpl;
+				channel.checkPendingState();
+
+				/* Now just wait for an enter. One enter implies all, they'll all be
+				 * sent in one protocol message */
+				channel.presence.subscribe('enter', function() {
+					channel.presence.unsubscribe('enter');
+					helper.Utils.nextTick(cb);
+				});
+			},
+			function(cb) {
+				channel.presence.get(function(err, results) {
+					test.equal(results.length, 10, 'Check all ten clients are there');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
