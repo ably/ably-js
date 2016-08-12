@@ -312,6 +312,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	testOnAllTransports(exports, 'resume_token_error', function(realtimeOpts) { return function(test) {
 		var realtime = helper.AblyRealtime(mixin(realtimeOpts, {useTokenAuth: true})),
+			badtoken,
 			connection = realtime.connection;
 
 		test.expect(2);
@@ -320,10 +321,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				connection.once('connected', function() { cb(); });
 			},
 			function(cb) {
-				/* Sabotage the resume */
-				var appId = realtime.auth.tokenDetails.token.slice(0, 6);
-				/* A valid but incorrect token */
-				realtime.auth.tokenDetails.token = appId + '.CbAUghzOIKgR6H7gR-1eZBFhkg0j1SOgBJalziRkMfLSkFZnPae7wuv37ozoY0eshNI4oc7WjTs-yTSsrwCI6ebL4hzbh0G8rUVPHwDER17g'
+				realtime.auth.requestToken({ttl: 1}, null, function(err, token) {
+					badtoken = token;
+					cb(err);
+				})
+			},
+			function(cb) {
+				/* Sabotage the resume - use a valid but now-expired token */
+				realtime.auth.tokenDetails.token = badtoken.token
 				connection.once(function(stateChange) {
 					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
 					cb();
