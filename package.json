@@ -10,7 +10,7 @@
     "hexy": "~0.2",
     "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
     "request": "~2.53",
-    "ws": "^0.8.0"
+    "ws": "^1.1.1"
   },
   "devDependencies": {
     "ejs": "~2.3",
