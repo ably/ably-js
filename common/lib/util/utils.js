@@ -118,7 +118,7 @@ var Utils = (function() {
 	 * of another constructor
 	 * See node.js util.inherits
 	 */
-	Utils.inherits = (typeof(require) !== 'undefined' && require('util').inherits) || function(ctor, superCtor) {
+	Utils.inherits = (typeof(require) === 'function' && require('util') && require('util').inherits) || function(ctor, superCtor) {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
@@ -338,12 +338,15 @@ var Utils = (function() {
 		return new Date().getTime();
 	};
 
-	Utils.inspect = function(x) {
-		return JSON.stringify(x);
-	};
+	Utils.inspect = (typeof(require) === 'function' && require('util') && require('util').inspect) ||
+		function(x) {
+			return JSON.stringify(x);
+		};
 
 	Utils.inspectError = function(x) {
-		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
+			x.toString() :
+			Utils.inspect(x);
 	};
 
 	Utils.randStr = function() {
