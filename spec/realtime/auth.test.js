@@ -295,14 +295,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientRealtime.close();
 				test.done();
 			});
-			// Workaround for ably-js issue 101 (comet transport goes into disconnected
-			// rather than failed). TODO remove next 5 lines when that's fixed
-			clientRealtime.connection.once('disconnected', function(stateChange){
-				test.ok(true, 'Verify connection failed');
-				test.equal(stateChange.reason.code, 40102);
-				clientRealtime.close();
-				test.done();
-			});
 		});
 	};
 
@@ -382,6 +374,50 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			monitorConnection(test, clientRealtime);
 		});
 	};
+
+	/* RSA4c
+	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
+	 */
+	function authCallback_failures(realtimeOptions) {
+		return function(test) {
+			test.expect(2);
+
+			var realtime = helper.AblyRealtime(realtimeOptions);
+			realtime.connection.on(function(stateChange) {
+				if(stateChange.previous !== 'initialized') {
+					test.equal(stateChange.current, 'disconnected', 'Check connection goes to disconnected, not failed');
+					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
+					realtime.connection.off();
+					closeAndFinish(test, realtime);
+				}
+			});
+		};
+	}
+
+	exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(new Error("An error from client code that the authCallback might return"));
+	}});
+
+	exports.authCallback_timeout = authCallback_failures({
+		authCallback: function() { /* (^._.^)ﾉ */ },
+		realtimeRequestTimeout: 100});
+
+	exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback();
+	}});
+
+	exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(null, { horse: 'ebooks' });
+	}});
+
+	exports.authUrl_timeout = authCallback_failures({
+		authUrl: helper.unroutableAddress,
+		realtimeRequestTimeout: 100
+	});
+
+	exports.authUrl_404 = authCallback_failures({
+		authUrl: 'http://example.com/404'
+	});
 
 	/*
 	 * Check state change reason is propogated during a disconnect
