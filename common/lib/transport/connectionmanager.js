@@ -62,6 +62,8 @@ var ConnectionManager = (function() {
 			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
+		if(this.heartbeats !== undefined)
+			params.heartbeats = this.heartbeats;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
@@ -1271,21 +1273,24 @@ var ConnectionManager = (function() {
 
 			var onTimeout = function () {
 				transport.off('heartbeat', onHeartbeat);
-				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
+				callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
 			};
 
-			var pingStart = Utils.now();
+			var pingStart = Utils.now(),
+				id = Utils.randStr();
 
-			var onHeartbeat = function () {
-				clearTimeout(timer);
-				var responseTime = Utils.now() - pingStart;
-				callback(null, responseTime);
+			var onHeartbeat = function (responseId) {
+				if(responseId === id) {
+					clearTimeout(timer);
+					var responseTime = Utils.now() - pingStart;
+					callback(null, responseTime);
+				}
 			};
 
 			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
-			transport.ping();
+			transport.ping(id);
 			return;
 		}
 

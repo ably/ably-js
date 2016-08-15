@@ -31,8 +31,10 @@ var CometTransport = (function() {
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
+		this.timeoutOnIdle = true;
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
+		params.heartbeats = true;
 		Transport.call(this, connectionManager, auth, params);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
