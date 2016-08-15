@@ -333,5 +333,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		80017
 	);
 
+	exports.idle_transport_timeout = function(test) {
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 100}),
+			originalOnProtocolMessage;
+
+		test.expect(3);
+
+		realtime.connection.connectionManager.on('transport.pending', function(transport) {
+			originalOnProtocolMessage = transport.onProtocolMessage;
+			transport.onProtocolMessage = function(message) {
+				if(message.action === 4) {
+					message.connectionDetails.maxIdleInterval = 100;
+				}
+				originalOnProtocolMessage.call(this, message);
+			};
+		});
+
+		realtime.connection.once('connected', function() {
+			realtime.connection.once(function(statechange) {
+				test.equal(statechange.current, 'disconnected', 'check connection goes to disconnected');
+				test.equal(statechange.reason.code, 80003, 'check code');
+				test.equal(statechange.reason.statusCode, 408, 'check statusCode');
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

@@ -26,6 +26,7 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.idleTimer = null;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
@@ -62,6 +63,8 @@ var Transport = (function() {
 
 		this.isFinished = true;
 		this.isConnected = false;
+		this.timeoutOnIdle = false;
+		clearTimeout(this.idleTimer);
 		this.emit(event, err);
 		this.dispose();
 	};
@@ -70,11 +73,14 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
+		if(this.timeoutOnIdle) {
+			this.resetIdleTimeout();
+		}
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
-			this.emit('heartbeat');
+			this.emit('heartbeat', message.id);
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
@@ -116,8 +122,18 @@ var Transport = (function() {
 		}
 	};
 
-	Transport.prototype.onConnect = function(_message) {
+	Transport.prototype.onConnect = function(message) {
 		this.isConnected = true;
+		if(message.connectionDetails.maxIdleInterval === 0) {
+			/* Realtime declines to guarantee any maximum idle interval - CD2h */
+			this.timeoutOnIdle = false;
+		} else {
+			/* TODO remove "|| 15000" once realtime starts sending this */
+			this.maxIdleInterval = message.connectionDetails.maxIdleInterval || 15000;
+		}
+		if(this.timeoutOnIdle) {
+			this.resetIdleTimeout();
+		}
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
@@ -145,21 +161,36 @@ var Transport = (function() {
 
 	Transport.prototype.requestClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
-		this.send(closeMessage, noop);
+		this.send(closeMessage);
 	};
 
 	Transport.prototype.requestDisconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
-		this.send(disconnectMessage, noop);
+		this.send(disconnectMessage);
 	};
 
-	Transport.prototype.ping = function(callback) {
-		this.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), callback || noop);
+	Transport.prototype.ping = function(id) {
+		var msg = {action: ProtocolMessage.Action.HEARTBEAT};
+		if(id) msg.id = id;
+		this.send(ProtocolMessage.fromValues(msg));
 	};
 
 	Transport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.off();
+	};
+
+	Transport.prototype.resetIdleTimeout = function() {
+		var self = this,
+			timeout = this.maxIdleInterval + this.timeouts.realtimeRequestTimeout;
+
+		clearTimeout(this.idleTimer);
+
+		this.idleTimer = setTimeout(function() {
+			var msg = 'No activity seen from realtime in ' + timeout + 'ms; assuming connection has dropped';
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.resetIdleTimeout()', msg);
+			self.disconnect(new ErrorInfo(msg, 80003, 408));
+		}, timeout);
 	};
 
 	return Transport;
