@@ -27,10 +27,15 @@ this.Http = (function() {
 			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
 				if(headers['content-type'] == 'application/json') body = JSON.parse(body);
-				callback(body.error || {statusCode: statusCode}, body, headers, true);
+				var error = body.error || {
+					statusCode: statusCode,
+					code: headers['x-ably-errorcode'],
+					message: headers['x-ably-errormessage']
+				};
+				callback(error, body, headers, true, statusCode);
 				return;
 			}
-			callback(null, body, headers, false);
+			callback(null, body, headers, false, statusCode);
 		};
 	};
 

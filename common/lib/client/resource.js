@@ -22,7 +22,7 @@ var Resource = (function() {
 	}
 
 	function unenvelope(callback, format) {
-		return function(err, body, headers, unpacked) {
+		return function(err, body, headers, unpacked, statusCode) {
 			if(err) {
 				callback(err);
 				return;
@@ -39,7 +39,7 @@ var Resource = (function() {
 
 			if(body.statusCode === undefined) {
 				/* Envelope already unwrapped by the transport */
-				callback(err, body, headers, true);
+				callback(err, body, headers, true, statusCode);
 				return;
 			}
 
@@ -58,7 +58,7 @@ var Resource = (function() {
 				return;
 			}
 
-			callback(null, response, headers, true);
+			callback(null, response, headers, true, statusCode);
 		};
 	}
 
@@ -77,14 +77,14 @@ var Resource = (function() {
 	}
 
 	function logResponseHandler(callback, verb, path, params) {
-		return function(err, body, headers, unpacked) {
+		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + JSON.stringify(err));
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
-					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
+					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
-			if (callback) { callback(err, body, headers, unpacked); }
+			if (callback) { callback(err, body, headers, unpacked, statusCode); }
 		}
 	}
 
@@ -103,7 +103,7 @@ var Resource = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
-			Http.get(rest, path, headers, params, function(err, res, headers, unpacked) {
+			Http.get(rest, path, headers, params, function(err, res, headers, unpacked, statusCode) {
 				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorize(null, null, function(err) {
@@ -116,7 +116,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers, unpacked);
+				callback(err, res, headers, unpacked, statusCode);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doGet);
@@ -145,7 +145,7 @@ var Resource = (function() {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
 
-			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked) {
+			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
 				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorize(null, null, function(err) {
@@ -158,7 +158,7 @@ var Resource = (function() {
 					});
 					return;
 				}
-				callback(err, res, headers, unpacked);
+				callback(err, res, headers, unpacked, statusCode);
 			});
 		}
 		withAuthDetails(rest, origheaders, origparams, callback, doPost);
