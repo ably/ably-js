@@ -123,7 +123,7 @@ var JSONPTransport = (function() {
 				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
 				var response = message.response;
 				if(message.statusCode == 204) {
-					self.complete();
+					self.complete(null, null, null, message.statusCode);
 				} else if(!response) {
 					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
 				} else if(message.statusCode < 400 || Utils.isArray(response)) {
@@ -131,7 +131,7 @@ var JSONPTransport = (function() {
 					 * it contains an error action (hence the nonsuccess statuscode), we can
 					 * consider the request to have succeeded, just pass it on to
 					 * onProtocolMessage to decide what to do */
-					self.complete(null, response, message.headers);
+					self.complete(null, response, message.headers, message.statusCode);
 				} else {
 					var err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
 					self.complete(err);
@@ -147,7 +147,7 @@ var JSONPTransport = (function() {
 		head.insertBefore(script, head.firstChild);
 	};
 
-	Request.prototype.complete = function(err, body, headers) {
+	Request.prototype.complete = function(err, body, headers, statusCode) {
 		headers = headers || {};
 		if(!this.requestComplete) {
 			this.requestComplete = true;
@@ -158,7 +158,7 @@ var JSONPTransport = (function() {
 				this.emit('data', body);
 			}
 
-			this.emit('complete', err, body, headers, /* unpacked: */ true);
+			this.emit('complete', err, body, headers, /* unpacked: */ true, statusCode);
 			this.dispose();
 		}
 	};
