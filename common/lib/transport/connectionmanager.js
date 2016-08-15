@@ -229,7 +229,7 @@ var ConnectionManager = (function() {
 				* so are dealt with as non-onconnect token errors */
 				if(Auth.isTokenErr(wrappedErr.error)) {
 					/* re-get a token and try again */
-					self.realtime.auth.authorise(null, {force: true}, function(err) {
+					self.realtime.auth.authorize(null, null, function(err) {
 						if(err) {
 							self.actOnErrorFromAuthorize(err);
 							return;
@@ -786,7 +786,7 @@ var ConnectionManager = (function() {
 		/* We retry immediately if:
 		 * - something disconnects us while we're connected, or
 		 * - a viable (but not yet active) transport fails due to a token error (so
-		 *   this.errorReason will be set, and startConnect will do a forced authorise) */
+		 *   this.errorReason will be set, and startConnect will do a forced authorize) */
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
@@ -908,14 +908,19 @@ var ConnectionManager = (function() {
 		if(auth.method === 'basic') {
 			connect();
 		} else {
-			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
-			auth.authorise(null, authOptions, function(err) {
+			var authCb = function(err) {
 				if(err) {
 					self.actOnErrorFromAuthorize(err);
 				} else {
 					connect();
 				}
-			});
+			};
+			if(this.errorReason && Auth.isTokenErr(this.errorReason)) {
+				/* Force a refetch of a new token */
+				auth.authorize(null, null, authCb);
+			} else {
+				auth._ensureValidAuthCredentials(authCb);
+			}
 		}
 	};
 
