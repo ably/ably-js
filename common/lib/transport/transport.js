@@ -107,6 +107,9 @@ var Transport = (function() {
 			/* otherwise it's a channel SYNC, so handle it in the channel */
 			this.connectionManager.onChannelMessage(message, this);
 			break;
+		case actions.AUTH:
+			this.auth.authorize();
+			break;
 		case actions.ERROR:
 			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {

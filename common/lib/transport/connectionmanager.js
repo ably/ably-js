@@ -1131,14 +1131,23 @@ var ConnectionManager = (function() {
 		this.notifyState({state: 'closed'});
 	};
 
-	ConnectionManager.prototype.onAuthUpdated = function() {
-		/* in the current protocol version we are not able to update auth params on the fly;
-		 * so disconnect, and the new auth params will be used for subsequent reconnection */
+	ConnectionManager.prototype.onAuthUpdated = function(tokenDetails) {
 		var state = this.state.state;
 		if(state == 'connected') {
-			this.disconnectAllTransports();
+			var authMsg = ProtocolMessage.fromValues({
+				action: actions.AUTH,
+				auth: {}
+			});
+			/* tokenDetails may be a 'real' tokenDetails or an object with only a
+			 * 'token' member. Unfortunately realtime expects those in different fields */
+			if('issued' in tokenDetails) {
+				authMsg.auth.tokenDetails = tokenDetails;
+			} else {
+				authMsg.auth.accessToken = tokenDetails.token;
+			}
+			this.send(authMsg);
 		} else if(state == 'connecting' || state == 'disconnected') {
-			/* the instant auto-reconnect is only for connected->disconnected transition */
+			/* Cut all current connection attempts and start again with the new auth details */
 			this.disconnectAllTransports();
 			var self = this;
 			Utils.nextTick(function() {
