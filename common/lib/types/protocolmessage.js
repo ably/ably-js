@@ -16,6 +16,7 @@ var ProtocolMessage = (function() {
 		this.msgSerial = undefined;
 		this.messages = undefined;
 		this.presence = undefined;
+		this.auth = undefined;
 	}
 
 	ProtocolMessage.Action = {
@@ -35,7 +36,8 @@ var ProtocolMessage = (function() {
 		'DETACHED' : 13,
 		'PRESENCE' : 14,
 		'MESSAGE' : 15,
-		'SYNC' : 16
+		'SYNC' : 16,
+		'AUTH' : 17
 	};
 
 	ProtocolMessage.ActionName = [];
