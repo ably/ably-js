@@ -38,18 +38,6 @@ var Auth = (function() {
 		return JSON.stringify(c14nCapability);
 	}
 
-	/* RSA10j/d */
-	function persistAuthOptions(options) {
-		for(var prop in options) {
-			if(!(prop === 'force'       ||
-			     options[prop] === null ||
-			     options[prop] === undefined)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	function logAndValidateTokenAuthMethod(authOptions) {
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
@@ -109,10 +97,9 @@ var Auth = (function() {
 	}
 
 	/**
-	 * Instructs the library to use token auth, storing the tokenParams and
-	 * authOptions given as the new defaults for subsequent use.
-	 * Ensures a valid token is present, requesting one if necessary or if
-	 * explicitly requested.
+	 * Instructs the library to get a token immediately and ensures Token Auth
+	 * is used for all future requests, storing the tokenParams and authOptions
+	 * given as the new defaults for subsequent use.
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
@@ -136,9 +123,6 @@ var Auth = (function() {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * - force       (optional) boolean indicating that a new token should be requested,
-	 *               even if a current token is still valid.
 	 *
 	 * - tokenDetails: (optional) object: An authenticated TokenDetails object.
 	 *
@@ -166,7 +150,7 @@ var Auth = (function() {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
+	Auth.prototype.authorize = function(tokenParams, authOptions, callback) {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -178,30 +162,48 @@ var Auth = (function() {
 		callback = callback || noop;
 		var self = this;
 
-		/* RSA10a: authorise() call implies token auth. If a key is passed it, we
+		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
 		 * just check if it doesn't clash and assume we're generating a token from it */
 		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
 			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
-		this._saveTokenOptions(tokenParams, authOptions);
+
+		if(authOptions && ('force' in authOptions)) {
+			Logger.logAction(Logger.LOG_ERROR, 'Auth.authorize', 'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want');
+			/* Emulate the old behaviour: if 'force' was the only member of authOptions,
+			 * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */
+			if(Utils.isOnlyPropIn(authOptions, 'force')) {
+				authOptions = null;
+			}
+		}
+
+		/* get rid of current token even if still valid */
+		this.tokenDetails = null;
 
 		/* _save normalises the tokenParams and authOptions and updates the auth
 		 * object. All subsequent operations should use the values on `this`,
 		 * not the passed in ones. */
+		this._saveTokenOptions(tokenParams, authOptions);
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
 		this._ensureValidAuthCredentials(function(err, tokenDetails) {
 			/* RSA10g */
-			self.tokenParams.timestamp = null;
+			delete self.tokenParams.timestamp;
+			delete self.authOptions.queryTime;
 			/* RTC8
 			 * use self.client.connection as a proxy for (self.client instanceof Realtime),
 			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
-			if(self.force && !err && self.client.connection) {
+			if(!err && self.client.connection) {
 				self.client.connection.connectionManager.onAuthUpdated();
 			}
 			callback(err, tokenDetails);
 		});
+	};
+
+	Auth.prototype.authorise = function() {
+		Logger.deprecated('Auth.authorise', 'Auth.authorize');
+		this.authorize.apply(this, arguments);
 	};
 
 	/**
@@ -531,12 +533,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this.authorise(null, null, function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:tokenDetails.token});
+				callback(null, {access_token: tokenDetails.token});
 			});
 	};
 
@@ -548,7 +550,7 @@ var Auth = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this.authorise(null, null, function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -584,7 +586,6 @@ var Auth = (function() {
 		this.key = authOptions.key;
 		this.basicKey = toBase64(authOptions.key);
 		this.authOptions = authOptions || {};
-		this.authOptions.force = false;
 		if('clientId' in authOptions) {
 			this._userSetClientId(authOptions.clientId);
 		}
@@ -593,40 +594,29 @@ var Auth = (function() {
 	Auth.prototype._saveTokenOptions = function(tokenParams, authOptions) {
 		this.method = 'token';
 
-		/* We temporarily persist tokenParams.timestamp in case a new token needs
-		 * to be requested, then null it out in the callback of
-		 * _ensureValidAuthCredentials for RSA10g compliance */
-		this.tokenParams = tokenParams || this.tokenParams || {};
+		if(tokenParams) {
+			/* We temporarily persist tokenParams.timestamp in case a new token needs
+			 * to be requested, then null it out in the callback of
+			 * _ensureValidAuthCredentials for RSA10g compliance */
+			this.tokenParams = tokenParams;
+		}
 
-		/* If an authOptions object is passed in that contains new auth info (ie
-		* isn't just {force: true} or something), it becomes the new default, with
-		* the exception of the force attribute (RSA10g), which is set anew on each
-		* call to authorise (defaulting to false) */
-		this.force = false;
 		if(authOptions) {
-			this.force = authOptions.force;
-
-			if(this.force) {
-				/* get rid of current token even if still valid */
-				this.tokenDetails = null;
+			/* normalise */
+			if(authOptions.token) {
+				/* options.token may contain a token string or, for convenience, a TokenDetails */
+				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
 			}
 
-			if(persistAuthOptions(authOptions)) {
-				this.authOptions = authOptions;
-				this.authOptions.force = false;
-
-				if(authOptions.token) {
-					/* options.token may contain a token string or, for convenience, a TokenDetails */
-					this.authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
-				}
-				if(authOptions.tokenDetails) {
-					this.tokenDetails = authOptions.tokenDetails;
-				}
-
-				if('clientId' in authOptions) {
-					this._userSetClientId(authOptions.clientId);
-				}
+			if(authOptions.tokenDetails) {
+				this.tokenDetails = authOptions.tokenDetails;
 			}
+
+			if('clientId' in authOptions) {
+				this._userSetClientId(authOptions.clientId);
+			}
+
+			this.authOptions = authOptions;
 		}
 	};
 
@@ -675,7 +665,7 @@ var Auth = (function() {
 		if(!(typeof(clientId) === 'string' || clientId === null)) {
 			throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
 		} else if(clientId === '*') {
-			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorise(), pass it in as a tokenParam: authorise({clientId: "*"}, authOptions)', 40012, 400);
+			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)', 40012, 400);
 		} else {
 			var err = this._uncheckedSetClientId(clientId);
 			if(err) throw err;
