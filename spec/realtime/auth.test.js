@@ -779,6 +779,42 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		closeAndFinish(test, realtime);
 	};
 
+	/* RTN22
+	 * Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
+	 */
+	exports.mocked_reauth = function(test) {
+		test.expect(4);
+		var rest = helper.AblyRest(),
+			authCallback = function(tokenParams, callback) {
+				test.ok(true, 'Requested a token (should happen twice)');
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						test.ok(false, displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+					callback(null, tokenDetails);
+				});
+			},
+			realtime = helper.AblyRealtime({authCallback: authCallback, transports: [helper.bestTransport]});
+
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+				originalSend = transport.send;
+			/* Spy on transport.send to detect the outgoing AUTH */
+			transport.send = function(message) {
+				if(message.action === 17) {
+					test.ok(message.auth.tokenDetails.token, 'Check AUTH message structure is as expected');
+					closeAndFinish(test, realtime);
+				} else {
+					originalSend.call(this, message);
+				}
+			};
+			/* Inject a fake AUTH from realtime */
+			transport.onProtocolMessage({action: 17});
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });
