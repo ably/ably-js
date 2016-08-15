@@ -45,11 +45,13 @@ var Utils = (function() {
 	 * else wrapping the obj in a single element Array
 	 */
 	Utils.ensureArray = function(obj) {
-		if (Utils.isArray(obj)) {
-			return obj;
-		} else {
-			return [obj];
+		if(Utils.isEmptyArg(obj)) {
+			return [];
 		}
+		if(Utils.isArray(obj)) {
+			return obj;
+		}
+		return [obj];
 	}
 
 	/* ...Or an Object (in the narrow sense) */

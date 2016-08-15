@@ -79,12 +79,12 @@ var XHRRequest = (function() {
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
-	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
+	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body, headers, unpacked);
+			this.emit('complete', err, body, headers, unpacked, statusCode);
 			this.dispose();
 		}
 	};
@@ -160,7 +160,7 @@ var XHRRequest = (function() {
 			clearTimeout(timer);
 			successResponse = (statusCode < 400);
 			if(statusCode == 204) {
-				self.complete();
+				self.complete(null, null, null, null, statusCode);
 				return;
 			}
 			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
@@ -202,7 +202,7 @@ var XHRRequest = (function() {
 			 * consider the request to have succeeded, just pass it on to
 			 * onProtocolMessage to decide what to do */
 			if(successResponse || Utils.isArray(responseBody)) {
-				self.complete(null, responseBody, headers, unpacked);
+				self.complete(null, responseBody, headers, unpacked, statusCode);
 				return;
 			}
 
