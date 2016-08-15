@@ -371,31 +371,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Authorise with different args
+	 * authorize with different args
 	 */
-	exports.authauthorise = function(test) {
+	exports.authauthorize = function(test) {
 		test.expect(3);
 		async.parallel([
 			function(cb) {
-				rest.auth.authorise(null, null, function(err, tokenDetails) {
+				rest.auth.authorize(null, null, function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			},
 			function(cb) {
-				rest.auth.authorise(null, function(err, tokenDetails) {
+				rest.auth.authorize(null, function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			},
 			function(cb) {
-				rest.auth.authorise(function(err, tokenDetails) {
+				rest.auth.authorize(function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			}
 		], function(err) {
-			if(err) test.ok(false, "Authorise returned an error: " + helper.displayError(err));
+			if(err) test.ok(false, "authorize returned an error: " + helper.displayError(err));
 			test.done();
 		});
 	};

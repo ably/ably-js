@@ -646,7 +646,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/*
-	 * use authorise({force: true}) to reauth with a token with a different set of capabilities
+	 * use authorize() to reauth with a token with a different set of capabilities
 	 */
 	testOnAllTransports(exports, 'reauth_tokendetails', function(realtimeOpts) { return function(test) {
 		test.expect(2);
@@ -681,7 +681,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		},
 
 		reAuth = function(tokenDetails, callback) {
-			realtime.auth.authorise(null, {force: true, tokenDetails: tokenDetails}, callback);
+			realtime.auth.authorize(null, {tokenDetails: tokenDetails}, callback);
 		},
 
 		checkCanNowAttach = function(stateChange, callback) {
@@ -704,7 +704,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/*
-	 * use authorise({force: true}) to force a reauth using an existing authCallback
+	 * use authorize() to force a reauth using an existing authCallback
 	 */
 	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
 		test.expect(8);
@@ -733,7 +733,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(err.code, 40160, 'Check expected error code');
 
 				/* soon after connected, reauth */
-				realtime.auth.authorise(null, {force: true}, function(err) {
+				realtime.auth.authorize(null, null, function(err) {
 					test.ok(!err, err && displayError(err));
 				});
 
@@ -755,6 +755,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		monitorConnection(test, realtime);
 	}});
+
+	/* RSA10j */
+	exports.authorize_updates_stored_details = function(test) {
+		test.expect(8);
+		var realtime = helper.AblyRealtime({autoConnect: false, defaultTokenParams: {version: 1}, token: '1', authUrl: '1'});
+
+		test.equal(realtime.auth.tokenParams.version, 1, 'Check initial defaultTokenParams stored');
+		test.equal(realtime.auth.tokenDetails.token, '1', 'Check initial token stored');
+		test.equal(realtime.auth.authOptions.authUrl, '1', 'Check initial authUrl stored');
+		realtime.auth.authorize({version: 2}, {authUrl: '2', token: '2'});
+		test.equal(realtime.auth.tokenParams.version, 2, 'Check authorize updated the stored tokenParams');
+		test.equal(realtime.auth.tokenDetails.token, '2', 'Check authorize updated the stored tokenDetails');
+		test.equal(realtime.auth.authOptions.authUrl, '2', 'Check authorize updated the stored authOptions');
+		realtime.auth.authorize(null, {token: '3'});
+		test.equal(realtime.auth.authOptions.authUrl, undefined, 'Check authorize completely replaces stored authOptions with passed in ones');
+
+		/* TODO remove for lib version 1.0 */
+		realtime.auth.authorize(null, {authUrl: 'http://invalid'});
+		realtime.auth.authorize(null, {force: true});
+		test.equal(realtime.auth.authOptions.authUrl, 'http://invalid', 'Check authorize does *not* replace stored authOptions when the only option is "force" in 0.9, for compatibility with 0.8');
+
+		closeAndFinish(test, realtime);
+	};
+
 
 	return module.exports = helper.withTimeout(exports);
 });

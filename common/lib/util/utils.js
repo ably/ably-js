@@ -68,6 +68,15 @@ var Utils = (function() {
 		return true;
 	};
 
+	Utils.isOnlyPropIn = function(ob, property) {
+		for(var prop in ob) {
+			if(prop !== property) {
+				return false;
+			}
+		}
+		return true;
+	};
+
 	/*
 	 * Determine whether or not an argument to an overloaded function is
 	 * undefined (missing) or null.
