@@ -129,7 +129,7 @@ var XHRRequest = (function() {
 		}
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
-				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 400);
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 408);
 			} else {
 				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
 			}
