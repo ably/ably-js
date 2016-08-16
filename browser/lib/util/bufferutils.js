@@ -116,6 +116,11 @@ var BufferUtils = (function() {
 		return CryptoJS.enc.Base64.parse(str);
 	};
 
+	BufferUtils.hexEncode = function(buf) {
+		if(isArrayBuffer(buf)) buf = WordArray.create(buf);
+		return CryptoJS.enc.Hex.stringify(buf);
+	};
+
 	BufferUtils.utf8Encode = function(string) {
 		return CryptoJS.enc.Utf8.parse(string);
 	};

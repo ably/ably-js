@@ -173,6 +173,20 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				return undefined;
 			};
 
+		var arrFilter = Array.prototype.filter
+			? function(arr, predicate) {
+				return arr.filter(predicate);
+			} : function(arr, predicate) {
+				var res = [];
+				for (var i = 0; i < arr.length; i++) {
+					if (predicate(arr[i])) {
+						res.push(arr[i]);
+					}
+				}
+				return res;
+			};
+
+
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -200,6 +214,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			isComet:                   isComet,
 			isWebsocket:               isWebsocket,
 			unroutableAddress:         unroutableAddress,
-			arrFind:                   arrFind
+			arrFind:                   arrFind,
+			arrFilter:                 arrFilter
 		};
 	});
