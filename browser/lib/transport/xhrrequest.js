@@ -163,7 +163,10 @@ var XHRRequest = (function() {
 				responseBody = json ? xhr.responseText : xhr.response;
 
 				if(json) {
-					responseBody = JSON.parse(String(responseBody));
+					responseBody = String(responseBody);
+					if(responseBody.length) {
+						responseBody = JSON.parse(responseBody);
+					}
 					unpacked = true;
 				}
 
