@@ -3,6 +3,16 @@ var Http = (function() {
 
 	function Http() {}
 
+	function shouldFallback(err) {
+		var statusCode = err.statusCode;
+		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
+		 * detail to know whether it's fallback-fixable, but it may be (eg if a
+		 * network issue), so try just in case */
+		return (statusCode === 408 && !err.code) ||
+			(statusCode === 400 && !err.code)      ||
+			(statusCode >= 500 && statusCode <= 504);
+	}
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -28,18 +38,18 @@ var Http = (function() {
 			return;
 		}
 
-		/* hosts is an array with preferred host plus at least one fallback */
-		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
+		/* so host is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					/* use a fallback host if available */
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		}
+		tryAHost(hosts);
 	};
 
 	/**
@@ -81,17 +91,16 @@ var Http = (function() {
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
+		var tryAHost = function(candidateHosts) {
+			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
 	};
 
 	/**

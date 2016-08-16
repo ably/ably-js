@@ -41,6 +41,18 @@ this.Http = (function() {
 
 	function Http() {}
 
+	function shouldFallback(err) {
+		var code = err.code,
+			statusCode = err.statusCode;
+		return code === 'ENETUNREACH' ||
+			code === 'EHOSTUNREACH'     ||
+			code === 'EHOSTDOWN'        ||
+			code === 'ETIMEDOUT'        ||
+			code === 'ESOCKETTIMEDOUT'  ||
+			code === 'ENOTFOUND'        ||
+			(statusCode >= 500 && statusCode <= 504);
+	}
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -60,17 +72,17 @@ this.Http = (function() {
 		}
 
 		/* so host is an array with preferred host plus at least one fallback */
-		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
+		var tryAHost = function(candidateHosts) {
+			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					/* use a fallback host if available */
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		}
+		tryAHost(hosts);
 	};
 
 	/**
@@ -110,18 +122,16 @@ this.Http = (function() {
 			return;
 		}
 
-		/* so host is an array with preferred host plus at least one fallback */
-		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
+		var tryAHost = function(candidateHosts) {
+			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
 	};
 
 	/**
