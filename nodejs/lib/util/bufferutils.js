@@ -13,6 +13,8 @@ this.BufferUtils = (function() {
 
 	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };
 
+	BufferUtils.hexEncode = function(buf) { return buf.toString('hex'); };
+
 	BufferUtils.utf8Encode = function(string) { return new Buffer(string, 'utf8'); };
 
 	BufferUtils.utf8Decode = function(buf) {
