@@ -40,7 +40,7 @@ var PaginatedResource = (function() {
 	PaginatedResource.prototype.post = function(params, body, callback) {
 		var self = this;
 		Resource.post(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-			self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
 		});
 	};
 
