@@ -214,13 +214,7 @@ var RealtimeChannel = (function() {
 			return;
 		}
 
-		if(Utils.isEmptyArg(event)) {
-			subscriptions.on(listener);
-		} else {
-			events = Utils.ensureArray(event);
-			for(var i = 0; i < events.length; i++)
-				subscriptions.on(events[i], listener);
-		}
+		subscriptions.on(event, listener);
 
 		this.attach(callback);
 	};
@@ -238,13 +232,7 @@ var RealtimeChannel = (function() {
 			return;
 		}
 
-		if(Utils.isEmptyArg(event)) {
-			subscriptions.off(listener);
-		} else {
-			events = Utils.ensureArray(event);
-			for(var i = 0; i < events.length; i++)
-				subscriptions.off(events[i], listener);
-		}
+		subscriptions.off(event, listener);
 	};
 
 	RealtimeChannel.prototype.sync = function() {
