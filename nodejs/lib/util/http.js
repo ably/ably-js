@@ -82,6 +82,7 @@ this.Http = (function() {
 			getOptions.qs = params;
 
 		getOptions.uri = uri;
+		getOptions.timeout = (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout;
 		request.get(getOptions, handler(uri, params, callback));
 	};
 
@@ -133,6 +134,7 @@ this.Http = (function() {
 			postOptions.qs = params;
 
 		postOptions.uri = uri;
+		postOptions.timeout = (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout;
 		request.post(postOptions, handler(uri, params, callback));
 	};
 
