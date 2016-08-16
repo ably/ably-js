@@ -161,12 +161,6 @@ var XHRRequest = (function() {
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
-				if(!responseBody) {
-					if(statusCode != 204) {
-						self.complete(new ErrorInfo('Incomplete response body from server', null, 400));
-					}
-					return;
-				}
 
 				if(json) {
 					responseBody = JSON.parse(String(responseBody));
