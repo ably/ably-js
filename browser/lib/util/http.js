@@ -51,7 +51,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(uri, headers, params, null, callback || noop);
+		Http.Request(rest, uri, headers, params, null, callback || noop);
 	};
 
 	/**
@@ -104,7 +104,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(uri, headers, params, body, callback || noop);
+		Http.Request(rest, uri, headers, params, body, callback || noop);
 	};
 
 	Http.supportsAuthHeaders = false;

@@ -67,9 +67,11 @@ var JSONPTransport = (function() {
 		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+		/* JSONP requests are used either with the context being a realtime
+		 * transport, or with timeouts passed in (for when used by a rest client),
+		 * or completely standalone.  Use the appropriate timeouts in each case */
+		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
 		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
@@ -175,8 +177,8 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	Http.Request = function(uri, headers, params, body, callback) {
-		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
+	Http.Request = function(rest, uri, headers, params, body, callback) {
+		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 		req.once('complete', callback);
 		Utils.nextTick(function() {
 			req.exec();
