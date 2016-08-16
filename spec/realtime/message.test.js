@@ -667,5 +667,42 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.subscribe_with_event_array = function(test) {
+		var realtime = helper.AblyRealtime(),
+			channel = realtime.channels.get('subscribe_with_event_array');
+
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(function(err) { cb(err); });
+			},
+			function(outercb) {
+				async.parallel([
+					function(innercb) {
+						var received = 0;
+						channel.subscribe(['a', 'b'], function(message) {
+							test.ok(message.name === 'a' || message.name === 'b', 'Correct messages received');
+							++received;
+							if(received === 2) {
+								/* wait a tick to make sure no more messages come in */
+								utils.nextTick(function() { innercb(); });
+							}
+						});
+					},
+					function(innercb) {
+						channel.publish([{name: 'a'}, {name: 'b'}, {name: 'c'}, {name: 'd'}], function(err) {
+							innercb(err);
+						});
+					}
+				], outercb)
+			}], function(err) {
+				test.ok(!err, err && helper.displayError(err));
+				closeAndFinish(test, realtime);
+			});
+	};
+
+
 	return module.exports = helper.withTimeout(exports);
 });
