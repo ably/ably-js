@@ -1,20 +1,36 @@
 # Change Log
 
-## [0.8.30](https://github.com/ably/ably-js/tree/0.8.30) (2016-08-10)
+## [0.8.32](https://github.com/ably/ably-js/tree/0.8.32) (2016-08-17)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.31...0.8.32)
+
+- Rate-limit autoreconnect attempts to a maximum of 1 per second [\#322](https://github.com/ably/ably-js/pull/322)
+
+- Fix REST fallback host functionality [\#327](https://github.com/ably/ably-js/pull/327)
+
+## [0.8.31](https://github.com/ably/ably-js/tree/0.8.31) (2016-08-10)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.30...0.8.31)
 
 - Add webpack/commonjs support [\#321](https://github.com/ably/ably-js/pull/321)
 
 ## [0.8.30](https://github.com/ably/ably-js/tree/0.8.30) (2016-07-18)
 
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.29...0.8.30)
+
 - Fix an issue where channels with large numbers of presence members (>100) could occasionally see a reduced presence set [\#319](https://github.com/ably/ably-js/pull/319)
 
 ## [0.8.29](https://github.com/ably/ably-js/tree/0.8.29) (2016-07-15)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.28...0.8.29)
 
 - Fix an issue where messages retried across a transport upgrade could theoretically lead to duplicate messages [\#308](https://github.com/ably/ably-js/pull/308)
 
 - Fix an issue where a client-detectable auth error on connect could cause the connect attempt to fail after the connect timeout (15s) rather than immediately [\#314](https://github.com/ably/ably-js/pull/314)
 
 ## [0.8.28](https://github.com/ably/ably-js/tree/0.8.28) (2016-07-13)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/0.8.27...0.8.28)
 
 - Fix an issue where a server-sent channel detached message could cause the channel to go into the failed state [\#313](https://github.com/ably/ably-js/pull/313)
 

@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.31
+ * Ably JavaScript Library v0.8.32
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2794,6 +2794,16 @@ var Http = (function() {
 
 	function Http() {}
 
+	function shouldFallback(err) {
+		var statusCode = err.statusCode;
+		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
+		 * detail to know whether it's fallback-fixable, but it may be (eg if a
+		 * network issue), so try just in case */
+		return (statusCode === 408 && !err.code) ||
+			(statusCode === 400 && !err.code)      ||
+			(statusCode >= 500 && statusCode <= 504);
+	}
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -2819,18 +2829,18 @@ var Http = (function() {
 			return;
 		}
 
-		/* hosts is an array with preferred host plus at least one fallback */
-		Http.getUri(rest, uri(hosts.shift()), headers, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.getUri(rest, uri(hosts.shift()), headers, params, callback);
+		/* so host is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					/* use a fallback host if available */
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		}
+		tryAHost(hosts);
 	};
 
 	/**
@@ -2842,7 +2852,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(uri, headers, params, null, callback || noop);
+		Http.Request(rest, uri, headers, params, null, callback || noop);
 	};
 
 	/**
@@ -2872,17 +2882,16 @@ var Http = (function() {
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		Http.postUri(rest, uri(hosts.shift()), headers, body, params, function(err) {
-			if(err) {
-				var code = err.code;
-				if(code =='ENETUNREACH' || code == 'EHOSTUNREACH' || code == 'EHOSTDOWN') {
-					/* we should use a fallback host if available */
-					Http.postUri(rest, uri(hosts.shift()), headers, body, params, callback);
+		var tryAHost = function(candidateHosts) {
+			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
 					return;
 				}
-			}
-			callback.apply(null, arguments);
-		});
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
 	};
 
 	/**
@@ -2895,7 +2904,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(uri, headers, params, body, callback || noop);
+		Http.Request(rest, uri, headers, params, body, callback || noop);
 	};
 
 	Http.supportsAuthHeaders = false;
@@ -4006,7 +4015,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.31';
+Defaults.version          = '0.8.32';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4032,7 +4041,9 @@ Defaults.getHosts = function(options) {
 		fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) hosts = hosts.concat(fallbackHosts.slice(0, httpMaxRetryCount));
+	if(fallbackHosts) {
+		hosts = hosts.concat(Utils.arrChooseN(fallbackHosts, httpMaxRetryCount));
+	}
 	return hosts;
 };
 
@@ -4711,6 +4722,17 @@ var Utils = (function() {
 	Utils.randStr = function() {
 		return String(Math.random()).substr(2);
 	};
+
+	/* Pick n elements at random without replacement from an array */
+	Utils.arrChooseN = function(arr, n) {
+		var numItems = Math.min(n, arr.length),
+			mutableArr = arr.slice(),
+			result = [];
+		for(var i = 0; i < numItems; i++) {
+			result.push(Utils.arrPopRandomElement(mutableArr));
+		}
+		return result;
+	}
 
 	return Utils;
 })();
@@ -5558,6 +5580,7 @@ var ConnectionManager = (function() {
 		this.proposedTransports = [];
 		this.pendingTransports = [];
 		this.host = null;
+		this.lastAutoReconnectAttempt = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
@@ -5891,8 +5914,11 @@ var ConnectionManager = (function() {
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
-		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state)
+		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
+			transport.disconnect();
 			return false;
+		}
 
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
@@ -6006,8 +6032,11 @@ var ConnectionManager = (function() {
 		} else if(wasActive) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
-			* activates and sets us back to connected */
+			* activates and sets us back to connected. (manually starting the
+			* transition timers in case that never happens) */
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
+			this.startSuspendTimer();
+			this.startTransitionTimer(this.states.connecting);
 			this.notifyState({state: 'connecting', error: error});
 		}
 	};
@@ -6140,7 +6169,7 @@ var ConnectionManager = (function() {
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
 				self.transitionTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager ' + transitionState.state + ' timer expired', 'requesting new state: ' + transitionState.failState);
 				self.notifyState({state: transitionState.failState});
 			}
 		}, transitionState.retryDelay);
@@ -6213,7 +6242,7 @@ var ConnectionManager = (function() {
 				(this.state === this.states.connecting  &&
 					indicated.error && Auth.isTokenErr(indicated.error))));
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
 		/* do nothing if we're already in the indicated state */
 		if(state == this.state.state)
 			return;
@@ -6233,10 +6262,20 @@ var ConnectionManager = (function() {
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 
 		if(retryImmediately) {
-			Utils.nextTick(function() {
-				self.requestState({state: 'connecting'});
-			});
-		} else if(newState.retryDelay) {
+			var autoReconnect = function() {
+				if(self.state === self.states.disconnected) {
+					self.lastAutoReconnectAttempt = Utils.now();
+					self.requestState({state: 'connecting'});
+				}
+			};
+			var sinceLast = this.lastAutoReconnectAttempt && (Utils.now() - this.lastAutoReconnectAttempt + 1);
+			if(sinceLast && (sinceLast < 1000)) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.notifyState()', 'Last reconnect attempt was only ' + sinceLast + 'ms ago, waiting another ' + (1000 - sinceLast) + 'ms before trying again');
+				setTimeout(autoReconnect, 1000 - sinceLast);
+			} else {
+				Utils.nextTick(autoReconnect);
+			}
+		} else if(state === 'disconnected' || state === 'suspended') {
 			this.startRetryTimer(newState.retryDelay);
 		}
 
@@ -6295,6 +6334,11 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.startConnect = function() {
+		if(this.state !== this.states.connecting) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'Must be in connecting state to connect, but was ' + this.state.state);
+			return;
+		}
+
 		var auth = this.realtime.auth,
 			self = this;
 
@@ -7661,7 +7705,7 @@ var PaginatedResource = (function() {
 
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, callback) {
 		if(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.get()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
 			callback(err);
 			return;
 		}
@@ -8631,7 +8675,7 @@ var Realtime = (function() {
 	Channels.prototype.setInProgress = function(channel, operation, inProgress) {
 		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
 		this.inProgress[channel.name][operation] = inProgress;
-		if(!inProgress && this.hasNopending) {
+		if(!inProgress && this.hasNopending()) {
 			this.emit('nopending');
 		}
 	};
@@ -9923,9 +9967,11 @@ var JSONPTransport = (function() {
 		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
-		/* JSONP requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+		/* JSONP requests are used either with the context being a realtime
+		 * transport, or with timeouts passed in (for when used by a rest client),
+		 * or completely standalone.  Use the appropriate timeouts in each case */
+		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
 		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
@@ -10023,8 +10069,8 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	Http.Request = function(uri, headers, params, body, callback) {
-		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND);
+	Http.Request = function(rest, uri, headers, params, body, callback) {
+		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 		req.once('complete', callback);
 		Utils.nextTick(function() {
 			req.exec();
@@ -10098,9 +10144,11 @@ var XHRRequest = (function() {
 	Utils.inherits(XHRRequest, EventEmitter);
 	XHRRequest.isAvailable = isAvailable;
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
-		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+		/* XHR requests are used either with the context being a realtime
+		 * transport, or with timeouts passed in (for when used by a rest client),
+		 * or completely standalone.  Use the appropriate timeouts in each case */
+		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
@@ -10164,7 +10212,7 @@ var XHRRequest = (function() {
 		}
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
-				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 400);
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 408);
 			} else {
 				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
 			}
@@ -10198,17 +10246,12 @@ var XHRRequest = (function() {
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
-				if(!responseBody) {
-					if(status != 204) {
-						err = new Error('Incomplete response body from server');
-						err.statusCode = 400;
-						self.complete(err);
-					}
-					return;
-				}
 
 				if(json) {
-					responseBody = JSON.parse(String(responseBody));
+					responseBody = String(responseBody);
+					if(responseBody.length) {
+						responseBody = JSON.parse(responseBody);
+					}
 					unpacked = true;
 				}
 
@@ -10312,8 +10355,8 @@ var XHRRequest = (function() {
           DomEvent.addUnloadListener(clearPendingRequests);
           if(typeof(Http) !== 'undefined') {
                   Http.supportsAuthHeaders = xhrSupported;
-                  Http.Request = function(uri, headers, params, body, callback) {
-                          var req = createRequest(uri, headers, params, body, REQ_SEND);
+                  Http.Request = function(rest, uri, headers, params, body, callback) {
+                          var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
                           req.once('complete', callback);
                           req.exec();
                           return req;
@@ -10339,7 +10382,7 @@ var XHRStreamingTransport = (function() {
 	XHRStreamingTransport.checkConnectivity = function(callback) {
 		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
 		Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Sending; ' + upUrl);
-		Http.Request(upUrl, null, null, null, function(err, responseText) {
+		Http.Request(null, upUrl, null, null, null, function(err, responseText) {
 			var result = (!err && responseText.replace(/\n/, '') == 'yes');
 			Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Result: ' + result);
 			callback(null, result);

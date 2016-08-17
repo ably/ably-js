@@ -1,7 +1,7 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably.io, the realtime messaging service",
-  "version": "0.8.31",
+  "version": "0.8.32",
   "main": "./nodejs/index.js",
   "dependencies": {
     "async": "git://github.com/ably-forks/async#requirejs",
