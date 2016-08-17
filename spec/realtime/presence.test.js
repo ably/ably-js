@@ -1332,7 +1332,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(7);
 		var channelName = "presence_refresh_on_detach";
 		var realtime = helper.AblyRealtime();
-		var observer = helper.AblyRealtime({log: {level: 4}});
+		var observer = helper.AblyRealtime();
 		var realtimeChannel = realtime.channels.get(channelName);
 		var observerChannel = observer.channels.get(channelName);
 
