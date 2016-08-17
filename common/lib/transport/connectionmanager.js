@@ -127,6 +127,7 @@ var ConnectionManager = (function() {
 		this.proposedTransports = [];
 		this.pendingTransports = [];
 		this.host = null;
+		this.lastAutoReconnectAttempt = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
@@ -460,8 +461,11 @@ var ConnectionManager = (function() {
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
-		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state)
+		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
+			transport.disconnect();
 			return false;
+		}
 
 		/* remove this transport from pending transports */
 		Utils.arrDeleteValue(this.pendingTransports, transport);
@@ -575,8 +579,11 @@ var ConnectionManager = (function() {
 		} else if(wasActive) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
-			* activates and sets us back to connected */
+			* activates and sets us back to connected. (manually starting the
+			* transition timers in case that never happens) */
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
+			this.startSuspendTimer();
+			this.startTransitionTimer(this.states.connecting);
 			this.notifyState({state: 'connecting', error: error});
 		}
 	};
@@ -709,7 +716,7 @@ var ConnectionManager = (function() {
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
 				self.transitionTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager connect timer expired', 'requesting new state: ' + self.states.connecting.failState);
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager ' + transitionState.state + ' timer expired', 'requesting new state: ' + transitionState.failState);
 				self.notifyState({state: transitionState.failState});
 			}
 		}, transitionState.retryDelay);
@@ -782,7 +789,7 @@ var ConnectionManager = (function() {
 				(this.state === this.states.connecting  &&
 					indicated.error && Auth.isTokenErr(indicated.error))));
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
 		/* do nothing if we're already in the indicated state */
 		if(state == this.state.state)
 			return;
@@ -802,10 +809,20 @@ var ConnectionManager = (function() {
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
 
 		if(retryImmediately) {
-			Utils.nextTick(function() {
-				self.requestState({state: 'connecting'});
-			});
-		} else if(newState.retryDelay) {
+			var autoReconnect = function() {
+				if(self.state === self.states.disconnected) {
+					self.lastAutoReconnectAttempt = Utils.now();
+					self.requestState({state: 'connecting'});
+				}
+			};
+			var sinceLast = this.lastAutoReconnectAttempt && (Utils.now() - this.lastAutoReconnectAttempt + 1);
+			if(sinceLast && (sinceLast < 1000)) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.notifyState()', 'Last reconnect attempt was only ' + sinceLast + 'ms ago, waiting another ' + (1000 - sinceLast) + 'ms before trying again');
+				setTimeout(autoReconnect, 1000 - sinceLast);
+			} else {
+				Utils.nextTick(autoReconnect);
+			}
+		} else if(state === 'disconnected' || state === 'suspended') {
 			this.startRetryTimer(newState.retryDelay);
 		}
 
@@ -864,6 +881,11 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.startConnect = function() {
+		if(this.state !== this.states.connecting) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'Must be in connecting state to connect, but was ' + this.state.state);
+			return;
+		}
+
 		var auth = this.realtime.auth,
 			self = this;
 
