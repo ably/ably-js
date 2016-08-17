@@ -99,7 +99,7 @@ var Realtime = (function() {
 	Channels.prototype.setInProgress = function(channel, operation, inProgress) {
 		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
 		this.inProgress[channel.name][operation] = inProgress;
-		if(!inProgress && this.hasNopending) {
+		if(!inProgress && this.hasNopending()) {
 			this.emit('nopending');
 		}
 	};
