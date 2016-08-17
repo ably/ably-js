@@ -61,9 +61,11 @@ var XHRRequest = (function() {
 	Utils.inherits(XHRRequest, EventEmitter);
 	XHRRequest.isAvailable = isAvailable;
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode) {
-		/* XHR requests are used outside the context of a realtime transport, in which case use the default timeouts */
-		var timeouts = (this && this.timeouts) || Defaults.TIMEOUTS;
+	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+		/* XHR requests are used either with the context being a realtime
+		 * transport, or with timeouts passed in (for when used by a rest client),
+		 * or completely standalone.  Use the appropriate timeouts in each case */
+		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
@@ -127,7 +129,7 @@ var XHRRequest = (function() {
 		}
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
-				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 400);
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 408);
 			} else {
 				errorHandler(errorEvent, 'Request cancelled', null, 400);
 			}
@@ -161,15 +163,12 @@ var XHRRequest = (function() {
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
-				if(!responseBody) {
-					if(statusCode != 204) {
-						self.complete(new ErrorInfo('Incomplete response body from server', null, 400));
-					}
-					return;
-				}
 
 				if(json) {
-					responseBody = JSON.parse(String(responseBody));
+					responseBody = String(responseBody);
+					if(responseBody.length) {
+						responseBody = JSON.parse(responseBody);
+					}
 					unpacked = true;
 				}
 
@@ -272,8 +271,8 @@ var XHRRequest = (function() {
           DomEvent.addUnloadListener(clearPendingRequests);
           if(typeof(Http) !== 'undefined') {
                   Http.supportsAuthHeaders = xhrSupported;
-                  Http.Request = function(uri, headers, params, body, callback) {
-                          var req = createRequest(uri, headers, params, body, REQ_SEND);
+                  Http.Request = function(rest, uri, headers, params, body, callback) {
+                          var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
                           req.once('complete', callback);
                           req.exec();
                           return req;
