@@ -45,7 +45,9 @@ Defaults.getHosts = function(options) {
 		fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) hosts = hosts.concat(fallbackHosts.slice(0, httpMaxRetryCount));
+	if(fallbackHosts) {
+		hosts = hosts.concat(Utils.arrChooseN(fallbackHosts, httpMaxRetryCount));
+	}
 	return hosts;
 };
 

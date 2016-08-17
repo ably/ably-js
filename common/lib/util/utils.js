@@ -350,5 +350,16 @@ var Utils = (function() {
 		return String(Math.random()).substr(2);
 	};
 
+	/* Pick n elements at random without replacement from an array */
+	Utils.arrChooseN = function(arr, n) {
+		var numItems = Math.min(n, arr.length),
+			mutableArr = arr.slice(),
+			result = [];
+		for(var i = 0; i < numItems; i++) {
+			result.push(Utils.arrPopRandomElement(mutableArr));
+		}
+		return result;
+	}
+
 	return Utils;
 })();
