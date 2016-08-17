@@ -1,6 +1,6 @@
 'use strict';
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var rest, exports = {},
 		Defaults = Ably.Rest.Defaults;
 
