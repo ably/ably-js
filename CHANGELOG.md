@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.33](https://github.com/ably/ably-js/tree/0.8.33) (2016-08-19)
+
+- Upgrade node websocket library for node 6 compatibility [\#326](https://github.com/ably/ably-js/pull/326)
+
 ## [0.8.32](https://github.com/ably/ably-js/tree/0.8.32) (2016-08-17)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.8.31...0.8.32)
