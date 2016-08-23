@@ -150,11 +150,13 @@ var CometTransport = (function() {
 				this.recvRequest.abort();
 				this.recvRequest = null;
 			}
-			Transport.prototype.onDisconnect.call(this);
+			/* In almost all cases the transport will be finished before it's
+			 * disposed. Finish here just to make sure. */
+			this.finish('disconnected', ConnectionError.disconnected);
 			var self = this;
 			Utils.nextTick(function() {
 				self.emit('disposed');
-			})
+			});
 		}
 	};
 

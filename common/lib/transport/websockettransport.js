@@ -119,7 +119,8 @@ var WebSocketTransport = (function() {
 		delete this.wsConnection;
 		if(wasClean) {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
-			Transport.prototype.onDisconnect.call(this);
+			var err = new ErrorInfo('Websocket closed', 80003, 400);
+			this.finish('disconnected', err);
 		} else {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
