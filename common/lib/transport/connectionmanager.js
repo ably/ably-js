@@ -1130,15 +1130,10 @@ var ConnectionManager = (function() {
 		if(state == 'connected') {
 			var authMsg = ProtocolMessage.fromValues({
 				action: actions.AUTH,
-				auth: {}
+				auth: {
+					accessToken: tokenDetails.token
+				}
 			});
-			/* tokenDetails may be a 'real' tokenDetails or an object with only a
-			 * 'token' member. Unfortunately realtime expects those in different fields */
-			if('issued' in tokenDetails) {
-				authMsg.auth.tokenDetails = tokenDetails;
-			} else {
-				authMsg.auth.accessToken = tokenDetails.token;
-			}
 			this.send(authMsg);
 		} else if(state == 'connecting' || state == 'disconnected') {
 			/* Cut all current connection attempts and start again with the new auth details */
