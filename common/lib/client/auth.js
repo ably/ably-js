@@ -371,7 +371,7 @@ var Auth = (function() {
 				if(!(err && err.code)) {
 					/* network errors don't have an error code, so assign them
 					 * 40170 so they'll by connectionManager as nonfatal */
-					err = new ErrorInfo(err.toString(), 40170, 401);
+					err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
 				}
 				callback(err);
 				return;
