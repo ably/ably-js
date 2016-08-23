@@ -1150,7 +1150,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientRealtime.close();
 				clientChannel.presence.enterClient('clientId', function(err) {
 					test.equal(err.code, 80017, 'presence enter failed with correct code');
-					test.equal(err.statusCode, 408, 'presence enter failed with correct statusCode');
+					test.equal(err.statusCode, 400, 'presence enter failed with correct statusCode');
 					test.done();
 				});
 			});
