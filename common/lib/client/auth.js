@@ -177,6 +177,34 @@ var Auth = (function() {
 			}
 		}
 
+		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
+			if(err) {
+				callback(err);
+			}
+			/* RTC8
+			 * - When authorize called by an end user and have a realtime connection,
+			 * don't call back till new token has taken effect.
+			 * - Use self.client.connection as a proxy for (self.client instanceof Realtime),
+			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
+			if(self.client.connection) {
+				self.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback);
+			} else {
+				callback(null, tokenDetails);
+			}
+		})
+	};
+
+	Auth.prototype.authorise = function() {
+		Logger.deprecated('Auth.authorise', 'Auth.authorize');
+		this.authorize.apply(this, arguments);
+	};
+
+	/* For internal use, eg by connectionManager - useful when want to call back
+	 * as soon as we have the new token, rather than waiting for it to take
+	 * effect on the connection as #authorize does */
+	Auth.prototype._forceNewToken = function(tokenParams, authOptions, callback) {
+		var self = this;
+
 		/* get rid of current token even if still valid */
 		this.tokenDetails = null;
 
@@ -191,20 +219,9 @@ var Auth = (function() {
 			/* RSA10g */
 			delete self.tokenParams.timestamp;
 			delete self.authOptions.queryTime;
-			/* RTC8
-			 * use self.client.connection as a proxy for (self.client instanceof Realtime),
-			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
-			if(!err && self.client.connection) {
-				self.client.connection.connectionManager.onAuthUpdated(tokenDetails);
-			}
 			callback(err, tokenDetails);
 		});
-	};
-
-	Auth.prototype.authorise = function() {
-		Logger.deprecated('Auth.authorise', 'Auth.authorize');
-		this.authorize.apply(this, arguments);
-	};
+	}
 
 	/**
 	 * Request an access token

@@ -104,6 +104,8 @@ var ProtocolMessage = (function() {
 			result += '; presence=' + toStringArray(PresenceMessage.fromValuesArray(msg.presence));
 		if(msg.error)
 			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
+		if(msg.auth && msg.auth.accessToken)
+			result += '; token=' + msg.auth.accessToken;
 
 		result += ']';
 		return result;
