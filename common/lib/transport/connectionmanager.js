@@ -1149,6 +1149,9 @@ var ConnectionManager = (function() {
 					});
 				}
 
+				/* Do any transport-specific new-token action */
+				this.activeProtocol.getTransport().onAuthUpdated(tokenDetails);
+
 				var authMsg = ProtocolMessage.fromValues({
 					action: actions.AUTH,
 					auth: {
