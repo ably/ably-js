@@ -196,5 +196,7 @@ var Transport = (function() {
 		}, timeout);
 	};
 
+	Transport.prototype.onAuthUpdated = function() {};
+
 	return Transport;
 })();

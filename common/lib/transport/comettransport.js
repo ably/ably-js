@@ -297,5 +297,15 @@ var CometTransport = (function() {
 		return responseData;
 	};
 
+	/* For comet, we could do the auth update by aborting the current recv and
+	 * starting a new one with the new token, that'd be sufficient for realtime.
+	 * Problem is JSONP - you can't cancel truly abort a recv once started. So
+	 * we need to send an AUTH for jsonp. In which case it's simpler to keep all
+	 * comet transports the same and do it for all of them. So we send the AUTH
+	 * instead, and don't need to abort the recv */
+	CometTransport.prototype.onAuthUpdated = function(tokenDetails) {
+		this.authParams = {access_token: tokenDetails.token};
+	};
+
 	return CometTransport;
 })();
