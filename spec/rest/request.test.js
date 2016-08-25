@@ -15,7 +15,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			rest = helper.AblyRest({log: {level: 4}});
+			rest = helper.AblyRest();
 			test.ok(true, 'app set up');
 			test.done();
 		});
