@@ -1444,7 +1444,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.presence_auto_reenter = function(test) {
 		test.expect(7);
 		var channelName = "presence_auto_reenter";
-		var realtime = helper.AblyRealtime({log: {level: 4}});
+		var realtime = helper.AblyRealtime();
 		var channel = realtime.channels.get(channelName);
 
 		async.series([
@@ -1515,7 +1515,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
 	exports.multiple_pending = function(test) {
 		/* single transport to avoid upgrade stalling due to the stubbed attachImpl */
-		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], log: {level: 4}}),
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			channel = realtime.channels.get('multiple_pending'),
 			originalAttachImpl = channel.attachImpl;
 
