@@ -145,6 +145,10 @@ var WebSocketTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
 		var wsConnection = this.wsConnection;
 		if(wsConnection) {
+			/* Ignore any messages that come through after dispose() is called but before
+			 * websocket is actually closed. (mostly would be harmless, but if it's a
+			 * CONNECTED, it'll re-tick isConnected and cause all sorts of havoc) */
+			wsConnection.onmessage = function() {};
 			delete this.wsConnection;
 			/* defer until the next event loop cycle before closing the socket,
 			 * giving some implementations the opportunity to send any outstanding close message */
