@@ -707,7 +707,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * use authorize() to force a reauth using an existing authCallback
 	 */
 	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
-		test.expect(8);
+		test.expect(5);
 		var realtime, rest = helper.AblyRest();
 		var firstTime = true;
 		var authCallback = function(tokenParams, callback) {
@@ -735,24 +735,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				/* soon after connected, reauth */
 				realtime.auth.authorize(null, null, function(err) {
 					test.ok(!err, err && displayError(err));
-				});
-
-				/* statechanges due to the reauth */
-				realtime.connection.once('disconnected', function(stateChange){
-					test.ok(true, 'Verify connection disconnected');
-					test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
-					realtime.connection.once('connected', function(){
-						test.ok(true, 'Verify connection reconnected');
-
-						channel.attach(function(err) {
-							test.ok(!err, 'Check using second token, with channel attach capability');
-							closeAndFinish(test, realtime);
-						});
+					channel.attach(function(err) {
+						test.ok(!err, 'Check using second token, with channel attach capability');
+						closeAndFinish(test, realtime);
 					});
-				})
+				});
 			});
 		});
-
 		monitorConnection(test, realtime);
 	}});
 
@@ -805,7 +794,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			/* Spy on transport.send to detect the outgoing AUTH */
 			transport.send = function(message) {
 				if(message.action === 17) {
-					test.ok(message.auth.tokenDetails.token, 'Check AUTH message structure is as expected');
+					test.ok(message.auth.accessToken, 'Check AUTH message structure is as expected');
 					closeAndFinish(test, realtime);
 				} else {
 					originalSend.call(this, message);
