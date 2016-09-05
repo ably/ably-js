@@ -497,7 +497,6 @@ var RealtimeChannel = (function() {
 			case 'attaching':
 				var err = new ErrorInfo('Channel attach timed out', 90000, 408);
 				this.notifyState('suspended', err);
-				this.failPendingMessages(err); // RTP5f
 				break;
 			case 'detaching':
 				var err = new ErrorInfo('Channel detach timed out', 90000, 408);
