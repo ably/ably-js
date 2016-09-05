@@ -476,6 +476,38 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * A server-sent DETACHED, with err, while in the attaching state, should
+	 * result in the channel becoming suspended
+	 */
+	exports.server_sent_detached_while_attaching = function(test) {
+		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+			channelName = 'server_sent_detached_while_attaching',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(4);
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+			/* Mock sendMessage to respond to attaches with a DETACHED */
+			channel.sendMessage = function(msg) {
+				test.equal(msg.action, 10, 'check attach action');
+				test.ok(true, 'Attach attempt');
+				helper.Utils.nextTick(function() {
+					transport.onProtocolMessage({
+						action: 13,
+						channel: channelName,
+						error: {statusCode: 500, code: 50000, message: "generic serverside failure"}
+					});
+				});
+			};
+			channel.attach(function(err) {
+				test.equal(err.code, 50000, 'check error is propogated to the attach callback');
+				test.equal(channel.state, 'suspended', 'check channel goes into suspended');
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
+	/*
 	 * A server-sent ERROR, with channel field, should fail the channel
 	 */
 	exports.server_sent_error = function(test) {

@@ -287,6 +287,11 @@ var RealtimeChannel = (function() {
 			var err = message.error ? ErrorInfo.fromValues(message.error) : new ErrorInfo('Channel detached', 90001, 404);
 			if(this.state === 'detaching') {
 				this.notifyState('detached', err);
+			} else if(this.state === 'attaching') {
+				/* Only retry immediately if we were previously attached. If we were
+				 * attaching, go into suspended, fail messages, and wait a few seconds
+				 * before retrying */
+				this.notifyState('suspended', err);
 			} else {
 				this.requestState('attaching', err);
 			}
