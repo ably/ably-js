@@ -701,7 +701,10 @@ var ConnectionManager = (function() {
 			this.errorReason = stateChange.reason;
 			this.realtime.connection.errorReason = stateChange.reason;
 		}
-		if(newState.terminal) {
+		if(newState.terminal || newState.state === 'suspended') {
+			/* suspended is nonterminal, but once in the suspended state, realtime
+			 * will have discarded our connection state, so futher connection
+			 * attempts should start from scratch */
 			this.clearConnection();
 		}
 		this.emit('connectionstate', stateChange);

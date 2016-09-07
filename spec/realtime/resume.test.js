@@ -432,5 +432,34 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check the library doesn't try to resume once the connectionStateTtl has expired
+	 */
+	exports.no_resume_once_suspended = function(test) {
+		var realtime = helper.AblyRealtime(),
+			connection = realtime.connection,
+			channelName = 'no_resume_once_suspended';
+
+		test.expect(1);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtime.connection.connectionManager.tryATransport = function(transportParams) {
+					test.equal(transportParams.mode, 'clean', 'Check library didn’t try to resume');
+					cb();
+				};
+				connection.connect();
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });
