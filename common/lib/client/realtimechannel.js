@@ -22,10 +22,12 @@ var RealtimeChannel = (function() {
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
-	RealtimeChannel.invalidStateError = {
-		statusCode: 400,
-		code: 90001,
-		message: 'Channel operation failed (invalid channel state)'
+	RealtimeChannel.invalidStateError = function(state) {
+		return {
+			statusCode: 400,
+			code: 90001,
+			message: 'Channel operation failed as channel state is ' + state
+		};
 	};
 
 	RealtimeChannel.progressOps = {
@@ -81,7 +83,7 @@ var RealtimeChannel = (function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		switch(this.state) {
 			case 'failed':
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 				break;
 			case 'attached':
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
@@ -210,7 +212,7 @@ var RealtimeChannel = (function() {
 		var events;
 
 		if(this.state === 'failed') {
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
 		}
 
@@ -228,7 +230,7 @@ var RealtimeChannel = (function() {
 		var events;
 
 		if(this.state === 'failed') {
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
 		}
 
@@ -435,7 +437,7 @@ var RealtimeChannel = (function() {
 		}
 		this.presence.actOnChannelState(state, reason);
 		if(state !== 'attached' && state !== 'attaching') {
-			this.failPendingMessages(reason || RealtimeChannel.invalidStateError);
+			this.failPendingMessages(reason || RealtimeChannel.invalidStateError(state));
 			if(state === 'detached' || state === 'failed') {
 				this.presence._clearMyMembers();
 			}
