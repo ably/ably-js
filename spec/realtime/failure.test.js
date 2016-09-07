@@ -245,7 +245,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.attach_timeout = function(test) {
-		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 300, channelRetryTimeout: 300}),
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 10, channelRetryTimeout: 10}),
 			channel = realtime.channels.get('failed_attach'),
 			originalOnMessage = channel.onMessage;
 
@@ -260,11 +260,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(err.code, 90000, 'check channel error code');
 				test.equal(err.statusCode, 408, 'check timeout statusCode');
 				test.equal(channel.state, 'suspended', 'check channel goes into suspended state');
-				realtime.options.timeouts.realtimeRequestTimeout = 10000;
-				setTimeout(function() {
-					test.equal(channel.state, 'attaching', 'check channel tries to attach again after channelRetryTimeout');
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'attaching', 'check channel tries to attach again');
 					closeAndFinish(test, realtime);
-				}, 400);
+				});
 			});
 		});
 	};
