@@ -675,7 +675,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					cb();
 				});
 				connection.connect();
-			},
+			}
 		], function() {
 			closeAndFinish(test, realtime);
 		});
