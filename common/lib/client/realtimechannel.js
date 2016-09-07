@@ -35,12 +35,6 @@ var RealtimeChannel = (function() {
 		sync: syncOp
 	};
 
-	RealtimeChannel.channelDetachedErr = {
-		statusCode: 409,
-		code: 90001,
-		message: 'Channel is detached'
-	};
-
 	RealtimeChannel.processListenerArgs = function(args) {
 		/* [event], listener, [callback] */
 		if(typeof(args[0]) == 'function')
