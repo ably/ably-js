@@ -94,7 +94,10 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		var getOptions = {headers:headers, encoding:null};
+		/* Will generally be making requests to one or two servers exclusively
+		* (Ably and perhaps an auth server), so for efficiency, use the
+		* foreverAgent to keep the TCP stream alive between requests where possible */
+		var getOptions = {headers:headers, encoding:null, forever: true};
 		if(params)
 			getOptions.qs = params;
 
@@ -144,7 +147,7 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		var postOptions = {headers:headers, body:body, encoding:null};
+		var postOptions = {headers:headers, body:body, encoding:null, forever: true};
 		if(params)
 			postOptions.qs = params;
 
