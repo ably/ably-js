@@ -53,7 +53,7 @@ var MessageQueue = (function() {
 	};
 
 	MessageQueue.prototype.completeAllMessages = function(err) {
-		this.completeMessages(0, Number.MAX_SAFE_INTEGER, err);
+		this.completeMessages(0, Number.MAX_SAFE_INTEGER || Number.MAX_VALUE, err);
 	};
 
 	MessageQueue.prototype.clear = function() {
