@@ -350,7 +350,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		realtime.connection.once('connected', function() {
 			realtime.connection.once(function(statechange) {
-				test.equal(statechange.current, 'disconnected', 'check connection goes to disconnected');
+				/* will go to connecting if there's another transport scheduled for activation */
+				test.ok(statechange.current === 'disconnected' || statechange.current === 'connecting', 'check connection goes to disconnected/connecting');
 				test.equal(statechange.reason.code, 80003, 'check code');
 				test.equal(statechange.reason.statusCode, 408, 'check statusCode');
 				closeAndFinish(test, realtime);
