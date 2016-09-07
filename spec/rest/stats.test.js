@@ -34,15 +34,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	];
 
-	var MAX_LIMIT = 1000;
 	//Skip a month for the generated tests
 	var secondIntervalDate = new Date(lastYear, 2, 3, 15, 6, 0);
 	var secondIntervalEpoch = Date.UTC(lastYear, 2, 3, 15, 6, 0);
 
 	var dateId;
 
-	//Add 1001 fixtures for default & max limit testing
-	for(var i = 0; i < MAX_LIMIT + 1; i++) {
+	for(var i = 0; i < 2; i++) {
 		secondIntervalDate.setMinutes(secondIntervalDate.getMinutes() + 1);
 		dateId = secondIntervalDate.getFullYear() + "-" + ('0' + (secondIntervalDate.getMonth() + 1)).slice(-2) + "-" + ('0' + secondIntervalDate.getDate()).slice(-2) + ":" + ('0' + secondIntervalDate.getHours()).slice(-2) + ":" + ('0' + secondIntervalDate.getMinutes()).slice(-2);
 
@@ -316,175 +314,6 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				test.equal(totalInbound, 50, 'Verify all inbound messages found');
 				test.equal(totalOutbound, 20, 'Verify all outbound messages found');
-				test.done();
-			} catch(e) {
-				console.log(e);
-			}
-		});
-	};
-
-	/**
-	 * Check max limit query param (forwards)
-	 * @spec : (RSC6b3)
-	 */
-	exports.appstats_limit_max_forwards = function(test) {
-		test.expect(1);
-		rest.stats({
-			start: secondIntervalEpoch,
-			end: anHourAgo,
-			direction: 'forwards',
-			limit: 1000
-		}, function(err, page) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			try {
-				test.expect(5);
-				var stats = page.items;
-				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
-
-				var totalInbound = 0, totalOutbound = 0;
-				for(var i = 0; i < stats.length; i++) {
-					totalInbound += stats[i].inbound.all.messages.count;
-					totalOutbound += stats[i].outbound.all.messages.count;
-				}
-
-				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
-
-				/* get next page */
-				test.ok(page.hasNext(), 'Verify next page rel link present');
-				page.next(function(err, page) {
-					if(err) {
-						test.ok(false, displayError(err));
-						test.done();
-						return;
-					}
-					var stats = page.items;
-					test.ok(stats.length == 1, 'Verify exactly one stats record found');
-					test.done();
-				});
-			} catch(e) {
-				console.log(e);
-			}
-		});
-	};
-
-	/**
-	 * Check max limit query param (backwards)
-	 * @spec : (RSC6b3)
-	 */
-	exports.appstats_limit_max_backwards = function(test) {
-		test.expect(1);
-		rest.stats({
-			start: secondIntervalEpoch,
-			end: anHourAgo,
-			direction: 'backwards',
-			limit: 1000
-		}, function(err, page) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			try {
-				test.expect(5);
-				var stats = page.items;
-				test.ok(stats.length == 1000, 'Verify 1000 stat records found');
-
-				var totalInbound = 0, totalOutbound = 0;
-				for(var i = 0; i < stats.length; i++) {
-					totalInbound += stats[i].inbound.all.messages.count;
-					totalOutbound += stats[i].outbound.all.messages.count;
-				}
-
-				test.equal(totalInbound, 15*1000, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 33*1000, 'Verify all outbound messages found');
-				/* get next page */
-				test.ok(page.hasNext(), 'Verify next page rel link present');
-				page.next(function(err, page) {
-					if(err) {
-						test.ok(false, displayError(err));
-						test.done();
-						return;
-					}
-					var stats = page.items;
-					test.ok(stats.length == 1, 'Verify exactly one stats record found');
-					test.done();
-				});
-			} catch(e) {
-				console.log(e);
-			}
-		});
-	};
-
-	/**
-	 * Check default limit query param (forwards)
-	 * @spec : (RSC6b3)
-	 */
-	exports.appstats_limit_default_forwards = function(test) {
-		test.expect(1);
-		rest.stats({
-			start: secondIntervalEpoch,
-			end: anHourAgo,
-			direction: 'forwards',
-		}, function(err, page) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			try {
-				test.expect(3);
-				var stats = page.items;
-				test.ok(stats.length == 100, 'Verify 1000 stat records found');
-
-				var totalInbound = 0, totalOutbound = 0;
-				for(var i = 0; i < stats.length; i++) {
-					totalInbound += stats[i].inbound.all.messages.count;
-					totalOutbound += stats[i].outbound.all.messages.count;
-				}
-
-				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
-				test.done();
-			} catch(e) {
-				console.log(e);
-			}
-		});
-	};
-
-	/**
-	 * Check default limit query param (backwards)
-	 * @spec : (RSC6b3)
-	 */
-	exports.appstats_limit_default_backwards = function(test) {
-		test.expect(1);
-		rest.stats({
-			start: secondIntervalEpoch,
-			end: anHourAgo,
-			direction: 'backwards',
-		}, function(err, page) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			try {
-				test.expect(3);
-				var stats = page.items;
-				test.ok(stats.length == 100, 'Verify 100 stat records found');
-
-				var totalInbound = 0, totalOutbound = 0;
-				for(var i = 0; i < stats.length; i++) {
-					totalInbound += stats[i].inbound.all.messages.count;
-					totalOutbound += stats[i].outbound.all.messages.count;
-				}
-
-				test.equal(totalInbound, 15*100, 'Verify all inbound messages found');
-				test.equal(totalOutbound, 33*100, 'Verify all outbound messages found');
 				test.done();
 			} catch(e) {
 				console.log(e);
