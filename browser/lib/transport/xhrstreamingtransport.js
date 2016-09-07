@@ -11,7 +11,7 @@ var XHRStreamingTransport = (function() {
 	XHRStreamingTransport.isAvailable = XHRRequest.isAvailable;
 
 	XHRStreamingTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		var upUrl = Defaults.internetUpUrl;
 		Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Sending; ' + upUrl);
 		Http.Request(null, upUrl, null, null, null, function(err, responseText) {
 			var result = (!err && responseText.replace(/\n/, '') == 'yes');

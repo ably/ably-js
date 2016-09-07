@@ -31,8 +31,9 @@ var JSONPTransport = (function() {
 	 * we just make sure that we handle concurrent requests (but the
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
+	window.JSONPTransport = JSONPTransport
 	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.js';
+		var upUrl = Defaults.jsonpInternetUpUrl;
 
 		if(checksInProgress) {
 			checksInProgress.push(callback);

@@ -25,7 +25,7 @@ var NodeCometTransport = (function() {
 	ConnectionManager.supportedTransports[shortName] = NodeCometTransport;
 
 	NodeCometTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		var upUrl = Defaults.internetUpUrl;
 		/* NodeCometTransport unsuited to rest requests; just use node http package */
 		Http.getUri(null, upUrl, null, null, function(err, responseText) {
 			callback(null, (!err && responseText.toString().trim() === 'yes'));
