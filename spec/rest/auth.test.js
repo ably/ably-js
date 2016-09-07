@@ -14,7 +14,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.setupauth = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
-			rest = helper.AblyRest();
+			rest = helper.AblyRest({queryTime: true});
 			getServerTime(function(err, time) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
@@ -141,7 +141,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.authtime2 = function(test) {
 		test.expect(1);
-		rest.auth.requestToken(null, {queryTime:true}, function(err, tokenDetails) {
+		rest.auth.requestToken(function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
@@ -275,7 +275,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.authexplicit_simple = function(test) {
 		test.expect(1);
 		rest.auth.getAuthHeaders(function(err, authHeaders) {
-			rest.auth.requestToken(null, {requestHeaders: authHeaders}, function(err, tokenDetails) {
+			rest.auth.authOptions.requestHeaders = authHeaders;
+			rest.auth.requestToken(function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
 					test.done();
@@ -517,7 +518,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.auth_createTokenRequest_given_key2 = function(test) {
 		test.expect(1);
-		rest.auth.createTokenRequest(null, {}, function(err, tokenRequest) {
+		rest.auth.createTokenRequest(function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
