@@ -280,8 +280,8 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
+		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
+		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
@@ -473,7 +473,8 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
+		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
+		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;

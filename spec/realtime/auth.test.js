@@ -19,7 +19,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var rest = helper.AblyRest();
+			var rest = helper.AblyRest({ queryTime: true });
 			rest.time(function(err, time) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
@@ -212,7 +212,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var realtime, rest = helper.AblyRest();
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
@@ -428,7 +428,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var clientRealtime,
 			rest = helper.AblyRest();
 
-		rest.auth.requestToken({ ttl: 5000 }, { queryTime: true }, function(err, tokenDetails) {
+		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -461,7 +461,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_query_time_once = function(test) {
 		test.expect(12);
 
-		var rest = helper.AblyRest(),
+		var rest = helper.AblyRest({ queryTime: true }),
 			timeRequestCount = 0,
 			offset = 1000,
 			originalTime = rest.time;
@@ -477,7 +477,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var asyncFns = [];
 		for(var i = 0; i < 10; i++) {
 			asyncFns.push(function(callback) {
-				rest.auth.createTokenRequest({}, { queryTime: true }, function(err, tokenDetails) {
+				rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
 					if(err) { return callback(err); }
 					test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
 					callback();
