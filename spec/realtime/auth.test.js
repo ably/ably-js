@@ -646,64 +646,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/*
-	 * use authorize() to reauth with a token with a different set of capabilities
-	 */
-	testOnAllTransports(exports, 'reauth_tokendetails', function(realtimeOpts) { return function(test) {
-		test.expect(2);
-		var rest = helper.AblyRest(),
-			realtime,
-			channel,
-			clientId = 'testClientId';
-
-		var getFirstToken = function(callback) {
-			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*']}}, null, function(err, tokenDetails) {
-				callback(err, tokenDetails);
-			});
-		},
-
-		connect = function(tokenDetails, callback) {
-			realtime = helper.AblyRealtime(mixin(realtimeOpts, {tokenDetails: tokenDetails}));
-			realtime.connection.once('connected', function() { callback() });
-		},
-
-		checkCantAttach = function(callback) {
-			channel = realtime.channels.get('rightchannel');
-			channel.attach(function(err) {
-				test.ok(err && err.code === 40160, 'check channel is denied access')
-				callback();
-			});
-		},
-
-		getSecondToken = function(callback) {
-			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*'], 'rightchannel': ['*']}}, null, function(err, tokenDetails) {
-				callback(err, tokenDetails);
-			});
-		},
-
-		reAuth = function(tokenDetails, callback) {
-			realtime.auth.authorize(null, {tokenDetails: tokenDetails}, callback);
-		},
-
-		checkCanNowAttach = function(stateChange, callback) {
-			channel.attach(function(err) {
-				callback(err);
-			});
-		};
-
-		async.waterfall([
-			getFirstToken,
-			connect,
-			checkCantAttach,
-			getSecondToken,
-			reAuth,
-			checkCanNowAttach,
-		], function(err) {
-			test.ok(!err, err && displayError(err));
-			closeAndFinish(test, realtime);
-		});
-	}});
-
-	/*
 	 * use authorize() to force a reauth using an existing authCallback
 	 */
 	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
