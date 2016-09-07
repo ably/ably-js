@@ -633,6 +633,7 @@ var ConnectionManager = (function() {
 		 * transport change on the same connection. If connectionId changes, we're
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
+		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		if(this.connectionId && this.connectionId !== connectionId)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
 			this.msgSerial = 0;
@@ -641,10 +642,16 @@ var ConnectionManager = (function() {
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});
+		} else {
+			/* don't allow the connectionSerial in the CONNECTED to lower the stored
+			 * connectionSerial, because messages can arrive on the upgrade transport
+			 * (validly incrementing the stored connectionSerial) after it's been
+			 * synced but before it gets activated */
+			connectionSerial = (this.connectionSerial === undefined) ? connectionSerial : Math.max(connectionSerial, this.connectionSerial);
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
-		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 	};
 
