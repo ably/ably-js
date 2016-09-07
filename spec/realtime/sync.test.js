@@ -105,7 +105,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.deepEqual(extractClientIds(results), ['one', 'three'], 'check two has gone and three is there');
 					cb(err);
 				});
-			},
+			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
 			test.done();

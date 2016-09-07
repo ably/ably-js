@@ -40,7 +40,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				async.parallel([
 					function(attachCb) { channel.attach(attachCb); },
-					function(attachCb) { binarychannel.attach(attachCb); },
+					function(attachCb) { binarychannel.attach(attachCb); }
 				], function(err) {
 					if(err) {
 						test.ok(false, 'Error attaching to channel: ' + displayError(err));
@@ -106,7 +106,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				async.parallel([
 					function(attachCb) { channel.attach(attachCb); },
-					function(attachCb) { binarychannel.attach(attachCb); },
+					function(attachCb) { binarychannel.attach(attachCb); }
 				], function(err) {
 					if(err) {
 						test.ok(false, 'Error attaching to channel: ' + displayError(err));

@@ -596,7 +596,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				firstKey = key;
 				async.parallel([
 					function(innercb) {rxChannel.setOptions({cipher: {key: key}}, innercb);},
-					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);}
 				], cb)
 			});
 		};
@@ -621,7 +621,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				secondKey = key;
 				async.parallel([
 					function(innercb) {rxChannel.setOptions({cipher: null}, innercb);},
-					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);}
 				], cb)
 			});
 		};

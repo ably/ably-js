@@ -1264,7 +1264,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		async.series([
 			function(callback) { console.log('realtimeBin'); runTest(realtimeBin, callback); },
-			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); },
+			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); }
 		], function() {
 			closeAndFinish(test, [realtimeBin, realtimeJson]);
 		});
@@ -1357,7 +1357,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		function enterOneAndTwo(cb) {
 			async.parallel([
 				function(enterCb) { realtimeChannel.presence.enterClient('one', enterCb); },
-				function(enterCb) { realtimeChannel.presence.enterClient('two', enterCb); },
+				function(enterCb) { realtimeChannel.presence.enterClient('two', enterCb); }
 			], cb);
 		}
 
@@ -1374,7 +1374,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		function swapTwoForThree(cb) {
 			async.parallel([
 				function(innerCb) { realtimeChannel.presence.leaveClient('two', innerCb); },
-				function(innerCb) { realtimeChannel.presence.enterClient('three', innerCb); },
+				function(innerCb) { realtimeChannel.presence.enterClient('three', innerCb); }
 			], cb);
 		}
 
@@ -1399,7 +1399,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) { observerChannel.detach(cb); },
 			swapTwoForThree,
 			attachAndListen,
-			function(cb) { checkPresence('one', 'three', cb); },
+			function(cb) { checkPresence('one', 'three', cb); }
 		], function(err) {
 			if(err) {
 				test.ok(false, helper.displayError(err));

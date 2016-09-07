@@ -468,7 +468,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(stateChange.reason.code, 90000, 'check error is now the timeout');
 					cb();
 				});
-			},
+			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
 			closeAndFinish(test, realtime);
@@ -561,7 +561,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
 				transport.onProtocolMessage({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
-			},
+			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
 			closeAndFinish(test, realtime);
@@ -693,7 +693,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(error.code, 91200, 'Check correct error code');
 					cb();
 				});
-			},
+			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
 			closeAndFinish(test, realtime);
