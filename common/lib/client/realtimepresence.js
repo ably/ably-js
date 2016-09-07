@@ -33,7 +33,7 @@ var RealtimePresence = (function() {
 				});
 				break;
 			default:
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(channel.state)));
 		}
 	}
 
@@ -369,7 +369,7 @@ var RealtimePresence = (function() {
 		var callback = args[2];
 
 		if(this.channel.state === 'failed')
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 
 		this.subscriptions.off(event, listener);
 	};
