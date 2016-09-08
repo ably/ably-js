@@ -9,7 +9,7 @@
     "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit",
     "hexy": "~0.2",
     "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
-    "request": "~2.53",
+    "request": "^2.74.0",
     "ws": "^1.1.1"
   },
   "devDependencies": {
