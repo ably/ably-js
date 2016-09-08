@@ -442,6 +442,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * presence enter between the syncs. Check everything was entered correctly
 	 */
 	exports.presence_sync_interruptus = function(test) {
+		if(helper.bestTransport === 'jsonp') {
+			/* JSONP can't cope with entering 110 people in one go. */
+			console.log("Skipping presence_sync_interruptus test (jsonp)");
+			test.done();
+			return;
+		}
 		test.expect(1);
 		var channelName = "presence_sync_interruptus";
 		var interrupterClientId = "dark_horse";
