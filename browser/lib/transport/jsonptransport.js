@@ -111,7 +111,14 @@ var JSONPTransport = (function() {
 			params.body = body;
 
 		var script = this.script = document.createElement('script');
-		script.src = uri + Utils.toQueryString(params);
+		var src = uri + Utils.toQueryString(params);
+		script.src = src;
+		if(script.src.split('/').slice(-1)[0] !== src.split('/').slice(-1)[0]) {
+			/* The src has been truncated. Can't abort, but can at least emit an
+			 * error so the user knows what's gone wrong. (Can't compare strings
+			 * directly as src may have a port, script.src won't) */
+			Logger.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
+		}
 		script.async = true;
 		script.type = 'text/javascript';
 		script.charset = 'UTF-8';
