@@ -373,11 +373,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(txChannel.channelOptions.cipher.algorithm, 'aes');
 				test.equal(rxChannel.channelOptions.cipher.algorithm, 'aes');
 
-				rxChannel.subscribe('event0', function(msg) {
-					test.ok(msg.data == messageText);
-					closeAndFinish(test, [txRealtime, rxRealtime]);
+				attachChannels([txChannel, rxChannel], function() {
+					rxChannel.subscribe('event0', function(msg) {
+						test.ok(msg.data == messageText);
+						closeAndFinish(test, [txRealtime, rxRealtime]);
+					});
+					txChannel.publish('event0', messageText);
 				});
-				txChannel.publish('event0', messageText);
 			});
 		});
 	}
@@ -396,7 +398,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * binary protocol. Publish an encrypted message on that channel using
 	 * the default cipher params and verify correct receipt.
 	 */
-	exports.single_send_binary_text = function(test) {
+	exports.single_send_text_binary = function(test) {
 		_single_send_separate_realtimes(test, { useBinaryProtocol: false }, { useBinaryProtocol: true });
 	};
 
