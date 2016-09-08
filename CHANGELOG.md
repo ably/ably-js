@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.34](https://github.com/ably/ably-js/tree/0.8.34) (2016-09-08)
+
+- Node: keep TCP stream alive between REST requests; update `request` module [\#331](https://github.com/ably/ably-js/pull/331)
+
 ## [0.8.33](https://github.com/ably/ably-js/tree/0.8.33) (2016-08-19)
 
 - Upgrade node websocket library for node 6 compatibility [\#326](https://github.com/ably/ably-js/pull/326)
