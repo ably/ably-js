@@ -45,6 +45,8 @@ this.Http = (function() {
 			code === 'ETIMEDOUT'        ||
 			code === 'ESOCKETTIMEDOUT'  ||
 			code === 'ENOTFOUND'        ||
+			code === 'ECONNRESET'       ||
+			code === 'ECONNREFUSED'     ||
 			(statusCode >= 500 && statusCode <= 504);
 	}
 
