@@ -126,6 +126,17 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
+	/* init with given restHost and realtimeHost, using the default fallback hosts */
+	exports.defaults_given_host_using_default_fallbacks = function(test) {
+		test.expect(3);
+		var normalisedOptions = Defaults.normaliseOptions({restHost: 'test.org', realtimeHost: 'ws.test.org', fallbackHostsUseDefault: true});
+
+		test.equal(normalisedOptions.restHost, 'test.org');
+		test.equal(normalisedOptions.realtimeHost, 'ws.test.org');
+		test.deepEqual(normalisedOptions.fallbackHosts.sort(), Defaults.FALLBACK_HOSTS.sort());
+		test.done();
+	};
+
 	/* init with deprecated host and wsHost options */
 	/* will emit a warning */
 	exports.defaults_given_deprecated_host = function(test) {

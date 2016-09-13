@@ -85,15 +85,16 @@ Defaults.normaliseOptions = function(options) {
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
+	var production = false;
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
-		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
+		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
 		production = !environment || (environment === 'production');
 		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
-		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	}
+	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	if(!('tls' in options)) options.tls = true;
