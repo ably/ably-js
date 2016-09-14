@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.8.36](https://github.com/ably/ably-js/tree/0.8.36) (2016-09-14)
+
+- Backport subscribing with an event array fix from 0.9
+
+## [0.8.35](https://github.com/ably/ably-js/tree/0.8.35) (2016-09-12)
+
+- Node: try fallback hosts on ECONNRESET
+
 ## [0.8.34](https://github.com/ably/ably-js/tree/0.8.34) (2016-09-08)
 
 - Node: keep TCP stream alive between REST requests; update `request` module [\#331](https://github.com/ably/ably-js/pull/331)

@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.35
+ * Ably JavaScript Library v0.8.36
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4015,7 +4015,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.35';
+Defaults.version          = '0.8.36';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4081,15 +4081,16 @@ Defaults.normaliseOptions = function(options) {
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
+	var production = false;
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
 	} else {
-		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT,
+		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
 		production = !environment || (environment === 'production');
 		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
-		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	}
+	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	if(!('tls' in options)) options.tls = true;
@@ -4419,7 +4420,7 @@ var Utils = (function() {
 	 */
 	Utils.ensureArray = function(obj) {
 		if (Utils.isArray(obj)) {
-			return ob;
+			return obj;
 		} else {
 			return [obj];
 		}
