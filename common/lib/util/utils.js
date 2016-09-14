@@ -46,7 +46,7 @@ var Utils = (function() {
 	 */
 	Utils.ensureArray = function(obj) {
 		if (Utils.isArray(obj)) {
-			return ob;
+			return obj;
 		} else {
 			return [obj];
 		}
