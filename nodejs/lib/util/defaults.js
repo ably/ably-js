@@ -5,5 +5,6 @@ this.Defaults = {
 	* intersection of this list and the transports clientOption that's supported */
 	transports: ['comet', 'web_socket'],
 	transportPreferenceOrder: ['comet', 'web_socket'],
-	upgradeTransports: ['web_socket']
+	upgradeTransports: ['web_socket'],
+	restAgentOptions: {maxSockets: 40}
 };
