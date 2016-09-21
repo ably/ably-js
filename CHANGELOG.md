@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.37](https://github.com/ably/ably-js/tree/0.8.37) (2016-09-21)
+
+- Node requests: limit max rest request TCP parallelism to 40 [\#336](https://github.com/ably/ably-js/pull/336)
+
 ## [0.8.36](https://github.com/ably/ably-js/tree/0.8.36) (2016-09-14)
 
 - Backport subscribing with an event array fix from 0.9

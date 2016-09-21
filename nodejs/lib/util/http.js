@@ -95,7 +95,7 @@ this.Http = (function() {
 		* (Ably and perhaps an auth server), so for efficiency, use the
 		* foreverAgent to keep the TCP stream alive between requests where possible */
 		var agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-		var getOptions = {headers:headers, encoding:null, forever: true, agentOptions: agentOptions};
+		var getOptions = {headers: headers, encoding: null, forever: true, agentOptions: agentOptions};
 		if(params)
 			getOptions.qs = params;
 
@@ -146,7 +146,7 @@ this.Http = (function() {
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
 		var agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-		var postOptions = {headers:headers, body:body, encoding:null, forever: true, agentOptions: agentOptions};
+		var postOptions = {headers: headers, body: body, encoding: null, forever: true, agentOptions: agentOptions};
 		if(params)
 			postOptions.qs = params;
 
