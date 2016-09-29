@@ -2,8 +2,6 @@
 
 ## Version: 0.8.37
 
-[![Build Status](https://travis-ci.org/ably/ably-js.png)](https://travis-ci.org/ably/ably-js)
-
 This repo contains the Ably javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
 
 For complete API documentation, see the [ably documentation](https://ably.io/documentation).
