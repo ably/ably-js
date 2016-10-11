@@ -1,6 +1,5 @@
 "use strict";
 var NodeCometTransport = (function() {
-	var buffertools = require('buffertools');
 	var http = require('http');
 	var https = require('https');
 	var url = require('url');
