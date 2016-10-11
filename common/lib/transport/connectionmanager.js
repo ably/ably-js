@@ -870,7 +870,7 @@ var ConnectionManager = (function() {
 		} else if(state == 'closing') {
 			if(this.state.state == 'closed')
 				return; /* silently do nothing */
-			Utils.nextTick(function() { self.closeImpl(); });
+			self.closeImpl();
 		}
 
 		var newState = this.states[state],
