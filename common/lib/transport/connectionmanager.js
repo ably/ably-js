@@ -863,20 +863,20 @@ var ConnectionManager = (function() {
 		* state should not reset the suspend timer */
 		this.checkSuspendTimer(state);
 
-		if(state == 'connecting') {
-			if(this.state.state == 'connected')
-				return; /* silently do nothing */
-			Utils.nextTick(function() { self.startConnect(); });
-		} else if(state == 'closing') {
-			if(this.state.state == 'closed')
-				return; /* silently do nothing */
-			self.closeImpl();
-		}
+		if(state == 'connecting' && this.state.state == 'connected') return;
+		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
+
+		if(state == 'connecting') {
+			Utils.nextTick(function() { self.startConnect(); });
+		}
+		if(state == 'closing') {
+			this.closeImpl();
+		}
 	};
 
 
