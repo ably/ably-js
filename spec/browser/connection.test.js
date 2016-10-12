@@ -196,7 +196,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		realtime.connection.once('connected', function() {
 			var connectionKey = realtime.connection.key;
 			document.dispatchEvent(refreshEvent);
-			test.equal(realtime.connection.state, 'closing', 'check page refresh triggered a close');
+			var state = realtime.connection.state;
+			test.ok(state == 'closing' || state == 'closed', 'check page refresh triggered a close');
 			test.done();
 		});
 	};
