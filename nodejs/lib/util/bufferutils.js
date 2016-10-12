@@ -1,6 +1,4 @@
 this.BufferUtils = (function() {
-	var buffertools = require('buffertools');
-
 	function BufferUtils() {}
 
 	BufferUtils.supportsBinary = true;
@@ -24,7 +22,7 @@ this.BufferUtils = (function() {
 	BufferUtils.bufferCompare = function(buf1, buf2) {
 		if(!buf1) return -1;
 		if(!buf2) return 1;
-		return buffertools.compare(buf1, buf2);
+		return buf1.compare(buf2);
 	};
 
 	return BufferUtils;
