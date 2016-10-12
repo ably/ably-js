@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.8.38](https://github.com/ably/ably-js/tree/0.8.38) (2016-10-12)
+
+- Node: remove runtime dependencies on crypto-js and buffertools [\#340](https://github.com/ably/ably-js/pull/340)
+
+- Fix closeOnUnload on IE11 [\#338](https://github.com/ably/ably-js/issues/338)
+
 ## [0.8.37](https://github.com/ably/ably-js/tree/0.8.37) (2016-09-21)
 
 - Node requests: limit max rest request TCP parallelism to 40 [\#336](https://github.com/ably/ably-js/pull/336)

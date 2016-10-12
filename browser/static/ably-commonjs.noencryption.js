@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.37
+ * Ably JavaScript Library v0.8.38
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2615,7 +2615,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.37';
+Defaults.version          = '0.8.38';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4917,20 +4917,20 @@ var ConnectionManager = (function() {
 		* state should not reset the suspend timer */
 		this.checkSuspendTimer(state);
 
-		if(state == 'connecting') {
-			if(this.state.state == 'connected')
-				return; /* silently do nothing */
-			Utils.nextTick(function() { self.startConnect(); });
-		} else if(state == 'closing') {
-			if(this.state.state == 'closed')
-				return; /* silently do nothing */
-			Utils.nextTick(function() { self.closeImpl(); });
-		}
+		if(state == 'connecting' && this.state.state == 'connected') return;
+		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
 			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
+
+		if(state == 'connecting') {
+			Utils.nextTick(function() { self.startConnect(); });
+		}
+		if(state == 'closing') {
+			this.closeImpl();
+		}
 	};
 
 
