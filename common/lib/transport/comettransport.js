@@ -95,6 +95,9 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
+				if(this.timeoutOnIdle) {
+					this.resetIdleTimeout();
+				}
 				if(err) {
 					if(err.code) {
 						/* A protocol error received from realtime. TODO: once realtime
@@ -257,6 +260,11 @@ var CometTransport = (function() {
 		});
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
+			if(this.timeoutOnIdle) {
+				/* A request completing must be considered activity, as realtime sends
+				 * heartbeats every 15s since a request began, not every 15s absolutely */
+				this.resetIdleTimeout();
+			}
 			if(err) {
 				if(err.code) {
 					/* A protocol error received from realtime. TODO: once realtime
