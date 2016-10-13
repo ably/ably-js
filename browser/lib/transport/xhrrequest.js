@@ -30,8 +30,8 @@ var XHRRequest = (function() {
 		return isIE && (version = ieVersion()) && version === 10;
 	}
 
-	function getContentType(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
+	function getHeader(xhr, header) {
+		return xhr.getResponseHeader && xhr.getResponseHeader(header);
 	}
 
 	/* Safari mysteriously returns 'Identity' for transfer-encoding
@@ -158,8 +158,9 @@ var XHRRequest = (function() {
 
 		function onEnd() {
 			try {
-				var contentType = getContentType(xhr),
-					headers = null,
+				var contentType = getHeader(xhr, 'content-type'),
+					headers,
+					server,
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
@@ -178,6 +179,10 @@ var XHRRequest = (function() {
 					successResponse = (statusCode < 400);
 					headers = responseBody.headers;
 					responseBody = responseBody.response;
+				} else {
+					headers = {};
+					if(contentType) { headers['content-type'] = contentType };
+					if(server = getHeader(xhr, 'server')) { headers['server'] = server };
 				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
@@ -187,7 +192,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, headers || (contentType && {'content-type': contentType}), unpacked);
+				self.complete(null, responseBody, headers, unpacked);
 				return;
 			}
 
