@@ -51,6 +51,27 @@ var Rest = (function() {
 		this.channels = new Channels(this);
 	}
 
+	Rest.prototype.channels = function(params, callback) {
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+		var headers = Utils.copy(Utils.defaultGetHeaders()),
+			envelope = Http.supportsLinkHeaders ? undefined : 'json';
+
+		if(this.options.headers)
+			Utils.mixin(headers, this.options.headers);
+
+		(new PaginatedResource(this, '/channels', headers, envelope, function(body, headers, unpacked) {
+			return (unpacked ? body : JSON.parse(body));
+		})).get(params, callback);
+	};
+
 	Rest.prototype.stats = function(params, callback) {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
