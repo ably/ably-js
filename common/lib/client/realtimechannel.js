@@ -212,7 +212,11 @@ var RealtimeChannel = (function() {
 
 		subscriptions.on(event, listener);
 
-		this.attach(callback);
+		if(callback) {
+			this.attach(callback);
+		} else {
+			this.autonomousAttach();
+		}
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
