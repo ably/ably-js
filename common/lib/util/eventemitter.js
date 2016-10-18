@@ -97,14 +97,8 @@ var EventEmitter = (function() {
 			/* ... or we take event to be the actual event name and listener to be all */
 		}
 
-		if(Utils.isEmptyArg(event)) {
-			/* "any" case */
-			if(listener) {
-				removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
-			} else {
-				this.any = [];
-				this.anyOnce = [];
-			}
+		if(listener && Utils.isEmptyArg(event)) {
+			removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
 			return;
 		}
 
