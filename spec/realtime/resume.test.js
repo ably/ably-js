@@ -360,7 +360,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				connection.once('connected', function() { cb(); });
 			},
 			function(cb) {
-				var keyName = realtime.auth.key.slice(0, 13);
+				var keyName = realtime.auth.key.split(':')[0];
 				realtime.auth.key = keyName+ ':wrong';
 				connection.once(function(stateChange) {
 					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
