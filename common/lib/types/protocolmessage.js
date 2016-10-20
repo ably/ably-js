@@ -64,9 +64,9 @@ var ProtocolMessage = (function() {
 		var error = decoded.error;
 		if(error) decoded.error = ErrorInfo.fromValues(error);
 		var messages = decoded.messages;
-		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
 		var presence = decoded.presence;
-		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
 		return Utils.mixin(new ProtocolMessage(), decoded);
 	};
 

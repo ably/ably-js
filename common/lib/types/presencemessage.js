@@ -106,7 +106,7 @@ var PresenceMessage = (function() {
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
+			var msg = body[i] = PresenceMessage.fromValues(body[i], true);
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
@@ -117,15 +117,11 @@ var PresenceMessage = (function() {
 		return body;
 	};
 
-	/* Creates a PresenceMessage from values obtained from an Ably protocol
-	* message; in particular, with a numeric presence action */
-	PresenceMessage.fromDecoded = function(values) {
-		values.action = PresenceMessage.Actions[values.action]
-		return Utils.mixin(new PresenceMessage(), values);
-	};
-
 	/* Creates a PresenceMessage from specified values, with a string presence action */
-	PresenceMessage.fromValues = function(values) {
+	PresenceMessage.fromValues = function(values, stringifyAction) {
+		if(stringifyAction) {
+			values.action = PresenceMessage.Actions[values.action]
+		}
 		return Utils.mixin(new PresenceMessage(), values);
 	};
 

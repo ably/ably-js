@@ -162,7 +162,7 @@ var Message = (function() {
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = Message.fromDecoded(body[i]);
+			var msg = body[i] = Message.fromValues(body[i]);
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
@@ -171,10 +171,6 @@ var Message = (function() {
 			}
 		}
 		return body;
-	};
-
-	Message.fromDecoded = function(values) {
-		return Utils.mixin(new Message(), values);
 	};
 
 	Message.fromValues = function(values) {
