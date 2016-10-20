@@ -50,13 +50,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			for(var i = 0; i < testData.items.length; i++) {
 				var item = testData.items[i];
 
-				/* read messages from test data */
-				var testMessage = Message.fromValues(item.encoded);
-				var encryptedMessage = Message.fromValues(item.encrypted);
-				/* decode (ie remove any base64 encoding). Will throw when
-				 * it gets to the cipher part of the encoding, so wrap in try/catch */
-				try { Message.decode(testMessage); } catch(_) {}
-				try { Message.decode(encryptedMessage); } catch(_) {}
+				/* read messages from test data and decode (ie remove any base64 encoding). */
+				var testMessage = Message.fromEncoded(item.encoded);
+				var encryptedMessage = Message.fromEncoded(item.encrypted);
 				/* reset channel cipher, to ensure it uses the given iv */
 				channel.setOptions({cipher: {key: key, iv: iv}});
 

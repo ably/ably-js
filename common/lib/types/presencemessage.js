@@ -131,5 +131,23 @@ var PresenceMessage = (function() {
 		return result;
 	};
 
+	PresenceMessage.fromEncoded = function(encoded, options) {
+		var msg = PresenceMessage.fromValues(encoded, true);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			PresenceMessage.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	PresenceMessage.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return PresenceMessage.fromEncoded(encoded, options);
+		});
+	};
+
 	return PresenceMessage;
 })();

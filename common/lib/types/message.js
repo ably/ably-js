@@ -183,5 +183,23 @@ var Message = (function() {
 		return result;
 	};
 
+	Message.fromEncoded = function(encoded, options) {
+		var msg = Message.fromValues(encoded);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			Message.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	Message.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return Message.fromEncoded(encoded, options);
+		});
+	};
+
 	return Message;
 })();
