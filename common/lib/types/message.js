@@ -162,7 +162,7 @@ var Message = (function() {
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = Message.fromDecoded(body[i]);
+			var msg = body[i] = Message.fromValues(body[i]);
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
@@ -173,10 +173,6 @@ var Message = (function() {
 		return body;
 	};
 
-	Message.fromDecoded = function(values) {
-		return Utils.mixin(new Message(), values);
-	};
-
 	Message.fromValues = function(values) {
 		return Utils.mixin(new Message(), values);
 	};
@@ -185,6 +181,24 @@ var Message = (function() {
 		var count = values.length, result = new Array(count);
 		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
 		return result;
+	};
+
+	Message.fromEncoded = function(encoded, options) {
+		var msg = Message.fromValues(encoded);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			Message.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	Message.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return Message.fromEncoded(encoded, options);
+		});
 	};
 
 	return Message;

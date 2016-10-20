@@ -51,23 +51,23 @@ var ProtocolMessage = (function() {
 		'RESUMED': 2
 	};
 
-	ProtocolMessage.encode = function(msg, format) {
+	ProtocolMessage.serialize = function(msg, format) {
 		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
-	ProtocolMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		return ProtocolMessage.fromDecoded(decoded);
+	ProtocolMessage.deserialize = function(serialized, format) {
+		var deserialized = (format == 'msgpack') ? msgpack.decode(serialized) : JSON.parse(String(serialized));
+		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
-	ProtocolMessage.fromDecoded = function(decoded) {
-		var error = decoded.error;
-		if(error) decoded.error = ErrorInfo.fromValues(error);
-		var messages = decoded.messages;
-		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
-		var presence = decoded.presence;
-		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
-		return Utils.mixin(new ProtocolMessage(), decoded);
+	ProtocolMessage.fromDeserialized = function(deserialized) {
+		var error = deserialized.error;
+		if(error) deserialized.error = ErrorInfo.fromValues(error);
+		var messages = deserialized.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
+		var presence = deserialized.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
+		return Utils.mixin(new ProtocolMessage(), deserialized);
 	};
 
 	ProtocolMessage.fromValues = function(values) {
