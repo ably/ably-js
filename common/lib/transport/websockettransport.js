@@ -88,13 +88,13 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
-		wsConnection.send(ProtocolMessage.encode(message, this.params.format));
+		wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
-			this.onProtocolMessage(ProtocolMessage.decode(data, this.format));
+			this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
