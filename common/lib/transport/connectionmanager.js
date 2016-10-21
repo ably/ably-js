@@ -120,6 +120,8 @@ var ConnectionManager = (function() {
 		* transport, it'll just be that one. */
 		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
+		/* Map of hosts to an array of transports to not be tried for that host */
+		this.transportHostBlacklist = {};
 		this.transportPreference = null;
 
 		this.httpHosts = Defaults.getHosts(options);
@@ -218,8 +220,12 @@ var ConnectionManager = (function() {
 	 * @param callback
 	 */
 	ConnectionManager.prototype.tryATransport = function(transportParams, candidate, callback) {
-		var self = this;
+		var self = this, host = transportParams.host;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
+		if((host in this.transportHostBlacklist) && Utils.arrIn(this.transportHostBlacklist[host], candidate)) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', candidate + ' transport is blacklisted for host ' + transportParams.host);
+			return;
+		}
 		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
