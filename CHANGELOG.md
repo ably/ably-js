@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.39](https://github.com/ably/ably-js/tree/0.8.39) (2016-10-21)
+
+- Disable xhr streaming if using cloudflare [\#342](https://github.com/ably/ably-js/pull/342)
+
 ## [0.8.38](https://github.com/ably/ably-js/tree/0.8.38) (2016-10-12)
 
 - Node: remove runtime dependencies on crypto-js and buffertools [\#340](https://github.com/ably/ably-js/pull/340)
