@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.38
+ * Ably JavaScript Library v0.8.39
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2625,7 +2625,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.38';
+Defaults.version          = '0.8.39';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -4184,6 +4184,8 @@ var ConnectionManager = (function() {
 		* transport, it'll just be that one. */
 		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
+		/* Map of hosts to an array of transports to not be tried for that host */
+		this.transportHostBlacklist = {};
 		this.transportPreference = null;
 
 		this.httpHosts = Defaults.getHosts(options);
@@ -4282,8 +4284,12 @@ var ConnectionManager = (function() {
 	 * @param callback
 	 */
 	ConnectionManager.prototype.tryATransport = function(transportParams, candidate, callback) {
-		var self = this;
+		var self = this, host = transportParams.host;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
+		if((host in this.transportHostBlacklist) && Utils.arrIn(this.transportHostBlacklist[host], candidate)) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', candidate + ' transport is blacklisted for host ' + transportParams.host);
+			return;
+		}
 		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
@@ -5773,6 +5779,20 @@ var CometTransport = (function() {
 		REQ_RECV_POLL = 2,
 		REQ_RECV_STREAM = 3;
 
+	function actOnConnectHeaders(headers, host, connectionManager) {
+		if(headers && headers.server && (headers.server.indexOf('cloudflare') > -1)) {
+			/* Cloudflare doesn't support xhr streaming */
+			var blacklist = connectionManager.transportHostBlacklist[host];
+			if(!blacklist) {
+				connectionManager.transportHostBlacklist[host] = ['xhr_streaming'];
+				return;
+			}
+			if(!Utils.arrIn(blacklist, 'xhr_streaming')) {
+				blacklist.push('xhr_streaming');
+			}
+		}
+	}
+
 	/*
 	 * A base comet transport class
 	 */
@@ -5832,7 +5852,8 @@ var CometTransport = (function() {
 				}
 				self.onData(data);
 			});
-			connectRequest.on('complete', function(err) {
+			connectRequest.on('complete', function(err, _body, headers) {
+				actOnConnectHeaders(headers, host, self.connectionManager);
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
@@ -8724,8 +8745,8 @@ var XHRRequest = (function() {
 		return isIE && (version = ieVersion()) && version === 10;
 	}
 
-	function getContentType(xhr) {
-		return xhr.getResponseHeader && xhr.getResponseHeader('content-type');
+	function getHeader(xhr, header) {
+		return xhr.getResponseHeader && xhr.getResponseHeader(header);
 	}
 
 	/* Safari mysteriously returns 'Identity' for transfer-encoding
@@ -8852,8 +8873,9 @@ var XHRRequest = (function() {
 
 		function onEnd() {
 			try {
-				var contentType = getContentType(xhr),
-					headers = null,
+				var contentType = getHeader(xhr, 'content-type'),
+					headers,
+					server,
 					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
@@ -8872,6 +8894,10 @@ var XHRRequest = (function() {
 					successResponse = (statusCode < 400);
 					headers = responseBody.headers;
 					responseBody = responseBody.response;
+				} else {
+					headers = {};
+					if(contentType) { headers['content-type'] = contentType };
+					if(server = getHeader(xhr, 'server')) { headers['server'] = server };
 				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
@@ -8881,7 +8907,7 @@ var XHRRequest = (function() {
 			}
 
 			if(successResponse) {
-				self.complete(null, responseBody, headers || (contentType && {'content-type': contentType}), unpacked);
+				self.complete(null, responseBody, headers, unpacked);
 				return;
 			}
 
