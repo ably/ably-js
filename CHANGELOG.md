@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.40](https://github.com/ably/ably-js/tree/0.8.40) (2016-10-24)
+
+- Fix ‘server’ header CORS warning in chrome for non-ably endpoints [\#345](https://github.com/ably/ably-js/pull/345)
+
 ## [0.8.39](https://github.com/ably/ably-js/tree/0.8.39) (2016-10-21)
 
 - Disable xhr streaming if using cloudflare [\#342](https://github.com/ably/ably-js/pull/342)
