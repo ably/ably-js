@@ -359,7 +359,13 @@ var Utils = (function() {
 			result.push(Utils.arrPopRandomElement(mutableArr));
 		}
 		return result;
-	}
+	};
+
+	Utils.trim = String.prototype.trim ? function(str) {
+		return str.trim();
+	} : function(str) {
+		return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+	};
 
 	return Utils;
 })();

@@ -43,6 +43,16 @@ var XHRRequest = (function() {
 			&& !xhr.getResponseHeader('content-length');
 	}
 
+	function getHeadersAsObject(xhr) {
+		var headerPairs = Utils.trim(xhr.getAllResponseHeaders()).split('\r\n'),
+			headers = {};
+		for (var i = 0; i < headerPairs.length; i++) {
+			var parts = Utils.arrMap(headerPairs[i].split(':'), Utils.trim);
+			headers[parts[0].toLowerCase()] = parts[1];
+		}
+		return headers;
+	}
+
 	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
 		EventEmitter.call(this);
 		params = params || {};
@@ -180,9 +190,7 @@ var XHRRequest = (function() {
 					headers = responseBody.headers;
 					responseBody = responseBody.response;
 				} else {
-					headers = {};
-					if(contentType) { headers['content-type'] = contentType };
-					if(server = getHeader(xhr, 'server')) { headers['server'] = server };
+					headers = getHeadersAsObject(xhr);
 				}
 			} catch(e) {
 				var err = new Error('Malformed response body from server: ' + e.message);
