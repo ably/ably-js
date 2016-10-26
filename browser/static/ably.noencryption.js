@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.8.40
+ * Ably JavaScript Library v0.8.41
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2625,7 +2625,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.40';
+Defaults.version          = '0.8.41';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -8298,7 +8298,7 @@ var RealtimePresence = (function() {
 
 		if(isSync) {
 			this.members.startSync();
-			if(syncChannelSerial && (match = syncChannelSerial.match(/^\w+:(.*)$/))) {
+			if(syncChannelSerial && (match = syncChannelSerial.match(/^[\w\-]+:(.*)$/))) {
 				syncCursor = match[1];
 			}
 		}

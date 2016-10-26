@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.41](https://github.com/ably/ably-js/tree/0.8.41) (2016-10-26)
+
+- Fix occasional anomalously low presence set right after a sync [abb03f5](https://github.com/ably/ably-js/commit/abb03f5fb4dc86aa13ed60e2def030c30b151852)
+
 ## [0.8.40](https://github.com/ably/ably-js/tree/0.8.40) (2016-10-24)
 
 - Fix ‘server’ header CORS warning in chrome for non-ably endpoints [\#345](https://github.com/ably/ably-js/pull/345)
