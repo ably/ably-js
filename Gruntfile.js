@@ -208,6 +208,7 @@ module.exports = function (grunt) {
 			tagName: '%VERSION%',
 			tagMessage: 'Version %VERSION%',
 			push: false,
+			prereleaseName: 'beta'
 		}
 	};
 
