@@ -71,15 +71,22 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		function callbackOnClose(realtime, callback) {
 			if(!realtime.connection.connectionManager.activeProtocol) {
 				console.log("No transport established; closing connection and calling test.done()")
-				realtime.close();
-				callback();
+				utils.nextTick(function() {
+					realtime.close();
+					callback();
+				});
 				return;
 			}
 			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
 				console.log("Transport disposed; calling test.done()")
 				callback();
 			});
-			realtime.close();
+			/* wait a tick before closing in order to avoid the final close
+			 * happening synchronously in a publish/attach callback, which
+			 * complicates channelattach_publish_invalid etc. */
+			utils.nextTick(function() {
+				realtime.close();
+			});
 		}
 
 		function closeAndFinishSeveral(test, realtimeArray) {
