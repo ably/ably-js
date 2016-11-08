@@ -106,5 +106,11 @@ Defaults.normaliseOptions = function(options) {
 		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
 	};
 
+	if('useBinaryProtocol' in options) {
+		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
+	} else {
+		options.useBinaryProtocol = Platform.preferBinary;
+	}
+
 	return options;
 };

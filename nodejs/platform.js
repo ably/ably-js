@@ -7,6 +7,7 @@ this.Platform = {
 	createHmac: require('crypto').createHmac,
 	msgpack: require('msgpack-js'),
 	supportsBinary: true,
+	preferBinary: true,
 	nextTick: process.nextTick,
 	addEventListener: null
 };

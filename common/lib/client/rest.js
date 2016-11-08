@@ -17,10 +17,6 @@ var Rest = (function() {
 		}
 		this.options = Defaults.normaliseOptions(options);
 
-		/* use binary protocol only if it is supported and explicitly requested */
-		if(!Platform.supportsBinary || this.options.useBinaryProtocol !== true)
-			this.options.useBinaryProtocol = false;
-
 		/* process options */
 		if(options.key) {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
