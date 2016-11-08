@@ -1,7 +1,5 @@
 var WebSocketTransport = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-	var binaryType = isBrowser ? 'arraybuffer' : 'nodebuffer';
+	var WebSocket = Platform.WebSocket;
 	var shortName = 'web_socket';
 
 	/* public constructor */
@@ -9,7 +7,7 @@ var WebSocketTransport = (function() {
 		this.shortName = shortName;
 		this.timeoutOnIdle = true;
 		/* If is a browser, can't detect pings, so request protocol heartbeats */
-		params.heartbeats = isBrowser;
+		params.heartbeats = Platform.useProtocolHeartbeats;
 		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
@@ -65,7 +63,7 @@ var WebSocketTransport = (function() {
 			var connectParams = params.getConnectParams(authParams);
 			try {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
-				wsConnection.binaryType = binaryType;
+				wsConnection.binaryType = Platform.binaryType;
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };

@@ -132,22 +132,25 @@ var ConnectionManager = (function() {
 			throw new Error(msg);
 		}
 
-		/* intercept close event in browser to persist connection id if requested */
-		if(haveSessionStorage && typeof options.recover === 'function' && window.addEventListener)
-			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+		var addEventListener = Platform.addEventListener;
+		if(addEventListener) {
+			/* intercept close event in browser to persist connection id if requested */
+			if(haveSessionStorage && typeof options.recover === 'function') {
+				addEventListener('beforeunload', this.persistConnection.bind(this));
+			}
 
-		if(options.closeOnUnload === true && window.addEventListener)
-			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			if(options.closeOnUnload === true) {
+				addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			}
 
-		/* Listen for online and offline events */
-		if(typeof window === 'object' && window.addEventListener) {
-			window.addEventListener('online', function() {
+			/* Listen for online and offline events */
+			addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
 					self.requestState({state: 'connecting'});
 				}
 			});
-			window.addEventListener('offline', function() {
+			addEventListener('offline', function() {
 				if(self.state == self.states.connected) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
 					// Not sufficient to just go to the 'disconnected' state, want to

@@ -78,6 +78,10 @@ module.exports = function (grunt) {
 			dest: '<%= dirs.dest %>/ably-commonjs.js',
 			nonull: true
 		},
+		'ably-reactnative': {
+			dest: '<%= dirs.dest %>/ably-reactnative.js',
+			nonull: true
+		},
 		'ably-commonjs.noencryption': {
 			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
 			nonull: true
@@ -95,8 +99,6 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/webstorage.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
-		'<%= dirs.browser %>/lib/util/domevent.js',
-		'<%= dirs.browser %>/lib/util/msgpack.js',
 
 		'<%= dirs.common %>/lib/util/defaults.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
@@ -131,7 +133,6 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
 		'<%= dirs.common %>/lib/client/realtimepresence.js',
 
-		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/xhrstreamingtransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js',
@@ -148,8 +149,14 @@ module.exports = function (grunt) {
 		'<%= dirs.crypto_js %>/aes.js',
 		'<%= dirs.crypto_js %>/lib-typedarrays.js',
 
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-browser.js',
+
 		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
+		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
 		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
@@ -165,8 +172,38 @@ module.exports = function (grunt) {
 		'<%= dirs.crypto_js %>/aes.js',
 		'<%= dirs.crypto_js %>/lib-typedarrays.js',
 
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-browser.js',
+
 		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
+		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
+
+	gruntConfig.concat['ably-reactnative'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		/* domevent omitted; not supported in react native */
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-reactnative.js',
+
+		/* crypto omitted for now due to lack of global.crypto object
+			 making secure random generation in pure js nontrivial */
+		ablyFiles,
+		/* jsonptransport omitted */
 
 		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
 	);
@@ -179,7 +216,13 @@ module.exports = function (grunt) {
 		'<%= dirs.crypto_js %>/hmac.js',
 		'<%= dirs.crypto_js %>/enc-base64.js',
 
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-browser.js',
+
 		ablyFiles,
+		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
 		'<%= dirs.fragments %>/ably-epilogue.js'
 	);
@@ -192,7 +235,13 @@ module.exports = function (grunt) {
 		'<%= dirs.crypto_js %>/hmac.js',
 		'<%= dirs.crypto_js %>/enc-base64.js',
 
+		'<%= dirs.browser %>/lib/util/domevent.js',
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-browser.js',
+
 		ablyFiles,
+		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
 		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
 	);
@@ -245,7 +294,7 @@ module.exports = function (grunt) {
 
 			var licenseFile = gruntConfig.dirs.fragments + '/license.js';
 			var licenseText = grunt.file.read(licenseFile).
-													replace(/(Ably JavaScript Library v)([\w\.]+)/i, '$1' + gruntConfig.pkgVersion).
+													replace(/(Ably JavaScript Library v)([\w\.\-]+)/i, '$1' + gruntConfig.pkgVersion).
 													replace(/(Copyright )(\d{4,})/i, '$1' + new Date().getFullYear())
 			grunt.file.write(licenseFile, licenseText);
 		}
