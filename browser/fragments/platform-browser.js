@@ -11,6 +11,7 @@ var Platform = {
 	createHmac: null,
 	msgpack: Ably.msgpack,
 	supportsBinary: !!window.TextDecoder,
+	preferBinary: false,
 	ArrayBuffer: window.ArrayBuffer,
 	atob: window.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
