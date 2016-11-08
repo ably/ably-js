@@ -26,6 +26,7 @@
   "globals": {
     "CryptoJS": true,
     "Crypto": true,
+    "Platform": true,
     "Defaults": true,
     "BufferUtils": true,
     "WebStorage": true,

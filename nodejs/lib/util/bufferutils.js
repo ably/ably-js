@@ -1,8 +1,6 @@
 this.BufferUtils = (function() {
 	function BufferUtils() {}
 
-	BufferUtils.supportsBinary = true;
-
 	BufferUtils.isBuffer = Buffer.isBuffer;
 
 	BufferUtils.toArrayBuffer = function(buf) { return buf; };

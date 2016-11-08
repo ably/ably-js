@@ -18,7 +18,7 @@ var Rest = (function() {
 		this.options = Defaults.normaliseOptions(options);
 
 		/* use binary protocol only if it is supported and explicitly requested */
-		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
+		if(!Platform.supportsBinary || this.options.useBinaryProtocol !== true)
 			this.options.useBinaryProtocol = false;
 
 		/* process options */
