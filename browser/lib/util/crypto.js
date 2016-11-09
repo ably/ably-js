@@ -14,16 +14,16 @@ var Crypto = (function() {
 	 * @param callback
 	 */
 	var generateRandom;
-	var browsercrypto = window.crypto || window.msCrypto; // mscrypto for IE11
-	if(window.Uint32Array && browsercrypto && browsercrypto.getRandomValues) {
+	if(typeof Uint32Array !== 'undefined' && Platform.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
-		generateRandom = function(bytes) {
+		generateRandom = function(bytes, callback) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
-			browsercrypto.getRandomValues(nativeArray);
-			return BufferUtils.toWordArray(nativeArray);
+			Platform.getRandomValues(nativeArray, function(err) {
+				callback(err, BufferUtils.toWordArray(nativeArray))
+			});
 		};
 	} else {
-		generateRandom = function(bytes) {
+		generateRandom = function(bytes, callback) {
 			Logger.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
 			var words = bytes / 4, array = new Array(words);
 			for(var i = 0; i < words; i++) {
@@ -34,7 +34,7 @@ var Crypto = (function() {
 				array[i] = Math.floor(Math.random() * UINT32_SUP) - INT32_SUP;
 			}
 
-			return WordArray.create(array);
+			callback(null, WordArray.create(array));
 		};
 	}
 
@@ -194,7 +194,7 @@ var Crypto = (function() {
 			callback = keyLength;
 			keyLength = undefined;
 		}
-		callback(null, generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8));
+		generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, callback);
 	};
 
 	/**
@@ -207,34 +207,52 @@ var Crypto = (function() {
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
-		var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
-		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)};
+		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS)};
 	};
 
-	function CBCCipher(params, iv) {
+	function CBCCipher(params, blockLengthWords) {
 		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
-		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
-		var key = this.key = BufferUtils.toWordArray(params.key);
-		/* clone the iv as CryptoJS's concat method mutates the receiver; don't want to
-		* mutate something that may have been passed in by the user */
-		var iv = this.iv = BufferUtils.toWordArray(iv).clone();
-		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
-		this.blockLengthWords = iv.words.length;
+		this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
+		this.key = BufferUtils.toWordArray(params.key);
+		this.iv = params.iv;
+		this.blockLengthWords = blockLengthWords;
 	}
 
-	CBCCipher.prototype.encrypt = function(plaintext) {
+	CBCCipher.prototype.encrypt = function(plaintext, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		plaintext = BufferUtils.toWordArray(plaintext);
 		//console.log('encrypt: plaintext:');
 		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
-			paddedLength = getPaddedLength(plaintextLength),
-			iv = this.getIv();
-		var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
-		var ciphertext = iv.concat(cipherOut);
-		//console.log('encrypt: ciphertext:');
-		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
-		return ciphertext;
+			paddedLength = getPaddedLength(plaintextLength);
+
+		var then = function() {
+			this.getIv(function(err, iv) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
+				var ciphertext = iv.concat(cipherOut);
+				//console.log('encrypt: ciphertext:');
+				//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+				callback(null, ciphertext);
+			}.bind(this));
+		}.bind(this);
+
+		if (!this.encryptCipher) {
+			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: iv });
+				this.iv = iv;
+				then();
+			}.bind(this));
+		} else {
+			then();
+		}
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
@@ -257,19 +275,24 @@ var Crypto = (function() {
 		return plaintext;
 	};
 
-	CBCCipher.prototype.getIv = function() {
+	CBCCipher.prototype.getIv = function(callback) {
 		if(this.iv) {
 			var iv = this.iv;
 			this.iv = null;
-			return iv;
+			callback(null, iv);
+			return;
 		}
 
-		var randomBlock = generateRandom(DEFAULT_BLOCKLENGTH);
 		/* Since the iv for a new block is the ciphertext of the last, this
 		* sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
 		* returning it */
-		return this.encryptCipher.process(randomBlock);
-
+		generateRandom(DEFAULT_BLOCKLENGTH, function(err, randomBlock) {
+			if (err) {
+				callback(err);
+				return;
+			} 
+			callback(null, this.encryptCipher.process(randomBlock));
+		}.bind(this));
 	};
 
 	return Crypto;

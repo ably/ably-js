@@ -71,7 +71,7 @@ var Message = (function() {
 		return result;
 	};
 
-	Message.encrypt = function(msg, options) {
+	Message.encrypt = function(msg, options, callback) {
 		var data = msg.data,
 			encoding = msg.encoding,
 			cipher = options.channelCipher;
@@ -81,11 +81,18 @@ var Message = (function() {
 			data = BufferUtils.utf8Encode(String(data));
 			encoding = encoding + 'utf-8/';
 		}
-		msg.data = cipher.encrypt(data);
-		msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+		cipher.encrypt(data, function(err, data) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			msg.data = data;
+			msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+			callback(null, msg);
+		});
 	};
 
-	Message.encode = function(msg, options) {
+	Message.encode = function(msg, options, callback) {
 		var data = msg.data, encoding,
 			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
@@ -98,15 +105,37 @@ var Message = (function() {
 			}
 		}
 
-		if(options != null && options.cipher)
-			Message.encrypt(msg, options);
+		if(options != null && options.cipher) {
+			Message.encrypt(msg, options, callback);
+		} else {
+			callback(null, msg);
+		}
 	};
 
-	Message.toRequestBody = function(messages, options, format) {
-		for (var i = 0; i < messages.length; i++)
-			Message.encode(messages[i], options);
+	Message.encodeArray = function(messages, options, callback) {
+		var processed = 0;
+		for (var i = 0; i < messages.length; i++) {
+			Message.encode(messages[i], options, function(err, msg) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				processed++;
+				if (processed == messages.length) {
+					callback(null, messages);
+				}
+			});
+		}
+	};
 
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
+	Message.toRequestBody = function(messages, options, format, callback) {
+		Message.encodeArray(messages, options, function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			callback(null, (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages));
+		});
 	};
 
 	Message.decode = function(message, options) {
