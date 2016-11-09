@@ -2,7 +2,7 @@ var Platform = {
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
 	WebSocket: WebSocket,
-	xhrSupported: XMLHttpRequest && ('withCredentials' in new XMLHttpRequest()),
+	xhrSupported: XMLHttpRequest,
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: (typeof require === 'function') ? require('msgpack-js') : Ably.msgpack,
