@@ -15,6 +15,12 @@ var Platform = {
 	ArrayBuffer: window.ArrayBuffer,
 	atob: window.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
-	addEventListener: window.addEventListener
+	addEventListener: window.addEventListener,
+	getRandomValues: (function(getRandomValues) {
+		return function(arr, callback) {
+			getRandomValues(arr);
+			callback(null);
+		};
+	})((window.crypto || window.msCrypto).getRandomValues // mscrypto for IE11
 };
 

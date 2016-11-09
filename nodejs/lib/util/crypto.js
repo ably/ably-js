@@ -181,13 +181,13 @@ var Crypto = (function() {
 	 * @param params either a CipherParams instance or some subset of its
 	 * fields that includes a key
 	 */
-	Crypto.getCipher = function(params) {
+	Crypto.getCipher = function(params, callback) {
 		var cipherParams = (isInstCipherParams(params)) ?
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
 		var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
-		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)};
+		callback(null, {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)});
 	};
 
 	function CBCCipher(params, iv) {
@@ -199,7 +199,7 @@ var Crypto = (function() {
 		this.blockLength = iv.length;
 	}
 
-	CBCCipher.prototype.encrypt = function(plaintext) {
+	CBCCipher.prototype.encrypt = function(plaintext, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		//console.log('encrypt: plaintext:');
 		//console.log(hexy.hexy(plaintext));
@@ -210,7 +210,7 @@ var Crypto = (function() {
 		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
 		//console.log('encrypt: ciphertext:');
 		//console.log(hexy.hexy(ciphertext));
-		return ciphertext;
+		return callback(null, ciphertext);
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {

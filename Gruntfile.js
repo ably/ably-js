@@ -200,8 +200,7 @@ module.exports = function (grunt) {
 
 		'<%= dirs.fragments %>/platform-reactnative.js',
 
-		/* crypto omitted for now due to lack of global.crypto object
-			 making secure random generation in pure js nontrivial */
+		'<%= dirs.browser %>/lib/util/crypto.js',
 		ablyFiles,
 		/* jsonptransport omitted */
 

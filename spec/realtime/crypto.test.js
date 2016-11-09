@@ -54,9 +54,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				var testMessage = Message.fromEncoded(item.encoded);
 				var encryptedMessage = Message.fromEncoded(item.encrypted);
 				/* reset channel cipher, to ensure it uses the given iv */
-				channel.setOptions({cipher: {key: key, iv: iv}});
-
-				fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
+				channel.setOptions({cipher: {key: key, iv: iv}}, function(err) {
+					if (err) {
+						test.ok(false, 'Unable to set channel options; err = ' + helper.displayError(err));
+						return;
+					}
+					fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
+				});
 			}
 			closeAndFinish(test, realtime);
 		});
@@ -150,18 +154,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.encrypt_message_128 = function(test) {
 		testEachFixture(test, 'crypto-data-128.json', 'encrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
 			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-			Message.encode(testMessage, channelOpts);
-			/* compare */
-			test.ok(compareMessage(testMessage, encryptedMessage));
+			Message.encode(testMessage, channelOpts, function() {
+				/* compare */
+				test.ok(compareMessage(testMessage, encryptedMessage));
+			});
 		});
 	};
 
 	exports.encrypt_message_256 = function(test) {
 		testEachFixture(test, 'crypto-data-256.json', 'encrypt_message_256', 1, function(channelOpts, testMessage, encryptedMessage) {
 			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-			Message.encode(testMessage, channelOpts);
-			/* compare */
-			test.ok(compareMessage(testMessage, encryptedMessage));
+			Message.encode(testMessage, channelOpts, function() {
+				/* compare */
+				test.ok(compareMessage(testMessage, encryptedMessage));
+			});
 		});
 	};
 
@@ -191,18 +197,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		testEachFixture(test, 'crypto-data-128.json', 'msgpack_128', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-			Message.encode(testMessage, channelOpts);
-			var msgpackFromEncoded = msgpack.encode(testMessage);
-			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
-			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
+			Message.encode(testMessage, channelOpts, function() {
+				var msgpackFromEncoded = msgpack.encode(testMessage);
+				var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+				var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
 
-			/* Mainly testing that we're correctly encoding the direct output from
-			* CryptoJS (a wordArray) into the msgpack binary type */
-			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
+				/* Mainly testing that we're correctly encoding the direct output from
+				* CryptoJS (a wordArray) into the msgpack binary type */
+				test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
 
-			/* Can't compare msgpackFromEncoded with fixture data because can't
-			* assume key order in the msgpack serialisation. So test decoded instead */
-			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+				/* Can't compare msgpackFromEncoded with fixture data because can't
+				* assume key order in the msgpack serialisation. So test decoded instead */
+				test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+			});
 		});
 	};
 
@@ -214,18 +221,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 
 		testEachFixture(test, 'crypto-data-256.json', 'msgpack_256', 2, function(channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-			Message.encode(testMessage, channelOpts);
-			var msgpackFromEncoded = msgpack.encode(testMessage);
-			var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
-			var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
+			Message.encode(testMessage, channelOpts, function() {
+				var msgpackFromEncoded = msgpack.encode(testMessage);
+				var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+				var messageFromMsgpack = Message.fromValues(msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)));
 
-			/* Mainly testing that we're correctly encoding the direct output from
-			* CryptoJS (a wordArray) into the msgpack binary type */
-			test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
+				/* Mainly testing that we're correctly encoding the direct output from
+				* CryptoJS (a wordArray) into the msgpack binary type */
+				test.equal(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted), 0, 'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare');
 
-			/* Can't compare msgpackFromEncoded with fixture data because can't
-			* assume key order in the msgpack serialisation. So test decoded instead */
-			test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+				/* Can't compare msgpackFromEncoded with fixture data because can't
+				* assume key order in the msgpack serialisation. So test decoded instead */
+				test.deepEqual(messageFromMsgpack, encryptedMessage, 'verify msgpack fixture decodes correctly');
+			});
 		});
 	};
 

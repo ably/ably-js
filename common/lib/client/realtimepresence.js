@@ -91,26 +91,32 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
-		PresenceMessage.encode(presence, channel.channelOptions);
-
-		switch(channel.state) {
-			case 'attached':
-				channel.sendPresence(presence, callback);
-				break;
-			case 'initialized':
-			case 'detached':
-				channel.autonomousAttach();
-			case 'attaching':
-				this.pendingPresence.push({
-					presence : presence,
-					callback : callback
-				});
-				break;
-			default:
-				var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
-				err.code = 90001;
-				callback(err);
-		}
+		channel._afterOptionsSet(function() {
+			PresenceMessage.encode(presence, channel.channelOptions, function(err) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				switch(channel.state) {
+					case 'attached':
+						channel.sendPresence(presence, callback);
+						break;
+					case 'initialized':
+					case 'detached':
+						channel.autonomousAttach();
+					case 'attaching':
+						this.pendingPresence.push({
+							presence : presence,
+							callback : callback
+						});
+						break;
+					default:
+						var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+						err.code = 90001;
+						callback(err);
+				}
+			}.bind(this));
+		}.bind(this));
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
