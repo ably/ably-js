@@ -21,6 +21,6 @@ var Platform = {
 			getRandomValues(arr);
 			callback(null);
 		};
-	})((window.crypto || window.msCrypto).getRandomValues // mscrypto for IE11
+	})((window.crypto || window.msCrypto).getRandomValues) // mscrypto for IE11
 };
 
