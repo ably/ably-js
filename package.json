@@ -3,6 +3,12 @@
   "description": "Realtime client library for Ably.io, the realtime messaging service",
   "version": "0.9.0-beta.0",
   "main": "./nodejs/index.js",
+  "react-native": {
+    "./nodejs/index.js": "browser/static/ably-reactnative.js"
+  },
+  "browser": {
+    "./nodejs/index.js": "browser/static/ably-commonjs.js"
+  },
   "dependencies": {
     "async": "git://github.com/ably-forks/async#requirejs",
     "hexy": "~0.2",
