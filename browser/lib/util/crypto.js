@@ -216,7 +216,7 @@ var Crypto = (function() {
 			then(null, iv);
 		} else {
 			generateRandom(DEFAULT_BLOCKLENGTH, then);
-		}		
+		}
 	};
 
 	function CBCCipher(params, iv) {
@@ -276,6 +276,7 @@ var Crypto = (function() {
 			var iv = this.iv;
 			this.iv = null;
 			callback(null, iv);
+			return;
 		}
 
 		/* Since the iv for a new block is the ciphertext of the last, this
