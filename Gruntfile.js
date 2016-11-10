@@ -240,12 +240,12 @@ module.exports = function (grunt) {
 		'Set the library version string used for loading dependencies',
 		function() {
 			var defaultsFile = gruntConfig.dirs.common + '/lib/util/defaults.js';
-			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.]+)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
+			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.\-]+)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
 			grunt.file.write(defaultsFile, defaultsText);
 
 			var licenseFile = gruntConfig.dirs.fragments + '/license.js';
 			var licenseText = grunt.file.read(licenseFile).
-													replace(/(Ably JavaScript Library v)([\w\.]+)/i, '$1' + gruntConfig.pkgVersion).
+													replace(/(Ably JavaScript Library v)([\w\.\-]+)/i, '$1' + gruntConfig.pkgVersion).
 													replace(/(Copyright )(\d{4,})/i, '$1' + new Date().getFullYear())
 			grunt.file.write(licenseFile, licenseText);
 		}
