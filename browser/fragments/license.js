@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.0
+ * Ably JavaScript Library v0.9.0-beta.1
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging

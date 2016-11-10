@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.0
+ * Ably JavaScript Library v0.9.0-beta.1
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4023,7 +4023,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.0';
+Defaults.version          = '0.9.0-beta.1';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.9';
 
@@ -4995,7 +4995,7 @@ var Message = (function() {
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = Message.fromDecoded(body[i]);
+			var msg = body[i] = Message.fromValues(body[i]);
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
@@ -5006,10 +5006,6 @@ var Message = (function() {
 		return body;
 	};
 
-	Message.fromDecoded = function(values) {
-		return Utils.mixin(new Message(), values);
-	};
-
 	Message.fromValues = function(values) {
 		return Utils.mixin(new Message(), values);
 	};
@@ -5018,6 +5014,24 @@ var Message = (function() {
 		var count = values.length, result = new Array(count);
 		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
 		return result;
+	};
+
+	Message.fromEncoded = function(encoded, options) {
+		var msg = Message.fromValues(encoded);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			Message.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	Message.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return Message.fromEncoded(encoded, options);
+		});
 	};
 
 	return Message;
@@ -5131,7 +5145,7 @@ var PresenceMessage = (function() {
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
+			var msg = body[i] = PresenceMessage.fromValues(body[i], true);
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
@@ -5142,15 +5156,11 @@ var PresenceMessage = (function() {
 		return body;
 	};
 
-	/* Creates a PresenceMessage from values obtained from an Ably protocol
-	* message; in particular, with a numeric presence action */
-	PresenceMessage.fromDecoded = function(values) {
-		values.action = PresenceMessage.Actions[values.action]
-		return Utils.mixin(new PresenceMessage(), values);
-	};
-
 	/* Creates a PresenceMessage from specified values, with a string presence action */
-	PresenceMessage.fromValues = function(values) {
+	PresenceMessage.fromValues = function(values, stringifyAction) {
+		if(stringifyAction) {
+			values.action = PresenceMessage.Actions[values.action]
+		}
 		return Utils.mixin(new PresenceMessage(), values);
 	};
 
@@ -5158,6 +5168,24 @@ var PresenceMessage = (function() {
 		var count = values.length, result = new Array(count);
 		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
 		return result;
+	};
+
+	PresenceMessage.fromEncoded = function(encoded, options) {
+		var msg = PresenceMessage.fromValues(encoded, true);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			PresenceMessage.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	PresenceMessage.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return PresenceMessage.fromEncoded(encoded, options);
+		});
 	};
 
 	return PresenceMessage;
@@ -5216,23 +5244,23 @@ var ProtocolMessage = (function() {
 		'RESUMED': 2
 	};
 
-	ProtocolMessage.encode = function(msg, format) {
+	ProtocolMessage.serialize = function(msg, format) {
 		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
-	ProtocolMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		return ProtocolMessage.fromDecoded(decoded);
+	ProtocolMessage.deserialize = function(serialized, format) {
+		var deserialized = (format == 'msgpack') ? msgpack.decode(serialized) : JSON.parse(String(serialized));
+		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
-	ProtocolMessage.fromDecoded = function(decoded) {
-		var error = decoded.error;
-		if(error) decoded.error = ErrorInfo.fromValues(error);
-		var messages = decoded.messages;
-		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
-		var presence = decoded.presence;
-		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
-		return Utils.mixin(new ProtocolMessage(), decoded);
+	ProtocolMessage.fromDeserialized = function(deserialized) {
+		var error = deserialized.error;
+		if(error) deserialized.error = ErrorInfo.fromValues(error);
+		var messages = deserialized.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
+		var presence = deserialized.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
+		return Utils.mixin(new ProtocolMessage(), deserialized);
 	};
 
 	ProtocolMessage.fromValues = function(values) {
@@ -7289,13 +7317,13 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
-		wsConnection.send(ProtocolMessage.encode(message, this.params.format));
+		wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
-			this.onProtocolMessage(ProtocolMessage.decode(data, this.format));
+			this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
@@ -7670,7 +7698,7 @@ var CometTransport = (function() {
 			var items = this.decodeResponse(responseData);
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onProtocolMessage(ProtocolMessage.fromDecoded(items[i]));
+					this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}
