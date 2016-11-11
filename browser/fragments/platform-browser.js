@@ -16,11 +16,11 @@ var Platform = {
 	atob: window.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: window.addEventListener,
-	getRandomValues: (function(getRandomValues) {
+	getRandomValues: (function(crypto) {
 		return function(arr, callback) {
-			getRandomValues(arr);
+			crypto.getRandomValues(arr);
 			callback(null);
 		};
-	})((window.crypto || window.msCrypto).getRandomValues) // mscrypto for IE11
+	})(window.crypto || window.msCrypto) // mscrypto for IE11
 };
 
