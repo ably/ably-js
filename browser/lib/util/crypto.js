@@ -207,14 +207,16 @@ var Crypto = (function() {
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
-		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS)};
+		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS, params.iv)};
 	};
 
-	function CBCCipher(params, blockLengthWords) {
+	function CBCCipher(params, blockLengthWords, iv) {
 		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
 		this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
 		this.key = BufferUtils.toWordArray(params.key);
-		this.iv = params.iv;
+		if(iv) {
+			this.iv = BufferUtils.toWordArray(iv).clone();
+		}
 		this.blockLengthWords = blockLengthWords;
 	}
 
@@ -241,15 +243,20 @@ var Crypto = (function() {
 		}.bind(this);
 
 		if (!this.encryptCipher) {
-			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
-				if (err) {
-					callback(err);
-					return;
-				}
-				this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: iv });
-				this.iv = iv;
+			if(this.iv) {
+				this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: this.iv });
 				then();
-			}.bind(this));
+			} else {
+				generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
+					if (err) {
+						callback(err);
+						return;
+					}
+					this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: iv });
+					this.iv = iv;
+					then();
+				}.bind(this));
+			}
 		} else {
 			then();
 		}
