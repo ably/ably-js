@@ -25,12 +25,10 @@ var Presence = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		this.channel._afterOptionsSet(function() {
-			var options = this.channel.channelOptions;
-			(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
-				return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
-			})).get(params, callback);
-		}.bind(this));
+		var options = this.channel.channelOptions;
+		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
+		})).get(params, callback);
 	};
 
 	Presence.prototype.history = function(params, callback) {
@@ -57,12 +55,10 @@ var Presence = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		this.channel._afterOptionsSet(function() {
-			var options = this.channel.channelOptions;
-			(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
-				return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
-			})).get(params, callback);
-		}.bind(this));
+		var options = this.channel.channelOptions;
+		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
+		})).get(params, callback);
 	};
 
 	return Presence;

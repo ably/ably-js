@@ -66,15 +66,13 @@ var RealtimeChannel = (function() {
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
-		this._afterOptionsSet(function() {
-			var options = this.channelOptions;
-			Message.encodeArray(messages, options, function(err) {
-				if (err) {
-					callback(err);
-					return;
-				}
-				this._publish(messages, callback);
-			}.bind(this));
+		var options = this.channelOptions;
+		Message.encodeArray(messages, options, function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			this._publish(messages, callback);
 		}.bind(this));
 	};
 
@@ -315,22 +313,20 @@ var RealtimeChannel = (function() {
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			this._afterOptionsSet(function() {
-				var options = this.channelOptions;
-				for(var i = 0; i < presence.length; i++) {
-					try {
-						var presenceMsg = presence[i];
-						PresenceMessage.decode(presenceMsg, options);
-					} catch (e) {
-						Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-						this.emit('error', e);
-					}
-					if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
-					if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
-					if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+			var options = this.channelOptions;
+			for(var i = 0; i < presence.length; i++) {
+				try {
+					var presenceMsg = presence[i];
+					PresenceMessage.decode(presenceMsg, options);
+				} catch (e) {
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
-				this.presence.setPresence(presence, isSync, syncChannelSerial);
-			}.bind(this));
+				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
+				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
+				if(!presenceMsg.id) presenceMsg.id = id + ':' + i;
+			}
+			this.presence.setPresence(presence, isSync, syncChannelSerial);
 			break;
 
 		case actions.MESSAGE:
@@ -339,23 +335,21 @@ var RealtimeChannel = (function() {
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			this._afterOptionsSet(function() {
-				var options = this.channelOptions;
-				for(var i = 0; i < messages.length; i++) {
-					try {
-						var msg = messages[i];
-						Message.decode(msg, options);
-					} catch (e) {
-						/* decrypt failed .. the most likely cause is that we have the wrong key */
-						Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-						this.emit('error', e);
-					}
-					if(!msg.connectionId) msg.connectionId = connectionId;
-					if(!msg.timestamp) msg.timestamp = timestamp;
-					if(!msg.id) msg.id = id + ':' + i;
+			var options = this.channelOptions;
+			for(var i = 0; i < messages.length; i++) {
+				try {
+					var msg = messages[i];
+					Message.decode(msg, options);
+				} catch (e) {
+					/* decrypt failed .. the most likely cause is that we have the wrong key */
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					this.emit('error', e);
 				}
-				this.onEvent(messages);
-			}.bind(this));
+				if(!msg.connectionId) msg.connectionId = connectionId;
+				if(!msg.timestamp) msg.timestamp = timestamp;
+				if(!msg.id) msg.id = id + ':' + i;
+			}
+			this.onEvent(messages);
 			break;
 
 		case actions.ERROR:

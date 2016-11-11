@@ -54,13 +54,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				var testMessage = Message.fromEncoded(item.encoded);
 				var encryptedMessage = Message.fromEncoded(item.encrypted);
 				/* reset channel cipher, to ensure it uses the given iv */
-				channel.setOptions({cipher: {key: key, iv: iv}}, function(err) {
-					if (err) {
-						test.ok(false, 'Unable to set channel options; err = ' + helper.displayError(err));
-						return;
-					}
-					fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
-				});
+				channel.setOptions({cipher: {key: key, iv: iv}});
+				fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
 			}
 			closeAndFinish(test, realtime);
 		});
@@ -300,41 +295,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			messageText = 'Test message (' + channelName + ')';
 
 		Crypto.generateRandomKey(128, function(err, key) {
-			channel.setOptions({cipher: {key: key}}, function(err) {
-				if(err) {
-					test.ok(false, 'Unable to set channel options; err = ' + displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				test.equal(channel.channelOptions.cipher.algorithm, 'aes');
-				test.equal(channel.channelOptions.cipher.keyLength, 128);
-				function sendAll(sendCb) {
-					var sent = 0;
-					var sendOnce = function() {
-						channel.publish('event0', messageText);
-						if(++sent == iterations) {
-							sendCb(null);
-							return;
-						}
-						setTimeout(sendOnce, delay);
-					};
-					sendOnce();
-				}
-				function recvAll(recvCb) {
-					var received = 0;
-					channel.subscribe('event0', function(msg) {
-						test.ok(msg.data == messageText);
-						if(++received == iterations)
-							recvCb(null);
-					});
-				}
-				async.parallel([sendAll, recvAll], function(err) {
-					if(err) {
-						test.ok(false, 'Error sending messages; err = ' + displayError(err));
+			channel.setOptions({cipher: {key: key}});
+			test.equal(channel.channelOptions.cipher.algorithm, 'aes');
+			test.equal(channel.channelOptions.cipher.keyLength, 128);
+			function sendAll(sendCb) {
+				var sent = 0;
+				var sendOnce = function() {
+					channel.publish('event0', messageText);
+					if(++sent == iterations) {
+						sendCb(null);
+						return;
 					}
-					test.ok('Verify all messages received');
-					closeAndFinish(test, realtime);
+					setTimeout(sendOnce, delay);
+				};
+				sendOnce();
+			}
+			function recvAll(recvCb) {
+				var received = 0;
+				channel.subscribe('event0', function(msg) {
+					test.ok(msg.data == messageText);
+					if(++received == iterations)
+						recvCb(null);
 				});
+			}
+			async.parallel([sendAll, recvAll], function(err) {
+				if(err) {
+					test.ok(false, 'Error sending messages; err = ' + displayError(err));
+				}
+				test.ok('Verify all messages received');
+				closeAndFinish(test, realtime);
 			});
 		});
 	}
@@ -366,8 +355,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			async.parallel([
-				function(cb) { txChannel.setOptions({cipher: {key: key}}, cb) },
-				function(cb) { rxChannel.setOptions({cipher: {key: key}}, cb) }
+				function(cb) { txChannel.setOptions({cipher: {key: key}}); cb(); },
+				function(cb) { rxChannel.setOptions({cipher: {key: key}}); cb(); }
 			], function(err) {
 				if(err) {
 					test.ok(false, 'Unable to set cipher; err = ' + displayError(err));
@@ -471,8 +460,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rxKey = res[1];
 
 			async.parallel([
-				function(cb) { txChannel.setOptions({cipher: {key: txKey}}, cb) },
-				function(cb) { rxChannel.setOptions({cipher: {key: rxKey}}, cb) }
+				function(cb) { txChannel.setOptions({cipher: {key: txKey}}); cb(); },
+				function(cb) { rxChannel.setOptions({cipher: {key: rxKey}}); cb(); }
 			], function() {
 				rxChannel.subscribe('event0', function(msg) {
 					test.ok(msg.data != messageText);
@@ -515,13 +504,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				rxChannel.setOptions({cipher: {key: rxKey}}, function() {
-					rxChannel.subscribe('event0', function(msg) {
-						test.ok(msg.data == messageText);
-						closeAndFinish(test, [txRealtime, rxRealtime]);
-					});
-					txChannel.publish('event0', messageText);
+				rxChannel.setOptions({cipher: {key: rxKey}});
+				rxChannel.subscribe('event0', function(msg) {
+					test.ok(msg.data == messageText);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 				});
+				txChannel.publish('event0', messageText);
 			});
 		});
 	};
@@ -558,13 +546,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					closeAndFinish(test, [txRealtime, rxRealtime]);
 					return;
 				}
-				txChannel.setOptions({cipher: {key: txKey}}, function() {
-					rxChannel.subscribe('event0', function(msg) {
-						test.ok(msg.encoding.indexOf('cipher') > -1);
-						closeAndFinish(test, [txRealtime, rxRealtime]);
-					});
-					txChannel.publish('event0', messageText);
+				txChannel.setOptions({cipher: {key: txKey}});
+				rxChannel.subscribe('event0', function(msg) {
+					test.ok(msg.encoding.indexOf('cipher') > -1);
+					closeAndFinish(test, [txRealtime, rxRealtime]);
 				});
+				txChannel.publish('event0', messageText);
 			});
 		});
 	};
@@ -601,8 +588,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				firstKey = key;
 				async.parallel([
-					function(innercb) {rxChannel.setOptions({cipher: {key: key}}, innercb);},
-					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);}
+					function(innercb) {rxChannel.setOptions({cipher: {key: key}}); innercb();},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}); innercb();}
 				], cb)
 			});
 		};
@@ -626,8 +613,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				secondKey = key;
 				async.parallel([
-					function(innercb) {rxChannel.setOptions({cipher: null}, innercb);},
-					function(innercb) {txChannel.setOptions({cipher: {key: key}}, innercb);}
+					function(innercb) {rxChannel.setOptions({cipher: null}); innercb();},
+					function(innercb) {txChannel.setOptions({cipher: {key: key}}); innercb();}
 				], cb)
 			});
 		};
@@ -643,7 +630,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		};
 
 		var setSecondKey = function(cb) {
-			rxChannel.setOptions({cipher: {key: secondKey}}, cb);
+			rxChannel.setOptions({cipher: {key: secondKey}});
+			cb();
 		};
 
 		var sendThirdMessage = function(cb) {

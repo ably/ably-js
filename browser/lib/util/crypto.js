@@ -202,32 +202,20 @@ var Crypto = (function() {
 	 * @param params either a CipherParams instance or some subset of its
 	 * fields that includes a key
 	 */
-	Crypto.getCipher = function(params, callback) {
+	Crypto.getCipher = function(params) {
 		var cipherParams = (params instanceof CipherParams) ?
 		                   params :
 		                   Crypto.getDefaultParams(params);
 
-		var then = function(err, iv) {
-			callback(err, {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)})
-		}
-
-		var iv = params.iv;
-		if (iv) {
-			then(null, iv);
-		} else {
-			generateRandom(DEFAULT_BLOCKLENGTH, then);
-		}
+		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS)};
 	};
 
-	function CBCCipher(params, iv) {
+	function CBCCipher(params, blockLengthWords) {
 		this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
-		var cjsAlgorithm = this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
-		var key = this.key = BufferUtils.toWordArray(params.key);
-		/* clone the iv as CryptoJS's concat method mutates the receiver; don't want to
-		* mutate something that may have been passed in by the user */
-		var iv = this.iv = BufferUtils.toWordArray(iv).clone();
-		this.encryptCipher = CryptoJS.algo[cjsAlgorithm].createEncryptor(key, { iv: iv });
-		this.blockLengthWords = iv.words.length;
+		this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
+		this.key = BufferUtils.toWordArray(params.key);
+		this.iv = params.iv;
+		this.blockLengthWords = blockLengthWords;
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext, callback) {
@@ -238,17 +226,33 @@ var Crypto = (function() {
 		var plaintextLength = plaintext.sigBytes,
 			paddedLength = getPaddedLength(plaintextLength);
 
-		this.getIv(function(err, iv) {
-			if (err) {
-				callback(err);
-				return;
-			}
-			var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
-			var ciphertext = iv.concat(cipherOut);
-			//console.log('encrypt: ciphertext:');
-			//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
-			callback(null, ciphertext);
-		}.bind(this));
+		var then = function() {
+			this.getIv(function(err, iv) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
+				var ciphertext = iv.concat(cipherOut);
+				//console.log('encrypt: ciphertext:');
+				//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
+				callback(null, ciphertext);
+			}.bind(this));
+		}.bind(this);
+
+		if (!this.encryptCipher) {
+			generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: iv });
+				this.iv = iv;
+				then();
+			}.bind(this));
+		} else {
+			then();
+		}
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {

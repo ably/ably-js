@@ -9,52 +9,22 @@ var Channel = (function() {
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
-		this._waitingOptions = [];
 		this.setOptions(channelOptions);
 	}
 	Utils.inherits(Channel, EventEmitter);
 
-	Channel.prototype.setOptions = function(options, callback) {
-		this._optionsSet = false;
-		var callerCallback = callback || noop;
-
-		// Perform actions waiting on setOptions to finish.
-		callback = function() {
-			this._optionsSet = true;
-			for (var i = 0; i < this._waitingOptions.length; i++) {
-				this._waitingOptions[i]();
-			}
-			this._waitingOptions = [];
-			callerCallback.apply(this, arguments);
-		}.bind(this);
-
+	Channel.prototype.setOptions = function(options) {
 		this.channelOptions = options = options || {};
 		if(options.cipher) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			Crypto.getCipher(options.cipher, function(err, cipherResult) {
-				if (err) {
-					callback(err);
-					return;
-				}
-				options.cipher = cipherResult.cipherParams;
-				options.channelCipher = cipherResult.cipher;
-				callback(null);
-			});
-			return;
+			var cipher = Crypto.getCipher(options.cipher);
+			options.cipher = cipher.cipherParams;
+			options.channelCipher = cipher.cipher;
 		} else if('cipher' in options) {
 			/* Don't deactivate an existing cipher unless options
 			 * has a 'cipher' key that's falsey */
 			options.cipher = null;
 			options.channelCipher = null;
-		}
-		callback(null);
-	};
-
-	Channel.prototype._afterOptionsSet = function(callback) {
-		if (this._optionsSet) {
-			callback();
-		} else {
-			this._waitingOptions.push(callback);
 		}
 	};
 
@@ -83,12 +53,10 @@ var Channel = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		this._afterOptionsSet(function() {
-			var options = this.channelOptions;
-			(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-				return Message.fromResponseBody(body, options, !unpacked && format, channel);
-			})).get(params, callback);
-		}.bind(this));
+		var options = this.channelOptions;
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
+			return Message.fromResponseBody(body, options, !unpacked && format, channel);
+		})).get(params, callback);
 	};
 
 	Channel.prototype.publish = function() {
@@ -111,21 +79,19 @@ var Channel = (function() {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 
-		this._afterOptionsSet(function() {
-			var rest = this.rest,
-				format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-				headers = Utils.copy(Utils.defaultPostHeaders(format));
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultPostHeaders(format));
 
-			if(rest.options.headers)
-				Utils.mixin(headers, rest.options.headers);
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
 
-			Message.toRequestBody(messages, this.channelOptions, format, function(err, requestBody) {
-				if (err) {
-					callback(err);
-					return;
-				}
-				this._publish(requestBody, headers, callback);
-			}.bind(this));
+		Message.toRequestBody(messages, this.channelOptions, format, function(err, requestBody) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			this._publish(requestBody, headers, callback);
 		}.bind(this));
 	};
 
