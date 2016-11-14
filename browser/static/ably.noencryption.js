@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.1
+ * Ably JavaScript Library v0.9.0-beta.2
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -1158,598 +1158,6 @@ var CryptoJS = CryptoJS || (function (Math, undefined) {
     };
 }());
 
-var Defaults = {
-	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
-	jsonpInternetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up-0-9.js',
-	/* Order matters here: the base transport is the leftmost one in the
-	 * intersection of this list and the transports clientOption that's
-	 * supported.  This is not quite the same as the preference order -- e.g.
-	 * xhr_polling is preferred to jsonp, but for browsers that support it we want
-	 * the base transport to be xhr_polling, not jsonp */
-	transports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
-	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
-	upgradeTransports: ['xhr_streaming', 'web_socket'],
-	minified: !(function _(){}).name
-};
-
-/* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -
-* while it can do streaming, the low max http-connections-per-host limit means
-* that the polling transport is crippled during the upgrade process. So just
-* leave it at the base transport */
-if(navigator.userAgent.toString().match(/MSIE\s8\.0/)) {
-	Defaults.upgradeTransports = [];
-}
-
-
-var BufferUtils = (function() {
-	var WordArray = CryptoJS.lib.WordArray;
-	var ArrayBuffer = window.ArrayBuffer;
-	var TextDecoder = window.TextDecoder;
-
-	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
-	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
-
-	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
-	function arrayBufferToBase64(ArrayBuffer) {
-		var base64    = ''
-		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-
-		var bytes         = new Uint8Array(ArrayBuffer)
-		var byteLength    = bytes.byteLength
-		var byteRemainder = byteLength % 3
-		var mainLength    = byteLength - byteRemainder
-
-		var a, b, c, d
-		var chunk
-
-		// Main loop deals with bytes in chunks of 3
-		for (var i = 0; i < mainLength; i = i + 3) {
-			// Combine the three bytes into a single integer
-			chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-
-			// Use bitmasks to extract 6-bit segments from the triplet
-			a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
-			b = (chunk & 258048)   >> 12 // 258048   = (2^6 - 1) << 12
-			c = (chunk & 4032)     >>  6 // 4032     = (2^6 - 1) << 6
-			d = chunk & 63               // 63       = 2^6 - 1
-
-			// Convert the raw binary segments to the appropriate ASCII encoding
-			base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
-		}
-
-		// Deal with the remaining bytes and padding
-		if (byteRemainder == 1) {
-			chunk = bytes[mainLength]
-
-			a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
-
-			// Set the 4 least significant bits to zero
-			b = (chunk & 3)   << 4 // 3   = 2^2 - 1
-
-			base64 += encodings[a] + encodings[b] + '=='
-		} else if (byteRemainder == 2) {
-			chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
-
-			a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
-			b = (chunk & 1008)  >>  4 // 1008  = (2^6 - 1) << 4
-
-			// Set the 2 least significant bits to zero
-			c = (chunk & 15)    <<  2 // 15    = 2^4 - 1
-
-			base64 += encodings[a] + encodings[b] + encodings[c] + '='
-		}
-
-		return base64
-	}
-
-	function base64ToArrayBuffer(base64) {
-		var binary_string =  window.atob(base64);
-		var len = binary_string.length;
-		var bytes = new Uint8Array( len );
-		for (var i = 0; i < len; i++)        {
-			var ascii = binary_string.charCodeAt(i);
-			bytes[i] = ascii;
-		}
-		return bytes.buffer;
-	}
-
-	function BufferUtils() {}
-
-	BufferUtils.supportsBinary = !!TextDecoder;
-
-	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
-
-	BufferUtils.toArrayBuffer = function(buf) {
-		if(!ArrayBuffer)
-			throw new Error("Can't convert to ArrayBuffer: ArrayBuffer not supported");
-
-		if(isArrayBuffer(buf))
-			return buf;
-
-		if(isWordArray(buf)) {
-			/* Backported from unreleased CryptoJS
-			* https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
-			var arrayBuffer = new ArrayBuffer(buf.sigBytes);
-			var uint8View = new Uint8Array(arrayBuffer);
-
-			for (var i = 0; i < buf.sigBytes; i++) {
-				uint8View[i] = (buf.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-			}
-
-			return arrayBuffer;
-		};
-
-		throw new Error("BufferUtils.toArrayBuffer expected a buffer");
-	};
-
-	BufferUtils.toWordArray = function(buf) {
-		return isWordArray(buf) ? buf : WordArray.create(buf);
-	};
-
-	BufferUtils.base64Encode = function(buf) {
-		if(isArrayBuffer(buf))
-			return arrayBufferToBase64(buf);
-		if(isWordArray(buf))
-			return CryptoJS.enc.Base64.stringify(buf);
-	};
-
-	BufferUtils.base64Decode = function(str) {
-		if(ArrayBuffer)
-			return base64ToArrayBuffer(str);
-		return CryptoJS.enc.Base64.parse(str);
-	};
-
-	BufferUtils.hexEncode = function(buf) {
-		if(isArrayBuffer(buf)) buf = WordArray.create(buf);
-		return CryptoJS.enc.Hex.stringify(buf);
-	};
-
-	BufferUtils.utf8Encode = function(string) {
-		return CryptoJS.enc.Utf8.parse(string);
-	};
-
-	BufferUtils.utf8Decode = function(buf) {
-		if(isArrayBuffer(buf))
-			buf = BufferUtils.toWordArray(buf) // CryptoJS only works with WordArrays
-		if(isWordArray(buf))
-			return CryptoJS.enc.Utf8.stringify(buf);
-		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
-	};
-
-	BufferUtils.bufferCompare = function(buf1, buf2) {
-		if(!buf1) return -1;
-		if(!buf2) return 1;
-		buf1 = BufferUtils.toWordArray(buf1);
-		buf2 = BufferUtils.toWordArray(buf2);
-		buf1.clamp(); buf2.clamp();
-
-		var cmp = buf1.sigBytes - buf2.sigBytes;
-		if(cmp != 0) return cmp;
-		buf1 = buf1.words; buf2 = buf2.words;
-		for(var i = 0; i < buf1.length; i++) {
-			cmp = buf1[i] - buf2[i];
-			if(cmp != 0) return cmp;
-		}
-		return 0;
-	};
-
-	return BufferUtils;
-})();
-
-var WebStorage = (function() {
-	var sessionSupported,
-		localSupported,
-		test = 'ablyjs-storage-test';
-
-	/* Even just accessing the session/localStorage object can throw a
-	 * security exception in some circumstances with some browsers. In
-	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no window object,
-	 * will throw on accessing a property of undefined) */
-	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
-		sessionSupported = true;
-	} catch(e) {
-		sessionSupported = false;
-	}
-
-	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
-		localSupported = true;
-	} catch(e) {
-		localSupported = false;
-	}
-
-	function WebStorage() {}
-
-	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
-	}
-
-	function set(name, value, ttl, session) {
-		var wrappedValue = {value: value};
-		if(ttl) {
-			wrappedValue.expires = Utils.now() + ttl;
-		}
-		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
-	}
-
-	function get(name, session) {
-		var rawItem = storageInterface(session).getItem(name);
-		if(!rawItem) return null;
-		var wrappedValue = JSON.parse(rawItem);
-		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
-			storageInterface(session).removeItem(name);
-			return null;
-		}
-		return wrappedValue.value;
-	}
-
-	function remove(name, session) {
-		return storageInterface(session).removeItem(name);
-	}
-
-	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
-	}
-
-	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
-	}
-
-	return WebStorage;
-})();
-
-var Http = (function() {
-	var noop = function() {};
-
-	function Http() {}
-
-	function shouldFallback(err) {
-		var statusCode = err.statusCode;
-		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
-		 * detail to know whether it's fallback-fixable, but it may be (eg if a
-		 * network issue), so try just in case */
-		return (statusCode === 408 && !err.code) ||
-			(statusCode === 400 && !err.code)      ||
-			(statusCode >= 500 && statusCode <= 504);
-	}
-
-	/**
-	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
-	 * @param rest
-	 * @param path the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.get = function(rest, path, headers, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					/* use a fallback host if available */
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		}
-		tryAHost(hosts);
-	};
-
-	/**
-	 * Perform an HTTP GET request for a given resolved URI
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(rest, uri, headers, params, null, callback || noop);
-	};
-
-	/**
-	 * Perform an HTTP POST request
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.post = function(rest, path, headers, body, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
-			return;
-		}
-
-		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		};
-		tryAHost(hosts);
-	};
-
-	/**
-	 * Perform an HTTP POST request for a given resolved URI
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(rest, uri, headers, params, body, callback || noop);
-	};
-
-	Http.supportsAuthHeaders = false;
-	Http.supportsLinkHeaders = false;
-	return Http;
-})();
-
-/*
- Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
-
- Permission is hereby granted, free of charge, to any person
- obtaining a copy of this software and associated documentation
- files (the "Software"), to deal in the Software without
- restriction, including without limitation the rights to use,
- copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following
- conditions:
-
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
- */
-var Base64 = (function() {
-	function StringBuffer()
-	{
-		this.buffer = [];
-	}
-
-	StringBuffer.prototype.append = function append(string)
-	{
-		this.buffer.push(string);
-		return this;
-	};
-
-	StringBuffer.prototype.toString = function toString()
-	{
-		return this.buffer.join("");
-	};
-
-	var Base64 =
-	{
-		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-		encode : function (input)
-		{
-			var output = new StringBuffer();
-			var codex = Base64.codex;
-
-			var enumerator = new Utf8EncodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var chr1 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr2 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr3 = enumerator.current;
-
-				var enc1 = chr1 >> 2;
-				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-				var enc4 = chr3 & 63;
-
-				if (isNaN(chr2))
-				{
-					enc3 = enc4 = 64;
-				}
-				else if (isNaN(chr3))
-				{
-					enc4 = 64;
-				}
-
-				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
-			}
-
-			return output.toString();
-		},
-
-		decode : function (input)
-		{
-			var output = new StringBuffer();
-
-			var enumerator = new Base64DecodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var charCode = enumerator.current;
-
-				if (charCode < 128)
-					output.append(String.fromCharCode(charCode));
-				else if ((charCode > 191) && (charCode < 224))
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
-				}
-				else
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					enumerator.moveNext();
-					var charCode3 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
-				}
-			}
-
-			return output.toString();
-		}
-	};
-
-	function Utf8EncodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Utf8EncodeEnumerator.prototype =
-	{
-		current: Number.NaN,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = Number.NaN;
-				return false;
-			}
-			else
-			{
-				var charCode = this._input.charCodeAt(++this._index);
-
-				// "\r\n" -> "\n"
-				//
-				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
-				{
-					charCode = 10;
-					this._index += 2;
-				}
-
-				if (charCode < 128)
-				{
-					this.current = charCode;
-				}
-				else if ((charCode > 127) && (charCode < 2048))
-				{
-					this.current = (charCode >> 6) | 192;
-					this._buffer.push((charCode & 63) | 128);
-				}
-				else
-				{
-					this.current = (charCode >> 12) | 224;
-					this._buffer.push(((charCode >> 6) & 63) | 128);
-					this._buffer.push((charCode & 63) | 128);
-				}
-
-				return true;
-			}
-		}
-	};
-
-	function Base64DecodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Base64DecodeEnumerator.prototype =
-	{
-		current: 64,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = 64;
-				return false;
-			}
-			else
-			{
-				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
-
-				var chr1 = (enc1 << 2) | (enc2 >> 4);
-				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-				var chr3 = ((enc3 & 3) << 6) | enc4;
-
-				this.current = chr1;
-
-				if (enc3 != 64)
-					this._buffer.push(chr2);
-
-				if (enc4 != 64)
-					this._buffer.push(chr3);
-
-				return true;
-			}
-		}
-	};
-
-	return Base64;
-})();
-
 var DomEvent = (function() {
 	function DomEvent() {}
 
@@ -1783,6 +1191,7 @@ var DomEvent = (function() {
 
 	return DomEvent;
 })();
+
 (// Module boilerplate to support browser globals and browserify and AMD.
 		typeof define === "function" ? function(m) {
 	define("msgpack-js", m);
@@ -2611,6 +2020,623 @@ var DomEvent = (function() {
 
 	return exports;
 });
+if(typeof window !== 'object') {
+	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
+}
+
+var Platform = {
+	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
+	binaryType: 'arraybuffer',
+	WebSocket: window.WebSocket || window.MozWebSocket,
+	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
+	useProtocolHeartbeats: true,
+	createHmac: null,
+	msgpack: Ably.msgpack,
+	supportsBinary: !!window.TextDecoder,
+	preferBinary: false,
+	ArrayBuffer: window.ArrayBuffer,
+	atob: window.atob,
+	nextTick: function(f) { setTimeout(f, 0); },
+	addEventListener: window.addEventListener,
+	getRandomValues: (function(crypto) {
+		return function(arr, callback) {
+			crypto.getRandomValues(arr);
+			callback(null);
+		};
+	})(window.crypto || window.msCrypto) // mscrypto for IE11
+};
+
+
+var Defaults = {
+	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
+	jsonpInternetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up-0-9.js',
+	/* Order matters here: the base transport is the leftmost one in the
+	 * intersection of this list and the transports clientOption that's
+	 * supported.  This is not quite the same as the preference order -- e.g.
+	 * xhr_polling is preferred to jsonp, but for browsers that support it we want
+	 * the base transport to be xhr_polling, not jsonp */
+	transports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
+	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
+	upgradeTransports: ['xhr_streaming', 'web_socket'],
+	minified: !(function _(){}).name
+};
+
+/* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -
+* while it can do streaming, the low max http-connections-per-host limit means
+* that the polling transport is crippled during the upgrade process. So just
+* leave it at the base transport */
+if(Platform.noUpgrade) {
+	Defaults.upgradeTransports = [];
+}
+
+
+var BufferUtils = (function() {
+	var WordArray = CryptoJS.lib.WordArray;
+	var ArrayBuffer = Platform.ArrayBuffer;
+	var atob = Platform.atob;
+
+	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
+	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
+
+	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
+	function arrayBufferToBase64(ArrayBuffer) {
+		var base64    = ''
+		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+		var bytes         = new Uint8Array(ArrayBuffer)
+		var byteLength    = bytes.byteLength
+		var byteRemainder = byteLength % 3
+		var mainLength    = byteLength - byteRemainder
+
+		var a, b, c, d
+		var chunk
+
+		// Main loop deals with bytes in chunks of 3
+		for (var i = 0; i < mainLength; i = i + 3) {
+			// Combine the three bytes into a single integer
+			chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+
+			// Use bitmasks to extract 6-bit segments from the triplet
+			a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
+			b = (chunk & 258048)   >> 12 // 258048   = (2^6 - 1) << 12
+			c = (chunk & 4032)     >>  6 // 4032     = (2^6 - 1) << 6
+			d = chunk & 63               // 63       = 2^6 - 1
+
+			// Convert the raw binary segments to the appropriate ASCII encoding
+			base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+		}
+
+		// Deal with the remaining bytes and padding
+		if (byteRemainder == 1) {
+			chunk = bytes[mainLength]
+
+			a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
+
+			// Set the 4 least significant bits to zero
+			b = (chunk & 3)   << 4 // 3   = 2^2 - 1
+
+			base64 += encodings[a] + encodings[b] + '=='
+		} else if (byteRemainder == 2) {
+			chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+
+			a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
+			b = (chunk & 1008)  >>  4 // 1008  = (2^6 - 1) << 4
+
+			// Set the 2 least significant bits to zero
+			c = (chunk & 15)    <<  2 // 15    = 2^4 - 1
+
+			base64 += encodings[a] + encodings[b] + encodings[c] + '='
+		}
+
+		return base64
+	}
+
+	function base64ToArrayBuffer(base64) {
+		var binary_string =  atob(base64);
+		var len = binary_string.length;
+		var bytes = new Uint8Array( len );
+		for (var i = 0; i < len; i++)        {
+			var ascii = binary_string.charCodeAt(i);
+			bytes[i] = ascii;
+		}
+		return bytes.buffer;
+	}
+
+	function BufferUtils() {}
+
+	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
+
+	BufferUtils.toArrayBuffer = function(buf) {
+		if(!ArrayBuffer)
+			throw new Error("Can't convert to ArrayBuffer: ArrayBuffer not supported");
+
+		if(isArrayBuffer(buf))
+			return buf;
+
+		if(isWordArray(buf)) {
+			/* Backported from unreleased CryptoJS
+			* https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
+			var arrayBuffer = new ArrayBuffer(buf.sigBytes);
+			var uint8View = new Uint8Array(arrayBuffer);
+
+			for (var i = 0; i < buf.sigBytes; i++) {
+				uint8View[i] = (buf.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+			}
+
+			return arrayBuffer;
+		};
+
+		throw new Error("BufferUtils.toArrayBuffer expected a buffer");
+	};
+
+	BufferUtils.toWordArray = function(buf) {
+		return isWordArray(buf) ? buf : WordArray.create(buf);
+	};
+
+	BufferUtils.base64Encode = function(buf) {
+		if(isArrayBuffer(buf))
+			return arrayBufferToBase64(buf);
+		if(isWordArray(buf))
+			return CryptoJS.enc.Base64.stringify(buf);
+	};
+
+	BufferUtils.base64Decode = function(str) {
+		if(ArrayBuffer && atob)
+			return base64ToArrayBuffer(str);
+		return CryptoJS.enc.Base64.parse(str);
+	};
+
+	BufferUtils.hexEncode = function(buf) {
+		if(isArrayBuffer(buf)) buf = WordArray.create(buf);
+		return CryptoJS.enc.Hex.stringify(buf);
+	};
+
+	BufferUtils.utf8Encode = function(string) {
+		return CryptoJS.enc.Utf8.parse(string);
+	};
+
+	BufferUtils.utf8Decode = function(buf) {
+		if(isArrayBuffer(buf))
+			buf = BufferUtils.toWordArray(buf) // CryptoJS only works with WordArrays
+		if(isWordArray(buf))
+			return CryptoJS.enc.Utf8.stringify(buf);
+		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
+	};
+
+	BufferUtils.bufferCompare = function(buf1, buf2) {
+		if(!buf1) return -1;
+		if(!buf2) return 1;
+		buf1 = BufferUtils.toWordArray(buf1);
+		buf2 = BufferUtils.toWordArray(buf2);
+		buf1.clamp(); buf2.clamp();
+
+		var cmp = buf1.sigBytes - buf2.sigBytes;
+		if(cmp != 0) return cmp;
+		buf1 = buf1.words; buf2 = buf2.words;
+		for(var i = 0; i < buf1.length; i++) {
+			cmp = buf1[i] - buf2[i];
+			if(cmp != 0) return cmp;
+		}
+		return 0;
+	};
+
+	return BufferUtils;
+})();
+
+var WebStorage = (function() {
+	var sessionSupported,
+		localSupported,
+		test = 'ablyjs-storage-test';
+
+	/* Even just accessing the session/localStorage object can throw a
+	 * security exception in some circumstances with some browsers. In
+	 * others, calling setItem will throw. So have to check in this
+	 * somewhat roundabout way. (If unsupported or no window object,
+	 * will throw on accessing a property of undefined) */
+	try {
+		window.sessionStorage.setItem(test, test);
+		window.sessionStorage.removeItem(test);
+		sessionSupported = true;
+	} catch(e) {
+		sessionSupported = false;
+	}
+
+	try {
+		window.localStorage.setItem(test, test);
+		window.localStorage.removeItem(test);
+		localSupported = true;
+	} catch(e) {
+		localSupported = false;
+	}
+
+	function WebStorage() {}
+
+	function storageInterface(session) {
+		return session ? window.sessionStorage : window.localStorage;
+	}
+
+	function set(name, value, ttl, session) {
+		var wrappedValue = {value: value};
+		if(ttl) {
+			wrappedValue.expires = Utils.now() + ttl;
+		}
+		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
+	}
+
+	function get(name, session) {
+		var rawItem = storageInterface(session).getItem(name);
+		if(!rawItem) return null;
+		var wrappedValue = JSON.parse(rawItem);
+		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
+			storageInterface(session).removeItem(name);
+			return null;
+		}
+		return wrappedValue.value;
+	}
+
+	function remove(name, session) {
+		return storageInterface(session).removeItem(name);
+	}
+
+	if(localSupported) {
+		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
+		WebStorage.get    = function(name) { return get(name, false); };
+		WebStorage.remove = function(name) { return remove(name, false); };
+	}
+
+	if(sessionSupported) {
+		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
+		WebStorage.getSession    = function(name) { return get(name, true); };
+		WebStorage.removeSession = function(name) { return remove(name, true); };
+	}
+
+	return WebStorage;
+})();
+
+var Http = (function() {
+	var noop = function() {};
+
+	function Http() {}
+
+	function shouldFallback(err) {
+		var statusCode = err.statusCode;
+		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
+		 * detail to know whether it's fallback-fixable, but it may be (eg if a
+		 * network issue), so try just in case */
+		return (statusCode === 408 && !err.code) ||
+			(statusCode === 400 && !err.code)      ||
+			(statusCode >= 500 && statusCode <= 504);
+	}
+
+	/**
+	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
+	 * @param rest
+	 * @param path the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.get = function(rest, path, headers, params, callback) {
+		callback = callback || noop;
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+
+		var hosts, connection = rest.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(rest.options);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
+			return;
+		}
+
+		/* so host is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					/* use a fallback host if available */
+					tryAHost(candidateHosts);
+					return;
+				}
+				callback.apply(null, arguments);
+			});
+		}
+		tryAHost(hosts);
+	};
+
+	/**
+	 * Perform an HTTP GET request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.getUri = function(rest, uri, headers, params, callback) {
+		Http.Request(rest, uri, headers, params, null, callback || noop);
+	};
+
+	/**
+	 * Perform an HTTP POST request
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param body object or buffer containing request body
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.post = function(rest, path, headers, body, params, callback) {
+		callback = callback || noop;
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+
+		var hosts, connection = rest.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(rest.options);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
+			return;
+		}
+
+		/* hosts is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
+					return;
+				}
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
+	};
+
+	/**
+	 * Perform an HTTP POST request for a given resolved URI
+	 * @param rest
+	 * @param the full path of the POST request
+	 * @param headers optional hash of headers
+	 * @param body object or buffer containing request body
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Http.postUri = function(rest, uri, headers, body, params, callback) {
+		Http.Request(rest, uri, headers, params, body, callback || noop);
+	};
+
+	Http.supportsAuthHeaders = false;
+	Http.supportsLinkHeaders = false;
+	return Http;
+})();
+
+/*
+ Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
+
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal in the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following
+ conditions:
+
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+ */
+var Base64 = (function() {
+	function StringBuffer()
+	{
+		this.buffer = [];
+	}
+
+	StringBuffer.prototype.append = function append(string)
+	{
+		this.buffer.push(string);
+		return this;
+	};
+
+	StringBuffer.prototype.toString = function toString()
+	{
+		return this.buffer.join("");
+	};
+
+	var Base64 =
+	{
+		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+		encode : function (input)
+		{
+			var output = new StringBuffer();
+			var codex = Base64.codex;
+
+			var enumerator = new Utf8EncodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var chr1 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr2 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr3 = enumerator.current;
+
+				var enc1 = chr1 >> 2;
+				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+				var enc4 = chr3 & 63;
+
+				if (isNaN(chr2))
+				{
+					enc3 = enc4 = 64;
+				}
+				else if (isNaN(chr3))
+				{
+					enc4 = 64;
+				}
+
+				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
+			}
+
+			return output.toString();
+		},
+
+		decode : function (input)
+		{
+			var output = new StringBuffer();
+
+			var enumerator = new Base64DecodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var charCode = enumerator.current;
+
+				if (charCode < 128)
+					output.append(String.fromCharCode(charCode));
+				else if ((charCode > 191) && (charCode < 224))
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
+				}
+				else
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					enumerator.moveNext();
+					var charCode3 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
+				}
+			}
+
+			return output.toString();
+		}
+	};
+
+	function Utf8EncodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Utf8EncodeEnumerator.prototype =
+	{
+		current: Number.NaN,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = Number.NaN;
+				return false;
+			}
+			else
+			{
+				var charCode = this._input.charCodeAt(++this._index);
+
+				// "\r\n" -> "\n"
+				//
+				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
+				{
+					charCode = 10;
+					this._index += 2;
+				}
+
+				if (charCode < 128)
+				{
+					this.current = charCode;
+				}
+				else if ((charCode > 127) && (charCode < 2048))
+				{
+					this.current = (charCode >> 6) | 192;
+					this._buffer.push((charCode & 63) | 128);
+				}
+				else
+				{
+					this.current = (charCode >> 12) | 224;
+					this._buffer.push(((charCode >> 6) & 63) | 128);
+					this._buffer.push((charCode & 63) | 128);
+				}
+
+				return true;
+			}
+		}
+	};
+
+	function Base64DecodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Base64DecodeEnumerator.prototype =
+	{
+		current: 64,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = 64;
+				return false;
+			}
+			else
+			{
+				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
+
+				var chr1 = (enc1 << 2) | (enc2 >> 4);
+				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				var chr3 = ((enc3 & 3) << 6) | enc4;
+
+				this.current = chr1;
+
+				if (enc3 != 64)
+					this._buffer.push(chr2);
+
+				if (enc4 != 64)
+					this._buffer.push(chr3);
+
+				return true;
+			}
+		}
+	};
+
+	return Base64;
+})();
+
 Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
@@ -2633,7 +2659,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.1';
+Defaults.version          = '0.9.0-beta.2';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.9';
 
@@ -2718,6 +2744,12 @@ Defaults.normaliseOptions = function(options) {
 	for(var prop in Defaults.TIMEOUTS) {
 		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
 	};
+
+	if('useBinaryProtocol' in options) {
+		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
+	} else {
+		options.useBinaryProtocol = Platform.preferBinary;
+	}
 
 	return options;
 };
@@ -3000,8 +3032,6 @@ var Logger = (function() {
 })();
 
 var Utils = (function() {
-	var isBrowser = (typeof(window) == 'object');
-
 	function Utils() {}
 
 	/*
@@ -3288,7 +3318,7 @@ var Utils = (function() {
 			return true;
 		};
 
-	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
+	Utils.nextTick = Platform.nextTick;
 
 	var contentTypes = {
 		json:   'application/json',
@@ -3442,7 +3472,7 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function Message() {
 		this.name = undefined;
@@ -3514,7 +3544,7 @@ var Message = (function() {
 		return result;
 	};
 
-	Message.encrypt = function(msg, options) {
+	Message.encrypt = function(msg, options, callback) {
 		var data = msg.data,
 			encoding = msg.encoding,
 			cipher = options.channelCipher;
@@ -3524,11 +3554,18 @@ var Message = (function() {
 			data = BufferUtils.utf8Encode(String(data));
 			encoding = encoding + 'utf-8/';
 		}
-		msg.data = cipher.encrypt(data);
-		msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+		cipher.encrypt(data, function(err, data) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			msg.data = data;
+			msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+			callback(null, msg);
+		});
 	};
 
-	Message.encode = function(msg, options) {
+	Message.encode = function(msg, options, callback) {
 		var data = msg.data, encoding,
 			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
@@ -3541,15 +3578,37 @@ var Message = (function() {
 			}
 		}
 
-		if(options != null && options.cipher)
-			Message.encrypt(msg, options);
+		if(options != null && options.cipher) {
+			Message.encrypt(msg, options, callback);
+		} else {
+			callback(null, msg);
+		}
 	};
 
-	Message.toRequestBody = function(messages, options, format) {
-		for (var i = 0; i < messages.length; i++)
-			Message.encode(messages[i], options);
+	Message.encodeArray = function(messages, options, callback) {
+		var processed = 0;
+		for (var i = 0; i < messages.length; i++) {
+			Message.encode(messages[i], options, function(err, msg) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				processed++;
+				if (processed == messages.length) {
+					callback(null, messages);
+				}
+			});
+		}
+	};
 
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
+	Message.toRequestBody = function(messages, options, format, callback) {
+		Message.encodeArray(messages, options, function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			callback(null, (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages));
+		});
 	};
 
 	Message.decode = function(message, options) {
@@ -3648,7 +3707,7 @@ var Message = (function() {
 })();
 
 var PresenceMessage = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -3802,7 +3861,7 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -4294,22 +4353,25 @@ var ConnectionManager = (function() {
 			throw new Error(msg);
 		}
 
-		/* intercept close event in browser to persist connection id if requested */
-		if(haveSessionStorage && typeof options.recover === 'function' && window.addEventListener)
-			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+		var addEventListener = Platform.addEventListener;
+		if(addEventListener) {
+			/* intercept close event in browser to persist connection id if requested */
+			if(haveSessionStorage && typeof options.recover === 'function') {
+				addEventListener('beforeunload', this.persistConnection.bind(this));
+			}
 
-		if(options.closeOnUnload === true && window.addEventListener)
-			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			if(options.closeOnUnload === true) {
+				addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			}
 
-		/* Listen for online and offline events */
-		if(typeof window === 'object' && window.addEventListener) {
-			window.addEventListener('online', function() {
+			/* Listen for online and offline events */
+			addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
 					self.requestState({state: 'connecting'});
 				}
 			});
-			window.addEventListener('offline', function() {
+			addEventListener('offline', function() {
 				if(self.state == self.states.connected) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
 					// Not sufficient to just go to the 'disconnected' state, want to
@@ -5838,9 +5900,7 @@ var Transport = (function() {
 })();
 
 var WebSocketTransport = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var WebSocket = isBrowser ? (window.WebSocket || window.MozWebSocket) : require('ws');
-	var binaryType = isBrowser ? 'arraybuffer' : 'nodebuffer';
+	var WebSocket = Platform.WebSocket;
 	var shortName = 'web_socket';
 
 	/* public constructor */
@@ -5848,7 +5908,7 @@ var WebSocketTransport = (function() {
 		this.shortName = shortName;
 		this.timeoutOnIdle = true;
 		/* If is a browser, can't detect pings, so request protocol heartbeats */
-		params.heartbeats = isBrowser;
+		params.heartbeats = Platform.useProtocolHeartbeats;
 		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
@@ -5904,7 +5964,7 @@ var WebSocketTransport = (function() {
 			var connectParams = params.getConnectParams(authParams);
 			try {
 				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
-				wsConnection.binaryType = binaryType;
+				wsConnection.binaryType = Platform.binaryType;
 				wsConnection.onopen = function() { self.onWsOpen(); };
 				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
 				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
@@ -6359,12 +6419,12 @@ var Presence = (function() {
 		var rest = this.channel.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.channelOptions;
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
 		})).get(params, callback);
@@ -6389,12 +6449,12 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.channelOptions,
 			channel = this.channel;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
 			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
@@ -6404,7 +6464,7 @@ var Presence = (function() {
 })();
 
 var Resource = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function Resource() {}
 
@@ -6690,24 +6750,22 @@ var PaginatedResource = (function() {
 })();
 
 var Auth = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgPack;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
 	var hmac, toBase64;
-	if(isBrowser) {
+	if(Platform.createHmac) {
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+		hmac = function(text, key) {
+			var inst = Platform.createHmac('SHA256', key);
+			inst.update(text);
+			return inst.digest('base64');
+		};
+	} else {
 		toBase64 = Base64.encode;
 		hmac = function(text, key) {
 			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
-		};
-	} else {
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
-		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA256', key);
-			inst.update(text);
-			return inst.digest('base64');
 		};
 	}
 
@@ -7433,10 +7491,6 @@ var Rest = (function() {
 		}
 		this.options = Defaults.normaliseOptions(options);
 
-		/* use binary protocol only if it is supported and explicitly requested */
-		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
-			this.options.useBinaryProtocol = false;
-
 		/* process options */
 		if(options.key) {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
@@ -7817,21 +7871,19 @@ var Channel = (function() {
 	}
 	Utils.inherits(Channel, EventEmitter);
 
-	Channel.prototype.setOptions = function(options, callback) {
-		callback = callback || noop;
+	Channel.prototype.setOptions = function(options) {
 		this.channelOptions = options = options || {};
 		if(options.cipher) {
 			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			var cipherResult = Crypto.getCipher(options.cipher);
-			options.cipher = cipherResult.cipherParams;
-			options.channelCipher = cipherResult.cipher;
+			var cipher = Crypto.getCipher(options.cipher);
+			options.cipher = cipher.cipherParams;
+			options.channelCipher = cipher.cipher;
 		} else if('cipher' in options) {
 			/* Don't deactivate an existing cipher unless options
 			 * has a 'cipher' key that's falsey */
 			options.cipher = null;
 			options.channelCipher = null;
 		}
-		callback(null);
 	};
 
 	Channel.prototype.history = function(params, callback) {
@@ -7854,12 +7906,12 @@ var Channel = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channelOptions,
 			channel = this;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		var options = this.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
 			return Message.fromResponseBody(body, options, !unpacked && format, channel);
 		})).get(params, callback);
@@ -7887,13 +7939,18 @@ var Channel = (function() {
 
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			requestBody = Message.toRequestBody(messages, this.channelOptions, format),
 			headers = Utils.copy(Utils.defaultPostHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		this._publish(requestBody, headers, callback);
+		Message.toRequestBody(messages, this.channelOptions, format, function(err, requestBody) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			this._publish(requestBody, headers, callback);
+		}.bind(this));
 	};
 
 	Channel.prototype._publish = function(requestBody, headers, callback) {
@@ -7951,8 +8008,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1],
-			options = this.channelOptions;
+			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -7972,10 +8028,14 @@ var RealtimeChannel = (function() {
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
-		for(var i = 0; i < messages.length; i++)
-			Message.encode(messages[i], options);
-
-		this._publish(messages, callback);
+		var options = this.channelOptions;
+		Message.encodeArray(messages, options, function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			this._publish(messages, callback);
+		}.bind(this));
 	};
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
@@ -8213,9 +8273,9 @@ var RealtimeChannel = (function() {
 			var presence = message.presence,
 				id = message.id,
 				connectionId = message.connectionId,
-				timestamp = message.timestamp,
-				options = this.channelOptions;
+				timestamp = message.timestamp;
 
+			var options = this.channelOptions;
 			for(var i = 0; i < presence.length; i++) {
 				try {
 					var presenceMsg = presence[i];
@@ -8235,9 +8295,9 @@ var RealtimeChannel = (function() {
 			var messages = message.messages,
 				id = message.id,
 				connectionId = message.connectionId,
-				timestamp = message.timestamp,
-				options = this.channelOptions;
+				timestamp = message.timestamp;
 
+			var options = this.channelOptions;
 			for(var i = 0; i < messages.length; i++) {
 				try {
 					var msg = messages[i];
@@ -8596,26 +8656,30 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
-		PresenceMessage.encode(presence, channel.channelOptions);
-
-		switch(channel.state) {
-			case 'attached':
-				channel.sendPresence(presence, callback);
-				break;
-			case 'initialized':
-			case 'detached':
-				channel.autonomousAttach();
-			case 'attaching':
-				this.pendingPresence.push({
-					presence : presence,
-					callback : callback
-				});
-				break;
-			default:
-				var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
-				err.code = 90001;
+		PresenceMessage.encode(presence, channel.channelOptions, function(err) {
+			if (err) {
 				callback(err);
-		}
+				return;
+			}
+			switch(channel.state) {
+				case 'attached':
+					channel.sendPresence(presence, callback);
+					break;
+				case 'initialized':
+				case 'detached':
+					channel.autonomousAttach();
+				case 'attaching':
+					this.pendingPresence.push({
+						presence : presence,
+						callback : callback
+					});
+					break;
+				default:
+					var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err.code = 90001;
+					callback(err);
+			}
+		}.bind(this));
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
@@ -9042,207 +9106,6 @@ var RealtimePresence = (function() {
 	return RealtimePresence;
 })();
 
-var JSONPTransport = (function() {
-	var noop = function() {};
-	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
-	var _ = window._ablyjs_jsonp = {};
-
-	/* express strips out parantheses from the callback!
-	 * Kludge to still alow its responses to work, while not keeping the
-	 * function form for normal use and not cluttering window.Ably
-	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
-	 */
-	_._ = function(id) { return _['_' + id] || noop; };
-	var idCounter = 1;
-	var isSupported = (typeof(document) !== 'undefined');
-	var head = isSupported ? document.getElementsByTagName('head')[0] : null;
-	var shortName = 'jsonp';
-
-	/* public constructor */
-	function JSONPTransport(connectionManager, auth, params) {
-		params.stream = false;
-		CometTransport.call(this, connectionManager, auth, params);
-		this.shortName = shortName;
-	}
-	Utils.inherits(JSONPTransport, CometTransport);
-
-	JSONPTransport.isAvailable = function() { return isSupported; };
-	if(isSupported) {
-		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
-	}
-
-	/* connectivity check; since this has a hard-coded callback id,
-	 * we just make sure that we handle concurrent requests (but the
-	 * connectionmanager should ensure this doesn't happen anyway */
-	var checksInProgress = null;
-	window.JSONPTransport = JSONPTransport
-	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.jsonpInternetUpUrl;
-
-		if(checksInProgress) {
-			checksInProgress.push(callback);
-			return;
-		}
-		checksInProgress = [callback];
-		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
-
-		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
-		req.once('complete', function(err, response) {
-			var result = !err && response;
-			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
-			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
-			checksInProgress = null;
-		});
-		Utils.nextTick(function() {
-			req.exec();
-		});
-	};
-
-	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
-		var transport = new JSONPTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback({event: this.event, error: err}); };
-		transport.on(['failed', 'disconnected'], errorCb);
-		transport.on('preconnect', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off(['failed', 'disconnected'], errorCb);
-			callback(null, transport);
-		});
-		transport.connect();
-	};
-
-	JSONPTransport.prototype.toString = function() {
-		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
-	};
-
-	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
-		/* JSONP requests are used either with the context being a realtime
-		 * transport, or with timeouts passed in (for when used by a rest client),
-		 * or completely standalone.  Use the appropriate timeouts in each case */
-		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
-		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
-	};
-
-	function Request(id, uri, headers, params, body, requestMode, timeouts) {
-		EventEmitter.call(this);
-		if(id === undefined) id = idCounter++;
-		this.id = id;
-		this.uri = uri;
-		this.params = params || {};
-		this.params.rnd = Utils.randStr();
-		if(headers) {
-			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
-			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
-			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
-		}
-		this.body = body;
-		this.requestMode = requestMode;
-		this.timeouts = timeouts;
-		this.requestComplete = false;
-	}
-	Utils.inherits(Request, EventEmitter);
-
-	Request.prototype.exec = function() {
-		var id = this.id,
-			body = this.body,
-			uri = this.uri,
-			params = this.params,
-			self = this;
-
-		params.callback = '_ablyjs_jsonp._(' + id + ')';
-
-		params.envelope = 'jsonp';
-		if(body)
-			params.body = body;
-
-		var script = this.script = document.createElement('script');
-		var src = uri + Utils.toQueryString(params);
-		script.src = src;
-		if(script.src.split('/').slice(-1)[0] !== src.split('/').slice(-1)[0]) {
-			/* The src has been truncated. Can't abort, but can at least emit an
-			 * error so the user knows what's gone wrong. (Can't compare strings
-			 * directly as src may have a port, script.src won't) */
-			Logger.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
-		}
-		script.async = true;
-		script.type = 'text/javascript';
-		script.charset = 'UTF-8';
-		script.onerror = function(err) {
-			self.complete(new ErrorInfo('JSONP script error (event: ' + Utils.inspect(err) + ')', null, 400));
-		};
-
-		_['_' + id] = function(message) {
-			if(message.statusCode) {
-				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
-				var response = message.response;
-				if(message.statusCode == 204) {
-					self.complete(null, null, null, message.statusCode);
-				} else if(!response) {
-					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
-				} else if(message.statusCode < 400 || Utils.isArray(response)) {
-					/* If response is an array, it's an array of protocol messages -- even if
-					 * it contains an error action (hence the nonsuccess statuscode), we can
-					 * consider the request to have succeeded, just pass it on to
-					 * onProtocolMessage to decide what to do */
-					self.complete(null, response, message.headers, message.statusCode);
-				} else {
-					var err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
-					self.complete(err);
-				}
-			} else {
-				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
-				self.complete(null, message);
-			}
-		};
-
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
-		this.timer = setTimeout(function() { self.abort(); }, timeout);
-		head.insertBefore(script, head.firstChild);
-	};
-
-	Request.prototype.complete = function(err, body, headers, statusCode) {
-		headers = headers || {};
-		if(!this.requestComplete) {
-			this.requestComplete = true;
-			var contentType;
-			if(body) {
-				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
-				headers['content-type'] = contentType;
-				this.emit('data', body);
-			}
-
-			this.emit('complete', err, body, headers, /* unpacked: */ true, statusCode);
-			this.dispose();
-		}
-	};
-
-	Request.prototype.abort = function() {
-		this.dispose();
-	};
-
-	Request.prototype.dispose = function() {
-		var timer = this.timer;
-		if(timer) {
-			clearTimeout(timer);
-			this.timer = null;
-		}
-		var script = this.script;
-		if(script.parentNode) script.parentNode.removeChild(script);
-		delete _[this.id];
-		this.emit('disposed');
-	};
-
-	Http.Request = function(rest, uri, headers, params, body, callback) {
-		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
-		req.once('complete', callback);
-		Utils.nextTick(function() {
-			req.exec();
-		});
-		return req;
-	};
-
-	return JSONPTransport;
-})();
-
 var XHRRequest = (function() {
 	var noop = function() {};
 	var idCounter = 0;
@@ -9258,10 +9121,10 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var xhrSupported;
+	var xhrSupported = Platform.xhrSupported;
 	var isIE = window.XDomainRequest;
 	function isAvailable() {
-		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
+		return xhrSupported;
 	};
 
 	function ieVersion() {
@@ -9525,18 +9388,20 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-  if(isAvailable()) {
-          DomEvent.addUnloadListener(clearPendingRequests);
-          if(typeof(Http) !== 'undefined') {
-                  Http.supportsAuthHeaders = xhrSupported;
-                  Http.Request = function(rest, uri, headers, params, body, callback) {
-                          var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
-                          req.once('complete', callback);
-                          req.exec();
-                          return req;
-                  };
-          }
-  }
+	if(isAvailable()) {
+		if(typeof DomEvent === 'object') {
+			DomEvent.addUnloadListener(clearPendingRequests);
+		}
+		if(typeof(Http) !== 'undefined') {
+			Http.supportsAuthHeaders = xhrSupported;
+			Http.Request = function(rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+				req.once('complete', callback);
+				req.exec();
+				return req;
+			};
+		}
+	}
 
 	return XHRRequest;
 })();
@@ -9624,6 +9489,209 @@ var XHRPollingTransport = (function() {
 	}
 
 	return XHRPollingTransport;
+})();
+
+var JSONPTransport = (function() {
+	var noop = function() {};
+	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
+	var _ = window._ablyjs_jsonp = {};
+
+	/* express strips out parantheses from the callback!
+	 * Kludge to still alow its responses to work, while not keeping the
+	 * function form for normal use and not cluttering window.Ably
+	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 */
+	_._ = function(id) { return _['_' + id] || noop; };
+	var idCounter = 1;
+	var isSupported = (typeof(document) !== 'undefined');
+	var head = isSupported ? document.getElementsByTagName('head')[0] : null;
+	var shortName = 'jsonp';
+
+	/* public constructor */
+	function JSONPTransport(connectionManager, auth, params) {
+		params.stream = false;
+		CometTransport.call(this, connectionManager, auth, params);
+		this.shortName = shortName;
+	}
+	Utils.inherits(JSONPTransport, CometTransport);
+
+	JSONPTransport.isAvailable = function() { return isSupported; };
+	if(isSupported) {
+		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+	}
+
+	/* connectivity check; since this has a hard-coded callback id,
+	 * we just make sure that we handle concurrent requests (but the
+	 * connectionmanager should ensure this doesn't happen anyway */
+	var checksInProgress = null;
+	window.JSONPTransport = JSONPTransport
+	JSONPTransport.checkConnectivity = function(callback) {
+		var upUrl = Defaults.jsonpInternetUpUrl;
+
+		if(checksInProgress) {
+			checksInProgress.push(callback);
+			return;
+		}
+		checksInProgress = [callback];
+		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
+
+		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+		req.once('complete', function(err, response) {
+			var result = !err && response;
+			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
+			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
+			checksInProgress = null;
+		});
+		Utils.nextTick(function() {
+			req.exec();
+		});
+	};
+
+	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
+		var transport = new JSONPTransport(connectionManager, auth, params);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
+		transport.on('preconnect', function() {
+			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
+			transport.off(['failed', 'disconnected'], errorCb);
+			callback(null, transport);
+		});
+		transport.connect();
+	};
+
+	JSONPTransport.prototype.toString = function() {
+		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
+	};
+
+	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+		/* JSONP requests are used either with the context being a realtime
+		 * transport, or with timeouts passed in (for when used by a rest client),
+		 * or completely standalone.  Use the appropriate timeouts in each case */
+		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
+		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
+	};
+
+	function Request(id, uri, headers, params, body, requestMode, timeouts) {
+		EventEmitter.call(this);
+		if(id === undefined) id = idCounter++;
+		this.id = id;
+		this.uri = uri;
+		this.params = params || {};
+		this.params.rnd = Utils.randStr();
+		if(headers) {
+			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
+			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
+			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
+		}
+		this.body = body;
+		this.requestMode = requestMode;
+		this.timeouts = timeouts;
+		this.requestComplete = false;
+	}
+	Utils.inherits(Request, EventEmitter);
+
+	Request.prototype.exec = function() {
+		var id = this.id,
+			body = this.body,
+			uri = this.uri,
+			params = this.params,
+			self = this;
+
+		params.callback = '_ablyjs_jsonp._(' + id + ')';
+
+		params.envelope = 'jsonp';
+		if(body)
+			params.body = body;
+
+		var script = this.script = document.createElement('script');
+		var src = uri + Utils.toQueryString(params);
+		script.src = src;
+		if(script.src.split('/').slice(-1)[0] !== src.split('/').slice(-1)[0]) {
+			/* The src has been truncated. Can't abort, but can at least emit an
+			 * error so the user knows what's gone wrong. (Can't compare strings
+			 * directly as src may have a port, script.src won't) */
+			Logger.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
+		}
+		script.async = true;
+		script.type = 'text/javascript';
+		script.charset = 'UTF-8';
+		script.onerror = function(err) {
+			self.complete(new ErrorInfo('JSONP script error (event: ' + Utils.inspect(err) + ')', null, 400));
+		};
+
+		_['_' + id] = function(message) {
+			if(message.statusCode) {
+				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
+				var response = message.response;
+				if(message.statusCode == 204) {
+					self.complete(null, null, null, message.statusCode);
+				} else if(!response) {
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
+				} else if(message.statusCode < 400 || Utils.isArray(response)) {
+					/* If response is an array, it's an array of protocol messages -- even if
+					 * it contains an error action (hence the nonsuccess statuscode), we can
+					 * consider the request to have succeeded, just pass it on to
+					 * onProtocolMessage to decide what to do */
+					self.complete(null, response, message.headers, message.statusCode);
+				} else {
+					var err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
+					self.complete(err);
+				}
+			} else {
+				/* Handle as non-enveloped -- as will be eg from a customer's authUrl server */
+				self.complete(null, message);
+			}
+		};
+
+		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
+		this.timer = setTimeout(function() { self.abort(); }, timeout);
+		head.insertBefore(script, head.firstChild);
+	};
+
+	Request.prototype.complete = function(err, body, headers, statusCode) {
+		headers = headers || {};
+		if(!this.requestComplete) {
+			this.requestComplete = true;
+			var contentType;
+			if(body) {
+				contentType = (typeof(body) == 'string') ? 'text/plain' : 'application/json';
+				headers['content-type'] = contentType;
+				this.emit('data', body);
+			}
+
+			this.emit('complete', err, body, headers, /* unpacked: */ true, statusCode);
+			this.dispose();
+		}
+	};
+
+	Request.prototype.abort = function() {
+		this.dispose();
+	};
+
+	Request.prototype.dispose = function() {
+		var timer = this.timer;
+		if(timer) {
+			clearTimeout(timer);
+			this.timer = null;
+		}
+		var script = this.script;
+		if(script.parentNode) script.parentNode.removeChild(script);
+		delete _[this.id];
+		this.emit('disposed');
+	};
+
+	if(!Http.Request) {
+		Http.Request = function(rest, uri, headers, params, body, callback) {
+			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
+			req.once('complete', callback);
+			Utils.nextTick(function() {
+				req.exec();
+			});
+			return req;
+		};
+	}
+
+	return JSONPTransport;
 })();
 
 if(typeof Realtime !== 'undefined') {
