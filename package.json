@@ -14,7 +14,8 @@
     "hexy": "~0.2",
     "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
     "request": "^2.74.0",
-    "ws": "^1.1.1"
+    "ws": "^1.1.1",
+    "react-native-randombytes": "git+https://github.com/ably-forks/react-native-randombytes.git"
   },
   "devDependencies": {
     "ejs": "~2.3",
