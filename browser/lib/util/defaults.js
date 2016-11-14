@@ -16,7 +16,7 @@ var Defaults = {
 * while it can do streaming, the low max http-connections-per-host limit means
 * that the polling transport is crippled during the upgrade process. So just
 * leave it at the base transport */
-if(navigator.userAgent.toString().match(/MSIE\s8\.0/)) {
+if(Platform.noUpgrade) {
 	Defaults.upgradeTransports = [];
 }
 

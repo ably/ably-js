@@ -13,10 +13,10 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var xhrSupported;
+	var xhrSupported = Platform.xhrSupported;
 	var isIE = window.XDomainRequest;
 	function isAvailable() {
-		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
+		return xhrSupported;
 	};
 
 	function ieVersion() {
@@ -280,18 +280,20 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-  if(isAvailable()) {
-          DomEvent.addUnloadListener(clearPendingRequests);
-          if(typeof(Http) !== 'undefined') {
-                  Http.supportsAuthHeaders = xhrSupported;
-                  Http.Request = function(rest, uri, headers, params, body, callback) {
-                          var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
-                          req.once('complete', callback);
-                          req.exec();
-                          return req;
-                  };
-          }
-  }
+	if(isAvailable()) {
+		if(typeof DomEvent === 'object') {
+			DomEvent.addUnloadListener(clearPendingRequests);
+		}
+		if(typeof(Http) !== 'undefined') {
+			Http.supportsAuthHeaders = xhrSupported;
+			Http.Request = function(rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+				req.once('complete', callback);
+				req.exec();
+				return req;
+			};
+		}
+	}
 
 	return XHRRequest;
 })();

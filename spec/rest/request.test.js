@@ -15,7 +15,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			rest = helper.AblyRest();
+			rest = helper.AblyRest({ useBinaryProtocol: false });
 			test.ok(true, 'app set up');
 			test.done();
 		});

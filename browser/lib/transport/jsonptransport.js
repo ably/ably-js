@@ -187,14 +187,16 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	Http.Request = function(rest, uri, headers, params, body, callback) {
-		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
-		req.once('complete', callback);
-		Utils.nextTick(function() {
-			req.exec();
-		});
-		return req;
-	};
+	if(!Http.Request) {
+		Http.Request = function(rest, uri, headers, params, body, callback) {
+			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
+			req.once('complete', callback);
+			Utils.nextTick(function() {
+				req.exec();
+			});
+			return req;
+		};
+	}
 
 	return JSONPTransport;
 })();

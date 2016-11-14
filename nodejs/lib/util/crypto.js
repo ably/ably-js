@@ -199,7 +199,7 @@ var Crypto = (function() {
 		this.blockLength = iv.length;
 	}
 
-	CBCCipher.prototype.encrypt = function(plaintext) {
+	CBCCipher.prototype.encrypt = function(plaintext, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		//console.log('encrypt: plaintext:');
 		//console.log(hexy.hexy(plaintext));
@@ -210,7 +210,7 @@ var Crypto = (function() {
 		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
 		//console.log('encrypt: ciphertext:');
 		//console.log(hexy.hexy(ciphertext));
-		return ciphertext;
+		return callback(null, ciphertext);
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {

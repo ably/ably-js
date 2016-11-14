@@ -1,22 +1,20 @@
 var Auth = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgPack;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
 	var hmac, toBase64;
-	if(isBrowser) {
+	if(Platform.createHmac) {
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+		hmac = function(text, key) {
+			var inst = Platform.createHmac('SHA256', key);
+			inst.update(text);
+			return inst.digest('base64');
+		};
+	} else {
 		toBase64 = Base64.encode;
 		hmac = function(text, key) {
 			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
-		};
-	} else {
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
-		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA256', key);
-			inst.update(text);
-			return inst.digest('base64');
 		};
 	}
 

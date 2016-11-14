@@ -1,6 +1,4 @@
 var Utils = (function() {
-	var isBrowser = (typeof(window) == 'object');
-
 	function Utils() {}
 
 	/*
@@ -287,7 +285,7 @@ var Utils = (function() {
 			return true;
 		};
 
-	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
+	Utils.nextTick = Platform.nextTick;
 
 	var contentTypes = {
 		json:   'application/json',

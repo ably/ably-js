@@ -21,6 +21,7 @@ var includeScript = function(name) {
 };
 
 /* include libraries */
+includeScript('./platform.js');
 includeScript('./lib/util/defaults.js');
 includeScript('./lib/util/bufferutils.js');
 includeScript('./lib/util/http.js');

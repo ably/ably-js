@@ -20,7 +20,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		 and is implicitly added when published */
 	exports.rest_implicit_client_id_0 = function(test) {
 		var clientId = 'implicit_client_id_0',
-			rest = helper.AblyRest({ clientId: clientId }),
+			rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
 			channel = rest.channels.get('rest_implicit_client_id_0');
 
 		test.expect(3);
@@ -56,7 +56,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		 and ensure it is published */
 	exports.rest_explicit_client_id_0 = function(test) {
 		var clientId = 'explicit_client_id_0',
-			rest = helper.AblyRest({ clientId: clientId }),
+			rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
 			channel = rest.channels.get('rest_explicit_client_id_0');
 
 		test.expect(3);
@@ -100,7 +100,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.ok(token.clientId === clientId, 'client ID is present in the Token');
 
 			// REST client uses a token string so is unaware of the clientId so cannot reject before communicating with Ably
-			var rest = helper.AblyRest({ token: token.token }),
+			var rest = helper.AblyRest({ token: token.token, useBinaryProtocol: false }),
 				channel = rest.channels.get('rest_explicit_client_id_1');
 
 			var originalPublish = channel._publish;
