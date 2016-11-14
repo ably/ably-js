@@ -1,3 +1,10 @@
+try {
+    require.resolve("react-native-randombytes");
+} catch(e) {
+    console.error("To use ably with react-native, please use the 'ably-reactnative' package, not the 'ably' package");
+    process.exit(e.code);
+}
+
 var Platform = {
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
