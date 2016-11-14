@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-## Version: 0.9.0-beta.2
+## Version: 0.9.0-beta.3
 
 This repo contains the Ably javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
 
