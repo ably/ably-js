@@ -1,12 +1,14 @@
 # [Ably](https://www.ably.io)
 
+A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
+
 ## Version: 0.8.41
 
-This repo contains the Ably javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
+This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
 
-For complete API documentation, see the [ably documentation](https://ably.io/documentation).
+For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
-# For node.js
+## For node.js
 
 ### Installation from npm
 
@@ -26,7 +28,7 @@ For the rest-only library:
 var rest = require('ably').Rest;
 ```
 
-### For browsers
+## For browsers
 
 Include the Ably library in your HTML:
 
@@ -63,6 +65,10 @@ If you are using ES6 and or a transpiler that suppots ES6 modules with WebPack, 
 import Ably from 'ably/browser/static/ably-commonjs.js'
 let realtime = new Ably.Realtime(options)
 ```
+
+## For React Native
+
+See the [ably-js-react-native repo](https://github.com/ably/ably-js-react-native) for React Native usage details.
 
 ## Using the Realtime API
 
@@ -496,4 +502,4 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## License
 
-Copyright (c) 2015 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
