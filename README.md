@@ -48,6 +48,10 @@ For the rest-only library:
 var rest = Ably.Rest;
 ```
 
+### For React Native
+
+For React Native, do not use this package. Instead use the [ably-react-native](https://github.com/ably/ably-js-react-native) package, which wraps ably-js and adds react-native-specific dependencies. See [that repo](https://github.com/ably/ably-js-react-native) for install instructions.
+
 ### Using WebPack
 
 WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require` Ably. Alternatively, you can reference the `ably-commonjs.js` static file directly if not in your `node_modules` folder.
