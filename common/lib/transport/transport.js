@@ -108,7 +108,11 @@ var Transport = (function() {
 			this.connectionManager.onChannelMessage(message, this);
 			break;
 		case actions.AUTH:
-			this.auth.authorize();
+			this.auth.authorize(function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
+				}
+			});
 			break;
 		case actions.ERROR:
 			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));

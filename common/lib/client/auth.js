@@ -178,6 +178,7 @@ var Auth = (function() {
 		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
 			if(err) {
 				callback(err);
+				return;
 			}
 			/* RTC8
 			 * - When authorize called by an end user and have a realtime connection,
