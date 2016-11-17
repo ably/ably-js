@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2016, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.3
+ * Ably JavaScript Library v0.9.0-beta.4
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4089,7 +4089,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.3';
+Defaults.version          = '0.9.0-beta.4';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.9';
 
@@ -7236,7 +7236,11 @@ var Transport = (function() {
 			this.connectionManager.onChannelMessage(message, this);
 			break;
 		case actions.AUTH:
-			this.auth.authorize();
+			this.auth.authorize(function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
+				}
+			});
 			break;
 		case actions.ERROR:
 			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
@@ -8359,6 +8363,7 @@ var Auth = (function() {
 		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
 			if(err) {
 				callback(err);
+				return;
 			}
 			/* RTC8
 			 * - When authorize called by an end user and have a realtime connection,
