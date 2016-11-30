@@ -8,11 +8,11 @@ module.exports = function(config) {
       flags: ['--web-security=no']
     },
     // Check out https://saucelabs.com/platforms for all browser/platform combos
-    sl_chrome_42: {
+    sl_chrome_54: {
       base: 'SauceLabs',
       browserName: 'chrome',
-      platform: 'Windows 8.1',
-      version: '42'
+      platform: 'Windows 10',
+      version: '54'
     },
     sl_chrome_35: {
       base: 'SauceLabs',

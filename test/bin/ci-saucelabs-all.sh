@@ -11,7 +11,7 @@ npm install
 npm install grunt-cli
 
 echo "\n$GREEN -> Running Karma test suite (Sauce Labs - part 1/3) $NO_COLOUR"
-$(npm bin)/grunt test:karma --browsers sl_chrome_42,sl_chrome_35,sl_firefox_37,sl_firefox_31
+$(npm bin)/grunt test:karma --browsers sl_chrome_54,sl_chrome_35,sl_firefox_37,sl_firefox_31
 karma_exitstatus1=$?
 
 echo "\n$GREEN -> Running Karma test suite (Sauce Labs - part 2/3) $NO_COLOUR"
