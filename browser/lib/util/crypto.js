@@ -226,21 +226,22 @@ var Crypto = (function() {
 		//console.log('encrypt: plaintext:');
 		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
-			paddedLength = getPaddedLength(plaintextLength);
+			paddedLength = getPaddedLength(plaintextLength),
+			self = this;
 
 		var then = function() {
-			this.getIv(function(err, iv) {
+			self.getIv(function(err, iv) {
 				if (err) {
 					callback(err);
 					return;
 				}
-				var cipherOut = this.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
+				var cipherOut = self.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
 				var ciphertext = iv.concat(cipherOut);
 				//console.log('encrypt: ciphertext:');
 				//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 				callback(null, ciphertext);
-			}.bind(this));
-		}.bind(this);
+			});
+		};
 
 		if (!this.encryptCipher) {
 			if(this.iv) {
@@ -252,10 +253,10 @@ var Crypto = (function() {
 						callback(err);
 						return;
 					}
-					this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: iv });
-					this.iv = iv;
+					self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv });
+					self.iv = iv;
 					then();
-				}.bind(this));
+				});
 			}
 		} else {
 			then();
@@ -293,13 +294,14 @@ var Crypto = (function() {
 		/* Since the iv for a new block is the ciphertext of the last, this
 		* sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
 		* returning it */
+		var self = this;
 		generateRandom(DEFAULT_BLOCKLENGTH, function(err, randomBlock) {
 			if (err) {
 				callback(err);
 				return;
 			} 
-			callback(null, this.encryptCipher.process(randomBlock));
-		}.bind(this));
+			callback(null, self.encryptCipher.process(randomBlock));
+		});
 	};
 
 	return Crypto;

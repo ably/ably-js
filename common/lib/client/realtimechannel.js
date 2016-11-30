@@ -67,13 +67,14 @@ var RealtimeChannel = (function() {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 		var options = this.channelOptions;
+		var self = this;
 		Message.encodeArray(messages, options, function(err) {
 			if (err) {
 				callback(err);
 				return;
 			}
-			this._publish(messages, callback);
-		}.bind(this));
+			self._publish(messages, callback);
+		});
 	};
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {

@@ -62,7 +62,8 @@ var Channel = (function() {
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1];
+			callback = arguments[argCount - 1],
+			self = this;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -91,8 +92,8 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			this._publish(requestBody, headers, callback);
-		}.bind(this));
+			self._publish(requestBody, headers, callback);
+		});
 	};
 
 	Channel.prototype._publish = function(requestBody, headers, callback) {

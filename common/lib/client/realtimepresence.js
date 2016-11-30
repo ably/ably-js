@@ -91,6 +91,7 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
+		var self = this;
 		PresenceMessage.encode(presence, channel.channelOptions, function(err) {
 			if (err) {
 				callback(err);
@@ -104,7 +105,7 @@ var RealtimePresence = (function() {
 				case 'detached':
 					channel.autonomousAttach();
 				case 'attaching':
-					this.pendingPresence.push({
+					self.pendingPresence.push({
 						presence : presence,
 						callback : callback
 					});
@@ -114,7 +115,7 @@ var RealtimePresence = (function() {
 					err.code = 90001;
 					callback(err);
 			}
-		}.bind(this));
+		});
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {

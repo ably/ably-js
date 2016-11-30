@@ -136,6 +136,7 @@ var ConnectionManager = (function() {
 		if(addEventListener) {
 			/* intercept close event in browser to persist connection id if requested */
 			if(haveSessionStorage && typeof options.recover === 'function') {
+				/* Usually can't use bind as not supported in IE8, but IE doesn't support sessionStorage, so... */
 				addEventListener('beforeunload', this.persistConnection.bind(this));
 			}
 
