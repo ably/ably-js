@@ -61,21 +61,20 @@ interface ClientOptions extends AuthOptions {
   defaultTokenParams?: TokenParams;
   echoMessages?: boolean;
   environment?: String;
-  logHandler?: any;
-  logLevel?: any;
+  log?: LogInfo;
   port?: number;
   queueMessages?: boolean;
   restHost?: String;
   realtimeHost?: String;
-  fallbackHosts?: Array<String>
-  recover?: String
+  fallbackHosts?: Array<String>;
+  recover?: String | standardCallback;
   tls?: boolean;
   tlsPort?: number;
   useBinaryProtocol?: boolean;
 }
 
 interface AuthOptions {
-  authCallback?: (data: String | TokenDetails | TokenRequest) => void;
+  authCallback?: (data: TokenParams,callback: (Error: ErrorInfo | String, tokenRequestOrDetails: String | TokenDetails | TokenRequest) => void) => void;
   authHeaders?: Array<any>;
   authMethod?: String;
   authParams?: Array<any>;
@@ -88,11 +87,11 @@ interface AuthOptions {
 }
 
 interface TokenParams {
-  capability: String;
+  capability?: String;
   clientId?: String;
   nonce?: String;
-  timestamp: Number;   // Time?
-  ttl: Number;
+  timestamp?: Number;   // Time?
+  ttl?: Number;
 }
 
 interface CipherParams {
@@ -151,12 +150,12 @@ interface TokenDetails {
 
 interface TokenRequest {
   capability: String;
-  clientId: String;
+  clientId?: String;
   keyName: String;
   mac: String;
   nonce: String;
   timestamp: number; // Time
-  ttl: number;
+  ttl?: number;
 }
 
 interface ChannelOptions {
@@ -164,38 +163,45 @@ interface ChannelOptions {
 }
 
 interface RestPresenceHistoryParams {
-  start: number;
-  end: number;
-  direction: String;
-  limit: number;
+  start?: number;
+  end?: number;
+  direction?: String;
+  limit?: number;
 }
 
 
 interface RestPresenceParams {
-  limit: number;
-  clientId: String;
-  connectionId: String;
+  limit?: number;
+  clientId?: String;
+  connectionId?: String;
 }
 
 interface RealtimePresenceParams {
-  waitForSync: boolean;
-  clientId: String;
-  connectionId: String;
+  waitForSync?: boolean;
+  clientId?: String;
+  connectionId?: String;
 }
 
 interface RealtimePresenceHistoryParams {
-  start: number;
-  end: number;
-  direction: String;
-  limit: number;
-  untilAttach: boolean
+  start?: number;
+  end?: number;
+  direction?: String;
+  limit?: number;
+  untilAttach?: boolean
 }
+
+interface LogInfo {
+  level?: number;
+  handler?: (...args) => void;
+}
+
 
 // Common Listeners
 type ListenerFn = (...args: Array<any>) => void;
 type PaginatedResultCallback = (Error: ErrorInfo, results: PaginatedResult ) => void;
 type standardCallback = (Error: ErrorInfo, results: any) => void;
 type messageCallback = (Msg: any) => void;
+type errorCallback = (Error: ErrorInfo) => void;
 
 
 
@@ -250,7 +256,7 @@ export declare class Channel {
   name: String;
   presence: Presence;
   history: (ParamsOrCallback?: RestPresenceHistoryParams | PaginatedResultCallback, callback?: PaginatedResultCallback ) => void;
-  publish: (messages: any, MessageDataOrCallback?: any | PaginatedResultCallback, callback?: PaginatedResultCallback) => void;
+  publish: (messages: any, MessageDataOrCallback?: any | errorCallback, callback?: errorCallback) => void;
 }
 
 export declare class RealtimeChannel extends EventEmitter {
@@ -265,11 +271,11 @@ export declare class RealtimeChannel extends EventEmitter {
 
   history: (ParamsOrCallback?: RealtimePresenceHistoryParams | PaginatedResultCallback, callback?: PaginatedResultCallback) => void;
 
-  subscribe: (presenceOrCallback: PresenceAction | messageCallback, listener?: standardCallback, callback?: standardCallback) => void;
+  subscribe: (eventOrCallback: String | messageCallback, listener?: messageCallback) => void;
 
-  unsubscribe: (presence?: PresenceAction, listener?: standardCallback, callback?: standardCallback) => void;
+  unsubscribe: (eventOrCallback?: String | messageCallback, listener?: messageCallback) => void;
 
-  publish: (messages: any, MessageDataOrCallback?: any | PaginatedResultCallback, callback?: PaginatedResultCallback) => void;
+  publish: (messages: any, MessageDataOrCallback?: any | errorCallback, callback?: errorCallback) => void;
 
 }
 
@@ -284,7 +290,7 @@ export declare class Message {
 
   fromEncoded: (JsonObject: String, channelOptions: ChannelOptions) => Message;
 
-  fromEncodedArray: (JsonArray: String, channelOptions: ChannelOptions) => Message;
+  fromEncodedArray: (JsonArray: String, channelOptions: ChannelOptions) => Array<Message>;
 
   clientId: String;
   connectionId: String;
