@@ -226,7 +226,7 @@ interface ConnectionStateChange {
 // Common Listeners
 type PaginatedResultCallback<T> = (error: ErrorInfo, results: PaginatedResult<T> ) => void;
 type standardCallback = (error: ErrorInfo, results: any) => void;
-type messageCallback = (message: Message) => void;
+type messageCallback<T> = (message: T) => void;
 type errorCallback = (error: ErrorInfo) => void;
 type channelEventCallback = (channelEvent: ChannelEvent, changeStateChange: ChannelStateChange) => void;
 type connectionEventCallback = (connectionEvent: ConnectionEvent, connectionStateChange: ConnectionStateChange) => void;
@@ -263,9 +263,9 @@ export declare class RealtimePresence {
 
   history: (ParamsOrCallback: RealtimePresenceHistoryParams | PaginatedResultCallback<PresenceMessage>, callback?: PaginatedResultCallback<PresenceMessage>) => void;
 
-  subscribe: (presenceOrCallback: PresenceAction | messageCallback, listener?: messageCallback) => void;
+  subscribe: (presenceOrCallback: PresenceAction | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;
 
-  unsubscribe: (presence?: PresenceAction, listener?: messageCallback) => void;
+  unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
 
   enter: (data: any, callback?: errorCallback) => void;
 
@@ -299,9 +299,9 @@ export declare class RealtimeChannel extends EventEmitter<channelEventCallback> 
 
   history: (paramsOrCallback?: RealtimePresenceHistoryParams | PaginatedResultCallback<Message>, callback?: PaginatedResultCallback<Message>) => void;
 
-  subscribe: (eventOrCallback: messageCallback | string, listener?: messageCallback) => void;
+  subscribe: (eventOrCallback: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
 
-  unsubscribe: (eventOrCallback?: messageCallback | string, listener?: messageCallback) => void;
+  unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
 
   publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
 
