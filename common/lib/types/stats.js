@@ -35,6 +35,7 @@ var Stats = (function() {
 		this.realtime = new MessageTypes(values && values.realtime);
 		this.rest = new MessageTypes(values && values.rest);
 		this.webhook = new MessageTypes(values && values.webhook);
+		this.push = new MessageTypes(values && values.push);
 		this.sharedQueue = new MessageTypes(values && values.sharedQueue);
 		this.externalQueue = new MessageTypes(values && values.externalQueue);
 		this.all = new MessageTypes(values && values.all);
