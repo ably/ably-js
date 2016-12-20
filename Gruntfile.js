@@ -82,6 +82,10 @@ module.exports = function (grunt) {
 			dest: '<%= dirs.dest %>/ably-reactnative.js',
 			nonull: true
 		},
+		'ably-nativescript': {
+			dest: '<%= dirs.dest %>/ably-nativescript.js',
+			nonull: true
+		},
 		'ably-commonjs.noencryption': {
 			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
 			nonull: true
@@ -206,6 +210,29 @@ module.exports = function (grunt) {
 
 		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
 	);
+
+    gruntConfig.concat['ably-nativescript'].src = [].concat(
+        '<%= dirs.fragments %>/license.js',
+        '<%= dirs.fragments %>/ably-commonjs-prologue.js',
+        '<%= dirs.crypto_js %>/core.js',
+        '<%= dirs.crypto_js %>/sha256.js',
+        '<%= dirs.crypto_js %>/hmac.js',
+        '<%= dirs.crypto_js %>/enc-base64.js',
+        '<%= dirs.crypto_js %>/cipher-core.js',
+        '<%= dirs.crypto_js %>/aes.js',
+        '<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		/* domevent omitted; not supported in nativescript */
+        '<%= dirs.browser %>/lib/util/msgpack.js',
+
+        '<%= dirs.fragments %>/platform-nativescript.js',
+
+        '<%= dirs.browser %>/lib/util/crypto.js',
+        ablyFiles,
+		/* jsonptransport omitted */
+
+        '<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+    );
 
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
 		'<%= dirs.fragments %>/license.js',

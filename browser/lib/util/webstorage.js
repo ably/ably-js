@@ -1,6 +1,7 @@
 var WebStorage = (function() {
 	var sessionSupported,
 		localSupported,
+        globalObject = (typeof window !== 'undefined' ? window : global),
 		test = 'ablyjs-storage-test';
 
 	/* Even just accessing the session/localStorage object can throw a
@@ -9,25 +10,26 @@ var WebStorage = (function() {
 	 * somewhat roundabout way. (If unsupported or no window object,
 	 * will throw on accessing a property of undefined) */
 	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
+		globalObject.sessionStorage.setItem(test, test);
+        globalObject.sessionStorage.removeItem(test);
 		sessionSupported = true;
 	} catch(e) {
 		sessionSupported = false;
 	}
 
 	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
+        globalObject.localStorage.setItem(test, test);
+        globalObject.localStorage.removeItem(test);
 		localSupported = true;
 	} catch(e) {
 		localSupported = false;
 	}
 
-	function WebStorage() {}
+
+    function WebStorage() {}
 
 	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
+		return session ? globalObject.sessionStorage : globalObject.localStorage;
 	}
 
 	function set(name, value, ttl, session) {
