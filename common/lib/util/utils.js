@@ -129,10 +129,16 @@ var Utils = (function() {
 	 * of another constructor
 	 * See node.js util.inherits
 	 */
-	Utils.inherits = (typeof(require) === 'function' && require('util') && require('util').inherits) || function(ctor, superCtor) {
+
+	Utils.inherits = function(ctor, superCtor) {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
+	try {
+        if (typeof(require) === 'function' && require('util') && require('util').inherits) {
+        	Utils.inherits = require('util').inherits;
+		}
+    } catch (err) {  /* Do Nothing. */ }
 
 	/*
 	 * Determine whether or not an object has an enumerable
@@ -349,10 +355,15 @@ var Utils = (function() {
 		return new Date().getTime();
 	};
 
-	Utils.inspect = (typeof(require) === 'function' && require('util') && require('util').inspect) ||
-		function(x) {
+	Utils.inspect = function(x) {
 			return JSON.stringify(x);
-		};
+	};
+
+	try {
+		if (typeof(require) === 'function' && require('util') && require('util').inspect) {
+			Utils.inspect = require('util').inspect;
+		}
+	} catch (err) { /* Do Nothing */ }
 
 	Utils.inspectError = function(x) {
 		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?

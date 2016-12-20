@@ -14,7 +14,7 @@ var XHRRequest = (function() {
 	}
 
 	var xhrSupported;
-	var isIE = window.XDomainRequest;
+    var isIE = typeof window !== 'undefined' ? window.XDomainRequest : false;
 	function isAvailable() {
 		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
 	};
