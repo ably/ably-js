@@ -196,7 +196,7 @@ module.exports = function (grunt) {
 		/* jsonptransport omitted */
 
         '<%= dirs.fragments %>/ably-commonjs-epilogue.js'
-    )
+    );
 
 	gruntConfig.concat['ably.noencryption'].src = [].concat(
 		'<%= dirs.fragments %>/license.js',
