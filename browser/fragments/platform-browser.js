@@ -16,6 +16,7 @@ var Platform = {
 	atob: window.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: window.addEventListener,
+	inspect: JSON.stringify,
 	getRandomValues: (function(crypto) {
 		return function(arr, callback) {
 			crypto.getRandomValues(arr);

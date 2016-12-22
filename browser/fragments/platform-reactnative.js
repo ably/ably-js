@@ -12,6 +12,7 @@ var Platform = {
 	atob: global.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: null,
+	inspect: JSON.stringify,
 	getRandomValues: (function(randomBytes) {
 		return function(arr, callback) {
 			randomBytes(arr.length, function(err, bytes) {

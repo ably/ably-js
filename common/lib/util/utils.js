@@ -125,9 +125,11 @@ var Utils = (function() {
 	/*
 	 * Declare a constructor to represent a subclass
 	 * of another constructor
+	 * If platform has a built-in version we use that from Platform, else we
+	 * define here (so can make use of other Utils fns)
 	 * See node.js util.inherits
 	 */
-	Utils.inherits = (typeof(require) === 'function' && require('util') && require('util').inherits) || function(ctor, superCtor) {
+	Utils.inherits = Platform.inherits || function(ctor, superCtor) {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
@@ -347,10 +349,7 @@ var Utils = (function() {
 		return new Date().getTime();
 	};
 
-	Utils.inspect = (typeof(require) === 'function' && require('util') && require('util').inspect) ||
-		function(x) {
-			return JSON.stringify(x);
-		};
+	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
 		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?

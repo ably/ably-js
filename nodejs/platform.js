@@ -9,5 +9,7 @@ this.Platform = {
 	supportsBinary: true,
 	preferBinary: true,
 	nextTick: process.nextTick,
+	inspect: require('util').inspect,
+	inherits: require('util').inherits,
 	addEventListener: null
 };
