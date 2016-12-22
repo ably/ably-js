@@ -504,11 +504,11 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.timeoutPendingState = function() {
 		switch(this.state) {
 			case 'attaching':
-				var err = new ErrorInfo('Channel attach timed out', 90000, 408);
+				var err = new ErrorInfo('Channel attach timed out', 90007, 408);
 				this.notifyState('suspended', err);
 				break;
 			case 'detaching':
-				var err = new ErrorInfo('Channel detach timed out', 90000, 408);
+				var err = new ErrorInfo('Channel detach timed out', 90007, 408);
 				this.notifyState('attached', err);
 				break;
 			default:
