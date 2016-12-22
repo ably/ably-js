@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		testOnAllTransports = helper.testOnAllTransports;
 
 	exports.setupchannel = function(test) {
@@ -460,7 +461,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					cb();
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			},
 			function(cb) {
 				channel.once(function(stateChange) {
@@ -492,11 +493,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(msg.action, 10, 'check attach action');
 				test.ok(true, 'Attach attempt');
 				helper.Utils.nextTick(function() {
-					transport.onProtocolMessage({
+					transport.onProtocolMessage(createPM({
 						action: 13,
 						channel: channelName,
 						error: {statusCode: 500, code: 50000, message: "generic serverside failure"}
-					});
+					}));
 				});
 			};
 			channel.attach(function(err) {
@@ -530,7 +531,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					closeAndFinish(test, realtime);
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 9, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 9, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			});
 		});
 	};
@@ -560,7 +561,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					cb();
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));

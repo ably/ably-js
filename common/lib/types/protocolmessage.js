@@ -45,10 +45,14 @@ var ProtocolMessage = (function() {
 		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
 	});
 
-	ProtocolMessage.Flag = {
+	var flags = {
 		'HAS_PRESENCE': 0,
 		'HAS_BACKLOG': 1,
 		'RESUMED': 2
+	};
+
+	ProtocolMessage.prototype.hasFlag = function(flag) {
+		return ((this.flags & ( 1 << flags[flag])) > 0);
 	};
 
 	ProtocolMessage.serialize = function(msg, format) {

@@ -1,6 +1,5 @@
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
-	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 	var statechangeOp = 'statechange';
 	var syncOp = 'sync';
@@ -421,8 +420,8 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
-		var resumed = ((message.flags & ( 1 << flags.RESUMED)) > 0);
+		var syncInProgress = message.hasFlag('HAS_PRESENCE');
+		var resumed = message.hasFlag('RESUMED');
 		if(syncInProgress) {
 			this.presence.awaitSync();
 		}
