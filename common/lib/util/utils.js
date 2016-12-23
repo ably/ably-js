@@ -133,11 +133,6 @@ var Utils = (function() {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
-	try {
-        if (typeof(require) === 'function' && require('util') && require('util').inherits) {
-        	Utils.inherits = require('util').inherits;
-		}
-    } catch (err) {  /* Do Nothing. */ }
 
 	/*
 	 * Determine whether or not an object has an enumerable
