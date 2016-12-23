@@ -100,7 +100,6 @@ module.exports = function (grunt) {
 	var ablyFiles = [
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
 
@@ -159,6 +158,7 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -182,6 +182,7 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -205,6 +206,7 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-reactnative.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		/* jsonptransport omitted */
 
@@ -228,6 +230,9 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-nativescript.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+
+		/* Note: nativescript-specific webstorage */
+		'<%= dirs.browser %>/lib/util/nativescript-webstorage.js',
 		ablyFiles,
 		/* jsonptransport omitted */
 
@@ -246,6 +251,7 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/msgpack.js',
 
 		'<%= dirs.fragments %>/platform-browser.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
@@ -266,6 +272,7 @@ module.exports = function (grunt) {
 
 		'<%= dirs.fragments %>/platform-browser.js',
 
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
