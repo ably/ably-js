@@ -257,7 +257,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(4);
 		realtime.connection.once('connected', function() {
 			channel.attach(function(err) {
-				test.equal(err.code, 90000, 'check channel error code');
+				test.equal(err.code, 90007, 'check channel error code');
 				test.equal(err.statusCode, 408, 'check timeout statusCode');
 				test.equal(channel.state, 'suspended', 'check channel goes into suspended state');
 				channel.once(function(stateChange) {

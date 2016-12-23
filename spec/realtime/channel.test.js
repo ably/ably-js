@@ -465,7 +465,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) {
 				channel.once(function(stateChange) {
 					test.equal(stateChange.current, 'suspended', 'Channel we go into suspended');
-					test.equal(stateChange.reason.code, 90000, 'check error is now the timeout');
+					test.equal(stateChange.reason.code, 90007, 'check error is now the timeout');
 					cb();
 				});
 			}
@@ -620,7 +620,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) {
 				channel.attach(function(err) {
 					test.ok(err, 'Channel attach timed out as expected');
-					test.equal(err && err.code, 90000, 'Attach timeout err passed to attach callback');
+					test.equal(err && err.code, 90007, 'Attach timeout err passed to attach callback');
 					test.equal(channel.state, 'suspended', 'Check channel state goes to suspended');
 					cb();
 				});
