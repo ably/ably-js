@@ -53,7 +53,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	function monitorConnectionContinuity() {
 		return function(state, callback) {
 			var listener = function () {
-				callback('Connection monitor: connection state changed to ' + this.event);
+				if(this.event !== 'update') {
+					callback('Connection monitor: connection state changed to ' + this.event);
+				}
 			};
 			state.realtime.connection.on(listener);
 			callback(null, mixin(state, {connectionMonitor: listener}));
@@ -62,9 +64,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	function reauthWithToken() {
 		return function(state, callback) {
-			state.realtime.auth.authorize(null, {token: state.token}, function(err) {
+			/* Callback once both authorize callback has callback and got 'update'
+			 * event. (Latter will only happen one event loop cycle after the former;
+			 * using async.parallel lets us test the update event without race
+			 * conditions) */
+			async.parallel([
+				function(cb) {
+					state.realtime.auth.authorize(null, {token: state.token}, cb);
+				},
+				function(cb) {
+					state.realtime.connection.on('update', function(stateChange) {
+						cb(stateChange.reason);
+					});
+				}
+			], function(err) {
 				callback(err, state);
-			});
+			})
 		};
 	}
 

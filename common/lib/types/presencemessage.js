@@ -101,7 +101,7 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format, channel) {
+	PresenceMessage.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
@@ -111,7 +111,6 @@ var PresenceMessage = (function() {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;

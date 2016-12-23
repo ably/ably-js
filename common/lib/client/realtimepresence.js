@@ -323,8 +323,9 @@ var RealtimePresence = (function() {
 			reenterCb = function(err) {
 				if(err) {
 					var msg = 'Presence auto-re-enter failed: ' + err.toString();
-					Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-					self.channel.emit('error', new ErrorInfo(msg, 91201, 400));
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, err);
+					self.channel.emit('update', change);
 				}
 			};
 

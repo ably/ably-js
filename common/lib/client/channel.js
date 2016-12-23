@@ -55,7 +55,7 @@ var Channel = (function() {
 
 		var options = this.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format, channel);
+			return Message.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 

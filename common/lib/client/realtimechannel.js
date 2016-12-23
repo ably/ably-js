@@ -1,6 +1,5 @@
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
-	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 	var statechangeOp = 'statechange';
 	var syncOp = 'sync';
@@ -189,7 +188,6 @@ var RealtimeChannel = (function() {
 			if(err) {
 				var msg = 'Channel auto-attach failed: ' + err.toString();
 				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.autonomousAttach()', msg);
-				self.emit('error', new ErrorInfo(msg, 91200, 400));
 			}
 		});
 	};
@@ -279,8 +277,9 @@ var RealtimeChannel = (function() {
 		switch(message.action) {
 		case actions.ATTACHED:
 			if(this.state === 'attached') {
-				if(message.error) {
-					this.emit('error', message.error);
+				if(!message.hasFlag('RESUMED')) {
+					var change = new ChannelStateChange(this.state, this.state, false, message.error);
+					this.emit('update', change);
 				}
 			} else {
 				this.setAttached(message);
@@ -321,7 +320,6 @@ var RealtimeChannel = (function() {
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-					this.emit('error', e);
 				}
 				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
@@ -344,7 +342,6 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-					this.emit('error', e);
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
@@ -421,8 +418,8 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
-		var resumed = ((message.flags & ( 1 << flags.RESUMED)) > 0);
+		var syncInProgress = message.hasFlag('HAS_PRESENCE');
+		var resumed = message.hasFlag('RESUMED');
 		if(syncInProgress) {
 			this.presence.awaitSync();
 		}

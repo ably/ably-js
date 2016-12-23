@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		testOnAllTransports = helper.testOnAllTransports;
 
 	exports.setupchannel = function(test) {
@@ -460,7 +461,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					cb();
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 13, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			},
 			function(cb) {
 				channel.once(function(stateChange) {
@@ -492,11 +493,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(msg.action, 10, 'check attach action');
 				test.ok(true, 'Attach attempt');
 				helper.Utils.nextTick(function() {
-					transport.onProtocolMessage({
+					transport.onProtocolMessage(createPM({
 						action: 13,
 						channel: channelName,
 						error: {statusCode: 500, code: 50000, message: "generic serverside failure"}
-					});
+					}));
 				});
 			};
 			channel.attach(function(err) {
@@ -530,21 +531,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					closeAndFinish(test, realtime);
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 9, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 9, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			});
 		});
 	};
 
 	/* RTL12
-	 * A server-sent ATTACHED with err on an attached channel should emit an
-	 * ERROR event on the channel
+	 * A server-sent ATTACHED indicating a loss of connection continuity (i.e.
+	 * with no resumed flag, possibly with an error) on an attached channel
+	 * should emit an UPDATE event on the channel
 	 */
 	exports.server_sent_attached_err = function(test) {
 		var realtime = helper.AblyRealtime(),
 			channelName = 'server_sent_attached_err',
 			channel = realtime.channels.get(channelName);
 
-		test.expect(3);
+		test.expect(6);
 		async.series([
 			function(cb) {
 				realtime.connection.once('connected', function() { cb(); });
@@ -553,14 +555,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				channel.attach(cb);
 			},
 			function(cb) {
-				channel.once(function(err) {
-					test.equal(this.event, 'error', 'check is error event');
-					test.equal(err.code, 50000, 'check error propogated');
+				channel.once(function(stateChange) {
+					test.equal(this.event, 'update', 'check is error event');
+					test.equal(stateChange.current, 'attached', 'check current');
+					test.equal(stateChange.previous, 'attached', 'check previous');
+					test.equal(stateChange.resumed, false, 'check resumed');
+					test.equal(stateChange.reason.code, 50000, 'check error propogated');
 					test.equal(channel.state, 'attached', 'check channel still attached');
 					cb();
 				});
 				var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-				transport.onProtocolMessage({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}});
+				transport.onProtocolMessage(createPM({action: 11, channel: channelName, error: {statusCode: 500, code: 50000, message: "generic serverside failure"}}));
 			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
@@ -688,9 +693,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				});
 			},
 			function(cb) {
-				channel.once('error', function(error) {
-					test.ok(true, 'Check that the failure to reattach is emitted as an error');
-					test.equal(error.code, 91200, 'Check correct error code');
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'suspended', 'Check that the channel goes back into suspended after attach fails');
+					test.equal(stateChange.reason.code, 90007, 'Check correct error code');
 					cb();
 				});
 			}
