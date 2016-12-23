@@ -387,7 +387,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.history_encoding_errors = function(test) {
 		var testchannel = rest.channels.get('persisted:history_encoding_errors');
 		var badMessage = {name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'};
-		test.expect(4);
+		test.expect(2);
 		try {
 			testchannel.publish(badMessage, function(err) {
 				if(err) {
@@ -396,34 +396,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					return;
 				}
 				setTimeout(function(){
-					async.parallel(
-						[
-							function(cb) {
-								/* Add channel error event listeners */
-								testchannel.on('error', function(err) {
-									test.equal(err.code, 40013, "Error emitted has correct error code");
-									test.ok(err.message.indexOf("utf-8") > -1, "Error emitted contains correct encoding component");
-									cb();
-								});
-							},
-							function(cb) {
-								testchannel.history(function(err, resultPage) {
-									if(err) {
-										test.ok(false, displayError(err));
-										test.done();
-										return;
-									}
-									/* verify all messages are received */
-									var message = resultPage.items[0];
-									test.equal(message.data, badMessage.data, 'Verify data preserved');
-									test.equal(message.encoding, badMessage.encoding, 'Verify encoding preserved');
-									cb();
-								});
-							}
-						],
-						function() { test.done(); }
-					)
-				}, 1000)
+					testchannel.history(function(err, resultPage) {
+						if(err) {
+							test.ok(false, displayError(err));
+							test.done();
+							return;
+						}
+						/* verify all messages are received */
+						var message = resultPage.items[0];
+						test.equal(message.data, badMessage.data, 'Verify data preserved');
+						test.equal(message.encoding, badMessage.encoding, 'Verify encoding preserved');
+						test.done();
+					});
+				}, 1000);
 			});
 		} catch(e) {
 			console.log(e.stack);

@@ -4,16 +4,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		_exports = {},
 		rest,
+		publishIntervalHelper = function(currentMessageNum, channel, dataFn, onPublish){
+			return function(currentMessageNum) {
+				channel.publish('event0', dataFn(), function() {
+					onPublish();
+				});
+			};
+		},
 		publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
 			for(var i = numMessages; i > 0; i--) {
-				var helper = function(currentMessageNum) {
-					console.log('sending: ' + currentMessageNum);
-					channel.publish('event0', dataFn(), function(err) {
-						console.log('publish callback called');
-						onPublish();
-					});
-				};
-				setTimeout(helper(i), 20*i);
+				setTimeout(publishIntervalHelper(i, channel, dataFn, onPublish), 2*i);
 			}
 		},
 		displayError = helper.displayError,
@@ -485,7 +485,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.unrecoverableUpgrade = function(test) {
-		test.expect(6);
+		test.expect(7);
 		var realtime,
 			fakeConnectionKey = '_____!ablyjs_test_fake-key____',
 			fakeConnectionId = 'ablyjs_tes';
@@ -501,8 +501,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				realtime.connection.connectionManager.connectionId = fakeConnectionId;
 
 				/* on upgrade failure */
-				realtime.connection.once('error', function(error) {
-					test.equal(error.code, 80008, 'Check correct (unrecoverable connection) error');
+				realtime.connection.once('update', function(stateChange) {
+					test.equal(stateChange.reason.code, 80008, 'Check correct (unrecoverable connection) error');
+					test.equal(stateChange.current, 'connected', 'Check current is connected');
 					test.equal(realtime.connection.errorReason.code, 80008, 'Check error set in connection.errorReason');
 					test.equal(realtime.connection.state, 'connected', 'Check still connected');
 

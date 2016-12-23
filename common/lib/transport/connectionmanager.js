@@ -463,7 +463,8 @@ var ConnectionManager = (function() {
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		var existingState = this.state;
+		var existingState = this.state,
+			connectedState = this.states.connected.state;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
 		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
@@ -491,23 +492,30 @@ var ConnectionManager = (function() {
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
-		 * can come at any time (eg following a reauth) */
+		 * can come at any time (eg following a reauth), and emit an RTN24 UPDATE
+		 * event. (Listener added on nextTick because we're in a transport.on('connected')
+		 * callback at the moment; if we add it now we'll be adding it to the end
+		 * of the listeners array and it'll be called immediately) */
 		this.onConnectionDetailsUpdate(connectionDetails, transport);
 		var self = this;
-		transport.on('connected', function(error, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
-			self.onConnectionDetailsUpdate(connectionDetails, transport);
-		});
+		Utils.nextTick(function() {
+			transport.on('connected', function(connectedErr, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
+				self.onConnectionDetailsUpdate(connectionDetails, transport);
+				self.emit('update', new ConnectionStateChange(connectedState, connectedState, null, connectedErr));
+			});
+		})
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
 
 		/* If previously not connected, notify the state change (including any
-		 * error).  If previously connected (ie upgrading), no state change, so
-		* emit any error as a standalone event */
+		 * error). */
 		if(existingState.state === this.states.connected.state) {
 			if(error) {
-				this.emit('error', error);
 				/* if upgrading without error, leave any existing errorReason alone */
 				this.errorReason = this.realtime.connection.errorReason = error;
+				/* Only bother emitting an upgrade if there's an error; otherwise it's
+				 * just a transport upgrade, so auth details won't have changed */
+				this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, error));
 			}
 		} else {
 			this.notifyState({state: 'connected', error: error});
@@ -890,7 +898,7 @@ var ConnectionManager = (function() {
 		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
-			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+			change = new ConnectionStateChange(this.state.state, newState.state, null, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
 

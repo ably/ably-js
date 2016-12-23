@@ -19,9 +19,9 @@ var Connection = (function() {
 				self.emit(state, stateChange);
 			});
 		});
-		this.connectionManager.on('error', function(error) {
+		this.connectionManager.on('update', function(stateChange) {
 			Utils.nextTick(function() {
-				self.emit('error', error);
+				self.emit('update', stateChange);
 			});
 		});
 	}

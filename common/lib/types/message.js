@@ -186,7 +186,7 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(body, options, format, channel) {
+	Message.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
@@ -196,7 +196,6 @@ var Message = (function() {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;
