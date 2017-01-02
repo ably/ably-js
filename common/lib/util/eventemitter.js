@@ -141,25 +141,28 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.emit = function(event  /* , args... */) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
+		var listeners = [];
 
 		if(this.anyOnce.length) {
-			var listeners = this.anyOnce;
+			Array.prototype.push.apply(listeners, this.anyOnce);
 			this.anyOnce = [];
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
 		}
-		for(var i = 0; i < this.any.length; i++)
-			this.any[i].apply(eventThis, args);
-		var listeners = this.eventsOnce[event];
-		if(listeners) {
+		if(this.any.length) {
+			Array.prototype.push.apply(listeners, this.any);
+		}
+		var eventsOnceListeners = this.eventsOnce[event];
+		if(eventsOnceListeners) {
+			Array.prototype.push.apply(listeners, eventsOnceListeners);
 			delete this.eventsOnce[event];
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
 		}
-		var listeners = this.events[event];
-		if(listeners)
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
+		var eventsListeners = this.events[event];
+		if(eventsListeners) {
+			Array.prototype.push.apply(listeners, eventsListeners);
+		}
+
+		Utils.arrForEach(listeners, function(listener) {
+			callListener(eventThis, listener, args);
+		});
 	};
 
 	/**
