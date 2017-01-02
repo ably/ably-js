@@ -295,9 +295,9 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			firstCbCalled = false,
 			secondCbCalled = false;
 
-		eventEmitter.on(['a'], function() {
+		eventEmitter.on('a', function() {
 			firstCbCalled = true;
-			eventEmitter.on(['a'], function() {
+			eventEmitter.on('a', function() {
 				secondCbCalled = true;
 			});
 		});
@@ -305,6 +305,46 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		test.ok(firstCbCalled, 'check first callback called');
 		test.ok(!secondCbCalled, 'check second callback not called');
+
+		closeAndFinish(test, realtime);
+	};
+
+	/* check that listeners removed in a listener cb are still called in that
+	 * emit instance (but only once) */
+	exports.listenerRemovedInListenerCb = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+			eventEmitter = realtime.connection,
+			onCbCalledTimes = 0,
+			onceCbCalledTimes = 0,
+			anyCbCalledTimes = 0,
+			anyOnceCbCalledTimes = 0;
+
+		eventEmitter.on('a', function() {
+			onCbCalledTimes++;
+			eventEmitter.off('a');
+		});
+
+		eventEmitter.once('a', function() {
+			onceCbCalledTimes++;
+			eventEmitter.off('a');
+		});
+
+		eventEmitter.on(function() {
+			anyCbCalledTimes++;
+			eventEmitter.off();
+		});
+
+		eventEmitter.once(function() {
+			anyOnceCbCalledTimes++;
+			eventEmitter.off();
+		});
+
+		eventEmitter.emit('a');
+
+		test.equal(onCbCalledTimes, 1, 'check on callback called exactly once');
+		test.equal(onceCbCalledTimes, 1, 'check once callback called exactly once');
+		test.equal(anyCbCalledTimes, 1, 'check any callback called exactly once');
+		test.equal(anyOnceCbCalledTimes, 1, 'check anyOnce callback called exactly once');
 
 		closeAndFinish(test, realtime);
 	}
