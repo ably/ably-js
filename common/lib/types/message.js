@@ -10,6 +10,7 @@ var Message = (function() {
 		this.connectionKey = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
+		this.extras = undefined;
 	}
 
 	/**
@@ -22,7 +23,8 @@ var Message = (function() {
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			connectionKey: this.connectionKey,
-			encoding: this.encoding
+			encoding: this.encoding,
+			extras: this.extras
 		};
 
 		/* encode data to base64 if present and we're returning real JSON;
@@ -59,6 +61,8 @@ var Message = (function() {
 			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
+		if(this.extras)
+			result += '; extras =' + JSON.stringify(this.extras);
 		if(this.data) {
 			if (typeof(data) == 'string')
 				result += '; data=' + this.data;

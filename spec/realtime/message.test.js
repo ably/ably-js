@@ -690,6 +690,34 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 	};
 
+	/* For now realtime doesn't yet support the extras field, so stub transport.send to test it */
+	exports.extras_field = function(test) {
+		var realtime = helper.AblyRealtime(),
+			event = 'event',
+			extras = {push: [{title: 'testing'}]};
+
+		test.expect(3);
+
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+
+			transport.send = function(message) {
+				if (message.action === 15) {
+					test.equal(message.messages[0].name, event, 'Outgoing message interecepted');
+					test.deepEqual(message.messages[0].extras, extras, 'Check extras field is present');
+				}
+				originalSend.apply(transport, arguments);
+			};
+
+			var channel = realtime.channels.get('extras_field');
+			channel.publish({name: event, extras: extras}, function(err) {
+				test.ok(!err, err && helper.displayError(err));
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
 
 	return module.exports = helper.withTimeout(exports);
 });
