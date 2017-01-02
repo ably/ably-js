@@ -255,5 +255,27 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish(test, realtime);
 	}
 
+	/* check that listeners added in a listener cb are not called during that
+	 * emit instance */
+	exports.listenerAddedInListenerCb = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+			eventEmitter = realtime.connection,
+			firstCbCalled = false,
+			secondCbCalled = false;
+
+		eventEmitter.on('a', function() {
+			firstCbCalled = true;
+			eventEmitter.on('a', function() {
+				secondCbCalled = true;
+			});
+		});
+		eventEmitter.emit('a');
+
+		test.ok(firstCbCalled, 'check first callback called');
+		test.ok(!secondCbCalled, 'check second callback not called');
+
+		closeAndFinish(test, realtime);
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });
