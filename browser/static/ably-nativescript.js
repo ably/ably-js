@@ -3093,6 +3093,24 @@ var msgpack = (function() {
 	return exports;
 })();
 
+require('nativescript-websockets');
+
+var randomBytes;
+if (global.android) {
+	randomBytes = function(size) {
+		var sr = new java.security.SecureRandom();
+		var buffer = Array.create("byte", size);
+		sr.nextBytes(buffer);
+		return android.util.Base64.encodeToString(buffer, android.util.Base64.DEFAULT);
+	};
+} else {
+	randomBytes = function(size) {
+		var bytes = NSMutableData.dataWithLength(size);
+		SecRandomCopyBytes(kSecRandomDefault, size, bytes.mutableBytes());
+		return bytes.base64EncodedStringWithOptions(0);
+	};
+}
+
 var Platform = {
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
@@ -3103,26 +3121,18 @@ var Platform = {
 	msgpack: Ably.msgpack,
 	supportsBinary: (typeof TextDecoder !== 'undefined') && TextDecoder,
 	preferBinary: false,
-	ArrayBuffer: (typeof ArrayBuffer !== 'undefined') && ArrayBuffer,
-	atob: global.atob,
+	ArrayBuffer: ArrayBuffer,
+	atob: function(f) { return Base64.decode(f); },
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: null,
 	inspect: JSON.stringify,
-	getRandomValues: (function(randomBytes) {
-		return function(arr, callback) {
-			randomBytes(arr.length, function(err, bytes) {
-				if (err) {
-					callback(err);
-					return;
-				}
-
-				for (var i = 0; i < arr.length; i++) {
-					arr[i] = bytes[i];
-				}
-				callback(null);
-			});
-		};
-	})(require('react-native-randombytes').randomBytes)
+	getRandomValues: function(arr, callback) {
+		var bytes = randomBytes(arr.length);
+		for (var i = 0; i < arr.length; i++) {
+			arr[i] = bytes[i];
+		}
+		callback(null);
+	}
 };
 
 
@@ -3436,71 +3446,32 @@ var Crypto = (function() {
 })();
 
 var WebStorage = (function() {
-	var sessionSupported,
-		localSupported,
-		test = 'ablyjs-storage-test';
-
-	/* Even just accessing the session/localStorage object can throw a
-	 * security exception in some circumstances with some browsers. In
-	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no window object,
-	 * will throw on accessing a property of undefined) */
-	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
-		sessionSupported = true;
-	} catch(e) {
-		sessionSupported = false;
-	}
-
-	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
-		localSupported = true;
-	} catch(e) {
-		localSupported = false;
-	}
+	var appSettings = require("application-settings");
 
 	function WebStorage() {}
 
-	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
-	}
-
-	function set(name, value, ttl, session) {
+	function set(name, value, ttl) {
 		var wrappedValue = {value: value};
 		if(ttl) {
 			wrappedValue.expires = Utils.now() + ttl;
 		}
-		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
+		return appSettings.setString(name, JSON.stringify(wrappedValue));
 	}
 
-	function get(name, session) {
-		var rawItem = storageInterface(session).getItem(name);
+	function get(name) {
+		var rawItem = appSettings.getString(name);
 		if(!rawItem) return null;
 		var wrappedValue = JSON.parse(rawItem);
 		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
-			storageInterface(session).removeItem(name);
+			appSettings.remove(name);
 			return null;
 		}
 		return wrappedValue.value;
 	}
 
-	function remove(name, session) {
-		return storageInterface(session).removeItem(name);
-	}
-
-	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
-	}
-
-	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
-	}
+	WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl); };
+	WebStorage.get    = function(name) { return get(name); };
+	WebStorage.remove = function(name) { return appSettings.remove(name); };
 
 	return WebStorage;
 })();

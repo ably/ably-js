@@ -20,7 +20,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.4';
+Defaults.version          = '0.9.0-beta.5';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.9';
 
