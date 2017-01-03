@@ -82,6 +82,10 @@ module.exports = function (grunt) {
 			dest: '<%= dirs.dest %>/ably-reactnative.js',
 			nonull: true
 		},
+		'ably-nativescript': {
+			dest: '<%= dirs.dest %>/ably-nativescript.js',
+			nonull: true
+		},
 		'ably-commonjs.noencryption': {
 			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
 			nonull: true
@@ -96,7 +100,6 @@ module.exports = function (grunt) {
 	var ablyFiles = [
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
 
@@ -155,6 +158,7 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -178,6 +182,7 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -201,6 +206,33 @@ module.exports = function (grunt) {
 		'<%= dirs.fragments %>/platform-reactnative.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
+		ablyFiles,
+		/* jsonptransport omitted */
+
+		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
+
+	gruntConfig.concat['ably-nativescript'].src = [].concat(
+		'<%= dirs.fragments %>/license.js',
+		'<%= dirs.fragments %>/ably-commonjs-prologue.js',
+		'<%= dirs.crypto_js %>/core.js',
+		'<%= dirs.crypto_js %>/sha256.js',
+		'<%= dirs.crypto_js %>/hmac.js',
+		'<%= dirs.crypto_js %>/enc-base64.js',
+		'<%= dirs.crypto_js %>/cipher-core.js',
+		'<%= dirs.crypto_js %>/aes.js',
+		'<%= dirs.crypto_js %>/lib-typedarrays.js',
+
+		/* domevent omitted; not supported in nativescript */
+		'<%= dirs.browser %>/lib/util/msgpack.js',
+
+		'<%= dirs.fragments %>/platform-nativescript.js',
+
+		'<%= dirs.browser %>/lib/util/crypto.js',
+
+		/* Note: nativescript-specific webstorage */
+		'<%= dirs.browser %>/lib/util/nativescript-webstorage.js',
 		ablyFiles,
 		/* jsonptransport omitted */
 
@@ -219,6 +251,7 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/util/msgpack.js',
 
 		'<%= dirs.fragments %>/platform-browser.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
@@ -239,6 +272,7 @@ module.exports = function (grunt) {
 
 		'<%= dirs.fragments %>/platform-browser.js',
 
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 

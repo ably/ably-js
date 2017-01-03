@@ -1,4 +1,5 @@
 if(typeof Realtime !== 'undefined') {
+	Ably.msgpack = msgpack;
 	Ably.Rest = Rest;
 	Ably.Realtime = Realtime;
 	Realtime.ConnectionManager = ConnectionManager;

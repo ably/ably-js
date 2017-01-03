@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2016, Ably
+ * @license Copyright 2017, Ably
  *
  * Ably JavaScript Library v0.9.0-beta.4
  * https://github.com/ably/ably-js
@@ -1192,15 +1192,8 @@ var DomEvent = (function() {
 	return DomEvent;
 })();
 
-(// Module boilerplate to support browser globals and browserify and AMD.
-		typeof define === "function" ? function(m) {
-	define("msgpack-js", m);
-} : typeof exports === "object" ? function(m) {
-	module.exports = m();
-} : function(m) {
-	this.msgpack = m();
-}
-	).call(this, function() {"use strict";
+var msgpack = (function() {
+	"use strict";
 
 	var exports = {};
 
@@ -2019,7 +2012,8 @@ var DomEvent = (function() {
 	}
 
 	return exports;
-});
+})();
+
 if(typeof window !== 'object') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
 }
@@ -2038,6 +2032,7 @@ var Platform = {
 	atob: window.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: window.addEventListener,
+	inspect: JSON.stringify,
 	getRandomValues: (function(crypto) {
 		return function(arr, callback) {
 			crypto.getRandomValues(arr);
@@ -2046,6 +2041,76 @@ var Platform = {
 	})(window.crypto || window.msCrypto) // mscrypto for IE11
 };
 
+
+var WebStorage = (function() {
+	var sessionSupported,
+		localSupported,
+		test = 'ablyjs-storage-test';
+
+	/* Even just accessing the session/localStorage object can throw a
+	 * security exception in some circumstances with some browsers. In
+	 * others, calling setItem will throw. So have to check in this
+	 * somewhat roundabout way. (If unsupported or no window object,
+	 * will throw on accessing a property of undefined) */
+	try {
+		window.sessionStorage.setItem(test, test);
+		window.sessionStorage.removeItem(test);
+		sessionSupported = true;
+	} catch(e) {
+		sessionSupported = false;
+	}
+
+	try {
+		window.localStorage.setItem(test, test);
+		window.localStorage.removeItem(test);
+		localSupported = true;
+	} catch(e) {
+		localSupported = false;
+	}
+
+	function WebStorage() {}
+
+	function storageInterface(session) {
+		return session ? window.sessionStorage : window.localStorage;
+	}
+
+	function set(name, value, ttl, session) {
+		var wrappedValue = {value: value};
+		if(ttl) {
+			wrappedValue.expires = Utils.now() + ttl;
+		}
+		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
+	}
+
+	function get(name, session) {
+		var rawItem = storageInterface(session).getItem(name);
+		if(!rawItem) return null;
+		var wrappedValue = JSON.parse(rawItem);
+		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
+			storageInterface(session).removeItem(name);
+			return null;
+		}
+		return wrappedValue.value;
+	}
+
+	function remove(name, session) {
+		return storageInterface(session).removeItem(name);
+	}
+
+	if(localSupported) {
+		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
+		WebStorage.get    = function(name) { return get(name, false); };
+		WebStorage.remove = function(name) { return remove(name, false); };
+	}
+
+	if(sessionSupported) {
+		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
+		WebStorage.getSession    = function(name) { return get(name, true); };
+		WebStorage.removeSession = function(name) { return remove(name, true); };
+	}
+
+	return WebStorage;
+})();
 
 var Defaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
@@ -2221,76 +2286,6 @@ var BufferUtils = (function() {
 	};
 
 	return BufferUtils;
-})();
-
-var WebStorage = (function() {
-	var sessionSupported,
-		localSupported,
-		test = 'ablyjs-storage-test';
-
-	/* Even just accessing the session/localStorage object can throw a
-	 * security exception in some circumstances with some browsers. In
-	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no window object,
-	 * will throw on accessing a property of undefined) */
-	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
-		sessionSupported = true;
-	} catch(e) {
-		sessionSupported = false;
-	}
-
-	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
-		localSupported = true;
-	} catch(e) {
-		localSupported = false;
-	}
-
-	function WebStorage() {}
-
-	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
-	}
-
-	function set(name, value, ttl, session) {
-		var wrappedValue = {value: value};
-		if(ttl) {
-			wrappedValue.expires = Utils.now() + ttl;
-		}
-		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
-	}
-
-	function get(name, session) {
-		var rawItem = storageInterface(session).getItem(name);
-		if(!rawItem) return null;
-		var wrappedValue = JSON.parse(rawItem);
-		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
-			storageInterface(session).removeItem(name);
-			return null;
-		}
-		return wrappedValue.value;
-	}
-
-	function remove(name, session) {
-		return storageInterface(session).removeItem(name);
-	}
-
-	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
-	}
-
-	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
-	}
-
-	return WebStorage;
 })();
 
 var Http = (function() {
@@ -3158,9 +3153,11 @@ var Utils = (function() {
 	/*
 	 * Declare a constructor to represent a subclass
 	 * of another constructor
+	 * If platform has a built-in version we use that from Platform, else we
+	 * define here (so can make use of other Utils fns)
 	 * See node.js util.inherits
 	 */
-	Utils.inherits = (typeof(require) === 'function' && require('util') && require('util').inherits) || function(ctor, superCtor) {
+	Utils.inherits = Platform.inherits || function(ctor, superCtor) {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
@@ -3380,10 +3377,7 @@ var Utils = (function() {
 		return new Date().getTime();
 	};
 
-	Utils.inspect = (typeof(require) === 'function' && require('util') && require('util').inspect) ||
-		function(x) {
-			return JSON.stringify(x);
-		};
+	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
 		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
@@ -3659,7 +3653,7 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(body, options, format, channel) {
+	Message.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
@@ -3669,7 +3663,6 @@ var Message = (function() {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;
@@ -3809,7 +3802,7 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format, channel) {
+	PresenceMessage.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
@@ -3819,7 +3812,6 @@ var PresenceMessage = (function() {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;
@@ -3907,10 +3899,14 @@ var ProtocolMessage = (function() {
 		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
 	});
 
-	ProtocolMessage.Flag = {
+	var flags = {
 		'HAS_PRESENCE': 0,
 		'HAS_BACKLOG': 1,
 		'RESUMED': 2
+	};
+
+	ProtocolMessage.prototype.hasFlag = function(flag) {
+		return ((this.flags & ( 1 << flags[flag])) > 0);
 	};
 
 	ProtocolMessage.serialize = function(msg, format) {
@@ -4013,6 +4009,9 @@ var Stats = (function() {
 		this.realtime = new MessageTypes(values && values.realtime);
 		this.rest = new MessageTypes(values && values.rest);
 		this.webhook = new MessageTypes(values && values.webhook);
+		this.push = new MessageTypes(values && values.push);
+		this.sharedQueue = new MessageTypes(values && values.sharedQueue);
+		this.externalQueue = new MessageTypes(values && values.externalQueue);
 		this.all = new MessageTypes(values && values.all);
 	}
 
@@ -4036,6 +4035,7 @@ var Stats = (function() {
 
 	return Stats;
 })();
+
 var ConnectionError = {
 	disconnected: ErrorInfo.fromValues({
 		statusCode: 400,
@@ -4357,6 +4357,7 @@ var ConnectionManager = (function() {
 		if(addEventListener) {
 			/* intercept close event in browser to persist connection id if requested */
 			if(haveSessionStorage && typeof options.recover === 'function') {
+				/* Usually can't use bind as not supported in IE8, but IE doesn't support sessionStorage, so... */
 				addEventListener('beforeunload', this.persistConnection.bind(this));
 			}
 
@@ -4683,7 +4684,8 @@ var ConnectionManager = (function() {
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		var existingState = this.state;
+		var existingState = this.state,
+			connectedState = this.states.connected.state;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
 		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
@@ -4711,23 +4713,30 @@ var ConnectionManager = (function() {
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
-		 * can come at any time (eg following a reauth) */
+		 * can come at any time (eg following a reauth), and emit an RTN24 UPDATE
+		 * event. (Listener added on nextTick because we're in a transport.on('connected')
+		 * callback at the moment; if we add it now we'll be adding it to the end
+		 * of the listeners array and it'll be called immediately) */
 		this.onConnectionDetailsUpdate(connectionDetails, transport);
 		var self = this;
-		transport.on('connected', function(error, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
-			self.onConnectionDetailsUpdate(connectionDetails, transport);
-		});
+		Utils.nextTick(function() {
+			transport.on('connected', function(connectedErr, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
+				self.onConnectionDetailsUpdate(connectionDetails, transport);
+				self.emit('update', new ConnectionStateChange(connectedState, connectedState, null, connectedErr));
+			});
+		})
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
 
 		/* If previously not connected, notify the state change (including any
-		 * error).  If previously connected (ie upgrading), no state change, so
-		* emit any error as a standalone event */
+		 * error). */
 		if(existingState.state === this.states.connected.state) {
 			if(error) {
-				this.emit('error', error);
 				/* if upgrading without error, leave any existing errorReason alone */
 				this.errorReason = this.realtime.connection.errorReason = error;
+				/* Only bother emitting an upgrade if there's an error; otherwise it's
+				 * just a transport upgrade, so auth details won't have changed */
+				this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, error));
 			}
 		} else {
 			this.notifyState({state: 'connected', error: error});
@@ -5110,7 +5119,7 @@ var ConnectionManager = (function() {
 		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
-			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+			change = new ConnectionStateChange(this.state.state, newState.state, null, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
 
@@ -6430,7 +6439,7 @@ var Presence = (function() {
 
 		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 
@@ -6460,7 +6469,7 @@ var Presence = (function() {
 
 		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 
@@ -7830,9 +7839,9 @@ var Connection = (function() {
 				self.emit(state, stateChange);
 			});
 		});
-		this.connectionManager.on('error', function(error) {
+		this.connectionManager.on('update', function(stateChange) {
 			Utils.nextTick(function() {
-				self.emit('error', error);
+				self.emit('update', stateChange);
 			});
 		});
 	}
@@ -7918,14 +7927,15 @@ var Channel = (function() {
 
 		var options = this.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format, channel);
+			return Message.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
-			callback = arguments[argCount - 1];
+			callback = arguments[argCount - 1],
+			self = this;
 
 		if(typeof(callback) !== 'function') {
 			callback = noop;
@@ -7954,8 +7964,8 @@ var Channel = (function() {
 				callback(err);
 				return;
 			}
-			this._publish(requestBody, headers, callback);
-		}.bind(this));
+			self._publish(requestBody, headers, callback);
+		});
 	};
 
 	Channel.prototype._publish = function(requestBody, headers, callback) {
@@ -7967,7 +7977,6 @@ var Channel = (function() {
 
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
-	var flags = ProtocolMessage.Flag;
 	var noop = function() {};
 	var statechangeOp = 'statechange';
 	var syncOp = 'sync';
@@ -8034,13 +8043,14 @@ var RealtimeChannel = (function() {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
 		var options = this.channelOptions;
+		var self = this;
 		Message.encodeArray(messages, options, function(err) {
 			if (err) {
 				callback(err);
 				return;
 			}
-			this._publish(messages, callback);
-		}.bind(this));
+			self._publish(messages, callback);
+		});
 	};
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
@@ -8155,7 +8165,6 @@ var RealtimeChannel = (function() {
 			if(err) {
 				var msg = 'Channel auto-attach failed: ' + err.toString();
 				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.autonomousAttach()', msg);
-				self.emit('error', new ErrorInfo(msg, 91200, 400));
 			}
 		});
 	};
@@ -8245,8 +8254,9 @@ var RealtimeChannel = (function() {
 		switch(message.action) {
 		case actions.ATTACHED:
 			if(this.state === 'attached') {
-				if(message.error) {
-					this.emit('error', message.error);
+				if(!message.hasFlag('RESUMED')) {
+					var change = new ChannelStateChange(this.state, this.state, false, message.error);
+					this.emit('update', change);
 				}
 			} else {
 				this.setAttached(message);
@@ -8287,7 +8297,6 @@ var RealtimeChannel = (function() {
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-					this.emit('error', e);
 				}
 				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
@@ -8310,7 +8319,6 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-					this.emit('error', e);
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
@@ -8387,8 +8395,8 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		var syncInProgress = ((message.flags & ( 1 << flags.HAS_PRESENCE)) > 0);
-		var resumed = ((message.flags & ( 1 << flags.RESUMED)) > 0);
+		var syncInProgress = message.hasFlag('HAS_PRESENCE');
+		var resumed = message.hasFlag('RESUMED');
 		if(syncInProgress) {
 			this.presence.awaitSync();
 		}
@@ -8470,11 +8478,11 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype.timeoutPendingState = function() {
 		switch(this.state) {
 			case 'attaching':
-				var err = new ErrorInfo('Channel attach timed out', 90000, 408);
+				var err = new ErrorInfo('Channel attach timed out', 90007, 408);
 				this.notifyState('suspended', err);
 				break;
 			case 'detaching':
-				var err = new ErrorInfo('Channel detach timed out', 90000, 408);
+				var err = new ErrorInfo('Channel detach timed out', 90007, 408);
 				this.notifyState('attached', err);
 				break;
 			default:
@@ -8661,6 +8669,7 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
+		var self = this;
 		PresenceMessage.encode(presence, channel.channelOptions, function(err) {
 			if (err) {
 				callback(err);
@@ -8674,7 +8683,7 @@ var RealtimePresence = (function() {
 				case 'detached':
 					channel.autonomousAttach();
 				case 'attaching':
-					this.pendingPresence.push({
+					self.pendingPresence.push({
 						presence : presence,
 						callback : callback
 					});
@@ -8684,7 +8693,7 @@ var RealtimePresence = (function() {
 					err.code = 90001;
 					callback(err);
 			}
-		}.bind(this));
+		});
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
@@ -8892,8 +8901,9 @@ var RealtimePresence = (function() {
 			reenterCb = function(err) {
 				if(err) {
 					var msg = 'Presence auto-re-enter failed: ' + err.toString();
-					Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-					self.channel.emit('error', new ErrorInfo(msg, 91201, 400));
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, err);
+					self.channel.emit('update', change);
 				}
 			};
 
@@ -9127,7 +9137,7 @@ var XHRRequest = (function() {
 	}
 
 	var xhrSupported = Platform.xhrSupported;
-	var isIE = window.XDomainRequest;
+	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
 	function isAvailable() {
 		return xhrSupported;
 	};
@@ -9700,6 +9710,7 @@ var JSONPTransport = (function() {
 })();
 
 if(typeof Realtime !== 'undefined') {
+	Ably.msgpack = msgpack;
 	Ably.Rest = Rest;
 	Ably.Realtime = Realtime;
 	Realtime.ConnectionManager = ConnectionManager;

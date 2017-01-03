@@ -1,12 +1,5 @@
-(// Module boilerplate to support browser globals and browserify and AMD.
-		typeof define === "function" ? function(m) {
-	define("msgpack-js", m);
-} : typeof exports === "object" ? function(m) {
-	module.exports = m();
-} : function(m) {
-	this.msgpack = m();
-}
-	).call(this, function() {"use strict";
+var msgpack = (function() {
+	"use strict";
 
 	var exports = {};
 
@@ -825,4 +818,4 @@
 	}
 
 	return exports;
-});
+})();

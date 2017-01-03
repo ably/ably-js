@@ -14,7 +14,7 @@ var XHRRequest = (function() {
 	}
 
 	var xhrSupported = Platform.xhrSupported;
-	var isIE = window.XDomainRequest;
+	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
 	function isAvailable() {
 		return xhrSupported;
 	};
