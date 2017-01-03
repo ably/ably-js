@@ -9,7 +9,7 @@ var Platform = {
 	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
 	useProtocolHeartbeats: true,
 	createHmac: null,
-	msgpack: Ably.msgpack,
+	msgpack: msgpack,
 	supportsBinary: !!window.TextDecoder,
 	preferBinary: false,
 	ArrayBuffer: window.ArrayBuffer,

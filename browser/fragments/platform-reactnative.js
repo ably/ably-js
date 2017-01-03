@@ -5,7 +5,7 @@ var Platform = {
 	xhrSupported: XMLHttpRequest,
 	useProtocolHeartbeats: true,
 	createHmac: null,
-	msgpack: Ably.msgpack,
+	msgpack: msgpack,
 	supportsBinary: (typeof TextDecoder !== 'undefined') && TextDecoder,
 	preferBinary: false,
 	ArrayBuffer: (typeof ArrayBuffer !== 'undefined') && ArrayBuffer,
