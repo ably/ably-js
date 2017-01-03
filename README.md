@@ -4,7 +4,7 @@ A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime
 
 ## Version: 0.8.41
 
-This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, and Cordova.
+This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
@@ -69,6 +69,10 @@ let realtime = new Ably.Realtime(options)
 ## For React Native
 
 See the [ably-js-react-native repo](https://github.com/ably/ably-js-react-native) for React Native usage details.
+
+## For NativeScript
+
+See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript) for NativeScript usage details.
 
 ## Using the Realtime API
 
