@@ -1,5 +1,5 @@
 var Auth = (function() {
-	var msgpack = Platform.msgPack;
+	var msgpack = Platform.msgpack;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
