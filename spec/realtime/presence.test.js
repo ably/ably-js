@@ -1437,10 +1437,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/* Check the RTP5c/RTP17 auto-re-enter functionality by injecting a member
-	 * into the private _myMembers set while suspended. Expect on re-attach and
-	 * sync that member to be sent to realtime and, with luck, make its way into
-	 * the normal presence set */
+	/* RTP5c2, RTP17
+	 * Test the auto-re-enter functionality by injecting a member into the
+	 * private _myMembers set while suspended. Expect on re-attach and sync that
+	 * member to be sent to realtime and, with luck, make its way into the normal
+	 * presence set */
 	exports.presence_auto_reenter = function(test) {
 		test.expect(7);
 		var channelName = "presence_auto_reenter";
@@ -1501,6 +1502,73 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.deepEqual(extractClientIds(results), ['one', 'two'], 'check correct members');
 					test.equal(extractMember(results, 'one').data, 'onedata', 'check correct data on one');
 					test.equal(extractMember(results, 'two').data, 'twodata', 'check correct data on two');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* RTP5c3
+	 * Test failed presence auto-re-entering */
+	exports.presence_failed_auto_reenter = function(test) {
+		test.expect(5);
+		var channelName = "presence_failed_auto_reenter",
+			realtime, channel, token;
+
+		async.series([
+			function(cb) {
+				/* Request a token without the capabilities to be in the presence set */
+				var tokenParams = {clientId: 'me', capability: {}};
+				tokenParams.capability[channelName] = ['publish', 'subscribe'];
+				rest.auth.requestToken(tokenParams, function(err, tokenDetails) {
+					token = tokenDetails;
+					cb(err);
+				});
+			},
+			function(cb) {
+				realtime = helper.AblyRealtime({tokenDetails: token});
+				channel = realtime.channels.get(channelName);
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) { channel.attach(cb); },
+			function(cb) {
+				channel.presence.get(function(err, members) {
+					test.equal(members.length, 0, 'Check no-one in presence set');
+					cb();
+				});
+			},
+			function(cb) {
+				/* inject an additional member into the myMember set, then force a suspended state */
+				var connId = realtime.connection.connectionManager.connectionId;
+				channel.presence._myMembers.put({
+					action: 'enter',
+					clientId: 'me',
+					connectionId: connId,
+					id: connId + ':0:0'
+				});
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtime.connection.connect();
+				channel.once('attached', function() { cb(); });
+			},
+			function(cb) {
+				/* The channel will now try to auto-re-enter the me client, which will result in... */
+				channel.once(function(channelStateChange) {
+					test.equal(this.event, 'update', 'Check get an update event');
+					test.equal(channelStateChange.current, 'attached', 'Check still attached')
+					test.equal(channelStateChange.reason && channelStateChange.reason.code, 91004, 'Check error code')
+					cb();
+				})
+			},
+			function(cb) {
+				channel.presence.get(function(err, members) {
+					test.equal(members.length, 0, 'Check no-one in presence set');
 					cb();
 				});
 			}
