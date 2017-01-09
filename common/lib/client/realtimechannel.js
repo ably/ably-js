@@ -433,9 +433,6 @@ var RealtimeChannel = (function() {
 		this.presence.actOnChannelState(state, reason);
 		if(state !== 'attached' && state !== 'attaching') {
 			this.failPendingMessages(reason || RealtimeChannel.invalidStateError(state));
-			if(state === 'detached' || state === 'failed') {
-				this.presence._clearMyMembers();
-			}
 		}
 		if(state === 'suspended' && this.connectionManager.state.sendEvents) {
 			this.startRetryTimer();

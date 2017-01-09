@@ -296,6 +296,8 @@ var RealtimePresence = (function() {
 				break;
 			case 'detached':
 			case 'failed':
+				this._clearMyMembers();
+				/* falls through */
 			case 'suspended':
 				this.failPendingPresence(err);
 				this.members.clear();
