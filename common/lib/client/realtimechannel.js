@@ -397,10 +397,6 @@ var RealtimeChannel = (function() {
 		 * order to support untilAttach flag for history retrieval */
 		this.attachSerial = message.channelSerial;
 
-		/* ensure we don't transition multiple times */
-		if(this.state != 'attaching')
-			return;
-
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
 			this.pendingEvents = [];
