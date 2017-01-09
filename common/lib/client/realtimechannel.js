@@ -397,10 +397,6 @@ var RealtimeChannel = (function() {
 		 * order to support untilAttach flag for history retrieval */
 		this.attachSerial = message.channelSerial;
 
-		/* update any presence included with this message */
-		if(message.presence)
-			this.presence.setPresence(message.presence, false);
-
 		/* ensure we don't transition multiple times */
 		if(this.state != 'attaching')
 			return;
