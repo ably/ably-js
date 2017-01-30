@@ -276,13 +276,16 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
+			this.attachSerial = message.channelSerial;
 			if(this.state === 'attached') {
 				if(!message.hasFlag('RESUMED')) {
+					/* On a loss of continuity, the presence set needs to be re-synced */
+					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
 					var change = new ChannelStateChange(this.state, this.state, false, message.error);
 					this.emit('update', change);
 				}
 			} else {
-				this.setAttached(message);
+				this.notifyState('attached', message.error, message.hasFlag('RESUMED'), message.hasFlag('HAS_PRESENCE'));
 			}
 			break;
 
@@ -390,20 +393,8 @@ var RealtimeChannel = (function() {
 		return result;
 	};
 
-	RealtimeChannel.prototype.setAttached = function(message) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name + '; message flags = ' + message.flags);
-
-		/* Remember the channel serial at the moment of attaching in
-		 * order to support untilAttach flag for history retrieval */
-		this.attachSerial = message.channelSerial;
-
-		/* update any presence included with this message */
-		if(message.presence)
-			this.presence.setPresence(message.presence, false);
-
-		/* ensure we don't transition multiple times */
-		if(this.state != 'attaching')
-			return;
+	RealtimeChannel.prototype.onAttached = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
 
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
@@ -418,28 +409,18 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		var syncInProgress = message.hasFlag('HAS_PRESENCE');
-		var resumed = message.hasFlag('RESUMED');
-		if(syncInProgress) {
-			this.presence.awaitSync();
-		}
-		this.setInProgress(syncOp, syncInProgress);
-		this.notifyState('attached', message.reason, resumed);
 	};
 
-	RealtimeChannel.prototype.notifyState = function(state, reason, resumed) {
+	RealtimeChannel.prototype.notifyState = function(state, reason, resumed, hasPresence) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
 		this.clearStateTimer();
 
 		if(state === this.state) {
 			return;
 		}
-		this.presence.actOnChannelState(state, reason);
+		this.presence.actOnChannelState(state, hasPresence, reason);
 		if(state !== 'attached' && state !== 'attaching') {
 			this.failPendingMessages(reason || RealtimeChannel.invalidStateError(state));
-			if(state === 'detached' || state === 'failed') {
-				this.presence._clearMyMembers();
-			}
 		}
 		if(state === 'suspended' && this.connectionManager.state.sendEvents) {
 			this.startRetryTimer();
@@ -455,6 +436,8 @@ var RealtimeChannel = (function() {
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {
+			this.onAttached();
+			this.setInProgress(syncOp, hasPresence);
 			this.setInProgress(statechangeOp, false);
 		} else if(state === 'detached' || state === 'failed' || state === 'suspended') {
 			this.setInProgress(statechangeOp, false);

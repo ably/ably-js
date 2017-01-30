@@ -21,6 +21,7 @@ var RealtimePresence = (function() {
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
+			case 'suspended':
 				action();
 				break;
 			case 'initialized':
@@ -184,6 +185,20 @@ var RealtimePresence = (function() {
 			callback(null, params ? members.list(params) : members.values());
 		}
 
+		/* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+		if(this.channel.state === 'suspended') {
+			if(waitForSync) {
+				callback(ErrorInfo.fromValues({
+					statusCode: 400,
+					code: 91005,
+					message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
+				}));
+			} else {
+				returnMembers(this.members);
+			}
+			return;
+		}
+
 		var self = this;
 		waitAttached(this.channel, callback, function() {
 			var members = self.members;
@@ -271,7 +286,18 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.setAttached = function() {
+	RealtimePresence.prototype.onAttached = function(hasPresence) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
+
+		if(hasPresence) {
+			this.members.startSync();
+		} else {
+			this._synthesizeLeaves(this.members.values());
+			this.members.clear();
+			this._ensureMyMembersPresent();
+		}
+
+		/* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
 		var pendingPresence = this.pendingPresence,
 			pendingPresCount = pendingPresence.length;
 
@@ -279,7 +305,7 @@ var RealtimePresence = (function() {
 			this.pendingPresence = [];
 			var presenceArray = [];
 			var multicaster = Multicaster();
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setAttached', 'sending ' + pendingPresCount + ' queued presence messages');
+			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
 			for(var i = 0; i < pendingPresCount; i++) {
 				var event = pendingPresence[i];
 				presenceArray.push(event.presence);
@@ -289,16 +315,18 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.actOnChannelState = function(state, err) {
+	RealtimePresence.prototype.actOnChannelState = function(state, hasPresence, err) {
 		switch(state) {
 			case 'attached':
-				this.setAttached();
+				this.onAttached(hasPresence);
 				break;
 			case 'detached':
 			case 'failed':
+				this._clearMyMembers();
+				this.members.clear();
+				/* falls through */
 			case 'suspended':
 				this.failPendingPresence(err);
-				this.members.clear();
 				break;
 		}
 	};
@@ -323,8 +351,9 @@ var RealtimePresence = (function() {
 			reenterCb = function(err) {
 				if(err) {
 					var msg = 'Presence auto-re-enter failed: ' + err.toString();
+					var wrappedErr = new ErrorInfo(msg, 91004, 400);
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, err);
+					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, wrappedErr);
 					self.channel.emit('update', change);
 				}
 			};
@@ -339,9 +368,19 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.awaitSync = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync()', 'channel = ' + this.channel.name);
-		this.members.startSync();
+	RealtimePresence.prototype._synthesizeLeaves = function(items) {
+		var subscriptions = this.subscriptions;
+		Utils.arrForEach(items, function(item) {
+			var presence = PresenceMessage.fromValues({
+				action: 'leave',
+				connectionId: item.connectionId,
+				clientId: item.clientId,
+				data: item.data,
+				encoding: item.encoding,
+				timestamp: Utils.now()
+			});
+			subscriptions.emit('leave', presence);
+		});
 	};
 
 	/* Deprecated */
@@ -512,7 +551,8 @@ var RealtimePresence = (function() {
 				}
 			}
 			/* any members that were present at the start of the sync,
-			 * and have not been seen in sync, can be removed */
+			 * and have not been seen in sync, can be removed, and leave events emitted */
+			this.presence._synthesizeLeaves(Utils.valuesArray(this.residualMembers));
 			for(var memberKey in this.residualMembers) {
 				delete map[memberKey];
 			}
