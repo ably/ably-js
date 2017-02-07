@@ -490,6 +490,10 @@ You can also view the [community reported Github issues](https://github.com/ably
 
 To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
+#### Browser-specific issues
+
+* ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.io/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers)
+
 ## Contributing
 
 1. Fork it
