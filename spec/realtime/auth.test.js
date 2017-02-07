@@ -375,7 +375,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/* RSA4c
+	/* RSA4c, RSA4e
 	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
 	 */
 	function authCallback_failures(realtimeOptions) {
@@ -410,6 +410,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		callback(null, { horse: 'ebooks' });
 	}});
 
+	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
+		var token = '';
+		for(var i=0; i<390; i++) {
+			token = token + 'a';
+		}
+		callback(null, token);
+	}});
+
 	exports.authUrl_timeout = authCallback_failures({
 		authUrl: helper.unroutableAddress,
 		realtimeRequestTimeout: 100
@@ -417,6 +425,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.authUrl_404 = authCallback_failures({
 		authUrl: 'http://example.com/404'
+	});
+
+	exports.authUrl_wrong_content_type = authCallback_failures({
+		authUrl: 'http://example.com/'
 	});
 
 	/*

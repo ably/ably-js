@@ -1,5 +1,7 @@
 var Auth = (function() {
 	var msgpack = Platform.msgpack;
+	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
+	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
@@ -303,7 +305,7 @@ var Auth = (function() {
 				}
 			}
 			tokenRequestCallback = function(params, cb) {
-				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
+				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
 						authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
@@ -313,11 +315,26 @@ var Auth = (function() {
 					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
-					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
+					var contentType = headers['content-type'];
+					if(!contentType) {
+						cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401));
+						return;
+					}
+					var json = contentType.indexOf('application/json') > -1,
+						text = contentType.indexOf('text/plain') > -1;
+					if(!json && !text) {
+						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain or application/json', 40170, 401));
+						return;
+					}
+					if(json) {
+						if(body.length > MAX_TOKENOBJECT_LENGTH) {
+							cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401));
+							return;
+						}
 						try {
 							body = JSON.parse(body);
 						} catch(e) {
-							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40000, 400));
+							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40170, 401));
 							return;
 						}
 					}
@@ -394,13 +411,22 @@ var Auth = (function() {
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
 			if(typeof(tokenRequestOrDetails) === 'string') {
-				callback(null, {token: tokenRequestOrDetails});
+				if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
+				} else {
+					callback(null, {token: tokenRequestOrDetails});
+				}
 				return;
 			}
 			if(typeof(tokenRequestOrDetails) !== 'object') {
 				var msg = 'Expected token request callback to call back with a token string or token request/details object, but got a ' + typeof(tokenRequestOrDetails);
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
 				callback(new ErrorInfo(msg, 40170, 401));
+				return;
+			}
+			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
+			if(objectSize > MAX_TOKENOBJECT_LENGTH) {
+				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
 			if('issued' in tokenRequestOrDetails) {

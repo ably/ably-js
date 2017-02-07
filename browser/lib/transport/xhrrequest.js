@@ -107,10 +107,11 @@ var XHRRequest = (function() {
 			accept = headers['accept'],
 			responseType = 'text';
 
-		if(!accept)
+		if(!accept) {
 			headers['accept'] = 'application/json';
-		else if(accept != 'application/json')
+		} else if(accept.indexOf('application/json') === -1) {
 			responseType = 'arraybuffer';
+		}
 
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
