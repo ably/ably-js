@@ -11,7 +11,7 @@
     "./nodejs/index.js": "browser/static/ably-commonjs.js"
   },
   "dependencies": {
-    "msgpack-js": "git://github.com/ably-forks/msgpack-js.git",
+    "msgpack-js": "git://github.com/ably-forks/msgpack-js",
     "request": "^2.74.0",
     "ws": "^1.1.1"
   },
@@ -30,7 +30,7 @@
     "grunt-shell": "~1.1",
     "grunt-zip": "~0.16",
     "hexy": "~0.2",
-    "karma": "git://github.com/ably-forks/karma.git#ably-js-custom",
+    "karma": "git://github.com/ably-forks/karma#ably-js-custom",
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",
@@ -53,6 +53,9 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:ably/ably-js.git"
+  },
+  "jspm": {
+    "registry": "npm"
   },
   "scripts": {
     "test": "grunt test"
