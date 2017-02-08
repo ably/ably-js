@@ -89,6 +89,10 @@ module.exports = function (grunt) {
 		'ably-commonjs.noencryption': {
 			dest: '<%= dirs.dest %>/ably-commonjs.noencryption.js',
 			nonull: true
+		},
+		'ably.d.ts': {
+			dest: '<%= dirs.dest %>/ably.d.ts',
+			nonull: true
 		}
 	};
 
@@ -277,6 +281,10 @@ module.exports = function (grunt) {
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
 		'<%= dirs.fragments %>/ably-commonjs-epilogue.js'
+	);
+
+	gruntConfig.concat['ably.d.ts'].src = [].concat(
+		'ably.d.ts'
 	);
 
 	gruntConfig.bump = {
