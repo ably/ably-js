@@ -55,7 +55,11 @@
     "url": "git@github.com:ably/ably-js.git"
   },
   "jspm": {
-    "registry": "npm"
+    "registry": "npm",
+    "directories": {
+      "lib": "browser/static"
+    },
+    "main": "ably"
   },
   "scripts": {
     "test": "grunt test"
