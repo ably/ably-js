@@ -1,4 +1,3 @@
-
 namespace ChannelState {
   export type INITIALIZED = 'initialized';
   export type ATTACHING = 'attaching';
