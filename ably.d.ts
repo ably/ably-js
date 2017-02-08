@@ -1,4 +1,4 @@
-namespace ChannelState {
+declare namespace ChannelState {
   export type INITIALIZED = 'initialized';
   export type ATTACHING = 'attaching';
   export type ATTACHED = "attached";
@@ -9,7 +9,7 @@ namespace ChannelState {
 }
 type ChannelState = ChannelState.FAILED | ChannelState.INITIALIZED | ChannelState.SUSPENDED | ChannelState.ATTACHED | ChannelState.ATTACHING | ChannelState.DETACHED | ChannelState.DETACHING;
 
-namespace ConnectionState {
+declare namespace ConnectionState {
   export type INITIALIZED = "initialized";
   export type CONNECTING = "connecting";
   export type CONNECTED = "connected";
@@ -21,7 +21,7 @@ namespace ConnectionState {
 }
 type ConnectionState = ConnectionState.INITIALIZED | ConnectionState.CONNECTED | ConnectionState.CONNECTING | ConnectionState.DISCONNECTED | ConnectionState.SUSPENDED | ConnectionState.CLOSED | ConnectionState.CLOSING | ConnectionState.FAILED;
 
-namespace ConnectionEvent {
+declare namespace ConnectionEvent {
   export type INITIALIZED = "initialized";
   export type CONNECTING = "connecting";
   export type CONNECTED = "connected";
@@ -34,7 +34,7 @@ namespace ConnectionEvent {
 }
 type ConnectionEvent = ConnectionEvent.INITIALIZED | ConnectionEvent.CONNECTED | ConnectionEvent.CONNECTING | ConnectionEvent.DISCONNECTED | ConnectionEvent.SUSPENDED | ConnectionEvent.CLOSED | ConnectionEvent.CLOSING | ConnectionEvent.FAILED | ConnectionEvent.UPDATE;
 
-namespace PresenceAction {
+declare namespace PresenceAction {
   export type ABSENT = "absent";
   export type PRESENT = "present";
   export type ENTER = "enter";
@@ -43,7 +43,7 @@ namespace PresenceAction {
 }
 type PresenceAction = PresenceAction.ABSENT | PresenceAction.PRESENT | PresenceAction.ENTER | PresenceAction.LEAVE | PresenceAction.UPDATE;
 
-namespace StatsIntervalGranularity {
+declare namespace StatsIntervalGranularity {
   export type MINUTE = "minute";
   export type HOUR = "hour";
   export type DAY = "day";
@@ -51,7 +51,7 @@ namespace StatsIntervalGranularity {
 }
 type StatsIntervalGranularity = StatsIntervalGranularity.MINUTE | StatsIntervalGranularity.HOUR | StatsIntervalGranularity.DAY | StatsIntervalGranularity.MONTH;
 
-namespace HTTPMethods {
+declare namespace HTTPMethods {
   export type POST = "POST";
   export type GET = "GET";
 }
@@ -60,7 +60,7 @@ type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
 // Interfaces
 
-interface ClientOptions extends AuthOptions {
+declare interface ClientOptions extends AuthOptions {
   autoConnect?: boolean;
   clientId?: string;
   defaultTokenParams?: TokenParams;
@@ -78,7 +78,7 @@ interface ClientOptions extends AuthOptions {
   useBinaryProtocol?: boolean;
 }
 
-interface AuthOptions {
+declare interface AuthOptions {
   authCallback?: (data: TokenParams,callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void) => void;
   authHeaders?: { [index: string]: string };
   authMethod?: HTTPMethods;
@@ -91,7 +91,7 @@ interface AuthOptions {
   useTokenAuth?: boolean;
 }
 
-interface TokenParams {
+declare interface TokenParams {
   capability?: string;
   clientId?: string;
   nonce?: string;
@@ -99,37 +99,37 @@ interface TokenParams {
   ttl?: number;
 }
 
-interface CipherParams {
+declare interface CipherParams {
   algorithm: string;
   key: any;
   keyLength: number;
   mode: string;
 }
 
-interface ErrorInfo {
+declare interface ErrorInfo {
   code: number;
   message: string;
   statusCode: number;
 }
 
-interface StatsMessageCount {
+declare interface StatsMessageCount {
   count: number;
   data: number;
 }
 
-interface StatsMessageTypes {
+declare interface StatsMessageTypes {
   all: StatsMessageCount;
   messages: StatsMessageCount;
   presence: StatsMessageCount;
 }
 
-interface StatsRequestCount {
+declare interface StatsRequestCount {
   failed: number;
   refused: number;
   succeeded: number;
 }
 
-interface StatsResourceCount {
+declare interface StatsResourceCount {
   mean: number;
   min: number;
   opened: number;
@@ -137,20 +137,20 @@ interface StatsResourceCount {
   refused: number;
 }
 
-interface StatsConnectionTypes {
+declare interface StatsConnectionTypes {
   all: StatsResourceCount;
   plain: StatsResourceCount;
   tls: StatsResourceCount;
 }
 
-interface StatsMessageTraffic {
+declare interface StatsMessageTraffic {
   all: StatsMessageTypes,
   realtime: StatsMessageTypes,
   rest: StatsMessageTypes,
   webhook: StatsMessageTypes
 }
 
-interface TokenDetails {
+declare interface TokenDetails {
   capability: string;
   clientId?: string;
   expires: number;
@@ -158,7 +158,7 @@ interface TokenDetails {
   token: string;
 }
 
-interface TokenRequest {
+declare interface TokenRequest {
   capability: string;
   clientId?: string;
   keyName: string;
@@ -168,30 +168,30 @@ interface TokenRequest {
   ttl?: number;
 }
 
-interface ChannelOptions {
+declare interface ChannelOptions {
   cipher: any;
 }
 
-interface RestPresenceHistoryParams {
+declare interface RestPresenceHistoryParams {
   start?: number;
   end?: number;
   direction?: string;
   limit?: number;
 }
 
-interface RestPresenceParams {
+declare interface RestPresenceParams {
   limit?: number;
   clientId?: string;
   connectionId?: string;
 }
 
-interface RealtimePresenceParams {
+declare interface RealtimePresenceParams {
   waitForSync?: boolean;
   clientId?: string;
   connectionId?: string;
 }
 
-interface RealtimePresenceHistoryParams {
+declare interface RealtimePresenceHistoryParams {
   start?: number;
   end?: number;
   direction?: string;
@@ -199,23 +199,23 @@ interface RealtimePresenceHistoryParams {
   untilAttach?: boolean
 }
 
-interface LogInfo {
+declare interface LogInfo {
   level?: number;
   handler?: (...args) => void;
 }
 
-interface ChannelEvent {
+declare interface ChannelEvent {
   state: ChannelState;
 }
 
-interface ChannelStateChange {
+declare interface ChannelStateChange {
   current: ChannelState;
   previous: ChannelState;
   reason?: ErrorInfo;
   resumed: boolean;
 }
 
-interface ConnectionStateChange {
+declare interface ConnectionStateChange {
   current: ConnectionState;
   previous: ConnectionState;
   reason?: ErrorInfo;
@@ -235,9 +235,7 @@ type timeCallback = (error: ErrorInfo, time: number) => void;
 // Internal Classes
 declare class EventEmitter<T> {
   on: (eventOrCallback: string | T, callback?: T) => void;
-
   once: (eventOrCallback: string | T, callback?: T) => void;
-
   off: (eventOrCallback?: string | T, callback?: T) => void;
 }
 
@@ -423,5 +421,3 @@ export declare class HttpPaginatedResponse extends PaginatedResult<any> {
   errorMessage: string;
   headers: any;
 }
-
-
