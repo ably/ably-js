@@ -57,9 +57,7 @@ declare namespace HTTPMethods {
 }
 type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
-
 // Interfaces
-
 declare interface ClientOptions extends AuthOptions {
   autoConnect?: boolean;
   clientId?: string;
@@ -249,31 +247,20 @@ export declare class Auth {
 
 export declare class Presence {
   get: (params: RestPresenceParams, callback: PaginatedResultCallback<PresenceMessage>) => void;
-
   history: (params: RestPresenceHistoryParams, callback: PaginatedResultCallback<PresenceMessage>) => void;
 }
 
 export declare class RealtimePresence {
   syncComplete: () =>  boolean;
-
   get: (Params: RealtimePresenceParams, callback?: (error: ErrorInfo, messages: Array<PresenceMessage>) => void) => void;
-
   history: (ParamsOrCallback: RealtimePresenceHistoryParams | PaginatedResultCallback<PresenceMessage>, callback?: PaginatedResultCallback<PresenceMessage>) => void;
-
   subscribe: (presenceOrCallback: PresenceAction | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;
-
   unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
-
   enter: (data: any, callback?: errorCallback) => void;
-
   update: (data: any, callback?: errorCallback) => void;
-
   leave: (data: any, callback?: errorCallback) => void;
-
   enterClient: (clientId: string, data: any, callback?: errorCallback) => void;
-
   updateClient: (clientId: string, data: any, callback?: errorCallback) => void;
-
   leaveClient: (clientId: string, data: any, callback?: errorCallback) => void;
 }
 
@@ -289,34 +276,23 @@ export declare class RealtimeChannel extends EventEmitter<channelEventCallback> 
   errorReason: ErrorInfo;
   state: ChannelState;
   presence: RealtimePresence;
-
   attach: (callback?: standardCallback) => void;
-
   detach:(callback?: standardCallback) => void;
-
   history: (paramsOrCallback?: RealtimePresenceHistoryParams | PaginatedResultCallback<Message>, callback?: PaginatedResultCallback<Message>) => void;
-
   subscribe: (eventOrCallback: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
-
   unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
-
   publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
-
 }
 
 export declare class Channels<T> {
   get: (name: string, channelOptions?: ChannelOptions) => T;
-
   release: (name: string) => void;
 }
 
 export declare class Message {
   constructor();
-
   fromEncoded: (JsonObject: string, channelOptions: ChannelOptions) => Message;
-
   fromEncodedArray: (JsonArray: string, channelOptions: ChannelOptions) => Array<Message>;
-
   clientId: string;
   connectionId: string;
   data: any;
@@ -329,9 +305,7 @@ export declare class Message {
 
 export declare class PresenceMessage {
   fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
-
   fromEncodedArray: (JsonArray: Array<any>, channelOptions?: ChannelOptions) => Array<PresenceMessage>;
-
   action: PresenceAction;
   clientId: string;
   connectionId: string;
@@ -352,22 +326,15 @@ export declare class Rest {
 
 export declare class Realtime {
   constructor(options: ClientOptions | string);
-
   auth: Auth;
   channels: Channels<RealtimeChannel>;
   clientId: string;
   connection: Connection;
-
   request: (method: string, path: string, params?: any, body?: Array<any> | any, headers?: any, callback?: (error: ErrorInfo, response: HttpPaginatedResponse) => void) => void;
-
   stats: (paramsOrCallback?: PaginatedResultCallback<Stats> | any, callback?: PaginatedResultCallback<Stats>) => void;
-
   close: () => void;
-
   connect: () => void;
-
   time: (paramsOrCallback?: timeCallback | any, callback?: timeCallback) => void;
-
 }
 
 export declare class Connection extends EventEmitter<connectionEventCallback> {
@@ -377,11 +344,8 @@ export declare class Connection extends EventEmitter<connectionEventCallback> {
   recoveryKey: string;
   serial: number;
   state: ConnectionState;
-
   close: () => void;
-
   connect: () => void;
-
   ping: (callback?: (error: ErrorInfo, responseTime: number ) => void ) => void;
 }
 
@@ -400,17 +364,11 @@ export declare class Stats {
 
 export declare class PaginatedResult<T> {
   items: Array<T>;
-
   first: (results: PaginatedResultCallback<T>) => void;
-
   next: (results: PaginatedResultCallback<T>) => void;
-
   current: (results: PaginatedResultCallback<T>) => void;
-
   hasNext: () => boolean;
-
   isLast: () => boolean;
-
 }
 
 export declare class HttpPaginatedResponse extends PaginatedResult<any> {
