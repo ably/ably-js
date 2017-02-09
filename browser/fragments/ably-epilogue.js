@@ -22,11 +22,14 @@ if (typeof exports === "object" && exports) {
 			exports[obj] = window.Ably[obj];
 		}
 	}
+	/* SystemJS support for default exports to be added to the root of the module
+	   https://github.com/frankwallis/plugin-typescript/issues/185 */
+	exports.__esModule = true;
 }
 
 /* AMD support */
 if (typeof define === "function" && define.amd) {
   define("ably", [], function() {
-    return Ably;
+    return window.Ably;
   });
 }
