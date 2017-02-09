@@ -390,8 +390,8 @@ client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequ
 ```javascript
 client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
   statsPage.items                              // array of Stats
-  statsPage.items[0].data                      // payload for first message
-  statsPage.items.length                       // number of messages in the current page of history
+  statsPage.items[0].inbound.rest.messages.count; // total messages published over REST
+  statsPage.items.length;                      // number of stats in the current page of history
   statsPage.hasNext()                          // true if there are further pages
   statsPage.isLast()                           // true if this page is the last page
   statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
