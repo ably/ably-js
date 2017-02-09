@@ -1,3 +1,8 @@
+// Type definitions for Ably Realtime and Rest client library v0.9.0
+// Project: https://www.ably.io/
+// Definitions by: Ably <https://github.com/ably/>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
 declare namespace ChannelState {
   export type INITIALIZED = 'initialized';
   export type ATTACHING = 'attaching';
@@ -59,28 +64,78 @@ type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
 // Interfaces
 declare interface ClientOptions extends AuthOptions {
+  /**
+   * When true will automatically connect to Ably when library is instanced. This is true by default
+   */
   autoConnect?: boolean;
+
+  /**
+   * Optional clientId that can be used to specify the identity for this client. In most cases
+   * it is preferable to instead specift a clientId in the token issued to this client.
+   */
   clientId?: string;
+
   defaultTokenParams?: TokenParams;
+
+  /**
+   * When true, messages published on channels by this client will be echoed back to this client.
+   * This is true by default
+   */
   echoMessages?: boolean;
+
+  /**
+   * Use this only if you have been provided a dedicated environment by Ably
+   */
   environment?: string;
+
+  /**
+   * Logger configuration
+   */
   log?: LogInfo;
   port?: number;
+
+  /**
+   * When true, messages will be queued whilst the connection is disconnected. True by default.
+   */
   queueMessages?: boolean;
+
   restHost?: string;
   realtimeHost?: string;
   fallbackHosts?: Array<string>;
+
+  /**
+   * Can be used to explicitly recover a connection.
+   * See https://www.ably.io/documentation/realtime/connection#connection-state-recovery
+   */
   recover?: standardCallback | string;
+
+  /**
+   * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
+   */
   tls?: boolean;
   tlsPort?: number;
+
+  /**
+   * When true, the more efficient MsgPack binary encoding is used.
+   * When false, JSON text encoding is used.
+   */
   useBinaryProtocol?: boolean;
 }
 
 declare interface AuthOptions {
+  /**
+   * A function which is called when a new token is required.
+   * The role of the callback is to either generate a signed TokenRequest which may then be submitted automatically
+   * by the library to the Ably REST API requestToken; or to provide a valid token in as a TokenDetails object.
+   **/
   authCallback?: (data: TokenParams,callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void) => void;
   authHeaders?: { [index: string]: string };
   authMethod?: HTTPMethods;
   authParams?: { [index: string]: string };
+
+  /**
+   * A URL that the library may use to obtain a token string (in plain text format), or a signed TokenRequest or TokenDetails (in JSON format).
+   **/
   authUrl?: string;
   key?: string;
   queryTime?: boolean;
@@ -198,7 +253,15 @@ declare interface RealtimePresenceHistoryParams {
 }
 
 declare interface LogInfo {
+  /**
+   * A number controlling the verbosity of the output. Valid values are: 0 (no logs), 1 (errors only),
+   * 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
+   **/
   level?: number;
+
+  /**
+   * A function to handle each line of log output. If handler is not specified, console.log is used.
+   **/
   handler?: (...args) => void;
 }
 
@@ -360,7 +423,6 @@ export declare class Stats {
   persisted: StatsMessageTypes;
   tokenRequests: StatsRequestCount;
 }
-
 
 export declare class PaginatedResult<T> {
   items: Array<T>;
