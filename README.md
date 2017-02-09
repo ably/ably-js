@@ -59,7 +59,7 @@ The TypeScript typings are included in the package and so all you have to do is:
 ```javascript
  import * as Ably from 'ably';
  let realtime = new Ably.Realtime(options);
-```  
+```
 
 ### Using WebPack
 
@@ -230,7 +230,7 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
 });
 
 // Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
-channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+channel.presence.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Symmetrical end-to-end encrypted payloads on a channel
@@ -241,7 +241,7 @@ When a 128 bit or 256 bit key is provided to the library, the `data` attributes 
 // Generate a random 256-bit key for demonstration purposes (in
 // practice you need to create one and distribute it to clients yourselves)
 Ably.Realtime.Crypto.generateRandomKey(function(err, key) {
-	var channel = client.channels.get('channelName', cipher: { key: key })
+	var channel = client.channels.get('channelName', { cipher: { key: key } })
 
 	channel.subscribe(function(message) {
 		message.name // 'name is not encrypted'
@@ -267,15 +267,15 @@ All examples assume a client and/or channel has been created as follows:
 
 ```javascript
 // basic auth with an API key
-var client = new Ably.Realtime(<key string>)
+var client = new Ably.Rest(<key string>)
 
 // using token auth
-var client = new Ably.Realtime(<token string>)
+var client = new Ably.Rest(<token string>)
 
 // using an Options object, see https://www.ably.io/documentation/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
-var client = new Ably.Realtime(<options>)
+var client = new Ably.Rest(<options>)
 ```
 
 Given:
@@ -377,7 +377,7 @@ request by a client using the `authCallback` or `authUrl` mechanisms):
 client.auth.createTokenRequest(function(err, tokenRequest) {
   // now send the tokenRequest back to the client, which will
   // use it to request a token and connect to Ably
-}
+});
 
 // createTokenRequest can take two optional params
 // tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
