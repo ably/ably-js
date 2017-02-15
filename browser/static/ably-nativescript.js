@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.6
+ * Ably JavaScript Library v0.9.0-beta.7
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4018,7 +4018,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.6';
+Defaults.version          = '0.9.0-beta.7';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.9';
 
@@ -5348,6 +5348,8 @@ var Stats = (function() {
 	function MessageCount(values) {
 		this.count = (values && values.count) || 0;
 		this.data = (values && values.data) || 0;
+		this.failed = (values && values.failed) || 0;
+		this.refused = (values && values.refused) || 0;
 	}
 
 	function ResourceCount(values) {
@@ -5676,15 +5678,15 @@ var ConnectionManager = (function() {
 		 * the base transport in case that fails */
 		var connectingTimeout = timeouts.preferenceConnectTimeout + timeouts.realtimeRequestTimeout;
 		this.states = {
-			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: connectingTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout, failState: 'disconnected'},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout, failState: 'suspended'},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
-			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
-			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'closed'},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'failed'}
 		};
 		this.state = this.states.initialized;
 		this.errorReason = null;
@@ -8134,7 +8136,9 @@ var PaginatedResource = (function() {
 })();
 
 var Auth = (function() {
-	var msgpack = Platform.msgPack;
+	var msgpack = Platform.msgpack;
+	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
+	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
@@ -8438,7 +8442,7 @@ var Auth = (function() {
 				}
 			}
 			tokenRequestCallback = function(params, cb) {
-				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
+				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
 						authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
@@ -8448,11 +8452,26 @@ var Auth = (function() {
 					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
-					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
+					var contentType = headers['content-type'];
+					if(!contentType) {
+						cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401));
+						return;
+					}
+					var json = contentType.indexOf('application/json') > -1,
+						text = contentType.indexOf('text/plain') > -1;
+					if(!json && !text) {
+						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain or application/json', 40170, 401));
+						return;
+					}
+					if(json) {
+						if(body.length > MAX_TOKENOBJECT_LENGTH) {
+							cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401));
+							return;
+						}
 						try {
 							body = JSON.parse(body);
 						} catch(e) {
-							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40000, 400));
+							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40170, 401));
 							return;
 						}
 					}
@@ -8529,13 +8548,22 @@ var Auth = (function() {
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
 			if(typeof(tokenRequestOrDetails) === 'string') {
-				callback(null, {token: tokenRequestOrDetails});
+				if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
+				} else {
+					callback(null, {token: tokenRequestOrDetails});
+				}
 				return;
 			}
 			if(typeof(tokenRequestOrDetails) !== 'object') {
 				var msg = 'Expected token request callback to call back with a token string or token request/details object, but got a ' + typeof(tokenRequestOrDetails);
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
 				callback(new ErrorInfo(msg, 40170, 401));
+				return;
+			}
+			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
+			if(objectSize > MAX_TOKENOBJECT_LENGTH) {
+				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
 			if('issued' in tokenRequestOrDetails) {
@@ -9624,13 +9652,16 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
+			this.attachSerial = message.channelSerial;
 			if(this.state === 'attached') {
 				if(!message.hasFlag('RESUMED')) {
+					/* On a loss of continuity, the presence set needs to be re-synced */
+					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
 					var change = new ChannelStateChange(this.state, this.state, false, message.error);
 					this.emit('update', change);
 				}
 			} else {
-				this.setAttached(message);
+				this.notifyState('attached', message.error, message.hasFlag('RESUMED'), message.hasFlag('HAS_PRESENCE'));
 			}
 			break;
 
@@ -9738,20 +9769,8 @@ var RealtimeChannel = (function() {
 		return result;
 	};
 
-	RealtimeChannel.prototype.setAttached = function(message) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.setAttached', 'activating channel; name = ' + this.name + '; message flags = ' + message.flags);
-
-		/* Remember the channel serial at the moment of attaching in
-		 * order to support untilAttach flag for history retrieval */
-		this.attachSerial = message.channelSerial;
-
-		/* update any presence included with this message */
-		if(message.presence)
-			this.presence.setPresence(message.presence, false);
-
-		/* ensure we don't transition multiple times */
-		if(this.state != 'attaching')
-			return;
+	RealtimeChannel.prototype.onAttached = function() {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
 
 		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
 		if(pendingCount) {
@@ -9766,28 +9785,18 @@ var RealtimeChannel = (function() {
 			}
 			this.sendMessage(msg, multicaster);
 		}
-		var syncInProgress = message.hasFlag('HAS_PRESENCE');
-		var resumed = message.hasFlag('RESUMED');
-		if(syncInProgress) {
-			this.presence.awaitSync();
-		}
-		this.setInProgress(syncOp, syncInProgress);
-		this.notifyState('attached', message.reason, resumed);
 	};
 
-	RealtimeChannel.prototype.notifyState = function(state, reason, resumed) {
+	RealtimeChannel.prototype.notifyState = function(state, reason, resumed, hasPresence) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
 		this.clearStateTimer();
 
 		if(state === this.state) {
 			return;
 		}
-		this.presence.actOnChannelState(state, reason);
+		this.presence.actOnChannelState(state, hasPresence, reason);
 		if(state !== 'attached' && state !== 'attaching') {
 			this.failPendingMessages(reason || RealtimeChannel.invalidStateError(state));
-			if(state === 'detached' || state === 'failed') {
-				this.presence._clearMyMembers();
-			}
 		}
 		if(state === 'suspended' && this.connectionManager.state.sendEvents) {
 			this.startRetryTimer();
@@ -9803,6 +9812,8 @@ var RealtimeChannel = (function() {
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {
+			this.onAttached();
+			this.setInProgress(syncOp, hasPresence);
 			this.setInProgress(statechangeOp, false);
 		} else if(state === 'detached' || state === 'failed' || state === 'suspended') {
 			this.setInProgress(statechangeOp, false);
@@ -9970,6 +9981,7 @@ var RealtimePresence = (function() {
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
+			case 'suspended':
 				action();
 				break;
 			case 'initialized':
@@ -10133,6 +10145,20 @@ var RealtimePresence = (function() {
 			callback(null, params ? members.list(params) : members.values());
 		}
 
+		/* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+		if(this.channel.state === 'suspended') {
+			if(waitForSync) {
+				callback(ErrorInfo.fromValues({
+					statusCode: 400,
+					code: 91005,
+					message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
+				}));
+			} else {
+				returnMembers(this.members);
+			}
+			return;
+		}
+
 		var self = this;
 		waitAttached(this.channel, callback, function() {
 			var members = self.members;
@@ -10220,7 +10246,18 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.setAttached = function() {
+	RealtimePresence.prototype.onAttached = function(hasPresence) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
+
+		if(hasPresence) {
+			this.members.startSync();
+		} else {
+			this._synthesizeLeaves(this.members.values());
+			this.members.clear();
+			this._ensureMyMembersPresent();
+		}
+
+		/* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
 		var pendingPresence = this.pendingPresence,
 			pendingPresCount = pendingPresence.length;
 
@@ -10228,7 +10265,7 @@ var RealtimePresence = (function() {
 			this.pendingPresence = [];
 			var presenceArray = [];
 			var multicaster = Multicaster();
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setAttached', 'sending ' + pendingPresCount + ' queued presence messages');
+			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
 			for(var i = 0; i < pendingPresCount; i++) {
 				var event = pendingPresence[i];
 				presenceArray.push(event.presence);
@@ -10238,16 +10275,18 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.actOnChannelState = function(state, err) {
+	RealtimePresence.prototype.actOnChannelState = function(state, hasPresence, err) {
 		switch(state) {
 			case 'attached':
-				this.setAttached();
+				this.onAttached(hasPresence);
 				break;
 			case 'detached':
 			case 'failed':
+				this._clearMyMembers();
+				this.members.clear();
+				/* falls through */
 			case 'suspended':
 				this.failPendingPresence(err);
-				this.members.clear();
 				break;
 		}
 	};
@@ -10272,8 +10311,9 @@ var RealtimePresence = (function() {
 			reenterCb = function(err) {
 				if(err) {
 					var msg = 'Presence auto-re-enter failed: ' + err.toString();
+					var wrappedErr = new ErrorInfo(msg, 91004, 400);
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, err);
+					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, wrappedErr);
 					self.channel.emit('update', change);
 				}
 			};
@@ -10288,9 +10328,19 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.awaitSync = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync()', 'channel = ' + this.channel.name);
-		this.members.startSync();
+	RealtimePresence.prototype._synthesizeLeaves = function(items) {
+		var subscriptions = this.subscriptions;
+		Utils.arrForEach(items, function(item) {
+			var presence = PresenceMessage.fromValues({
+				action: 'leave',
+				connectionId: item.connectionId,
+				clientId: item.clientId,
+				data: item.data,
+				encoding: item.encoding,
+				timestamp: Utils.now()
+			});
+			subscriptions.emit('leave', presence);
+		});
 	};
 
 	/* Deprecated */
@@ -10461,7 +10511,8 @@ var RealtimePresence = (function() {
 				}
 			}
 			/* any members that were present at the start of the sync,
-			 * and have not been seen in sync, can be removed */
+			 * and have not been seen in sync, can be removed, and leave events emitted */
+			this.presence._synthesizeLeaves(Utils.valuesArray(this.residualMembers));
 			for(var memberKey in this.residualMembers) {
 				delete map[memberKey];
 			}
@@ -10601,10 +10652,11 @@ var XHRRequest = (function() {
 			accept = headers['accept'],
 			responseType = 'text';
 
-		if(!accept)
+		if(!accept) {
 			headers['accept'] = 'application/json';
-		else if(accept != 'application/json')
+		} else if(accept.indexOf('application/json') === -1) {
 			responseType = 'arraybuffer';
+		}
 
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
