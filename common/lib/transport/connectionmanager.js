@@ -84,15 +84,15 @@ var ConnectionManager = (function() {
 		 * the base transport in case that fails */
 		var connectingTimeout = timeouts.preferenceConnectTimeout + timeouts.realtimeRequestTimeout;
 		this.states = {
-			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: connectingTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout, failState: 'disconnected'},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout, failState: 'suspended'},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
-			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
-			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'closed'},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'failed'}
 		};
 		this.state = this.states.initialized;
 		this.errorReason = null;
