@@ -274,6 +274,21 @@ var Utils = (function() {
 			return result;
 		};
 
+	Utils.arrFilter = Array.prototype.filter ?
+		function(arr, fn) {
+			return arr.filter(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(fn(arr[i])) {
+					result.push(arr[i]);
+				}
+			}
+			return result;
+		};
+
 	Utils.arrEvery = Array.prototype.every ?
 		function(arr, fn) {
 			return arr.every(fn);
