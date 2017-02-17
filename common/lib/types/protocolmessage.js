@@ -46,13 +46,31 @@ var ProtocolMessage = (function() {
 	});
 
 	var flags = {
-		'HAS_PRESENCE': 0,
-		'HAS_BACKLOG': 1,
-		'RESUMED': 2
+		/* Channel attach state flags */
+		'HAS_PRESENCE':       1 << 0,
+		'HAS_BACKLOG':        1 << 1,
+		'RESUMED':            1 << 2,
+		'HAS_LOCAL_PRESENCE': 1 << 3,
+		'TRANSIENT':          1 << 4,
+		/* Channel mode flags */
+		'PRESENCE':           1 << 16,
+		'PUBLISH':            1 << 17,
+		'SUBSCRIBE':          1 << 18,
+		'PRESENCE_SUBSCRIBE': 1 << 19,
 	};
+	var flagNames = Utils.keysArray(flags);
+	flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
 
 	ProtocolMessage.prototype.hasFlag = function(flag) {
-		return ((this.flags & ( 1 << flags[flag])) > 0);
+		return ((this.flags & flags[flag]) > 0);
+	};
+
+	ProtocolMessage.prototype.setFlag = function(flag) {
+		return this.flags = this.flags | flags[flag];
+	};
+
+	ProtocolMessage.prototype.getMode = function() {
+		return this.flags && (this.flags & flags.MODE_ALL);
 	};
 
 	ProtocolMessage.serialize = function(msg, format) {
@@ -88,7 +106,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
@@ -110,6 +128,10 @@ var ProtocolMessage = (function() {
 			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
 		if(msg.auth && msg.auth.accessToken)
 			result += '; token=' + msg.auth.accessToken;
+		if(msg.flags)
+			result += '; flags=' + Utils.arrFilter(flagNames, function(flag) {
+				return msg.hasFlag(flag);
+			}).join(',');
 
 		result += ']';
 		return result;

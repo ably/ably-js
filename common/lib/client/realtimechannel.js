@@ -18,6 +18,8 @@ var RealtimeChannel = (function() {
 		this.attachSerial = undefined;
 		this.setOptions(options);
 		this.errorReason = null;
+		this._requestedFlags = null;
+		this._mode = null;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -114,8 +116,15 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.attach = function(callback) {
+	RealtimeChannel.prototype.attach = function(flags, callback) {
+		if(typeof(flags) === 'function') {
+			callback = flags;
+			flags = null;
+		}
 		callback = callback || noop;
+		if(flags) {
+			this._requestedFlags = flags;
+		}
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getStateError());
@@ -123,8 +132,12 @@ var RealtimeChannel = (function() {
 		}
 		switch(this.state) {
 			case 'attached':
-				callback();
-				break;
+				/* If flags requested, always do a re-attach. TODO only do this if if
+				* current mode differs from requested mode */
+				if(!flags) {
+					callback();
+					break;
+				} /* else fallthrough */
 			default:
 				this.requestState('attaching');
 			case 'attaching':
@@ -142,11 +155,16 @@ var RealtimeChannel = (function() {
 			}
     };
 
-	RealtimeChannel.prototype.attachImpl = function(callback) {
+	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.setInProgress(statechangeOp, true);
-		var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-		this.sendMessage(msg, (callback || noop));
+		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		if(this._requestedFlags) {
+			Utils.arrForEach(this._requestedFlags, function(flag) {
+				attachMsg.setFlag(flag);
+			})
+		}
+		this.sendMessage(attachMsg, noop);
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
@@ -277,6 +295,7 @@ var RealtimeChannel = (function() {
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.attachSerial = message.channelSerial;
+			this._mode = message.getMode();
 			if(this.state === 'attached') {
 				if(!message.hasFlag('RESUMED')) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
