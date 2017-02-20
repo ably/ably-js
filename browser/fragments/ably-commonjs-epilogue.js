@@ -13,3 +13,7 @@ Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
 
 module.exports = Ably;
+
+/* SystemJS support for default exports to be added to the root of the module
+   https://github.com/frankwallis/plugin-typescript/issues/185 */
+module.exports.__esModule = true;
