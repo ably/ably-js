@@ -4,16 +4,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		_exports = {},
 		rest,
+		publishIntervalHelper = function(currentMessageNum, channel, dataFn, onPublish){
+			return function(currentMessageNum) {
+				channel.publish('event0', dataFn(), function() {
+					onPublish();
+				});
+			};
+		},
 		publishAtIntervals = function(numMessages, channel, dataFn, onPublish){
 			for(var i = numMessages; i > 0; i--) {
-				var helper = function(currentMessageNum) {
-					console.log('sending: ' + currentMessageNum);
-					channel.publish('event0', dataFn(), function(err) {
-						console.log('publish callback called');
-						onPublish();
-					});
-				};
-				setTimeout(helper(i), 20*i);
+				setTimeout(publishIntervalHelper(i, channel, dataFn, onPublish), 2*i);
 			}
 		},
 		displayError = helper.displayError,
