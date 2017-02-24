@@ -247,7 +247,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.attach_timeout = function(test) {
 		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 10, channelRetryTimeout: 10}),
 			channel = realtime.channels.get('failed_attach'),
-			originalOnMessage = channel.onMessage;
+			originalOnMessage = channel.onMessage.bind(channel);
 
 		channel.onMessage = function(message) {
 				if(message.action === 11) { return; }
