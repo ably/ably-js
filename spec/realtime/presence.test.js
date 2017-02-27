@@ -1488,5 +1488,41 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Send >10 presence updates, check they were all broadcast. Point of this is
+	 * to check for a bug in the original 0.8 spec re presence membersmap
+	 * comparisons.
+	 */
+	exports.presence_many_updates = function(test) {
+		var client = helper.AblyRealtime({ clientId: testClientId });
+
+		test.expect(1);
+		var channel = client.channels.get('presence_many_updates'),
+			presence = channel.presence,
+			numUpdates = 0;
+
+		channel.attach(function(err) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, client);
+			}
+			presence.subscribe(function(presMsg) {
+				numUpdates++;
+			});
+
+			async.timesSeries(15, function(i, cb) {
+				presence.update(i.toString(), cb);
+			}, function(err) {
+				if(err) { test.ok(false, displayError(err)); }
+				// Wait to make sure everything has been received
+				setTimeout(function() {
+					test.equal(numUpdates, 15, 'Check got all the results');
+					client.close();
+					test.done();
+				}, 1000);
+			});
+		})
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
