@@ -22,7 +22,7 @@ Defaults.httpMaxRetryCount = 3;
 
 Defaults.version          = '0.9.0-beta.7';
 Defaults.libstring        = 'js-' + Defaults.version;
-Defaults.apiVersion       = '0.9';
+Defaults.apiVersion       = '1.0';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
