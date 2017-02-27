@@ -1666,6 +1666,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			},
 			function(cb) {
 				channel.presence.subscribe(function(presmsg) {
+					channel.presence.unsubscribe();
 					test.equal(presmsg.action, 'leave', 'Check action was leave');
 					test.equal(presmsg.clientId, goneClientId, 'Check goneClient has left');
 					cb();
