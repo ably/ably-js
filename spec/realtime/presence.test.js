@@ -398,7 +398,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.subscribe(presenceHandler);
 		};
 		var enterDetachEnter = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken, transports: [helper.bestTransport]}); // NB remove besttransport in 1.1 spec, see attachdetach0
 			var clientChannel = clientRealtime.channels.get(channelName);
 			clientRealtime.connection.once('connected', function() {
 				clientChannel.presence.enter('first', function(err) {

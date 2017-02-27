@@ -128,7 +128,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(false, 'Channel attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
-	}});
+	}}, true); /* NB upgrade is excluded because realtime now sends an ATTACHED
+	* post-upgrade, which can race with the DETACHED if the DETACH is only sent
+	* just after upgrade. Re-include it with 1.1 spec which has IDs in ATTACHs */
 
 	/*
 	 * Attach with an empty channel and expect a channel error

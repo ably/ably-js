@@ -26,7 +26,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.attachdetach0 = function(test) {
 		test.expect(8);
 		try {
-			var realtime = helper.AblyRealtime(),
+			/* Note: realtime now sends an ATTACHED post-upgrade, which can race with
+			 * the DETACHED if the DETACH is only sent just after upgrade. Remove
+			 * bestTransport with 1.1 spec which has IDs in ATTACHs */
+			var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			index,
 			expectedConnectionEvents = [
 				'connecting',
