@@ -1,7 +1,7 @@
 /**
- * @license Copyright 2016, Ably
+ * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v0.8.41
+ * Ably JavaScript Library v0.8.42
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2625,7 +2625,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.41';
+Defaults.version          = '0.8.42';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '0.8';
 
@@ -2850,25 +2850,28 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.emit = function(event  /* , args... */) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var eventThis = {event:event};
+		var listeners = [];
 
 		if(this.anyOnce.length) {
-			var listeners = this.anyOnce;
+			Array.prototype.push.apply(listeners, this.anyOnce);
 			this.anyOnce = [];
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
 		}
-		for(var i = 0; i < this.any.length; i++)
-			this.any[i].apply(eventThis, args);
-		var listeners = this.eventsOnce[event];
-		if(listeners) {
+		if(this.any.length) {
+			Array.prototype.push.apply(listeners, this.any);
+		}
+		var eventsOnceListeners = this.eventsOnce[event];
+		if(eventsOnceListeners) {
+			Array.prototype.push.apply(listeners, eventsOnceListeners);
 			delete this.eventsOnce[event];
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
 		}
-		var listeners = this.events[event];
-		if(listeners)
-			for(var i = 0; i < listeners.length; i++)
-				callListener(eventThis, listeners[i], args);
+		var eventsListeners = this.events[event];
+		if(eventsListeners) {
+			Array.prototype.push.apply(listeners, eventsListeners);
+		}
+
+		Utils.arrForEach(listeners, function(listener) {
+			callListener(eventThis, listener, args);
+		});
 	};
 
 	/**
@@ -3626,6 +3629,26 @@ var PresenceMessage = (function() {
 		'leave',
 		'update'
 	];
+
+	/* Returns whether this presenceMessage is synthesized, i.e. was not actually
+	 * sent by the connection (usually means a leave event sent 15s after a
+	 * disconnection). This is useful because synthesized messages cannot be
+	 * compared for newness by id lexicographically - RTP2b1
+	 */
+	PresenceMessage.prototype.isSynthesized = function() {
+		return this.id.substring(this.connectionId.length, 0) !== this.connectionId;
+	};
+
+	/* RTP2b2 */
+	PresenceMessage.prototype.parseId = function() {
+		var parts = this.id.split(':');
+		return {
+			connectionId: parts[0],
+			msgSerial: parseInt(parts[1], 10),
+			index: parseInt(parts[2], 10)
+		};
+	};
+
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
@@ -8436,6 +8459,22 @@ var RealtimePresence = (function() {
 		return result;
 	};
 
+	function newerThan(item, existing) {
+		/* RTP2b1: if either is synthesised, compare by timestamp */
+		if(item.isSynthesized() || existing.isSynthesized()) {
+			return item.timestamp > existing.timestamp;
+		}
+
+		/* RTP2b2 */
+		var itemOrderings = item.parseId(),
+			existingOrderings = existing.parseId();
+		if(itemOrderings.msgSerial === existingOrderings.msgSerial) {
+			return itemOrderings.index > existingOrderings.index;
+		} else {
+			return itemOrderings.msgSerial > existingOrderings.msgSerial;
+		}
+	}
+
 	PresenceMap.prototype.put = function(item) {
 		if(item.action === 'enter' || item.action === 'update') {
 			item = PresenceMessage.fromValues(item);
@@ -8448,11 +8487,8 @@ var RealtimePresence = (function() {
 
 		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
 		var existingItem = map[key];
-		if(existingItem) {
-			/* no item supersedes a newer item with the same key */
-			if(item.id <= existingItem.id) {
-				return false;
-			}
+		if(existingItem && !newerThan(item, existingItem)) {
+			return false;
 		}
 		map[key] = item;
 		return true;

@@ -2,7 +2,7 @@
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
-## Version: 0.8.41
+## Version: 0.8.42
 
 This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
 
