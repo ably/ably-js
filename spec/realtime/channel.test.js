@@ -439,7 +439,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * immediate reattach. If that fails, it should go into suspended
 	 */
 	exports.server_sent_detached = function(test) {
-		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			channelName = 'server_sent_detached',
 			channel = realtime.channels.get(channelName);
 
@@ -466,7 +466,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) {
 				channel.once(function(stateChange) {
 					test.equal(stateChange.current, 'suspended', 'Channel we go into suspended');
-					test.equal(stateChange.reason.code, 90007, 'check error is now the timeout');
+					test.equal(stateChange.reason && stateChange.reason.code, 90007, 'check error is now the timeout');
 					cb();
 				});
 			}
