@@ -483,7 +483,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * result in the channel becoming suspended
 	 */
 	exports.server_sent_detached_while_attaching = function(test) {
-		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			channelName = 'server_sent_detached_while_attaching',
 			channel = realtime.channels.get(channelName);
 
