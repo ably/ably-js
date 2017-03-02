@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.7
+ * Ably JavaScript Library v0.9.0-beta.8
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4047,9 +4047,9 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.7';
+Defaults.version          = '0.9.0-beta.8';
 Defaults.libstring        = 'js-' + Defaults.version;
-Defaults.apiVersion       = '0.9';
+Defaults.apiVersion       = '1.0';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -4698,6 +4698,21 @@ var Utils = (function() {
 			return result;
 		};
 
+	Utils.arrFilter = Array.prototype.filter ?
+		function(arr, fn) {
+			return arr.filter(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(fn(arr[i])) {
+					result.push(arr[i]);
+				}
+			}
+			return result;
+		};
+
 	Utils.arrEvery = Array.prototype.every ?
 		function(arr, fn) {
 			return arr.every(fn);
@@ -5300,13 +5315,31 @@ var ProtocolMessage = (function() {
 	});
 
 	var flags = {
-		'HAS_PRESENCE': 0,
-		'HAS_BACKLOG': 1,
-		'RESUMED': 2
+		/* Channel attach state flags */
+		'HAS_PRESENCE':       1 << 0,
+		'HAS_BACKLOG':        1 << 1,
+		'RESUMED':            1 << 2,
+		'HAS_LOCAL_PRESENCE': 1 << 3,
+		'TRANSIENT':          1 << 4,
+		/* Channel mode flags */
+		'PRESENCE':           1 << 16,
+		'PUBLISH':            1 << 17,
+		'SUBSCRIBE':          1 << 18,
+		'PRESENCE_SUBSCRIBE': 1 << 19,
 	};
+	var flagNames = Utils.keysArray(flags);
+	flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
 
 	ProtocolMessage.prototype.hasFlag = function(flag) {
-		return ((this.flags & ( 1 << flags[flag])) > 0);
+		return ((this.flags & flags[flag]) > 0);
+	};
+
+	ProtocolMessage.prototype.setFlag = function(flag) {
+		return this.flags = this.flags | flags[flag];
+	};
+
+	ProtocolMessage.prototype.getMode = function() {
+		return this.flags && (this.flags & flags.MODE_ALL);
 	};
 
 	ProtocolMessage.serialize = function(msg, format) {
@@ -5342,7 +5375,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
@@ -5364,6 +5397,10 @@ var ProtocolMessage = (function() {
 			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
 		if(msg.auth && msg.auth.accessToken)
 			result += '; token=' + msg.auth.accessToken;
+		if(msg.flags)
+			result += '; flags=' + Utils.arrFilter(flagNames, function(flag) {
+				return msg.hasFlag(flag);
+			}).join(',');
 
 		result += ']';
 		return result;
@@ -5743,6 +5780,7 @@ var ConnectionManager = (function() {
 		this.pendingTransports = [];
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
+		this.mostRecentMsgId = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
@@ -6977,6 +7015,12 @@ var ConnectionManager = (function() {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
+			var msgId = message.id;
+			if(msgId === this.mostRecentMsgId) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
+				return;
+			}
+			this.mostRecentMsgId = msgId;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
@@ -9423,6 +9467,8 @@ var RealtimeChannel = (function() {
 		this.attachSerial = undefined;
 		this.setOptions(options);
 		this.errorReason = null;
+		this._requestedFlags = null;
+		this._mode = null;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -9519,8 +9565,15 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.attach = function(callback) {
+	RealtimeChannel.prototype.attach = function(flags, callback) {
+		if(typeof(flags) === 'function') {
+			callback = flags;
+			flags = null;
+		}
 		callback = callback || noop;
+		if(flags) {
+			this._requestedFlags = flags;
+		}
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getStateError());
@@ -9528,8 +9581,12 @@ var RealtimeChannel = (function() {
 		}
 		switch(this.state) {
 			case 'attached':
-				callback();
-				break;
+				/* If flags requested, always do a re-attach. TODO only do this if if
+				* current mode differs from requested mode */
+				if(!flags) {
+					callback();
+					break;
+				} /* else fallthrough */
 			default:
 				this.requestState('attaching');
 			case 'attaching':
@@ -9547,11 +9604,16 @@ var RealtimeChannel = (function() {
 			}
     };
 
-	RealtimeChannel.prototype.attachImpl = function(callback) {
+	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.setInProgress(statechangeOp, true);
-		var msg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
-		this.sendMessage(msg, (callback || noop));
+		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		if(this._requestedFlags) {
+			Utils.arrForEach(this._requestedFlags, function(flag) {
+				attachMsg.setFlag(flag);
+			})
+		}
+		this.sendMessage(attachMsg, noop);
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
@@ -9682,6 +9744,7 @@ var RealtimeChannel = (function() {
 		switch(message.action) {
 		case actions.ATTACHED:
 			this.attachSerial = message.channelSerial;
+			this._mode = message.getMode();
 			if(this.state === 'attached') {
 				if(!message.hasFlag('RESUMED')) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
@@ -10029,6 +10092,7 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
+		this.syncComplete = false;
 		this.members = new PresenceMap(this);
 		this._myMembers = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
@@ -10408,10 +10472,6 @@ var RealtimePresence = (function() {
 		this.subscriptions.off(event, listener);
 	};
 
-	RealtimePresence.prototype.syncComplete = function() {
-		return !this.members.syncInProgress;
-	};
-
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;
@@ -10523,7 +10583,7 @@ var RealtimePresence = (function() {
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
-			this.syncInProgress = true;
+			this.setInProgress(true);
 		}
 	};
 
@@ -10548,7 +10608,7 @@ var RealtimePresence = (function() {
 			this.residualMembers = null;
 
 			/* finish, notifying any waiters */
-			this.syncInProgress = false;
+			this.setInProgress(false);
 		}
 		this.emit('sync');
 	};
@@ -10565,8 +10625,14 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.clear = function(callback) {
 		this.map = {};
-		this.syncInProgress = false;
+		this.setInProgress(false);
 		this.residualMembers = null;
+	};
+
+	PresenceMap.prototype.setInProgress = function(inProgress) {
+		Logger.logAction(Logger.LOG_ERROR, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		this.syncInProgress = inProgress;
+		this.presence.syncComplete = !inProgress;
 	};
 
 	return RealtimePresence;
@@ -10973,3 +11039,7 @@ Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
 
 module.exports = Ably;
+
+/* SystemJS support for default exports to be added to the root of the module
+   https://github.com/frankwallis/plugin-typescript/issues/185 */
+module.exports.__esModule = true;
