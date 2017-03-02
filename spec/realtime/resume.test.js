@@ -385,7 +385,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check channel resumed flag
 	 * TODO: enable once realtime supports this
 	 */
-	_exports.channel_resumed_flag = function(test) {
+	exports.channel_resumed_flag = function(test) {
 		var realtime = helper.AblyRealtime(),
 			realtimeTwo,
 			recoveryKey,
@@ -393,7 +393,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'channel_resumed_flag',
 			channel = realtime.channels.get(channelName);
 
-		test.expect(3);
+		test.expect(2);
 		async.series([
 			function(cb) {
 				connection.once('connected', function() { cb(); });
