@@ -1379,7 +1379,7 @@ var ConnectionManager = (function() {
 				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
 			var msgId = message.id;
-			if(msgId === this.mostRecentMsgId) {
+			if(msgId && (msgId === this.mostRecentMsgId)) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
 				return;
 			}
