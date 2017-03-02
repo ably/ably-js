@@ -123,6 +123,7 @@ var ConnectionManager = (function() {
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
 		this.lastActivity = null;
+		this.mostRecentMsgId = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -1377,6 +1378,12 @@ var ConnectionManager = (function() {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
+			var msgId = message.id;
+			if(msgId === this.mostRecentMsgId) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
+				return;
+			}
+			this.mostRecentMsgId = msgId;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
