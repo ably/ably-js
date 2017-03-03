@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v0.9.0-beta.10
+ * Ably JavaScript Library v0.9.0-beta.11
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2655,7 +2655,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.9.0-beta.10';
+Defaults.version          = '0.9.0-beta.11';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -9238,7 +9238,7 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.setInProgress = function(inProgress) {
-		Logger.logAction(Logger.LOG_ERROR, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
 		this.syncInProgress = inProgress;
 		this.presence.syncComplete = !inProgress;
 	};
