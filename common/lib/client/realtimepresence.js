@@ -578,7 +578,7 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.setInProgress = function(inProgress) {
-		Logger.logAction(Logger.LOG_ERROR, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
 		this.syncInProgress = inProgress;
 		this.presence.syncComplete = !inProgress;
 	};
