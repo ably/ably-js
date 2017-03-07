@@ -1117,8 +1117,9 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		var upgradeTransportParams = new TransportParams(this.options, transportParams.host, 'upgrade', this.connectionKey);
 		Utils.arrForEach(upgradePossibilities, function(upgradeTransport) {
+			/* Note: the transport may mutate the params, so give each transport a fresh one */
+			var upgradeTransportParams = new TransportParams(self.options, transportParams.host, 'upgrade', self.connectionKey);
 			self.tryATransport(upgradeTransportParams, upgradeTransport, noop);
 		});
 	};
