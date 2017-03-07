@@ -1,6 +1,4 @@
 var Utils = (function() {
-	var isBrowser = (typeof(window) == 'object');
-
 	function Utils() {}
 
 	/*
@@ -45,11 +43,13 @@ var Utils = (function() {
 	 * else wrapping the obj in a single element Array
 	 */
 	Utils.ensureArray = function(obj) {
-		if (Utils.isArray(obj)) {
-			return obj;
-		} else {
-			return [obj];
+		if(Utils.isEmptyArg(obj)) {
+			return [];
 		}
+		if(Utils.isArray(obj)) {
+			return obj;
+		}
+		return [obj];
 	}
 
 	/* ...Or an Object (in the narrow sense) */
@@ -65,6 +65,15 @@ var Utils = (function() {
 	Utils.isEmpty = function(ob) {
 		for(var prop in ob)
 			return false;
+		return true;
+	};
+
+	Utils.isOnlyPropIn = function(ob, property) {
+		for(var prop in ob) {
+			if(prop !== property) {
+				return false;
+			}
+		}
 		return true;
 	};
 
@@ -116,9 +125,11 @@ var Utils = (function() {
 	/*
 	 * Declare a constructor to represent a subclass
 	 * of another constructor
+	 * If platform has a built-in version we use that from Platform, else we
+	 * define here (so can make use of other Utils fns)
 	 * See node.js util.inherits
 	 */
-	Utils.inherits = (typeof(require) !== 'undefined' && require('util').inherits) || function(ctor, superCtor) {
+	Utils.inherits = Platform.inherits || function(ctor, superCtor) {
 		ctor.super_ = superCtor;
 		ctor.prototype = Utils.prototypicalClone(superCtor.prototype, { constructor: ctor });
 	};
@@ -263,6 +274,21 @@ var Utils = (function() {
 			return result;
 		};
 
+	Utils.arrFilter = Array.prototype.filter ?
+		function(arr, fn) {
+			return arr.filter(fn);
+		} :
+		function(arr, fn)	{
+			var result = [],
+				len = arr.length;
+			for(var i = 0; i < len; i++) {
+				if(fn(arr[i])) {
+					result.push(arr[i]);
+				}
+			}
+			return result;
+		};
+
 	Utils.arrEvery = Array.prototype.every ?
 		function(arr, fn) {
 			return arr.every(fn);
@@ -276,7 +302,7 @@ var Utils = (function() {
 			return true;
 		};
 
-	Utils.nextTick = isBrowser ? function(f) { setTimeout(f, 0); } : process.nextTick;
+	Utils.nextTick = Platform.nextTick;
 
 	var contentTypes = {
 		json:   'application/json',
@@ -338,12 +364,12 @@ var Utils = (function() {
 		return new Date().getTime();
 	};
 
-	Utils.inspect = function(x) {
-		return JSON.stringify(x);
-	};
+	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
-		return (x && x.constructor.name == 'ErrorInfo') ? x.toString() : Utils.inspect(x);
+		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
+			x.toString() :
+			Utils.inspect(x);
 	};
 
 	Utils.randStr = function() {

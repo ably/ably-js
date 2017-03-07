@@ -4,8 +4,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {}, _exports = {},
 		displayError = helper.displayError,
 		utils = helper.Utils,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
+
+	function extractClientIds(presenceSet) {
+		return utils.arrMap(presenceSet, function(presmsg) {
+			return presmsg.clientId;
+		}).sort();
+	}
+
+	function extractMember(presenceSet, clientId) {
+		return helper.arrFind(presenceSet, function(member) {
+			return member.clientId === clientId;
+		});
+	}
 
 	var rest, authToken, authToken2;
 	var testClientId = 'testclient', testClientId2 = 'testclient2';
@@ -208,7 +221,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		// will not run its callback
 		var channelName = 'enterDetachRace';
 		try {
-			test.expect(3);
 			/* listen for the enter event, test is complete when received */
 
 			createListenerChannel(channelName, function(err, listenerRealtime, presenceChannel){
@@ -249,7 +261,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						//   that we're testing for) isn't.
 						if(err) {
 							test.ok(true, 'Enter failed with error: ' + JSON.stringify(err));
-							test.equal(err.code, 40400);
 							closeAndFinish(test, [listenerRealtime, clientRealtime]);
 							return;
 						}
@@ -387,7 +398,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.presence.subscribe(presenceHandler);
 		};
 		var enterDetachEnter = function(cb) {
-			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+			var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken, transports: [helper.bestTransport]}); // NB remove besttransport in 1.1 spec, see attachdetach0
 			var clientChannel = clientRealtime.channels.get(channelName);
 			clientRealtime.connection.once('connected', function() {
 				clientChannel.presence.enter('first', function(err) {
@@ -1139,7 +1150,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				clientRealtime.close();
 				clientChannel.presence.enterClient('clientId', function(err) {
 					test.equal(err.code, 80017, 'presence enter failed with correct code');
-					test.equal(err.statusCode, 408, 'presence enter failed with correct statusCode');
+					test.equal(err.statusCode, 400, 'presence enter failed with correct statusCode');
 					test.done();
 				});
 			});
@@ -1253,7 +1264,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		async.series([
 			function(callback) { console.log('realtimeBin'); runTest(realtimeBin, callback); },
-			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); },
+			function(callback) { console.log('realtimeJson'); runTest(realtimeJson, callback); }
 		], function() {
 			closeAndFinish(test, [realtimeBin, realtimeJson]);
 		});
@@ -1346,7 +1357,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		function enterOneAndTwo(cb) {
 			async.parallel([
 				function(enterCb) { realtimeChannel.presence.enterClient('one', enterCb); },
-				function(enterCb) { realtimeChannel.presence.enterClient('two', enterCb); },
+				function(enterCb) { realtimeChannel.presence.enterClient('two', enterCb); }
 			], cb);
 		}
 
@@ -1363,7 +1374,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		function swapTwoForThree(cb) {
 			async.parallel([
 				function(innerCb) { realtimeChannel.presence.leaveClient('two', innerCb); },
-				function(innerCb) { realtimeChannel.presence.enterClient('three', innerCb); },
+				function(innerCb) { realtimeChannel.presence.enterClient('three', innerCb); }
 			], cb);
 		}
 
@@ -1388,7 +1399,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) { observerChannel.detach(cb); },
 			swapTwoForThree,
 			attachAndListen,
-			function(cb) { checkPresence('one', 'three', cb); },
+			function(cb) { checkPresence('one', 'three', cb); }
 		], function(err) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
@@ -1426,57 +1437,407 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/*
-	 * Do a 110-member sync, so split into two sync messages. Inject a normal
-	 * presence enter between the syncs. Check everything was entered correctly
-	 */
-	exports.presence_sync_interruptus = function(test) {
-		test.expect(1);
-		var channelName = "presence_sync_interruptus";
-		var interrupterClientId = "dark_horse";
-		var enterer = helper.AblyRealtime();
-		var syncer = helper.AblyRealtime();
-		var entererChannel = enterer.channels.get(channelName);
-		var syncerChannel = syncer.channels.get(channelName);
-
-		function waitForBothConnect(cb) {
-			async.parallel([
-				function(connectCb) { enterer.connection.on('connected', connectCb); },
-				function(connectCb) { syncer.connection.on('connected', connectCb); }
-			], function() { cb(); });
-		}
+	/* RTP5c2, RTP17
+	 * Test the auto-re-enter functionality by injecting a member into the
+	 * private _myMembers set while suspended. Expect on re-attach and sync that
+	 * member to be sent to realtime and, with luck, make its way into the normal
+	 * presence set */
+	exports.presence_auto_reenter = function(test) {
+		test.expect(7);
+		var channelName = "presence_auto_reenter";
+		var realtime = helper.AblyRealtime();
+		var channel = realtime.channels.get(channelName);
 
 		async.series([
-			waitForBothConnect,
-			function(cb) { entererChannel.attach(cb); },
+			function(cb) { realtime.connection.once('connected', function() { cb(); }); },
+			function(cb) { channel.attach(cb); },
+			function(cb) { channel.presence.members.waitSync(cb); },
 			function(cb) {
-				async.times(110, function(i, presCb) {
-					entererChannel.presence.enterClient(i.toString(), null, presCb);
-				}, cb);
+				channel.presence.enterClient('one', 'onedata');
+				channel.presence.subscribe('enter', function() {
+					channel.presence.unsubscribe('enter');
+					cb();
+				});
 			},
 			function(cb) {
-				var originalOnMessage = syncerChannel.onMessage;
-				syncerChannel.onMessage = function(message) {
-					originalOnMessage.apply(this, arguments);
-					/* Inject an additional presence message after the first sync */
-					if(message.action === 16) {
-						syncerChannel.onMessage = originalOnMessage;
-						syncerChannel.onMessage({
-							"action": 14,
-							"id": "messageid-0",
-							"connectionId": "connid",
-							"timestamp": 2000000000000,
-							"presence": [{
-								"clientId": interrupterClientId,
-								"action": 'enter'
-							}]});
+				/* inject an additional member into the myMember set, then force a suspended state */
+				var connId = realtime.connection.connectionManager.connectionId;
+				channel.presence._myMembers.put({
+					action: 'enter',
+					clientId: 'two',
+					connectionId: connId,
+					id: connId + ':0:0',
+					data: 'twodata'
+				});
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				test.equal(channel.state, 'suspended', 'sanity-check channel state');
+				/* Reconnect */
+				realtime.connection.connect();
+				channel.once('attached', function() { cb(); });
+			},
+			function(cb) {
+				/* Since we haven't been gone for two minutes, we don't know for sure
+				 * that realtime will feel it necessary to do a sync - if it doesn't,
+					* we request one */
+				if(channel.presence.syncComplete()) {
+					channel.sync();
+				}
+				channel.presence.members.waitSync(cb);
+			},
+			function(cb) {
+				/* Now just wait for an enter! */
+				channel.presence.subscribe('enter', function(presmsg) {
+					test.equal(presmsg.clientId, 'two', 'Check expected clientId');
+					channel.presence.unsubscribe('enter');
+					cb();
+				});
+			},
+			function(cb) {
+				channel.presence.get(function(err, results) {
+					test.ok(channel.presence.syncComplete, 'Check in sync');
+					test.equal(results.length, 2, 'Check correct number of results');
+					test.deepEqual(extractClientIds(results), ['one', 'two'], 'check correct members');
+					test.equal(extractMember(results, 'one').data, 'onedata', 'check correct data on one');
+					test.equal(extractMember(results, 'two').data, 'twodata', 'check correct data on two');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* RTP5c3
+	 * Test failed presence auto-re-entering */
+	exports.presence_failed_auto_reenter = function(test) {
+		test.expect(5);
+		var channelName = "presence_failed_auto_reenter",
+			realtime, channel, token;
+
+		async.series([
+			function(cb) {
+				/* Request a token without the capabilities to be in the presence set */
+				var tokenParams = {clientId: 'me', capability: {}};
+				tokenParams.capability[channelName] = ['publish', 'subscribe'];
+				rest.auth.requestToken(tokenParams, function(err, tokenDetails) {
+					token = tokenDetails;
+					cb(err);
+				});
+			},
+			function(cb) {
+				realtime = helper.AblyRealtime({tokenDetails: token});
+				channel = realtime.channels.get(channelName);
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) { channel.attach(cb); },
+			function(cb) {
+				channel.presence.get(function(err, members) {
+					test.equal(members.length, 0, 'Check no-one in presence set');
+					cb();
+				});
+			},
+			function(cb) {
+				/* inject an additional member into the myMember set, then force a suspended state */
+				var connId = realtime.connection.connectionManager.connectionId;
+				channel.presence._myMembers.put({
+					action: 'enter',
+					clientId: 'me',
+					connectionId: connId,
+					id: connId + ':0:0'
+				});
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtime.connection.connect();
+				channel.once('attached', function() { cb(); });
+			},
+			function(cb) {
+				/* The channel will now try to auto-re-enter the me client, which will result in... */
+				channel.once(function(channelStateChange) {
+					test.equal(this.event, 'update', 'Check get an update event');
+					test.equal(channelStateChange.current, 'attached', 'Check still attached')
+					test.equal(channelStateChange.reason && channelStateChange.reason.code, 91004, 'Check error code')
+					cb();
+				})
+			},
+			function(cb) {
+				channel.presence.get(function(err, members) {
+					test.equal(members.length, 0, 'Check no-one in presence set');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
+	exports.multiple_pending = function(test) {
+		/* single transport to avoid upgrade stalling due to the stubbed attachImpl */
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
+			channel = realtime.channels.get('multiple_pending'),
+			originalAttachImpl = channel.attachImpl;
+
+		async.series([
+			function(cb) { realtime.connection.once('connected', function() { cb(); }); },
+			function(cb) {
+				/* stub out attachimpl */
+				channel.attachImpl = function() {};
+				channel.attach();
+
+				for(var i=0; i<10; i++) {
+					channel.presence.enterClient('client_' + i.toString(), i.toString());
+				}
+
+				channel.attachImpl = originalAttachImpl;
+				channel.checkPendingState();
+
+				/* Now just wait for an enter. One enter implies all, they'll all be
+				 * sent in one protocol message */
+				channel.presence.subscribe('enter', function() {
+					channel.presence.unsubscribe('enter');
+					helper.Utils.nextTick(cb);
+				});
+			},
+			function(cb) {
+				channel.presence.get(function(err, results) {
+					test.equal(results.length, 10, 'Check all ten clients are there');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* RTP19
+	 * Check that a LEAVE message is published for anyone in the local presence
+	 * set but missing from a sync */
+	exports.leave_published_for_member_missing_from_sync = function(test) {
+		test.expect(6);
+		var realtime = helper.AblyRealtime(),
+			continuousClientId = 'continuous',
+			goneClientId = 'gone',
+			continuousRealtime = helper.AblyRealtime({clientId: continuousClientId}),
+			channelName = 'leave_published_for_member_missing_from_sync',
+			channel = realtime.channels.get(channelName),
+			continuousChannel = continuousRealtime.channels.get(channelName);
+		monitorConnection(test, realtime);
+		monitorConnection(test, continuousRealtime);
+
+		async.series([
+			function(cb) { continuousRealtime.connection.whenState('connected', function() { cb(); }); },
+			function(cb) { continuousChannel.attach(cb); },
+			function(cb) { continuousChannel.presence.enter(cb); },
+			function(cb) { realtime.connection.whenState('connected', function() { cb(); }); },
+			function(cb) { channel.attach(cb); },
+			function(cb) {
+				channel.presence.get({waitForSync: true}, function(err, members) {
+					test.equal(members && members.length, 1, 'Check one member present');
+					cb(err);
+				});
+			},
+			function(cb) {
+				/* Inject an additional member locally */
+				channel.onMessage({
+					"action": 14,
+					"id": "messageid:0",
+					"connectionId": "connid",
+					"timestamp": utils.now(),
+					"presence": [{
+						"clientId": goneClientId,
+						"action": 'enter'
+					}]});
+				channel.presence.get(function(err, members) {
+					test.equal(members && members.length, 2, 'Check two members present');
+					cb(err);
+				});
+			},
+			function(cb) {
+				channel.presence.subscribe(function(presmsg) {
+					channel.presence.unsubscribe();
+					test.equal(presmsg.action, 'leave', 'Check action was leave');
+					test.equal(presmsg.clientId, goneClientId, 'Check goneClient has left');
+					cb();
+				});
+				channel.sync();
+			},
+			function(cb) {
+				channel.presence.get({waitForSync: true}, function(err, members) {
+					test.equal(members && members.length, 1, 'Check back to one member present');
+					test.equal(members && members[0] && members[0].clientId, continuousClientId, 'check cont still present')
+					cb(err);
+				});
+			},
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				return;
+			}
+			closeAndFinish(test, [realtime, continuousRealtime]);
+		});
+	};
+
+	/* RTP19a
+	 * Check that a LEAVE message is published for anyone in the local presence
+	 * set if get an ATTACHED with no HAS_PRESENCE */
+	exports.leave_published_for_members_on_presenceless_attached = function(test) {
+		test.expect(4);
+		var realtime = helper.AblyRealtime(),
+			channelName = 'leave_published_for_members_on_presenceless_attached',
+			channel = realtime.channels.get(channelName),
+			fakeClientId = 'faker';
+		monitorConnection(test, realtime);
+
+		async.series([
+			function(cb) { realtime.connection.whenState('connected', function() { cb(); }); },
+			function(cb) { channel.attach(cb); },
+			function(cb) {
+				/* Inject a member locally */
+				channel.onMessage({
+					"action": 14,
+					"id": "messageid:0",
+					"connectionId": "connid",
+					"timestamp": utils.now(),
+					"presence": [{
+						"clientId": fakeClientId,
+						"action": 'enter'
+					}]});
+				channel.presence.get(function(err, members) {
+					test.equal(members && members.length, 1, 'Check one member present');
+					cb(err);
+				});
+			},
+			function(cb) {
+				channel.presence.subscribe(function(presmsg) {
+					test.equal(presmsg.action, 'leave', 'Check action was leave');
+					test.equal(presmsg.clientId, fakeClientId, 'Check fake client has left');
+					cb();
+				});
+				/* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
+				channel.onMessage(createPM({
+					"action": 11,
+					"channelSerial": channel.attachSerial,
+					"flags": 0
+				}));
+			},
+			function(cb) {
+				channel.presence.get(function(err, members) {
+					test.equal(members && members.length, 0, 'Check no members present');
+					cb(err);
+				});
+			},
+		], function(err) {
+			if(err) {
+				test.ok(false, helper.displayError(err));
+				return;
+			}
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/* RTP5f; RTP11d
+	 * Check that on ATTACHED -> SUSPENDED -> ATTACHED, members map is preserved
+	 * and only members that changedbetween ATTACHED stats should result in
+	 * presence events */
+	exports.suspended_preserves_presence = function(test) {
+		test.expect(8);
+		var mainRealtime = helper.AblyRealtime({clientId: 'main'}),
+			continuousRealtime = helper.AblyRealtime({clientId: 'continuous'}),
+			leavesRealtime = helper.AblyRealtime({clientId: 'leaves'}),
+			channelName = 'suspended_preserves_presence',
+			mainChannel = mainRealtime.channels.get(channelName);
+
+		monitorConnection(test, continuousRealtime);
+		monitorConnection(test, leavesRealtime);
+		var enter = function(rt, outerCb) {
+			var channel = rt.channels.get(channelName);
+			async.series([
+				function(cb) { rt.connection.whenState('connected', function() { cb(); }); },
+				function(cb) { channel.attach(cb); },
+				function(cb) { channel.presence.enter(cb); }
+			], outerCb);
+		};
+		var waitFor = function(expectedClientId) {
+			return function(cb) {
+				var presenceHandler = function(presmsg) {
+					if(expectedClientId == presmsg.clientId) {
+						mainChannel.presence.unsubscribe(presenceHandler);
+						cb();
 					}
 				};
-				syncerChannel.attach(cb);
+				mainChannel.presence.subscribe(presenceHandler);
+			};
+		};
+
+		async.series([
+			function(cb) {
+				enter(mainRealtime, cb);
 			},
 			function(cb) {
-				syncerChannel.presence.get(function(err, presenceSet) {
-					test.equal(presenceSet && presenceSet.length, 111, 'Check everyone’s in presence set');
+				waitFor('continuous')(cb);
+				enter(continuousRealtime, function(err) { if(err) cb(err); });
+			},
+			function(cb) {
+				waitFor('leaves')(cb);
+				enter(leavesRealtime, function(err) { if(err) cb(err); });
+			},
+			function(cb) {
+				mainChannel.presence.get(function(err, members) {
+					test.equal(members.length, 3, 'Check all three expected members here');
+					cb(err);
+				});
+			},
+			function(cb) {
+				helper.becomeSuspended(mainRealtime, cb);
+			},
+			function(cb) {
+				mainChannel.presence.get(function(err) {
+					/* Check RTP11d: get() returns an error by default */
+					test.ok(err, 'Check error returned by get() while suspended');
+					test.equal(err && err.code, 91005, 'Check error code for get() while suspende');
+					cb();
+				});
+			},
+			function(cb) {
+				mainChannel.presence.get({ waitForSync: false }, function(err, members) {
+					/* Check RTP11d: get() works while suspended if waitForSync: false */
+					test.ok(!err, 'Check no error returned by get() while suspended if waitForSync: false');
+					test.equal(members && members.length, 3, 'Check all three expected members here');
+					cb(err);
+				});
+			},
+			function(cb) {
+				leavesRealtime.connection.whenState('closed', function() { cb(); });
+				leavesRealtime.close();
+			},
+			function(cb) {
+				mainChannel.presence.subscribe(function(presmsg) {
+					test.equal(presmsg.clientId, 'leaves', 'Check the only presmsg we get is a leave from leaves');
+					test.equal(presmsg.action, 'leave', 'Check the only presmsg we get is a leave from leaves');
+					cb();
+				});
+				/* Don't need to reattach explicitly; should be done automatically on connected */
+				mainRealtime.connect();
+			},
+			function(cb) {
+				/* Wait a bit to make sure we don't receive any other presence messages */
+				setTimeout(cb, 1000);
+			},
+			function(cb) {
+				mainChannel.presence.get(function(err, members) {
+					test.equal(members && members.length, 2, 'Check two expected members here');
 					cb(err);
 				});
 			}
@@ -1484,7 +1845,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 			}
-			closeAndFinish(test, [enterer, syncer]);
+			closeAndFinish(test, [mainRealtime, continuousRealtime, leavesRealtime]);
 		});
 	};
 

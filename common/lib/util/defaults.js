@@ -10,6 +10,7 @@ Defaults.TIMEOUTS = {
 	disconnectedRetryTimeout   : 15000,
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
+	channelRetryTimeout        : 15000,
 	/* Not documented: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
@@ -19,9 +20,9 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '0.8.42';
+Defaults.version          = '0.9.0-beta.7';
 Defaults.libstring        = 'js-' + Defaults.version;
-Defaults.apiVersion       = '0.8';
+Defaults.apiVersion       = '1.0';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -104,6 +105,12 @@ Defaults.normaliseOptions = function(options) {
 	for(var prop in Defaults.TIMEOUTS) {
 		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
 	};
+
+	if('useBinaryProtocol' in options) {
+		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
+	} else {
+		options.useBinaryProtocol = Platform.preferBinary;
+	}
 
 	return options;
 };

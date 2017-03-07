@@ -13,10 +13,10 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var xhrSupported;
-	var isIE = window.XDomainRequest;
+	var xhrSupported = Platform.xhrSupported;
+	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
 	function isAvailable() {
-		return (xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest());
+		return xhrSupported;
 	};
 
 	function ieVersion() {
@@ -79,12 +79,12 @@ var XHRRequest = (function() {
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
 	};
 
-	XHRRequest.prototype.complete = function(err, body, headers, unpacked) {
+	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			if(body)
 				this.emit('data', body);
-			this.emit('complete', err, body, headers, unpacked);
+			this.emit('complete', err, body, headers, unpacked, statusCode);
 			this.dispose();
 		}
 	};
@@ -107,10 +107,11 @@ var XHRRequest = (function() {
 			accept = headers['accept'],
 			responseType = 'text';
 
-		if(!accept)
+		if(!accept) {
 			headers['accept'] = 'application/json';
-		else if(accept != 'application/json')
+		} else if(accept.indexOf('application/json') === -1) {
 			responseType = 'arraybuffer';
+		}
 
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
@@ -135,17 +136,17 @@ var XHRRequest = (function() {
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
 		xhr.onerror = function(errorEvent) {
-			errorHandler(errorEvent, 'XHR error occurred', 80000, 400);
+			errorHandler(errorEvent, 'XHR error occurred', null, 400);
 		}
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
-				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', 80000, 408);
+				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 408);
 			} else {
-				errorHandler(errorEvent, 'Request cancelled', 80000, 400);
+				errorHandler(errorEvent, 'Request cancelled', null, 400);
 			}
 		};
 		xhr.ontimeout = function(errorEvent) {
-			errorHandler(errorEvent, 'Request timed out', 80000, 408);
+			errorHandler(errorEvent, 'Request timed out', null, 408);
 		};
 
 		var streaming,
@@ -160,7 +161,7 @@ var XHRRequest = (function() {
 			clearTimeout(timer);
 			successResponse = (statusCode < 400);
 			if(statusCode == 204) {
-				self.complete();
+				self.complete(null, null, null, null, statusCode);
 				return;
 			}
 			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
@@ -193,21 +194,22 @@ var XHRRequest = (function() {
 					headers = getHeadersAsObject(xhr);
 				}
 			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
+				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
 				return;
 			}
 
-			if(successResponse) {
-				self.complete(null, responseBody, headers, unpacked);
+			/* If response is an array, it's an array of protocol messages -- even if
+			 * is contains an error action (hence the nonsuccess statuscode), we can
+			 * consider the request to have succeeded, just pass it on to
+			 * onProtocolMessage to decide what to do */
+			if(successResponse || Utils.isArray(responseBody)) {
+				self.complete(null, responseBody, headers, unpacked, statusCode);
 				return;
 			}
 
 			var err = responseBody.error;
 			if(!err) {
-				err = new Error('Error response received from server: ' + statusCode);
-				err.statusCode = statusCode;
+				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}
 			self.complete(err);
 		}
@@ -226,9 +228,7 @@ var XHRRequest = (function() {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				var err = new Error('Malformed response body from server: ' + e.message);
-				err.statusCode = 400;
-				self.complete(err);
+				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
 				return;
 			}
 			self.emit('data', chunk);
@@ -281,18 +281,20 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-  if(isAvailable()) {
-          DomEvent.addUnloadListener(clearPendingRequests);
-          if(typeof(Http) !== 'undefined') {
-                  Http.supportsAuthHeaders = xhrSupported;
-                  Http.Request = function(rest, uri, headers, params, body, callback) {
-                          var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
-                          req.once('complete', callback);
-                          req.exec();
-                          return req;
-                  };
-          }
-  }
+	if(isAvailable()) {
+		if(typeof DomEvent === 'object') {
+			DomEvent.addUnloadListener(clearPendingRequests);
+		}
+		if(typeof(Http) !== 'undefined') {
+			Http.supportsAuthHeaders = xhrSupported;
+			Http.Request = function(rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+				req.once('complete', callback);
+				req.exec();
+				return req;
+			};
+		}
+	}
 
 	return XHRRequest;
 })();

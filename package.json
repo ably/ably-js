@@ -1,16 +1,22 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably.io, the realtime messaging service",
-  "version": "0.8.42",
+  "version": "0.9.0-beta.7",
   "main": "./nodejs/index.js",
+  "typings": "browser/static/ably.d.ts",
+  "react-native": {
+    "./nodejs/index.js": "browser/static/ably-reactnative.js"
+  },
+  "browser": {
+    "./nodejs/index.js": "browser/static/ably-commonjs.js"
+  },
   "dependencies": {
-    "async": "git://github.com/ably-forks/async#requirejs",
-    "hexy": "~0.2",
-    "msgpack-js": "git://github.com/paddybyers/msgpack-js.git",
+    "msgpack-js": "git://github.com/ably-forks/msgpack-js",
     "request": "^2.74.0",
     "ws": "^1.1.1"
   },
   "devDependencies": {
+    "async": "git://github.com/ably-forks/async#requirejs",
     "ejs": "~2.3",
     "express": "~4.12",
     "cors": "~2.7",
@@ -23,7 +29,8 @@
     "grunt-curl": "~2.1",
     "grunt-shell": "~1.1",
     "grunt-zip": "~0.16",
-    "karma": "git://github.com/ably-forks/karma.git#ably-js-custom",
+    "hexy": "~0.2",
+    "karma": "git://github.com/ably-forks/karma#ably-js-custom",
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",
@@ -46,6 +53,13 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:ably/ably-js.git"
+  },
+  "jspm": {
+    "registry": "npm",
+    "directories": {
+      "lib": "browser/static"
+    },
+    "main": "ably"
   },
   "scripts": {
     "test": "grunt test"

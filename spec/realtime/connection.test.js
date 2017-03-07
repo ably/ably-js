@@ -112,7 +112,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		try {
 			realtime = helper.AblyRealtime({recover: fakeRecoveryKey});
 			realtime.connection.on('connected', function(stateChange) {
-				console.log(JSON.stringify(stateChange));
 				test.equal(stateChange.reason.code, 80008, "verify unrecoverable-connection error set in stateChange.reason");
 				test.equal(realtime.connection.errorReason.code, 80008, "verify unrecoverable-connection error set in connection.errorReason");
 				test.equal(realtime.connection.serial, -1, "verify serial is -1 (new connection), not 5");
@@ -146,7 +145,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				/* Sabotage sending the message */
 				transport.send = function(msg) {
-					test.equal(msg.msgSerial, 0, 'Expect msgSerial to be 0');
+					if(msg.action == 15) {
+						test.equal(msg.msgSerial, 0, 'Expect msgSerial to be 0');
+					}
 				};
 
 				async.parallel([

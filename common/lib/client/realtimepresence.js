@@ -21,6 +21,7 @@ var RealtimePresence = (function() {
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
+			case 'suspended':
 				action();
 				break;
 			case 'initialized':
@@ -33,14 +34,16 @@ var RealtimePresence = (function() {
 				});
 				break;
 			default:
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(channel.state)));
 		}
 	}
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
 		this.members = new PresenceMap(this);
+		this._myMembers = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
+		this.pendingPresence = [];
 	}
 	Utils.inherits(RealtimePresence, Presence);
 
@@ -74,8 +77,14 @@ var RealtimePresence = (function() {
 			}
 		}
 
+		var channel = this.channel;
+		if(!channel.connectionManager.activeState()) {
+			callback(channel.connectionManager.getStateError());
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + this.channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,
@@ -83,34 +92,31 @@ var RealtimePresence = (function() {
 		});
 		if (clientId) { presence.clientId = clientId; }
 
-		PresenceMessage.encode(presence, this.channel.channelOptions);
-
-		var channel = this.channel;
-		switch(channel.state) {
-			case 'attached':
-				channel.sendPresence(presence, callback);
-				break;
-			case 'initialized':
-			case 'detached':
-				var self = this;
-				channel.attach(function(err) {
-					// If error in attaching, callback immediately
-					if(err) {
-						self.pendingPresence = null;
-						callback(err);
-					}
-				});
-			case 'attaching':
-				this.pendingPresence = {
-					presence : presence,
-					callback : callback
-				};
-				break;
-			default:
-				var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
-				err.code = 90001;
+		var self = this;
+		PresenceMessage.encode(presence, channel.channelOptions, function(err) {
+			if (err) {
 				callback(err);
-		}
+				return;
+			}
+			switch(channel.state) {
+				case 'attached':
+					channel.sendPresence(presence, callback);
+					break;
+				case 'initialized':
+				case 'detached':
+					channel.autonomousAttach();
+				case 'attaching':
+					self.pendingPresence.push({
+						presence : presence,
+						callback : callback
+					});
+					break;
+				default:
+					var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err.code = 90001;
+					callback(err);
+			}
+		});
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
@@ -129,35 +135,39 @@ var RealtimePresence = (function() {
 			}
 		}
 
+		var channel = this.channel;
+		if(!channel.connectionManager.activeState()) {
+			callback(channel.connectionManager.getStateError());
+			return;
+		}
+
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : 'leave',
 			data   : data
 		});
 		if (clientId) { presence.clientId = clientId; }
-		var channel = this.channel;
+
 		switch(channel.state) {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
 			case 'attaching':
-				this.pendingPresence = {
+				this.pendingPresence.push({
 					presence : presence,
 					callback : callback
-				};
+				});
 				break;
 			case 'initialized':
 			case 'failed':
 				/* we're not attached; therefore we let any entered status
 				 * timeout by itself instead of attaching just in order to leave */
-				this.pendingPresence = null;
 				var err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
 				callback(err);
 				break;
 			default:
 				/* there is no connection; therefore we let
-				 * any entered status will timeout by itself */
-				this.pendingPresence = null;
+				 * any entered status timeout by itself */
 				callback(ConnectionError.failed);
 		}
 	};
@@ -173,6 +183,20 @@ var RealtimePresence = (function() {
 
 		function returnMembers(members) {
 			callback(null, params ? members.list(params) : members.values());
+		}
+
+		/* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+		if(this.channel.state === 'suspended') {
+			if(waitForSync) {
+				callback(ErrorInfo.fromValues({
+					statusCode: 400,
+					code: 91005,
+					message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
+				}));
+			} else {
+				returnMembers(this.members);
+			}
+			return;
 		}
 
 		var self = this;
@@ -214,7 +238,8 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, isSync, syncChannelSerial) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
-		var syncCursor, match, members = this.members, broadcastMessages = [];
+		var syncCursor, match, members = this.members, myMembers = this._myMembers,
+			broadcastMessages = [], connId = this.channel.connectionManager.connectionId;
 
 		if(isSync) {
 			this.members.startSync();
@@ -230,12 +255,18 @@ var RealtimePresence = (function() {
 					if(members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
+					if(presence.connectionId === connId && !presence.isSynthesized) {
+						myMembers.remove(presence);
+					}
 					break;
-				case 'update':
 				case 'enter':
 				case 'present':
+				case 'update':
 					if(members.put(presence)) {
 						broadcastMessages.push(presence);
+					}
+					if(presence.connectionId === connId) {
+						myMembers.put(presence);
 					}
 					break;
 			}
@@ -243,6 +274,8 @@ var RealtimePresence = (function() {
 		/* if this is the last (or only) message in a sequence of sync updates, end the sync */
 		if(isSync && !syncCursor) {
 			members.endSync();
+			/* RTP5c2: re-enter our own members if they haven't shown up in the sync */
+			this._ensureMyMembersPresent();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
 		}
 
@@ -253,28 +286,101 @@ var RealtimePresence = (function() {
 		}
 	};
 
-	RealtimePresence.prototype.setAttached = function() {
-		var pendingPresence = this.pendingPresence;
-		if(pendingPresence) {
-			var presence = pendingPresence.presence, callback = pendingPresence.callback;
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setAttached', 'sending queued presence; action = ' + presence.action);
-			this.channel.sendPresence(presence, callback);
-			this.pendingPresence = null;
+	RealtimePresence.prototype.onAttached = function(hasPresence) {
+		Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
+
+		if(hasPresence) {
+			this.members.startSync();
+		} else {
+			this._synthesizeLeaves(this.members.values());
+			this.members.clear();
+			this._ensureMyMembersPresent();
+		}
+
+		/* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
+		var pendingPresence = this.pendingPresence,
+			pendingPresCount = pendingPresence.length;
+
+		if(pendingPresCount) {
+			this.pendingPresence = [];
+			var presenceArray = [];
+			var multicaster = Multicaster();
+			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
+			for(var i = 0; i < pendingPresCount; i++) {
+				var event = pendingPresence[i];
+				presenceArray.push(event.presence);
+				multicaster.push(event.callback);
+			}
+			this.channel.sendPresence(presenceArray, multicaster);
 		}
 	};
 
-	RealtimePresence.prototype.setSuspended = function(err) {
-		var pendingPresence = this.pendingPresence;
-		if(pendingPresence) {
-			pendingPresence.callback(err);
-			this.pendingPresence = null;
+	RealtimePresence.prototype.actOnChannelState = function(state, hasPresence, err) {
+		switch(state) {
+			case 'attached':
+				this.onAttached(hasPresence);
+				break;
+			case 'detached':
+			case 'failed':
+				this._clearMyMembers();
+				this.members.clear();
+				/* falls through */
+			case 'suspended':
+				this.failPendingPresence(err);
+				break;
 		}
-		this.members.clear();
 	};
 
-	RealtimePresence.prototype.awaitSync = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.awaitSync()', 'channel = ' + this.channel.name);
-		this.members.startSync();
+	RealtimePresence.prototype.failPendingPresence = function(err) {
+		if(this.pendingPresence.length) {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingPresence', 'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err));
+			for(var i = 0; i < this.pendingPresence.length; i++)
+				try {
+					this.pendingPresence[i].callback(err);
+				} catch(e) {}
+			this.pendingPresence = [];
+		}
+	};
+
+	RealtimePresence.prototype._clearMyMembers = function() {
+		this._myMembers.clear();
+	};
+
+	RealtimePresence.prototype._ensureMyMembersPresent = function() {
+		var self = this, members = this.members, myMembers = this._myMembers,
+			reenterCb = function(err) {
+				if(err) {
+					var msg = 'Presence auto-re-enter failed: ' + err.toString();
+					var wrappedErr = new ErrorInfo(msg, 91004, 400);
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, wrappedErr);
+					self.channel.emit('update', change);
+				}
+			};
+
+		for(var memberKey in myMembers.map) {
+			if(!(memberKey in members.map)) {
+				var entry = myMembers.map[memberKey];
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
+				this._enterOrUpdateClient(entry.clientId, entry.data, reenterCb, 'enter');
+				delete myMembers.map[memberKey];
+			}
+		}
+	};
+
+	RealtimePresence.prototype._synthesizeLeaves = function(items) {
+		var subscriptions = this.subscriptions;
+		Utils.arrForEach(items, function(item) {
+			var presence = PresenceMessage.fromValues({
+				action: 'leave',
+				connectionId: item.connectionId,
+				clientId: item.clientId,
+				data: item.data,
+				encoding: item.encoding,
+				timestamp: Utils.now()
+			});
+			subscriptions.emit('leave', presence);
+		});
 	};
 
 	/* Deprecated */
@@ -308,7 +414,7 @@ var RealtimePresence = (function() {
 		var callback = args[2];
 
 		if(this.channel.state === 'failed')
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError));
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 
 		this.subscriptions.off(event, listener);
 	};
@@ -405,11 +511,20 @@ var RealtimePresence = (function() {
 	PresenceMap.prototype.remove = function(item) {
 		var map = this.map, key = memberKey(item);
 		var existingItem = map[key];
-		if(existingItem) {
-			delete map[key];
-			if(existingItem.action === 'absent')
-				return false;
+
+		if(existingItem && !newerThan(item, existingItem)) {
+			return false;
 		}
+
+		/* RTP2f */
+		if(this.syncInProgress) {
+			item = PresenceMessage.fromValues(item);
+			item.action = 'absent';
+			map[key] = item;
+		} else {
+			delete map[key];
+		}
+
 		return true;
 	};
 
@@ -436,7 +551,8 @@ var RealtimePresence = (function() {
 				}
 			}
 			/* any members that were present at the start of the sync,
-			 * and have not been seen in sync, can be removed */
+			 * and have not been seen in sync, can be removed, and leave events emitted */
+			this.presence._synthesizeLeaves(Utils.valuesArray(this.residualMembers));
 			for(var memberKey in this.residualMembers) {
 				delete map[memberKey];
 			}

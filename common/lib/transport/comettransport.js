@@ -19,12 +19,37 @@ var CometTransport = (function() {
 		}
 	}
 
+	/* TODO: can remove once realtime sends protocol message responses for comet errors */
+	function shouldBeErrorAction(err) {
+		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
+		if(err.code) {
+			if(Auth.isTokenErr(err)) return false;
+			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+			return (err.code >= 40000 && err.code < 50000);
+		} else {
+			/* Likely a network or transport error of some kind. Certainly not fatal to the connection */
+			return false;
+		}
+	}
+
+	function protocolMessageFromRawError(err) {
+		/* err will be either a legacy (non-protocolmessage) comet error response
+		 * (which will have an err.code), or a xhr/network error (which won't). */
+		if(shouldBeErrorAction(err)) {
+			return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})];
+		} else {
+			return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.DISCONNECTED, error: err})];
+		}
+	}
+
 	/*
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
+		this.timeoutOnIdle = true;
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
+		params.heartbeats = true;
 		Transport.call(this, connectionManager, auth, params);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
@@ -55,7 +80,7 @@ var CometTransport = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
-				self.abort(err);
+				self.disconnect(err);
 				return;
 			}
 			self.authParams = authParams;
@@ -85,10 +110,20 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
+				if(this.timeoutOnIdle) {
+					this.resetIdleTimeout();
+				}
 				if(err) {
-					/* If connect errors before the preconnect, connectionManager is
-					 * never given the transport, so need to dispose of it ourselves */
-					self.abort(err);
+					if(err.code) {
+						/* A protocol error received from realtime. TODO: once realtime
+						 * consistendly sends errors wrapped in protocol messages, should be
+						 * able to remove this */
+						self.onData(protocolMessageFromRawError(err));
+					} else {
+						/* A network/xhr error. Don't bother wrapping in a protocol message,
+						 * just disconnect the transport */
+						self.disconnect(err);
+					}
 					return;
 				}
 				Utils.nextTick(function() {
@@ -97,12 +132,6 @@ var CometTransport = (function() {
 			});
 			connectRequest.exec();
 		});
-	};
-
-	CometTransport.prototype.disconnect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.disconnect()', '');
-		this.requestDisconnect();
-		Transport.prototype.disconnect.call(this);
 	};
 
 	CometTransport.prototype.requestClose = function() {
@@ -124,7 +153,7 @@ var CometTransport = (function() {
 			request.on('complete', function (err) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + err);
-					self.finish('failed', err);
+					self.finish('disconnected', err);
 				}
 			});
 			request.exec();
@@ -140,11 +169,13 @@ var CometTransport = (function() {
 				this.recvRequest.abort();
 				this.recvRequest = null;
 			}
-			Transport.prototype.onDisconnect.call(this);
+			/* In almost all cases the transport will be finished before it's
+			 * disposed. Finish here just to make sure. */
+			this.finish('disconnected', ConnectionError.disconnected);
 			var self = this;
 			Utils.nextTick(function() {
 				self.emit('disposed');
-			})
+			});
 		}
 	};
 
@@ -165,16 +196,11 @@ var CometTransport = (function() {
 		this.disconnectUri = baseConnectionUri + '/disconnect';
 	};
 
-	CometTransport.prototype.send = function(message, callback) {
+	CometTransport.prototype.send = function(message) {
 		if(this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
 			this.pendingItems.push(message);
-
-			if(callback) {
-				this.pendingCallback = this.pendingCallback || Multicaster();
-				this.pendingCallback.push(callback);
-			}
 			return;
 		}
 		/* send this, plus any pending, now */
@@ -182,30 +208,21 @@ var CometTransport = (function() {
 		pendingItems.push(message);
 		this.pendingItems = null;
 
-		var pendingCallback = this.pendingCallback;
-		if(pendingCallback) {
-			if(callback) pendingCallback.push(callback);
-			callback = pendingCallback;
-			this.pendingCallback = null;
-		}
-
-		this.sendItems(pendingItems, callback);
+		this.sendItems(pendingItems);
 	};
 
 	CometTransport.prototype.sendAnyPending = function() {
-		var pendingItems = this.pendingItems,
-			pendingCallback = this.pendingCallback;
+		var pendingItems = this.pendingItems;
 
 		if(!pendingItems) {
 			return;
 		}
 
 		this.pendingItems = null;
-		this.pendingCallback = null;
-		this.sendItems(pendingItems, pendingCallback);
+		this.sendItems(pendingItems);
 	}
 
-	CometTransport.prototype.sendItems = function(items, callback) {
+	CometTransport.prototype.sendItems = function(items) {
 		var self = this,
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
 
@@ -217,8 +234,14 @@ var CometTransport = (function() {
 			if(data) {
 				self.onData(data);
 			} else if(err && err.code) {
-				self.onData([ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})]);
-				err = null;
+				/* A protocol error received from realtime. TODO: once realtime
+				 * consistendly sends errors wrapped in protocol messages, should be
+				 * able to remove this */
+				self.onData(protocolMessageFromRawError(err));
+			} else {
+				/* A network/xhr error. Don't bother wrapping in a protocol message,
+				 * just disconnect the transport */
+				self.disconnect(err);
 			}
 
 			if(self.pendingItems) {
@@ -231,7 +254,6 @@ var CometTransport = (function() {
 					}
 				});
 			}
-			callback && callback(err);
 		});
 		sendRequest.exec();
 	};
@@ -253,8 +275,22 @@ var CometTransport = (function() {
 		});
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
+			if(this.timeoutOnIdle) {
+				/* A request completing must be considered activity, as realtime sends
+				 * heartbeats every 15s since a request began, not every 15s absolutely */
+				this.resetIdleTimeout();
+			}
 			if(err) {
-				self.finish('failed', err);
+				if(err.code) {
+					/* A protocol error received from realtime. TODO: once realtime
+					 * consistendly sends errors wrapped in protocol messages, should be
+					 * able to remove this */
+					self.onData(protocolMessageFromRawError(err));
+				} else {
+					/* A network/xhr error. Don't bother wrapping in a protocol message,
+					 * just disconnect the transport */
+					self.disconnect(err);
+				}
 				return;
 			}
 			Utils.nextTick(function() {
@@ -269,7 +305,7 @@ var CometTransport = (function() {
 			var items = this.decodeResponse(responseData);
 			if(items && items.length)
 				for(var i = 0; i < items.length; i++)
-					this.onProtocolMessage(ProtocolMessage.fromDecoded(items[i]));
+					this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
 		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}
@@ -283,6 +319,16 @@ var CometTransport = (function() {
 		if(typeof(responseData) == 'string')
 			responseData = JSON.parse(responseData);
 		return responseData;
+	};
+
+	/* For comet, we could do the auth update by aborting the current recv and
+	 * starting a new one with the new token, that'd be sufficient for realtime.
+	 * Problem is JSONP - you can't cancel truly abort a recv once started. So
+	 * we need to send an AUTH for jsonp. In which case it's simpler to keep all
+	 * comet transports the same and do it for all of them. So we send the AUTH
+	 * instead, and don't need to abort the recv */
+	CometTransport.prototype.onAuthUpdated = function(tokenDetails) {
+		this.authParams = {access_token: tokenDetails.token};
 	};
 
 	return CometTransport;

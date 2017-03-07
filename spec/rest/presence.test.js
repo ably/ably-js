@@ -5,19 +5,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Crypto = Ably.Realtime.Crypto,
 		BufferUtils = Ably.Realtime.BufferUtils,
 		displayError = helper.displayError,
-		arrFind = Array.prototype.find
-			? function(arr, predicate) {
-				return arr.find(predicate);
-			} : function(arr, predicate) {
-				var value;
-				for (var i = 0; i < arr.length; i++) {
-					value = arr[i];
-					if (predicate(value)) {
-						return value;
-					}
-				}
-				return undefined;
-			},
+		arrFind = helper.arrFind,
 		cipherParamsFromConfig = function(cipherConfig) {
 			var cipherParams = new Crypto.CipherParams;
 			for(var prop in cipherConfig) {

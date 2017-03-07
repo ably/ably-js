@@ -20,14 +20,14 @@ var Presence = (function() {
 		var rest = this.channel.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.channelOptions;
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, this.channel);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 
@@ -50,14 +50,14 @@ var Presence = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format)),
-			options = this.channel.channelOptions,
 			channel = this.channel;
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		var options = this.channel.channelOptions;
 		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body, headers, unpacked) {
-			return PresenceMessage.fromResponseBody(body, options, !unpacked && format, channel);
+			return PresenceMessage.fromResponseBody(body, options, !unpacked && format);
 		})).get(params, callback);
 	};
 

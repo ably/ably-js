@@ -60,18 +60,33 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			realtime.connection.connectionManager.requestState({state: 'disconnected'});
 		}
 
+		function becomeSuspended(realtime, cb) {
+			realtime.connection.connectionManager.disconnectAllTransports();
+			realtime.connection.once('disconnected', function() {
+				realtime.connection.connectionManager.notifyState({state: 'suspended'});
+			});
+			if(cb) realtime.connection.once('suspended', function() { cb(); });
+		}
+
 		function callbackOnClose(realtime, callback) {
 			if(!realtime.connection.connectionManager.activeProtocol) {
 				console.log("No transport established; closing connection and calling test.done()")
-				realtime.close();
-				callback();
+				utils.nextTick(function() {
+					realtime.close();
+					callback();
+				});
 				return;
 			}
 			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
 				console.log("Transport disposed; calling test.done()")
 				callback();
 			});
-			realtime.close();
+			/* wait a tick before closing in order to avoid the final close
+			 * happening synchronously in a publish/attach callback, which
+			 * complicates channelattach_publish_invalid etc. */
+			utils.nextTick(function() {
+				realtime.close();
+			});
 		}
 
 		function closeAndFinishSeveral(test, realtimeArray) {
@@ -151,6 +166,34 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			return !!transport.toString().match(/wss?\:/);
 		}
 
+		var arrFind = Array.prototype.find
+			? function(arr, predicate) {
+				return arr.find(predicate);
+			} : function(arr, predicate) {
+				var value;
+				for (var i = 0; i < arr.length; i++) {
+					value = arr[i];
+					if (predicate(value)) {
+						return value;
+					}
+				}
+				return undefined;
+			};
+
+		var arrFilter = Array.prototype.filter
+			? function(arr, predicate) {
+				return arr.filter(predicate);
+			} : function(arr, predicate) {
+				var res = [];
+				for (var i = 0; i < arr.length; i++) {
+					if (predicate(arr[i])) {
+						res.push(arr[i]);
+					}
+				}
+				return res;
+			};
+
+
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -169,6 +212,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			monitorConnection:         monitorConnection,
 			closeAndFinish:            closeAndFinish,
 			simulateDroppedConnection: simulateDroppedConnection,
+			becomeSuspended:           becomeSuspended,
 			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
 			availableTransports:       availableTransports,
@@ -176,6 +220,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			clearTransportPreference:  clearTransportPreference,
 			isComet:                   isComet,
 			isWebsocket:               isWebsocket,
-			unroutableAddress:         unroutableAddress
+			unroutableAddress:         unroutableAddress,
+			arrFind:                   arrFind,
+			arrFilter:                 arrFilter
 		};
 	});

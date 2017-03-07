@@ -26,7 +26,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	exports.attachdetach0 = function(test) {
 		test.expect(8);
 		try {
-			var realtime = helper.AblyRealtime(),
+			/* Note: realtime now sends an ATTACHED post-upgrade, which can race with
+			 * the DETACHED if the DETACH is only sent just after upgrade. Remove
+			 * bestTransport with 1.1 spec which has IDs in ATTACHs */
+			var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			index,
 			expectedConnectionEvents = [
 				'connecting',
@@ -251,6 +254,38 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		eventEmitter.off(callback);
 		test.ok(!('custom' in eventEmitter.events), 'event listener array is removed from object');
+
+		closeAndFinish(test, realtime);
+	}
+
+	exports.arrayOfEvents = function(test) {
+		var realtime = helper.AblyRealtime({ autoConnect: false }),
+				callbackCalled = 0,
+				eventEmitter = realtime.connection;
+
+		var callback = function() { callbackCalled += 1; };
+
+		callbackCalled = 0;
+		eventEmitter.on(['a', 'b', 'c'], callback);
+		eventEmitter.emit('a');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 3, 'listener listens to all events in array');
+
+		eventEmitter.off(['a', 'b', 'c'], callback);
+		eventEmitter.emit('a');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 3, 'All callbacks should have been removed');
+
+		callbackCalled = 0;
+		eventEmitter.on(['a', 'b', 'c'], callback);
+		eventEmitter.off('a', callback);
+		eventEmitter.emit('a');
+		test.equals(callbackCalled, 0, 'callback ‘a’ should have been removed');
+		eventEmitter.emit('b');
+		eventEmitter.emit('c');
+		test.equals(callbackCalled, 2, 'callbacks b and c should not have been removed');
 
 		closeAndFinish(test, realtime);
 	}

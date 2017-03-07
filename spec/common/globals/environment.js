@@ -28,6 +28,10 @@ define(function(require) {
 		if(query['tls_port'])     tlsPort = query['tls_port'];
 		if(query['tls'])          tls = query['tls'].toLowerCase() !== 'false';
 		if(query['log_level'])    logLevel = Number(query['log_level']) || defaultLogLevel;
+	} else if(process) {
+		process.on('uncaughtException', function(err) {
+			console.error(err.stack);
+		});
 	}
 
 	return module.exports = {
@@ -37,6 +41,12 @@ define(function(require) {
 		port:        port,
 		tlsPort:     tlsPort,
 		tls:         tls,
-		log:         { level: logLevel }
+		log:         {
+			level:   logLevel,
+			handler: function(msg) {
+				var time = new Date();
+				console.log(time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds() + '.' + time.getMilliseconds(), msg);
+			}
+		}
 	};
 });

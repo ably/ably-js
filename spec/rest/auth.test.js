@@ -14,7 +14,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.setupauth = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
-			rest = helper.AblyRest();
+			rest = helper.AblyRest({queryTime: true});
 			getServerTime(function(err, time) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
@@ -141,7 +141,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.authtime2 = function(test) {
 		test.expect(1);
-		rest.auth.requestToken(null, {queryTime:true}, function(err, tokenDetails) {
+		rest.auth.requestToken(function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
@@ -275,7 +275,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.authexplicit_simple = function(test) {
 		test.expect(1);
 		rest.auth.getAuthHeaders(function(err, authHeaders) {
-			rest.auth.requestToken(null, {requestHeaders: authHeaders}, function(err, tokenDetails) {
+			rest.auth.authOptions.requestHeaders = authHeaders;
+			rest.auth.requestToken(function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
 					test.done();
@@ -371,31 +372,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Authorise with different args
+	 * authorize with different args
 	 */
-	exports.authauthorise = function(test) {
+	exports.authauthorize = function(test) {
 		test.expect(3);
 		async.parallel([
 			function(cb) {
-				rest.auth.authorise(null, null, function(err, tokenDetails) {
+				rest.auth.authorize(null, null, function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			},
 			function(cb) {
-				rest.auth.authorise(null, function(err, tokenDetails) {
+				rest.auth.authorize(null, function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			},
 			function(cb) {
-				rest.auth.authorise(function(err, tokenDetails) {
+				rest.auth.authorize(function(err, tokenDetails) {
 					test.ok(tokenDetails.token, 'Check token obtained');
 					cb(err);
 				});
 			}
 		], function(err) {
-			if(err) test.ok(false, "Authorise returned an error: " + helper.displayError(err));
+			if(err) test.ok(false, "authorize returned an error: " + helper.displayError(err));
 			test.done();
 		});
 	};
@@ -517,7 +518,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.auth_createTokenRequest_given_key2 = function(test) {
 		test.expect(1);
-		rest.auth.createTokenRequest(null, {}, function(err, tokenRequest) {
+		rest.auth.createTokenRequest(function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();

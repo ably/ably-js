@@ -593,15 +593,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			var channel = realtime.channels.get('explicit_client_id_0');
 			/* subscribe to event */
-			channel.subscribe('event0', function(message) {
-				test.ok(message.clientId == clientId, 'Client ID was added implicitly');
-				setTimeout(function() { closeAndFinish(test, realtime); }, 500); // wait for publish confirmation
-			});
-			channel.publish({ name: 'event0', clientId: clientId }, function(err) {
-				test.ok(!err, 'Message was published successfully');
+			async.parallel([
+				function(cb) {
+					channel.subscribe('event0', function(message) {
+						test.ok(message.clientId == clientId, 'Client ID was added implicitly');
+						cb();
+					});
+				},
+				function(cb) {
+					channel.publish({ name: 'event0', clientId: clientId }, function(err) {
+						cb(err);
+					});
+				}
+			], function(err) {
+				test.ok(!err, err && helper.displayError(err));
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
+
 
 	/* Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
 	   and expect it to not be published and be rejected */
@@ -643,6 +653,71 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		});
 	};
+
+	exports.subscribe_with_event_array = function(test) {
+		var realtime = helper.AblyRealtime(),
+			channel = realtime.channels.get('subscribe_with_event_array');
+
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(function(err) { cb(err); });
+			},
+			function(outercb) {
+				async.parallel([
+					function(innercb) {
+						var received = 0;
+						channel.subscribe(['a', 'b'], function(message) {
+							test.ok(message.name === 'a' || message.name === 'b', 'Correct messages received');
+							++received;
+							if(received === 2) {
+								/* wait a tick to make sure no more messages come in */
+								utils.nextTick(function() { innercb(); });
+							}
+						});
+					},
+					function(innercb) {
+						channel.publish([{name: 'a'}, {name: 'b'}, {name: 'c'}, {name: 'd'}], function(err) {
+							innercb(err);
+						});
+					}
+				], outercb)
+			}], function(err) {
+				test.ok(!err, err && helper.displayError(err));
+				closeAndFinish(test, realtime);
+			});
+	};
+
+	/* For now realtime doesn't yet support the extras field, so stub transport.send to test it */
+	exports.extras_field = function(test) {
+		var realtime = helper.AblyRealtime(),
+			event = 'event',
+			extras = {push: [{title: 'testing'}]};
+
+		test.expect(3);
+
+		realtime.connection.once('connected', function() {
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+
+			transport.send = function(message) {
+				if (message.action === 15) {
+					test.equal(message.messages[0].name, event, 'Outgoing message interecepted');
+					test.deepEqual(message.messages[0].extras, extras, 'Check extras field is present');
+				}
+				originalSend.apply(transport, arguments);
+			};
+
+			var channel = realtime.channels.get('extras_field');
+			channel.publish({name: event, extras: extras}, function(err) {
+				test.ok(!err, err && helper.displayError(err));
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
 
 	return module.exports = helper.withTimeout(exports);
 });

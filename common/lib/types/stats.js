@@ -3,6 +3,8 @@ var Stats = (function() {
 	function MessageCount(values) {
 		this.count = (values && values.count) || 0;
 		this.data = (values && values.data) || 0;
+		this.failed = (values && values.failed) || 0;
+		this.refused = (values && values.refused) || 0;
 	}
 
 	function ResourceCount(values) {
@@ -35,6 +37,9 @@ var Stats = (function() {
 		this.realtime = new MessageTypes(values && values.realtime);
 		this.rest = new MessageTypes(values && values.rest);
 		this.webhook = new MessageTypes(values && values.webhook);
+		this.push = new MessageTypes(values && values.push);
+		this.sharedQueue = new MessageTypes(values && values.sharedQueue);
+		this.externalQueue = new MessageTypes(values && values.externalQueue);
 		this.all = new MessageTypes(values && values.all);
 	}
 

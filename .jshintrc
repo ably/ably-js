@@ -26,6 +26,7 @@
   "globals": {
     "CryptoJS": true,
     "Crypto": true,
+    "Platform": true,
     "Defaults": true,
     "BufferUtils": true,
     "WebStorage": true,
@@ -55,6 +56,7 @@
     "Rest": true,
     "Realtime": true,
     "ConnectionStateChange": true,
+    "ChannelStateChange": true,
     "Connection": true,
     "Channel": true,
     "RealtimeChannel": true,

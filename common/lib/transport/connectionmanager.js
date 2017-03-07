@@ -19,18 +19,6 @@ var ConnectionManager = (function() {
 		return haveSessionStorage && WebStorage.removeSession(sessionRecoveryName);
 	}
 
-	function isFatalErr(err) {
-		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
-
-		if(err.code) {
-			if(Auth.isTokenErr(err)) return false;
-			if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
-			return (err.code >= 40000 && err.code < 50000);
-		}
-		/* If no statusCode either, assume false */
-		return err.statusCode < 500;
-	}
-
 	function betterTransportThan(a, b) {
 		return Utils.arrIndexOf(transportPreferenceOrder, a.shortName) >
 		   Utils.arrIndexOf(transportPreferenceOrder, b.shortName);
@@ -74,6 +62,8 @@ var ConnectionManager = (function() {
 			params.format = this.format;
 		if(this.stream !== undefined)
 			params.stream = this.stream;
+		if(this.heartbeats !== undefined)
+			params.heartbeats = this.heartbeats;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
@@ -94,15 +84,15 @@ var ConnectionManager = (function() {
 		 * the base transport in case that fails */
 		var connectingTimeout = timeouts.preferenceConnectTimeout + timeouts.realtimeRequestTimeout;
 		this.states = {
-			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false},
+			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: connectingTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false},
-			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout},
-			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
+			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout, failState: 'disconnected'},
+			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout, failState: 'suspended'},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
-			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false},
-			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false}
+			closed:        {state: 'closed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'closed'},
+			failed:        {state: 'failed',        terminal: true,  queueEvents: false, sendEvents: false, failState: 'failed'}
 		};
 		this.state = this.states.initialized;
 		this.errorReason = null;
@@ -142,22 +132,26 @@ var ConnectionManager = (function() {
 			throw new Error(msg);
 		}
 
-		/* intercept close event in browser to persist connection id if requested */
-		if(haveSessionStorage && typeof options.recover === 'function' && window.addEventListener)
-			window.addEventListener('beforeunload', this.persistConnection.bind(this));
+		var addEventListener = Platform.addEventListener;
+		if(addEventListener) {
+			/* intercept close event in browser to persist connection id if requested */
+			if(haveSessionStorage && typeof options.recover === 'function') {
+				/* Usually can't use bind as not supported in IE8, but IE doesn't support sessionStorage, so... */
+				addEventListener('beforeunload', this.persistConnection.bind(this));
+			}
 
-		if(options.closeOnUnload === true && window.addEventListener)
-			window.addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			if(options.closeOnUnload === true) {
+				addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+			}
 
-		/* Listen for online and offline events */
-		if(typeof window === 'object' && window.addEventListener) {
-			window.addEventListener('online', function() {
+			/* Listen for online and offline events */
+			addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
 					self.requestState({state: 'connecting'});
 				}
 			});
-			window.addEventListener('offline', function() {
+			addEventListener('offline', function() {
 				if(self.state == self.states.connected) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
 					// Not sufficient to just go to the 'disconnected' state, want to
@@ -226,37 +220,40 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', candidate + ' transport is blacklisted for host ' + transportParams.host);
 			return;
 		}
-		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(err, transport) {
+		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(wrappedErr, transport) {
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				if(transport) {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'connection ' + state.state + ' while we were attempting the transport; closing ' + transport);
 					transport.close();
 				}
-				callback(new ErrorInfo('Connection ' + state.state, 80017, 400));
+				callback(true);
 				return;
 			}
 
-			if(err) {
-				err = ErrorInfo.fromValues(err);
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' returned err: ' + err.toString());
+			if(wrappedErr) {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString());
 
 				/* Comet transport onconnect token errors can be dealt with here.
 				* Websocket ones only happen after the transport claims to be viable,
 				* so are dealt with as non-onconnect token errors */
-				if(Auth.isTokenErr(err)) {
+				if(Auth.isTokenErr(wrappedErr.error)) {
 					/* re-get a token and try again */
-					self.realtime.auth.authorise(null, {force: true}, function(err) {
+					self.realtime.auth._forceNewToken(null, null, function(err) {
 						if(err) {
-							callback(err);
+							self.actOnErrorFromAuthorize(err);
 							return;
 						}
 						self.tryATransport(transportParams, candidate, callback);
 					});
-					return;
+				} else if(wrappedErr.event === 'failed') {
+					/* Error that's fatal to the connection */
+					self.notifyState({state: 'failed', error: wrappedErr.error});
+					callback(true);
+				} else if(wrappedErr.event === 'disconnected') {
+					/* Error with that transport only */
+					callback(false);
 				}
-
-				callback(err);
 				return;
 			}
 
@@ -309,10 +306,8 @@ var ConnectionManager = (function() {
 			}
 		});
 
-		Utils.arrForEach(['disconnected', 'closed', 'failed'], function(event) {
-			transport.on(event, function(error) {
-				self.deactivateTransport(transport, event, error);
-			});
+		transport.on(['disconnected', 'closed', 'failed'], function(error) {
+			self.deactivateTransport(transport, this.event, error);
 		});
 
 		this.emit('transport.pending', transport);
@@ -387,13 +382,16 @@ var ConnectionManager = (function() {
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
 			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
-				/* If there's been some problem with syncing, we have a problem -- we
-				* can't just fall back on the old transport, as we don't know whether
-				* realtime got the sync -- if it did, the old transport is no longer
-				* valid. To be safe, we disconnect both and start again from scratch. */
+				/* If there's been some problem with syncing (and the connection hasn't
+				 * closed or something in the meantime), we have a problem -- we can't
+				 * just fall back on the old transport, as we don't know whether
+				 * realtime got the sync -- if it did, the old transport is no longer
+				 * valid. To be safe, we disconnect both and start again from scratch. */
 				if(syncErr) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
-					self.disconnectAllTransports();
+					if(self.state === self.states.synchronizing) {
+						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
+						self.disconnectAllTransports();
+					}
 					return;
 				}
 				var finishUpgrade = function() {
@@ -465,7 +463,8 @@ var ConnectionManager = (function() {
 
 		/* if the connectionmanager moved to the closing/closed state before this
 		 * connection event, then we won't activate this transport */
-		var existingState = this.state;
+		var existingState = this.state,
+			connectedState = this.states.connected.state;
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
 		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
@@ -492,26 +491,31 @@ var ConnectionManager = (function() {
 			this.setConnection(connectionId, connectionKey, connectionSerial);
 		}
 
-		var clientId = connectionDetails && connectionDetails.clientId;
-		if(clientId) {
-			var err = this.realtime.auth._uncheckedSetClientId(clientId);
-			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', err.message);
-				transport.abort(err);
-				return;
-			}
-		}
+		/* Rebroadcast any new connectionDetails from the active transport, which
+		 * can come at any time (eg following a reauth), and emit an RTN24 UPDATE
+		 * event. (Listener added on nextTick because we're in a transport.on('connected')
+		 * callback at the moment; if we add it now we'll be adding it to the end
+		 * of the listeners array and it'll be called immediately) */
+		this.onConnectionDetailsUpdate(connectionDetails, transport);
+		var self = this;
+		Utils.nextTick(function() {
+			transport.on('connected', function(connectedErr, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
+				self.onConnectionDetailsUpdate(connectionDetails, transport);
+				self.emit('update', new ConnectionStateChange(connectedState, connectedState, null, connectedErr));
+			});
+		})
 
 		this.emit('transport.active', transport, connectionKey, transport.params);
 
 		/* If previously not connected, notify the state change (including any
-		 * error).  If previously connected (ie upgrading), no state change, so
-		* emit any error as a standalone event */
+		 * error). */
 		if(existingState.state === this.states.connected.state) {
 			if(error) {
-				this.emit('error', error);
 				/* if upgrading without error, leave any existing errorReason alone */
 				this.errorReason = this.realtime.connection.errorReason = error;
+				/* Only bother emitting an upgrade if there's an error; otherwise it's
+				 * just a transport upgrade, so auth details won't have changed */
+				this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, error));
 			}
 		} else {
 			this.notifyState({state: 'connected', error: error});
@@ -520,6 +524,13 @@ var ConnectionManager = (function() {
 
 		/* Gracefully terminate existing protocol */
 		if(existingActiveProtocol) {
+			if(existingActiveProtocol.messageQueue.count() > 0) {
+				/* We could just requeue pending messages on the new transport, but
+				 * actually this should never happen: transports should only take over
+				 * from other active transports when upgrading, and upgrading waits for
+				 * the old transport to be idle. So log an error. */
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
+			}
 			existingActiveProtocol.finish();
 		}
 
@@ -571,18 +582,18 @@ var ConnectionManager = (function() {
 		 * - the transport was the active transport and there are no transports
 		 *   which are connected and scheduled for activation, just waiting for the
 		 *   active transport to finish what its doing; or
+		 * - the transport was the active transport and the error was fatal (so
+		 *   unhealable by another transport); or
 		 * - there is no active transport, and this is the last remaining
 		 *   pending transport (so we were in the connecting state)
 		 */
 		if((wasActive && noTransportsScheduledForActivation) ||
-			 (currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
-			/* Transport failures only imply a connection failure
-			 * if the reason for the failure is fatal */
-			if((state === 'failed') && error && !isFatalErr(error)) {
-				state = 'disconnected';
-			}
+			(wasActive && (state === 'failed') || (state === 'closed')) ||
+			(currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
+			if(state === 'failed' && Auth.isTokenErr(error)) { state = 'disconnected' }
 			this.notifyState({state: state, error: error});
-		} else if(wasActive) {
+		} else if(wasActive && (state === 'disconnected')) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
@@ -621,13 +632,7 @@ var ConnectionManager = (function() {
 			connectionSerial: this.connectionSerial
 		});
 
-		transport.send(syncMessage, function(err) {
-			if(err) {
-				transport.off('sync');
-				clearTimeout(timeout);
-				callback(ErrorInfo.fromValues(err));
-			}
-		});
+		transport.send(syncMessage);
 
 		transport.once('sync', function(connectionSerial, connectionId) {
 			clearTimeout(timeout);
@@ -636,14 +641,29 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
-		if(connectionId !== this.connectionId) {
-			/* if connectionKey changes but connectionId stays the same, then just a
-			* transport change on the same connection, so msgSerial should not reset */
+		/* if connectionKey changes but connectionId stays the same, then just a
+		 * transport change on the same connection. If connectionId changes, we're
+		 * on a new connection, with implications for msgSerial and channel state */
+		var self = this;
+		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		if(this.connectionId && this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
 			this.msgSerial = 0;
+			/* Wait till next tick before reattaching channels so that connection
+			 * state will be updated */
+			Utils.nextTick(function() {
+				self.realtime.channels.reattach();
+			});
+		} else {
+			/* don't allow the connectionSerial in the CONNECTED to lower the stored
+			 * connectionSerial, because messages can arrive on the upgrade transport
+			 * (validly incrementing the stored connectionSerial) after it's been
+			 * synced but before it gets activated */
+			connectionSerial = (this.connectionSerial === undefined) ? connectionSerial : Math.max(connectionSerial, this.connectionSerial);
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
-		this.realtime.connection.serial = this.connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
+		this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
 	};
 
@@ -687,8 +707,8 @@ var ConnectionManager = (function() {
 		return ConnectionError[this.state.state];
 	};
 
-	ConnectionManager.activeState = function(state) {
-		return state.queueEvents || state.sendEvents;
+	ConnectionManager.prototype.activeState = function() {
+		return this.state.queueEvents || this.state.sendEvents;
 	};
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
@@ -700,7 +720,10 @@ var ConnectionManager = (function() {
 			this.errorReason = stateChange.reason;
 			this.realtime.connection.errorReason = stateChange.reason;
 		}
-		if(newState.terminal) {
+		if(newState.terminal || newState.state === 'suspended') {
+			/* suspended is nonterminal, but once in the suspended state, realtime
+			 * will have discarded our connection state, so futher connection
+			 * attempts should start from scratch */
 			this.clearConnection();
 		}
 		this.emit('connectionstate', stateChange);
@@ -788,7 +811,7 @@ var ConnectionManager = (function() {
 		/* We retry immediately if:
 		 * - something disconnects us while we're connected, or
 		 * - a viable (but not yet active) transport fails due to a token error (so
-		 *   this.errorReason will be set, and startConnect will do a forced authorise) */
+		 *   this.errorReason will be set, and startConnect will do a forced authorize) */
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
@@ -850,15 +873,17 @@ var ConnectionManager = (function() {
 
 		/* implement the change and notify */
 		this.enactStateChange(change);
-		if(this.state.sendEvents)
+		if(this.state.sendEvents) {
 			this.sendQueuedMessages();
-		else if(!this.state.queueEvents)
-			this.realtime.channels.setSuspended(change.reason);
+		} else if(!this.state.queueEvents) {
+			this.realtime.channels.propogateConnectionInterruption(state, change.reason);
+			this.failQueuedMessages(change.reason); // RTN7c
+		}
 	};
 
 	ConnectionManager.prototype.requestState = function(request) {
 		var state = request.state, self = this;
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state);
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state + '; current state: ' + this.state.state);
 		if(state == this.state.state)
 			return; /* silently do nothing */
 
@@ -873,7 +898,7 @@ var ConnectionManager = (function() {
 		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
-			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryIn, (request.error || ConnectionError[newState.state]));
+			change = new ConnectionStateChange(this.state.state, newState.state, null, (request.error || ConnectionError[newState.state]));
 
 		this.enactStateChange(change);
 
@@ -908,14 +933,19 @@ var ConnectionManager = (function() {
 		if(auth.method === 'basic') {
 			connect();
 		} else {
-			var authOptions = (this.errorReason && Auth.isTokenErr(this.errorReason)) ? {force: true} : null;
-			auth.authorise(null, authOptions, function(err) {
+			var authCb = function(err) {
 				if(err) {
-					self.notifyState({state: 'failed', error: err});
+					self.actOnErrorFromAuthorize(err);
 				} else {
 					connect();
 				}
-			});
+			};
+			if(this.errorReason && Auth.isTokenErr(this.errorReason)) {
+				/* Force a refetch of a new token */
+				auth._forceNewToken(null, null, authCb);
+			} else {
+				auth._ensureValidAuthCredentials(authCb);
+			}
 		}
 	};
 
@@ -987,7 +1017,8 @@ var ConnectionManager = (function() {
 		/* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
 		 * The wstransport it will substitute the httphost for an appropriate wshost */
 		transportParams.host = self.httpHosts[0];
-		self.tryATransport(transportParams, preference, function(err, transport) {
+		self.tryATransport(transportParams, preference, function(fatal, transport) {
+			clearTimeout(preferenceTimeout);
 			if(preferenceTimeoutExpired && transport) {
 				/* Viable, but too late - connectImpl() will already be trying
 				* connectBase, and we weren't in upgrade mode. Just remove the
@@ -995,14 +1026,12 @@ var ConnectionManager = (function() {
 				transport.off();
 				transport.disconnect();
 				Utils.arrDeleteValue(this.pendingTransports, transport);
-			} else {
-				clearTimeout(preferenceTimeout);
-				if(err) {
-					self.unpersistTransportPreference();
-					self.failConnectionIfFatal(err);
-					self.connectImpl(transportParams);
-				}
+			} else if(!transport && !fatal) {
+				/* Preference failed in a transport-specific way. Try more */
+				self.unpersistTransportPreference();
+				self.connectImpl(transportParams);
 			}
+			/* If suceeded, or failed fatally, nothing to do */
 		});
 	};
 
@@ -1020,13 +1049,9 @@ var ConnectionManager = (function() {
 				self.notifyState({state: self.states.connecting.failState, error: err});
 			},
 			candidateHosts = this.httpHosts.slice(),
-			hostAttemptCb = function(err) {
-				if(err) {
-					var wasFatal = self.failConnectionIfFatal(err);
-					if(!wasFatal) {
-						tryFallbackHosts();
-						return;
-					}
+			hostAttemptCb = function(fatal, transport) {
+				if(!transport && !fatal) {
+					tryFallbackHosts();
 				}
 			};
 
@@ -1105,31 +1130,19 @@ var ConnectionManager = (function() {
 		this.cancelSuspendTimer();
 		this.startTransitionTimer(this.states.closing);
 
-		function closeTransport(transport) {
-			if(transport) {
-				try {
-					transport.close();
-				} catch(e) {
-					var msg = 'Unexpected exception attempting to close transport; e = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.closeImpl()', msg);
-					transport.abort(new ErrorInfo(msg, 50000, 500));
-				}
-			}
-		}
-
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
-			closeTransport(transport);
+			if(transport) transport.close();
 		});
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
-			transport.dispose();
+			if(transport) transport.dispose();
 		});
 
 		if(this.activeProtocol) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
-			closeTransport(this.activeProtocol.getTransport());
+			this.activeProtocol.getTransport().close();
 		}
 
 		/* If there was an active transport, this will probably be
@@ -1137,52 +1150,111 @@ var ConnectionManager = (function() {
 		this.notifyState({state: 'closed'});
 	};
 
-	ConnectionManager.prototype.onAuthUpdated = function() {
-		/* in the current protocol version we are not able to update auth params on the fly;
-		 * so disconnect, and the new auth params will be used for subsequent reconnection */
-		var state = this.state.state;
-		if(state == 'connected') {
-			this.disconnectAllTransports();
-		} else if(state == 'connecting' || state == 'disconnected') {
-			/* the instant auto-reconnect is only for connected->disconnected transition */
-			this.disconnectAllTransports();
-			var self = this;
-			Utils.nextTick(function() {
-				self.requestState({state: 'connecting'});
-			});
+	ConnectionManager.prototype.onAuthUpdated = function(tokenDetails, callback) {
+		var self = this;
+		switch(this.state.state) {
+			case 'connected':
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()', 'Sending AUTH message on active transport');
+				/* If there are any proposed/pending transports (eg an upgrade that
+				 * isn't yet scheduled for activation) that hasn't yet started syncing,
+				 * just to get rid of them & restart the upgrade with the new token, to
+				 * avoid a race condition. (If it has started syncing, the AUTH will be
+				 * queued until the upgrade is complete, so everything's fine) */
+				if((this.pendingTransports.length || this.proposedTransports.length) &&
+					self.state !== self.states.synchronizing) {
+					this.disconnectAllTransports(/* exceptActive: */true);
+					var transportParams = this.activeProtocol.getTransport().params;
+					Utils.nextTick(function() {
+						if(self.state.state === 'connected') {
+							self.upgradeIfNeeded(transportParams);
+						}
+					});
+				}
+
+				/* Do any transport-specific new-token action */
+				this.activeProtocol.getTransport().onAuthUpdated(tokenDetails);
+
+				var authMsg = ProtocolMessage.fromValues({
+					action: actions.AUTH,
+					auth: {
+						accessToken: tokenDetails.token
+					}
+				});
+				this.send(authMsg);
+
+				/* The answer will come back as either a connectiondetails event
+				 * (realtime sends a CONNECTED to asknowledge the reauth) or a
+				 * statechange to failed */
+				var successListener = function() {
+					self.off(failureListener);
+					callback(null, tokenDetails);
+				};
+				var failureListener = function(stateChange) {
+					if(stateChange.current === 'failed') {
+						self.off(successListener);
+						self.off(failureListener);
+						callback(stateChange.reason || self.getStateError());
+					}
+				};
+				this.once('connectiondetails', successListener);
+				this.on('connectionstate', failureListener);
+				break;
+
+			case 'connecting':
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
+					'Aborting current connection attempts in order to start again with the new auth details');
+				this.disconnectAllTransports();
+				/* fallthrough to add statechange listener */
+
+			default:
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
+					'Connection state is ' + this.state.state + '; waiting until either connected or failed');
+				var listener = function(stateChange) {
+					switch(stateChange.current) {
+						case 'connected':
+							self.off(listener);
+							callback(null, tokenDetails);
+							break;
+						case 'failed':
+						case 'closed':
+						case 'suspended':
+							self.off(listener);
+							callback(stateChange.reason || self.getStateError());
+							break;
+						default:
+							/* ignore till we get either connected or failed */
+							break;
+					}
+				};
+				self.on('connectionstate', listener);
+				if(this.state.state === 'connecting') {
+					/* can happen if in the connecting state but no transport was pending
+					 * yet, so disconnectAllTransports did not trigger a disconnected state */
+					self.startConnect();
+				} else {
+					self.requestState({state: 'connecting'});
+				}
 		}
 	};
 
-	ConnectionManager.prototype.disconnectAllTransports = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports');
-
-		function disconnectTransport(transport) {
-			if(transport) {
-				try {
-					transport.disconnect();
-				} catch(e) {
-					var msg = 'Unexpected exception attempting to disconnect transport; e = ' + e;
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.disconnectAllTransports()', msg);
-					transport.abort(new ErrorInfo(msg, 50000, 500));
-				}
-			}
-		}
+	ConnectionManager.prototype.disconnectAllTransports = function(exceptActive) {
+		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''));
 
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
-			disconnectTransport(transport);
+			if(transport) transport.disconnect();
 		});
 		this.pendingTransports = [];
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
-			transport.dispose();
+			if(transport) transport.dispose();
 		});
 		this.proposedTransports = [];
 
-		if(this.activeProtocol) {
+		if(this.activeProtocol && !exceptActive) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting active transport: ' + this.activeProtocol.getTransport());
-			disconnectTransport(this.activeProtocol.getTransport());
+			this.activeProtocol.getTransport().disconnect();
 		}
 		/* No need to notify state disconnected; disconnecting the active transport
 		 * will have that effect */
@@ -1208,8 +1280,9 @@ var ConnectionManager = (function() {
 				}
 				this.queue(msg, callback);
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'rejecting event; state = ' + state.state);
-				callback(this.errorReason);
+				var err = 'rejecting event as queueMessages was disabled; state = ' + state.state;
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+				callback(this.errorReason || new ErrorInfo(err, 90000, 400));
 			}
 		}
 	};
@@ -1222,9 +1295,7 @@ var ConnectionManager = (function() {
 			msg.msgSerial = this.msgSerial++;
 		}
 		try {
-			this.activeProtocol.send(pendingMessage, function(err) {
-				/* FIXME: schedule a retry directly if we get a send error */
-			});
+			this.activeProtocol.send(pendingMessage);
 		} catch(e) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
 		}
@@ -1259,6 +1330,11 @@ var ConnectionManager = (function() {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
 			this.queuedMessages.prepend(pendingMessages);
 		}
+	};
+
+	ConnectionManager.prototype.failQueuedMessages = function(err) {
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.failQueuedMessages()', 'failing ' + this.queuedMessages.count() + ' queued messages');
+		this.queuedMessages.completeAllMessages(err);
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
@@ -1298,21 +1374,24 @@ var ConnectionManager = (function() {
 
 			var onTimeout = function () {
 				transport.off('heartbeat', onHeartbeat);
-				callback(new ErrorInfo('Timedout waiting for heartbeat response', 50000, 500));
+				callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
 			};
 
-			var pingStart = Utils.now();
+			var pingStart = Utils.now(),
+				id = Utils.randStr();
 
-			var onHeartbeat = function () {
-				clearTimeout(timer);
-				var responseTime = Utils.now() - pingStart;
-				callback(null, responseTime);
+			var onHeartbeat = function (responseId) {
+				if(responseId === id) {
+					clearTimeout(timer);
+					var responseTime = Utils.now() - pingStart;
+					callback(null, responseTime);
+				}
 			};
 
 			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
 			transport.once('heartbeat', onHeartbeat);
-			transport.ping();
+			transport.ping(id);
 			return;
 		}
 
@@ -1350,17 +1429,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.abort = function(error) {
-		this.activeProtocol.getTransport().abort(error);
-	};
-
-	ConnectionManager.prototype.failConnectionIfFatal = function(err) {
-		/* Only allow connection to go into 'failed' if the has a definite
-		 * unrecoverable code from realtime */
-		var unrecoverable = err.code && isFatalErr(err);
-		if(unrecoverable) {
-			this.notifyState({state: 'failed', error: err});
-		}
-		return unrecoverable;
+		this.activeProtocol.getTransport().fail(error);
 	};
 
 	ConnectionManager.prototype.registerProposedTransport = function(transport) {
@@ -1385,6 +1454,31 @@ var ConnectionManager = (function() {
 		if(haveWebStorage) {
 			WebStorage.remove(transportPreferenceName);
 		}
+	};
+
+	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
+		if(err.code === 40170) {
+			/* Special-case problems with the client auth callback - unlike other
+			 * auth errors these may be nonfatal. (RSA4c) */
+			err.code = 80019;
+			this.notifyState({state: this.state.failState, error: err});
+		} else {
+			this.notifyState({state: 'failed', error: err});
+		}
+	};
+
+	ConnectionManager.prototype.onConnectionDetailsUpdate = function(connectionDetails, transport) {
+		var clientId = connectionDetails && connectionDetails.clientId;
+		if(clientId) {
+			var err = this.realtime.auth._uncheckedSetClientId(clientId);
+			if(err) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onConnectionDetailsUpdate()', err.message);
+				/* Errors setting the clientId are fatal to the connection */
+				transport.fail(err);
+				return;
+			}
+		}
+		this.emit('connectiondetails', connectionDetails);
 	};
 
 	return ConnectionManager;

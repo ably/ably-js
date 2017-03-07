@@ -1,7 +1,6 @@
 "use strict";
 var Crypto = (function() {
 	var crypto = require('crypto');
-	var hexy = require('hexy');
 	var util = require('util');
 
 	var DEFAULT_ALGORITHM = 'aes';
@@ -199,31 +198,23 @@ var Crypto = (function() {
 		this.blockLength = iv.length;
 	}
 
-	CBCCipher.prototype.encrypt = function(plaintext) {
+	CBCCipher.prototype.encrypt = function(plaintext, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-		//console.log('encrypt: plaintext:');
-		//console.log(hexy.hexy(plaintext));
 		var plaintextLength = plaintext.length,
 			paddedLength = getPaddedLength(plaintextLength),
 			iv = this.getIv();
 		var cipherOut = this.encryptCipher.update(Buffer.concat([plaintext, pkcs5Padding[paddedLength - plaintextLength]]));
 		var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-		//console.log('encrypt: ciphertext:');
-		//console.log(hexy.hexy(ciphertext));
-		return ciphertext;
+		return callback(null, ciphertext);
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
-		//console.log('decrypt: ciphertext:');
-		//console.log(hexy.hexy(ciphertext));
 		var blockLength = this.blockLength,
 			decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
 			plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
 			final = decryptCipher.final();
 		if(final && final.length)
 			plaintext = Buffer.concat([plaintext, toBuffer(final)]);
-		//console.log('decrypt: plaintext:');
-		//console.log(hexy.hexy(plaintext));
 		return plaintext;
 	};
 

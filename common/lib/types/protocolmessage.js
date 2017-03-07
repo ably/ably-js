@@ -1,5 +1,5 @@
 var ProtocolMessage = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -16,6 +16,7 @@ var ProtocolMessage = (function() {
 		this.msgSerial = undefined;
 		this.messages = undefined;
 		this.presence = undefined;
+		this.auth = undefined;
 	}
 
 	ProtocolMessage.Action = {
@@ -35,7 +36,8 @@ var ProtocolMessage = (function() {
 		'DETACHED' : 13,
 		'PRESENCE' : 14,
 		'MESSAGE' : 15,
-		'SYNC' : 16
+		'SYNC' : 16,
+		'AUTH' : 17
 	};
 
 	ProtocolMessage.ActionName = [];
@@ -43,28 +45,51 @@ var ProtocolMessage = (function() {
 		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
 	});
 
-	ProtocolMessage.Flag = {
-		'HAS_PRESENCE': 0,
-		'HAS_BACKLOG': 1
+	var flags = {
+		/* Channel attach state flags */
+		'HAS_PRESENCE':       1 << 0,
+		'HAS_BACKLOG':        1 << 1,
+		'RESUMED':            1 << 2,
+		'HAS_LOCAL_PRESENCE': 1 << 3,
+		'TRANSIENT':          1 << 4,
+		/* Channel mode flags */
+		'PRESENCE':           1 << 16,
+		'PUBLISH':            1 << 17,
+		'SUBSCRIBE':          1 << 18,
+		'PRESENCE_SUBSCRIBE': 1 << 19
+	};
+	var flagNames = Utils.keysArray(flags);
+	flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
+
+	ProtocolMessage.prototype.hasFlag = function(flag) {
+		return ((this.flags & flags[flag]) > 0);
 	};
 
-	ProtocolMessage.encode = function(msg, format) {
+	ProtocolMessage.prototype.setFlag = function(flag) {
+		return this.flags = this.flags | flags[flag];
+	};
+
+	ProtocolMessage.prototype.getMode = function() {
+		return this.flags && (this.flags & flags.MODE_ALL);
+	};
+
+	ProtocolMessage.serialize = function(msg, format) {
 		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
 	};
 
-	ProtocolMessage.decode = function(encoded, format) {
-		var decoded = (format == 'msgpack') ? msgpack.decode(encoded) : JSON.parse(String(encoded));
-		return ProtocolMessage.fromDecoded(decoded);
+	ProtocolMessage.deserialize = function(serialized, format) {
+		var deserialized = (format == 'msgpack') ? msgpack.decode(serialized) : JSON.parse(String(serialized));
+		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
-	ProtocolMessage.fromDecoded = function(decoded) {
-		var error = decoded.error;
-		if(error) decoded.error = ErrorInfo.fromValues(error);
-		var messages = decoded.messages;
-		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromDecoded(messages[i]);
-		var presence = decoded.presence;
-		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromDecoded(presence[i]);
-		return Utils.mixin(new ProtocolMessage(), decoded);
+	ProtocolMessage.fromDeserialized = function(deserialized) {
+		var error = deserialized.error;
+		if(error) deserialized.error = ErrorInfo.fromValues(error);
+		var messages = deserialized.messages;
+		if(messages) for(var i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
+		var presence = deserialized.presence;
+		if(presence) for(var i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
+		return Utils.mixin(new ProtocolMessage(), deserialized);
 	};
 
 	ProtocolMessage.fromValues = function(values) {
@@ -81,7 +106,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count flags msgSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
@@ -101,6 +126,12 @@ var ProtocolMessage = (function() {
 			result += '; presence=' + toStringArray(PresenceMessage.fromValuesArray(msg.presence));
 		if(msg.error)
 			result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
+		if(msg.auth && msg.auth.accessToken)
+			result += '; token=' + msg.auth.accessToken;
+		if(msg.flags)
+			result += '; flags=' + Utils.arrFilter(flagNames, function(flag) {
+				return msg.hasFlag(flag);
+			}).join(',');
 
 		result += ']';
 		return result;

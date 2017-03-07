@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection,
@@ -263,6 +264,202 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	testOnAllTransports(exports, 'resume_active', function(realtimeOpts) { return function(test) {
 		resume_active(test, 'resume_active' + String(Math.random()), {}, realtimeOpts);
 	}}, /* excludeUpgrade: */ true);
+
+
+	/* RTN15c3
+	 * Resume with loss of continuity
+	 */
+	testOnAllTransports(exports, 'resume_lost_continuity', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(realtimeOpts),
+			connection = realtime.connection,
+			attachedChannelName = 'resume_lost_continuity_attached',
+			suspendedChannelName = 'resume_lost_continuity_suspended',
+			attachedChannel = realtime.channels.get(attachedChannelName),
+			suspendedChannel = realtime.channels.get(suspendedChannelName);
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				suspendedChannel.state = 'suspended';
+				attachedChannel.attach(cb);
+			},
+			function(cb) {
+				/* Sabotage the resume */
+				connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____',
+				connection.connectionManager.connectionId = 'ablyjs_tes';
+				connection.once('disconnected', function() { cb(); });
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('connected', function(stateChange) {
+					test.equal(stateChange.reason && stateChange.reason.code, 80008, 'Unable to recover connection correctly set in the stateChange');
+					test.equal(attachedChannel.state, 'attaching', 'Attached channel went into attaching');
+					test.equal(suspendedChannel.state, 'attaching', 'Suspended channel went into attaching');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true /* Use a fixed transport as attaches are resent when the transport changes */);
+
+	/* RTN15c5
+	 * Resume with token error
+	 */
+	testOnAllTransports(exports, 'resume_token_error', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(mixin(realtimeOpts, {useTokenAuth: true})),
+			badtoken,
+			connection = realtime.connection;
+
+		test.expect(2);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				realtime.auth.requestToken({ttl: 1}, null, function(err, token) {
+					badtoken = token;
+					cb(err);
+				})
+			},
+			function(cb) {
+				/* Sabotage the resume - use a valid but now-expired token */
+				realtime.auth.tokenDetails.token = badtoken.token
+				connection.once(function(stateChange) {
+					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
+					cb();
+				});
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('connected', function(stateChange) {
+					test.ok(true, 'successfully reconnected after getting a new token');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true);
+
+	/* RTN15c4
+	 * Resume with fatal error
+	 */
+	testOnAllTransports(exports, 'resume_fatal_error', function(realtimeOpts) { return function(test) {
+		var realtime = helper.AblyRealtime(realtimeOpts),
+			connection = realtime.connection;
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				var keyName = realtime.auth.key.split(':')[0];
+				realtime.auth.key = keyName+ ':wrong';
+				connection.once(function(stateChange) {
+					test.ok(stateChange.current, 'disconnected', 'check connection disconnects first');
+					cb();
+				});
+				connection.connectionManager.disconnectAllTransports();
+			},
+			function(cb) {
+				connection.once('failed', function(stateChange) {
+					test.ok(true, 'check connection failed');
+					test.equal(stateChange.reason.code, 40101, 'check correct code propogated');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	}}, true);
+
+	/* RTL2f
+	 * Check channel resumed flag
+	 * TODO: enable once realtime supports this
+	 */
+	_exports.channel_resumed_flag = function(test) {
+		var realtime = helper.AblyRealtime(),
+			realtimeTwo,
+			recoveryKey,
+			connection = realtime.connection,
+			channelName = 'channel_resumed_flag',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(3);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach();
+				channel.once('attached', function(stateChange) {
+					test.equal(stateChange.resumed, false, 'Check channel not resumed when first attached');
+					recoveryKey = connection.recoveryKey;
+					cb();
+				});
+			},
+			function(cb) {
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtimeTwo = helper.AblyRealtime({recover: recoveryKey});
+				realtimeTwo.connection.once('connected', function(stateChange) {
+					if(stateChange.reason) {
+						test.ok(false, 'Error while recovering: ' + JSON.stringify(stateChange.reason));
+					}
+					cb();
+				});
+			},
+			function(cb) {
+				var channelTwo = realtimeTwo.channels.get(channelName);
+				channelTwo.attach();
+				channelTwo.once('attached', function(stateChange) {
+					test.equal(stateChange.resumed, true, 'Check resumed flag is true');
+					cb();
+				});
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
+
+	/*
+	 * Check the library doesn't try to resume once the connectionStateTtl has expired
+	 */
+	exports.no_resume_once_suspended = function(test) {
+		var realtime = helper.AblyRealtime(),
+			connection = realtime.connection,
+			channelName = 'no_resume_once_suspended';
+
+		test.expect(1);
+		async.series([
+			function(cb) {
+				connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				helper.becomeSuspended(realtime, cb);
+			},
+			function(cb) {
+				realtime.connection.connectionManager.tryATransport = function(transportParams) {
+					test.equal(transportParams.mode, 'clean', 'Check library didn’t try to resume');
+					cb();
+				};
+				connection.connect();
+			}
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });

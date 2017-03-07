@@ -2,7 +2,7 @@
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
-## Version: 0.8.42
+## Version: 0.9.0-beta.7
 
 This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
 
@@ -48,6 +48,19 @@ For the rest-only library:
 
 ```javascript
 var rest = Ably.Rest;
+```
+
+### For React Native
+
+For React Native, do not use this package. Instead use the [ably-react-native](https://github.com/ably/ably-js-react-native) package, which wraps ably-js and adds react-native-specific dependencies. See [that repo](https://github.com/ably/ably-js-react-native) for install instructions.
+
+### TypeScript support
+
+The TypeScript typings are included in the package and so all you have to do is:
+
+```javascript
+ import * as Ably from 'ably';
+ let realtime = new Ably.Realtime(options);
 ```
 
 ### Using WebPack
@@ -227,7 +240,7 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
 });
 
 // Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
-channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+channel.presence.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Symmetrical end-to-end encrypted payloads on a channel
@@ -238,7 +251,7 @@ When a 128 bit or 256 bit key is provided to the library, the `data` attributes 
 // Generate a random 256-bit key for demonstration purposes (in
 // practice you need to create one and distribute it to clients yourselves)
 Ably.Realtime.Crypto.generateRandomKey(function(err, key) {
-	var channel = client.channels.get('channelName', cipher: { key: key })
+	var channel = client.channels.get('channelName', { cipher: { key: key } })
 
 	channel.subscribe(function(message) {
 		message.name // 'name is not encrypted'
@@ -264,15 +277,15 @@ All examples assume a client and/or channel has been created as follows:
 
 ```javascript
 // basic auth with an API key
-var client = new Ably.Realtime(<key string>)
+var client = new Ably.Rest(<key string>)
 
 // using token auth
-var client = new Ably.Realtime(<token string>)
+var client = new Ably.Rest(<token string>)
 
 // using an Options object, see https://www.ably.io/documentation/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
-var client = new Ably.Realtime(<options>)
+var client = new Ably.Rest(<options>)
 ```
 
 Given:
@@ -374,7 +387,7 @@ request by a client using the `authCallback` or `authUrl` mechanisms):
 client.auth.createTokenRequest(function(err, tokenRequest) {
   // now send the tokenRequest back to the client, which will
   // use it to request a token and connect to Ably
-}
+});
 
 // createTokenRequest can take two optional params
 // tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
@@ -387,8 +400,8 @@ client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequ
 ```javascript
 client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
   statsPage.items                              // array of Stats
-  statsPage.items[0].data                      // payload for first message
-  statsPage.items.length                       // number of messages in the current page of history
+  statsPage.items[0].inbound.rest.messages.count; // total messages published over REST
+  statsPage.items.length;                      // number of stats in the current page of history
   statsPage.hasNext()                          // true if there are further pages
   statsPage.isLast()                           // true if this page is the last page
   statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
@@ -486,6 +499,10 @@ Please visit http://support.ably.io/ for access to our knowledgebase and to ask 
 You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
 
 To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
+
+#### Browser-specific issues
+
+* ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.io/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers)
 
 ## Contributing
 

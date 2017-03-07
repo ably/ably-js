@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
 		utils = helper.Utils,
@@ -244,21 +245,115 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.attach_timeout = function(test) {
-		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 3000}),
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 10, channelRetryTimeout: 10}),
 			channel = realtime.channels.get('failed_attach'),
-			originalOnMessage = channel.onMessage;
+			originalOnMessage = channel.onMessage.bind(channel);
 
 		channel.onMessage = function(message) {
 				if(message.action === 11) { return; }
 				originalOnMessage(message);
 			};
 
-		test.expect(3);
+		test.expect(4);
 		realtime.connection.once('connected', function() {
 			channel.attach(function(err) {
-				test.equal(err.code, 90000, 'check channel error code');
+				test.equal(err.code, 90007, 'check channel error code');
 				test.equal(err.statusCode, 408, 'check timeout statusCode');
-				test.equal(channel.state, 'detached', 'check channel reverts to being detached');
+				test.equal(channel.state, 'suspended', 'check channel goes into suspended state');
+				channel.once(function(stateChange) {
+					test.equal(stateChange.current, 'attaching', 'check channel tries to attach again');
+					closeAndFinish(test, realtime);
+				});
+			});
+		});
+	};
+
+	/* RTN7c
+	 * Publish a message, then before it receives an ack, disconnect the
+	 * transport, and let the connection go into some terminal failure state.
+	 * Check that the publish callback is called with an error.
+	 */
+	function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
+		return function(test) {
+			test.expect(3)
+			/* Use one transport because stubbing out transport#onProtocolMesage */
+			var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
+				channel = realtime.channels.get('nack_on_connection_failure');
+
+			async.series([
+				function(cb) { realtime.connection.once('connected', function() { cb(); }); },
+				function(cb) { channel.attach(cb); },
+				function(cb) {
+					var transport = realtime.connection.connectionManager.activeProtocol.transport,
+						originalOnProtocolMessage = transport.onProtocolMessage;
+
+					transport.onProtocolMessage = function(message) {
+						/* make sure we don't get an ack! */
+						if(message.action !== 1) {
+							originalOnProtocolMessage.apply(this, arguments);
+						}
+					};
+					channel.publish('foo', 'bar', function(err) {
+						test.ok(err, 'Publish failed as expected');
+						test.equal(realtime.connection.state, expectedRealtimeState, 'check realtime state is ' + expectedRealtimeState);
+						test.equal(err.code, expectedNackCode, 'Check error code was ' + expectedNackCode);
+						cb();
+					});
+					helper.Utils.nextTick(function() {
+						failureFn(realtime);
+					});
+				}
+			], function(err) {
+				if(err) test.ok(false, helper.displayError(err));
+				closeAndFinish(test, realtime);
+			});
+		};
+	}
+
+	exports.nack_on_connection_suspended = nack_on_connection_failure(
+		function(realtime) { helper.becomeSuspended(realtime); },
+		'suspended',
+		80002
+	);
+
+	exports.nack_on_connection_failed = nack_on_connection_failure(
+		function(realtime) {
+			realtime.connection.connectionManager.activeProtocol.transport.onProtocolMessage({
+				action: 9,
+				error: {statusCode: 401, code: 40100, message: "connection failed because reasons"}
+			});},
+		'failed',
+		40100
+	);
+
+	exports.nack_on_connection_closed = nack_on_connection_failure(
+		function(realtime) { realtime.close(); },
+		'closed',
+		80017
+	);
+
+	exports.idle_transport_timeout = function(test) {
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 100}),
+			originalOnProtocolMessage;
+
+		test.expect(3);
+
+		realtime.connection.connectionManager.on('transport.pending', function(transport) {
+			originalOnProtocolMessage = transport.onProtocolMessage;
+			transport.onProtocolMessage = function(message) {
+				if(message.action === 4) {
+					message.connectionDetails.maxIdleInterval = 100;
+				}
+				originalOnProtocolMessage.call(this, message);
+			};
+		});
+
+		realtime.connection.once('connected', function() {
+			realtime.connection.once(function(statechange) {
+				/* will go to connecting if there's another transport scheduled for activation */
+				test.ok(statechange.current === 'disconnected' || statechange.current === 'connecting', 'check connection goes to disconnected/connecting');
+				test.equal(statechange.reason.code, 80003, 'check code');
+				test.equal(statechange.reason.statusCode, 408, 'check statusCode');
 				closeAndFinish(test, realtime);
 			});
 		});

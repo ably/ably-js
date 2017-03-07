@@ -31,8 +31,9 @@ var JSONPTransport = (function() {
 	 * we just make sure that we handle concurrent requests (but the
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
+	window.JSONPTransport = JSONPTransport
 	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.js';
+		var upUrl = Defaults.jsonpInternetUpUrl;
 
 		if(checksInProgress) {
 			checksInProgress.push(callback);
@@ -55,11 +56,11 @@ var JSONPTransport = (function() {
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback(err); };
-		transport.on('failed', errorCb);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('failed', errorCb);
+			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -84,6 +85,11 @@ var JSONPTransport = (function() {
 		this.uri = uri;
 		this.params = params || {};
 		this.params.rnd = Utils.randStr();
+		if(headers) {
+			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
+			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
+			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
+		}
 		this.body = body;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
@@ -105,13 +111,19 @@ var JSONPTransport = (function() {
 			params.body = body;
 
 		var script = this.script = document.createElement('script');
-		script.src = uri + Utils.toQueryString(params);
+		var src = uri + Utils.toQueryString(params);
+		script.src = src;
+		if(script.src.split('/').slice(-1)[0] !== src.split('/').slice(-1)[0]) {
+			/* The src has been truncated. Can't abort, but can at least emit an
+			 * error so the user knows what's gone wrong. (Can't compare strings
+			 * directly as src may have a port, script.src won't) */
+			Logger.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
+		}
 		script.async = true;
 		script.type = 'text/javascript';
 		script.charset = 'UTF-8';
 		script.onerror = function(err) {
-			err.code = 80000;
-			self.complete(err);
+			self.complete(new ErrorInfo('JSONP script error (event: ' + Utils.inspect(err) + ')', null, 400));
 		};
 
 		_['_' + id] = function(message) {
@@ -119,13 +131,17 @@ var JSONPTransport = (function() {
 				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
 				var response = message.response;
 				if(message.statusCode == 204) {
-					self.complete();
+					self.complete(null, null, null, message.statusCode);
 				} else if(!response) {
-					self.complete(new ErrorInfo('Invalid server response: no envelope detected', 50000, 500));
-				} else if(message.statusCode < 400) {
-					self.complete(null, response, message.headers);
+					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
+				} else if(message.statusCode < 400 || Utils.isArray(response)) {
+					/* If response is an array, it's an array of protocol messages -- even if
+					 * it contains an error action (hence the nonsuccess statuscode), we can
+					 * consider the request to have succeeded, just pass it on to
+					 * onProtocolMessage to decide what to do */
+					self.complete(null, response, message.headers, message.statusCode);
 				} else {
-					var err = response.error || new ErrorInfo('Error response received from server', 50000, message.statusCode);
+					var err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
 					self.complete(err);
 				}
 			} else {
@@ -139,7 +155,7 @@ var JSONPTransport = (function() {
 		head.insertBefore(script, head.firstChild);
 	};
 
-	Request.prototype.complete = function(err, body, headers) {
+	Request.prototype.complete = function(err, body, headers, statusCode) {
 		headers = headers || {};
 		if(!this.requestComplete) {
 			this.requestComplete = true;
@@ -150,7 +166,7 @@ var JSONPTransport = (function() {
 				this.emit('data', body);
 			}
 
-			this.emit('complete', err, body, headers, /* unpacked: */ true);
+			this.emit('complete', err, body, headers, /* unpacked: */ true, statusCode);
 			this.dispose();
 		}
 	};
@@ -171,14 +187,16 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	Http.Request = function(rest, uri, headers, params, body, callback) {
-		var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
-		req.once('complete', callback);
-		Utils.nextTick(function() {
-			req.exec();
-		});
-		return req;
-	};
+	if(!Http.Request) {
+		Http.Request = function(rest, uri, headers, params, body, callback) {
+			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
+			req.once('complete', callback);
+			Utils.nextTick(function() {
+				req.exec();
+			});
+			return req;
+		};
+	}
 
 	return JSONPTransport;
 })();

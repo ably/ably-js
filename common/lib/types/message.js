@@ -1,5 +1,5 @@
 var Message = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function Message() {
 		this.name = undefined;
@@ -10,6 +10,7 @@ var Message = (function() {
 		this.connectionKey = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
+		this.extras = undefined;
 	}
 
 	/**
@@ -22,7 +23,8 @@ var Message = (function() {
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			connectionKey: this.connectionKey,
-			encoding: this.encoding
+			encoding: this.encoding,
+			extras: this.extras
 		};
 
 		/* encode data to base64 if present and we're returning real JSON;
@@ -59,6 +61,8 @@ var Message = (function() {
 			result += '; connectionId=' + this.connectionId;
 		if(this.encoding)
 			result += '; encoding=' + this.encoding;
+		if(this.extras)
+			result += '; extras =' + JSON.stringify(this.extras);
 		if(this.data) {
 			if (typeof(data) == 'string')
 				result += '; data=' + this.data;
@@ -71,7 +75,7 @@ var Message = (function() {
 		return result;
 	};
 
-	Message.encrypt = function(msg, options) {
+	Message.encrypt = function(msg, options, callback) {
 		var data = msg.data,
 			encoding = msg.encoding,
 			cipher = options.channelCipher;
@@ -81,11 +85,18 @@ var Message = (function() {
 			data = BufferUtils.utf8Encode(String(data));
 			encoding = encoding + 'utf-8/';
 		}
-		msg.data = cipher.encrypt(data);
-		msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+		cipher.encrypt(data, function(err, data) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			msg.data = data;
+			msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+			callback(null, msg);
+		});
 	};
 
-	Message.encode = function(msg, options) {
+	Message.encode = function(msg, options, callback) {
 		var data = msg.data, encoding,
 			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
@@ -98,15 +109,37 @@ var Message = (function() {
 			}
 		}
 
-		if(options != null && options.cipher)
-			Message.encrypt(msg, options);
+		if(options != null && options.cipher) {
+			Message.encrypt(msg, options, callback);
+		} else {
+			callback(null, msg);
+		}
 	};
 
-	Message.toRequestBody = function(messages, options, format) {
-		for (var i = 0; i < messages.length; i++)
-			Message.encode(messages[i], options);
+	Message.encodeArray = function(messages, options, callback) {
+		var processed = 0;
+		for (var i = 0; i < messages.length; i++) {
+			Message.encode(messages[i], options, function(err, msg) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				processed++;
+				if (processed == messages.length) {
+					callback(null, messages);
+				}
+			});
+		}
+	};
 
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
+	Message.toRequestBody = function(messages, options, format, callback) {
+		Message.encodeArray(messages, options, function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			callback(null, (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages));
+		});
 	};
 
 	Message.decode = function(message, options) {
@@ -157,24 +190,19 @@ var Message = (function() {
 		}
 	};
 
-	Message.fromResponseBody = function(body, options, format, channel) {
+	Message.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = Message.fromDecoded(body[i]);
+			var msg = body[i] = Message.fromValues(body[i]);
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;
-	};
-
-	Message.fromDecoded = function(values) {
-		return Utils.mixin(new Message(), values);
 	};
 
 	Message.fromValues = function(values) {
@@ -185,6 +213,24 @@ var Message = (function() {
 		var count = values.length, result = new Array(count);
 		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
 		return result;
+	};
+
+	Message.fromEncoded = function(encoded, options) {
+		var msg = Message.fromValues(encoded);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			Message.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	Message.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return Message.fromEncoded(encoded, options);
+		});
 	};
 
 	return Message;

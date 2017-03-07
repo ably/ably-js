@@ -19,7 +19,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var rest = helper.AblyRest();
+			var rest = helper.AblyRest({ queryTime: true });
 			rest.time(function(err, time) {
 				if(err) {
 					test.ok(false, helper.displayError(err));
@@ -212,7 +212,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var realtime, rest = helper.AblyRest();
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(null, tokenParams, function(err, tokenDetails) {
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 				if(err) {
 					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
@@ -290,14 +290,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
 			clientRealtime.connection.once('failed', function(stateChange){
-				test.ok(true, 'Verify connection failed');
-				test.equal(stateChange.reason.code, 40102);
-				clientRealtime.close();
-				test.done();
-			});
-			// Workaround for ably-js issue 101 (comet transport goes into disconnected
-			// rather than failed). TODO remove next 5 lines when that's fixed
-			clientRealtime.connection.once('disconnected', function(stateChange){
 				test.ok(true, 'Verify connection failed');
 				test.equal(stateChange.reason.code, 40102);
 				clientRealtime.close();
@@ -383,6 +375,62 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RSA4c, RSA4e
+	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
+	 */
+	function authCallback_failures(realtimeOptions) {
+		return function(test) {
+			test.expect(2);
+
+			var realtime = helper.AblyRealtime(realtimeOptions);
+			realtime.connection.on(function(stateChange) {
+				if(stateChange.previous !== 'initialized') {
+					test.equal(stateChange.current, 'disconnected', 'Check connection goes to disconnected, not failed');
+					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
+					realtime.connection.off();
+					closeAndFinish(test, realtime);
+				}
+			});
+		};
+	}
+
+	exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(new Error("An error from client code that the authCallback might return"));
+	}});
+
+	exports.authCallback_timeout = authCallback_failures({
+		authCallback: function() { /* (^._.^)ﾉ */ },
+		realtimeRequestTimeout: 100});
+
+	exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback();
+	}});
+
+	exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(null, { horse: 'ebooks' });
+	}});
+
+	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
+		var token = '';
+		for(var i=0; i<390; i++) {
+			token = token + 'a';
+		}
+		callback(null, token);
+	}});
+
+	exports.authUrl_timeout = authCallback_failures({
+		authUrl: helper.unroutableAddress,
+		realtimeRequestTimeout: 100
+	});
+
+	exports.authUrl_404 = authCallback_failures({
+		authUrl: 'http://example.com/404'
+	});
+
+	exports.authUrl_wrong_content_type = authCallback_failures({
+		authUrl: 'http://example.com/'
+	});
+
 	/*
 	 * Check state change reason is propogated during a disconnect
 	 * (when connecting with a token that expires while connected)
@@ -392,7 +440,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var clientRealtime,
 			rest = helper.AblyRest();
 
-		rest.auth.requestToken({ ttl: 5000 }, { queryTime: true }, function(err, tokenDetails) {
+		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				test.done();
@@ -425,7 +473,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_query_time_once = function(test) {
 		test.expect(12);
 
-		var rest = helper.AblyRest(),
+		var rest = helper.AblyRest({ queryTime: true }),
 			timeRequestCount = 0,
 			offset = 1000,
 			originalTime = rest.time;
@@ -441,7 +489,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var asyncFns = [];
 		for(var i = 0; i < 10; i++) {
 			asyncFns.push(function(callback) {
-				rest.auth.createTokenRequest({}, { queryTime: true }, function(err, tokenDetails) {
+				rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
 					if(err) { return callback(err); }
 					test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
 					callback();
@@ -610,68 +658,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/*
-	 * use authorise({force: true}) to reauth with a token with a different set of capabilities
-	 */
-	testOnAllTransports(exports, 'reauth_tokendetails', function(realtimeOpts) { return function(test) {
-		test.expect(2);
-		var rest = helper.AblyRest(),
-			realtime,
-			channel,
-			clientId = 'testClientId';
-
-		var getFirstToken = function(callback) {
-			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*']}}, null, function(err, tokenDetails) {
-				callback(err, tokenDetails);
-			});
-		},
-
-		connect = function(tokenDetails, callback) {
-			realtime = helper.AblyRealtime(mixin(realtimeOpts, {tokenDetails: tokenDetails}));
-			realtime.connection.once('connected', function() { callback() });
-		},
-
-		checkCantAttach = function(callback) {
-			channel = realtime.channels.get('rightchannel');
-			channel.attach(function(err) {
-				test.ok(err && err.code === 40160, 'check channel is denied access')
-				callback();
-			});
-		},
-
-		getSecondToken = function(callback) {
-			rest.auth.requestToken({clientId: clientId, capability: {'wrongchannel': ['*'], 'rightchannel': ['*']}}, null, function(err, tokenDetails) {
-				callback(err, tokenDetails);
-			});
-		},
-
-		reAuth = function(tokenDetails, callback) {
-			realtime.auth.authorise(null, {force: true, tokenDetails: tokenDetails}, callback);
-		},
-
-		checkCanNowAttach = function(stateChange, callback) {
-			channel.attach(function(err) {
-				callback(err);
-			});
-		};
-
-		async.waterfall([
-			getFirstToken,
-			connect,
-			checkCantAttach,
-			getSecondToken,
-			reAuth,
-			checkCanNowAttach,
-		], function(err) {
-			test.ok(!err, err && displayError(err));
-			closeAndFinish(test, realtime);
-		});
-	}});
-
-	/*
-	 * use authorise({force: true}) to force a reauth using an existing authCallback
+	 * use authorize() to force a reauth using an existing authCallback
 	 */
 	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
-		test.expect(8);
+		test.expect(5);
 		var realtime, rest = helper.AblyRest();
 		var firstTime = true;
 		var authCallback = function(tokenParams, callback) {
@@ -697,28 +687,77 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(err.code, 40160, 'Check expected error code');
 
 				/* soon after connected, reauth */
-				realtime.auth.authorise(null, {force: true}, function(err) {
+				realtime.auth.authorize(null, null, function(err) {
 					test.ok(!err, err && displayError(err));
-				});
-
-				/* statechanges due to the reauth */
-				realtime.connection.once('disconnected', function(stateChange){
-					test.ok(true, 'Verify connection disconnected');
-					test.equal(stateChange.reason.code, 80003, 'Verify disconnect was client-initiated, not server-initiated (ie 40142)');
-					realtime.connection.once('connected', function(){
-						test.ok(true, 'Verify connection reconnected');
-
-						channel.attach(function(err) {
-							test.ok(!err, 'Check using second token, with channel attach capability');
-							closeAndFinish(test, realtime);
-						});
+					channel.attach(function(err) {
+						test.ok(!err, 'Check using second token, with channel attach capability');
+						closeAndFinish(test, realtime);
 					});
-				})
+				});
 			});
 		});
-
 		monitorConnection(test, realtime);
 	}});
+
+	/* RSA10j */
+	exports.authorize_updates_stored_details = function(test) {
+		test.expect(8);
+		var realtime = helper.AblyRealtime({autoConnect: false, defaultTokenParams: {version: 1}, token: '1', authUrl: '1'});
+
+		test.equal(realtime.auth.tokenParams.version, 1, 'Check initial defaultTokenParams stored');
+		test.equal(realtime.auth.tokenDetails.token, '1', 'Check initial token stored');
+		test.equal(realtime.auth.authOptions.authUrl, '1', 'Check initial authUrl stored');
+		realtime.auth.authorize({version: 2}, {authUrl: '2', token: '2'});
+		test.equal(realtime.auth.tokenParams.version, 2, 'Check authorize updated the stored tokenParams');
+		test.equal(realtime.auth.tokenDetails.token, '2', 'Check authorize updated the stored tokenDetails');
+		test.equal(realtime.auth.authOptions.authUrl, '2', 'Check authorize updated the stored authOptions');
+		realtime.auth.authorize(null, {token: '3'});
+		test.equal(realtime.auth.authOptions.authUrl, undefined, 'Check authorize completely replaces stored authOptions with passed in ones');
+
+		/* TODO remove for lib version 1.0 */
+		realtime.auth.authorize(null, {authUrl: 'http://invalid'});
+		realtime.auth.authorize(null, {force: true});
+		test.equal(realtime.auth.authOptions.authUrl, 'http://invalid', 'Check authorize does *not* replace stored authOptions when the only option is "force" in 0.9, for compatibility with 0.8');
+
+		closeAndFinish(test, realtime);
+	};
+
+	/* RTN22
+	 * Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
+	 */
+	exports.mocked_reauth = function(test) {
+		test.expect(4);
+		var rest = helper.AblyRest(),
+			authCallback = function(tokenParams, callback) {
+				test.ok(true, 'Requested a token (should happen twice)');
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						test.ok(false, displayError(err));
+						closeAndFinish(test, realtime);
+						return;
+					}
+					callback(null, tokenDetails);
+				});
+			},
+			realtime = helper.AblyRealtime({authCallback: authCallback, transports: [helper.bestTransport]});
+
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			var transport = realtime.connection.connectionManager.activeProtocol.transport,
+				originalSend = transport.send;
+			/* Spy on transport.send to detect the outgoing AUTH */
+			transport.send = function(message) {
+				if(message.action === 17) {
+					test.ok(message.auth.accessToken, 'Check AUTH message structure is as expected');
+					closeAndFinish(test, realtime);
+				} else {
+					originalSend.call(this, message);
+				}
+			};
+			/* Inject a fake AUTH from realtime */
+			transport.onProtocolMessage({action: 17});
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });

@@ -1,5 +1,5 @@
 var PresenceMessage = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
@@ -41,7 +41,6 @@ var PresenceMessage = (function() {
 			index: parseInt(parts[2], 10)
 		};
 	};
-
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
@@ -102,31 +101,26 @@ var PresenceMessage = (function() {
 	PresenceMessage.encode = Message.encode;
 	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format, channel) {
+	PresenceMessage.fromResponseBody = function(body, options, format) {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = PresenceMessage.fromDecoded(body[i]);
+			var msg = body[i] = PresenceMessage.fromValues(body[i], true);
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
-				channel && channel.emit('error', e);
 			}
 		}
 		return body;
 	};
 
-	/* Creates a PresenceMessage from values obtained from an Ably protocol
-	* message; in particular, with a numeric presence action */
-	PresenceMessage.fromDecoded = function(values) {
-		values.action = PresenceMessage.Actions[values.action]
-		return Utils.mixin(new PresenceMessage(), values);
-	};
-
 	/* Creates a PresenceMessage from specified values, with a string presence action */
-	PresenceMessage.fromValues = function(values) {
+	PresenceMessage.fromValues = function(values, stringifyAction) {
+		if(stringifyAction) {
+			values.action = PresenceMessage.Actions[values.action]
+		}
 		return Utils.mixin(new PresenceMessage(), values);
 	};
 
@@ -134,6 +128,24 @@ var PresenceMessage = (function() {
 		var count = values.length, result = new Array(count);
 		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
 		return result;
+	};
+
+	PresenceMessage.fromEncoded = function(encoded, options) {
+		var msg = PresenceMessage.fromValues(encoded, true);
+		/* if decoding fails at any point, catch and return the message decoded to
+		 * the fullest extent possible */
+		try {
+			PresenceMessage.decode(msg, options);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
+		}
+		return msg;
+	};
+
+	PresenceMessage.fromEncodedArray = function(encodedArray, options) {
+		return Utils.arrMap(encodedArray, function(encoded) {
+			return PresenceMessage.fromEncoded(encoded, options);
+		});
 	};
 
 	return PresenceMessage;

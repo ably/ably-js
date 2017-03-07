@@ -1,22 +1,22 @@
 var Auth = (function() {
-	var isBrowser = (typeof(window) == 'object');
-	var crypto = isBrowser ? null : require('crypto');
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
+	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
+	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 
 	var hmac, toBase64;
-	if(isBrowser) {
+	if(Platform.createHmac) {
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+		hmac = function(text, key) {
+			var inst = Platform.createHmac('SHA256', key);
+			inst.update(text);
+			return inst.digest('base64');
+		};
+	} else {
 		toBase64 = Base64.encode;
 		hmac = function(text, key) {
 			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
-		};
-	} else {
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
-		hmac = function(text, key) {
-			var inst = crypto.createHmac('SHA256', key);
-			inst.update(text);
-			return inst.digest('base64');
 		};
 	}
 
@@ -36,18 +36,6 @@ var Auth = (function() {
 			c14nCapability[keys[i]] = capability[keys[i]].sort();
 		}
 		return JSON.stringify(c14nCapability);
-	}
-
-	/* RSA10j/d */
-	function persistAuthOptions(options) {
-		for(var prop in options) {
-			if(!(prop === 'force'       ||
-			     options[prop] === null ||
-			     options[prop] === undefined)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	function logAndValidateTokenAuthMethod(authOptions) {
@@ -109,10 +97,9 @@ var Auth = (function() {
 	}
 
 	/**
-	 * Instructs the library to use token auth, storing the tokenParams and
-	 * authOptions given as the new defaults for subsequent use.
-	 * Ensures a valid token is present, requesting one if necessary or if
-	 * explicitly requested.
+	 * Instructs the library to get a token immediately and ensures Token Auth
+	 * is used for all future requests, storing the tokenParams and authOptions
+	 * given as the new defaults for subsequent use.
 	 *
 	 * @param tokenParams
 	 * an object containing the parameters for the requested token:
@@ -136,9 +123,6 @@ var Auth = (function() {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * - force       (optional) boolean indicating that a new token should be requested,
-	 *               even if a current token is still valid.
 	 *
 	 * - tokenDetails: (optional) object: An authenticated TokenDetails object.
 	 *
@@ -166,7 +150,7 @@ var Auth = (function() {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	Auth.prototype.authorise = function(tokenParams, authOptions, callback) {
+	Auth.prototype.authorize = function(tokenParams, authOptions, callback) {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -178,31 +162,67 @@ var Auth = (function() {
 		callback = callback || noop;
 		var self = this;
 
-		/* RSA10a: authorise() call implies token auth. If a key is passed it, we
+		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
 		 * just check if it doesn't clash and assume we're generating a token from it */
 		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
 			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
-		this._saveTokenOptions(tokenParams, authOptions);
+
+		if(authOptions && ('force' in authOptions)) {
+			Logger.logAction(Logger.LOG_ERROR, 'Auth.authorize', 'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want');
+			/* Emulate the old behaviour: if 'force' was the only member of authOptions,
+			 * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */
+			if(Utils.isOnlyPropIn(authOptions, 'force')) {
+				authOptions = null;
+			}
+		}
+
+		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
+			if(err) {
+				callback(err);
+				return;
+			}
+			/* RTC8
+			 * - When authorize called by an end user and have a realtime connection,
+			 * don't call back till new token has taken effect.
+			 * - Use self.client.connection as a proxy for (self.client instanceof Realtime),
+			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
+			if(self.client.connection) {
+				self.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback);
+			} else {
+				callback(null, tokenDetails);
+			}
+		})
+	};
+
+	Auth.prototype.authorise = function() {
+		Logger.deprecated('Auth.authorise', 'Auth.authorize');
+		this.authorize.apply(this, arguments);
+	};
+
+	/* For internal use, eg by connectionManager - useful when want to call back
+	 * as soon as we have the new token, rather than waiting for it to take
+	 * effect on the connection as #authorize does */
+	Auth.prototype._forceNewToken = function(tokenParams, authOptions, callback) {
+		var self = this;
+
+		/* get rid of current token even if still valid */
+		this.tokenDetails = null;
 
 		/* _save normalises the tokenParams and authOptions and updates the auth
 		 * object. All subsequent operations should use the values on `this`,
 		 * not the passed in ones. */
+		this._saveTokenOptions(tokenParams, authOptions);
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
 		this._ensureValidAuthCredentials(function(err, tokenDetails) {
 			/* RSA10g */
-			self.tokenParams.timestamp = null;
-			/* RTC8
-			 * use self.client.connection as a proxy for (self.client instanceof Realtime),
-			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
-			if(self.force && !err && self.client.connection) {
-				self.client.connection.connectionManager.onAuthUpdated();
-			}
+			delete self.tokenParams.timestamp;
+			delete self.authOptions.queryTime;
 			callback(err, tokenDetails);
 		});
-	};
+	}
 
 	/**
 	 * Request an access token
@@ -261,8 +281,8 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		/* merge supplied options with the already-known options */
-		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
+		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
+		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
 		var format = authOptions.format || 'json';
@@ -285,7 +305,7 @@ var Auth = (function() {
 				}
 			}
 			tokenRequestCallback = function(params, cb) {
-				var authHeaders = Utils.mixin({accept: 'application/json'}, authOptions.authHeaders),
+				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
 						authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
@@ -295,11 +315,26 @@ var Auth = (function() {
 					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
-					if(headers['content-type'] && headers['content-type'].indexOf('application/json') > -1) {
+					var contentType = headers['content-type'];
+					if(!contentType) {
+						cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401));
+						return;
+					}
+					var json = contentType.indexOf('application/json') > -1,
+						text = contentType.indexOf('text/plain') > -1;
+					if(!json && !text) {
+						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain or application/json', 40170, 401));
+						return;
+					}
+					if(json) {
+						if(body.length > MAX_TOKENOBJECT_LENGTH) {
+							cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401));
+							return;
+						}
 						try {
 							body = JSON.parse(body);
 						} catch(e) {
-							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40000, 400));
+							cb(new ErrorInfo('Unexpected error processing authURL response; err = ' + e.message, 40170, 401));
 							return;
 						}
 					}
@@ -350,23 +385,59 @@ var Auth = (function() {
 				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
 			}
 		};
+
+		var tokenRequestCallbackTimeoutExpired = false,
+			timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
+			tokenRequestCallbackTimeout = setTimeout(function() {
+				tokenRequestCallbackTimeoutExpired = true;
+				var msg = 'Token request callback timed out after ' + (timeoutLength / 1000) + ' seconds';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
+			}, timeoutLength);
+
 		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
+			if(tokenRequestCallbackTimeoutExpired) return;
+			clearTimeout(tokenRequestCallbackTimeout);
+
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
-				if(!('code' in err))
-					err.code = 40170;
-				if(!('statusCode' in err))
-					err.statusCode = 401;
+				if(!(err && err.code)) {
+					/* network errors don't have an error code, so assign them
+					 * 40170 so they'll by connectionManager as nonfatal */
+					err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
+				}
 				callback(err);
 				return;
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
 			if(typeof(tokenRequestOrDetails) === 'string') {
-				callback(null, {token: tokenRequestOrDetails});
+				if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
+				} else {
+					callback(null, {token: tokenRequestOrDetails});
+				}
+				return;
+			}
+			if(typeof(tokenRequestOrDetails) !== 'object') {
+				var msg = 'Expected token request callback to call back with a token string or token request/details object, but got a ' + typeof(tokenRequestOrDetails);
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
+				return;
+			}
+			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
+			if(objectSize > MAX_TOKENOBJECT_LENGTH) {
+				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
 			if('issued' in tokenRequestOrDetails) {
+				/* a tokenDetails object */
 				callback(null, tokenRequestOrDetails);
+				return;
+			}
+			if(!('keyName' in tokenRequestOrDetails)) {
+				var msg = 'Expected token request callback to call back with a token string, token request object, or token details object';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+				callback(new ErrorInfo(msg, 40170, 401));
 				return;
 			}
 			/* it's a token request, so make the request */
@@ -427,7 +498,8 @@ var Auth = (function() {
 			authOptions = null;
 		}
 
-		authOptions = Utils.mixin(Utils.copy(this.authOptions), authOptions);
+		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
+		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 
 		var key = authOptions.key;
@@ -504,12 +576,12 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this.authorise(null, null, function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
 				}
-				callback(null, {access_token:tokenDetails.token});
+				callback(null, {access_token: tokenDetails.token});
 			});
 	};
 
@@ -521,7 +593,7 @@ var Auth = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this.authorise(null, null, function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -557,7 +629,6 @@ var Auth = (function() {
 		this.key = authOptions.key;
 		this.basicKey = toBase64(authOptions.key);
 		this.authOptions = authOptions || {};
-		this.authOptions.force = false;
 		if('clientId' in authOptions) {
 			this._userSetClientId(authOptions.clientId);
 		}
@@ -566,40 +637,29 @@ var Auth = (function() {
 	Auth.prototype._saveTokenOptions = function(tokenParams, authOptions) {
 		this.method = 'token';
 
-		/* We temporarily persist tokenParams.timestamp in case a new token needs
-		 * to be requested, then null it out in the callback of
-		 * _ensureValidAuthCredentials for RSA10g compliance */
-		this.tokenParams = tokenParams || this.tokenParams || {};
+		if(tokenParams) {
+			/* We temporarily persist tokenParams.timestamp in case a new token needs
+			 * to be requested, then null it out in the callback of
+			 * _ensureValidAuthCredentials for RSA10g compliance */
+			this.tokenParams = tokenParams;
+		}
 
-		/* If an authOptions object is passed in that contains new auth info (ie
-		* isn't just {force: true} or something), it becomes the new default, with
-		* the exception of the force attribute (RSA10g), which is set anew on each
-		* call to authorise (defaulting to false) */
-		this.force = false;
 		if(authOptions) {
-			this.force = authOptions.force;
-
-			if(this.force) {
-				/* get rid of current token even if still valid */
-				this.tokenDetails = null;
+			/* normalise */
+			if(authOptions.token) {
+				/* options.token may contain a token string or, for convenience, a TokenDetails */
+				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
 			}
 
-			if(persistAuthOptions(authOptions)) {
-				this.authOptions = authOptions;
-				this.authOptions.force = false;
-
-				if(authOptions.token) {
-					/* options.token may contain a token string or, for convenience, a TokenDetails */
-					this.authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
-				}
-				if(authOptions.tokenDetails) {
-					this.tokenDetails = authOptions.tokenDetails;
-				}
-
-				if('clientId' in authOptions) {
-					this._userSetClientId(authOptions.clientId);
-				}
+			if(authOptions.tokenDetails) {
+				this.tokenDetails = authOptions.tokenDetails;
 			}
+
+			if('clientId' in authOptions) {
+				this._userSetClientId(authOptions.clientId);
+			}
+
+			this.authOptions = authOptions;
 		}
 	};
 
@@ -648,7 +708,7 @@ var Auth = (function() {
 		if(!(typeof(clientId) === 'string' || clientId === null)) {
 			throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
 		} else if(clientId === '*') {
-			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorise(), pass it in as a tokenParam: authorise({clientId: "*"}, authOptions)', 40012, 400);
+			throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)', 40012, 400);
 		} else {
 			var err = this._uncheckedSetClientId(clientId);
 			if(err) throw err;

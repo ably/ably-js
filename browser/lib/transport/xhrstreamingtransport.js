@@ -11,7 +11,7 @@ var XHRStreamingTransport = (function() {
 	XHRStreamingTransport.isAvailable = XHRRequest.isAvailable;
 
 	XHRStreamingTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		var upUrl = Defaults.internetUpUrl;
 		Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Sending; ' + upUrl);
 		Http.Request(null, upUrl, null, null, null, function(err, responseText) {
 			var result = (!err && responseText.replace(/\n/, '') == 'yes');
@@ -22,11 +22,11 @@ var XHRStreamingTransport = (function() {
 
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRStreamingTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback(err); };
-		transport.on('failed', errorCb);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'XHRStreamingTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('failed', errorCb);
+			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
 		transport.connect();

@@ -26,6 +26,7 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.idleTimer = null;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
@@ -38,15 +39,21 @@ var Transport = (function() {
 		this.finish('closed', ConnectionError.closed);
 	};
 
-	Transport.prototype.abort = function(error) {
+	Transport.prototype.disconnect = function(err) {
+		/* Used for network/transport issues that need to result in the transport
+		 * being disconnected, but should not affect the connection */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('failed', error);
+		this.finish('disconnected', err || ConnectionError.disconnected);
 	};
 
-	Transport.prototype.disconnect = function(err) {
-		this.finish('disconnected', err || ConnectionError.disconnected);
+	Transport.prototype.fail = function(err) {
+		/* Used for client-side-detected fatal connection issues */
+		if(this.isConnected) {
+			this.requestDisconnect();
+		}
+		this.finish('failed', err || ConnectionError.failed);
 	};
 
 	Transport.prototype.finish = function(event, err) {
@@ -56,6 +63,8 @@ var Transport = (function() {
 
 		this.isFinished = true;
 		this.isConnected = false;
+		this.timeoutOnIdle = false;
+		clearTimeout(this.idleTimer);
 		this.emit(event, err);
 		this.dispose();
 	};
@@ -64,11 +73,14 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
+		if(this.timeoutOnIdle) {
+			this.resetIdleTimeout();
+		}
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
-			this.emit('heartbeat');
+			this.emit('heartbeat', message.id);
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
@@ -95,13 +107,17 @@ var Transport = (function() {
 			/* otherwise it's a channel SYNC, so handle it in the channel */
 			this.connectionManager.onChannelMessage(message, this);
 			break;
+		case actions.AUTH:
+			this.auth.authorize(function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
+				}
+			});
+			break;
 		case actions.ERROR:
-			var msgErr = message.error;
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + JSON.stringify(msgErr) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
-				/* a transport error */
-				var err = ErrorInfo.fromValues(msgErr);
-				this.abort(err);
+				this.onFatalError(message);
 				break;
 			}
 			/* otherwise it's a channel-specific error, so handle it in the channel */
@@ -114,26 +130,34 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onConnect = function(message) {
-		/* if there was a (non-fatal) connection error
-		 * that invalidates an existing connection id, then
-		 * remove all channels attached to the previous id */
-		var connectionKey = message.connectionKey,
-			connectionId = message.connectionId,
-			error = message.error,
-			connectionManager = this.connectionManager;
-
-		if(error && connectionId !== connectionManager.connectionId) {
-			connectionManager.realtime.channels.setSuspended(error);
-		}
-
-		this.connectionKey = connectionKey;
 		this.isConnected = true;
+		if(message.connectionDetails.maxIdleInterval === 0) {
+			/* Realtime declines to guarantee any maximum idle interval - CD2h */
+			this.timeoutOnIdle = false;
+		} else {
+			/* TODO remove "|| 15000" once realtime starts sending this */
+			this.maxIdleInterval = message.connectionDetails.maxIdleInterval || 15000;
+		}
+		if(this.timeoutOnIdle) {
+			this.resetIdleTimeout();
+		}
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
+		/* Used for when the server has disconnected the client (usually with a
+		 * DISCONNECTED action) */
 		var err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.finish('disconnected', err);
+	};
+
+	Transport.prototype.onFatalError = function(message) {
+		/* On receipt of a fatal connection error, we can assume that the server
+		 * will close the connection and the transport, and do not need to request
+		 * a disconnection - RTN15i */
+		var err = message && message.error;
+		Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
+		this.finish('failed', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
@@ -144,22 +168,39 @@ var Transport = (function() {
 
 	Transport.prototype.requestClose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
-		this.send(closeMessage, noop);
+		this.send(closeMessage);
 	};
 
 	Transport.prototype.requestDisconnect = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
-		this.send(disconnectMessage, noop);
+		this.send(disconnectMessage);
 	};
 
-	Transport.prototype.ping = function(callback) {
-		this.send(ProtocolMessage.fromValues({action: ProtocolMessage.Action.HEARTBEAT}), callback || noop);
+	Transport.prototype.ping = function(id) {
+		var msg = {action: ProtocolMessage.Action.HEARTBEAT};
+		if(id) msg.id = id;
+		this.send(ProtocolMessage.fromValues(msg));
 	};
 
 	Transport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.off();
 	};
+
+	Transport.prototype.resetIdleTimeout = function() {
+		var self = this,
+			timeout = this.maxIdleInterval + this.timeouts.realtimeRequestTimeout;
+
+		clearTimeout(this.idleTimer);
+
+		this.idleTimer = setTimeout(function() {
+			var msg = 'No activity seen from realtime in ' + timeout + 'ms; assuming connection has dropped';
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.resetIdleTimeout()', msg);
+			self.disconnect(new ErrorInfo(msg, 80003, 408));
+		}, timeout);
+	};
+
+	Transport.prototype.onAuthUpdated = function() {};
 
 	return Transport;
 })();

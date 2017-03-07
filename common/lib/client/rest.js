@@ -17,10 +17,6 @@ var Rest = (function() {
 		}
 		this.options = Defaults.normaliseOptions(options);
 
-		/* use binary protocol only if it is supported and explicitly requested */
-		if(!BufferUtils.supportsBinary || this.options.useBinaryProtocol !== true)
-			this.options.useBinaryProtocol = false;
-
 		/* process options */
 		if(options.key) {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
@@ -106,6 +102,38 @@ var Rest = (function() {
 			self.serverTimeOffset = (time - Utils.now());
 			callback(null, time);
 		});
+	};
+
+	Rest.prototype.request = function(method, path, params, body, customHeaders, callback) {
+		var format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+			method = method.toLowerCase(),
+			envelope = Http.supportsLinkHeaders ? undefined : 'json',
+			params = params || {},
+			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders() : Utils.defaultPostHeaders(format));
+
+		if(typeof body !== 'string') {
+			body = JSON.stringify(body);
+		}
+		if(this.options.headers) {
+			Utils.mixin(headers, this.options.headers);
+		}
+		if(customHeaders) {
+			Utils.mixin(headers, customHeaders);
+		}
+		var paginatedResource = new PaginatedResource(this, path, headers, envelope, function(resbody, headers, unpacked) {
+			return Utils.ensureArray(unpacked ? resbody : JSON.parse(resbody));
+		}, /* useHttpPaginatedResponse: */ true);
+
+		switch(method) {
+			case 'get':
+				paginatedResource.get(params, callback);
+				break;
+			case 'post':
+				paginatedResource.post(params, body, callback);
+				break;
+			default:
+				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
+		}
 	};
 
 	function Channels(rest) {

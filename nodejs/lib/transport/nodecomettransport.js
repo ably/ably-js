@@ -24,7 +24,7 @@ var NodeCometTransport = (function() {
 	ConnectionManager.supportedTransports[shortName] = NodeCometTransport;
 
 	NodeCometTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrlWithoutExtension + '.txt';
+		var upUrl = Defaults.internetUpUrl;
 		/* NodeCometTransport unsuited to rest requests; just use node http package */
 		Http.getUri(null, upUrl, null, null, function(err, responseText) {
 			callback(null, (!err && responseText.toString().trim() === 'yes'));
@@ -33,11 +33,11 @@ var NodeCometTransport = (function() {
 
 	NodeCometTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new NodeCometTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback(err); };
-		transport.on('failed', errorCb);
+		var errorCb = function(err) { callback({event: this.event, error: err}); };
+		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.tryConnect()', 'viable transport ' + transport);
-			transport.off('failed', errorCb);
+			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
 		transport.connect();
@@ -195,10 +195,8 @@ var NodeCometTransport = (function() {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
 				var msg = 'Malformed response body from server: ' + e.message;
-				var err = new Error(msg);
 				Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
-				err.statusCode = 400;
-				self.complete(err);
+				self.complete(new ErrorInfo(msg, null, 400));
 				return;
 			}
 			self.emit('data', chunk);
@@ -251,25 +249,26 @@ var NodeCometTransport = (function() {
 					body = JSON.parse(String(body));
 				} catch(e) {
 					var msg = 'Malformed response body from server: ' + e.message;
-					var err = new Error(msg);
 					Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
-					err.statusCode = 400;
-					self.complete(err);
+					self.complete(new ErrorInfo(msg, null, 400));
 					return;
 				}
 
-				if(statusCode < 400) {
-					self.complete(err, body);
+				/* If response is an array, it's an array of protocol messages -- even if
+				 * is contains an error action (hence the nonsuccess statuscode), we can
+				 * consider the request to have succeeded, just pass it on to
+				 * onProtocolMessage to decide what to do */
+				if(statusCode < 400 || Utils.isArray(body)) {
+					self.complete(null, body);
 					return;
 				}
 
-				err = body.error;
+				var err = body.error;
 				if(!err) {
-					err = new Error('Error response received from server: ' + statusCode);
-					err.statusCode = statusCode;
+					err = new ErrorInfo('Error response received from server: ' + statusCode + ', body was: ' + Utils.inspect(body), null, statusCode);
 				}
 				self.complete(err);
-			})
+			});
 		});
 	};
 

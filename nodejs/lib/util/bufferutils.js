@@ -1,8 +1,6 @@
 this.BufferUtils = (function() {
 	function BufferUtils() {}
 
-	BufferUtils.supportsBinary = true;
-
 	BufferUtils.isBuffer = Buffer.isBuffer;
 
 	BufferUtils.toArrayBuffer = function(buf) { return buf; };
@@ -10,6 +8,8 @@ this.BufferUtils = (function() {
 	BufferUtils.base64Encode = function(buf) { return buf.toString('base64'); };
 
 	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };
+
+	BufferUtils.hexEncode = function(buf) { return buf.toString('hex'); };
 
 	BufferUtils.utf8Encode = function(string) { return new Buffer(string, 'utf8'); };
 

@@ -485,7 +485,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.unrecoverableUpgrade = function(test) {
-		test.expect(6);
+		test.expect(7);
 		var realtime,
 			fakeConnectionKey = '_____!ablyjs_test_fake-key____',
 			fakeConnectionId = 'ablyjs_tes';
@@ -501,8 +501,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				realtime.connection.connectionManager.connectionId = fakeConnectionId;
 
 				/* on upgrade failure */
-				realtime.connection.once('error', function(error) {
-					test.equal(error.code, 80008, 'Check correct (unrecoverable connection) error');
+				realtime.connection.once('update', function(stateChange) {
+					test.equal(stateChange.reason.code, 80008, 'Check correct (unrecoverable connection) error');
+					test.equal(stateChange.current, 'connected', 'Check current is connected');
 					test.equal(realtime.connection.errorReason.code, 80008, 'Check error set in connection.errorReason');
 					test.equal(realtime.connection.state, 'connected', 'Check still connected');
 
@@ -540,7 +541,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		realtime.connection.once('connected', function() {
 			channel.attach(function(err){
 				test.ok(err.code, 90000, 'Check error code for channel attach timing out');
-				test.ok(channel.state, 'detached', 'Check channel reverts to detach');
+				test.ok(channel.state, 'suspended', 'Check channel goes into suspended state');
 				test.ok(realtime.connection.state, 'connected', 'Check connection state is still connected');
 				channel.attach(function(err){
 					test.ok(!err, 'Check a second attach works fine');
@@ -675,7 +676,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					cb();
 				});
 				connection.connect();
-			},
+			}
 		], function() {
 			closeAndFinish(test, realtime);
 		});
@@ -708,7 +709,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						cb();
 					});
 					transport.once('connected', function() {
-						baseTransport.abort({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
+						baseTransport.disconnect({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
 					});
 				});
 			},
