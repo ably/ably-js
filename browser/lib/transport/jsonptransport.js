@@ -32,27 +32,6 @@ var JSONPTransport = (function() {
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
 	window.JSONPTransport = JSONPTransport
-	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.jsonpInternetUpUrl;
-
-		if(checksInProgress) {
-			checksInProgress.push(callback);
-			return;
-		}
-		checksInProgress = [callback];
-		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
-
-		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
-		req.once('complete', function(err, response) {
-			var result = !err && response;
-			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
-			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
-			checksInProgress = null;
-		});
-		Utils.nextTick(function() {
-			req.exec();
-		});
-	};
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
@@ -195,6 +174,28 @@ var JSONPTransport = (function() {
 				req.exec();
 			});
 			return req;
+		};
+
+		Http.checkConnectivity = function(callback) {
+			var upUrl = Defaults.jsonpInternetUpUrl;
+
+			if(checksInProgress) {
+				checksInProgress.push(callback);
+				return;
+			}
+			checksInProgress = [callback];
+			Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+
+			var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+			req.once('complete', function(err, response) {
+				var result = !err && response;
+				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+				for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
+				checksInProgress = null;
+			});
+			Utils.nextTick(function() {
+				req.exec();
+			});
 		};
 	}
 

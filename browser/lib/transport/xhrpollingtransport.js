@@ -9,7 +9,6 @@ var XHRPollingTransport = (function() {
 	Utils.inherits(XHRPollingTransport, CometTransport);
 
 	XHRPollingTransport.isAvailable = XHRRequest.isAvailable;
-	XHRPollingTransport.checkConnectivity = XHRStreamingTransport.checkConnectivity;
 
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRPollingTransport(connectionManager, auth, params);

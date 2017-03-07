@@ -1075,8 +1075,7 @@ var ConnectionManager = (function() {
 			/* before trying any fallback (or any remaining fallback) we decide if
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
-			var connectivityCheckTransport = self.baseTransport === 'web_socket' ? 'xhr_polling' : self.baseTransport;
-			ConnectionManager.supportedTransports[connectivityCheckTransport].checkConnectivity(function(err, connectivity) {
+			Http.checkConnectivity(function(err, connectivity) {
 				/* we know err won't happen but handle it here anyway */
 				if(err) {
 					giveUp(err);
