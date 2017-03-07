@@ -44,7 +44,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Publish once with REST, before upgrade, verify message received
 	 */
 	exports.publishpreupgrade = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -89,7 +89,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Publish once with REST, after upgrade, verify message received on active transport
 	 */
 	exports.publishpostupgrade0 = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -150,7 +150,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Publish once with REST, after upgrade, verify message not received on inactive transport
 	 */
 	exports.publishpostupgrade1 = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -225,7 +225,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			--cbCount;
 			checkFinish();
 		};
-		var transportOpts = {useBinaryProtocol: false};
+		var transportOpts = {useBinaryProtocol: false, transports: helper.availableTransports};
 		var realtime = helper.AblyRealtime(transportOpts);
 		test.expect(count);
 		var channel = realtime.channels.get('upgradepublish0');
@@ -254,7 +254,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			--cbCount;
 			checkFinish();
 		};
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		var realtime = helper.AblyRealtime(transportOpts);
 		test.expect(count);
 		var channel = realtime.channels.get('upgradepublish1');
@@ -272,7 +272,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Base upgrade case
 	 */
 	exports.upgradebase0 = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(2);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -312,7 +312,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check active heartbeat, text protocol
 	 */
 	exports.upgradeheartbeat0 = function(test) {
-		var transportOpts = {useBinaryProtocol: false};
+		var transportOpts = {useBinaryProtocol: false, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -349,7 +349,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check active heartbeat, binary protocol
 	 */
 	exports.upgradeheartbeat1 = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -386,7 +386,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check heartbeat does not fire on inactive transport, text protocol
 	 */
 	exports.upgradeheartbeat2 = function(test) {
-		var transportOpts = {useBinaryProtocol: false};
+		var transportOpts = {useBinaryProtocol: false, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -437,7 +437,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check heartbeat does not fire on inactive transport, binary protocol
 	 */
 	exports.upgradeheartbeat3 = function(test) {
-		var transportOpts = {useBinaryProtocol: true};
+		var transportOpts = {useBinaryProtocol: true, transports: helper.availableTransports};
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(transportOpts);
@@ -492,7 +492,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		try {
 			/* on base transport active */
-			realtime = helper.AblyRealtime();
+			realtime = helper.AblyRealtime({transports: helper.availableTransports});
 			realtime.connection.connectionManager.once('transport.active', function(transport) {
 				test.ok(transport.toString().indexOf('/comet/') > -1, 'assert first transport to become active is a comet transport');
 				test.equal(realtime.connection.errorReason, null, 'Check connection.errorReason is initially null');
@@ -529,7 +529,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check that an attach that times out on the base transport does not prevent an upgrade
 	 */
 	exports.attach_timeout_on_base_transport = function(test) {
-		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 3000}),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports, realtimeRequestTimeout: 3000}),
 			channel = realtime.channels.get('timeout0'),
 			connectionManager = realtime.connection.connectionManager;
 
@@ -556,7 +556,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * seamlessly transferred to the websocket transport and published there
 	 */
 	exports.message_timeout_stalling_upgrade = function(test) {
-		var realtime = helper.AblyRealtime({httpRequestTimeout: 3000}),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports, httpRequestTimeout: 3000}),
 			channel = realtime.channels.get('timeout1'),
 			connectionManager = realtime.connection.connectionManager;
 
@@ -597,7 +597,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.unresponsive_upgrade_sync = function(test) {
 		test.expect(5);
-		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 2000}),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports, realtimeRequestTimeout: 2000}),
 			connection = realtime.connection;
 
 		connection.connectionManager.on('transport.pending', function(transport) {
@@ -644,7 +644,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * and subsequent connections do not upgrade
 	 */
 	exports.persist_transport_prefs = function(test) {
-		var realtime = helper.AblyRealtime(),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports}),
 			connection = realtime.connection,
 			connectionManager = connection.connectionManager;
 
@@ -686,7 +686,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check that upgrades succeed even if the original transport dies before the sync
 	 */
 	exports.upgrade_original_transport_dies = function(test) {
-		var realtime = helper.AblyRealtime(),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports}),
 			connection = realtime.connection,
 			connectionManager = connection.connectionManager;
 

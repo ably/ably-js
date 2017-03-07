@@ -264,7 +264,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.expect(2);
 			var realtime;
 			try {
-				realtime = helper.AblyRealtime();
+				realtime = helper.AblyRealtime({transports: helper.availableTransports});
 				test.equal(realtime.connection.connectionManager.baseTransport, 'comet');
 				test.deepEqual(realtime.connection.connectionManager.upgradeTransports, ['web_socket']);
 				closeAndFinish(test, realtime);

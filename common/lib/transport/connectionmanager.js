@@ -103,12 +103,12 @@ var ConnectionManager = (function() {
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 
-		this.transports = Utils.intersect((options.transports || Defaults.transports), ConnectionManager.supportedTransports);
-		/* baseTransports selects the leftmost transport in the Defaults.transports list
+		this.transports = Utils.intersect((options.transports || Defaults.defaultTransports), ConnectionManager.supportedTransports);
+		/* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
 		* that's both requested and supported. Normally this will be xhr_polling;
 		* if xhr isn't supported it will be jsonp. If the user has forced a
 		* transport, it'll just be that one. */
-		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
+		this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
 		/* Map of hosts to an array of transports to not be tried for that host */
 		this.transportHostBlacklist = {};
@@ -122,7 +122,7 @@ var ConnectionManager = (function() {
 		this.lastAutoReconnectAttempt = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
 

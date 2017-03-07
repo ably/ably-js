@@ -6,7 +6,14 @@
 define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
-		var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
+		var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
+			/* Don't include jsonp in availableTransports if xhr worksk. Why? Because
+			 * you can't abort requests. So recv's stick around for 90s till realtime
+			 * ends them. So in a test, the browsers max-connections-per-host limit
+			 * fills up quickly, which messes up other comet transports too */
+			availableTransports = utils.arrIn(supportedTransports, 'xhr_polling') ?
+				utils.arrWithoutValue(supportedTransports, 'jsonp') :
+				supportedTransports,
 			bestTransport = availableTransports[0],
 			/* IANA reserved; requests to it will hang forever */
 			unroutableAddress = 'http://10.255.255.1/';
@@ -105,22 +112,17 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
 		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
-			/* Don't include jsonp if possible. Why? Because you can't abort requests. So recv's
-			* stick around for 90s till realtime ends them. So in a test, the
-			* browsers max-connections-per-host limit fills up quickly, which messes
-			* up other comet transports too */
-			var transports = utils.arrIn(availableTransports, 'xhr_polling') ?
-				utils.arrWithoutValue(availableTransports, 'jsonp') :
-				availableTransports;
-
-			utils.arrForEach(transports, function(transport) {
+			utils.arrForEach(availableTransports, function(transport) {
 				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
 				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
 			});
-			/* Plus one for no transport specified (ie use upgrade mechanism if present) */
+			/* Plus one for no transport specified (ie use upgrade mechanism if
+			 * present).  (we explicitly specify all transports since node only does
+			 * nodecomet+upgrade if comet is explicitly requested
+			 * */
 			if(!excludeUpgrade) {
-				exports[name + '_with_binary_transport'] = testFn({useBinaryProtocol: true});
-				exports[name + '_with_text_transport'] = testFn({useBinaryProtocol: false});
+				exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
+				exports[name + '_with_text_transport'] = testFn({transports: availableTransports, useBinaryProtocol: false});
 			}
 		}
 
