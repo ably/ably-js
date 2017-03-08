@@ -2,7 +2,7 @@
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
-## Version: 0.9.0-beta.7
+## Version: 1.0.0
 
 This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
 
@@ -33,18 +33,18 @@ var rest = require('ably').Rest;
 Include the Ably library in your HTML:
 
 ```html
-<script src="https://cdn.ably.io/lib/ably.min.js"></script>
+<script src="https://cdn.ably.io/lib/ably.min-1.0.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/).  To lock into a major or minor verison of the client library, you can specify a specific version number such as http://cdn.ably.io/lib/ably.min-0.8.xx.js or http://cdn.ably.io/lib/ably-0.8.xx.js for the non-minified version.  See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.io/lib/ably.min-1.js for all v1.* versions, or https://cdn.ably.io/lib/ably.min-1.0.js for all v1.0.* versions, or you can lock into a single release with https://cdn.ably.io/lib/ably.min-1.0.0.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.io/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
-For the real-time library:
+For the realtime library:
 
 ```javascript
 var realtime = Ably.Realtime;
 ```
 
-For the rest-only library:
+For the REST only library:
 
 ```javascript
 var rest = Ably.Rest;
