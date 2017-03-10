@@ -71,7 +71,9 @@ var Realtime = (function() {
 	Channels.prototype.reattach = function(reason) {
 		for(var channelId in this.all) {
 			var channel = this.all[channelId];
-      if(channel.state === 'attaching' || channel.state === 'attached') {
+			/* NB this should not trigger for merely attaching channels, as they will
+			 * be reattached anyway through the onTransportActive checkPendingState */
+			if(channel.state === 'attached') {
 				channel.requestState('attaching', reason);
 			}
 		}
