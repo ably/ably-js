@@ -7,7 +7,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
-			/* Don't include jsonp in availableTransports if xhr worksk. Why? Because
+			/* Don't include jsonp in availableTransports if xhr works. Why? Because
 			 * you can't abort requests. So recv's stick around for 90s till realtime
 			 * ends them. So in a test, the browsers max-connections-per-host limit
 			 * fills up quickly, which messes up other comet transports too */
