@@ -505,8 +505,6 @@ var ConnectionManager = (function() {
 			});
 		})
 
-		this.emit('transport.active', transport, connectionKey, transport.params);
-
 		/* If previously not connected, notify the state change (including any
 		 * error). */
 		if(existingState.state === this.states.connected.state) {
@@ -521,6 +519,10 @@ var ConnectionManager = (function() {
 			this.notifyState({state: 'connected', error: error});
 			this.errorReason = this.realtime.connection.errorReason = error || null;
 		}
+
+		/* Send after the connection state update, as Channels hooks into this to
+		 * resend attaches on a new transport if necessary */
+		this.emit('transport.active', transport, connectionKey, transport.params);
 
 		/* Gracefully terminate existing protocol */
 		if(existingActiveProtocol) {
@@ -649,8 +651,10 @@ var ConnectionManager = (function() {
 		if(this.connectionId && this.connectionId !== connectionId)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
 			this.msgSerial = 0;
-			/* Wait till next tick before reattaching channels so that connection
-			 * state will be updated */
+			/* Wait till next tick before reattaching channels, so that connection
+			 * state will be updated and so that it will be applied after
+			 * Channels#onTransportUpdate, else channels will not have an ATTACHED
+			 * sent twice (once from this and once from that). */
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});

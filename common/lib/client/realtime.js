@@ -29,13 +29,7 @@ var Realtime = (function() {
 		this.realtime = realtime;
 		this.all = {};
 		this.inProgress = {};
-		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function() {
-			/* nextTick to allow connectionManager to set the connection state to 'connected' if necessary */
-			Utils.nextTick(function() {
-				self.onTransportActive();
-			});
-		});
+		realtime.connection.connectionManager.on('transport.active', this.onTransportActive.bind(this));
 	}
 	Utils.inherits(Channels, EventEmitter);
 
