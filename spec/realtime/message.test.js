@@ -79,7 +79,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(100);
 		try {
 			var realtime = helper.AblyRealtime(realtimeOpts);
-			realtime.connection.on('connected', function() {
+			realtime.connection.once('connected', function() {
 				var channel = realtime.channels.get('publishfast_' + String(Math.random()).substr(2));
 				channel.attach(function(err) {
 					if(err) {
@@ -164,7 +164,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					publish(0);
 				},
 				function(cb) {
-					realtime.connection.on('connected', function() { cb(); });
+					realtime.connection.once('connected', function() { cb(); });
 					realtime.connection.connect();
 				}
 			], function() {

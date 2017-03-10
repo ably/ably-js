@@ -583,12 +583,16 @@ var RealtimeChannel = (function() {
 		}
 
 		if(params && params.untilAttach) {
-			if(this.state === 'attached') {
-				delete params.untilAttach;
-				params.from_serial = this.attachSerial;
-			} else {
+			if(this.state !== 'attached') {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+				return;
 			}
+			if(!this.attachSerial) {
+				callback(new ErrorInfo("untilAttach was specified and channel is attached, but attachSerial is not defined", 40000, 400));
+				return;
+			}
+			delete params.untilAttach;
+			params.from_serial = this.attachSerial;
 		}
 
 		Channel.prototype._history.call(this, params, callback);

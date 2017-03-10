@@ -163,5 +163,12 @@ this.Http = (function() {
 	Http.supportsAuthHeaders = true;
 	Http.supportsLinkHeaders = true;
 
+	Http.checkConnectivity = function(callback) {
+		var upUrl = Defaults.internetUpUrl;
+		Http.getUri(null, upUrl, null, null, function(err, responseText) {
+			callback(null, (!err && responseText.toString().trim() === 'yes'));
+		});
+	};
+
 	return Http;
 })();
