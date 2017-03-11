@@ -87,7 +87,7 @@ var ConnectionManager = (function() {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: connectingTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, forceQueueEvents: true, failState: 'disconnected'},
 			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout, failState: 'disconnected'},
 			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout, failState: 'suspended'},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
@@ -1268,7 +1268,7 @@ var ConnectionManager = (function() {
 	 * event queueing
 	 ******************/
 
-	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
+	ConnectionManager.prototype.send = function(msg, queueEvent, callback) {
 		callback = callback || noop;
 		var state = this.state;
 
@@ -1277,18 +1277,17 @@ var ConnectionManager = (function() {
 			this.sendImpl(new PendingMessage(msg, callback));
 			return;
 		}
-		if(state.queueEvents) {
-			if(state == this.states.synchronizing || queueEvents) {
-				if (Logger.shouldLog(Logger.LOG_MICRO)) {
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
-				}
-				this.queue(msg, callback);
-			} else {
-				var err = 'rejecting event as queueMessages was disabled; state = ' + state.state;
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
-				callback(this.errorReason || new ErrorInfo(err, 90000, 400));
-			}
+		var shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
+		if(!shouldQueue) {
+			var err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+			callback(this.errorReason || new ErrorInfo(err, 90000, 400));
+			return;
 		}
+		if(Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
+		}
+		this.queue(msg, callback);
 	};
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
