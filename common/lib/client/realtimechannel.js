@@ -476,8 +476,11 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.checkPendingState = function() {
 		/* if can't send events, do nothing */
-		if(!this.connectionManager.state.sendEvents) {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'not connected');
+		var cmState = this.connectionManager.state;
+		/* Allow attach messages to queue up when synchronizing, since this will be
+		 * the state we'll be in when upgrade transport.active triggers a checkpendingstate */
+		if(!(cmState.sendEvents || cmState.forceQueueEvents)) {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'sendEvents is false; state is ' + this.connectionManager.state.state);
 			return;
 		}
 
