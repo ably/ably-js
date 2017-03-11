@@ -325,7 +325,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.attach();
 			channel.whenState('attached', function() {
 				firedImmediately = true;
-				test.ok(channel.state === 'attached', 'whenState fired when attached');
+				test.equal(channel.state, 'attached', 'whenState fired when attached');
 				closeAndFinish(test, realtime);
 			});
 			test.ok(!firedImmediately, 'whenState should not fire immediately as not attached');

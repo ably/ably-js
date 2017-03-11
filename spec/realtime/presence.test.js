@@ -1626,7 +1626,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * set but missing from a sync */
 	exports.leave_published_for_member_missing_from_sync = function(test) {
 		test.expect(6);
-		var realtime = helper.AblyRealtime(),
+		var realtime = helper.AblyRealtime({transports: helper.availableTransports}),
 			continuousClientId = 'continuous',
 			goneClientId = 'gone',
 			continuousRealtime = helper.AblyRealtime({clientId: continuousClientId}),
