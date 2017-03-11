@@ -271,7 +271,9 @@ var RealtimeChannel = (function() {
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, channel: this.name});
-		syncMessage.channelSerial = this.syncChannelSerial;
+		if(this.syncChannelSerial) {
+			syncMessage.channelSerial = this.syncChannelSerial;
+		}
 		connectionManager.send(syncMessage);
 	};
 
