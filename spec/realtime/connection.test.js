@@ -136,7 +136,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel = realtime.channels.get('connectionQueuing'),
 			connectionManager = realtime.connection.connectionManager;
 
-		connectionManager.once('transport.active', function(transport) {
+		realtime.connection.once('connected', function() {
+			var transport = connectionManager.activeProtocol.transport;
 			channel.attach(function(err) {
 				if(err) {
 					test.ok(false, 'Attach failed with error: ' + helper.displayError(err));
@@ -160,7 +161,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					},
 					function(cb) {
 						/* After the disconnect, on reconnect, spy on transport.send again */
-						connectionManager.once('transport.active', function(transport) {
+						connectionManager.once('transport.pending', function(transport) {
 							var oldSend = transport.send;
 
 							transport.send = function(msg, msgCb) {
@@ -169,7 +170,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 										test.equal(msg.msgSerial, 0, 'Expect msgSerial of original message to still be 0');
 										test.equal(msg.messages.length, 1, 'Expect second message to not have been merged with the attempted message');
 									} else if(msg.messages[0].name === 'second') {
-										test.equal(msg.msgSerial, 1, 'Expect msgSerial of new message to be 0');
+										test.equal(msg.msgSerial, 1, 'Expect msgSerial of new message to be 1');
 										cb();
 									}
 								}

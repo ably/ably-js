@@ -540,9 +540,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		realtime.connection.once('connected', function() {
 			channel.attach(function(err){
-				test.ok(err.code, 90000, 'Check error code for channel attach timing out');
-				test.ok(channel.state, 'suspended', 'Check channel goes into suspended state');
-				test.ok(realtime.connection.state, 'connected', 'Check connection state is still connected');
+				test.equal(err.code, 90007, 'Check error code for channel attach timing out');
+				test.equal(channel.state, 'suspended', 'Check channel goes into suspended state');
+				test.equal(realtime.connection.state, 'connected', 'Check connection state is still connected');
 				channel.attach(function(err){
 					test.ok(!err, 'Check a second attach works fine');
 					closeAndFinish(test, realtime)

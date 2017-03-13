@@ -277,6 +277,7 @@ var RealtimePresence = (function() {
 			/* RTP5c2: re-enter our own members if they haven't shown up in the sync */
 			this._ensureMyMembersPresent();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
+			this.channel.syncChannelSerial = null;
 		}
 
 		/* broadcast to listeners */

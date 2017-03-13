@@ -29,13 +29,7 @@ var Realtime = (function() {
 		this.realtime = realtime;
 		this.all = {};
 		this.inProgress = {};
-		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function() {
-			/* nextTick to allow connectionManager to set the connection state to 'connected' if necessary */
-			Utils.nextTick(function() {
-				self.onTransportActive();
-			});
-		});
+		realtime.connection.connectionManager.on('transport.active', this.onTransportActive.bind(this));
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -71,7 +65,9 @@ var Realtime = (function() {
 	Channels.prototype.reattach = function(reason) {
 		for(var channelId in this.all) {
 			var channel = this.all[channelId];
-      if(channel.state === 'attaching' || channel.state === 'attached') {
+			/* NB this should not trigger for merely attaching channels, as they will
+			 * be reattached anyway through the onTransportActive checkPendingState */
+			if(channel.state === 'attached') {
 				channel.requestState('attaching', reason);
 			}
 		}
