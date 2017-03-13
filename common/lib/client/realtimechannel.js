@@ -80,17 +80,17 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
+		if(this.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+			return;
+		}
+		if(this.channelOptions.transient) {
+			this._publishImpl(messages, callback);
+			return;
+		}
 		switch(this.state) {
-			case 'failed':
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
-				break;
 			case 'attached':
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
-				var msg = new ProtocolMessage();
-				msg.action = actions.MESSAGE;
-				msg.channel = this.name;
-				msg.messages = messages;
-				this.sendMessage(msg, callback);
+				this._publishImpl(messages, callback);
 				break;
 			default:
 				this.autonomousAttach();
@@ -107,6 +107,15 @@ var RealtimeChannel = (function() {
 		}
 	};
 
+	RealtimeChannel.prototype._publishImpl = function(messages, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+		var msg = new ProtocolMessage();
+		msg.action = actions.MESSAGE;
+		msg.channel = this.name;
+		msg.messages = messages;
+		this.sendMessage(msg, callback);
+	}
+
 	RealtimeChannel.prototype.onEvent = function(messages) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
@@ -122,7 +131,9 @@ var RealtimeChannel = (function() {
 			flags = null;
 		}
 		callback = callback || noop;
-		if(flags) {
+		if(this.channelOptions.transient) {
+			this._requestedFlags = ['PUBLISH', 'TRANSIENT'];
+		} else if(flags) {
 			this._requestedFlags = flags;
 		}
 		var connectionManager = this.connectionManager;
@@ -312,7 +323,8 @@ var RealtimeChannel = (function() {
 
 		case actions.DETACHED:
 			var err = message.error ? ErrorInfo.fromValues(message.error) : new ErrorInfo('Channel detached', 90001, 404);
-			if(this.state === 'detaching') {
+			/* Transient channels can detach at any time, and shouldn't be auto-reattached */
+			if(this.state === 'detaching' || this.channelOptions.transient) {
 				this.notifyState('detached', err);
 			} else if(this.state === 'attaching') {
 				/* Only retry immediately if we were previously attached. If we were

@@ -707,6 +707,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.transient_channel = function(test) {
+		test.expect(1);
+		/* Use a fixed transport as attaches are resent when the transport changes */
+		var realtime = helper.AblyRealtime(),
+			channelName = 'transient_channel',
+			channel = realtime.channels.get(channelName, {transient: true}),
+			originalSendMessage = channel.sendMessage;
+
+
+		realtime.connection.once('connected', function() {
+			async.parallel([
+				function(cb) {
+					channel.sendMessage = function(msg) {
+						test.equal(msg.action, 15, 'check that lib sent message without attaching first');
+						originalSendMessage.apply(channel, arguments)
+						cb();
+					};
+				},
+				function(cb) {
+					channel.publish("foo", "bar", cb);
+				}
+			], function(err) {
+				if(err) {
+					test.ok(false, helper.displayError(err));
+				}
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });
