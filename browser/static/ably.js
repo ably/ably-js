@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.0
+ * Ably JavaScript Library v1.0.1
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3549,11 +3549,12 @@ var Defaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	jsonpInternetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up-0-9.js',
 	/* Order matters here: the base transport is the leftmost one in the
-	 * intersection of this list and the transports clientOption that's
+	 * intersection of baseTransportOrder and the transports clientOption that's
 	 * supported.  This is not quite the same as the preference order -- e.g.
 	 * xhr_polling is preferred to jsonp, but for browsers that support it we want
 	 * the base transport to be xhr_polling, not jsonp */
-	transports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
+	defaultTransports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
+	baseTransportOrder: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
 	upgradeTransports: ['xhr_streaming', 'web_socket'],
 	minified: !(function _(){}).name
@@ -4087,7 +4088,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.0';
+Defaults.version          = '1.0.1';
 Defaults.libstring        = 'js-' + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -5787,7 +5788,7 @@ var ConnectionManager = (function() {
 			initialized:   {state: 'initialized',   terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
 			connecting:    {state: 'connecting',    terminal: false, queueEvents: true,  sendEvents: false, retryDelay: connectingTimeout, failState: 'disconnected'},
 			connected:     {state: 'connected',     terminal: false, queueEvents: false, sendEvents: true,  failState: 'disconnected'},
-			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, failState: 'disconnected'},
+			synchronizing: {state: 'connected',     terminal: false, queueEvents: true,  sendEvents: false, forceQueueEvents: true, failState: 'disconnected'},
 			disconnected:  {state: 'disconnected',  terminal: false, queueEvents: true,  sendEvents: false, retryDelay: timeouts.disconnectedRetryTimeout, failState: 'disconnected'},
 			suspended:     {state: 'suspended',     terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.suspendedRetryTimeout, failState: 'suspended'},
 			closing:       {state: 'closing',       terminal: false, queueEvents: false, sendEvents: false, retryDelay: timeouts.realtimeRequestTimeout, failState: 'closed'},
@@ -5803,12 +5804,12 @@ var ConnectionManager = (function() {
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 
-		this.transports = Utils.intersect((options.transports || Defaults.transports), ConnectionManager.supportedTransports);
-		/* baseTransports selects the leftmost transport in the Defaults.transports list
+		this.transports = Utils.intersect((options.transports || Defaults.defaultTransports), ConnectionManager.supportedTransports);
+		/* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
 		* that's both requested and supported. Normally this will be xhr_polling;
 		* if xhr isn't supported it will be jsonp. If the user has forced a
 		* transport, it'll just be that one. */
-		this.baseTransport = Utils.intersect(Defaults.transports, this.transports)[0];
+		this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
 		this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
 		/* Map of hosts to an array of transports to not be tried for that host */
 		this.transportHostBlacklist = {};
@@ -5822,7 +5823,7 @@ var ConnectionManager = (function() {
 		this.lastAutoReconnectAttempt = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.transports) + ']');
+		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
 
@@ -6205,8 +6206,6 @@ var ConnectionManager = (function() {
 			});
 		})
 
-		this.emit('transport.active', transport, connectionKey, transport.params);
-
 		/* If previously not connected, notify the state change (including any
 		 * error). */
 		if(existingState.state === this.states.connected.state) {
@@ -6221,6 +6220,10 @@ var ConnectionManager = (function() {
 			this.notifyState({state: 'connected', error: error});
 			this.errorReason = this.realtime.connection.errorReason = error || null;
 		}
+
+		/* Send after the connection state update, as Channels hooks into this to
+		 * resend attaches on a new transport if necessary */
+		this.emit('transport.active', transport, connectionKey, transport.params);
 
 		/* Gracefully terminate existing protocol */
 		if(existingActiveProtocol) {
@@ -6349,8 +6352,10 @@ var ConnectionManager = (function() {
 		if(this.connectionId && this.connectionId !== connectionId)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
 			this.msgSerial = 0;
-			/* Wait till next tick before reattaching channels so that connection
-			 * state will be updated */
+			/* Wait till next tick before reattaching channels, so that connection
+			 * state will be updated and so that it will be applied after
+			 * Channels#onTransportUpdate, else channels will not have an ATTACHED
+			 * sent twice (once from this and once from that). */
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});
@@ -6775,8 +6780,7 @@ var ConnectionManager = (function() {
 			/* before trying any fallback (or any remaining fallback) we decide if
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
-			var connectivityCheckTransport = self.baseTransport === 'web_socket' ? 'xhr_polling' : self.baseTransport;
-			ConnectionManager.supportedTransports[connectivityCheckTransport].checkConnectivity(function(err, connectivity) {
+			Http.checkConnectivity(function(err, connectivity) {
 				/* we know err won't happen but handle it here anyway */
 				if(err) {
 					giveUp(err);
@@ -6818,8 +6822,9 @@ var ConnectionManager = (function() {
 			return;
 		}
 
-		var upgradeTransportParams = new TransportParams(this.options, transportParams.host, 'upgrade', this.connectionKey);
 		Utils.arrForEach(upgradePossibilities, function(upgradeTransport) {
+			/* Note: the transport may mutate the params, so give each transport a fresh one */
+			var upgradeTransportParams = new TransportParams(self.options, transportParams.host, 'upgrade', self.connectionKey);
 			self.tryATransport(upgradeTransportParams, upgradeTransport, noop);
 		});
 	};
@@ -6964,7 +6969,7 @@ var ConnectionManager = (function() {
 	 * event queueing
 	 ******************/
 
-	ConnectionManager.prototype.send = function(msg, queueEvents, callback) {
+	ConnectionManager.prototype.send = function(msg, queueEvent, callback) {
 		callback = callback || noop;
 		var state = this.state;
 
@@ -6973,18 +6978,17 @@ var ConnectionManager = (function() {
 			this.sendImpl(new PendingMessage(msg, callback));
 			return;
 		}
-		if(state.queueEvents) {
-			if(state == this.states.synchronizing || queueEvents) {
-				if (Logger.shouldLog(Logger.LOG_MICRO)) {
-					Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
-				}
-				this.queue(msg, callback);
-			} else {
-				var err = 'rejecting event as queueMessages was disabled; state = ' + state.state;
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
-				callback(this.errorReason || new ErrorInfo(err, 90000, 400));
-			}
+		var shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
+		if(!shouldQueue) {
+			var err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+			callback(this.errorReason || new ErrorInfo(err, 90000, 400));
+			return;
 		}
+		if(Logger.shouldLog(Logger.LOG_MICRO)) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
+		}
+		this.queue(msg, callback);
 	};
 
 	ConnectionManager.prototype.sendImpl = function(pendingMessage) {
@@ -9180,13 +9184,7 @@ var Realtime = (function() {
 		this.realtime = realtime;
 		this.all = {};
 		this.inProgress = {};
-		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function() {
-			/* nextTick to allow connectionManager to set the connection state to 'connected' if necessary */
-			Utils.nextTick(function() {
-				self.onTransportActive();
-			});
-		});
+		realtime.connection.connectionManager.on('transport.active', this.onTransportActive.bind(this));
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -9222,7 +9220,9 @@ var Realtime = (function() {
 	Channels.prototype.reattach = function(reason) {
 		for(var channelId in this.all) {
 			var channel = this.all[channelId];
-      if(channel.state === 'attaching' || channel.state === 'attached') {
+			/* NB this should not trigger for merely attaching channels, as they will
+			 * be reattached anyway through the onTransportActive checkPendingState */
+			if(channel.state === 'attached') {
 				channel.requestState('attaching', reason);
 			}
 		}
@@ -9753,7 +9753,9 @@ var RealtimeChannel = (function() {
 
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({action: actions.SYNC, channel: this.name});
-		syncMessage.channelSerial = this.syncChannelSerial;
+		if(this.syncChannelSerial) {
+			syncMessage.channelSerial = this.syncChannelSerial;
+		}
 		connectionManager.send(syncMessage);
 	};
 
@@ -9958,8 +9960,11 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.checkPendingState = function() {
 		/* if can't send events, do nothing */
-		if(!this.connectionManager.state.sendEvents) {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'not connected');
+		var cmState = this.connectionManager.state;
+		/* Allow attach messages to queue up when synchronizing, since this will be
+		 * the state we'll be in when upgrade transport.active triggers a checkpendingstate */
+		if(!(cmState.sendEvents || cmState.forceQueueEvents)) {
+			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'sendEvents is false; state is ' + this.connectionManager.state.state);
 			return;
 		}
 
@@ -10065,12 +10070,16 @@ var RealtimeChannel = (function() {
 		}
 
 		if(params && params.untilAttach) {
-			if(this.state === 'attached') {
-				delete params.untilAttach;
-				params.from_serial = this.attachSerial;
-			} else {
+			if(this.state !== 'attached') {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+				return;
 			}
+			if(!this.attachSerial) {
+				callback(new ErrorInfo("untilAttach was specified and channel is attached, but attachSerial is not defined", 40000, 400));
+				return;
+			}
+			delete params.untilAttach;
+			params.from_serial = this.attachSerial;
 		}
 
 		Channel.prototype._history.call(this, params, callback);
@@ -10362,6 +10371,7 @@ var RealtimePresence = (function() {
 			/* RTP5c2: re-enter our own members if they haven't shown up in the sync */
 			this._ensureMyMembersPresent();
 			this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
+			this.channel.syncChannelSerial = null;
 		}
 
 		/* broadcast to listeners */
@@ -10963,6 +10973,16 @@ var XHRRequest = (function() {
 				req.exec();
 				return req;
 			};
+
+			Http.checkConnectivity = function(callback) {
+				var upUrl = Defaults.internetUpUrl;
+				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+				Http.Request(null, upUrl, null, null, null, function(err, responseText) {
+					var result = (!err && responseText.replace(/\n/, '') == 'yes');
+					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+					callback(null, result);
+				});
+			};
 		}
 	}
 
@@ -10980,16 +11000,6 @@ var XHRStreamingTransport = (function() {
 	Utils.inherits(XHRStreamingTransport, CometTransport);
 
 	XHRStreamingTransport.isAvailable = XHRRequest.isAvailable;
-
-	XHRStreamingTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.internetUpUrl;
-		Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Sending; ' + upUrl);
-		Http.Request(null, upUrl, null, null, null, function(err, responseText) {
-			var result = (!err && responseText.replace(/\n/, '') == 'yes');
-			Logger.logAction(Logger.LOG_MICRO, 'XHRStreamingTransport.checkConnectivity()', 'Result: ' + result);
-			callback(null, result);
-		});
-	};
 
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRStreamingTransport(connectionManager, auth, params);
@@ -11027,7 +11037,6 @@ var XHRPollingTransport = (function() {
 	Utils.inherits(XHRPollingTransport, CometTransport);
 
 	XHRPollingTransport.isAvailable = XHRRequest.isAvailable;
-	XHRPollingTransport.checkConnectivity = XHRStreamingTransport.checkConnectivity;
 
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRPollingTransport(connectionManager, auth, params);
@@ -11088,27 +11097,6 @@ var JSONPTransport = (function() {
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
 	window.JSONPTransport = JSONPTransport
-	JSONPTransport.checkConnectivity = function(callback) {
-		var upUrl = Defaults.jsonpInternetUpUrl;
-
-		if(checksInProgress) {
-			checksInProgress.push(callback);
-			return;
-		}
-		checksInProgress = [callback];
-		Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Sending; ' + upUrl);
-
-		var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
-		req.once('complete', function(err, response) {
-			var result = !err && response;
-			Logger.logAction(Logger.LOG_MICRO, 'JSONPTransport.checkConnectivity()', 'Result: ' + result);
-			for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
-			checksInProgress = null;
-		});
-		Utils.nextTick(function() {
-			req.exec();
-		});
-	};
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);
@@ -11251,6 +11239,28 @@ var JSONPTransport = (function() {
 				req.exec();
 			});
 			return req;
+		};
+
+		Http.checkConnectivity = function(callback) {
+			var upUrl = Defaults.jsonpInternetUpUrl;
+
+			if(checksInProgress) {
+				checksInProgress.push(callback);
+				return;
+			}
+			checksInProgress = [callback];
+			Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+
+			var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+			req.once('complete', function(err, response) {
+				var result = !err && response;
+				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+				for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
+				checksInProgress = null;
+			});
+			Utils.nextTick(function() {
+				req.exec();
+			});
 		};
 	}
 
