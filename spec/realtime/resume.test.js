@@ -428,7 +428,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
-			closeAndFinish(test, realtime);
+			closeAndFinish(test, [realtime, realtimeTwo]);
 		});
 	};
 
