@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.1
+ * Ably JavaScript Library v1.0.2
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2009,6 +2009,7 @@ if(typeof window !== 'object') {
 }
 
 var Platform = {
+	libver: 'js-web-',
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
@@ -2645,8 +2646,8 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.1';
-Defaults.libstring        = 'js-' + Defaults.version;
+Defaults.version          = '1.0.2';
+Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
 Defaults.getHost = function(options, host, ws) {
@@ -4360,6 +4361,8 @@ var ConnectionManager = (function() {
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
+		this.connectionStateTtl = timeouts.connectionStateTtl;
+		this.maxIdleInterval = null;
 
 		this.transports = Utils.intersect((options.transports || Defaults.defaultTransports), ConnectionManager.supportedTransports);
 		/* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
@@ -4378,6 +4381,7 @@ var ConnectionManager = (function() {
 		this.pendingTransports = [];
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
+		this.lastActivity = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -4938,6 +4942,16 @@ var ConnectionManager = (function() {
 		this.unpersistConnection();
 	};
 
+	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
+		if(!this.lastActivity) { return; }
+
+		var sinceLast = Utils.now() - this.lastActivity;
+		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
+			this.clearConnection();
+		}
+	};
+
 	/**
 	 * Called when the connectionmanager wants to persist transport
 	 * state for later recovery. Only applicable in the browser context.
@@ -4949,7 +4963,7 @@ var ConnectionManager = (function() {
 				disconnectedAt: Utils.now(),
 				location: window.location,
 				clientId: this.realtime.auth.clientId
-			}, this.options.timeouts.connectionStateTtl);
+			}, this.connectionStateTtl);
 		}
 	};
 
@@ -5033,7 +5047,7 @@ var ConnectionManager = (function() {
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
-		}, this.options.timeouts.connectionStateTtl);
+		}, this.connectionStateTtl);
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
@@ -5183,6 +5197,7 @@ var ConnectionManager = (function() {
 			self = this;
 
 		var connect = function() {
+			self.checkConnectionStateFreshness();
 			self.getTransportParams(function(transportParams) {
 				self.connectImpl(transportParams);
 			});
@@ -5729,7 +5744,10 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onConnectionDetailsUpdate = function(connectionDetails, transport) {
-		var clientId = connectionDetails && connectionDetails.clientId;
+		if(!connectionDetails) {
+			return;
+		}
+		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
@@ -5739,6 +5757,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 		}
+		var connectionStateTtl = connectionDetails.connectionStateTtl;
+		if(connectionStateTtl) {
+			this.connectionStateTtl = connectionStateTtl;
+		}
+		this.maxIdleInterval = connectionDetails.maxIdleInterval;
 		this.emit('connectiondetails', connectionDetails);
 	};
 
@@ -5773,7 +5796,9 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.maxIdleInterval = null;
 		this.idleTimer = null;
+		this.lastActivity = null;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
@@ -5810,8 +5835,9 @@ var Transport = (function() {
 
 		this.isFinished = true;
 		this.isConnected = false;
-		this.timeoutOnIdle = false;
+		this.maxIdleInterval = null;
 		clearTimeout(this.idleTimer);
+		this.idleTimer = null;
 		this.emit(event, err);
 		this.dispose();
 	};
@@ -5820,8 +5846,9 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
-		if(this.timeoutOnIdle) {
-			this.resetIdleTimeout();
+		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+		if(this.maxIdleInterval) {
+			this.setIdleTimer();
 		}
 
 		switch(message.action) {
@@ -5878,16 +5905,12 @@ var Transport = (function() {
 
 	Transport.prototype.onConnect = function(message) {
 		this.isConnected = true;
-		if(message.connectionDetails.maxIdleInterval === 0) {
-			/* Realtime declines to guarantee any maximum idle interval - CD2h */
-			this.timeoutOnIdle = false;
-		} else {
-			/* TODO remove "|| 15000" once realtime starts sending this */
-			this.maxIdleInterval = message.connectionDetails.maxIdleInterval || 15000;
+		var maxPromisedIdle = message.connectionDetails.maxIdleInterval;
+		if(maxPromisedIdle) {
+			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
+			this.setIdleTimer();
 		}
-		if(this.timeoutOnIdle) {
-			this.resetIdleTimeout();
-		}
+		/* else Realtime declines to guarantee any maximum idle interval - CD2h */
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
@@ -5934,17 +5957,26 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.resetIdleTimeout = function() {
-		var self = this,
-			timeout = this.maxIdleInterval + this.timeouts.realtimeRequestTimeout;
+	Transport.prototype.setIdleTimer = function(timeout) {
+		var self = this;
+		if(!this.idleTimer) {
+			this.idleTimer = setTimeout(function() {
+				self.onIdleTimerExpire();
+			}, timeout || this.maxIdleInterval);
+		}
+	};
 
-		clearTimeout(this.idleTimer);
-
-		this.idleTimer = setTimeout(function() {
-			var msg = 'No activity seen from realtime in ' + timeout + 'ms; assuming connection has dropped';
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.resetIdleTimeout()', msg);
-			self.disconnect(new ErrorInfo(msg, 80003, 408));
-		}, timeout);
+	Transport.prototype.onIdleTimerExpire = function() {
+		this.idleTimer = null;
+		var sinceLast = Utils.now() - this.lastActivity,
+			timeRemaining = this.maxIdleInterval - sinceLast;
+		if(timeRemaining <= 0) {
+			var msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
+			this.disconnect(new ErrorInfo(msg, 80003, 408));
+		} else {
+			this.setIdleTimer(timeRemaining + 10);
+		}
 	};
 
 	Transport.prototype.onAuthUpdated = function() {};
@@ -5959,7 +5991,6 @@ var WebSocketTransport = (function() {
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
 		this.shortName = shortName;
-		this.timeoutOnIdle = true;
 		/* If is a browser, can't detect pings, so request protocol heartbeats */
 		params.heartbeats = Platform.useProtocolHeartbeats;
 		Transport.call(this, connectionManager, auth, params);
@@ -6025,7 +6056,7 @@ var WebSocketTransport = (function() {
 				if(wsConnection.on) {
 					/* node; browsers currently don't have a general eventemitter and can't detect
 					 * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-					wsConnection.on('ping', function() { self.resetIdleTimeout() });
+					wsConnection.on('ping', function() { self.setIdleTimer() });
 				}
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
@@ -6162,7 +6193,6 @@ var CometTransport = (function() {
 	 * A base comet transport class
 	 */
 	function CometTransport(connectionManager, auth, params) {
-		this.timeoutOnIdle = true;
 		/* binary not supported for comet, so just fall back to default */
 		params.format = undefined;
 		params.heartbeats = true;
@@ -6226,8 +6256,8 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
-				if(this.timeoutOnIdle) {
-					this.resetIdleTimeout();
+				if(this.maxIdleInterval) {
+					this.setIdleTimer();
 				}
 				if(err) {
 					if(err.code) {
@@ -6391,10 +6421,10 @@ var CometTransport = (function() {
 		});
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
-			if(this.timeoutOnIdle) {
+			if(this.maxIdleInterval) {
 				/* A request completing must be considered activity, as realtime sends
 				 * heartbeats every 15s since a request began, not every 15s absolutely */
-				this.resetIdleTimeout();
+				this.setIdleTimer();
 			}
 			if(err) {
 				if(err.code) {
