@@ -461,5 +461,29 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Check the library doesn't try to resume if the last known activity on the
+	 * connection was > connectionStateTtl ago
+	 */
+	exports.no_resume_last_activity = function(test) {
+		/* Specify a best transport so that upgrade activity doesn't reset the last activity timer */
+		var realtime = helper.AblyRealtime({transports: [bestTransport]}),
+			connection = realtime.connection,
+			connectionManager = connection.connectionManager
+
+		test.expect(1);
+		connection.once('connected', function() {
+			connectionManager.lastActivity = helper.Utils.now() - 10000000
+			/* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
+			 * reset the last activity timer */
+			connectionManager.activeProtocol.getTransport().onProtocolMessage = function(){};
+			connectionManager.tryATransport = function(transportParams) {
+				test.equal(transportParams.mode, 'clean', 'Check library didn’t try to resume');
+				closeAndFinish(test, realtime);
+			};
+			connectionManager.disconnectAllTransports();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });

@@ -681,6 +681,14 @@ var ConnectionManager = (function() {
 		this.unpersistConnection();
 	};
 
+	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
+		var sinceLast = Utils.now() - this.lastActivity;
+		if(sinceLast > this.options.timeouts.connectionStateTtl) {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
+			this.clearConnection();
+		}
+	};
+
 	/**
 	 * Called when the connectionmanager wants to persist transport
 	 * state for later recovery. Only applicable in the browser context.
@@ -926,6 +934,7 @@ var ConnectionManager = (function() {
 			self = this;
 
 		var connect = function() {
+			self.checkConnectionStateFreshness();
 			self.getTransportParams(function(transportParams) {
 				self.connectImpl(transportParams);
 			});
