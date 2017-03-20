@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
 		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		monitorConnection = helper.monitorConnection;
 
 	exports.setupConnection = function(test) {
@@ -188,6 +189,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			});
 		});
+	};
+
+	/*
+	 * Inject a new CONNECTED with different connectionDetails; check they're used
+	 */
+	exports.connectionDetails = function(test) {
+		test.expect(4);
+		var realtime = helper.AblyRealtime(),
+			connectionManager = realtime.connection.connectionManager;
+		realtime.connection.once('connected', function() {
+			connectionManager.once('connectiondetails', function(details) {
+				test.equal(details.connectionStateTtl, 12345, 'Check connectionStateTtl in event');
+				test.equal(connectionManager.connectionStateTtl, 12345, 'Check connectionStateTtl set in connectionManager');
+				test.equal(details.clientId, 'foo', 'Check clientId in event');
+				test.equal(realtime.auth.clientId, 'foo', 'Check clientId set in auth');
+				closeAndFinish(test, realtime);
+			});
+			connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 4,
+				connectionId: 'a',
+				connectionKey: 'ab',
+				connectionSerial: -1,
+				connectionDetails: {
+					clientId: 'foo',
+					connectionStateTtl: 12345
+				}
+			}));
+		});
+		monitorConnection(test, realtime);
 	};
 
 	return module.exports = helper.withTimeout(exports);

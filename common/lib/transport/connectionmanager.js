@@ -102,6 +102,7 @@ var ConnectionManager = (function() {
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
+		this.connectionStateTtl = timeouts.connectionStateTtl;
 
 		this.transports = Utils.intersect((options.transports || Defaults.defaultTransports), ConnectionManager.supportedTransports);
 		/* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
@@ -683,7 +684,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
 		var sinceLast = Utils.now() - this.lastActivity;
-		if(sinceLast > this.options.timeouts.connectionStateTtl) {
+		if(sinceLast > this.connectionStateTtl) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
 		}
@@ -700,7 +701,7 @@ var ConnectionManager = (function() {
 				disconnectedAt: Utils.now(),
 				location: window.location,
 				clientId: this.realtime.auth.clientId
-			}, this.options.timeouts.connectionStateTtl);
+			}, this.connectionStateTtl);
 		}
 	};
 
@@ -784,7 +785,7 @@ var ConnectionManager = (function() {
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
 			}
-		}, this.options.timeouts.connectionStateTtl);
+		}, this.connectionStateTtl);
 	};
 
 	ConnectionManager.prototype.checkSuspendTimer = function(state) {
@@ -1490,6 +1491,10 @@ var ConnectionManager = (function() {
 				transport.fail(err);
 				return;
 			}
+		}
+		var connectionStateTtl = connectionDetails && connectionDetails.connectionStateTtl;
+		if(connectionStateTtl) {
+			this.connectionStateTtl = connectionStateTtl;
 		}
 		this.emit('connectiondetails', connectionDetails);
 	};
