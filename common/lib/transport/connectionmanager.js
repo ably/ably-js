@@ -103,6 +103,7 @@ var ConnectionManager = (function() {
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
 		this.connectionStateTtl = timeouts.connectionStateTtl;
+		this.maxIdleInterval = null;
 
 		this.transports = Utils.intersect((options.transports || Defaults.defaultTransports), ConnectionManager.supportedTransports);
 		/* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
@@ -684,7 +685,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
 		var sinceLast = Utils.now() - this.lastActivity;
-		if(sinceLast > this.connectionStateTtl) {
+		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
 		}
@@ -1482,7 +1483,10 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.onConnectionDetailsUpdate = function(connectionDetails, transport) {
-		var clientId = connectionDetails && connectionDetails.clientId;
+		if(!connectionDetails) {
+			return;
+		}
+		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
@@ -1492,10 +1496,11 @@ var ConnectionManager = (function() {
 				return;
 			}
 		}
-		var connectionStateTtl = connectionDetails && connectionDetails.connectionStateTtl;
+		var connectionStateTtl = connectionDetails.connectionStateTtl;
 		if(connectionStateTtl) {
 			this.connectionStateTtl = connectionStateTtl;
 		}
+		this.maxIdleInterval = connectionDetails.maxIdleInterval;
 		this.emit('connectiondetails', connectionDetails);
 	};
 
