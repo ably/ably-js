@@ -5,7 +5,6 @@ var WebSocketTransport = (function() {
 	/* public constructor */
 	function WebSocketTransport(connectionManager, auth, params) {
 		this.shortName = shortName;
-		this.timeoutOnIdle = true;
 		/* If is a browser, can't detect pings, so request protocol heartbeats */
 		params.heartbeats = Platform.useProtocolHeartbeats;
 		Transport.call(this, connectionManager, auth, params);
@@ -71,7 +70,7 @@ var WebSocketTransport = (function() {
 				if(wsConnection.on) {
 					/* node; browsers currently don't have a general eventemitter and can't detect
 					 * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-					wsConnection.on('ping', function() { self.resetIdleTimeout() });
+					wsConnection.on('ping', function() { self.setIdleTimer() });
 				}
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));

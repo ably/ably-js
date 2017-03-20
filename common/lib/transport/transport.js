@@ -26,7 +26,9 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.maxIdleInterval = null;
 		this.idleTimer = null;
+		this.lastActivity = null;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
@@ -63,8 +65,9 @@ var Transport = (function() {
 
 		this.isFinished = true;
 		this.isConnected = false;
-		this.timeoutOnIdle = false;
+		this.maxIdleInterval = null;
 		clearTimeout(this.idleTimer);
+		this.idleTimer = null;
 		this.emit(event, err);
 		this.dispose();
 	};
@@ -73,8 +76,9 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
-		if(this.timeoutOnIdle) {
-			this.resetIdleTimeout();
+		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+		if(this.maxIdleInterval) {
+			this.setIdleTimer();
 		}
 
 		switch(message.action) {
@@ -131,16 +135,12 @@ var Transport = (function() {
 
 	Transport.prototype.onConnect = function(message) {
 		this.isConnected = true;
-		if(message.connectionDetails.maxIdleInterval === 0) {
-			/* Realtime declines to guarantee any maximum idle interval - CD2h */
-			this.timeoutOnIdle = false;
-		} else {
-			/* TODO remove "|| 15000" once realtime starts sending this */
-			this.maxIdleInterval = message.connectionDetails.maxIdleInterval || 15000;
+		var maxPromisedIdle = message.connectionDetails.maxIdleInterval;
+		if(maxPromisedIdle) {
+			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
+			this.setIdleTimer();
 		}
-		if(this.timeoutOnIdle) {
-			this.resetIdleTimeout();
-		}
+		/* else Realtime declines to guarantee any maximum idle interval - CD2h */
 	};
 
 	Transport.prototype.onDisconnect = function(message) {
@@ -187,17 +187,26 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.resetIdleTimeout = function() {
-		var self = this,
-			timeout = this.maxIdleInterval + this.timeouts.realtimeRequestTimeout;
+	Transport.prototype.setIdleTimer = function(timeout) {
+		var self = this;
+		if(!this.idleTimer) {
+			this.idleTimer = setTimeout(function() {
+				self.onIdleTimerExpire();
+			}, timeout || this.maxIdleInterval);
+		}
+	};
 
-		clearTimeout(this.idleTimer);
-
-		this.idleTimer = setTimeout(function() {
-			var msg = 'No activity seen from realtime in ' + timeout + 'ms; assuming connection has dropped';
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.resetIdleTimeout()', msg);
-			self.disconnect(new ErrorInfo(msg, 80003, 408));
-		}, timeout);
+	Transport.prototype.onIdleTimerExpire = function() {
+		this.idleTimer = null;
+		var sinceLast = Utils.now() - this.lastActivity,
+			timeRemaining = this.maxIdleInterval - sinceLast;
+		if(timeRemaining <= 0) {
+			var msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
+			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
+			this.disconnect(new ErrorInfo(msg, 80003, 408));
+		} else {
+			this.setIdleTimer(timeRemaining + 10);
+		}
 	};
 
 	Transport.prototype.onAuthUpdated = function() {};

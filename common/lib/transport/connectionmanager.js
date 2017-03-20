@@ -120,6 +120,7 @@ var ConnectionManager = (function() {
 		this.pendingTransports = [];
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
+		this.lastActivity = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
