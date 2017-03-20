@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.ok(('X-Ably-Lib' in headers), 'Verify lib header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			test.equal(headers['X-Ably-Lib'], 'js-' + Defaults.version, 'Verify libstring');
+			test.ok(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring');
 		};
 
 		var post_inner = Ably.Rest.Http.post;
@@ -33,7 +33,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
 			test.ok(('X-Ably-Lib' in headers), 'Verify lib header exists');
 			test.equal(headers['X-Ably-Version'], Defaults.apiVersion, 'Verify current version number');
-			test.equal(headers['X-Ably-Lib'], 'js-' + Defaults.version, 'Verify libstring');
+			test.ok(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring');
 		};
 
 		//Call all methods that use rest http calls

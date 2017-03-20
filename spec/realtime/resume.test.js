@@ -385,7 +385,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check channel resumed flag
 	 * TODO: enable once realtime supports this
 	 */
-	_exports.channel_resumed_flag = function(test) {
+	exports.channel_resumed_flag = function(test) {
 		var realtime = helper.AblyRealtime(),
 			realtimeTwo,
 			recoveryKey,
@@ -393,7 +393,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'channel_resumed_flag',
 			channel = realtime.channels.get(channelName);
 
-		test.expect(3);
+		test.expect(2);
 		async.series([
 			function(cb) {
 				connection.once('connected', function() { cb(); });
@@ -428,7 +428,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
-			closeAndFinish(test, realtime);
+			closeAndFinish(test, [realtime, realtimeTwo]);
 		});
 	};
 
@@ -458,6 +458,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		], function(err) {
 			if(err) test.ok(false, helper.displayError(err));
 			closeAndFinish(test, realtime);
+		});
+	};
+
+	/*
+	 * Check the library doesn't try to resume if the last known activity on the
+	 * connection was > connectionStateTtl ago
+	 */
+	exports.no_resume_last_activity = function(test) {
+		/* Specify a best transport so that upgrade activity doesn't reset the last activity timer */
+		var realtime = helper.AblyRealtime({transports: [bestTransport]}),
+			connection = realtime.connection,
+			connectionManager = connection.connectionManager
+
+		test.expect(1);
+		connection.once('connected', function() {
+			connectionManager.lastActivity = helper.Utils.now() - 10000000
+			/* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
+			 * reset the last activity timer */
+			connectionManager.activeProtocol.getTransport().onProtocolMessage = function(){};
+			connectionManager.tryATransport = function(transportParams) {
+				test.equal(transportParams.mode, 'clean', 'Check library didn’t try to resume');
+				closeAndFinish(test, realtime);
+			};
+			connectionManager.disconnectAllTransports();
 		});
 	};
 
