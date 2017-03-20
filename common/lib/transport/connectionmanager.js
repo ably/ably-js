@@ -684,6 +684,8 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
+		if(!this.lastActivity) { return; }
+
 		var sinceLast = Utils.now() - this.lastActivity;
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
