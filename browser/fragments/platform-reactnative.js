@@ -1,4 +1,5 @@
 var Platform = {
+	libver: 'js-rn-',
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
 	WebSocket: WebSocket,

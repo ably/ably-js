@@ -1,4 +1,5 @@
 this.Platform = {
+	libver: 'js-node-',
 	hasWindow: false,
 	userAgent: null,
 	binaryType: 'nodebuffer',
