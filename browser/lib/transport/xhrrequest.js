@@ -13,11 +13,7 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var xhrSupported = Platform.xhrSupported;
 	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
-	function isAvailable() {
-		return xhrSupported;
-	};
 
 	function ieVersion() {
 		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
@@ -69,7 +65,6 @@ var XHRRequest = (function() {
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
 	Utils.inherits(XHRRequest, EventEmitter);
-	XHRRequest.isAvailable = isAvailable;
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
 		/* XHR requests are used either with the context being a realtime
@@ -281,12 +276,12 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	if(isAvailable()) {
+	if(Platform.xhrSupported) {
 		if(typeof DomEvent === 'object') {
 			DomEvent.addUnloadListener(clearPendingRequests);
 		}
 		if(typeof(Http) !== 'undefined') {
-			Http.supportsAuthHeaders = xhrSupported;
+			Http.supportsAuthHeaders = true;
 			Http.Request = function(rest, uri, headers, params, body, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
 				req.once('complete', callback);

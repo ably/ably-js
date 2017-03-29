@@ -8,6 +8,7 @@ var Platform = {
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
 	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
+	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: msgpack,

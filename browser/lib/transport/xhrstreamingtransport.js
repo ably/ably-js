@@ -8,7 +8,9 @@ var XHRStreamingTransport = (function() {
 	}
 	Utils.inherits(XHRStreamingTransport, CometTransport);
 
-	XHRStreamingTransport.isAvailable = XHRRequest.isAvailable;
+	XHRStreamingTransport.isAvailable = function() {
+		return Platform.xhrSupported && Platform.streamingSupported;
+	};
 
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRStreamingTransport(connectionManager, auth, params);
