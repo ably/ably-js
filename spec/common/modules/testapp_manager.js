@@ -1,15 +1,18 @@
 "use strict";
+/* global define, isNativescript, fetch */
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably) {
 	var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
 			tlsPort  = ablyGlobals.tlsPort;
 
+
 	var isBrowser = (typeof(window) === 'object'),
 			httpReq   = httpReqFunction(),
-			toBase64  = base64Function(),
-			loadJsonData = isBrowser ? loadJsonDataBrowser : loadJsonDataNode,
-			testResourcesPath = (isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/common/ably-common/test-resources/';
+			toBase64  =  base64Function(),
+			loadJsonData = isNativescript ? loadJsonNativescript : isBrowser ? loadJsonDataBrowser : loadJsonDataNode,
+			testResourcesPath = isNativescript ? '~/ably/ably-common/test-resources/' :
+				(isBrowser && window.__karma__ && window.__karma__.start ? 'base/' : '') + 'spec/common/ably-common/test-resources/';
 
 	function prefixDomainWithEnvironment(domain, environment) {
 		if (environment.toLowerCase() === 'production') {
@@ -31,6 +34,10 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		return null;
 	}
 
+	function NSbase64Function(d) {
+		return base64.encode(d);
+	}
+
 	function base64Function() {
 		if (isBrowser) {
 			return base64.encode;
@@ -44,7 +51,26 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 	}
 
 	function httpReqFunction() {
-		if (isBrowser) {
+		if (isNativescript) {
+			return function(options, callback) {
+				var http = require('http');
+				var uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
+
+				http.request({
+					url: uri,
+					method: options.method || 'GET',
+					timeout: 10000,
+					headers: options.headers,
+					content: options.body
+				}).then(function (results) {
+					callback(null, results.content.toString());
+				})
+				.catch(function(err) {
+					callback(err);
+				});
+			};
+		}
+		else if (isBrowser) {
 			return function(options, callback) {
 				var xhr = createXHR();
 				var uri;
@@ -195,6 +221,11 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		};
 
 		httpReq(delOptions, function(err) { callback(err); });
+	}
+
+	function loadJsonNativescript(datapath, callback) {
+		var d = require(datapath);
+		callback(null, d);
 	}
 
 	function loadJsonDataBrowser(dataPath, callback) {

@@ -28,7 +28,7 @@ var Platform = {
 	supportsBinary: (typeof TextDecoder !== 'undefined') && TextDecoder,
 	preferBinary: false,
 	ArrayBuffer: ArrayBuffer,
-	atob: function(f) { return Base64.decode(f); },
+	atob: null,
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: null,
 	inspect: JSON.stringify,
