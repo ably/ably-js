@@ -22,35 +22,8 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					/* use a fallback host if available */
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		}
-		tryAHost(hosts);
-	};
+		Http.do('get', rest, path, headers, null, params, callback);
+	}
 
 	/**
 	 * Perform an HTTP GET request for a given resolved URI
@@ -61,7 +34,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(rest, uri, headers, params, null, callback || noop);
+		Http.doUri('get', rest, uri, headers, null, params, callback);
 	};
 
 	/**
@@ -74,33 +47,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
-			return;
-		}
-
-		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		};
-		tryAHost(hosts);
+		Http.do('post', rest, path, headers, body, params, callback);
 	};
 
 	/**
@@ -113,7 +60,57 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(rest, uri, headers, params, body, callback || noop);
+		Http.doUri('post', rest, uri, headers, body, params, callback);
+	};
+
+	Http.delete = function(rest, path, headers, params, callback) {
+		Http.do('delete', rest, path, headers, null, params, callback);
+	}
+
+	Http.deleteUri = function(rest, uri, headers, params, callback) {
+		Http.doUri('delete', rest, uri, headers, null, params, callback);
+	};
+
+	Http.put = function(rest, path, headers, body, params, callback) {
+		Http.do('put', rest, path, headers, body, params, callback);
+	};
+
+	Http.putUri = function(rest, uri, headers, body, params, callback) {
+		Http.doUri('put', rest, uri, headers, body, params, callback);
+	};
+
+	Http.do = function(method, rest, path, headers, body, params, callback) {
+		callback = callback || noop;
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+
+		var hosts, connection = rest.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(rest.options);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.doUri(method, rest, uri(hosts[0]), headers, body, params, callback);
+			return;
+		}
+
+		/* hosts is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.doUri(method, rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
+					return;
+				}
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
+	};
+
+	Http.doUri = function(method, rest, uri, headers, body, params, callback) {
+		Http.Request(method, rest, uri, headers, params, body, callback || noop);
 	};
 
 	Http.supportsAuthHeaders = false;
