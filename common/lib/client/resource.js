@@ -76,10 +76,10 @@ var Resource = (function() {
 		return path + (params ? '?' : '') + paramString(params);
 	}
 
-	function logResponseHandler(callback, verb, path, params) {
+	function logResponseHandler(callback, method, path, params) {
 		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
@@ -89,8 +89,24 @@ var Resource = (function() {
 	}
 
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource.do('get', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource.do('post', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.delete = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource.do('delete', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource.do('put', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.do = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'get', path, origparams);
+			callback = logResponseHandler(callback, method, path, origparams);
 		}
 
 		if(envelope) {
@@ -98,12 +114,12 @@ var Resource = (function() {
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
-		function doGet(headers, params) {
+		function doRequest(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
-			Http.get(rest, path, headers, params, function(err, res, headers, unpacked, statusCode) {
+			var args = [rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
 				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorize(null, null, function(err) {
@@ -112,56 +128,31 @@ var Resource = (function() {
 							return;
 						}
 						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+						withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 					});
 					return;
 				}
 				callback(err, res, headers, unpacked, statusCode);
-			});
-		}
-		withAuthDetails(rest, origheaders, origparams, callback, doGet);
-	};
+			}];
+			if (!body) {
+				args.splice(3, 1);
+			}
 
-	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'post', path, origparams);
-		}
-
-		if(envelope) {
-			callback = unenvelope(callback, envelope);
-			origparams['envelope'] = envelope;
-		}
-
-		function doPost(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
 						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
-						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
 					}
 				}
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
-
-			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
-				if(err && Auth.isTokenErr(err)) {
-					/* token has expired, so get a new one */
-					rest.auth.authorize(null, null, function(err) {
-						if(err) {
-							callback(err);
-							return;
-						}
-						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doPost);
-					});
-					return;
-				}
-				callback(err, res, headers, unpacked, statusCode);
-			});
+			Http[method].apply(this, args);
 		}
-		withAuthDetails(rest, origheaders, origparams, callback, doPost);
+
+		withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 	};
 
 	return Resource;

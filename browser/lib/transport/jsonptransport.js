@@ -171,7 +171,8 @@ var JSONPTransport = (function() {
 	};
 
 	if(Platform.jsonpSupported && !Http.Request) {
-		Http.Request = function(rest, uri, headers, params, body, callback) {
+		Http.Request = function(method, rest, uri, headers, params, body, callback) {
+			/* ignore method; always GET */
 			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 			req.once('complete', callback);
 			Utils.nextTick(function() {

@@ -49,7 +49,7 @@ var XHRRequest = (function() {
 		return headers;
 	}
 
-	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
+	function XHRRequest(uri, headers, params, body, requestMode, timeouts, method) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = Utils.randStr();
@@ -58,6 +58,7 @@ var XHRRequest = (function() {
 		this.uri = uri + Utils.toQueryString(params);
 		this.headers = headers || {};
 		this.body = body;
+		this.method = method ? method.toUpperCase() : (Utils.isEmptyArg(body) ? 'POST' : 'GET');
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
 		this.timedOut = false;
@@ -66,12 +67,12 @@ var XHRRequest = (function() {
 	}
 	Utils.inherits(XHRRequest, EventEmitter);
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts, method) {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
 		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
-		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
+		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
@@ -96,7 +97,7 @@ var XHRRequest = (function() {
 				xhr.abort();
 			}, timeout),
 			body = this.body,
-			method = Utils.isEmptyArg(body) ? 'GET' : 'POST',
+			method = method,
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			accept = headers['accept'],
@@ -287,8 +288,8 @@ var XHRRequest = (function() {
 		}
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = true;
-			Http.Request = function(rest, uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+			Http.Request = function(method, rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
 				req.once('complete', callback);
 				req.exec();
 				return req;
