@@ -4,7 +4,7 @@
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably) {
 	var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
-		tlsPort  = ablyGlobals.tlsPort;
+			tlsPort  = ablyGlobals.tlsPort;
 
 
 	var isBrowser = (typeof(window) === 'object'),
@@ -90,12 +90,12 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 
 				if(xhr.isXDR && !schemeMatchesCurrent(options.scheme)) {
 					/* Can't use XDR for cross-scheme. For some requests could just force
-					 * the same scheme and be done with it, but not for authenticated
-					 * requests to ably, can't use basic auth for non-tls endpoints.
-					 * Luckily ably can handle jsonp, so just use the ably Http method,
-					 * which will use the jsonp transport. Can't just do this all the time
-					 * as the local express webserver serves files statically, so can't do
-					 * jsonp. */
+					* the same scheme and be done with it, but not for authenticated
+					* requests to ably, can't use basic auth for non-tls endpoints.
+					* Luckily ably can handle jsonp, so just use the ably Http method,
+					* which will use the jsonp transport. Can't just do this all the time
+					* as the local express webserver serves files statically, so can't do
+					* jsonp. */
 					if(options.method === 'DELETE') {
 						/* Ignore DELETEs -- can't be done with jsonp at the moment, and
 						 * simulation apps self-delete after a while */
@@ -136,7 +136,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 			};
 		} else {
 			var http = require('http'),
-				https = require('https');
+					https = require('https');
 
 			return function(options, callback) {
 				var body = options.body;
@@ -199,7 +199,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		var postData = JSON.stringify(statsData);
 
 		var authKey = app.keys[0].keyStr,
-			authHeader = toBase64(authKey);
+				authHeader = toBase64(authKey);
 
 		var postOptions = {
 			host: restHost, port: tlsPort, path: '/stats', method: 'POST', scheme: 'https',
@@ -224,7 +224,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 
 	function deleteApp(app, callback) {
 		var authKey = app.keys[0].keyStr,
-			authHeader = toBase64(authKey);
+				authHeader = toBase64(authKey);
 
 		var delOptions = {
 			host: restHost, port: tlsPort, method: 'DELETE', path: '/apps/' + app.appId,
@@ -266,8 +266,8 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 
 	function loadJsonDataNode(dataPath, callback) {
 		var fs = require('fs'),
-			path = require('path'),
-			resolvedPath = path.resolve(__dirname, '../../..', dataPath);
+				path = require('path'),
+				resolvedPath = path.resolve(__dirname, '../../..', dataPath);
 
 		fs.readFile(resolvedPath, function(err, data) {
 			if(err) {
