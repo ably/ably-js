@@ -72,6 +72,8 @@ var Message = (function() {
 			else
 				result += '; data (json)=' + JSON.stringify(this.data);
 		}
+		if(this.extras)
+			result += '; extras=' + JSON.stringify(this.extras);
 		result += ']';
 		return result;
 	};

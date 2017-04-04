@@ -9,6 +9,7 @@ var Channel = (function() {
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
+		this.push = new PushChannel(this);
 		this.setOptions(channelOptions);
 	}
 	Utils.inherits(Channel, EventEmitter);
