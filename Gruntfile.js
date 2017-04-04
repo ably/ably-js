@@ -103,6 +103,8 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/types/presencemessage.js',
 		'<%= dirs.common %>/lib/types/protocolmessage.js',
 		'<%= dirs.common %>/lib/types/stats.js',
+		'<%= dirs.common %>/lib/types/devicedetails.js',
+		'<%= dirs.common %>/lib/types/pushchannelsubscription.js',
 
 		'<%= dirs.common %>/lib/transport/connectionerror.js',
 		'<%= dirs.common %>/lib/transport/messagequeue.js',
@@ -121,6 +123,8 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/connectionstatechange.js',
 		'<%= dirs.common %>/lib/client/channelstatechange.js',
 		'<%= dirs.common %>/lib/client/connection.js',
+		'<%= dirs.common %>/lib/client/push.js',
+		'<%= dirs.common %>/lib/client/pushchannel.js',
 		'<%= dirs.common %>/lib/client/channel.js',
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
 		'<%= dirs.common %>/lib/client/realtimepresence.js',
