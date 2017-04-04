@@ -50,6 +50,7 @@ var Rest = (function() {
 		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
+		this.push = new Push(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
