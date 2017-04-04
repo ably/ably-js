@@ -694,6 +694,8 @@ var ConnectionManager = (function() {
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
+			this.states.connecting.failState = 'suspended';
+			this.states.connecting.queueEvents = false;
 		}
 	};
 
