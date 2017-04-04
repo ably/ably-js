@@ -688,7 +688,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
-		if(!this.lastActivity) { return; }
+		if(!this.lastActivity || !this.connectionId) { return; }
 
 		var sinceLast = Utils.now() - this.lastActivity;
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
