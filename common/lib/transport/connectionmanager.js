@@ -651,8 +651,12 @@ var ConnectionManager = (function() {
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
 		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-		if(this.connectionId && this.connectionId !== connectionId)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
+		/* Note that this is also run on clean connections; the msgSerial is a
+		 * noop, but the channel reattach is needed for channels that were
+		 * previously in the attached state even though the connection mode was
+		 * 'clean' due to a freshness check - see https://github.com/ably/ably-js/issues/394 */
+		if(this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; resetting msgSerial and reattaching any attached channels');
 			this.msgSerial = 0;
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
@@ -684,12 +688,14 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
-		if(!this.lastActivity) { return; }
+		if(!this.lastActivity || !this.connectionId) { return; }
 
 		var sinceLast = Utils.now() - this.lastActivity;
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
+			this.states.connecting.failState = 'suspended';
+			this.states.connecting.queueEvents = false;
 		}
 	};
 
