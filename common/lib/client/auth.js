@@ -368,22 +368,14 @@ var Auth = (function() {
 
 		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
-			var requestHeaders,
-				keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken';};
+			var keyName = signedTokenParams.keyName,
+				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
 
-			if(Http.post) {
-				requestHeaders = Utils.defaultPostHeaders(format);
-				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
-				Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
-			} else {
-				requestHeaders = Utils.defaultGetHeaders();
-				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
-			}
+			var requestHeaders = Utils.defaultPostHeaders(format);
+			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
+			signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true) : JSON.stringify(signedTokenParams);
+			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
 
 		var tokenRequestCallbackTimeoutExpired = false,
