@@ -439,8 +439,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var x = arguments[0];
 			var y = arguments[1];
 
-			if (isArray(x)) {
-				if (!isArray(y)) {
+			if (Utils.isArray(x)) {
+				if (!Utils.isArray(y)) {
 					return 'not both arrays';
 				}
 
@@ -475,7 +475,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 				return true;
 			} else if (x instanceof Object) {
-				if (!(x instanceof Object) || isArray(y)) {
+				if (!(x instanceof Object) || Utils.isArray(y)) {
 					return 'not both objects';
 				}
 
@@ -501,10 +501,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var eq = includesUnordered(x, y);
 		test.ok(eq === true, JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')');
-	}
-
-	function isArray(object) {
- 		return object != null && typeof object === "object" && 'splice' in object && 'join' in object;
 	}
 
 	return module.exports = helper.withTimeout(exports);
