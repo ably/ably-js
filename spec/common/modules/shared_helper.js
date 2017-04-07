@@ -139,6 +139,9 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 							test.done = function() {
 								clearTimeout(timer);
 								originalDone.apply(test, arguments);
+								test.done = function() {
+									console.log("Test DONE called TWICE! -- there is a bug in the test, or the timeout was triggered!", originalFn.name);
+								};
 							};
 							var timer = setTimeout(function() {
 								test.ok(false, "Test timed out after " + (timeout / 1000) + "s");

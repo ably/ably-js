@@ -110,7 +110,7 @@ var XHRRequest = (function() {
 
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
-			if(contentType == 'application/json' && typeof(body) != 'string')
+			if(contentType.indexOf('application/json') > -1 && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
 
@@ -167,7 +167,7 @@ var XHRRequest = (function() {
 				var contentType = getHeader(xhr, 'content-type'),
 					headers,
 					server,
-					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
+					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
 
