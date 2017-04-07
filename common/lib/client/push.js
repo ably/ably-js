@@ -10,7 +10,7 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 		    requestBody = Utils.mixin({recipient: recipient}, payload),
-		    headers = Utils.copy(Utils.defaultPostHeaders(format));
+		    headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -32,7 +32,7 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 		    requestBody = DeviceDetails.fromValues(device),
-		    headers = Utils.copy(Utils.defaultPostHeaders(format));
+		    headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -74,7 +74,7 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 		    requestBody = PushChannelSubscription.fromValues(subscription),
-		    headers = Utils.copy(Utils.defaultPostHeaders(format));
+		    headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
