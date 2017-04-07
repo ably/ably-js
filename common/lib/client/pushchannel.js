@@ -15,7 +15,7 @@ var PushChannel = (function() {
 		this._getClientId(callback, function(clientId) {
 			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			    requestBody = {clientId: clientId, channel: self.channel.name},
-			    headers = Utils.copy(Utils.defaultPostHeaders(format));
+			    headers = Utils.defaultPostHeaders(format);
 
 			if(rest.options.headers)
 				Utils.mixin(headers, rest.options.headers);
@@ -30,7 +30,7 @@ var PushChannel = (function() {
 		var rest = this.rest;
 		this._getClientId(callback, function(clientId) {
 			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			    headers = Utils.copy(Utils.defaultPostHeaders(format));
+			    headers = Utils.defaultPostHeaders(format);
 
 			if(rest.options.headers)
 				Utils.mixin(headers, rest.options.headers);
