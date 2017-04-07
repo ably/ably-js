@@ -20,7 +20,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.2';
+Defaults.version          = '1.0.3';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 

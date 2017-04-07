@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.2
+ * Ably JavaScript Library v1.0.3
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3148,6 +3148,7 @@ var Platform = {
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
 	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
+	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: msgpack,
@@ -4089,7 +4090,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.2';
+Defaults.version          = '1.0.3';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -6353,8 +6354,12 @@ var ConnectionManager = (function() {
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
 		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-		if(this.connectionId && this.connectionId !== connectionId)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'connectionId has changed; resetting msgSerial and reattaching channels');
+		/* Note that this is also run on clean connections; the msgSerial is a
+		 * noop, but the channel reattach is needed for channels that were
+		 * previously in the attached state even though the connection mode was
+		 * 'clean' due to a freshness check - see https://github.com/ably/ably-js/issues/394 */
+		if(this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; resetting msgSerial and reattaching any attached channels');
 			this.msgSerial = 0;
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
@@ -6386,12 +6391,14 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
-		if(!this.lastActivity) { return; }
+		if(!this.lastActivity || !this.connectionId) { return; }
 
 		var sinceLast = Utils.now() - this.lastActivity;
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
+			this.states.connecting.failState = 'suspended';
+			this.states.connecting.queueEvents = false;
 		}
 	};
 
@@ -8645,22 +8652,14 @@ var Auth = (function() {
 
 		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
-			var requestHeaders,
-				keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken';};
+			var keyName = signedTokenParams.keyName,
+				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
 
-			if(Http.post) {
-				requestHeaders = Utils.defaultPostHeaders(format);
-				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true): JSON.stringify(signedTokenParams);
-				Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
-			} else {
-				requestHeaders = Utils.defaultGetHeaders();
-				if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending GET; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-				Http.get(client, tokenUri, requestHeaders, signedTokenParams, tokenCb);
-			}
+			var requestHeaders = Utils.defaultPostHeaders(format);
+			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
+			signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true) : JSON.stringify(signedTokenParams);
+			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
 
 		var tokenRequestCallbackTimeoutExpired = false,
@@ -10723,11 +10722,7 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var xhrSupported = Platform.xhrSupported;
 	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
-	function isAvailable() {
-		return xhrSupported;
-	};
 
 	function ieVersion() {
 		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
@@ -10779,7 +10774,6 @@ var XHRRequest = (function() {
 		pendingRequests[this.id = String(++idCounter)] = this;
 	}
 	Utils.inherits(XHRRequest, EventEmitter);
-	XHRRequest.isAvailable = isAvailable;
 
 	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
 		/* XHR requests are used either with the context being a realtime
@@ -10825,7 +10819,7 @@ var XHRRequest = (function() {
 
 		if(body) {
 			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
-			if(contentType == 'application/json' && typeof(body) != 'string')
+			if(contentType.indexOf('application/json') > -1 && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
 
@@ -10882,7 +10876,7 @@ var XHRRequest = (function() {
 				var contentType = getHeader(xhr, 'content-type'),
 					headers,
 					server,
-					json = contentType ? (contentType == 'application/json') : (xhr.responseType == 'text');
+					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
 
 				responseBody = json ? xhr.responseText : xhr.response;
 
@@ -10991,12 +10985,12 @@ var XHRRequest = (function() {
 		delete pendingRequests[this.id];
 	};
 
-	if(isAvailable()) {
+	if(Platform.xhrSupported) {
 		if(typeof DomEvent === 'object') {
 			DomEvent.addUnloadListener(clearPendingRequests);
 		}
 		if(typeof(Http) !== 'undefined') {
-			Http.supportsAuthHeaders = xhrSupported;
+			Http.supportsAuthHeaders = true;
 			Http.Request = function(rest, uri, headers, params, body, callback) {
 				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
 				req.once('complete', callback);
@@ -11029,7 +11023,9 @@ var XHRStreamingTransport = (function() {
 	}
 	Utils.inherits(XHRStreamingTransport, CometTransport);
 
-	XHRStreamingTransport.isAvailable = XHRRequest.isAvailable;
+	XHRStreamingTransport.isAvailable = function() {
+		return Platform.xhrSupported && Platform.streamingSupported;
+	};
 
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRStreamingTransport(connectionManager, auth, params);
@@ -11066,7 +11062,9 @@ var XHRPollingTransport = (function() {
 	}
 	Utils.inherits(XHRPollingTransport, CometTransport);
 
-	XHRPollingTransport.isAvailable = XHRRequest.isAvailable;
+	XHRPollingTransport.isAvailable = function() {
+		return Platform.xhrSupported;
+	};
 
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new XHRPollingTransport(connectionManager, auth, params);
