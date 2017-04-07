@@ -84,7 +84,7 @@ var Channel = (function() {
 		var rest = this.rest,
 			options = rest.options,
 			format = options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultPostHeaders(format));
+			headers = Utils.defaultPostHeaders(format);
 
 		if(options.headers)
 			Utils.mixin(headers, options.headers);

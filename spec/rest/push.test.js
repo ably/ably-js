@@ -5,7 +5,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Utils = Ably.Rest.Utils,
 		exports = {},
 		displayError = helper.displayError,
-		defaultHeaders = Utils.copy(Utils.defaultPostHeaders('msgpack')),
+		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
 		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
 		
 	exports.setup_push = function(test) {
