@@ -97,7 +97,7 @@ var XHRRequest = (function() {
 				xhr.abort();
 			}, timeout),
 			body = this.body,
-			method = method,
+			method = this.method,
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			accept = headers['accept'],
