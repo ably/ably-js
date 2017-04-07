@@ -1,5 +1,5 @@
 var Push = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function Push(rest) {
 		this.rest = rest;
