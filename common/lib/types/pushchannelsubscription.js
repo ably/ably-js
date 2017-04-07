@@ -39,14 +39,7 @@ var PushChannelSubscription = (function() {
 		if(format)
 			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
-		for(var i = 0; i < body.length; i++) {
-			body[i] = PushChannelSubscription.fromDecoded(body[i]);
-		}
-		return body;
-	};
-
-	PushChannelSubscription.fromDecoded = function(values) {
-		return Utils.mixin(new PushChannelSubscription(), values);
+		return PushChannelSubscription.fromValuesArray(body);
 	};
 
 	PushChannelSubscription.fromValues = function(values) {
