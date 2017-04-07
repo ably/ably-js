@@ -1,5 +1,5 @@
 var DeviceDetails = (function() {
-	var msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+	var msgpack = Platform.msgpack;
 
 	function DeviceDetails() {
 		this.id = undefined;
