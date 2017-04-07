@@ -1,5 +1,33 @@
 # Change Log
 
+This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
+
+## [1.0.3](https://github.com/ably/ably-js/tree/1.0.3) (2017-04-17)
+
+- Improved NativeScript supprot [\#392](https://github.com/ably/ably-js/pull/392)
+
+- Fix bug in 1.0.2 where channels can never become reattached after a computer goes into sleep mode [\#396](https://github.com/ably/ably-js/pull/396)
+
+## [1.0.2](https://github.com/ably/ably-js/tree/1.0.2) (2017-03-20)
+
+- Don’t attempt a resume if last known activity was greater than the connectionStateTtl ago [\#389](https://github.com/ably/ably-js/pull/389)
+
+## [1.0.1](https://github.com/ably/ably-js/tree/1.0.1) (2017-03-13)
+
+- Only use websocket transport in node unless comet explicitly requested with `transports: ['comet']` or `transports: ['comet', 'web_socket']` [\#382](https://github.com/ably/ably-js/pull/382)
+
+- Fix issue with multiple attaches happening after a failed resume [\#386](https://github.com/ably/ably-js/pull/386)
+
+## [1.0](https://github.com/ably/ably-js/tree/1.0.0) (2017-03-08)
+
+- Lots of changes; see https://github.com/ably/docs/issues/235 for the most important and/or breaking changes and upgrade notes, or the [full Changelog](https://github.com/ably/ably-js/compare/0.8.42...1.0.0)
+
+## [0.8.42](https://github.com/ably/ably-js/tree/0.8.42) (2017-02-27)
+
+- Fix presence issue when receive >9 presence updates from the same connection by backporting 0.9 presence newness algorithm  5ce4fa8
+
+- Fix on('attached') registration in an on('attached') block firing immediately [\#364](https://github.com/ably/ably-js/issues/364)
+
 ## [0.8.41](https://github.com/ably/ably-js/tree/0.8.41) (2016-10-26)
 
 - Fix occasional anomalously low presence set right after a sync [abb03f5](https://github.com/ably/ably-js/commit/abb03f5fb4dc86aa13ed60e2def030c30b151852)
