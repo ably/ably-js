@@ -546,5 +546,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Try to connect over http
+	 * @spec : (RSC18)
+	 */
+	exports.auth_connect_unsecure = function(test) {
+		test.expect(2);
+
+		var rest = helper.AblyRest({ tls: false });
+
+		rest.stats({}, function(err, page) {
+			if(err) {
+				test.ok(true, 'Verify connection failed');
+				test.equal(err.code, 40103, 'Verify error code');
+			} else {
+				test.ok(false, 'Connected unsecure');
+			}
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
