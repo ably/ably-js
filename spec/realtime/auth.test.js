@@ -432,6 +432,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	});
 
 	/*
+	 * When a clientId value is provided in both ClientOptions#clientId and ClientOptions#defaultTokenParams,
+	 * the ClientOptions#clientId takes precendence and is used for all Auth operations (RSA7a4)
+	 */
+	exports.auth_clientid_precedence = function(test) {
+		test.expect(2);
+		var testClientId = 'test client id',
+			testClientDefaultId = 'test client default id';
+
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: testClientId, defaultTokenParams: { clientId: testClientDefaultId } }, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			test.ok((tokenDetails.token), 'Verify token value');
+			test.equal(tokenDetails.clientId, testClientId, 'Authenticated with clientId that overrides default clientId');
+			test.done();
+		});
+	};
+
+	/*
 	 * Check state change reason is propogated during a disconnect
 	 * (when connecting with a token that expires while connected)
 	 */
