@@ -70,7 +70,7 @@ var WebSocketTransport = (function() {
 				if(wsConnection.on) {
 					/* node; browsers currently don't have a general eventemitter and can't detect
 					 * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-					wsConnection.on('ping', function() { self.setIdleTimer() });
+					wsConnection.on('ping', function() { self.onActivity(); });
 				}
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
