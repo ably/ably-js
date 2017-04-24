@@ -14,6 +14,10 @@ var Logger = (function() {
 		consoleLogger = function() {};
 	}
 
+	function pad(str, three) {
+		return ('000' + str).slice(-2-(three || 0));
+	}
+
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
 	LOG_MAJOR = 2,
@@ -24,7 +28,11 @@ var Logger = (function() {
 	LOG_DEBUG   = LOG_MICRO;
 
 	var logLevel = LOG_DEFAULT;
-	var logHandler = consoleLogger;
+	var logHandler = Platform.logTimestamps ?
+		function(msg) {
+			var time = new Date();
+			consoleLogger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
+		} : consoleLogger;
 
 	/* public constructor */
 	function Logger(args) {}
