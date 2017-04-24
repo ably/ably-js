@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.3
+ * Ably JavaScript Library v1.0.4
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4079,7 +4079,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.3';
+Defaults.version          = '1.0.4';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4402,6 +4402,10 @@ var Logger = (function() {
 		consoleLogger = function() {};
 	}
 
+	function pad(str, three) {
+		return ('000' + str).slice(-2-(three || 0));
+	}
+
 	var LOG_NONE  = 0,
 	LOG_ERROR = 1,
 	LOG_MAJOR = 2,
@@ -4412,7 +4416,11 @@ var Logger = (function() {
 	LOG_DEBUG   = LOG_MICRO;
 
 	var logLevel = LOG_DEFAULT;
-	var logHandler = consoleLogger;
+	var logHandler = Platform.logTimestamps ?
+		function(msg) {
+			var time = new Date();
+			consoleLogger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
+		} : consoleLogger;
 
 	/* public constructor */
 	function Logger(args) {}
@@ -5815,6 +5823,7 @@ var ConnectionManager = (function() {
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
 		this.lastActivity = null;
+		this.mostRecentMsgId = null;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -7069,6 +7078,12 @@ var ConnectionManager = (function() {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
 			}
+			var msgId = message.id;
+			if(msgId && (msgId === this.mostRecentMsgId)) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
+				return;
+			}
+			this.mostRecentMsgId = msgId;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
@@ -7285,10 +7300,7 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
-		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
-		if(this.maxIdleInterval) {
-			this.setIdleTimer();
-		}
+		this.onActivity();
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
@@ -7347,7 +7359,7 @@ var Transport = (function() {
 		var maxPromisedIdle = message.connectionDetails.maxIdleInterval;
 		if(maxPromisedIdle) {
 			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
-			this.setIdleTimer();
+			this.onActivity();
 		}
 		/* else Realtime declines to guarantee any maximum idle interval - CD2h */
 	};
@@ -7396,7 +7408,10 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.setIdleTimer = function(timeout) {
+	Transport.prototype.onActivity = function(timeout) {
+		if(!this.maxIdleInterval) { return; }
+
+		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
 		var self = this;
 		if(!this.idleTimer) {
 			this.idleTimer = setTimeout(function() {
@@ -7414,7 +7429,7 @@ var Transport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
-			this.setIdleTimer(timeRemaining + 10);
+			this.onActivity(timeRemaining + 10);
 		}
 	};
 
@@ -7495,7 +7510,7 @@ var WebSocketTransport = (function() {
 				if(wsConnection.on) {
 					/* node; browsers currently don't have a general eventemitter and can't detect
 					 * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-					wsConnection.on('ping', function() { self.setIdleTimer() });
+					wsConnection.on('ping', function() { self.onActivity(); });
 				}
 			} catch(e) {
 				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
@@ -7510,7 +7525,15 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
-		wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+		try {
+			wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+		} catch (e) {
+			var msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
+			/* Don't try to request a disconnect, that'll just involve sending data
+			 * down the websocket again. Just finish the transport. */
+			this.finish('disconnected', new ErrorInfo(msg, 50000, 500));
+		}
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
@@ -7695,9 +7718,7 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
 				}
 				self.recvRequest = null;
-				if(this.maxIdleInterval) {
-					this.setIdleTimer();
-				}
+				self.onActivity();
 				if(err) {
 					if(err.code) {
 						/* A protocol error received from realtime. TODO: once realtime
@@ -7860,11 +7881,9 @@ var CometTransport = (function() {
 		});
 		recvRequest.on('complete', function(err) {
 			self.recvRequest = null;
-			if(this.maxIdleInterval) {
-				/* A request completing must be considered activity, as realtime sends
-				 * heartbeats every 15s since a request began, not every 15s absolutely */
-				this.setIdleTimer();
-			}
+			/* A request completing must be considered activity, as realtime sends
+			 * heartbeats every 15s since a request began, not every 15s absolutely */
+			self.onActivity();
 			if(err) {
 				if(err.code) {
 					/* A protocol error received from realtime. TODO: once realtime
@@ -10152,6 +10171,7 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
+		this.syncComplete = false;
 		this.members = new PresenceMap(this);
 		this._myMembers = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
@@ -10532,10 +10552,6 @@ var RealtimePresence = (function() {
 		this.subscriptions.off(event, listener);
 	};
 
-	RealtimePresence.prototype.syncComplete = function() {
-		return !this.members.syncInProgress;
-	};
-
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;
@@ -10647,7 +10663,7 @@ var RealtimePresence = (function() {
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
-			this.syncInProgress = true;
+			this.setInProgress(true);
 		}
 	};
 
@@ -10672,7 +10688,7 @@ var RealtimePresence = (function() {
 			this.residualMembers = null;
 
 			/* finish, notifying any waiters */
-			this.syncInProgress = false;
+			this.setInProgress(false);
 		}
 		this.emit('sync');
 	};
@@ -10689,8 +10705,14 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.clear = function(callback) {
 		this.map = {};
-		this.syncInProgress = false;
+		this.setInProgress(false);
 		this.residualMembers = null;
+	};
+
+	PresenceMap.prototype.setInProgress = function(inProgress) {
+		Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		this.syncInProgress = inProgress;
+		this.presence.syncComplete = !inProgress;
 	};
 
 	return RealtimePresence;

@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.4](https://github.com/ably/ably-js/tree/1.0.4) (2017-04-24)
+
+- Have the default logHandler on node log timestamps (https://github.com/ably/ably-js/issues/399)
+
+- Don't require Ably-protocol-level heartbeats by default on node (https://github.com/ably/ably-js/pull/398)
+
+- Cherry-pick syncComplete fn->bool and other changes and fixes from 0.9 branch that didn't make it into 1.0.0
+
 ## [1.0.3](https://github.com/ably/ably-js/tree/1.0.3) (2017-04-17)
 
 - Improved NativeScript supprot [\#392](https://github.com/ably/ably-js/pull/392)
