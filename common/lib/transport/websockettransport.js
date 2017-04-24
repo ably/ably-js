@@ -85,7 +85,15 @@ var WebSocketTransport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
-		wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+		try {
+			wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+		} catch (e) {
+			var msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
+			/* Don't try to request a disconnect, that'll just involve sending data
+			 * down the websocket again. Just finish the transport. */
+			this.finish('disconnected', new ErrorInfo(msg, 50000, 500));
+		}
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
