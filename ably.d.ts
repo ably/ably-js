@@ -319,7 +319,7 @@ declare namespace ablyLib {
   }
 
   class RealtimePresence {
-    syncComplete: () =>  boolean;
+    syncComplete: boolean;
     get: (Params: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
     history: (ParamsOrCallback: RealtimePresenceHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
     subscribe: (presenceOrCallback: PresenceAction | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;

@@ -637,7 +637,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							return;
 						}
 						test.ok(clientChannel2.state, 'attached', 'Verify channel attached');
-						test.ok(clientChannel2.presence.syncComplete(), 'Verify sync complete');
+						test.ok(clientChannel2.presence.syncComplete, 'Verify sync complete');
 						test.equal(presenceMembers.length, 1, 'Expect test client to be present');
 						test.equal(presenceMembers[0].clientId, testClientId, 'Expected test clientId to be correct');
 						closeAndFinish(test, [clientRealtime, clientRealtime2]);
@@ -1481,7 +1481,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				/* Since we haven't been gone for two minutes, we don't know for sure
 				 * that realtime will feel it necessary to do a sync - if it doesn't,
 					* we request one */
-				if(channel.presence.syncComplete()) {
+				if(channel.presence.syncComplete) {
 					channel.sync();
 				}
 				channel.presence.members.waitSync(cb);

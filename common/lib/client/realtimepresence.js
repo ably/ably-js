@@ -40,6 +40,7 @@ var RealtimePresence = (function() {
 
 	function RealtimePresence(channel, options) {
 		Presence.call(this, channel);
+		this.syncComplete = false;
 		this.members = new PresenceMap(this);
 		this._myMembers = new PresenceMap(this);
 		this.subscriptions = new EventEmitter();
@@ -420,10 +421,6 @@ var RealtimePresence = (function() {
 		this.subscriptions.off(event, listener);
 	};
 
-	RealtimePresence.prototype.syncComplete = function() {
-		return !this.members.syncInProgress;
-	};
-
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;
@@ -535,7 +532,7 @@ var RealtimePresence = (function() {
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
-			this.syncInProgress = true;
+			this.setInProgress(true);
 		}
 	};
 
@@ -560,7 +557,7 @@ var RealtimePresence = (function() {
 			this.residualMembers = null;
 
 			/* finish, notifying any waiters */
-			this.syncInProgress = false;
+			this.setInProgress(false);
 		}
 		this.emit('sync');
 	};
@@ -577,8 +574,14 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.clear = function(callback) {
 		this.map = {};
-		this.syncInProgress = false;
+		this.setInProgress(false);
 		this.residualMembers = null;
+	};
+
+	PresenceMap.prototype.setInProgress = function(inProgress) {
+		Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		this.syncInProgress = inProgress;
+		this.presence.syncComplete = !inProgress;
 	};
 
 	return RealtimePresence;

@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		monitorConnection = helper.monitorConnection;
 
 	exports.setupSync = function(test) {
@@ -42,7 +43,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'syncexistingset',
 			channel = realtime.channels.get(channelName);
 
-		channel.state = 'attached';
+		channel.onMessage(createPM({
+			action: 11,
+			channel: channelName,
+			flags: 1
+		}));
 
 		async.series([
 			function(cb) {
@@ -122,7 +127,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'sync_member_arrives_in_middle',
 			channel = realtime.channels.get(channelName);
 
-		channel.state = 'attached';
+		channel.onMessage(createPM({
+			action: 11,
+			channel: channelName,
+			flags: 1
+		}));
 
 		/* First sync */
 		channel.onMessage({
@@ -197,7 +206,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'sync_member_arrives_normally_after_came_in_sync',
 			channel = realtime.channels.get(channelName);
 
-		channel.state = 'attached';
+		channel.onMessage(createPM({
+			action: 11,
+			channel: channelName,
+			flags: 1
+		}));
 
 		channel.onMessage({
 			action: 16,
@@ -257,7 +270,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'sync_member_arrives_normally_before_comes_in_sync',
 			channel = realtime.channels.get(channelName);
 
-		channel.state = 'attached';
+		channel.onMessage(createPM({
+			action: 11,
+			channel: channelName,
+			flags: 1
+		}));
 
 		channel.onMessage({
 			action: 16,
@@ -318,7 +335,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channelName = 'sync_ordering',
 			channel = realtime.channels.get(channelName);
 
-		channel.state = 'attached';
+		channel.onMessage(createPM({
+			action: 11,
+			channel: channelName
+		}));
 
 		/* One enters */
 		channel.onMessage({
