@@ -4,7 +4,7 @@ this.Platform = {
 	userAgent: null,
 	binaryType: 'nodebuffer',
 	WebSocket: require('ws'),
-	useProtocolHeartbeats: true,
+	useProtocolHeartbeats: false,
 	createHmac: require('crypto').createHmac,
 	msgpack: require('msgpack-js'),
 	supportsBinary: true,

@@ -76,10 +76,7 @@ var Transport = (function() {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
 		}
-		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
-		if(this.maxIdleInterval) {
-			this.setIdleTimer();
-		}
+		this.onActivity();
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
@@ -138,7 +135,7 @@ var Transport = (function() {
 		var maxPromisedIdle = message.connectionDetails.maxIdleInterval;
 		if(maxPromisedIdle) {
 			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
-			this.setIdleTimer();
+			this.onActivity();
 		}
 		/* else Realtime declines to guarantee any maximum idle interval - CD2h */
 	};
@@ -187,7 +184,10 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.setIdleTimer = function(timeout) {
+	Transport.prototype.onActivity = function(timeout) {
+		if(!this.maxIdleInterval) { return; }
+
+		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
 		var self = this;
 		if(!this.idleTimer) {
 			this.idleTimer = setTimeout(function() {
@@ -205,7 +205,7 @@ var Transport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
-			this.setIdleTimer(timeRemaining + 10);
+			this.onActivity(timeRemaining + 10);
 		}
 	};
 
