@@ -15,7 +15,7 @@ var PushChannelSubscription = (function() {
 		return {
 			channel: this.channel,
 			deviceId: this.deviceId,
-			clientId: this.clientId,
+			clientId: this.clientId
 		};
 	};
 

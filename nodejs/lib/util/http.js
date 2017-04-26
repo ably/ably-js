@@ -86,7 +86,7 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
-		Http.do('get', rest, path, headers, null, params, callback);
+		Http['do']('get', rest, path, headers, null, params, callback);
 	}
 
 	/**
@@ -111,7 +111,7 @@ this.Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
-		Http.do('post', rest, path, headers, body, params, callback);
+		Http['do']('post', rest, path, headers, body, params, callback);
 	};
 
 	/**
@@ -127,8 +127,8 @@ this.Http = (function() {
 		Http.doUri('post', rest, uri, headers, body, params, callback);
 	};
 
-	Http.delete = function(rest, path, headers, params, callback) {
-		Http.do('delete', rest, path, headers, null, params, callback);
+	Http['delete'] = function(rest, path, headers, params, callback) {
+		Http['do']('delete', rest, path, headers, null, params, callback);
 	};
 
 	Http.deleteUri = function(rest, uri, headers, params, callback) {
@@ -136,14 +136,14 @@ this.Http = (function() {
 	};
 
 	Http.put = function(rest, path, headers, body, params, callback) {
-		Http.do('put', rest, path, headers, body, params, callback);
+		Http['do']('put', rest, path, headers, body, params, callback);
 	};
 
 	Http.putUri = function(rest, uri, headers, body, params, callback) {
 		Http.doUri('put', rest, uri, headers, body, params, callback);
 	};
 
-	Http.do = function(method, rest, path, headers, body, params, callback) {
+	Http['do'] = function(method, rest, path, headers, body, params, callback) {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var hosts = getHosts(rest);
 
