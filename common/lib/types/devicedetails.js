@@ -12,7 +12,7 @@ var DeviceDetails = (function() {
 			transportType: undefined,
 			state: undefined,
 			errorReason: undefined,
-			metadata: undefined,
+			metadata: undefined
 		};
 	}
 
@@ -32,8 +32,8 @@ var DeviceDetails = (function() {
 				transportType: this.push.transportType,
 				state: this.push.state,
 				errorReason: this.push.errorReason,
-				metadata: this.push.metadata,
-			},
+				metadata: this.push.metadata
+			}
 		};
 	};
 
