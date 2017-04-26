@@ -35,7 +35,7 @@ var PushChannel = (function() {
 			if(rest.options.headers)
 				Utils.mixin(headers, rest.options.headers);
 
-			Resource.delete(rest, '/push/channelSubscriptions', headers, {clientId: clientId, channel: self.channel.name}, false, callback);
+			Resource['delete'](rest, '/push/channelSubscriptions', headers, {clientId: clientId, channel: self.channel.name}, false, callback);
 		});
 	};
 

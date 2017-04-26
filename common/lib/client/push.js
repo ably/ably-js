@@ -63,7 +63,7 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.delete(rest, '/push/deviceRegistrations', headers, params, false, callback);
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
 	};
 
 	function ChannelSubscriptions(rest) {
@@ -105,7 +105,7 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		Resource.delete(rest, '/push/channelSubscriptions', headers, params, false, callback);
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
 	};
 
 	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
