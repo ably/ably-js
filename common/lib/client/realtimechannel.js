@@ -567,12 +567,15 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', err = ' + Utils.inspectError(err));
-		for(var i = 0; i < this.pendingEvents.length; i++)
-			try {
-				this.pendingEvents[i].callback(err);
-			} catch(e) {}
-		this.pendingEvents = [];
+		var numPending = this.pendingEvents.length;
+		if(numPending > 0) {
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', failing' + numPending + ' pending messages, err = ' + Utils.inspectError(err));
+			for(var i = 0; i < this.pendingEvents.length; i++)
+				try {
+					this.pendingEvents[i].callback(err);
+				} catch(e) {}
+			this.pendingEvents = [];
+		}
 	};
 
 	RealtimeChannel.prototype.history = function(params, callback) {

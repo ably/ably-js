@@ -1357,8 +1357,11 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.failQueuedMessages = function(err) {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.failQueuedMessages()', 'failing ' + this.queuedMessages.count() + ' queued messages');
-		this.queuedMessages.completeAllMessages(err);
+		var numQueued = this.queuedMessages.count();
+		if(numQueued > 0) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.failQueuedMessages()', 'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err));
+			this.queuedMessages.completeAllMessages(err);
+		}
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
