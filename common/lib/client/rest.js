@@ -153,5 +153,9 @@ var Rest = (function() {
 		return channel;
 	};
 
+	Channels.prototype.release = function(name) {
+		delete this.attached[String(name)];
+	};
+
 	return Rest;
 })();
