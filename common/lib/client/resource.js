@@ -137,7 +137,7 @@ var Resource = (function() {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
-						body = msgpack.decode(body);
+						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
 						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + JSON.stringify(decodeErr));
 					}
