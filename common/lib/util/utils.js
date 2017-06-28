@@ -367,7 +367,11 @@ var Utils = (function() {
 	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
-		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
+		/* redundant, but node vmcontext issue makes instanceof unreliable, and
+		 * can't use just constructor test as could be a TypeError constructor etc. */
+		return (x && (x.constructor.name == 'ErrorInfo' ||
+			x.constructor.name == 'Error' ||
+			x instanceof Error)) ?
 			x.toString() :
 			Utils.inspect(x);
 	};
