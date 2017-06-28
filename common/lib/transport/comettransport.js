@@ -224,7 +224,7 @@ var CometTransport = (function() {
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
 
 		sendRequest.on('complete', function(err, data) {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + JSON.stringify(err));
+			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 
 			/* the results of the request usually get handled as protocol responses instead of send errors */

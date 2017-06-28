@@ -307,7 +307,7 @@ var Auth = (function() {
 						authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
-						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
 					} else {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 					}
