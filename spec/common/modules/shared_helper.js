@@ -126,6 +126,11 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
+		function restTestOnJsonMsgpack(exports, name, testFn) {
+			exports[name + '_binary'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary'); };
+			exports[name + '_text'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text'); };
+		}
+
 		/* Wraps all tests with a timeout so that they don't run indefinitely */
 		/* Also clears transport preferences, so each test starts fresh */
 		function withTimeout(exports, defaultTimeout) {
@@ -220,6 +225,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			becomeSuspended:           becomeSuspended,
 			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
+			restTestOnJsonMsgpack:     restTestOnJsonMsgpack,
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
 			clearTransportPreference:  clearTransportPreference,

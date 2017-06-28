@@ -1,7 +1,8 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var currentTime, rest, exports = {},
+	var currentTime, rest, restBinary, exports = {},
+			restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack,
 			displayError = helper.displayError,
 			utils = helper.Utils,
 			testMessages = [
@@ -30,9 +31,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.history_simple = function(test) {
+	restTestOnJsonMsgpack(exports, 'history_simple', function(test, rest, channelName) {
 		test.expect(2);
-		var testchannel = rest.channels.get('persisted:history_simple');
+		var testchannel = rest.channels.get('persisted:' + channelName);
 
 		/* first, send a number of events to this channel */
 
@@ -62,7 +63,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						return;
 					}
 					/* verify all messages are received */
-		  var messages = resultPage.items;
+					var messages = resultPage.items;
 					test.equal(messages.length, testMessages.length, 'Verify correct number of messages found');
 
 					/* verify message ids are unique */
@@ -75,11 +76,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		} catch(e) {
 			console.log(e.stack);
 		}
-	};
+	});
 
-	exports.history_multiple = function(test) {
+	restTestOnJsonMsgpack(exports, 'history_multiple', function(test, rest, channelName) {
 		test.expect(2);
-		var testchannel = rest.channels.get('persisted:history_multiple');
+		var testchannel = rest.channels.get('persisted:' + channelName);
 
 		/* first, send a number of events to this channel */
 		var publishTasks = [function(publishCb) {
@@ -119,10 +120,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		} catch(e) {
 			console.log(e.stack);
 		}
-	};
+	});
 
-	exports.history_simple_paginated_b = function(test) {
-		var testchannel = rest.channels.get('persisted:history_simple_paginated_b');
+	restTestOnJsonMsgpack(exports, 'history_simple_paginated_b', function(test, rest, channelName) {
+		var testchannel = rest.channels.get('persisted:' + channelName);
 
 		/* first, send a number of events to this channel */
 		test.expect(5 * testMessages.length - 1);
@@ -187,7 +188,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		} catch(e) {
 			console.log(e.stack);
 		}
-	};
+	});
 
 	exports.history_simple_paginated_f = function(test) {
 		var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
@@ -384,8 +385,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	exports.history_encoding_errors = function(test) {
-		var testchannel = rest.channels.get('persisted:history_encoding_errors');
+	restTestOnJsonMsgpack(exports, 'history_encoding_errors', function(test, rest, channelName) {
+		var testchannel = rest.channels.get('persisted:' + channelName);
 		var badMessage = {name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{\"foo\":\"bar\"}'};
 		test.expect(2);
 		try {
@@ -413,7 +414,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		} catch(e) {
 			console.log(e.stack);
 		}
-	};
+	});
 
 	return module.exports = helper.withTimeout(exports);
 });
