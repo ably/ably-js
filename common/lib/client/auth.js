@@ -1,5 +1,4 @@
 var Auth = (function() {
-	var msgpack = Platform.msgpack;
 	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
 	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
@@ -285,7 +284,6 @@ var Auth = (function() {
 		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
-		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
@@ -371,10 +369,10 @@ var Auth = (function() {
 			var keyName = signedTokenParams.keyName,
 				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
 
-			var requestHeaders = Utils.defaultPostHeaders(format);
+			var requestHeaders = Utils.defaultPostHeaders();
 			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-			signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true) : JSON.stringify(signedTokenParams);
+			signedTokenParams = JSON.stringify(signedTokenParams);
 			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
 
@@ -439,7 +437,7 @@ var Auth = (function() {
 					callback(err);
 					return;
 				}
-				if(!unpacked) tokenResponse = (format == 'msgpack') ? msgpack.decode(tokenResponse) : JSON.parse(tokenResponse);
+				if(!unpacked) tokenResponse = JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
 				callback(null, tokenResponse);
 			});
