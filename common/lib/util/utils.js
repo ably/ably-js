@@ -314,7 +314,7 @@ var Utils = (function() {
 
 	Utils.defaultGetHeaders = function(format) {
 		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
+		var accept = (format === 'json') ? contentTypes.json : contentTypes[format];
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
@@ -324,8 +324,8 @@ var Utils = (function() {
 
 	Utils.defaultPostHeaders = function(format) {
 		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json,
-			contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
+		var accept, contentType;
+		accept = contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
 
 		return {
 			accept: accept,
