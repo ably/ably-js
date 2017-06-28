@@ -104,7 +104,7 @@ var XHRRequest = (function() {
 
 		if(!accept) {
 			headers['accept'] = 'application/json';
-		} else if(accept.indexOf('application/json') === -1) {
+		} else if(accept.indexOf('application/x-msgpack') === 0) {
 			responseType = 'arraybuffer';
 		}
 
@@ -113,7 +113,6 @@ var XHRRequest = (function() {
 			if(contentType.indexOf('application/json') > -1 && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
-
 
 		xhr.open(method, this.uri, true);
 		xhr.responseType = responseType;
