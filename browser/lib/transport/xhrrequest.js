@@ -165,17 +165,23 @@ var XHRRequest = (function() {
 			try {
 				var contentType = getHeader(xhr, 'content-type'),
 					headers,
-					server,
+					responseBody,
+					/* Be liberal in what we accept; buggy auth servers may respond
+					 * without the correct contenttype, but assume they're still
+					 * responding with json */
 					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
 
-				responseBody = json ? xhr.responseText : xhr.response;
-
 				if(json) {
-					responseBody = String(responseBody);
+					/* If we requested msgpack but server responded with json, then since
+					 * we set the responseType expecting msgpack, the response will be
+					 * an ArrayBuffer containing json */
+					responseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
 					if(responseBody.length) {
 						responseBody = JSON.parse(responseBody);
 					}
 					unpacked = true;
+				} else {
+					responseBody = xhr.response;
 				}
 
 				if(responseBody.response !== undefined) {
