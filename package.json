@@ -3,9 +3,9 @@
   "description": "Realtime client library for Ably.io, the realtime messaging service",
   "version": "1.0.4",
   "main": "./nodejs/index.js",
-  "typings": "browser/static/ably.d.ts",
+  "typings": "./browser/static/ably.d.ts",
   "react-native": {
-    "./nodejs/index.js": "browser/static/ably-reactnative.js"
+    "./nodejs/index.js": "./browser/static/ably-reactnative.js"
   },
   "browser": {
     "./nodejs/index.js": "./browser/static/ably-commonjs.js"
