@@ -164,8 +164,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var rxRealtime = helper.AblyRealtime(mixin(rxOpts));
 		test.expect(3);
 
-		var rxChannel = rxRealtime.channels.get('resume1');
-		var txChannel = txRest.channels.get('resume1');
+		var rxChannel = rxRealtime.channels.get(channelName);
+		var txChannel = txRest.channels.get(channelName);
 		var rxCount = 0;
 
 		function phase0(callback) {
