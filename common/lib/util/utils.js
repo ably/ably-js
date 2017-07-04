@@ -313,8 +313,7 @@ var Utils = (function() {
 	};
 
 	Utils.defaultGetHeaders = function(format) {
-		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
+		var accept = contentTypes[format || 'json'];
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
@@ -323,9 +322,8 @@ var Utils = (function() {
 	};
 
 	Utils.defaultPostHeaders = function(format) {
-		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json,
-			contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
+		var accept, contentType;
+		accept = contentType = contentTypes[format || 'json'];
 
 		return {
 			accept: accept,
@@ -367,7 +365,11 @@ var Utils = (function() {
 	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
-		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
+		/* redundant, but node vmcontext issue makes instanceof unreliable, and
+		 * can't use just constructor test as could be a TypeError constructor etc. */
+		return (x && (x.constructor.name == 'ErrorInfo' ||
+			x.constructor.name == 'Error' ||
+			x instanceof Error)) ?
 			x.toString() :
 			Utils.inspect(x);
 	};
