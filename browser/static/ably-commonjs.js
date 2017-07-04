@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.4
+ * Ably JavaScript Library v1.0.5
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4079,7 +4079,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.4';
+Defaults.version          = '1.0.5';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4777,8 +4777,7 @@ var Utils = (function() {
 	};
 
 	Utils.defaultGetHeaders = function(format) {
-		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json;
+		var accept = contentTypes[format || 'json'];
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
@@ -4787,9 +4786,8 @@ var Utils = (function() {
 	};
 
 	Utils.defaultPostHeaders = function(format) {
-		format = format || 'json';
-		var accept = (format === 'json') ? contentTypes.json : contentTypes[format] + ',' + contentTypes.json,
-			contentType = (format === 'json') ? contentTypes.json : contentTypes[format];
+		var accept, contentType;
+		accept = contentType = contentTypes[format || 'json'];
 
 		return {
 			accept: accept,
@@ -4831,7 +4829,11 @@ var Utils = (function() {
 	Utils.inspect = Platform.inspect;
 
 	Utils.inspectError = function(x) {
-		return (x && (x.constructor.name == 'ErrorInfo' || x.constructor.name == 'Error')) ?
+		/* redundant, but node vmcontext issue makes instanceof unreliable, and
+		 * can't use just constructor test as could be a TypeError constructor etc. */
+		return (x && (x.constructor.name == 'ErrorInfo' ||
+			x.constructor.name == 'Error' ||
+			x instanceof Error)) ?
 			x.toString() :
 			Utils.inspect(x);
 	};
@@ -7057,8 +7059,11 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.failQueuedMessages = function(err) {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.failQueuedMessages()', 'failing ' + this.queuedMessages.count() + ' queued messages');
-		this.queuedMessages.completeAllMessages(err);
+		var numQueued = this.queuedMessages.count();
+		if(numQueued > 0) {
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.failQueuedMessages()', 'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err));
+			this.queuedMessages.completeAllMessages(err);
+		}
 	};
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
@@ -7833,7 +7838,7 @@ var CometTransport = (function() {
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
 
 		sendRequest.on('complete', function(err, data) {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + JSON.stringify(err));
+			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 
 			/* the results of the request usually get handled as protocol responses instead of send errors */
@@ -8085,7 +8090,7 @@ var Resource = (function() {
 	function logResponseHandler(callback, verb, path, params) {
 		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + JSON.stringify(err));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
@@ -8143,9 +8148,9 @@ var Resource = (function() {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
-						body = msgpack.decode(body);
+						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
-						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + JSON.stringify(decodeErr));
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
 					}
 				}
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
@@ -8221,7 +8226,7 @@ var PaginatedResource = (function() {
 
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, statusCode, callback) {
 		if(err) {
-			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + JSON.stringify(err));
+			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
 			callback(err);
 			return;
 		}
@@ -8291,7 +8296,6 @@ var PaginatedResource = (function() {
 })();
 
 var Auth = (function() {
-	var msgpack = Platform.msgpack;
 	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
 	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
@@ -8577,7 +8581,6 @@ var Auth = (function() {
 		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
 		callback = callback || noop;
-		var format = authOptions.format || 'json';
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
@@ -8601,7 +8604,7 @@ var Auth = (function() {
 						authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
-						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + JSON.stringify(err));
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
 					} else {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 					}
@@ -8663,10 +8666,10 @@ var Auth = (function() {
 			var keyName = signedTokenParams.keyName,
 				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
 
-			var requestHeaders = Utils.defaultPostHeaders(format);
+			var requestHeaders = Utils.defaultPostHeaders();
 			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
-			signedTokenParams = (format == 'msgpack') ? msgpack.encode(signedTokenParams, true) : JSON.stringify(signedTokenParams);
+			signedTokenParams = JSON.stringify(signedTokenParams);
 			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
 
@@ -8731,7 +8734,7 @@ var Auth = (function() {
 					callback(err);
 					return;
 				}
-				if(!unpacked) tokenResponse = (format == 'msgpack') ? msgpack.decode(tokenResponse) : JSON.parse(tokenResponse);
+				if(!unpacked) tokenResponse = JSON.parse(tokenResponse);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
 				callback(null, tokenResponse);
 			});
@@ -9185,6 +9188,10 @@ var Rest = (function() {
 		}
 
 		return channel;
+	};
+
+	Channels.prototype.release = function(name) {
+		delete this.attached[String(name)];
 	};
 
 	return Rest;
@@ -10086,12 +10093,15 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.failPendingMessages = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', err = ' + Utils.inspectError(err));
-		for(var i = 0; i < this.pendingEvents.length; i++)
-			try {
-				this.pendingEvents[i].callback(err);
-			} catch(e) {}
-		this.pendingEvents = [];
+		var numPending = this.pendingEvents.length;
+		if(numPending > 0) {
+			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', failing' + numPending + ' pending messages, err = ' + Utils.inspectError(err));
+			for(var i = 0; i < this.pendingEvents.length; i++)
+				try {
+					this.pendingEvents[i].callback(err);
+				} catch(e) {}
+			this.pendingEvents = [];
+		}
 	};
 
 	RealtimeChannel.prototype.history = function(params, callback) {
@@ -10824,7 +10834,7 @@ var XHRRequest = (function() {
 
 		if(!accept) {
 			headers['accept'] = 'application/json';
-		} else if(accept.indexOf('application/json') === -1) {
+		} else if(accept.indexOf('application/x-msgpack') === 0) {
 			responseType = 'arraybuffer';
 		}
 
@@ -10833,7 +10843,6 @@ var XHRRequest = (function() {
 			if(contentType.indexOf('application/json') > -1 && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
-
 
 		xhr.open(method, this.uri, true);
 		xhr.responseType = responseType;
@@ -10886,17 +10895,23 @@ var XHRRequest = (function() {
 			try {
 				var contentType = getHeader(xhr, 'content-type'),
 					headers,
-					server,
+					responseBody,
+					/* Be liberal in what we accept; buggy auth servers may respond
+					 * without the correct contenttype, but assume they're still
+					 * responding with json */
 					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
 
-				responseBody = json ? xhr.responseText : xhr.response;
-
 				if(json) {
-					responseBody = String(responseBody);
+					/* If we requested msgpack but server responded with json, then since
+					 * we set the responseType expecting msgpack, the response will be
+					 * an ArrayBuffer containing json */
+					responseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
 					if(responseBody.length) {
 						responseBody = JSON.parse(responseBody);
 					}
 					unpacked = true;
+				} else {
+					responseBody = xhr.response;
 				}
 
 				if(responseBody.response !== undefined) {
