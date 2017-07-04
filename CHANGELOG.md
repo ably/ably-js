@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.5](https://github.com/ably/ably-js/tree/1.0.5) (2017-07-04)
+
+- Fix issue with webpack module resolution: [\#404](https://github.com/ably/ably-js/pull/404)
+
+- Implement Channels#release: [\#405](https://github.com/ably/ably-js/pull/405)
+
+- Fix various bugs with useBinaryProtocol: true [\#406](https://github.com/ably/ably-js/pull/406)
+
 ## [1.0.4](https://github.com/ably/ably-js/tree/1.0.4) (2017-04-24)
 
 - Have the default logHandler on node log timestamps (https://github.com/ably/ably-js/issues/399)
