@@ -64,11 +64,11 @@ var ConnectionManager = (function() {
 			params.stream = this.stream;
 		if(this.heartbeats !== undefined)
 			params.heartbeats = this.heartbeats;
+		params.v = Defaults.apiVersion;
+		params.lib = Defaults.libstring;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
-		params.v = Defaults.apiVersion;
-		params.lib = Defaults.libstring;
 		return params;
 	};
 
