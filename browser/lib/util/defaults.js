@@ -6,10 +6,10 @@ var Defaults = {
 	 * supported.  This is not quite the same as the preference order -- e.g.
 	 * xhr_polling is preferred to jsonp, but for browsers that support it we want
 	 * the base transport to be xhr_polling, not jsonp */
-	defaultTransports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
+	defaultTransports: ['web_socket'],
 	baseTransportOrder: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
-	upgradeTransports: ['xhr_streaming', 'web_socket'],
+	upgradeTransports: ['web_socket'],
 	minified: !(function _(){}).name
 };
 
