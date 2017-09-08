@@ -206,7 +206,15 @@ var ConnectionManager = (function() {
 		}
 
 		decideMode(function(mode) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			if(mode === 'recover') {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = recover; recoveryKey = ' + self.options.recover);
+				var match = self.options.recover.split(':');
+				if(match && match[2]) {
+					self.msgSerial = match[2];
+				}
+			} else {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			}
 			callback(new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial));
 		});
 	};
@@ -652,13 +660,16 @@ var ConnectionManager = (function() {
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
 		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-		/* Note that this is also run on clean connections; the msgSerial is a
-		 * noop, but the channel reattach is needed for channels that were
-		 * previously in the attached state even though the connection mode was
-		 * 'clean' due to a freshness check - see https://github.com/ably/ably-js/issues/394 */
-		if(this.connectionId !== connectionId)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; resetting msgSerial and reattaching any attached channels');
+		/* If no previous connectionId, don't reset the msgSerial as it may have been set by recover data */
+		if(this.connectionId && (this.connectionId !== connectionId))  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
 			this.msgSerial = 0;
+		}
+		/* but do need to reattach channels, for channels that were previously in
+		 * the attached state even though the connection mode was 'clean' due to a
+		 * freshness check - see https://github.com/ably/ably-js/issues/394 */
+		if(this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
 			 * Channels#onTransportUpdate, else channels will not have an ATTACHED
@@ -676,7 +687,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
 		this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
+		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -707,7 +718,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.persistConnection = function() {
 		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
 			setSessionRecoverData({
-				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
+				recoveryKey: this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial,
 				disconnectedAt: Utils.now(),
 				location: window.location,
 				clientId: this.realtime.auth.clientId
@@ -1317,6 +1328,7 @@ var ConnectionManager = (function() {
 		 * so Ably can dedup if the previous send succeeded */
 		if(pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
 			msg.msgSerial = this.msgSerial++;
+			this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
 		}
 		try {
 			this.activeProtocol.send(pendingMessage);
@@ -1379,7 +1391,7 @@ var ConnectionManager = (function() {
 			}
 			if(connectionSerial !== undefined) {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
+				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial + ':' + this.msgSerial;
 			}
 			var msgId = message.id;
 			if(msgId && (msgId === this.mostRecentMsgId)) {
