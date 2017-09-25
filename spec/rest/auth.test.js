@@ -466,16 +466,23 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * createTokenRequest uses the key it was initialized with if authOptions is null
+	 * createTokenRequest uses the key it was initialized with if authOptions is null,
+	 * and the token request includes all the fields it should include, but
+	 * doesn't include ttl or capability by default
 	 */
 	exports.auth_createTokenRequest_given_key = function(test) {
-		test.expect(1);
+		test.expect(6);
 		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
 			if(err) {
 				test.ok(false, helper.displayError(err));
 				test.done();
 				return;
 			}
+			test.ok('mac' in tokenRequest, 'check tokenRequest contains a mac');
+			test.ok('nonce' in tokenRequest, 'check tokenRequest contains a nonce');
+			test.ok('timestamp' in tokenRequest, 'check tokenRequest contains a timestamp');
+			test.ok(!('ttl' in tokenRequest), 'check tokenRequest does not contains a ttl by default');
+			test.ok(!('capability' in tokenRequest), 'check tokenRequest does not contains capabilities by default');
 			test.equal(tokenRequest.keyName, helper.getTestApp().keys[0].keyName);
 			test.done();
 		});
