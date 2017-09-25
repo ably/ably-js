@@ -236,6 +236,47 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * RSA8c1c -- If the given authUrl includes any querystring params, they
+	 * should be preserved, and in the GET case, authParams/tokenParams should be
+	 * merged with them. If a name conflict occurs, authParams/tokenParams should
+	 * take precedence
+	 */
+	exports.auth_useAuthUrl_mixed_authParams_qsParams = function(test) {
+		test.expect(1);
+
+		var realtime, rest = helper.AblyRest();
+		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+
+			/* Complete token request requires both parts to be combined, and
+			 * requires the keyName in the higherPrecence part to take precedence
+			 * over the wrong keyName */
+			var lowerPrecedenceTokenRequestParts = {
+				keyName: "WRONG",
+				timestamp: tokenRequest.timestamp,
+				nonce: tokenRequest.nonce
+			};
+			var higherPrecedenceTokenRequestParts = {
+				keyName: tokenRequest.keyName,
+				mac: tokenRequest.mac
+			};
+			var authPath = "http://echo.ably.io/qs_to_body" + utils.toQueryString(lowerPrecedenceTokenRequestParts);
+
+			realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
+
+			realtime.connection.on('connected', function() {
+				test.ok(true, 'Connected to Ably');
+				closeAndFinish(test, realtime);
+				return;
+			});
+		});
+	};
+
+	/*
 	 * Request a token using clientId, then initialize a connection without one,
 	 * and check that the connection inherits the clientId from the tokenDetails
 	 */
