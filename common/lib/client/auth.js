@@ -338,8 +338,9 @@ var Auth = (function() {
 					}
 					cb(null, body);
 				};
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
-				if(authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post') {
+				var usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Requesting token from ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams) + '; method: ' + (usePost ? 'POST' : 'GET'));
+				if(usePost) {
 					/* send body form-encoded */
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
