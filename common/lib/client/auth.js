@@ -511,12 +511,14 @@ var Auth = (function() {
 			return;
 		}
 
-		tokenParams.capability = c14n(tokenParams.capability);
+		if('capability' in tokenParams) {
+			tokenParams.capability = c14n(tokenParams.capability);
+		}
 
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
-			capability = tokenParams.capability,
+			capability = tokenParams.capability || '',
 			self = this;
 
 		(function(authoriseCb) {
