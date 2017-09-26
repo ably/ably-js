@@ -5,6 +5,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		_exports = {},
 		closeAndFinish = helper.closeAndFinish,
 		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
+		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection;
 
 	exports.setupConnection = function(test) {
@@ -67,7 +68,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			realtime = helper.AblyRealtime();
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.connection.serial, -1, "verify serial is -1 on connect");
-				test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify correct recovery key');
+				test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify correct recovery key');
 
 				var channel = realtime.channels.get('connectionattributes');
 				channel.attach(function(err) {
@@ -80,7 +81,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						setTimeout(function() {
 							console.log("connectionAttributes test: connection serial is " + realtime.connection.serial)
 							test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
-							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial, 'verify recovery key still correct');
+							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify recovery key still correct');
 
 							realtime.connection.close();
 							realtime.connection.whenState('closed', function() {
