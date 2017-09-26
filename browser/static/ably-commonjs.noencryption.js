@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.5
+ * Ably JavaScript Library v1.0.6
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2647,7 +2647,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.5';
+Defaults.version          = '1.0.6';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4334,11 +4334,11 @@ var ConnectionManager = (function() {
 			params.stream = this.stream;
 		if(this.heartbeats !== undefined)
 			params.heartbeats = this.heartbeats;
+		params.v = Defaults.apiVersion;
+		params.lib = Defaults.libstring;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
-		params.v = Defaults.apiVersion;
-		params.lib = Defaults.libstring;
 		return params;
 	};
 
@@ -4476,7 +4476,15 @@ var ConnectionManager = (function() {
 		}
 
 		decideMode(function(mode) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			if(mode === 'recover') {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = recover; recoveryKey = ' + self.options.recover);
+				var match = self.options.recover.split(':');
+				if(match && match[2]) {
+					self.msgSerial = match[2];
+				}
+			} else {
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+			}
 			callback(new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial));
 		});
 	};
@@ -4922,13 +4930,16 @@ var ConnectionManager = (function() {
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
 		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
-		/* Note that this is also run on clean connections; the msgSerial is a
-		 * noop, but the channel reattach is needed for channels that were
-		 * previously in the attached state even though the connection mode was
-		 * 'clean' due to a freshness check - see https://github.com/ably/ably-js/issues/394 */
-		if(this.connectionId !== connectionId)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; resetting msgSerial and reattaching any attached channels');
+		/* If no previous connectionId, don't reset the msgSerial as it may have been set by recover data */
+		if(this.connectionId && (this.connectionId !== connectionId))  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
 			this.msgSerial = 0;
+		}
+		/* but do need to reattach channels, for channels that were previously in
+		 * the attached state even though the connection mode was 'clean' due to a
+		 * freshness check - see https://github.com/ably/ably-js/issues/394 */
+		if(this.connectionId !== connectionId)  {
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
 			 * Channels#onTransportUpdate, else channels will not have an ATTACHED
@@ -4946,7 +4957,7 @@ var ConnectionManager = (function() {
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionKey;
 		this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial;
+		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -4977,7 +4988,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.persistConnection = function() {
 		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
 			setSessionRecoverData({
-				recoveryKey: this.connectionKey + ':' + this.connectionSerial,
+				recoveryKey: this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial,
 				disconnectedAt: Utils.now(),
 				location: window.location,
 				clientId: this.realtime.auth.clientId
@@ -5587,6 +5598,7 @@ var ConnectionManager = (function() {
 		 * so Ably can dedup if the previous send succeeded */
 		if(pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
 			msg.msgSerial = this.msgSerial++;
+			this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
 		}
 		try {
 			this.activeProtocol.send(pendingMessage);
@@ -5649,7 +5661,7 @@ var ConnectionManager = (function() {
 			}
 			if(connectionSerial !== undefined) {
 				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial;
+				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial + ':' + this.msgSerial;
 			}
 			var msgId = message.id;
 			if(msgId && (msgId === this.mostRecentMsgId)) {
@@ -7159,17 +7171,20 @@ var Auth = (function() {
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
-			/* if no authParams given, check if they were given in the URL */
-			if(!authOptions.authParams) {
-				var queryIdx = authOptions.authUrl.indexOf('?');
-				if(queryIdx > -1) {
-					authOptions.authParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
-					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
-				}
-			}
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
-						authParams = Utils.mixin(params, authOptions.authParams);
+					authParams = Utils.mixin(params, authOptions.authParams),
+					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
+				if(!usePost) {
+					/* Combine authParams with any qs params given in the authUrl */
+					var queryIdx = authOptions.authUrl.indexOf('?');
+					if(queryIdx > -1) {
+						var providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
+						authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+						/* In case of conflict, authParams take precedence over qs params in the authUrl */
+						authParams = Utils.mixin(providedQsParams, authParams);
+					}
+				}
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
@@ -7203,8 +7218,8 @@ var Auth = (function() {
 					}
 					cb(null, body);
 				};
-				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Sending; ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams));
-				if(authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post') {
+				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Requesting token from ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams) + '; method: ' + (usePost ? 'POST' : 'GET'));
+				if(usePost) {
 					/* send body form-encoded */
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
@@ -7376,12 +7391,14 @@ var Auth = (function() {
 			return;
 		}
 
-		tokenParams.capability = c14n(tokenParams.capability);
+		if('capability' in tokenParams) {
+			tokenParams.capability = c14n(tokenParams.capability);
+		}
 
 		var request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
-			capability = tokenParams.capability,
+			capability = tokenParams.capability || '',
 			self = this;
 
 		(function(authoriseCb) {
@@ -9394,7 +9411,7 @@ var XHRRequest = (function() {
 				xhr.abort();
 			}, timeout),
 			body = this.body,
-			method = body ? 'POST' : 'GET',
+			method = Utils.isEmptyArg(body) ? 'GET' : 'POST',
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			accept = headers['accept'],
