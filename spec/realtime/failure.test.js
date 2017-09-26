@@ -333,7 +333,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	);
 
 	exports.idle_transport_timeout = function(test) {
-		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 100}),
+		var realtime = helper.AblyRealtime({realtimeRequestTimeout: 100, transports: [helper.bestTransport]}),
 			originalOnProtocolMessage;
 
 		test.expect(3);
