@@ -514,7 +514,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * A server-sent ERROR, with channel field, should fail the channel
 	 */
 	exports.server_sent_error = function(test) {
-		var realtime = helper.AblyRealtime({transport: [helper.bestTransport]}),
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
 			channelName = 'server_sent_error',
 			channel = realtime.channels.get(channelName);
 
@@ -613,7 +613,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.channel_attach_timeout = function(test) {
 		test.expect(4);
 		/* Use a fixed transport as attaches are resent when the transport changes */
-		var realtime = helper.AblyRealtime({transport: [helper.bestTransport], realtimeRequestTimeout: 100, channelRetryTimeout: 100}),
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], realtimeRequestTimeout: 100, channelRetryTimeout: 100}),
 			channelName = 'channel_attach_timeout',
 			channel = realtime.channels.get(channelName);
 
@@ -651,7 +651,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	exports.suspended_connection = function(test) {
 		/* Use a fixed transport as attaches are resent when the transport changes */
-		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], channelRetryTimeout: 100, suspendedRetryTimeout: 1000}),
+		/* Browsers throttle setTimeouts to min 1s in in active tabs; having timeouts less than that screws with the relative timings */
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport], channelRetryTimeout: 1010, suspendedRetryTimeout: 1100}),
 			channelName = 'suspended_connection',
 			channel = realtime.channels.get(channelName);
 
@@ -697,7 +698,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			function(cb) {
 				channel.once(function(stateChange) {
 					test.equal(stateChange.current, 'suspended', 'Check that the channel goes back into suspended after attach fails');
-					test.equal(stateChange.reason.code, 90007, 'Check correct error code');
+					test.equal(stateChange.reason && stateChange.reason.code, 90007, 'Check correct error code');
 					cb();
 				});
 			}
