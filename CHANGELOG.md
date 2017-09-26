@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.6](https://github.com/ably/ably-js/tree/1.0.6) (2017-09-26)
+
+- Fix issue where presence updates sent immediately after a recover can be ignored [\#412](https://github.com/ably/ably-js/pull/412)
+
+- Fix authMethod being ignored if there are no authParams: [\#415](https://github.com/ably/ably-js/pull/415)
+
+- Combine authParams with querystring params given in an authUrl, rather than replace: [\#418](https://github.com/ably/ably-js/pull/418)
+
 ## [1.0.5](https://github.com/ably/ably-js/tree/1.0.5) (2017-07-04)
 
 - Fix issue with webpack module resolution: [\#404](https://github.com/ably/ably-js/pull/404)
