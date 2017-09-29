@@ -8757,6 +8757,11 @@ var Auth = (function() {
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
+					if(!(err && err.code)) {
+						/* network errors don't have an error code, so assign them
+						 * 40170 so they'll by connectionManager as nonfatal */
+						err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
+					}
 					callback(err);
 					return;
 				}
