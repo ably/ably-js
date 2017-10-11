@@ -453,7 +453,7 @@ var RealtimeChannel = (function() {
 		}
 		var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.toString()) : ''));
+		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.message + '; code: ' + reason.code) : ''));
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {
