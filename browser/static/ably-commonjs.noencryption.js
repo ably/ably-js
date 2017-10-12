@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.6
+ * Ably JavaScript Library v1.0.7
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2647,7 +2647,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.6';
+Defaults.version          = '1.0.7';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -5993,15 +5993,18 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.onActivity = function(timeout) {
+	Transport.prototype.onActivity = function() {
 		if(!this.maxIdleInterval) { return; }
-
 		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+		this.setIdleTimer(this.maxIdleInterval + 100);
+	};
+
+	Transport.prototype.setIdleTimer = function(timeout) {
 		var self = this;
 		if(!this.idleTimer) {
 			this.idleTimer = setTimeout(function() {
 				self.onIdleTimerExpire();
-			}, timeout || this.maxIdleInterval);
+			}, timeout);
 		}
 	};
 
@@ -6014,7 +6017,7 @@ var Transport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
-			this.onActivity(timeRemaining + 10);
+			this.setIdleTimer(timeRemaining + 100);
 		}
 	};
 
@@ -7271,7 +7274,7 @@ var Auth = (function() {
 
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
-				if(!(err && err.code)) {
+				if(!err.code) {
 					/* network errors don't have an error code, so assign them
 					 * 40170 so they'll by connectionManager as nonfatal */
 					err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
@@ -7314,6 +7317,11 @@ var Auth = (function() {
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
+					if(!err.code) {
+						/* network errors don't have an error code, so assign them
+						 * 40170 so they'll be seen by connectionManager as nonfatal */
+						err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
+					}
 					callback(err);
 					return;
 				}
@@ -8564,7 +8572,7 @@ var RealtimeChannel = (function() {
 		}
 		var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.toString()) : ''));
+		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.message + '; code: ' + reason.code) : ''));
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {

@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.7](https://github.com/ably/ably-js/tree/1.0.7) (2017-10-12)
+
+- Fix idle timeout bug when timer extended due to positive timeRemaning (if setTimeout is overly eager) [\#421](https://github.com/ably/ably-js/pull/421)
+
+- Fix channel state change log message when error is not an ErrorInfo [\#420](https://github.com/ably/ably-js/pull/420)
+
+- Stop network error trading a token request for a token failing the connection [\#419](https://github.com/ably/ably-js/pull/419)
+
 ## [1.0.6](https://github.com/ably/ably-js/tree/1.0.6) (2017-09-26)
 
 - Fix issue where presence updates sent immediately after a recover can be ignored [\#412](https://github.com/ably/ably-js/pull/412)
