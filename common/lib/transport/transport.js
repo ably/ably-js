@@ -184,15 +184,18 @@ var Transport = (function() {
 		this.off();
 	};
 
-	Transport.prototype.onActivity = function(timeout) {
+	Transport.prototype.onActivity = function() {
 		if(!this.maxIdleInterval) { return; }
-
 		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+		this.setIdleTimer(this.maxIdleInterval + 100);
+	};
+
+	Transport.prototype.setIdleTimer = function(timeout) {
 		var self = this;
 		if(!this.idleTimer) {
 			this.idleTimer = setTimeout(function() {
 				self.onIdleTimerExpire();
-			}, timeout || this.maxIdleInterval);
+			}, timeout);
 		}
 	};
 
@@ -205,7 +208,7 @@ var Transport = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
-			this.onActivity(timeRemaining + 10);
+			this.setIdleTimer(timeRemaining + 100);
 		}
 	};
 
