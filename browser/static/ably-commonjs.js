@@ -3750,35 +3750,8 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					/* use a fallback host if available */
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		}
-		tryAHost(hosts);
-	};
+		Http['do']('get', rest, path, headers, null, params, callback);
+	}
 
 	/**
 	 * Perform an HTTP GET request for a given resolved URI
@@ -3789,7 +3762,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(rest, uri, headers, params, null, callback || noop);
+		Http.Request('get', rest, uri, headers, params, null, callback);
 	};
 
 	/**
@@ -3802,33 +3775,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
-			return;
-		}
-
-		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		};
-		tryAHost(hosts);
+		Http['do']('post', rest, path, headers, body, params, callback);
 	};
 
 	/**
@@ -3841,7 +3788,53 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(rest, uri, headers, params, body, callback || noop);
+		Http.Request('post', rest, uri, headers, params, body, callback);
+	};
+
+	Http['delete'] = function(rest, path, headers, params, callback) {
+		Http['do']('delete', rest, path, headers, null, params, callback);
+	}
+
+	Http.deleteUri = function(rest, uri, headers, params, callback) {
+		Http.Request('delete', rest, uri, headers, params, null, callback);
+	};
+
+	Http.put = function(rest, path, headers, body, params, callback) {
+		Http['do']('put', rest, path, headers, body, params, callback);
+	};
+
+	Http.putUri = function(rest, uri, headers, body, params, callback) {
+		Http.Request('put', rest, uri, headers, params, body, callback);
+	};
+
+	Http['do'] = function(method, rest, path, headers, body, params, callback) {
+		callback = callback || noop;
+		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+
+		var hosts, connection = rest.connection;
+		if(connection && connection.state == 'connected')
+			hosts = [connection.connectionManager.host];
+		else
+			hosts = Defaults.getHosts(rest.options);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.Request(method, rest, uri(hosts[0]), headers, params, body, callback);
+			return;
+		}
+
+		/* hosts is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			Http.Request(method, rest, uri(candidateHosts.shift()), headers, params, body, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts);
+					return;
+				}
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
 	};
 
 	Http.supportsAuthHeaders = false;
@@ -4187,6 +4180,11 @@ Defaults.normaliseOptions = function(options) {
 		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
 	} else {
 		options.useBinaryProtocol = Platform.preferBinary;
+	}
+
+	if(options.clientId) {
+		var headers = options.headers = options.headers || {};
+		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
 	return options;
@@ -5016,6 +5014,8 @@ var Message = (function() {
 			else
 				result += '; data (json)=' + JSON.stringify(this.data);
 		}
+		if(this.extras)
+			result += '; extras=' + JSON.stringify(this.extras);
 		result += ']';
 		return result;
 	};
@@ -5551,6 +5551,159 @@ var Stats = (function() {
 	};
 
 	return Stats;
+})();
+
+var DeviceDetails = (function() {
+	var msgpack = Platform.msgpack;
+
+	function DeviceDetails() {
+		this.id = undefined;
+		this.platform = undefined;
+		this.formFactor = undefined;
+		this.clientId = undefined;
+		this.metadata = undefined;
+		this.updateToken = undefined;
+		this.push = {
+			transportType: undefined,
+			state: undefined,
+			errorReason: undefined,
+			metadata: undefined
+		};
+	}
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	DeviceDetails.prototype.toJSON = function() {
+		return {
+			id: this.id,
+			platform: this.platform,
+			formFactor: this.formFactor,
+			clientId: this.clientId,
+			metadata: this.metadata,
+			updateToken: this.updateToken,
+			push: {
+				transportType: this.push.transportType,
+				state: this.push.state,
+				errorReason: this.push.errorReason,
+				metadata: this.push.metadata
+			}
+		};
+	};
+
+	DeviceDetails.prototype.toString = function() {
+		var result = '[DeviceDetails';
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.platform)
+			result += '; platform=' + this.platform;
+		if(this.formFactor)
+			result += '; formFactor=' + this.formFactor;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.metadata)
+			result += '; metadata=' + this.metadata;
+		if(this.updateToken)
+			result += '; updateToken=' + this.updateToken;
+		if(this.push.transportType)
+			result += '; push.transportType=' + this.push.transportType;
+		if(this.push.state)
+			result += '; push.state=' + this.push.state;
+		if(this.push.errorReason)
+			result += '; push.errorReason=' + this.push.errorReason;
+		if(this.push.metadata)
+			result += '; push.metadata=' + this.push.metadata;
+		result += ']';
+		return result;
+	};
+
+	DeviceDetails.toRequestBody = function(subscription, format) {
+		return (format == 'msgpack') ? msgpack.encode(subscription, true): JSON.stringify(subscription);
+	};
+
+	DeviceDetails.fromResponseBody = function(body, format) {
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		for(var i = 0; i < body.length; i++) {
+			body[i] = DeviceDetails.fromDecoded(body[i]);
+		}
+		return body;
+	};
+
+	DeviceDetails.fromDecoded = function(values) {
+		return Utils.mixin(new DeviceDetails(), values);
+	};
+
+	DeviceDetails.fromValues = function(values) {
+		return Utils.mixin(new DeviceDetails(), values);
+	};
+
+	DeviceDetails.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = DeviceDetails.fromValues(values[i]);
+		return result;
+	};
+
+	return DeviceDetails;
+})();
+
+var PushChannelSubscription = (function() {
+	var msgpack = Platform.msgpack;
+
+	function PushChannelSubscription() {
+		this.channel = undefined;
+		this.deviceId = undefined;
+		this.clientId = undefined;
+	}
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	PushChannelSubscription.prototype.toJSON = function() {
+		return {
+			channel: this.channel,
+			deviceId: this.deviceId,
+			clientId: this.clientId
+		};
+	};
+
+	PushChannelSubscription.prototype.toString = function() {
+		var result = '[PushChannelSubscription';
+		if(this.channel)
+			result += '; channel=' + this.channel;
+		if(this.deviceId)
+			result += '; deviceId=' + this.deviceId;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		result += ']';
+		return result;
+	};
+
+	PushChannelSubscription.toRequestBody = function(subscription, format) {
+		return (format == 'msgpack') ? msgpack.encode(subscription, true): JSON.stringify(subscription);
+	};
+
+	PushChannelSubscription.fromResponseBody = function(body, format) {
+		if(format)
+			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+		return PushChannelSubscription.fromValuesArray(body);
+	};
+
+	PushChannelSubscription.fromValues = function(values) {
+		return Utils.mixin(new PushChannelSubscription(), values);
+	};
+
+	PushChannelSubscription.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = PushChannelSubscription.fromValues(values[i]);
+		return result;
+	};
+
+	return PushChannelSubscription;
 })();
 
 var ConnectionError = {
@@ -8224,10 +8377,10 @@ var Resource = (function() {
 		return path + (params ? '?' : '') + paramString(params);
 	}
 
-	function logResponseHandler(callback, verb, path, params) {
+	function logResponseHandler(callback, method, path, params) {
 		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
@@ -8237,8 +8390,24 @@ var Resource = (function() {
 	}
 
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource['delete'] = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'get', path, origparams);
+			callback = logResponseHandler(callback, method, path, origparams);
 		}
 
 		if(envelope) {
@@ -8246,12 +8415,12 @@ var Resource = (function() {
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
-		function doGet(headers, params) {
+		function doRequest(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
-			Http.get(rest, path, headers, params, function(err, res, headers, unpacked, statusCode) {
+			var args = [rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
 				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorize(null, null, function(err) {
@@ -8260,56 +8429,31 @@ var Resource = (function() {
 							return;
 						}
 						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+						withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 					});
 					return;
 				}
 				callback(err, res, headers, unpacked, statusCode);
-			});
-		}
-		withAuthDetails(rest, origheaders, origparams, callback, doGet);
-	};
+			}];
+			if (!body) {
+				args.splice(3, 1);
+			}
 
-	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'post', path, origparams);
-		}
-
-		if(envelope) {
-			callback = unenvelope(callback, envelope);
-			origparams['envelope'] = envelope;
-		}
-
-		function doPost(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
 						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
-						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
 					}
 				}
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
-
-			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
-				if(err && Auth.isTokenErr(err)) {
-					/* token has expired, so get a new one */
-					rest.auth.authorize(null, null, function(err) {
-						if(err) {
-							callback(err);
-							return;
-						}
-						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doPost);
-					});
-					return;
-				}
-				callback(err, res, headers, unpacked, statusCode);
-			});
+			Http[method].apply(this, args);
 		}
-		withAuthDetails(rest, origheaders, origparams, callback, doPost);
+
+		withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 	};
 
 	return Resource;
@@ -8514,8 +8658,7 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.clientId     ||
-			  options.authCallback ||
+			 (options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -8536,12 +8679,10 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(options.clientId || !options.key) {
-				var msg = 'Cannot authenticate with basic auth' +
-					(options.clientId ? ' as a clientId implies token auth' :
-					 (!options.key ? ' as no key was given' : ''));
-					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-					 throw new Error(msg);
+			if(!options.key) {
+				var msg = 'Cannot authenticate with basic auth as no key was given';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
@@ -9246,6 +9387,7 @@ var Rest = (function() {
 		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
+		this.push = new Push(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
@@ -9595,6 +9737,227 @@ var Connection = (function() {
 	return Connection;
 })();
 
+var Push = (function() {
+	var msgpack = Platform.msgpack;
+
+	function Push(rest) {
+		this.rest = rest;
+		this.admin = new Admin(rest);
+	}
+
+	Push.prototype.publish = function(recipient, payload, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = Utils.mixin({recipient: recipient}, payload),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/publish', requestBody, headers, null, false, callback);
+	};
+
+	function Admin(rest) {
+		this.deviceRegistrations = new DeviceRegistrations(rest);
+		this.channelSubscriptions = new ChannelSubscriptions(rest);
+	}
+
+	function DeviceRegistrations(rest) {
+		this.rest = rest;
+	}
+
+	DeviceRegistrations.prototype.save = function(device, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = DeviceDetails.fromValues(device),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, null, false, callback);
+	};
+
+	DeviceRegistrations.prototype.get = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
+			return DeviceDetails.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	DeviceRegistrations.prototype.remove = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
+	};
+
+	function ChannelSubscriptions(rest) {
+		this.rest = rest;
+	}
+
+	ChannelSubscriptions.prototype.save = function(subscription, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = PushChannelSubscription.fromValues(subscription),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, null, false, callback);
+	};
+
+	ChannelSubscriptions.prototype.get = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
+			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	ChannelSubscriptions.prototype.remove = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
+	};
+
+	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
+			var f = !unpacked && format;
+
+			if(f)
+				body = (f == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+			for(var i = 0; i < body.length; i++) {
+				body[i] = String(body[i]);
+			}
+			return body;
+		})).get(params, callback);
+	};
+
+	return Push;
+})();
+
+var PushChannel = (function() {
+	var msgpack = Platform.msgpack;
+
+	function noop() {}
+
+	/* public constructor */
+	function PushChannel(channel) {
+		this.channel = channel;
+		this.rest = channel.rest;
+	}
+
+	PushChannel.prototype.subscribeClientId = function(callback) {
+		var self = this;
+		var rest = this.rest;
+		this._getClientId(callback, function(clientId) {
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			    requestBody = {clientId: clientId, channel: self.channel.name},
+			    headers = Utils.defaultPostHeaders(format);
+
+			if(rest.options.headers)
+				Utils.mixin(headers, rest.options.headers);
+
+			requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+			Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, null, false, callback);
+		});
+	};
+
+	PushChannel.prototype.unsubscribeClientId = function(callback) {
+		var self = this;
+		var rest = this.rest;
+		this._getClientId(callback, function(clientId) {
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			    headers = Utils.defaultPostHeaders(format);
+
+			if(rest.options.headers)
+				Utils.mixin(headers, rest.options.headers);
+
+			Resource['delete'](rest, '/push/channelSubscriptions', headers, {clientId: clientId, channel: self.channel.name}, false, callback);
+		});
+	};
+
+	PushChannel.prototype.getSubscriptions = function(params, callback) {
+		Logger.logAction(Logger.LOG_MICRO, 'PushChannel.getSubscriptions()', 'channel = ' + this.channel.name);
+		/* params and callback are optional; see if params contains the callback */
+		if(callback === undefined) {
+			if(typeof(params) == 'function') {
+				callback = params;
+				params = null;
+			} else {
+				callback = noop;
+			}
+		}
+
+		this._getSubscriptions(params, callback);
+	};
+
+	PushChannel.prototype._getSubscriptions = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			channel = this.channel;
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		params = params || {};
+		params.channel = channel.name;
+
+		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
+			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	PushChannel.prototype._getClientId = function(callbackErr, callbackOk) {
+		var clientId = this.rest.auth.clientId;
+		if (clientId) {
+			callbackOk(clientId);
+		} else {
+			callbackErr(new ErrorInfo("cannot subscribe from REST client with null client ID", 50000, 500));
+		}
+	}
+
+	return PushChannel;
+})();
+
 var Channel = (function() {
 	function noop() {}
 
@@ -9606,6 +9969,7 @@ var Channel = (function() {
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
+		this.push = new PushChannel(this);
 		this.setOptions(channelOptions);
 	}
 	Utils.inherits(Channel, EventEmitter);
@@ -9679,7 +10043,7 @@ var Channel = (function() {
 
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultPostHeaders(format));
+			headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -10914,7 +11278,7 @@ var XHRRequest = (function() {
 		return headers;
 	}
 
-	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
+	function XHRRequest(uri, headers, params, body, requestMode, timeouts, method) {
 		EventEmitter.call(this);
 		params = params || {};
 		params.rnd = Utils.randStr();
@@ -10923,6 +11287,7 @@ var XHRRequest = (function() {
 		this.uri = uri + Utils.toQueryString(params);
 		this.headers = headers || {};
 		this.body = body;
+		this.method = method ? method.toUpperCase() : (Utils.isEmptyArg(body) ? 'POST' : 'GET');
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
 		this.timedOut = false;
@@ -10931,12 +11296,12 @@ var XHRRequest = (function() {
 	}
 	Utils.inherits(XHRRequest, EventEmitter);
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts, method) {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
 		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
-		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
+		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
@@ -10961,7 +11326,7 @@ var XHRRequest = (function() {
 				xhr.abort();
 			}, timeout),
 			body = this.body,
-			method = Utils.isEmptyArg(body) ? 'GET' : 'POST',
+			method = this.method,
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			accept = headers['accept'],
@@ -11152,8 +11517,8 @@ var XHRRequest = (function() {
 		}
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = true;
-			Http.Request = function(rest, uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+			Http.Request = function(method, rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
 				req.once('complete', callback);
 				req.exec();
 				return req;
@@ -11425,7 +11790,8 @@ var JSONPTransport = (function() {
 	};
 
 	if(Platform.jsonpSupported && !Http.Request) {
-		Http.Request = function(rest, uri, headers, params, body, callback) {
+		Http.Request = function(method, rest, uri, headers, params, body, callback) {
+			/* ignore method; always GET */
 			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 			req.once('complete', callback);
 			Utils.nextTick(function() {
