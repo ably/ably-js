@@ -514,12 +514,13 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 6. Push to the branch (`git push origin my-new-feature`)
 7. Create a new Pull Request
 
-## Releasing
+## Release Process
 
 - Make sure you have the closure compiler installed, needed to generate
   the minified library. You can install it with `grunt compiler`
 - `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
 - `grunt release:deploy`
+- Visit https://github.com/ably/ably-js/tags and add release notes for the release including links to the changelog entry.
 
 ## License
 
