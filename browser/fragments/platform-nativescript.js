@@ -18,6 +18,7 @@ if (global.android) {
 
 var Platform = {
 	libver: 'js-ns-',
+	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
 	WebSocket: WebSocket,

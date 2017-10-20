@@ -4,6 +4,7 @@ if(typeof window !== 'object') {
 
 var Platform = {
 	libver: 'js-web-',
+	logTimestamps: true,
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
