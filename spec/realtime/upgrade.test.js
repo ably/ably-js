@@ -526,32 +526,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Check that an attach that times out on the base transport does not prevent an upgrade
-	 */
-	exports.attach_timeout_on_base_transport = function(test) {
-		var realtime = helper.AblyRealtime({transports: helper.availableTransports, realtimeRequestTimeout: 3000}),
-			channel = realtime.channels.get('timeout0'),
-			connectionManager = realtime.connection.connectionManager;
-
-		connectionManager.once('transport.active', function(transport) {
-			test.ok(helper.isComet(transport), 'Check first transport to become active is comet');
-			transport.sendUri = helper.unroutableAddress;
-		});
-
-		realtime.connection.once('connected', function() {
-			channel.attach(function(err){
-				test.equal(err.code, 90007, 'Check error code for channel attach timing out');
-				test.equal(channel.state, 'suspended', 'Check channel goes into suspended state');
-				test.equal(realtime.connection.state, 'connected', 'Check connection state is still connected');
-				channel.attach(function(err){
-					test.ok(!err, 'Check a second attach works fine');
-					closeAndFinish(test, realtime)
-				});
-			});
-		});
-	};
-
-	/*
 	 * Check that a message that fails to publish on a comet transport can be
 	 * seamlessly transferred to the websocket transport and published there
 	 */
