@@ -1503,12 +1503,14 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
 		if(err.code === 40170) {
-			/* Special-case problems with the client auth callback - unlike other
-			 * auth errors these may be nonfatal. (RSA4c) */
+			/* RSA4c */
 			err.code = 80019;
-			this.notifyState({state: this.state.failState, error: err});
-		} else {
+		}
+		if(err.statusCode === 403) {
+			/* RSA4d */
 			this.notifyState({state: 'failed', error: err});
+		} else {
+			this.notifyState({state: this.state.failState, error: err});
 		}
 	};
 
