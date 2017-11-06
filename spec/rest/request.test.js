@@ -59,7 +59,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.ok(!err, err && helper.displayError(err));
 					test.equal(res.statusCode, 201, 'Check statusCode is 201');
 					test.equal(res.success, true, 'Check post was a success');
-					test.deepEqual(res.items, [{}], 'Check items is as expected');
+					test.equal(res.items && res.items.length, 1, 'Check number of results is as expected');
 					cb();
 				});
 			},
@@ -67,7 +67,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.request('post', channelPath, null, msgtwo, null, function(err, res) {
 					test.ok(!err, err && helper.displayError(err));
 					test.equal(res.statusCode, 201, 'Check statusCode is 201');
-					test.deepEqual(res.items, [{}], 'Check items is as expected');
+					test.equal(res.items && res.items.length, 1, 'Check number of results is as expected');
 					cb();
 				});
 			},
