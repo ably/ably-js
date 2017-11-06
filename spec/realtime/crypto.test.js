@@ -318,12 +318,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						recvCb(null);
 				});
 			}
-			async.parallel([sendAll, recvAll], function(err) {
+
+			channel.attach(function(err) {
 				if(err) {
-					test.ok(false, 'Error sending messages; err = ' + displayError(err));
+					test.ok(false, 'Unable to attach; err = ' + displayError(err));
+					closeAndFinish(test, realtime);
+					return;
 				}
-				test.ok('Verify all messages received');
-				closeAndFinish(test, realtime);
+				async.parallel([sendAll, recvAll], function(err) {
+					if(err) {
+						test.ok(false, 'Error sending messages; err = ' + displayError(err));
+					}
+					test.ok('Verify all messages received');
+					closeAndFinish(test, realtime);
+				});
 			});
 		});
 	}

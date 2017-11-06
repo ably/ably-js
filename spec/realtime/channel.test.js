@@ -197,14 +197,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/*
-	 * Implicit attach by publishing
+	 * Publishing on a nonattached channel
 	 */
-	testOnAllTransports(exports, 'channelattach_publish', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'publish_no_attach', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		try {
 			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.once('connected', function() {
-				realtime.channels.get('channelattach_publish').publish(function(err) {
+				realtime.channels.get('publish_no_attach').publish(function(err) {
 					if(err) {
 						test.ok(false, 'Unexpected attach failure: ' + helper.displayError(err));
 						closeAndFinish(test, realtime);
@@ -216,13 +216,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 			monitorConnection(test, realtime);
 		} catch(e) {
-			test.ok(false, 'Channelattach_publish failed with exception: ' + e.stack);
+			test.ok(false, 'publish_no_attach failed with exception: ' + e.stack);
 			closeAndFinish(test, realtime);
 		}
 	}});
 
 	/*
-	 * Implicit attach with an invalid channel name by publishing
+	 * publishing on a nonattached channel with an invalid channel name
 	 */
 	testOnAllTransports(exports, 'channelattach_publish_invalid', function(realtimeOpts) { return function(test) {
 		test.expect(2);
@@ -576,34 +576,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
-	 * Check that queueMessages: false disables queuing both for channel and connection queue states
+	 * Check that queueMessages: false disables queuing for connection queue state
 	 */
 	exports.publish_no_queueing = function(test) {
-		test.expect(3);
+		test.expect(1);
 		var realtime = helper.AblyRealtime({ queueMessages: false }),
 			channel = realtime.channels.get('publish_no_queueing');
 
-		realtime.connection.once('connected', function() {
-			/* First try a publish while connected but attaching */
-			channel.publish('foo', 'bar', function(err) {
-				test.ok(err, 'Check publish while still attaching was rejected');
-				test.equal(err.code, 90001, 'Check correct error code');
-
-				channel.attach(function(err) {
-					if(err) {
-						test.ok(false, helper.displayError(err));
-						closeAndFinish(test, realtime);
-						return;
-					}
-					realtime.connection.connectionManager.disconnectAllTransports();
-					/* now try a publish while attached but disconnected */
-					channel.publish('foo', 'bar', function(err) {
-						test.ok(err, 'Check publish while disconnected/connecting is rejected');
-						closeAndFinish(test, realtime);
-					});
-				});
-			});
-			monitorConnection(test, realtime);
+		/* try a publish while not yet connected */
+		channel.publish('foo', 'bar', function(err) {
+			test.ok(err, 'Check publish while disconnected/connecting is rejected');
+			closeAndFinish(test, realtime);
 		});
 	};
 

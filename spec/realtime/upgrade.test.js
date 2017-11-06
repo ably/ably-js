@@ -234,9 +234,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(true, 'Received event0');
 			--count;
 			checkFinish();
+		}, function() {
+			var dataFn = function() { return 'Hello world at: ' + new Date() };
+			publishAtIntervals(count, channel, dataFn, onPublish);
 		});
-		var dataFn = function() { return 'Hello world at: ' + new Date() };
-		publishAtIntervals(count, channel, dataFn, onPublish);
 	};
 
 	/**
@@ -263,9 +264,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(true, 'Received event0');
 			--count;
 			checkFinish();
+		}, function() {
+			var dataFn = function() { return 'Hello world at: ' + new Date() };
+			publishAtIntervals(count, channel, dataFn, onPublish);
 		});
-		var dataFn = function() { return 'Hello world at: ' + new Date() };
-		publishAtIntervals(count, channel, dataFn, onPublish);
 	};
 
 	/*
