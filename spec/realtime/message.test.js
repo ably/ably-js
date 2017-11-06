@@ -131,49 +131,60 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	testOnAllTransports(exports, 'publishQueued', function(realtimeOpts) { return function(test) {
 		test.expect(150);
-		var realtime;
+		var txRealtime, rxRealtime;
 		try {
-			realtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
-			var channel = realtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
+			txRealtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
+			rxRealtime = helper.AblyRealtime();
+			var txChannel = txRealtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
+			var rxChannel = rxRealtime.channels.get(txChannel.name);
 
-			async.parallel([
-				function(cb) {
-					var expectedMsgNum = 0;
-					channel.subscribe('event', function(msg) {
-						var num = msg.data.num;
-						test.ok(true, 'Received event ' + num);
-						test.equal(expectedMsgNum, num, 'Event ' + num + ' was in the right order');
-						expectedMsgNum++;
-						if(num === 49) cb();
-					});
-				},
-				function(cb) {
-					var ackd = 0;
-					var publish = function(i) {
-						channel.publish('event', {num: i}, function(err) {
-							test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
-							ackd++;
-							if(ackd === 50) cb();
+		async.series([
+			function(cb) {
+				rxRealtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				rxChannel.attach(function(err) { cb(err); });
+			},
+			function(cb) {
+				async.parallel([
+					function(parCb) {
+						var expectedMsgNum = 0;
+						rxChannel.subscribe('event', function(msg) {
+							var num = msg.data.num;
+							test.ok(true, 'Received event ' + num);
+							test.equal(expectedMsgNum, num, 'Event ' + num + ' was in the right order');
+							expectedMsgNum++;
+							if(num === 49) parCb();
 						});
-						if(i < 49) {
-							setTimeout(function() {
-								publish(i + 1);
-							}, 20);
-						}
-					};
-					publish(0);
-				},
-				function(cb) {
-					realtime.connection.once('connected', function() { cb(); });
-					realtime.connection.connect();
-				}
-			], function() {
-				closeAndFinish(test, realtime);
+					},
+					function(parCb) {
+						var ackd = 0;
+						var publish = function(i) {
+							txChannel.publish('event', {num: i}, function(err) {
+								test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
+								ackd++;
+								if(ackd === 50) parCb();
+							});
+							if(i < 49) {
+								setTimeout(function() {
+									publish(i + 1);
+								}, 20);
+							}
+						};
+						publish(0);
+					},
+					function(parCb) {
+						txRealtime.connection.once('connected', function() { parCb(); });
+						txRealtime.connection.connect();
+					}
+				], cb);
+			}
+		], function() {
+				closeAndFinish(test, [rxRealtime, txRealtime]);
 			});
-			monitorConnection(test, realtime);
 		} catch(e) {
 			test.ok(false, 'test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
+			closeAndFinish(test, [rxRealtime, txRealtime]);
 		}
 	};});
 
@@ -536,9 +547,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(true, 'Received event0');
 			--count;
 			checkFinish();
+		}, function() {
+			var dataFn = function() { return 'Hello world at: ' + new Date(); };
+			publishAtIntervals(count, channel, dataFn, onPublish);
 		});
-		var dataFn = function() { return 'Hello world at: ' + new Date(); };
-		publishAtIntervals(count, channel, dataFn, onPublish);
 	}});
 
 	/* Authenticate with a clientId and ensure that the clientId is not sent in the Message
@@ -575,7 +587,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	   and ensure it is published */
 	exports.explicit_client_id_0 = function(test) {
 		var clientId = 'explicit_client_id_0',
-				realtime = helper.AblyRealtime({ clientId: clientId });
+			/* Use a fixed transport as intercepting transport.send */
+			realtime = helper.AblyRealtime({ clientId: clientId, transports: [helper.bestTransport] });
 
 		test.expect(4);
 
@@ -593,21 +606,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			var channel = realtime.channels.get('explicit_client_id_0');
 			/* subscribe to event */
-			async.parallel([
-				function(cb) {
-					channel.subscribe('event0', function(message) {
-						test.ok(message.clientId == clientId, 'Client ID was added implicitly');
-						cb();
-					});
-				},
-				function(cb) {
-					channel.publish({ name: 'event0', clientId: clientId }, function(err) {
-						cb(err);
-					});
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(!err, err && helper.displayError(err));
+					closeAndFinish(test, realtime);
 				}
-			], function(err) {
-				test.ok(!err, err && helper.displayError(err));
-				closeAndFinish(test, realtime);
+				async.parallel([
+					function(cb) {
+						channel.subscribe('event0', function(message) {
+							test.ok(message.clientId == clientId, 'Client ID was added implicitly');
+							cb();
+						});
+					},
+					function(cb) {
+						channel.publish({ name: 'event0', clientId: clientId }, function(err) {
+							cb(err);
+						});
+					}
+				], function(err) {
+					test.ok(!err, err && helper.displayError(err));
+					closeAndFinish(test, realtime);
+				});
 			});
 		});
 	};
@@ -625,7 +644,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		rest.auth.requestToken({ clientId: clientId }, function(err, token) {
 			test.ok(token.clientId === clientId, 'client ID is present in the Token');
 
-			var realtime = helper.AblyRealtime({ token: token.token }),
+			/* Use a fixed transport as intercepting transport.send */
+			var realtime = helper.AblyRealtime({ token: token.token, transports: [helper.bestTransport] }),
 					channel = realtime.channels.get('explicit_client_id_1');
 
 			// Publish before authentication to ensure the client library does not reject the message as the clientId is not known
@@ -634,9 +654,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				setTimeout(function() { closeAndFinish(test, realtime); }, 500); // ensure that the message is not published
 			});
 
-			realtime.connection.once('connected', function() {
-				var transport = realtime.connection.connectionManager.activeProtocol.transport,
-						originalSend = transport.send;
+			realtime.connection.connectionManager.on('transport.pending', function(transport) {
+				var originalSend = transport.send;
 
 				transport.send = function(message) {
 					if (message.action === 15) {

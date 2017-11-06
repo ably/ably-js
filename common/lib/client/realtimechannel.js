@@ -80,29 +80,19 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
-		switch(this.state) {
+		var state = this.state;
+		switch(state) {
 			case 'failed':
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+			case 'suspended':
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(state)));
 				break;
-			case 'attached':
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+			default:
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
 				var msg = new ProtocolMessage();
 				msg.action = actions.MESSAGE;
 				msg.channel = this.name;
 				msg.messages = messages;
 				this.sendMessage(msg, callback);
-				break;
-			default:
-				this.autonomousAttach();
-			case 'attaching':
-				if(this.realtime.options.queueMessages) {
-					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-					this.pendingEvents.push({messages: messages, callback: callback});
-				} else {
-					var msg = 'Cannot publish messages while channel is attaching as queueMessages was disabled';
-					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', msg);
-					callback(new ErrorInfo(msg, 90001, 409));
-				}
 				break;
 		}
 	};
