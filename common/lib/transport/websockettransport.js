@@ -129,14 +129,14 @@ var WebSocketTransport = (function() {
 		} else {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsClose()', msg);
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
 			this.finish('disconnected', err);
 		}
 		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
+		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
 		/* Wait a tick before aborting: if the websocket was connected, this event
 		 * will be immediately followed by an onclose event with a close code. Allow
 		 * that to close it (so we see the close code) rather than anticipating it */
