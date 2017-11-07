@@ -38,7 +38,7 @@ var Rest = (function() {
 
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
-		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
+		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
