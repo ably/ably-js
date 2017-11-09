@@ -88,7 +88,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
 								closeAndFinish(test, realtime);
 							});
-						}, 0);
+						}, 100);
 					});
 					channel.publish("name", "data", function(err) {
 						if(err) {
