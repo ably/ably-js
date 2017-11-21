@@ -77,27 +77,33 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						closeAndFinish(test, realtime);
 						return;
 					}
-					channel.subscribe(function() {
-						setTimeout(function() {
-							console.log("connectionAttributes test: connection serial is " + realtime.connection.serial)
-							test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
-							test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify recovery key still correct');
-
-							realtime.connection.close();
-							realtime.connection.whenState('closed', function() {
-								test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
-								closeAndFinish(test, realtime);
+					async.parallel([
+						function(cb) {
+							channel.subscribe(function() {
+								setTimeout(function() {
+									console.log("connectionAttributes test: connection serial is " + realtime.connection.serial)
+									test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
+									test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify recovery key still correct');
+									cb();
+								}, 0);
 							});
-						}, 0);
-					});
-					channel.publish("name", "data", function(err) {
+						},
+						function(cb) {
+							channel.publish("name", "data", cb);
+							test.equal(realtime.connection.serial, -1, "verify serial is -1 after publish begun but before message received")
+						}
+					], function(err) {
 						if(err) {
-							test.ok(false, 'Publish failed with error: ' + displayError(err));
+							test.ok(false, 'test failed with error: ' + displayError(err));
 							closeAndFinish(test, realtime);
 							return;
 						}
+						realtime.connection.close();
+						realtime.connection.whenState('closed', function() {
+							test.equal(realtime.connection.recoveryKey, null, 'verify recovery key null after close');
+							closeAndFinish(test, realtime);
+						});
 					});
-					test.equal(realtime.connection.serial, -1, "verify serial is -1 after publish but before message received")
 				});
 			});
 			monitorConnection(test, realtime);
