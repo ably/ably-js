@@ -8,7 +8,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports,
-		mixin = helper.Utils.mixin;
+		mixin = helper.Utils.mixin,
+		echoServer = "http://echo.ably.io";
+		//echoServer = "http://localhost:5000";
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -68,7 +70,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var authPath = "http://echo.ably.io/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
+			var authPath = echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
 
 			realtime = helper.AblyRealtime({ authUrl: authPath });
 
@@ -96,7 +98,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var authUrl = "http://echo.ably.io/?type=json&";
+			var authUrl = echoServer + "/?type=json&";
 
 			realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: "POST", authParams: tokenDetails});
 
@@ -124,7 +126,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var authPath = "http://echo.ably.io/?type=text&body=" + tokenDetails['token'];
+			var authPath = echoServer + "/?type=text&body=" + tokenDetails['token'];
 
 			realtime = helper.AblyRealtime({ authUrl: authPath });
 
@@ -264,7 +266,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				keyName: tokenRequest.keyName,
 				mac: tokenRequest.mac
 			};
-			var authPath = "http://echo.ably.io/qs_to_body" + utils.toQueryString(lowerPrecedenceTokenRequestParts);
+			var authPath = echoServer + "/qs_to_body" + utils.toQueryString(lowerPrecedenceTokenRequestParts);
 
 			realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
 
@@ -319,7 +321,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * (RSA15a, RSA15c)
 	 */
 	exports.auth_clientid_inheritance2 = function(test) {
-		test.expect(2);
+		test.expect(3);
 		var clientRealtime,
 			testClientId = 'test client id';
 		var rest = helper.AblyRest();
@@ -332,7 +334,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
 			clientRealtime.connection.once('failed', function(stateChange){
 				test.ok(true, 'Verify connection failed');
-				test.equal(stateChange.reason.code, 40102);
+				test.equal(stateChange.reason.code, 80019);
+				test.equal(stateChange.reason.cause.code, 40102);
 				clientRealtime.close();
 				test.done();
 			});
@@ -419,15 +422,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* RSA4c, RSA4e
 	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
 	 */
-	function authCallback_failures(realtimeOptions) {
+	function authCallback_failures(realtimeOptions, expectFailure) {
 		return function(test) {
-			test.expect(2);
+			test.expect(3);
 
 			var realtime = helper.AblyRealtime(realtimeOptions);
 			realtime.connection.on(function(stateChange) {
 				if(stateChange.previous !== 'initialized') {
-					test.equal(stateChange.current, 'disconnected', 'Check connection goes to disconnected, not failed');
+					test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
 					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
+					test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
 					realtime.connection.off();
 					closeAndFinish(test, realtime);
 				}
@@ -471,6 +475,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.authUrl_wrong_content_type = authCallback_failures({
 		authUrl: 'http://example.com/'
 	});
+
+	exports.authUrl_401 = authCallback_failures({
+		authUrl: echoServer + '/respondwith?status=401'
+	});
+
+	/* 403 should cause the connection to go to failed, unlike the others */
+	exports.authUrl_403 = authCallback_failures({
+		authUrl: echoServer + '/respondwith?status=403'
+	}, /* expectFailed: */ true);
 
 	/*
 	 * Check state change reason is propogated during a disconnect
@@ -633,7 +646,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Same as previous but with no way to generate a new token
 	 */
 	testOnAllTransports(exports, 'auth_token_string_expiry_with_token', function(realtimeOpts) { return function(test) {
-		test.expect(5);
+		test.expect(6);
 
 		var realtime, rest = helper.AblyRest();
 		var clientId = "test clientid";
@@ -652,7 +665,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					realtime.connection.once('failed', function(stateChange){
 						/* Library has no way to generate a new token, so should fail */
 						test.ok(true, 'Verify connection failed');
-						test.equal(stateChange.reason.code, 40101, 'Verify correct failure code');
+						test.equal(stateChange.reason.code, 80019, 'Verify correct failure code');
+						test.equal(stateChange.reason.cause.code, 40101, 'Verify correct cause failure code');
 						realtime.close();
 						test.done();
 					});
@@ -679,7 +693,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
 				realtime.connection.once('failed', function(stateChange){
 					test.ok(true, 'Verify connection failed');
-					test.equal(stateChange.reason.code, 40101, 'Verify correct failure code');
+					test.equal(stateChange.reason.cause.code, 40101, 'Verify correct failure code');
 					realtime.close();
 					test.done();
 				});
