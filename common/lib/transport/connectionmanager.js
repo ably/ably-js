@@ -748,7 +748,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		var logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason.message + ', code: ' + stateChange.reason.code) : ''));
+		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason) : ''));
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
@@ -1501,14 +1501,18 @@ var ConnectionManager = (function() {
 		}
 	};
 
+	/* This method is only used during connection attempts, so implements RSA4c1,
+	 * RSA4c2, and RSA4d. In particular it is not invoked for
+	 * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
 	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
-		if(err.code === 40170) {
-			/* Special-case problems with the client auth callback - unlike other
-			 * auth errors these may be nonfatal. (RSA4c) */
-			err.code = 80019;
-			this.notifyState({state: this.state.failState, error: err});
+		if(err.statusCode === 403) {
+			var msg = 'Client configured authentication provider returned 403; failing the connection';
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
+			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});
 		} else {
-			this.notifyState({state: 'failed', error: err});
+			var msg = 'Client configured authentication provider request failed';
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
+			this.notifyState({state: this.state.failState, error: new ErrorInfo(msg, 80019, 401, err)});
 		}
 	};
 

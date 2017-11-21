@@ -3,6 +3,17 @@ var Auth = (function() {
 	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
+	function normaliseAuthcallbackError(err) {
+		/* A client auth callback may give errors in any number of formats; normalise to an errorinfo */
+		if(!Utils.isErrorInfo(err)) {
+			return new ErrorInfo(Utils.inspectError(err), err.code || 40170, err.statusCode || 401);
+		}
+		/* network errors will not have an inherent error code */
+		if(!err.code) {
+			err.code = (err.statusCode === 403) ? 40300 : 40170;
+		}
+		return err;
+	}
 
 	var hmac, toBase64;
 	if(Platform.createHmac) {
@@ -359,7 +370,7 @@ var Auth = (function() {
 		} else {
 			var msg = "Need a new token, but authOptions does not include any way to request one";
 			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-			callback(new ErrorInfo(msg, 40101, 401));
+			callback(new ErrorInfo(msg, 40101, 403));
 			return;
 		}
 
@@ -394,12 +405,7 @@ var Auth = (function() {
 
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
-				if(!err.code) {
-					/* network errors don't have an error code, so assign them
-					 * 40170 so they'll by connectionManager as nonfatal */
-					err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
-				}
-				callback(err);
+				callback(normaliseAuthcallbackError(err));
 				return;
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
@@ -437,12 +443,7 @@ var Auth = (function() {
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
-					if(!err.code) {
-						/* network errors don't have an error code, so assign them
-						 * 40170 so they'll be seen by connectionManager as nonfatal */
-						err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
-					}
-					callback(err);
+					callback(normaliseAuthcallbackError(err));
 					return;
 				}
 				if(!unpacked) tokenResponse = JSON.parse(tokenResponse);
@@ -502,7 +503,7 @@ var Auth = (function() {
 
 		var key = authOptions.key;
 		if(!key) {
-			callback(new Error('No key specified'));
+			callback(new ErrorInfo('No key specified', 40101, 403));
 			return;
 		}
 		var keyParts = key.split(':'),
@@ -510,7 +511,7 @@ var Auth = (function() {
 			keySecret = keyParts[1];
 
 		if(!keySecret) {
-			callback(new Error('Invalid key specified'));
+			callback(new ErrorInfo('Invalid key specified', 40101, 403));
 			return;
 		}
 
@@ -679,7 +680,8 @@ var Auth = (function() {
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 401));
+				/* 403 to trigger a permanently failed client - RSA15c */
+				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 403));
 				return;
 			}
 			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
