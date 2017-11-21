@@ -296,7 +296,6 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
-					authParams = Utils.mixin(params, authOptions.authParams),
 					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
 				if(!usePost) {
 					/* Combine authParams with any qs params given in the authUrl */
@@ -305,9 +304,10 @@ var Auth = (function() {
 						var providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
 						authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
 						/* In case of conflict, authParams take precedence over qs params in the authUrl */
-						authParams = Utils.mixin(providedQsParams, authParams);
+						authOptions.authParams = Utils.mixin(providedQsParams, authOptions.authParams);
 					}
 				}
+				var authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
