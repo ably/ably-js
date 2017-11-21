@@ -359,7 +359,7 @@ var Auth = (function() {
 		} else {
 			var msg = "Need a new token, but authOptions does not include any way to request one";
 			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-			callback(new ErrorInfo(msg, 40101, 401));
+			callback(new ErrorInfo(msg, 40101, 403));
 			return;
 		}
 
@@ -437,11 +437,6 @@ var Auth = (function() {
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
-					if(!err.code) {
-						/* network errors don't have an error code, so assign them
-						 * 40170 so they'll be seen by connectionManager as nonfatal */
-						err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
-					}
 					callback(err);
 					return;
 				}
@@ -679,7 +674,7 @@ var Auth = (function() {
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 401));
+				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 403));
 				return;
 			}
 			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
@@ -721,7 +716,7 @@ var Auth = (function() {
 			/* Should never happen in normal circumstances as realtime should
 			 * recognise mismatch and return an error */
 			var msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
-			var err = new ErrorInfo(msg, 40102, 401);
+			var err = new ErrorInfo(msg, 40102, 403);
 			Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
 			return err;
 		} else if(clientId === '*') {
