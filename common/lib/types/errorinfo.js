@@ -1,9 +1,10 @@
 var ErrorInfo = (function() {
 
-	function ErrorInfo(message, code, statusCode) {
+	function ErrorInfo(message, code, statusCode, cause) {
 		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;
+		this.cause = cause;
 	}
 
 	ErrorInfo.prototype.toString = function() {
@@ -11,6 +12,7 @@ var ErrorInfo = (function() {
 		if(this.message) result += ': ' + this.message;
 		if(this.statusCode) result += '; statusCode=' + this.statusCode;
 		if(this.code) result += '; code=' + this.code;
+		if(this.cause) result += '; cause=' + Utils.inspectError(this.cause);
 		result += ']';
 		return result;
 	};
