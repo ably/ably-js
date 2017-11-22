@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.7
+ * Ably JavaScript Library v1.0.9
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3133,6 +3133,7 @@ if(typeof window !== 'object') {
 
 var Platform = {
 	libver: 'js-web-',
+	logTimestamps: true,
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
@@ -4075,11 +4076,11 @@ Defaults.TIMEOUTS = {
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000,
 	preferenceConnectTimeout   : 6000,
-	parallelUpgradeDelay       : 4000
+	parallelUpgradeDelay       : 6000
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.7';
+Defaults.version          = '1.0.9';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4828,10 +4829,14 @@ var Utils = (function() {
 
 	Utils.inspect = Platform.inspect;
 
+	Utils.isErrorInfo = function(err) {
+		return err.constructor.name == 'ErrorInfo'
+	};
+
 	Utils.inspectError = function(x) {
 		/* redundant, but node vmcontext issue makes instanceof unreliable, and
 		 * can't use just constructor test as could be a TypeError constructor etc. */
-		return (x && (x.constructor.name == 'ErrorInfo' ||
+		return (x && (Utils.isErrorInfo(x) ||
 			x.constructor.name == 'Error' ||
 			x instanceof Error)) ?
 			x.toString() :
@@ -4891,10 +4896,11 @@ var Multicaster = (function() {
 
 var ErrorInfo = (function() {
 
-	function ErrorInfo(message, code, statusCode) {
+	function ErrorInfo(message, code, statusCode, cause) {
 		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;
+		this.cause = cause;
 	}
 
 	ErrorInfo.prototype.toString = function() {
@@ -4902,6 +4908,7 @@ var ErrorInfo = (function() {
 		if(this.message) result += ': ' + this.message;
 		if(this.statusCode) result += '; statusCode=' + this.statusCode;
 		if(this.code) result += '; code=' + this.code;
+		if(this.cause) result += '; cause=' + Utils.inspectError(this.cause);
 		result += ']';
 		return result;
 	};
@@ -6450,7 +6457,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		var logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason.message + ', code: ' + stateChange.reason.code) : ''));
+		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason) : ''));
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
@@ -7203,14 +7210,18 @@ var ConnectionManager = (function() {
 		}
 	};
 
+	/* This method is only used during connection attempts, so implements RSA4c1,
+	 * RSA4c2, and RSA4d. In particular it is not invoked for
+	 * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
 	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
-		if(err.code === 40170) {
-			/* Special-case problems with the client auth callback - unlike other
-			 * auth errors these may be nonfatal. (RSA4c) */
-			err.code = 80019;
-			this.notifyState({state: this.state.failState, error: err});
+		if(err.statusCode === 403) {
+			var msg = 'Client configured authentication provider returned 403; failing the connection';
+			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
+			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});
 		} else {
-			this.notifyState({state: 'failed', error: err});
+			var msg = 'Client configured authentication provider request failed';
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
+			this.notifyState({state: this.state.failState, error: new ErrorInfo(msg, 80019, 401, err)});
 		}
 	};
 
@@ -7589,14 +7600,14 @@ var WebSocketTransport = (function() {
 		} else {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsClose()', msg);
+			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
 			this.finish('disconnected', err);
 		}
 		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onError()', 'Unexpected error from WebSocket: ' + err.message);
+		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
 		/* Wait a tick before aborting: if the websocket was connected, this event
 		 * will be immediately followed by an onclose event with a close code. Allow
 		 * that to close it (so we see the close code) rather than anticipating it */
@@ -8315,6 +8326,17 @@ var Auth = (function() {
 	var MAX_TOKENSTRING_LENGTH = 384;
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
+	function normaliseAuthcallbackError(err) {
+		/* A client auth callback may give errors in any number of formats; normalise to an errorinfo */
+		if(!Utils.isErrorInfo(err)) {
+			return new ErrorInfo(Utils.inspectError(err), err.code || 40170, err.statusCode || 401);
+		}
+		/* network errors will not have an inherent error code */
+		if(!err.code) {
+			err.code = (err.statusCode === 403) ? 40300 : 40170;
+		}
+		return err;
+	}
 
 	var hmac, toBase64;
 	if(Platform.createHmac) {
@@ -8608,7 +8630,6 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
-					authParams = Utils.mixin(params, authOptions.authParams),
 					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
 				if(!usePost) {
 					/* Combine authParams with any qs params given in the authUrl */
@@ -8617,9 +8638,10 @@ var Auth = (function() {
 						var providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
 						authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
 						/* In case of conflict, authParams take precedence over qs params in the authUrl */
-						authParams = Utils.mixin(providedQsParams, authParams);
+						authOptions.authParams = Utils.mixin(providedQsParams, authOptions.authParams);
 					}
 				}
+				var authParams = Utils.mixin(params, authOptions.authParams);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
@@ -8671,7 +8693,7 @@ var Auth = (function() {
 		} else {
 			var msg = "Need a new token, but authOptions does not include any way to request one";
 			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-			callback(new ErrorInfo(msg, 40101, 401));
+			callback(new ErrorInfo(msg, 40101, 403));
 			return;
 		}
 
@@ -8706,12 +8728,7 @@ var Auth = (function() {
 
 			if(err) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request signing call returned error; err = ' + Utils.inspectError(err));
-				if(!err.code) {
-					/* network errors don't have an error code, so assign them
-					 * 40170 so they'll by connectionManager as nonfatal */
-					err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
-				}
-				callback(err);
+				callback(normaliseAuthcallbackError(err));
 				return;
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
@@ -8749,12 +8766,7 @@ var Auth = (function() {
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
-					if(!err.code) {
-						/* network errors don't have an error code, so assign them
-						 * 40170 so they'll be seen by connectionManager as nonfatal */
-						err = new ErrorInfo(Utils.inspectError(err), 40170, 401);
-					}
-					callback(err);
+					callback(normaliseAuthcallbackError(err));
 					return;
 				}
 				if(!unpacked) tokenResponse = JSON.parse(tokenResponse);
@@ -8814,7 +8826,7 @@ var Auth = (function() {
 
 		var key = authOptions.key;
 		if(!key) {
-			callback(new Error('No key specified'));
+			callback(new ErrorInfo('No key specified', 40101, 403));
 			return;
 		}
 		var keyParts = key.split(':'),
@@ -8822,7 +8834,7 @@ var Auth = (function() {
 			keySecret = keyParts[1];
 
 		if(!keySecret) {
-			callback(new Error('Invalid key specified'));
+			callback(new ErrorInfo('Invalid key specified', 40101, 403));
 			return;
 		}
 
@@ -8991,7 +9003,8 @@ var Auth = (function() {
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
-				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 401));
+				/* 403 to trigger a permanently failed client - RSA15c */
+				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 403));
 				return;
 			}
 			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
@@ -9100,7 +9113,7 @@ var Rest = (function() {
 
 		if(options.log)
 			Logger.setLog(options.log.level, options.log.handler);
-		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started');
+		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 
@@ -9631,29 +9644,19 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
-		switch(this.state) {
+		var state = this.state;
+		switch(state) {
 			case 'failed':
-				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+			case 'suspended':
+				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(state)));
 				break;
-			case 'attached':
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message');
+			default:
+				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
 				var msg = new ProtocolMessage();
 				msg.action = actions.MESSAGE;
 				msg.channel = this.name;
 				msg.messages = messages;
 				this.sendMessage(msg, callback);
-				break;
-			default:
-				this.autonomousAttach();
-			case 'attaching':
-				if(this.realtime.options.queueMessages) {
-					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'queueing message');
-					this.pendingEvents.push({messages: messages, callback: callback});
-				} else {
-					var msg = 'Cannot publish messages while channel is attaching as queueMessages was disabled';
-					Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', msg);
-					callback(new ErrorInfo(msg, 90001, 409));
-				}
 				break;
 		}
 	};
@@ -10004,7 +10007,7 @@ var RealtimeChannel = (function() {
 		}
 		var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason.message + '; code: ' + reason.code) : ''));
+		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason) : ''));
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {
