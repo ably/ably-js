@@ -2,6 +2,18 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.8](https://github.com/ably/ably-js/tree/1.0.8) (2017-11-22)
+
+- Add ability for an auth server to trigger a client to move to the failed state by returning an HTTP 403 [\#434](https://github.com/ably/ably-js/pull/434)
+
+- Enable transient publishes when publish is called on a channel that isn't already attached [\#430](https://github.com/ably/ably-js/pull/430)
+
+- Fix bug where qs params provided in an authUrl were being discarded after first use [\#433](https://github.com/ably/ably-js/pull/433)
+
+- Default to logging timestamps on all platforms
+
+- Tweak websocket error log levels to avoid logging non-error closes at ERROR level
+
 ## [1.0.7](https://github.com/ably/ably-js/tree/1.0.7) (2017-10-12)
 
 - Fix idle timeout bug when timer extended due to positive timeRemaning (if setTimeout is overly eager) [\#421](https://github.com/ably/ably-js/pull/421)
