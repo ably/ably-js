@@ -1384,7 +1384,7 @@ var ConnectionManager = (function() {
 		 * before it's become active (while waiting for the old one to become
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
-			var connectionSerial = message.connectionSerial;
+			var connectionSerial = ++transport.connectionSerial;
 			if(connectionSerial <= this.connectionSerial) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
 				return;

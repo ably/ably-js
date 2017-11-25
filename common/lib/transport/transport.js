@@ -29,6 +29,7 @@ var Transport = (function() {
 		this.maxIdleInterval = null;
 		this.idleTimer = null;
 		this.lastActivity = null;
+		this.connectionSerial = -1;
 	}
 	Utils.inherits(Transport, EventEmitter);
 
@@ -85,7 +86,7 @@ var Transport = (function() {
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', message.error, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, message.connectionDetails);
+			this.emit('connected', message.error, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), this.connectionSerial, message.connectionId, message.connectionDetails);
 			break;
 		case actions.CLOSED:
 			this.onClose(message);
@@ -102,7 +103,7 @@ var Transport = (function() {
 		case actions.SYNC:
 			if(message.connectionId !== undefined) {
 				/* a transport SYNC */
-				this.emit('sync', message.connectionSerial, message.connectionId);
+				this.emit('sync', this.connectionSerial, message.connectionId);
 				break;
 			}
 			/* otherwise it's a channel SYNC, so handle it in the channel */
