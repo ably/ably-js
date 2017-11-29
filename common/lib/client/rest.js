@@ -45,6 +45,7 @@ var Rest = (function() {
 		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
+		this.storage = new WebStorage(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {

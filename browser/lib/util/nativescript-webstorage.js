@@ -22,9 +22,12 @@ var WebStorage = (function() {
 		return wrappedValue.value;
 	}
 
-	WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl); };
-	WebStorage.get    = function(name) { return get(name); };
-	WebStorage.remove = function(name) { return appSettings.remove(name); };
+	WebStorage.prototype.supportsLocal = true;
+	WebStorage.prototype.supportsSession = false;
+
+	WebStorage.prototype.set    = function(name, value, ttl) { return set(name, value, ttl); };
+	WebStorage.prototype.get    = function(name) { return get(name); };
+	WebStorage.prototype.remove = function(name) { return appSettings.remove(name); };
 
 	return WebStorage;
 })();

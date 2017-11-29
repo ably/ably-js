@@ -53,16 +53,18 @@ var WebStorage = (function() {
 		return storageInterface(session).removeItem(name);
 	}
 
+	WebStorage.prototype.supportsLocal = localSupported;
 	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
+		WebStorage.prototype.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
+		WebStorage.prototype.get    = function(name) { return get(name, false); };
+		WebStorage.prototype.remove = function(name) { return remove(name, false); };
 	}
 
+	WebStorage.prototype.supportsSession = sessionSupported;
 	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
+		WebStorage.prototype.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
+		WebStorage.prototype.getSession    = function(name) { return get(name, true); };
+		WebStorage.prototype.removeSession = function(name) { return remove(name, true); };
 	}
 
 	return WebStorage;

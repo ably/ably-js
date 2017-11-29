@@ -20,6 +20,7 @@ function findAll(dir, pattern) {
 	return result;
 }
 
+exports.util = findAll('util', /(\w+)\.test\.js/);
 exports.rest = findAll('rest', /(\w+)\.test\.js/);
 exports.realtime = findAll('realtime', /(\w+)\.test\.js/);
 

@@ -1,6 +1,4 @@
 var ConnectionManager = (function() {
-	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
-	var haveSessionStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.getSession);
 	var actions = ProtocolMessage.Action;
 	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
@@ -9,15 +7,6 @@ var ConnectionManager = (function() {
 	var transportPreferenceName = 'ably-transport-preference';
 
 	var sessionRecoveryName = 'ably-connection-recovery';
-	function getSessionRecoverData() {
-		return haveSessionStorage && WebStorage.getSession(sessionRecoveryName);
-	}
-	function setSessionRecoverData(value) {
-		return haveSessionStorage && WebStorage.setSession(sessionRecoveryName, value);
-	}
-	function clearSessionRecoverData() {
-		return haveSessionStorage && WebStorage.removeSession(sessionRecoveryName);
-	}
 
 	function betterTransportThan(a, b) {
 		return Utils.arrIndexOf(transportPreferenceOrder, a.shortName) >
@@ -169,6 +158,31 @@ var ConnectionManager = (function() {
 	}
 	Utils.inherits(ConnectionManager, EventEmitter);
 
+	/*******************************
+	 * session preference management
+	 *******************************/
+
+	ConnectionManager.prototype.getSessionRecoverData = function() {
+		var storage = this.realtime.storage;
+		if(storage.supportsSession) {
+			return storage.getSession(sessionRecoveryName);
+		}
+	};
+
+	ConnectionManager.prototype.setSessionRecoverData = function(value) {
+		var storage = this.realtime.storage;
+		if(storage.supportsSession) {
+			storage.setSession(sessionRecoveryName, value);
+		}
+	};
+
+	ConnectionManager.prototype.clearSessionRecoverData = function() {
+		var storage = this.realtime.storage;
+		if(storage.supportsSession) {
+			storage.removeSession(sessionRecoveryName);
+		}
+	};
+
 	/*********************
 	 * transport management
 	 *********************/
@@ -190,7 +204,7 @@ var ConnectionManager = (function() {
 			}
 
 			var recoverFn = self.options.recover,
-				lastSessionData = getSessionRecoverData();
+				lastSessionData = self.getSessionRecoverData();
 			if(lastSessionData && typeof(recoverFn) === 'function') {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Calling clientOptions-provided recover function with last session data');
 				recoverFn(lastSessionData, function(shouldRecover) {
@@ -714,11 +728,11 @@ var ConnectionManager = (function() {
 
 	/**
 	 * Called when the connectionmanager wants to persist transport
-	 * state for later recovery. Only applicable in the browser context.
+	 * state for later recovery.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
-			setSessionRecoverData({
+		if(this.connectionKey && this.connectionSerial !== undefined) {
+			this.setSessionRecoverData({
 				recoveryKey: this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial,
 				disconnectedAt: Utils.now(),
 				location: window.location,
@@ -729,10 +743,10 @@ var ConnectionManager = (function() {
 
 	/**
 	 * Called when the connectionmanager wants to persist transport
-	 * state for later recovery. Only applicable in the browser context.
+	 * state for later recovery.
 	 */
 	ConnectionManager.prototype.unpersistConnection = function() {
-		clearSessionRecoverData();
+		this.clearSessionRecoverData();
 	};
 
 	/*********************
@@ -1483,22 +1497,24 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.getTransportPreference = function() {
-		return this.transportPreference || (haveWebStorage && WebStorage.get(transportPreferenceName));
+		return this.transportPreference || (this.realtime.storage.get(transportPreferenceName));
 	};
 
 	ConnectionManager.prototype.persistTransportPreference = function(transport) {
 		if(Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
 			this.transportPreference = transport.shortName;
-			if(haveWebStorage) {
-				WebStorage.set(transportPreferenceName, transport.shortName);
+			var storage = this.realtime.storage;
+			if(storage.supportsLocal) {
+				storage.set(transportPreferenceName, transport.shortName);
 			}
 		}
 	};
 
 	ConnectionManager.prototype.unpersistTransportPreference = function() {
 		this.transportPreference = null;
-		if(haveWebStorage) {
-			WebStorage.remove(transportPreferenceName);
+		var storage = this.realtime.storage;
+		if(storage.supportsLocal) {
+			storage.remove(transportPreferenceName);
 		}
 	};
 

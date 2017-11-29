@@ -25,6 +25,7 @@ includeScript('./platform.js');
 includeScript('./lib/util/defaults.js');
 includeScript('./lib/util/bufferutils.js');
 includeScript('./lib/util/http.js');
+includeScript('./lib/util/webstorage.js');
 includeScript('../common/lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');

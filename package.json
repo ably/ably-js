@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "msgpack-js": "git://github.com/ably-forks/msgpack-js",
+    "node-localstorage": "^1.3.0",
+    "node-mkdirs": "0.0.1",
     "request": "^2.74.0",
     "ws": "^1.1.1"
   },
