@@ -99,6 +99,7 @@ var ConnectionManager = (function() {
 
 		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
+		this.connectionDetails = undefined;
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
@@ -1520,6 +1521,7 @@ var ConnectionManager = (function() {
 		if(!connectionDetails) {
 			return;
 		}
+		this.connectionDetails = connectionDetails;
 		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
