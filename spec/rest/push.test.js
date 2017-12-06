@@ -180,8 +180,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			platform: 'android',
 			formFactor: 'phone',
 			push: {
-				transportType: 'gcm',
-				metadata: {registrationToken: 'xxxxxxxxxxx'},
+				recipient: {
+					transportType: 'gcm',
+					registrationToken: 'xxxxxxxxxxx',
+				},
 			},
 		};
 
@@ -215,8 +217,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				platform: 'android',
 				formFactor: 'phone',
 				push: {
-					transportType: 'gcm',
-					metadata: {registrationToken: 'xxxxxxxxxxx'},
+					recipient: {
+						transportType: 'gcm',
+						registrationToken: 'xxxxxxxxxxx',
+					},
 				},
 			};
 			if (!devicesByClientId[device.clientId]) {
@@ -272,8 +276,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			platform: 'android',
 			formFactor: 'phone',
 			push: {
-				transportType: 'gcm',
-				metadata: {registrationToken: 'xxxxxxxxxxx'},
+				recipient: {
+					transportType: 'gcm',
+					registrationToken: 'xxxxxxxxxxx',
+				},
 			},
 		};
 

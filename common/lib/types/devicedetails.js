@@ -9,10 +9,9 @@ var DeviceDetails = (function() {
 		this.metadata = undefined;
 		this.updateToken = undefined;
 		this.push = {
-			transportType: undefined,
+			recipient: undefined,
 			state: undefined,
 			errorReason: undefined,
-			metadata: undefined
 		};
 	}
 
@@ -29,11 +28,10 @@ var DeviceDetails = (function() {
 			metadata: this.metadata,
 			updateToken: this.updateToken,
 			push: {
-				transportType: this.push.transportType,
+				recipient: this.push.recipient,
 				state: this.push.state,
 				errorReason: this.push.errorReason,
-				metadata: this.push.metadata
-			}
+			},
 		};
 	};
 
@@ -51,8 +49,8 @@ var DeviceDetails = (function() {
 			result += '; metadata=' + this.metadata;
 		if(this.updateToken)
 			result += '; updateToken=' + this.updateToken;
-		if(this.push.transportType)
-			result += '; push.transportType=' + this.push.transportType;
+		if(this.push.recipient)
+			result += '; push.recipient=' + JSON.stringify(this.push.recipient);
 		if(this.push.state)
 			result += '; push.state=' + this.push.state;
 		if(this.push.errorReason)

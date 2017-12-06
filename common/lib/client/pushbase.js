@@ -1,10 +1,10 @@
-var Push = (function() {
+var PushBase = function(Push) {
 	var msgpack = Platform.msgpack;
 
-	function Push(rest) {
+	Push.prototype.construct = function(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
-	}
+	};
 
 	Push.prototype.publish = function(recipient, payload, callback) {
 		var rest = this.rest;
@@ -131,4 +131,4 @@ var Push = (function() {
 	};
 
 	return Push;
-})();
+};
