@@ -1,10 +1,10 @@
-var Push = (function() {
+var PushBase = function(Push) {
 	var noop = function() {};
 
-	function Push(rest) {
+	Push.prototype.construct = function(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
-	}
+	};
 
 	function Admin(rest) {
 		this.rest = rest;
@@ -271,4 +271,4 @@ var Push = (function() {
 	};
 
 	return Push;
-})();
+};
