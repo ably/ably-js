@@ -148,7 +148,7 @@ var ulid = (function() {
 				return Math.random();
 			};
 		}
-		throw createError("secure crypto unusable, insecure Math.random not allowedW");
+		throw createError("secure crypto unusable, insecure Math.random not allowed");
 	}
 	function factory(currPrng) {
 		if (!currPrng) {
