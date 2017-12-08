@@ -11,13 +11,17 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			requestBody = Utils.mixin({recipient: recipient}, payload),
-			headers = Utils.defaultPostHeaders(format);
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.post(rest, '/push/publish', requestBody, headers, null, false, callback);
+		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
 	};
 
 	function Admin(rest) {
@@ -33,13 +37,17 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			requestBody = DeviceDetails.fromValues(device),
-			headers = Utils.defaultPostHeaders(format);
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, null, false, callback);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, callback);
 	};
 
 	DeviceRegistrations.prototype.get = function(params, callback) {
@@ -50,6 +58,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
 			return DeviceDetails.fromResponseBody(body, !unpacked && format);
@@ -64,6 +75,9 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
 	};
 
@@ -75,13 +89,17 @@ var Push = (function() {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			requestBody = PushChannelSubscription.fromValues(subscription),
-			headers = Utils.defaultPostHeaders(format);
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, null, false, callback);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, callback);
 	};
 
 	ChannelSubscriptions.prototype.get = function(params, callback) {
@@ -92,6 +110,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
 			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
@@ -106,6 +127,9 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
 	};
 
@@ -117,6 +141,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
 			var f = !unpacked && format;
@@ -258,13 +285,17 @@ var Push = (function() {
 				var rest = machine.rest;
 				var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 					requestBody = DeviceDetails.fromValues(device),
-					headers = Utils.defaultPostHeaders(format);
+					headers = Utils.defaultPostHeaders(format),
+					params = {};
 
 				if(rest.options.headers)
 					Utils.mixin(headers, rest.options.headers);
 
+				if(rest.options.pushFullWait)
+					Utils.mixin(params, {fullWait: 'true'});
+
 				requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
-				Resource.post(rest, '/push/deviceRegistrations', requestBody, headers, null, false, function(err, responseBody) {
+				Resource.post(rest, '/push/deviceRegistrations', requestBody, headers, params, false, function(err, responseBody) {
 					if (err) {
 						machine.handleEvent(new GettingUpdateTokenFailed(err));
 					} else {
@@ -424,13 +455,17 @@ var Push = (function() {
 			var rest = this.rest;
 			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 				requestBody = DeviceDetails.fromValues(device),
-				headers = Utils.defaultPostHeaders(format);
+				headers = Utils.defaultPostHeaders(format),
+				params = {};
 
 			if(rest.options.headers)
 				Utils.mixin(headers, rest.options.headers);
 
+			if(rest.options.pushFullWait)
+				Utils.mixin(params, {fullWait: 'true'});
+
 			requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
-			Resource.patch(rest, '/push/deviceRegistrations', requestBody, headers, null, false, function(err, responseBody) {
+			Resource.patch(rest, '/push/deviceRegistrations', requestBody, headers, params, false, function(err, responseBody) {
 				if (err) {
 					this.handleEvent(new GettingUpdateTokenFailed(err));
 				} else {
@@ -451,6 +486,9 @@ var Push = (function() {
 
 			if(rest.options.headers)
 				Utils.mixin(headers, rest.options.headers);
+
+			if(rest.options.pushFullWait)
+				Utils.mixin(params, {fullWait: 'true'});
 
 			Resource.delete(rest, '/push/deviceRegistrations', headers, params, false, function(err, responseBody) {
 				if (err) {
