@@ -133,8 +133,6 @@ var Push = (function() {
 
 	var persistKeys = {
 		activationState: 'ably.push.activationState',
-		useCustomRegisterer: 'ably.push.useCustomRegisterer',
-		useCustomDeregisterer: 'ably.push.useCustomDeregisterer',
 	};
 
 	var ActivationStateMachine = function(rest) {
@@ -143,8 +141,6 @@ var Push = (function() {
 			throw new Error('this platform is not supported as a target of push notifications');
 		}
 		this.current = ActivationStateMachine[Platform.push.storage.get(persistKeys.activationState) || 'NotActivated'];
-		this.useCustomRegisterer = Platform.push.storage.get(persistKeys.useCustomRegisterer) || false;
-		this.useCustomDeregisterer = Platform.push.storage.get(persistKeys.useCustomDeregisterer) || false;
 		this.pendingEvents = [];
 	};
 
@@ -153,31 +149,33 @@ var Push = (function() {
 		return function() {
 			if (!machine) {
 				machine = new ActivationStateMachine(this.rest);
+				machine.customRegisterer = null;
+				machine.customDeregisterer = null;
 			}
 			return machine;
 		};
 	})();
 
-	Push.prototype.activate = function(useCustomRegisterer, callback) {
-		this.stateMachine().handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine(), useCustomRegisterer));
+	Push.prototype.activate = function(customRegisterer, callback) {
 		this.stateMachine().activatedCallback = callback || nop;
+		this.stateMachine().handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine(), customRegisterer));
 	};
 
-	Push.prototype.deactivate = function(useCustomDeregisterer, callback) {
-		this.stateMachine().handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine(), useCustomDeregisterer));
+	Push.prototype.deactivate = function(customDeregisterer, callback) {
 		this.stateMachine().deactivatedCallback = callback || nop;
+		this.stateMachine().handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine(), customDeregisterer));
 	};
 
 	// Events
 
-	var CalledActivate = function(machine, useCustomRegisterer) {
-		machine.useCustomRegisterer = useCustomRegisterer || false;
+	var CalledActivate = function(machine, customRegisterer) {
+		machine.customRegisterer = customRegisterer || false;
 		machine.persist();
 	};
 	ActivationStateMachine.CalledActivate = CalledActivate; 
 
-	var CalledDeactivate = function(machine, useCustomDeregisterer) {
-		machine.useCustomDeregisterer = useCustomDeregisterer || false;
+	var CalledDeactivate = function(machine, customDeregisterer) {
+		machine.customDeregisterer = customDeregisterer || false;
 		machine.persist();
 	};
 	ActivationStateMachine.CalledDeactivate = CalledDeactivate; 
@@ -254,7 +252,7 @@ var Push = (function() {
 		} else if (event instanceof GotPushDeviceDetails) {
 			var device = machine.getDevice();
 
-			if (machine.useCustomRegisterer) {
+			if (machine.customRegisterer) {
 				machine.callCustomRegisterer(device, true);
 			} else {
 				var rest = machine.rest;
@@ -376,9 +374,6 @@ var Push = (function() {
 		if (isPersistentState(this.current)) {
 			Platform.push.storage.set(persistKeys.activationState, this.current.name);
 		}
-		Platform.push.storage.set(persistKeys.useCustomRegisterer, this.useCustomRegisterer);
-		Platform.push.storage.set(persistKeys.useCustomDeregisterer, this.useCustomDeregisterer);
-	};
 	};
 
 	ActivationStateMachine.prototype.callUpdateRegistrationFailedCallback = function(reason) {
