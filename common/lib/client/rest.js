@@ -164,6 +164,16 @@ var Rest = (function() {
 		Logger.setLog(logOptions.level, logOptions.handler);
 	};
 
+	Rest.prototype.device = (function() {
+		var device = null;
+		return function() {
+			if (!device) {
+				device = LocalDevice.load(this);
+			}
+			return device;
+		};
+	})();
+
 	function Channels(rest) {
 		this.rest = rest;
 		this.attached = {};

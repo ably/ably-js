@@ -97,6 +97,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
+		'<%= dirs.common %>/lib/util/ulid.js',
 
 		'<%= dirs.common %>/lib/types/errorinfo.js',
 		'<%= dirs.common %>/lib/types/message.js',
@@ -105,6 +106,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/types/stats.js',
 		'<%= dirs.common %>/lib/types/devicedetails.js',
 		'<%= dirs.common %>/lib/types/pushchannelsubscription.js',
+		'<%= dirs.common %>/lib/types/localdevice.js',
 
 		'<%= dirs.common %>/lib/transport/connectionerror.js',
 		'<%= dirs.common %>/lib/transport/messagequeue.js',
@@ -123,15 +125,12 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/connectionstatechange.js',
 		'<%= dirs.common %>/lib/client/channelstatechange.js',
 		'<%= dirs.common %>/lib/client/connection.js',
-		'<%= dirs.common %>/lib/client/pushbase.js',
+		'<%= dirs.common %>/lib/client/push.js',
 		'<%= dirs.common %>/lib/client/pushchannel.js',
 		'<%= dirs.common %>/lib/client/channel.js',
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
 		'<%= dirs.common %>/lib/client/realtimepresence.js',
 
-		'<%= dirs.browser %>/lib/util/ulid.js',
-		'<%= dirs.browser %>/lib/types/localdevice.js',
-		'<%= dirs.browser %>/lib/client/push.js',
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/xhrstreamingtransport.js',
 		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js',
@@ -150,11 +149,12 @@ module.exports = function (grunt) {
 
 		'<%= dirs.browser %>/lib/util/domevent.js',
 		'<%= dirs.browser %>/lib/util/msgpack.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
+
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -174,11 +174,12 @@ module.exports = function (grunt) {
 
 		'<%= dirs.browser %>/lib/util/domevent.js',
 		'<%= dirs.browser %>/lib/util/msgpack.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 
 		'<%= dirs.fragments %>/platform-browser.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
+
 		ablyFiles,
 		'<%= dirs.browser %>/lib/transport/jsonptransport.js',
 
@@ -198,11 +199,12 @@ module.exports = function (grunt) {
 
 		/* domevent omitted; not supported in react native */
 		'<%= dirs.browser %>/lib/util/msgpack.js',
+		'<%= dirs.browser %>/lib/util/webstorage.js',
 
 		'<%= dirs.fragments %>/platform-reactnative.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
+
 		ablyFiles,
 		/* jsonptransport omitted */
 
@@ -223,12 +225,13 @@ module.exports = function (grunt) {
 		/* domevent omitted; not supported in nativescript */
 		'<%= dirs.browser %>/lib/util/msgpack.js',
 
+		/* Note: nativescript-specific webstorage */
+		'<%= dirs.browser %>/lib/util/nativescript-webstorage.js',
+
 		'<%= dirs.fragments %>/platform-nativescript.js',
 
 		'<%= dirs.browser %>/lib/util/crypto.js',
 
-		/* Note: nativescript-specific webstorage */
-		'<%= dirs.browser %>/lib/util/nativescript-webstorage.js',
 		ablyFiles,
 		/* jsonptransport omitted */
 
