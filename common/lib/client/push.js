@@ -10,8 +10,8 @@ var Push = (function() {
 	Push.prototype.publish = function(recipient, payload, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = Utils.mixin({recipient: recipient}, payload),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = Utils.mixin({recipient: recipient}, payload),
+			headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -32,8 +32,8 @@ var Push = (function() {
 	DeviceRegistrations.prototype.save = function(device, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = DeviceDetails.fromValues(device),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = DeviceDetails.fromValues(device),
+			headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -74,8 +74,8 @@ var Push = (function() {
 	ChannelSubscriptions.prototype.save = function(subscription, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = PushChannelSubscription.fromValues(subscription),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = PushChannelSubscription.fromValues(subscription),
+			headers = Utils.defaultPostHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -347,7 +347,9 @@ var Push = (function() {
 				return WaitingForDeregistration(previousState);
 			} else if (event instanceof Deregistered) {
 				var device = machine.getDevice();
-				device.setUpdateToken(null);
+				device.updateToken = null;
+				device.resetId();
+				device.persist();
 				machine.deactivatedCallback(null);
 				return NotActivated;
 			} else if (event instanceof DeregistrationFailed) {
@@ -377,19 +379,87 @@ var Push = (function() {
 	};
 
 	ActivationStateMachine.prototype.callUpdateRegistrationFailedCallback = function(reason) {
-		throw new Error('TODO');
+		// TODO: Should this an event on an EventEmitter? If so, who's the EventEmitter?
+		// Rest.push?
 	};
 
-	ActivationStateMachine.prototype.callCustomRegisterer = function(reason) {
-		throw new Error('TODO');
+	ActivationStateMachine.prototype.callCustomRegisterer = function(device, isNew) {
+		this.customRegisterer(device, isNew, function(err, updateToken) {
+			if (err) {
+				if (isNew) {
+					this.handleEvent(new GettingUpdateTokenFailed(error));
+				} else {
+					this.handleEvent(new UpdatingRegistrationFailed(error));
+				}
+				return;
+			}
+
+			if (isNew) {
+				this.handleEvent(new GotUpdateToken(updateToken));
+			} else {
+				this.handleEvent(new RegistrationUpdated());
+			}
+		}.bind(this));
+	};
+
+	ActivationStateMachine.prototype.callCustomDeregisterer = function() {
+		this.customDeregisterer(device, function(err) {
+			if (err) {
+				this.handleEvent(new DeregistrationFailed(err));
+				return;
+			}
+			this.handleEvent(new Deregistered());
+		}.bind(this));
 	};
 
 	ActivationStateMachine.prototype.updateRegistration = function() {
-		throw new Error('TODO');
+		if (this.customRegisterer) {
+			this.callCustomRegisterer(this.getDevice(), false);
+		} else {
+			// TODO: Use deviceToken once that's done. Right now it just uses
+			// the Ably token, which will fail with push-subscribe. It expects
+			// the updateToken in the auth header instead, but since that's
+			// away I won't bother implementing it.
+
+			var rest = this.rest;
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+				requestBody = DeviceDetails.fromValues(device),
+				headers = Utils.defaultPostHeaders(format);
+
+			if(rest.options.headers)
+				Utils.mixin(headers, rest.options.headers);
+
+			requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
+			Resource.patch(rest, '/push/deviceRegistrations', requestBody, headers, null, false, function(err, responseBody) {
+				if (err) {
+					this.handleEvent(new GettingUpdateTokenFailed(err));
+				} else {
+					this.handleEvent(new GotUpdateToken(responseBody.updateToken));
+				}
+			}.bind(this));
+		}
 	};
 
 	ActivationStateMachine.prototype.deregister = function() {
-		throw new Error('TODO');
+		if (this.customDeregisterer) {
+			this.callCustomDeregisterer(this.getDevice());
+		} else {
+			var rest = this.rest;
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+				headers = Utils.defaultPostHeaders(format),
+				params = {deviceId: rest.device().id};
+
+			if(rest.options.headers)
+				Utils.mixin(headers, rest.options.headers);
+
+			Resource.delete(rest, '/push/deviceRegistrations', headers, params, false, function(err, responseBody) {
+				if (err) {
+					this.handleEvent(new DeregistrationFailed(err));
+				} else {
+					this.handleEvent(new Deregistered());
+				}
+			}.bind(this));
+		}
 	};
 
 	ActivationStateMachine.prototype.handleEvent = (function() {
