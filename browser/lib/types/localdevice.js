@@ -18,9 +18,9 @@ var LocalDevice = (function() {
 	};
 
 	LocalDevice.prototype.loadPersisted = function() {
-		this.platform = 'browser';
+		this.platform = Platform.pushPlatform;
 		this.clientId = this.rest.auth.clientId;
-		this.formFactor = 'desktop'; // TODO: Actually detect this.
+		this.formFactor = Platform.pushFormFactor;
 		this.id = WebStorage.get(persistKeys.deviceId);
 		if (!this.id) {
 			this.resetId();
