@@ -1,6 +1,6 @@
 var Push = (function() {
 	Rest.prototype.device = (function() {
-		let device = null;
+		var device = null;
 		return function() {
 			if (!device) {
 				device = LocalDevice.load(this);
@@ -9,7 +9,7 @@ var Push = (function() {
 		}
 	})();
 
-	const persistKeys = {
+	var persistKeys = {
 		activationState: 'ably.push.activationState',
 		useCustomRegisterer: 'ably.push.useCustomRegisterer',
 		useCustomDeregisterer: 'ably.push.useCustomDeregisterer',
@@ -21,7 +21,7 @@ var Push = (function() {
 
 	PushBase(Push);
 
-	let ActivationStateMachine = function(rest) {
+	var ActivationStateMachine = function(rest) {
 		this.rest = rest;
 		this.current = ActivationStateMachine[WebStorage.get(persistKeys.activationState) || 'NotActivated'];
 		this.useCustomRegisterer = WebStorage.get(persistKeys.useCustomRegisterer) || false;
@@ -30,7 +30,7 @@ var Push = (function() {
 	};
 
 	Push.prototype.stateMachine = (function() {
-		let machine = null;
+		var machine = null;
 		return function() {
 			if (!machine) {
 				machine = new ActivationStateMachine(this.rest);
@@ -51,60 +51,60 @@ var Push = (function() {
 
 	// Events
 
-	let CalledActivate = function(machine, useCustomRegisterer) {
+	var CalledActivate = function(machine, useCustomRegisterer) {
 		machine.useCustomRegisterer = useCustomRegisterer || false;
 		machine.persist();
 	};
 	ActivationStateMachine.CalledActivate = CalledActivate; 
 
-	let CalledDeactivate = function(machine, useCustomDeregisterer) {
+	var CalledDeactivate = function(machine, useCustomDeregisterer) {
 		machine.useCustomDeregisterer = useCustomDeregisterer || false;
 		machine.persist();
 	};
 	ActivationStateMachine.CalledDeactivate = CalledDeactivate; 
 
-	let GotPushDeviceDetails = function() {};
+	var GotPushDeviceDetails = function() {};
 	ActivationStateMachine.GotPushDeviceDetails = GotPushDeviceDetails; 
 
-	let GettingPushDeviceDetailsFailed = function(reason) {
+	var GettingPushDeviceDetailsFailed = function(reason) {
 		this.reason = reason;
 	};
 	ActivationStateMachine.GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed; 
 
-	let GotUpdateToken = function(updateToken) {
+	var GotUpdateToken = function(updateToken) {
 		this.updateToken = updateToken;
 	};
 	ActivationStateMachine.GotUpdateToken = GotUpdateToken; 
 
-	let GettingUpdateTokenFailed = function(reason) {
+	var GettingUpdateTokenFailed = function(reason) {
 		this.reason = reason;
 	};
 	ActivationStateMachine.GettingUpdateTokenFailed = GettingUpdateTokenFailed; 
 
-	let RegistrationUpdated = function() {};
+	var RegistrationUpdated = function() {};
 	ActivationStateMachine.RegistrationUpdated = RegistrationUpdated; 
 	
-	let UpdatingRegistrationFailed = function(reason) {
+	var UpdatingRegistrationFailed = function(reason) {
 		this.reason = reason;
 	};
 	ActivationStateMachine.UpdatingRegistrationFailed = UpdatingRegistrationFailed; 
 
-	let Deregistered = function() {};
+	var Deregistered = function() {};
 	ActivationStateMachine.Deregistered = Deregistered;
 
-	let DeregistrationFailed = function(reason) {
+	var DeregistrationFailed = function(reason) {
 		this.reason = reason;
 	};
 	ActivationStateMachine.DeregistrationFailed = DeregistrationFailed; 
 
 	// States
 
-	let NotActivated = function(machine, event) {
+	var NotActivated = function(machine, event) {
 		if (event instanceof CalledDeactivate) {
 			machine.callDeactivatedCallback(null);
 			return NotActivated;
 		} else if (event instanceof CalledActivate) {
-			let device = machine.getDevice();
+			var device = machine.getDevice();
 
 			if (device.updateToken != null) {
 				// Already registered.
@@ -116,7 +116,7 @@ var Push = (function() {
 				machine.pendingEvents.push(new GotPushDeviceDetails());
 			}
 
-			let withPermissionCalled = false;
+			var withPermissionCalled = false;
 			function withPermission(permission) {
 				if (withPermissionCalled) {
 					return;
@@ -134,7 +134,7 @@ var Push = (function() {
 					var subscribe = function() {
 						// TODO: appServerKey is Ably's public key, should be retrieved
 						// from the server.
-						const appServerKey = 'BCHetocdFiZiT8YwGRPcYeRB1fjoDxQOs73hnDO9Rni0mCh9sfZBa-gfT1P7irZyaiQfZPOdogytTdJUuOXwO9E=';
+						var appServerKey = 'BCHetocdFiZiT8YwGRPcYeRB1fjoDxQOs73hnDO9Rni0mCh9sfZBa-gfT1P7irZyaiQfZPOdogytTdJUuOXwO9E=';
 
 						worker.pushManager.subscribe({
 							userVisibleOnly: true,
@@ -173,7 +173,7 @@ var Push = (function() {
 
 			// requestPermission sometimes takes a callback and sometimes
 			// returns a Promise. And sometimes both!
-			let maybePermissionPromise = Notification.requestPermission(withPermission);
+			var maybePermissionPromise = Notification.requestPermission(withPermission);
 			if (maybePermissionPromise) {
 				maybePermissionPromise.then(withPermission);
 			}
@@ -186,14 +186,14 @@ var Push = (function() {
 	};
 	ActivationStateMachine.NotActivated = NotActivated;
 
-	let WaitingForPushDeviceDetails = function(machine, event) {
+	var WaitingForPushDeviceDetails = function(machine, event) {
 		if (event instanceof CalledActivate) {
 			return WaitingForPushDeviceDetails;
 		} else if (event instanceof CalledDeactivate) {
 			machine.callDeactivatedCallback(null);
 			return NotActivated;
 		} else if (event instanceof GotPushDeviceDetails) {
-			let device = machine.getDevice();
+			var device = machine.getDevice();
 
 			if (machine.useCustomRegisterer) {
 				machine.callCustomRegisterer(device, true);
@@ -206,7 +206,7 @@ var Push = (function() {
 				if(rest.options.headers)
 					Utils.mixin(headers, rest.options.headers);
 
-				requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+				requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
 				Resource.post(rest, '/push/deviceRegistrations', requestBody, headers, null, false, function(err, responseBody) {
 					if (err) {
 						machine.handleEvent(new GettingUpdateTokenFailed(err));
@@ -225,11 +225,11 @@ var Push = (function() {
 	};
 	ActivationStateMachine.WaitingForPushDeviceDetails = WaitingForPushDeviceDetails;
 
-	let WaitingForUpdateToken = function(machine, event) {
+	var WaitingForUpdateToken = function(machine, event) {
 		if (event instanceof CalledActivate) {
 			return WaitingForUpdateToken;
 		} else if (event instanceof GotUpdateToken) {
-			let device = machine.getDevice();
+			var device = machine.getDevice();
 			device.updateToken = event.updateToken;
 			device.persist();
 			machine.callActivatedCallback(null);
@@ -242,7 +242,7 @@ var Push = (function() {
 	};
 	ActivationStateMachine.WaitingForUpdateToken = WaitingForUpdateToken;
 
-	let WaitingForNewPushDeviceDetails = function(machine, event) {
+	var WaitingForNewPushDeviceDetails = function(machine, event) {
 		if (event instanceof CalledActivate) {
 			machine.callActivatedCallback(null);
 			return WaitingForNewPushDeviceDetails;
@@ -256,7 +256,7 @@ var Push = (function() {
 	};
 	ActivationStateMachine.WaitingForNewPushDeviceDetails = WaitingForNewPushDeviceDetails;
 
-	let WaitingForRegistrationUpdate = function(machine, event) {
+	var WaitingForRegistrationUpdate = function(machine, event) {
 		if (event instanceof CalledActivate) {
 			machine.callActivatedCallback(null);
 			return WaitingForRegistrationUpdate;
@@ -272,7 +272,7 @@ var Push = (function() {
 	};
 	ActivationStateMachine.WaitingForRegistrationUpdate = WaitingForRegistrationUpdate;
 
-	let AfterRegistrationUpdateFailed = function(machine, event) {
+	var AfterRegistrationUpdateFailed = function(machine, event) {
 		if (event instanceof CalledActivate || event instanceof GotPushDeviceDetails) {
 			machine.updateRegistration();
 			return WaitingForRegistrationUpdate;
@@ -284,12 +284,12 @@ var Push = (function() {
 	};
 	ActivationStateMachine.AfterRegistrationUpdateFailed = AfterRegistrationUpdateFailed;
 
-	let WaitingForDeregistration = function(previousState) {
+	var WaitingForDeregistration = function(previousState) {
 		return function(machine, event) {
 			if (event instanceof CalledDeactivate) {
 				return WaitingForDeregistration(previousState);
 			} else if (event instanceof Deregistered) {
-				let device = machine.getDevice();
+				var device = machine.getDevice();
 				device.setUpdateToken(null);
 				machine.callDeactivatedCallback(null);
 				return NotActivated;
@@ -356,7 +356,7 @@ var Push = (function() {
 	ActivationStateMachine.prototype.handleEvent = function(event) {
 		Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'handling event ' + event.constructor.name + ' from ' + this.current.name);
 
-		let maybeNext = this.current(this, event);
+		var maybeNext = this.current(this, event);
 		if (!maybeNext) {
 			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'enqueing event: ' + event.constructor.name);
 			this.pendingEvents.push(event);
@@ -367,7 +367,7 @@ var Push = (function() {
 		this.current = maybeNext;
 
 		while (true) {
-			let pending = this.pendingEvents.length > 0 ? this.pendingEvents[0] : null;
+			var pending = this.pendingEvents.length > 0 ? this.pendingEvents[0] : null;
 			if (!pending) {
 				break;
 			}
@@ -393,11 +393,11 @@ var Push = (function() {
 	}
 
 	function urlBase64ToUint8Array(base64String) {
-		const padding = '='.repeat((4 - base64String.length % 4) % 4);
-		const base64 = (base64String + padding)
+		var padding = '='.repeat((4 - base64String.length % 4) % 4);
+		var base64 = (base64String + padding)
 			.replace(/\-/g, '+')
 			.replace(/_/g, '/');
-		const rawData = window.atob(base64);
+		var rawData = window.atob(base64);
 		return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 	}
 
