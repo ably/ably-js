@@ -1,5 +1,6 @@
 var Push = (function() {
 	var msgpack = Platform.msgpack;
+	var nop = function() {};
 
 	function Push(rest) {
 		this.rest = rest;
@@ -158,13 +159,13 @@ var Push = (function() {
 	})();
 
 	Push.prototype.activate = function(useCustomRegisterer, callback) {
-		this.stateMachine().activatedCallback = callback;
 		this.stateMachine().handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine(), useCustomRegisterer));
+		this.stateMachine().activatedCallback = callback || nop;
 	};
 
 	Push.prototype.deactivate = function(useCustomDeregisterer, callback) {
-		this.stateMachine().deactivatedCallback = callback;
 		this.stateMachine().handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine(), useCustomDeregisterer));
+		this.stateMachine().deactivatedCallback = callback || nop;
 	};
 
 	// Events
@@ -219,7 +220,7 @@ var Push = (function() {
 
 	var NotActivated = function(machine, event) {
 		if (event instanceof CalledDeactivate) {
-			machine.callDeactivatedCallback(null);
+			machine.deactivatedCallback(null);
 			return NotActivated;
 		} else if (event instanceof CalledActivate) {
 			var device = machine.getDevice();
@@ -248,7 +249,7 @@ var Push = (function() {
 		if (event instanceof CalledActivate) {
 			return WaitingForPushDeviceDetails;
 		} else if (event instanceof CalledDeactivate) {
-			machine.callDeactivatedCallback(null);
+			machine.deactivatedCallback(null);
 			return NotActivated;
 		} else if (event instanceof GotPushDeviceDetails) {
 			var device = machine.getDevice();
@@ -276,7 +277,7 @@ var Push = (function() {
 
 			return WaitingForUpdateToken;
 		} else if (event instanceof GettingPushDeviceDetailsFailed) {
-			machine.callActivatedCallback(event.reason);
+			machine.activatedCallback(event.reason);
 			return NotActivated;
 		}
 		return null;
@@ -290,10 +291,10 @@ var Push = (function() {
 			var device = machine.getDevice();
 			device.updateToken = event.updateToken;
 			device.persist();
-			machine.callActivatedCallback(null);
+			machine.activatedCallback(null);
 			return WaitingForNewPushDeviceDetails;
 		} else if (event instanceof GettingUpdateTokenFailed) {
-			machine.callActivatedCallback(event.reason);
+			machine.activatedCallback(event.reason);
 			return NotActivated;
 		}
 		return null;
@@ -302,7 +303,7 @@ var Push = (function() {
 
 	var WaitingForNewPushDeviceDetails = function(machine, event) {
 		if (event instanceof CalledActivate) {
-			machine.callActivatedCallback(null);
+			machine.activatedCallback(null);
 			return WaitingForNewPushDeviceDetails;
 		} else if (event instanceof CalledDeactivate) {
 			machine.deregister();
@@ -316,7 +317,7 @@ var Push = (function() {
 
 	var WaitingForRegistrationUpdate = function(machine, event) {
 		if (event instanceof CalledActivate) {
-			machine.callActivatedCallback(null);
+			machine.activatedCallback(null);
 			return WaitingForRegistrationUpdate;
 		} else if (event instanceof RegistrationUpdated) {
 			return WaitingForNewPushDeviceDetails;
@@ -349,10 +350,10 @@ var Push = (function() {
 			} else if (event instanceof Deregistered) {
 				var device = machine.getDevice();
 				device.setUpdateToken(null);
-				machine.callDeactivatedCallback(null);
+				machine.deactivatedCallback(null);
 				return NotActivated;
 			} else if (event instanceof DeregistrationFailed) {
-				machine.callDeactivatedCallback(event.reason);
+				machine.deactivatedCallback(event.reason);
 				return previousState;
 			}
 			return null;
@@ -378,21 +379,6 @@ var Push = (function() {
 		Platform.push.storage.set(persistKeys.useCustomRegisterer, this.useCustomRegisterer);
 		Platform.push.storage.set(persistKeys.useCustomDeregisterer, this.useCustomDeregisterer);
 	};
-
-	ActivationStateMachine.prototype.callActivatedCallback = function(reason) {
-		// TODO: This should be an EventEmitter event, so that it can be
-		// emitted by a ServiceWorker if in the future we want to support
-		// something like the server activating/deactivating remotely the
-		// device.
-		this.activatedCallback(reason);
-	};
-
-	ActivationStateMachine.prototype.callDeactivatedCallback = function(reason) {
-		// TODO: This should be an EventEmitter event, so that it can be
-		// emitted by a ServiceWorker if in the future we want to support
-		// something like the server activating/deactivating remotely the
-		// device.
-		this.deactivatedCallback(reason);
 	};
 
 	ActivationStateMachine.prototype.callUpdateRegistrationFailedCallback = function(reason) {
