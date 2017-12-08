@@ -116,67 +116,11 @@ var Push = (function() {
 				machine.pendingEvents.push(new GotPushDeviceDetails());
 			}
 
-			var withPermissionCalled = false;
-			function withPermission(permission) {
-				if (withPermissionCalled) {
-					return;
-				}
-				withPermissionCalled = true;
-
-				if (permission !== 'granted') {
-					machine.handleEvent(new GettingPushDeviceDetailsFailed(new Error(`user denied permission to send notifications.`)));
-					return;
-				}
-
-
-				// TODO: sw.js should be a ClientOption or an argument to push.activate
-				navigator.serviceWorker.register('sw.js').then(function(worker) {
-					var subscribe = function() {
-						// TODO: appServerKey is Ably's public key, should be retrieved
-						// from the server.
-						var appServerKey = 'BCHetocdFiZiT8YwGRPcYeRB1fjoDxQOs73hnDO9Rni0mCh9sfZBa-gfT1P7irZyaiQfZPOdogytTdJUuOXwO9E=';
-
-						worker.pushManager.subscribe({
-							userVisibleOnly: true,
-							applicationServerKey: urlBase64ToUint8Array(appServerKey),
-						}).then(function(subscription) {
-							var endpoint = subscription.endpoint;
-							var p256dh = toBase64Url(subscription.getKey('p256dh'));
-							var auth = toBase64Url(subscription.getKey('auth'));
-							var key = [p256dh, auth].join(':');
-
-							var device = machine.getDevice();
-							device.push.recipient = {
-								transportType: 'web',
-								targetUrl: btoa(endpoint),
-								encryptionKey: key,
-							};
-							device.persist();
-
-							machine.handleEvent(new GotPushDeviceDetails());
-						}).catch(function(err) {
-							machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
-						});
-					}
-
-					worker.pushManager.getSubscription().then(function(subscription) {
-						if (subscription) {
-							subscription.unsubscribe().then(subscribe);
-						} else {
-							subscribe();
-						}
-					});
-				}).catch(function(err) {
-					machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
-				});
-			};
-
-			// requestPermission sometimes takes a callback and sometimes
-			// returns a Promise. And sometimes both!
-			var maybePermissionPromise = Notification.requestPermission(withPermission);
-			if (maybePermissionPromise) {
-				maybePermissionPromise.then(withPermission);
+			var getPushDeviceDetails = Platform.getPushDeviceDetails;
+			if (!getPushDeviceDetails) {
+				throw new Error('this platform is not supported as a target of push notifications');
 			}
+			getPushDeviceDetails(machine);
 
 			return WaitingForPushDeviceDetails;
 		} else if (event instanceof GotPushDeviceDetails) {
@@ -372,7 +316,7 @@ var Push = (function() {
 				break;
 			}
 
-			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'attempting to consume pending event: ' + pending.name);
+			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'attempting to consume pending event: ' + pending.constructor.name);
 
 			maybeNext = this.current(this, pending);
 			if (!maybeNext) {
@@ -386,20 +330,6 @@ var Push = (function() {
 
 		this.persist();
 	};
-
-	function toBase64Url(arrayBuffer) {
-		var buffer = new Uint8Array(arrayBuffer.slice(0, arrayBuffer.byteLength));
-		return btoa(String.fromCharCode.apply(null, buffer));
-	}
-
-	function urlBase64ToUint8Array(base64String) {
-		var padding = '='.repeat((4 - base64String.length % 4) % 4);
-		var base64 = (base64String + padding)
-			.replace(/\-/g, '+')
-			.replace(/_/g, '/');
-		var rawData = window.atob(base64);
-		return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
-	}
 
 	return Push;
 })();
