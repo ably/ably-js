@@ -1,13 +1,134 @@
 var Push = (function() {
-	Rest.prototype.device = (function() {
-		var device = null;
-		return function() {
-			if (!device) {
-				device = LocalDevice.load(this);
+	var msgpack = Platform.msgpack;
+
+	function Push(rest) {
+		this.rest = rest;
+		this.admin = new Admin(rest);
+	};
+
+	Push.prototype.publish = function(recipient, payload, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = Utils.mixin({recipient: recipient}, payload),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/publish', requestBody, headers, null, false, callback);
+	};
+
+	function Admin(rest) {
+		this.deviceRegistrations = new DeviceRegistrations(rest);
+		this.channelSubscriptions = new ChannelSubscriptions(rest);
+	}
+
+	function DeviceRegistrations(rest) {
+		this.rest = rest;
+	}
+
+	DeviceRegistrations.prototype.save = function(device, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = DeviceDetails.fromValues(device),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, null, false, callback);
+	};
+
+	DeviceRegistrations.prototype.get = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
+			return DeviceDetails.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	DeviceRegistrations.prototype.remove = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
+	};
+
+	function ChannelSubscriptions(rest) {
+		this.rest = rest;
+	}
+
+	ChannelSubscriptions.prototype.save = function(subscription, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+		    requestBody = PushChannelSubscription.fromValues(subscription),
+		    headers = Utils.defaultPostHeaders(format);
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, null, false, callback);
+	};
+
+	ChannelSubscriptions.prototype.get = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
+			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	ChannelSubscriptions.prototype.remove = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
+	};
+
+	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
+			var f = !unpacked && format;
+
+			if(f)
+				body = (f == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+
+			for(var i = 0; i < body.length; i++) {
+				body[i] = String(body[i]);
 			}
-			return device;
-		}
-	})();
+			return body;
+		})).get(params, callback);
+	};
 
 	var persistKeys = {
 		activationState: 'ably.push.activationState',
@@ -15,17 +136,14 @@ var Push = (function() {
 		useCustomDeregisterer: 'ably.push.useCustomDeregisterer',
 	};
 
-	function Push() {
-		this.construct.apply(this, arguments);
-	};
-
-	PushBase(Push);
-
 	var ActivationStateMachine = function(rest) {
 		this.rest = rest;
-		this.current = ActivationStateMachine[WebStorage.get(persistKeys.activationState) || 'NotActivated'];
-		this.useCustomRegisterer = WebStorage.get(persistKeys.useCustomRegisterer) || false;
-		this.useCustomDeregisterer = WebStorage.get(persistKeys.useCustomDeregisterer) || false;
+		if (!Platform.push) {
+			throw new Error('this platform is not supported as a target of push notifications');
+		}
+		this.current = ActivationStateMachine[Platform.push.storage.get(persistKeys.activationState) || 'NotActivated'];
+		this.useCustomRegisterer = Platform.push.storage.get(persistKeys.useCustomRegisterer) || false;
+		this.useCustomDeregisterer = Platform.push.storage.get(persistKeys.useCustomDeregisterer) || false;
 		this.pendingEvents = [];
 	};
 
@@ -114,13 +232,9 @@ var Push = (function() {
 
 			if (device.push.recipient) {
 				machine.pendingEvents.push(new GotPushDeviceDetails());
+			} else {
+				Platform.push.getPushDeviceDetails(machine);
 			}
-
-			var getPushDeviceDetails = Platform.getPushDeviceDetails;
-			if (!getPushDeviceDetails) {
-				throw new Error('this platform is not supported as a target of push notifications');
-			}
-			getPushDeviceDetails(machine);
 
 			return WaitingForPushDeviceDetails;
 		} else if (event instanceof GotPushDeviceDetails) {
@@ -259,10 +373,10 @@ var Push = (function() {
 
 	ActivationStateMachine.prototype.persist = function() {
 		if (isPersistentState(this.current)) {
-			WebStorage.set(persistKeys.activationState, this.current.name);
+			Platform.push.storage.set(persistKeys.activationState, this.current.name);
 		}
-		WebStorage.set(persistKeys.useCustomRegisterer, this.useCustomRegisterer);
-		WebStorage.set(persistKeys.useCustomDeregisterer, this.useCustomDeregisterer);
+		Platform.push.storage.set(persistKeys.useCustomRegisterer, this.useCustomRegisterer);
+		Platform.push.storage.set(persistKeys.useCustomDeregisterer, this.useCustomDeregisterer);
 	};
 
 	ActivationStateMachine.prototype.callActivatedCallback = function(reason) {
@@ -297,39 +411,52 @@ var Push = (function() {
 		throw new Error('TODO');
 	};
 
-	ActivationStateMachine.prototype.handleEvent = function(event) {
-		Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'handling event ' + event.constructor.name + ' from ' + this.current.name);
-
-		var maybeNext = this.current(this, event);
-		if (!maybeNext) {
-			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'enqueing event: ' + event.constructor.name);
-			this.pendingEvents.push(event);
-			return;	
-		}
-
-		Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + event.constructor.name + ')-> ' + maybeNext.name);
-		this.current = maybeNext;
-
-		while (true) {
-			var pending = this.pendingEvents.length > 0 ? this.pendingEvents[0] : null;
-			if (!pending) {
-				break;
+	ActivationStateMachine.prototype.handleEvent = (function() {
+		var handling = false;
+		return function(event) {
+			if (handling) {
+				setTimeout(function() {
+					this.handleEvent(event);
+				}.bind(this), 0);
+				return;
 			}
 
-			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'attempting to consume pending event: ' + pending.constructor.name);
+			handling = true;
+			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'handling event ' + event.constructor.name + ' from ' + this.current.name);
 
-			maybeNext = this.current(this, pending);
+			var maybeNext = this.current(this, event);
 			if (!maybeNext) {
-				break;
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'enqueing event: ' + event.constructor.name);
+				this.pendingEvents.push(event);
+				handling = false;
+				return;	
 			}
-			this.pendingEvents.splice(0, 1);
 
-			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + pending.constructor.name + ')-> ' + maybeNext.name);
+			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + event.constructor.name + ')-> ' + maybeNext.name);
 			this.current = maybeNext;
-		}
 
-		this.persist();
-	};
+			while (true) {
+				var pending = this.pendingEvents.length > 0 ? this.pendingEvents[0] : null;
+				if (!pending) {
+					break;
+				}
+
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'attempting to consume pending event: ' + pending.constructor.name);
+
+				maybeNext = this.current(this, pending);
+				if (!maybeNext) {
+					break;
+				}
+				this.pendingEvents.splice(0, 1);
+
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + pending.constructor.name + ')-> ' + maybeNext.name);
+				this.current = maybeNext;
+			}
+
+			this.persist();
+			handling = false;
+		}
+	})();
 
 	return Push;
 })();
