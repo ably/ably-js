@@ -522,6 +522,8 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 - `grunt release:deploy`
 - Visit https://github.com/ably/ably-js/tags and add release notes for the release including links to the changelog entry.
 
+Warning: if publishing to npm, please use npm version 5.1, as 5.5 has a bug that results in the creation of an invalid package, see https://github.com/ably/ably-js/issues/422 and https://github.com/npm/npm/issues/18870 for more info
+
 ## License
 
 Copyright (c) 2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
