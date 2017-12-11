@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.11](https://github.com/ably/ably-js/tree/1.0.11) (2017-12-11)
+
+- Allow Message#fromEncoded to take a short-form (key-only) cipherParams (https://github.com/ably/ably-js/pull/438)
+
+[note: 1.0.10 skipped due to buggy version on npm used to create package; see https://github.com/npm/npm/issues/18870]
+
 ## [1.0.9](https://github.com/ably/ably-js/tree/1.0.9) (2017-11-22)
 
 - Add ability for an auth server to trigger a client to move to the failed state by returning an HTTP 403 [\#434](https://github.com/ably/ably-js/pull/434)
