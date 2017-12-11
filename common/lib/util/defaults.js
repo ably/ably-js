@@ -73,8 +73,14 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
-		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
 		options.recover = null;
+	}
+
+	if(!('closeOnUnload' in options)) {
+		/* Have closeOnUnload default to true unless we have any indication that
+		 * the user may want to recover the connection */
+		options.closeOnUnload = !options.recover;
 	}
 
 	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {

@@ -179,5 +179,33 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
+	exports.defaults_closeOnUnload = function(test) {
+		test.expect(6);
+		var options;
+
+		/* Default to true */
+		options = Defaults.normaliseOptions({});
+		test.equal(options.closeOnUnload, true);
+
+		/* Default to false if using manual recovery */
+		options = Defaults.normaliseOptions({recover: 'someRecoveryKey'});
+		test.equal(options.closeOnUnload, false);
+
+		/* Default to false if using autorecovery */
+		options = Defaults.normaliseOptions({recover: function(){}});
+		test.equal(options.closeOnUnload, false);
+
+		/* can override default with manual recovery */
+		options = Defaults.normaliseOptions({recover: 'someRecoveryKey', closeOnUnload: true});
+		test.equal(options.closeOnUnload, true);
+
+		/* can override default with autorecovery only at the cost of unsetting autorecovery */
+		options = Defaults.normaliseOptions({recover: function(){}, closeOnUnload: true});
+		test.equal(options.closeOnUnload, true);
+		test.ok(!options.recover);
+
+		test.done();
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
