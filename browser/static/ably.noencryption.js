@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2017, Ably
  *
- * Ably JavaScript Library v1.0.9
+ * Ably JavaScript Library v1.0.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2659,7 +2659,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.9';
+Defaults.version          = '1.0.10';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -3721,8 +3721,18 @@ var Message = (function() {
 		return result;
 	};
 
+	function normalizeCipherOptions(options) {
+		if(options && options.cipher && !options.cipher.channelCipher) {
+			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+			var cipher = Crypto.getCipher(options.cipher);
+			options.cipher = cipher.cipherParams;
+			options.channelCipher = cipher.cipher;
+		}
+	}
+
 	Message.fromEncoded = function(encoded, options) {
 		var msg = Message.fromValues(encoded);
+		normalizeCipherOptions(options);
 		/* if decoding fails at any point, catch and return the message decoded to
 		 * the fullest extent possible */
 		try {
@@ -3734,6 +3744,7 @@ var Message = (function() {
 	};
 
 	Message.fromEncodedArray = function(encodedArray, options) {
+		normalizeCipherOptions(options);
 		return Utils.arrMap(encodedArray, function(encoded) {
 			return Message.fromEncoded(encoded, options);
 		});
@@ -4387,6 +4398,7 @@ var ConnectionManager = (function() {
 
 		this.queuedMessages = new MessageQueue();
 		this.msgSerial = 0;
+		this.connectionDetails = undefined;
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
@@ -5808,6 +5820,7 @@ var ConnectionManager = (function() {
 		if(!connectionDetails) {
 			return;
 		}
+		this.connectionDetails = connectionDetails;
 		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
