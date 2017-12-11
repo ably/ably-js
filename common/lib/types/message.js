@@ -215,8 +215,18 @@ var Message = (function() {
 		return result;
 	};
 
+	function normalizeCipherOptions(options) {
+		if(options && options.cipher && !options.cipher.channelCipher) {
+			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+			var cipher = Crypto.getCipher(options.cipher);
+			options.cipher = cipher.cipherParams;
+			options.channelCipher = cipher.cipher;
+		}
+	}
+
 	Message.fromEncoded = function(encoded, options) {
 		var msg = Message.fromValues(encoded);
+		normalizeCipherOptions(options);
 		/* if decoding fails at any point, catch and return the message decoded to
 		 * the fullest extent possible */
 		try {
@@ -228,6 +238,7 @@ var Message = (function() {
 	};
 
 	Message.fromEncodedArray = function(encodedArray, options) {
+		normalizeCipherOptions(options);
 		return Utils.arrMap(encodedArray, function(encoded) {
 			return Message.fromEncoded(encoded, options);
 		});

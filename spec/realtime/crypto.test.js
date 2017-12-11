@@ -184,6 +184,32 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.fromEncoded_cipher_options = function(test) {
+		if(!Crypto) {
+			test.ok(false, 'Encryption not supported');
+			test.done();
+			return;
+		}
+
+		loadTestData(testResourcesPath + 'crypto-data-256.json', function(err, testData) {
+			if(err) {
+				test.ok(false, 'Unable to get test assets; err = ' + displayError(err));
+				return;
+			}
+			var key = BufferUtils.base64Decode(testData.key);
+			var iv = BufferUtils.base64Decode(testData.iv);
+
+			test.expect(testData.items.length);
+			for(var i = 0; i < testData.items.length; i++) {
+				var item = testData.items[i];
+				var testMessage = Message.fromEncoded(item.encoded);
+				var decryptedMessage = Message.fromEncoded(item.encrypted, {cipher: {key: key, iv: iv}});
+				test.ok(compareMessage(testMessage, decryptedMessage));
+			}
+			test.done();
+		});
+	};
+
 	exports.msgpack_128 = function(test) {
 		if(typeof ArrayBuffer === 'undefined') {
 			/* Encryption or binary transport not supported */
