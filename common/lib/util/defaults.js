@@ -77,6 +77,12 @@ Defaults.normaliseOptions = function(options) {
 		options.recover = null;
 	}
 
+	if(!('closeOnUnload' in options)) {
+		/* Have closeOnUnload default to true unless we have any indication that
+		 * the user may want to recover the connection */
+		options.closeOnUnload = !options.recover;
+	}
+
 	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
 		Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
 		Utils.arrDeleteValue(options.transports, 'xhr');
