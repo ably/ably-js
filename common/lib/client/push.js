@@ -6,23 +6,28 @@ var Push = (function() {
 		this.admin = new Admin(rest);
 	}
 
-	Push.prototype.publish = function(recipient, payload, callback) {
+	function Admin(rest) {
+		this.rest = rest;
+		this.deviceRegistrations = new DeviceRegistrations(rest);
+		this.channelSubscriptions = new ChannelSubscriptions(rest);
+	}
+
+	Admin.prototype.publish = function(recipient, payload, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = Utils.mixin({recipient: recipient}, payload),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = Utils.mixin({recipient: recipient}, payload),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.post(rest, '/push/publish', requestBody, headers, null, false, callback);
-	};
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
-	function Admin(rest) {
-		this.deviceRegistrations = new DeviceRegistrations(rest);
-		this.channelSubscriptions = new ChannelSubscriptions(rest);
-	}
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
+	};
 
 	function DeviceRegistrations(rest) {
 		this.rest = rest;
@@ -31,14 +36,18 @@ var Push = (function() {
 	DeviceRegistrations.prototype.save = function(device, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = DeviceDetails.fromValues(device),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = DeviceDetails.fromValues(device),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, null, false, callback);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, callback);
 	};
 
 	DeviceRegistrations.prototype.get = function(params, callback) {
@@ -49,6 +58,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
 			return DeviceDetails.fromResponseBody(body, !unpacked && format);
@@ -63,6 +75,9 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
 	};
 
@@ -73,14 +88,18 @@ var Push = (function() {
 	ChannelSubscriptions.prototype.save = function(subscription, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-		    requestBody = PushChannelSubscription.fromValues(subscription),
-		    headers = Utils.defaultPostHeaders(format);
+			requestBody = PushChannelSubscription.fromValues(subscription),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
-		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, null, false, callback);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, callback);
 	};
 
 	ChannelSubscriptions.prototype.get = function(params, callback) {
@@ -91,6 +110,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
 			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
@@ -105,6 +127,9 @@ var Push = (function() {
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
 		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
 	};
 
@@ -116,6 +141,9 @@ var Push = (function() {
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
 			var f = !unpacked && format;
