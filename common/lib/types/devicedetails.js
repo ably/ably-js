@@ -3,16 +3,16 @@ var DeviceDetails = (function() {
 
 	function DeviceDetails() {
 		this.id = undefined;
+		this.deviceSecret = undefined;
 		this.platform = undefined;
 		this.formFactor = undefined;
 		this.clientId = undefined;
 		this.metadata = undefined;
-		this.updateToken = undefined;
+		this.deviceIdentityToken = undefined;
 		this.push = {
-			transportType: undefined,
+			recipient: undefined,
 			state: undefined,
 			errorReason: undefined,
-			metadata: undefined
 		};
 	}
 
@@ -23,17 +23,17 @@ var DeviceDetails = (function() {
 	DeviceDetails.prototype.toJSON = function() {
 		return {
 			id: this.id,
+			deviceSecret: this.deviceSecret,
 			platform: this.platform,
 			formFactor: this.formFactor,
 			clientId: this.clientId,
 			metadata: this.metadata,
-			updateToken: this.updateToken,
+			deviceIdentityToken: this.deviceIdentityToken,
 			push: {
-				transportType: this.push.transportType,
+				recipient: this.push.recipient,
 				state: this.push.state,
 				errorReason: this.push.errorReason,
-				metadata: this.push.metadata
-			}
+			},
 		};
 	};
 
@@ -49,10 +49,10 @@ var DeviceDetails = (function() {
 			result += '; clientId=' + this.clientId;
 		if(this.metadata)
 			result += '; metadata=' + this.metadata;
-		if(this.updateToken)
-			result += '; updateToken=' + this.updateToken;
-		if(this.push.transportType)
-			result += '; push.transportType=' + this.push.transportType;
+		if(this.deviceIdentityToken)
+			result += '; deviceIdentityToken=' + JSON.stringify(this.deviceIdentityToken);
+		if(this.push.recipient)
+			result += '; push.recipient=' + JSON.stringify(this.push.recipient);
 		if(this.push.state)
 			result += '; push.state=' + this.push.state;
 		if(this.push.errorReason)
