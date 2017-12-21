@@ -7,7 +7,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
 		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
-		
+
 	exports.setup_push = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
@@ -154,17 +154,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			var payload =  {
-				notification: {title: 'test'},
-				data: {foo: 'bar'},
+			var pushPayload =  {
+				notification: {title: 'Test message', body:'Test message body'},
+				data: {foo: 'bar'}
+			};
+
+			const baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+			const pushRecipient = {
+				transportType: 'ablyChannel',
+				channel: 'pushenabled:foo',
+				ablyKey: realtime.options.key,
+				ablyUrl: baseUri
 			};
 
 			channel.subscribe('__ably_push__', function(msg) {
-				test.deepEqual(msg.data, payload);
+				var receivedPushPayload = JSON.parse(msg.data);
+				test.deepEqual(receivedPushPayload.data, pushPayload.data);
+				test.deepEqual(receivedPushPayload.notification.title, pushPayload.notification.title);
+				test.deepEqual(receivedPushPayload.notification.body, pushPayload.notification.body);
 				test.done();
 			});
 
-			realtime.push.publish({ablyChannel: 'pushenabled:foo'}, payload, function(err) {
+			realtime.push.admin.publish(pushRecipient, pushPayload, function(err) {
 				if (err) {
 					test.ok(false, err.message);
 					test.done();
@@ -177,6 +188,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var rest = helper.AblyRest();
 		var device = {
 			id: 'testId',
+			deviceSecret: 'secret-testId',
 			platform: 'android',
 			formFactor: 'phone',
 			push: {
@@ -213,6 +225,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		for (var i = 0; i < 5; i++) { (function(i) {
 			var device = {
 				id: 'device' + (i + 1),
+				deviceSecret: 'secret-device' + (i + 1),
 				clientId: 'testClient' + ((i % 2) + 1),
 				platform: 'android',
 				formFactor: 'phone',
@@ -273,6 +286,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var rest = helper.AblyRest();
 		var device = {
 			id: 'testId',
+			deviceSecret: 'secret-testId',
 			platform: 'android',
 			formFactor: 'phone',
 			push: {
@@ -291,12 +305,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			req(rest, 'get', '/push/deviceRegistrations/' + encodeURIComponent(device.id), null, null, null, callback);
 		}], function(err, result) {
 			if (err) {
-				test.ok(false, err.message);
+				test.equal(err.statusCode, 404, 'Verify device is not found');
 				test.done();
 				return;
 			}
-			var got = result[2][0];
-			test.ok(got.length === 0, got); // got is a Buffer
+			test.ok(false, 'Device erroneously returned');
 			test.done();
 		});
 	};

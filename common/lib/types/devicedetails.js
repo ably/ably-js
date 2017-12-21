@@ -3,11 +3,12 @@ var DeviceDetails = (function() {
 
 	function DeviceDetails() {
 		this.id = undefined;
+		this.deviceSecret = undefined;
 		this.platform = undefined;
 		this.formFactor = undefined;
 		this.clientId = undefined;
 		this.metadata = undefined;
-		this.updateToken = undefined;
+		this.deviceIdentityToken = undefined;
 		this.push = {
 			recipient: undefined,
 			state: undefined,
@@ -22,11 +23,12 @@ var DeviceDetails = (function() {
 	DeviceDetails.prototype.toJSON = function() {
 		return {
 			id: this.id,
+			deviceSecret: this.deviceSecret,
 			platform: this.platform,
 			formFactor: this.formFactor,
 			clientId: this.clientId,
 			metadata: this.metadata,
-			updateToken: this.updateToken,
+			deviceIdentityToken: this.deviceIdentityToken,
 			push: {
 				recipient: this.push.recipient,
 				state: this.push.state,
@@ -47,8 +49,8 @@ var DeviceDetails = (function() {
 			result += '; clientId=' + this.clientId;
 		if(this.metadata)
 			result += '; metadata=' + this.metadata;
-		if(this.updateToken)
-			result += '; updateToken=' + this.updateToken;
+		if(this.deviceIdentityToken)
+			result += '; deviceIdentityToken=' + JSON.stringify(this.deviceIdentityToken);
 		if(this.push.recipient)
 			result += '; push.recipient=' + JSON.stringify(this.push.recipient);
 		if(this.push.state)

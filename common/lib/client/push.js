@@ -5,9 +5,15 @@ var Push = (function() {
 	function Push(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
-	};
+	}
 
-	Push.prototype.publish = function(recipient, payload, callback) {
+	function Admin(rest) {
+		this.rest = rest;
+		this.deviceRegistrations = new DeviceRegistrations(rest);
+		this.channelSubscriptions = new ChannelSubscriptions(rest);
+	}
+
+	Admin.prototype.publish = function(recipient, payload, callback) {
 		var rest = this.rest;
 		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			requestBody = Utils.mixin({recipient: recipient}, payload),
@@ -23,11 +29,6 @@ var Push = (function() {
 		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
 		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
 	};
-
-	function Admin(rest) {
-		this.deviceRegistrations = new DeviceRegistrations(rest);
-		this.channelSubscriptions = new ChannelSubscriptions(rest);
-	}
 
 	function DeviceRegistrations(rest) {
 		this.rest = rest;
