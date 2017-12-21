@@ -313,7 +313,9 @@ var Auth = (function() {
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback, client = this.client;
+		var tokenRequestCallback, client = this.client,
+			deviceId = tokenParams.deviceId,
+			self = this;
 
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
@@ -394,7 +396,6 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var keyName = signedTokenParams.keyName,
 				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
@@ -458,6 +459,17 @@ var Auth = (function() {
 				return;
 			}
 			/* it's a token request, so make the request */
+			if(deviceId && !tokenRequestOrDetails.deviceId) {
+				/* augment the TokenRequest with device details */
+				var deviceAuthErr = self.updateTokenRequestForDevice(tokenRequestOrDetails, tokenParams);
+				if(deviceAuthErr) {
+					var msg = 'Unable to generate device authentication for token request';
+					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+					callback(new ErrorInfo(msg, 40170, 401));
+					return;
+				}
+			}
+
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
@@ -586,8 +598,31 @@ var Auth = (function() {
 			request.mac = request.mac || hmac(signText, keySecret);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+
+			if(tokenParams.deviceId) {
+				var deviceAuthErr = self.updateTokenRequestForDevice(request, tokenParams);
+				if(deviceAuthErr) {
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'failed to add deviceSignature; err = ' + err);
+					callback(deviceAuthErr);
+					return;
+				}
+			}
 			callback(null, request);
 		});
+	};
+
+	Auth.prototype.updateTokenRequestForDevice = function(baseTokenRequest, tokenParams) {
+		var deviceId = tokenParams.deviceId;
+		if(!deviceId) {
+			return new ErrorInfo('Unable to create device TokenRequest; no device id', 40000, 400);
+		}
+		var deviceSecret = tokenParams.deviceSecret;
+		if(!deviceSecret) {
+			return new ErrorInfo('Unable to create device TokenRequest; no device credentials', 40000, 400);
+		}
+		baseTokenRequest.deviceId = deviceId;
+		baseTokenRequest.deviceSignature = 'HS256:' + hmac(baseTokenRequest.mac, deviceSecret);
+		return null;
 	};
 
 	/**
