@@ -63,6 +63,8 @@ The TypeScript typings are included in the package and so all you have to do is:
  let realtime = new Ably.Realtime(options);
 ```
 
+Additionally, the type definitions are registered with [DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ably).
+
 ### Using WebPack
 
 WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require` Ably. Alternatively, you can reference the `ably-commonjs.js` static file directly if not in your `node_modules` folder.
@@ -511,8 +513,9 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 3. Create your feature branch (`git checkout -b my-new-feature`)
 4. Commit your changes (`git commit -am 'Add some feature'`)
 5. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
-6. Push to the branch (`git push origin my-new-feature`)
-7. Create a new Pull Request
+6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have been updated if the public API has changed
+7. Push to the branch (`git push origin my-new-feature`)
+8. Create a new Pull Request
 
 ## Release Process
 
@@ -521,9 +524,10 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 - `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
 - `grunt release:deploy`
 - Visit https://github.com/ably/ably-js/tags and add release notes for the release including links to the changelog entry.
+- If the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have changed, submit a [PR to DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/pull/14524).
 
 Warning: if publishing to npm, please use npm version 5.1, as 5.5 has a bug that results in the creation of an invalid package, see https://github.com/ably/ably-js/issues/422 and https://github.com/npm/npm/issues/18870 for more info
 
 ## License
 
-Copyright (c) 2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2017 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
