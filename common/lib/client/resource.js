@@ -89,22 +89,23 @@ var Resource = (function() {
 	}
 
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, callback);
+		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, null, callback);
 	};
 
 	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, callback);
+		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, null, callback);
 	};
 
 	Resource['delete'] = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, callback);
+		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, null, callback);
 	};
 
 	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, callback);
+		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, null, callback);
 	};
 
-	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
+	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, authResolver, callback) {
+		authResolver = authResolver || withAuthDetails;
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			callback = logResponseHandler(callback, method, path, origparams);
 		}

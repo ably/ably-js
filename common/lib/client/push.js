@@ -5,6 +5,7 @@ var Push = (function() {
 	function Push(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
+		this.stateMachine = Platform.push ? new ActivationStateMachine(this) : null;
 	}
 
 	function Admin(rest) {
@@ -163,35 +164,28 @@ var Push = (function() {
 		activationState: 'ably.push.activationState',
 	};
 
-	var ActivationStateMachine = function(rest) {
+	function ActivationStateMachine(rest) {
 		this.rest = rest;
-		if (!Platform.push) {
-			throw new Error('this platform is not supported as a target of push notifications');
-		}
+		this.customRegisterer = null;
+		this.customDeregisterer = null;
 		this.current = ActivationStateMachine[Platform.push.storage.get(persistKeys.activationState) || 'NotActivated'];
 		this.pendingEvents = [];
-	};
-
-	Push.prototype.stateMachine = (function() {
-		var machine = null;
-		return function() {
-			if (!machine) {
-				machine = new ActivationStateMachine(this.rest);
-				machine.customRegisterer = null;
-				machine.customDeregisterer = null;
-			}
-			return machine;
-		};
-	})();
+	}
 
 	Push.prototype.activate = function(customRegisterer, callback) {
-		this.stateMachine().activatedCallback = callback || nop;
-		this.stateMachine().handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine(), customRegisterer));
+		if(!this.stateMachine) {
+			throw new Error('this platform is not supported as a target of push notifications');
+		}
+		this.stateMachine.activatedCallback = callback || nop;
+		this.stateMachine.handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine, customRegisterer));
 	};
 
 	Push.prototype.deactivate = function(customDeregisterer, callback) {
-		this.stateMachine().deactivatedCallback = callback || nop;
-		this.stateMachine().handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine(), customDeregisterer));
+		if(!this.stateMachine) {
+			throw new Error('this platform is not supported as a target of push notifications');
+		}
+		this.stateMachine.deactivatedCallback = callback || nop;
+		this.stateMachine.handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine, customDeregisterer));
 	};
 
 	// Events
@@ -216,15 +210,15 @@ var Push = (function() {
 	};
 	ActivationStateMachine.GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed; 
 
-	var GotUpdateToken = function(updateToken) {
-		this.updateToken = updateToken;
+	var GotDeviceRegistration = function(deviceRegistration) {
+		this.deviceIdentityToken = deviceRegistration.deviceIdentityToken;
 	};
-	ActivationStateMachine.GotUpdateToken = GotUpdateToken; 
+	ActivationStateMachine.GotDeviceRegistration = GotDeviceRegistration; 
 
-	var GettingUpdateTokenFailed = function(reason) {
+	var GettingDeviceRegistrationFailed = function(reason) {
 		this.reason = reason;
 	};
-	ActivationStateMachine.GettingUpdateTokenFailed = GettingUpdateTokenFailed; 
+	ActivationStateMachine.GettingDeviceRegistrationFailed = GettingDeviceRegistrationFailed;
 
 	var RegistrationUpdated = function() {};
 	ActivationStateMachine.RegistrationUpdated = RegistrationUpdated; 
@@ -251,7 +245,7 @@ var Push = (function() {
 		} else if (event instanceof CalledActivate) {
 			var device = machine.getDevice();
 
-			if (device.updateToken != null) {
+			if (device.deviceIdentityToken != null) {
 				// Already registered.
 				machine.pendingEvents.push(event);
 				return WaitingForNewPushDeviceDetails;
@@ -298,14 +292,14 @@ var Push = (function() {
 				requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
 				Resource.post(rest, '/push/deviceRegistrations', requestBody, headers, params, false, function(err, responseBody) {
 					if (err) {
-						machine.handleEvent(new GettingUpdateTokenFailed(err));
+						machine.handleEvent(new GettingDeviceRegistrationFailed(err));
 					} else {
-						machine.handleEvent(new GotUpdateToken(responseBody.updateToken));
+						machine.handleEvent(new GotDeviceRegistration(responseBody));
 					}
 				});
 			}
 
-			return WaitingForUpdateToken;
+			return WaitingForDeviceRegistration;
 		} else if (event instanceof GettingPushDeviceDetailsFailed) {
 			machine.activatedCallback(event.reason);
 			return NotActivated;
@@ -314,22 +308,22 @@ var Push = (function() {
 	};
 	ActivationStateMachine.WaitingForPushDeviceDetails = WaitingForPushDeviceDetails;
 
-	var WaitingForUpdateToken = function(machine, event) {
+	var WaitingForDeviceRegistration = function(machine, event) {
 		if (event instanceof CalledActivate) {
-			return WaitingForUpdateToken;
-		} else if (event instanceof GotUpdateToken) {
+			return WaitingForDeviceRegistration;
+		} else if (event instanceof GotDeviceRegistration) {
 			var device = machine.getDevice();
-			device.updateToken = event.updateToken;
+			device.deviceIdentityToken = event.deviceIdentityToken;
 			device.persist();
 			machine.activatedCallback(null);
 			return WaitingForNewPushDeviceDetails;
-		} else if (event instanceof GettingUpdateTokenFailed) {
+		} else if (event instanceof GettingDeviceRegistrationFailed) {
 			machine.activatedCallback(event.reason);
 			return NotActivated;
 		}
 		return null;
 	};
-	ActivationStateMachine.WaitingForUpdateToken = WaitingForUpdateToken;
+	ActivationStateMachine.WaitingForDeviceRegistration = WaitingForDeviceRegistration;
 
 	var WaitingForNewPushDeviceDetails = function(machine, event) {
 		if (event instanceof CalledActivate) {
@@ -379,7 +373,7 @@ var Push = (function() {
 				return WaitingForDeregistration(previousState);
 			} else if (event instanceof Deregistered) {
 				var device = machine.getDevice();
-				device.updateToken = null;
+				device.deviceIdentityToken = null;
 				device.resetId();
 				device.persist();
 				machine.deactivatedCallback(null);
@@ -416,10 +410,10 @@ var Push = (function() {
 	};
 
 	ActivationStateMachine.prototype.callCustomRegisterer = function(device, isNew) {
-		this.customRegisterer(device, isNew, function(err, updateToken) {
+		this.customRegisterer(device, isNew, function(err, deviceRegistration) {
 			if (err) {
 				if (isNew) {
-					this.handleEvent(new GettingUpdateTokenFailed(error));
+					this.handleEvent(new GettingDeviceRegistrationFailed(error));
 				} else {
 					this.handleEvent(new UpdatingRegistrationFailed(error));
 				}
@@ -427,7 +421,7 @@ var Push = (function() {
 			}
 
 			if (isNew) {
-				this.handleEvent(new GotUpdateToken(updateToken));
+				this.handleEvent(new GotDeviceRegistration(deviceRegistration));
 			} else {
 				this.handleEvent(new RegistrationUpdated());
 			}
@@ -445,32 +439,31 @@ var Push = (function() {
 	};
 
 	ActivationStateMachine.prototype.updateRegistration = function() {
+		var localDevice = this.getDevice();
 		if (this.customRegisterer) {
-			this.callCustomRegisterer(this.getDevice(), false);
+			this.callCustomRegisterer(localDevice, false);
 		} else {
-			// TODO: Use deviceToken once that's done. Right now it just uses
-			// the Ably token, which will fail with push-subscribe. It expects
-			// the updateToken in the auth header instead, but since that's
-			// away I won't bother implementing it.
-
 			var rest = this.rest;
 			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-				requestBody = DeviceDetails.fromValues(device),
+				requestBody = DeviceDetails.fromValues(localDevice),
 				headers = Utils.defaultPostHeaders(format),
 				params = {};
 
-			if(rest.options.headers)
+			if(rest.options.headers) {
 				Utils.mixin(headers, rest.options.headers);
+			}
 
-			if(rest.options.pushFullWait)
+			if(rest.options.pushFullWait) {
 				Utils.mixin(params, {fullWait: 'true'});
+			}
 
 			requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
-			Resource.patch(rest, '/push/deviceRegistrations', requestBody, headers, params, false, function(err, responseBody) {
+			var deviceTokenAuthResolver = localDevice.getAuthDetails.bind(localDevice);
+			Resource['do']('patch', rest, '/push/deviceRegistrations', requestBody, headers, params, false, deviceTokenAuthResolver, function(err, responseBody) {
 				if (err) {
-					this.handleEvent(new GettingUpdateTokenFailed(err));
+					this.handleEvent(new GettingDeviceRegistrationFailed(err));
 				} else {
-					this.handleEvent(new GotUpdateToken(responseBody.updateToken));
+					this.handleEvent(new GotDeviceRegistration(responseBody));
 				}
 			}.bind(this));
 		}
