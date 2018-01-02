@@ -289,8 +289,8 @@ declare namespace ablyLib {
   type standardCallback = (error: ErrorInfo, results: any) => void;
   type messageCallback<T> = (message: T) => void;
   type errorCallback = (error: ErrorInfo) => void;
-  type channelEventCallback = (channelEvent: ChannelEvent, changeStateChange: ChannelStateChange) => void;
-  type connectionEventCallback = (connectionEvent: ConnectionEvent, connectionStateChange: ConnectionStateChange) => void;
+  type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
+  type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
   type timeCallback = (error: ErrorInfo, time: number) => void;
   type realtimePresenceGetCallback = (error: ErrorInfo, messages: PresenceMessage[]) => void;
   type tokenDetailsCallback = (error: ErrorInfo, Results: TokenDetails) => void;
