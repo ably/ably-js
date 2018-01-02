@@ -332,7 +332,7 @@ var ConnectionManager = (function() {
 	 * @param transport, the transport instance
 	 * @param connectionKey
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, preUpgradeConnectionSerial, connectionId, connectionDetails) {
 		var self = this,
 			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
 			abandon = function() {
@@ -387,14 +387,14 @@ var ConnectionManager = (function() {
 			* be a sync with the new connectionSerial (which will be -1). (And it
 			* needs to be set in the library, which is done by activateTransport). */
 			var connectionReset = connectionId !== self.connectionId,
-				newConnectionSerial = connectionReset ? connectionSerial : self.connectionSerial;
+				syncConnectionSerial = connectionReset ? preUpgradeConnectionSerial : self.connectionSerial;
 
 			if(connectionReset) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
 			}
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
+			self.sync(transport, syncConnectionSerial, function(syncErr, newConnectionSerial, connectionId) {
 				/* If there's been some problem with syncing (and the connection hasn't
 				 * closed or something in the meantime), we have a problem -- we can't
 				 * just fall back on the old transport, as we don't know whether
@@ -634,7 +634,7 @@ var ConnectionManager = (function() {
 	 * Called when activating a new transport, to ensure message delivery
 	 * on the new transport synchronises with the messages already received
 	 */
-	ConnectionManager.prototype.sync = function(transport, callback) {
+	ConnectionManager.prototype.sync = function(transport, connectionSerial, callback) {
 		var timeout = setTimeout(function () {
 			transport.off('sync');
 			callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
@@ -644,14 +644,14 @@ var ConnectionManager = (function() {
 		var syncMessage = ProtocolMessage.fromValues({
 			action: actions.SYNC,
 			connectionKey: this.connectionKey,
-			connectionSerial: this.connectionSerial
+			connectionSerial: connectionSerial
 		});
 
 		transport.send(syncMessage);
 
-		transport.once('sync', function(connectionSerial, connectionId) {
+		transport.once('sync', function(newConnectionSerial, connectionId) {
 			clearTimeout(timeout);
-			callback(null, connectionSerial, connectionId);
+			callback(null, newConnectionSerial, connectionId);
 		});
 	};
 
