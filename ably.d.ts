@@ -312,6 +312,7 @@ declare namespace ablyLib {
     once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
     off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
     whenState: (targetState: StateType, currentState: StateType, callback: CallbackType) => void;
+    listeners: (eventName?: EventType) => CallbackType[] | null;
   }
 
   // Classes
