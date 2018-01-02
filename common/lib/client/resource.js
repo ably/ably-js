@@ -100,7 +100,8 @@ var Resource = (function() {
 		};
 	});
 
-	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
+	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, authResolver, callback) {
+		authResolver = authResolver || withAuthDetails;
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			callback = logResponseHandler(callback, method, path, origparams);
 		}
