@@ -308,7 +308,7 @@ declare namespace ablyLib {
 
   // Internal Classes
   class EventEmitter<CallbackType, EventType> {
-    on: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
+    on: (eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType) => void;
     once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
     off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
   }
