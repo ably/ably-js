@@ -307,10 +307,11 @@ declare namespace ablyLib {
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
   // Internal Classes
-  class EventEmitter<CallbackType, EventType> {
+  class EventEmitter<CallbackType, EventType, StateType> {
     on: (eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType) => void;
     once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
     off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
+    whenState: (targetState: StateType, currentState: StateType, callback: CallbackType) => void;
   }
 
   // Classes
@@ -347,7 +348,7 @@ declare namespace ablyLib {
     publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
   }
 
-  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelEvent> {
+  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelEvent, ChannelState> {
     name: string;
     errorReason: ErrorInfo;
     state: ChannelState;
@@ -407,7 +408,7 @@ declare namespace ablyLib {
     generateRandomKey: (callback: (error: ErrorInfo, key: string) => void) => void;
   }
 
-  class Connection extends EventEmitter<connectionEventCallback, ConnectionEvent> {
+  class Connection extends EventEmitter<connectionEventCallback, ConnectionEvent, ConnectionState> {
     errorReason: ErrorInfo;
     id: string;
     key: string;
