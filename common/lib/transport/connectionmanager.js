@@ -332,7 +332,7 @@ var ConnectionManager = (function() {
 	 * @param transport, the transport instance
 	 * @param connectionKey
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, preUpgradeConnectionSerial, connectionId, connectionDetails) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, preSyncConnectionSerial, connectionId, connectionDetails) {
 		var self = this,
 			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
 			abandon = function() {
@@ -387,7 +387,7 @@ var ConnectionManager = (function() {
 			* be a sync with the new connectionSerial (which will be -1). (And it
 			* needs to be set in the library, which is done by activateTransport). */
 			var connectionReset = connectionId !== self.connectionId,
-				syncConnectionSerial = connectionReset ? preUpgradeConnectionSerial : self.connectionSerial;
+				syncConnectionSerial = connectionReset ? preSyncConnectionSerial : self.connectionSerial;
 
 			if(connectionReset) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
