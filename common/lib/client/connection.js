@@ -9,6 +9,7 @@ var Connection = (function() {
 		this.key = undefined;
 		this.id = undefined;
 		this.serial = undefined;
+		this.timeSerial = undefined;
 		this.recoveryKey = undefined;
 		this.errorReason = null;
 

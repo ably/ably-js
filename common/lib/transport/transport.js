@@ -11,7 +11,8 @@ var Transport = (function() {
 	 * closed           error
 	 * failed           error
 	 * disposed
-	 * connected        null error, connectionKey
+	 * connected        null error, connectionSerial, connectionId, connectionDetails
+	 * sync             connectionSerial, connectionId
 	 * event            channel message object
 	 */
 
@@ -80,12 +81,12 @@ var Transport = (function() {
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId);
 			this.emit('heartbeat', message.id);
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', message.error, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, message.connectionDetails);
+			this.emit('connected', message.error, message.connectionId, message.connectionDetails, message);
 			break;
 		case actions.CLOSED:
 			this.onClose(message);
@@ -102,7 +103,7 @@ var Transport = (function() {
 		case actions.SYNC:
 			if(message.connectionId !== undefined) {
 				/* a transport SYNC */
-				this.emit('sync', message.connectionSerial, message.connectionId);
+				this.emit('sync', message.connectionId, message);
 				break;
 			}
 			/* otherwise it's a channel SYNC, so handle it in the channel */
@@ -116,7 +117,7 @@ var Transport = (function() {
 			});
 			break;
 		case actions.ERROR:
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionId = ' + this.connectionManager.connectionId + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				this.onFatalError(message);
 				break;
