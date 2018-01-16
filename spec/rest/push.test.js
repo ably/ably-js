@@ -429,7 +429,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	function req(rest, method, path, params, headers, body, callback) {
 		headers = Utils.mixin(Utils.copy(defaultHeaders), headers || {});
-		Resource.do(method, rest, path, body, headers, params, false, function(err, body, headers) {
+		Resource.do(method, rest, path, body, headers, params, false, null, function(err, body, headers) {
 			if (err) {
 				callback(err);
 				return;
