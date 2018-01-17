@@ -532,3 +532,5 @@ Warning: if publishing to npm, please use npm version 5.1, as 5.5 has a bug that
 ## License
 
 Copyright (c) 2017 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+
+TEST
