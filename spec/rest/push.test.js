@@ -32,8 +32,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			var subscribeHttpCode = result[0][3];
+			test.equal(subscribeHttpCode, 201);
 			var subs = result[1][0];
 			test.deepEqual([subscription], subs);
+			var subsAfterDelete = result[2][0];
+			test.deepEqual(subsAfterDelete, []);
 			test.done();
 		});
 	};
@@ -54,6 +58,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			var subResult = result[0];
+			test.equal(subResult, undefined);
 			var subs = result[1][0];
 			test.deepEqual([], subs);
 			test.done();
@@ -76,6 +82,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			var subscribeHttpCode = result[0][3];
+			test.equal(subscribeHttpCode, 201);
+			var unsubscribeHttpCode = result[1][3];
+			test.equal(unsubscribeHttpCode, 204);
+			var subsAfterDelete = result[1][0]
+			test.deepEqual(subsAfterDelete, []);
 			var subs = result[2][0];
 			test.deepEqual([], subs);
 			test.done();
@@ -91,14 +103,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				callback(err);
 			});
 		}], function(err, result) {
+			test.deepEqual(result, [undefined]);
 			test.ok(!err, err);
 			test.done();
 		});
 	};
 
 	exports.push_getSubscriptions = function(test) {
-		var subscribes = [];
-		var deletes = [];
+		var subscribes = [], deletes = [];
 		var subsByChannel = {};
 		for (var i = 0; i < 5; i++) { (function(i) {
 			var sub = {channel: 'pushenabled:foo' + ((i % 2) + 1), clientId: 'testClient' + ((i % 3) + 1)};
@@ -222,7 +234,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var deletes = [];
 		var devices = [];
 		var devicesByClientId = {};
-		for (var i = 0; i < 5; i++) { (function(i) {
+		let numberOfDevices = 5;
+		for (var i = 0; i < numberOfDevices; i++) { (function(i) {
 			var device = {
 				id: 'device' + (i + 1),
 				deviceSecret: 'secret-device' + (i + 1),
@@ -275,6 +288,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			test.equal(numberOfDevices, result[0].length);
 			includesUnordered(test, untyped(result[1].items), untyped(devices));
 			includesUnordered(test, untyped(result[2].items), untyped(devicesByClientId['testClient1']));
 			includesUnordered(test, untyped(result[3].items), untyped(devicesByClientId['testClient2']));
@@ -306,6 +320,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}], function(err, result) {
 			if (err) {
 				test.equal(err.statusCode, 404, 'Verify device is not found');
+				test.equal(err.code, 40400)
 				test.done();
 				return;
 			}
@@ -332,6 +347,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			var got = result[1][0];
 			includesUnordered(test, got, [subscription]);
+			var subscriptionsAfterDelete = result[2][0];
+			test.deepEqual(subscriptionsAfterDelete, []);
 			test.done();
 		});
 	};
@@ -451,8 +468,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * order.
 	 *
 	 * includesUnordered(x, y) -> string | true
-     * includesUnordered(test, x, y) -> void
-     */
+	 * includesUnordered(test, x, y) -> void
+	*/
 	function includesUnordered() {
 		if (arguments.length == 2) {
 			var x = arguments[0];
