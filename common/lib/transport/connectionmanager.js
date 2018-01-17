@@ -374,7 +374,7 @@ var ConnectionManager = (function() {
 	 * @param connectionDetails
 	 * @param connectedMessage
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionId, connectionDetails, upgradeConnectedMessage) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionId, connectionDetails, upgradeConnectionPosition) {
 		var self = this,
 			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
 			abandon = function() {
@@ -429,7 +429,7 @@ var ConnectionManager = (function() {
 			* be a sync with the new connection position. (And it
 			* needs to be set in the library, which is done by activateTransport). */
 			var connectionReset = connectionId !== self.connectionId,
-				syncPosition = connectionReset ? upgradeConnectedMessage : self;
+				syncPosition = connectionReset ? upgradeConnectionPosition : self;
 
 			if(connectionReset) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connection position from ' + (self.timeSerial || self.connectionSerial) + ' to ' + (syncPosition.timeSerial || syncPosition.connectionSerial) + '; upgrade error was ' + error);
@@ -769,18 +769,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.setRecoveryKey = function() {
-		var recoveryKey = this.connectionKey + ':';
-		var timeSerial = this.timeSerial;
-		if(timeSerial) {
-			recoveryKey += timeSerial;
-		} else {
-			recoveryKey += this.connectionSerial;
-		}
-		var msgSerial = this.msgSerial;
-		if(msgSerial) {
-			recoveryKey += (':' + msgSerial);
-		}
-		this.realtime.connection.recoveryKey = recoveryKey;
+		this.realtime.connection.recoveryKey = this.connectionKey + ':' + (this.timeSerial || this.connectionSerial) + ':' + this.msgSerial;
 	};
 
 	ConnectionManager.prototype.clearRecoveryKey = function() {
