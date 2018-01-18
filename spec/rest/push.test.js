@@ -19,11 +19,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.push_subscribeClientId_ok = function(test) {
 		var rest = helper.AblyRest({clientId: 'testClient'});
 		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
+		var pushChannel = rest.channels.get('pushenabled:foo').push
 
 		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.subscribeClientId(callback);
+			pushChannel.subscribeClientId(callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			pushChannel.getSubscriptions(subscription, callback);
 		}, function(callback) {
 			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
 		}], function(err, result) {
@@ -34,8 +35,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			var subscribeHttpCode = result[0][3];
 			test.equal(subscribeHttpCode, 201);
-			var subs = result[1][0];
-			test.deepEqual([subscription], subs);
+			var subs = result[1].items;
+			test.equal(subs.length, 1);
+			var sub = subs[0];
+			// deepEqual would fail because `sub` will have also a deviceId field
+			test.equal(sub.channel, subscription.channel);
+			test.equal(sub.clientId, subscription.clientId);
 			var subsAfterDelete = result[2][0];
 			test.deepEqual(subsAfterDelete, []);
 			test.done();
@@ -51,7 +56,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				callback(err);
 			});
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', {channel: 'pushenabled:foo'}, null, null, callback);
+			rest.channels.get('pushenabled:foo').push.getSubscriptions({channel: 'pushenabled:foo'}, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -60,8 +65,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			var subResult = result[0];
 			test.equal(subResult, undefined);
-			var subs = result[1][0];
-			test.deepEqual([], subs);
+			var subs = result[1].items;
+			test.equal(subs.length, 0);
 			test.done();
 		});
 	};
@@ -75,7 +80,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.channels.get('pushenabled:foo').push.unsubscribeClientId(callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -88,8 +93,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.equal(unsubscribeHttpCode, 204);
 			var subsAfterDelete = result[1][0]
 			test.deepEqual(subsAfterDelete, []);
-			var subs = result[2][0];
-			test.deepEqual([], subs);
+			var subs = result[2].items;
+			test.equal(0, subs.length);
 			test.done();
 		});
 	};
@@ -336,7 +341,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
 		}, function(callback) {
 			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
 		}], function(err, result) {
@@ -345,8 +350,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			var got = result[1][0];
-			includesUnordered(test, got, [subscription]);
+			var sub = result[1].items[0];
+			test.equal(subscription.clientId, sub.clientId);
+			test.equal(subscription.channel, sub.channel);
 			var subscriptionsAfterDelete = result[2][0];
 			test.deepEqual(subscriptionsAfterDelete, []);
 			test.done();
