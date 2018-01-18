@@ -74,13 +74,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.push_unsubscribeClientId_ok = function(test) {
 		var rest = helper.AblyRest({clientId: 'testClient'});
 		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
+		var pushChannel = rest.channels.get('pushenabled:foo').push;
 
 		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.subscribeClientId(callback);
+			pushChannel.subscribeClientId(callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo').push.unsubscribeClientId(callback);
+			pushChannel.unsubscribeClientId(callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
+			pushChannel.getSubscriptions(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
