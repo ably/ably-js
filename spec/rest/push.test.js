@@ -6,7 +6,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		exports = {},
 		displayError = helper.displayError,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
-		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js'),
+		testDevice = {
+			id: 'testId',
+			deviceSecret: 'secret-testId',
+			platform: 'android',
+			formFactor: 'phone',
+			push: {
+				recipient: {
+					transportType: 'gcm',
+					registrationToken: 'xxxxxxxxxxx',
+				}
+			}
+		};
 
 	exports.setup_push = function(test) {
 		test.expect(1);
@@ -204,25 +216,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_deviceRegistrations_save = function(test) {
 		var rest = helper.AblyRest();
-		var device = {
-			id: 'testId',
-			deviceSecret: 'secret-testId',
-			platform: 'android',
-			formFactor: 'phone',
-			push: {
-				recipient: {
-					transportType: 'gcm',
-					registrationToken: 'xxxxxxxxxxx',
-				}
-			}
-		};
 
 		async.series([function(callback) {
-			rest.push.admin.deviceRegistrations.save(device, callback);
+			rest.push.admin.deviceRegistrations.save(testDevice, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get(device.id, callback);
+			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/deviceRegistrations', {deviceId: device.id}, null, null, callback);
+			req(rest, 'delete', '/push/deviceRegistrations', {deviceId: testDevice.id}, null, null, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -233,7 +233,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.equal(got.push.state, 'ACTIVE');
 			delete got.metadata; // Ignore these properties for testing
 			delete got.push.state;
-			includesUnordered(test, untyped(got), device);
+			includesUnordered(test, untyped(got), testDevice);
 			test.done();
 		});
 	};
@@ -307,25 +307,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_deviceRegistrations_remove = function(test) {
 		var rest = helper.AblyRest();
-		var device = {
-			id: 'testId',
-			deviceSecret: 'secret-testId',
-			platform: 'android',
-			formFactor: 'phone',
-			push: {
-				recipient: {
-					transportType: 'gcm',
-					registrationToken: 'xxxxxxxxxxx',
-				},
-			},
-		};
 
 		async.series([function(callback) {
-			rest.push.admin.deviceRegistrations.save(device, callback);
+			rest.push.admin.deviceRegistrations.save(testDevice, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.remove({deviceId: device.id}, callback);
+			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get(device.id, callback);
+			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}], function(err, result) {
 			var devices = result[2].items;
 			test.equal(devices.length, 0);
