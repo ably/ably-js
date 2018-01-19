@@ -222,7 +222,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/deviceRegistrations', {deviceId: testDevice.id}, null, null, callback);
+			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -269,7 +269,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.push.admin.deviceRegistrations.save(device, callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {deviceId: 'device' + (i + 1)}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({deviceId: 'device' + (i + 1)}, callback);
 			});
 		})(i) }
 
@@ -285,9 +285,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rest.push.admin.deviceRegistrations.get({clientId: 'testClient2'}, callback);
 		}, function(callback) {
 			async.parallel([function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {clientId: 'testClient1'}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient1'}, callback);
 			}, function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {clientId: 'testClient2'}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient2'}, callback);
 			}], callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
