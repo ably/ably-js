@@ -6,7 +6,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		exports = {},
 		displayError = helper.displayError,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
-		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js'),
 		testDevice = {
 			id: 'testId',
 			deviceSecret: 'secret-testId',
@@ -38,7 +37,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			pushChannel.getSubscriptions(subscription, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -142,7 +141,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.channels.get(sub.channel).push.subscribeClientId(callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/channelSubscriptions', sub, null, null, callback);
+				rest.push.admin.channelSubscriptions.remove(sub, callback);
 			});
 		})(i) }
 
@@ -330,7 +329,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -362,7 +361,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.push.admin.channelSubscriptions.save(sub, callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/channelSubscriptions', {clientId: 'testClient' + i}, null, null, callback);
+				rest.push.admin.channelSubscriptions.remove({clientId: 'testClient' + i}, callback);
 			});
 		})(i) }
 
@@ -396,15 +395,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
 			rest.push.admin.channelSubscriptions.remove(subscription, callback);
-		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var got = result[2][0];
+			var got = result[1][0];
 			test.ok(got.length === 0, got);
 			test.done();
 		});
@@ -434,20 +431,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			includesUnordered(test, ['pushenabled:listChannels1', 'pushenabled:listChannels2'], result[1].items);
 			test.done();
-		});
-	};
-
-	function req(rest, method, path, params, headers, body, callback) {
-		headers = Utils.mixin(Utils.copy(defaultHeaders), headers || {});
-		Resource.do(method, rest, path, body, headers, params, false, null, function(err, body, headers) {
-			if (err) {
-				callback(err);
-				return;
-			}
-			try {
-				body = msgpack.decode(body);
-			} catch(e) {}
-			callback(null, body, headers);
 		});
 	};
 
