@@ -213,14 +213,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				recipient: {
 					transportType: 'gcm',
 					registrationToken: 'xxxxxxxxxxx',
-				},
-			},
+				}
+			}
 		};
 
 		async.series([function(callback) {
 			rest.push.admin.deviceRegistrations.save(device, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/deviceRegistrations/' + encodeURIComponent(device.id), null, null, null, callback);
+			rest.push.admin.deviceRegistrations.get(device.id, callback);
 		}, function(callback) {
 			req(rest, 'delete', '/push/deviceRegistrations', {deviceId: device.id}, null, null, callback);
 		}], function(err, result) {
@@ -229,8 +229,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			var got = result[1][0];
-			includesUnordered(test, got, device);
+			var got = result[1].items[0];
+			test.equal(got.push.state, 'ACTIVE');
+			delete got.metadata; // Ignore these properties for testing
+			delete got.push.state;
+			includesUnordered(test, untyped(got), device);
 			test.done();
 		});
 	};
@@ -322,15 +325,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.push.admin.deviceRegistrations.remove({deviceId: device.id}, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/deviceRegistrations/' + encodeURIComponent(device.id), null, null, null, callback);
+			rest.push.admin.deviceRegistrations.get(device.id, callback);
 		}], function(err, result) {
-			if (err) {
-				test.equal(err.statusCode, 404, 'Verify device is not found');
-				test.equal(err.code, 40400)
-				test.done();
-				return;
-			}
-			test.ok(false, 'Device erroneously returned');
+			var devices = result[2].items;
+			test.equal(devices.length, 0);
 			test.done();
 		});
 	};
