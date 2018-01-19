@@ -52,8 +52,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			// deepEqual would fail because `sub` will have also a deviceId field
 			test.equal(sub.channel, subscription.channel);
 			test.equal(sub.clientId, subscription.clientId);
-			var subsAfterDelete = result[2][0];
-			test.deepEqual(subsAfterDelete, []);
 			test.done();
 		});
 	};
