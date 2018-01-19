@@ -99,8 +99,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			var subscribeHttpCode = result[0][3];
 			test.equal(subscribeHttpCode, 201);
-			var unsubscribeHttpCode = result[1][3];
-			test.equal(unsubscribeHttpCode, 204);
 			var subs = result[2].items;
 			test.equal(0, subs.length);
 			test.done();
