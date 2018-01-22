@@ -494,6 +494,8 @@ When using the test webserver `grunt test:webserver` the following test variable
 * `tls` - true or false to enable/disable use of TLS respectively
 * `log_level` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
 
+A good starting point for developing/testing locally in the browser is this URL: http://localhost:3000/nodeunit.html?env=local&port=8080&tls_port=8081&log_level=0
+
 ## Support, feedback and troubleshooting
 
 Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
