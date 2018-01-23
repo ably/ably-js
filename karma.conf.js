@@ -78,10 +78,60 @@ module.exports = function(config) {
       deviceName: 'Android Emulator',
       platform: 'Linux',
       version: '5.0'
-    }
+    },
+    // BrowserStack launchers. List here: https://www.browserstack.com/list-of-browsers-and-platforms?product=automate
+    // To get actual values run `curl -u "BROWSERSTACK_USERNAME:BROWSERSTACK_ACCESSKEY" https://api.browserstack.com/automate/browsers.json | json_pp`
+    bs_firefox_sierra: {
+      base: 'BrowserStack',
+      browser: 'firefox',
+      browser_version: '57.0',
+      os: 'OS X',
+      os_version: 'Sierra'
+    },
+    bs_chrome_sierra: {
+      base: 'BrowserStack',
+      browser: 'chrome',
+      browser_version: '63.0',
+      os: 'OS X',
+      os_version: 'Sierra'
+    },
+    bs_firefox_win8: {
+      base: 'BrowserStack',
+      browser: 'firefox',
+      browser_version: '57.0',
+      os: 'Windows',
+      os_version: '8'
+    },
+    bs_chrome_win8: {
+      base: 'BrowserStack',
+      browser: 'chrome',
+      browser_version: '63.0',
+      os: 'Windows',
+      os_version: '8'
+    },
+    bs_ie11_win81: {
+      base: 'BrowserStack',
+      browser: 'ie',
+      browser_version: '11.0',
+      os: 'Windows',
+      os_version: '8.1'
+    },
+    bs_ie8_win7: {
+      base: 'BrowserStack',
+      browser: 'ie',
+      browser_version: '8.0',
+      os: 'Windows',
+      os_version: '7'
+    },
   };
 
   config.set({
+
+    browserStack: {
+      username: process.env.BROWSERSTACK_USERNAME,
+      accessKey: process.env.BROWSERSTACK_ACCESSKEY,
+      timeout: 1800
+    },
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -153,7 +203,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['story', 'saucelabs'],
+    reporters: ['dots', 'BrowserStack'],
     reportSlowerThan: 5000,
 
     // web server port
@@ -183,7 +233,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: Object.keys(customLaunchers).concat('IE10 - Win7'),
+    browsers: Object.keys(customLaunchers),
     captureTimeout: 360000,
     browserDisconnectTimeout : 10000,
     browserNoActivityTimeout: 360000,
