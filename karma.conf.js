@@ -109,12 +109,26 @@ module.exports = function(config) {
       os: 'Windows',
       os_version: '8'
     },
+    bs_chrome_win81: {
+      base: 'BrowserStack',
+      browser: 'chrome',
+      browser_version: '63.0',
+      os: 'Windows',
+      os_version: '8.1'
+    },
     bs_ie11_win81: {
       base: 'BrowserStack',
       browser: 'ie',
       browser_version: '11.0',
       os: 'Windows',
       os_version: '8.1'
+    },
+    bs_ie10_win81: {
+      base: 'BrowserStack',
+      browser: 'ie',
+      browser_version: '10.0',
+      os: 'Windows',
+      os_version: '8'
     },
     bs_ie8_win7: {
       base: 'BrowserStack',
