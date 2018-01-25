@@ -75,8 +75,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 					content: options.body
 				}).then(function (results) {
 					callback(null, results.content.toString());
-				})
-				['catch'](function(err) {
+				})['catch'](function(err) {
 					callback(err);
 				});
 			};
