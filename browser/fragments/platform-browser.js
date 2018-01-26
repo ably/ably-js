@@ -21,10 +21,12 @@ var Platform = {
 	addEventListener: window.addEventListener,
 	inspect: JSON.stringify,
 	getRandomValues: (function(crypto) {
+		if (crypto === undefined) {
+			return undefined;
+		}
 		return function(arr, callback) {
 			crypto.getRandomValues(arr);
 			callback(null);
 		};
 	})(window.crypto || window.msCrypto) // mscrypto for IE11
 };
-
