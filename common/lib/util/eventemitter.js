@@ -13,7 +13,7 @@ var EventEmitter = (function() {
 		try {
 			listener.apply(eventThis, args);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && e.stack));
 		}
 	}
 
