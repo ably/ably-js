@@ -424,14 +424,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	function authCallback_failures(realtimeOptions, expectFailure) {
 		return function(test) {
-			test.expect(3);
-
 			var realtime = helper.AblyRealtime(realtimeOptions);
 			realtime.connection.on(function(stateChange) {
 				if(stateChange.previous !== 'initialized') {
-					test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+					if (helper.bestTransport === 'jsonp') {
+						test.expect(1);
+					} else {
+						test.expect(3);
+						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
+					}
 					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
-					test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
 					realtime.connection.off();
 					closeAndFinish(test, realtime);
 				}
@@ -483,7 +486,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* 403 should cause the connection to go to failed, unlike the others */
 	exports.authUrl_403 = authCallback_failures({
 		authUrl: echoServer + '/respondwith?status=403'
-	}, /* expectFailed: */ true);
+	}, true); /* expectFailed: */
 
 	/*
 	 * Check state change reason is propogated during a disconnect
