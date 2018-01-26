@@ -424,13 +424,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 */
 	function authCallback_failures(realtimeOptions, expectFailure) {
 		return function(test) {
+			test.expect(3);
+
 			var realtime = helper.AblyRealtime(realtimeOptions);
 			realtime.connection.on(function(stateChange) {
 				if(stateChange.previous !== 'initialized') {
 					if (helper.bestTransport === 'jsonp') {
-						test.expect(1);
+						// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
+						test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
+						// jsonp doesn't let you examine the statuscode
+						test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
 					} else {
-						test.expect(3);
 						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
 						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
 					}
