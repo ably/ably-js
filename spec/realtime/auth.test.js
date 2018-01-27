@@ -429,9 +429,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var realtime = helper.AblyRealtime(realtimeOptions);
 			realtime.connection.on(function(stateChange) {
 				if(stateChange.previous !== 'initialized') {
-					test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+					if (helper.bestTransport === 'jsonp') {
+						// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
+						test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
+						// jsonp doesn't let you examine the statuscode
+						test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
+					} else {
+						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
+					}
 					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
-					test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
 					realtime.connection.off();
 					closeAndFinish(test, realtime);
 				}
@@ -483,7 +490,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* 403 should cause the connection to go to failed, unlike the others */
 	exports.authUrl_403 = authCallback_failures({
 		authUrl: echoServer + '/respondwith?status=403'
-	}, /* expectFailed: */ true);
+	}, true); /* expectFailed: */
 
 	/*
 	 * Check state change reason is propogated during a disconnect
