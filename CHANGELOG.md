@@ -2,7 +2,7 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [1.0.12](https://github.com/ably/ably-js/tree/1.0.12) (2017-12-30)
+## [1.0.12](https://github.com/ably/ably-js/tree/1.0.12) (2018-01-30)
 
 - Fix Typescript definition files (https://github.com/ably/ably-js/pull/444)
 - Fix sync connection when an upgrade fails (https://github.com/ably/ably-js/pull/445)
