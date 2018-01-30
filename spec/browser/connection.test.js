@@ -203,7 +203,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.page_refresh_with_manual_recovery = function(test) {
-		var realtime = helper.AblyRealtime(),
+		var realtime = helper.AblyRealtime({ closeOnUnload: false }),
 			refreshEvent = new Event('beforeunload', {'bubbles': true});
 
 		test.expect(2);
