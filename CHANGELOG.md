@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.12](https://github.com/ably/ably-js/tree/1.0.12) (2017-12-30)
+
+- Fix Typescript definition files (https://github.com/ably/ably-js/pull/444)
+- Fix sync connection when an upgrade fails (https://github.com/ably/ably-js/pull/445)
+- Fix encryption on IE9 and IE10 (https://github.com/ably/ably-js/pull/453)
+- Fix crash on `Logger.LOG_ERROR` (https://github.com/ably/ably-js/pull/439/files)
+- The `closeOnUnload` option now defaults to true (https://github.com/ably/ably-js/commit/293aed15d7ecaa001a3f834871b78d0403b195d7)
+
+
 ## [1.0.11](https://github.com/ably/ably-js/tree/1.0.11) (2017-12-11)
 
 - Allow Message#fromEncoded to take a short-form (key-only) cipherParams (https://github.com/ably/ably-js/pull/438)
