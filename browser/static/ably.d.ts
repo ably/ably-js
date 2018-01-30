@@ -15,6 +15,18 @@ declare namespace ablyLib {
   }
   type ChannelState = ChannelState.FAILED | ChannelState.INITIALIZED | ChannelState.SUSPENDED | ChannelState.ATTACHED | ChannelState.ATTACHING | ChannelState.DETACHED | ChannelState.DETACHING;
 
+  namespace ChannelEvent {
+    type INITIALIZED = 'initialized';
+    type ATTACHING = 'attaching';
+    type ATTACHED = "attached";
+    type DETACHING = "detaching";
+    type DETACHED = "detached";
+    type SUSPENDED = "suspended";
+    type FAILED = "failed";
+    type UPDATE = "update";
+  }
+  type ChannelEvent = ChannelEvent.FAILED | ChannelEvent.INITIALIZED | ChannelEvent.SUSPENDED | ChannelEvent.ATTACHED | ChannelEvent.ATTACHING | ChannelEvent.DETACHED | ChannelEvent.DETACHING | ChannelEvent.UPDATE;
+
   namespace ConnectionState {
     type INITIALIZED = "initialized";
     type CONNECTING = "connecting";
@@ -266,10 +278,6 @@ declare namespace ablyLib {
     handler?: (...args: any[]) => void;
   }
 
-  interface ChannelEvent {
-    state: ChannelState;
-  }
-
   interface ChannelStateChange {
     current: ChannelState;
     previous: ChannelState;
@@ -289,8 +297,8 @@ declare namespace ablyLib {
   type standardCallback = (error: ErrorInfo, results: any) => void;
   type messageCallback<T> = (message: T) => void;
   type errorCallback = (error: ErrorInfo) => void;
-  type channelEventCallback = (channelEvent: ChannelEvent, changeStateChange: ChannelStateChange) => void;
-  type connectionEventCallback = (connectionEvent: ConnectionEvent, connectionStateChange: ConnectionStateChange) => void;
+  type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
+  type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
   type timeCallback = (error: ErrorInfo, time: number) => void;
   type realtimePresenceGetCallback = (error: ErrorInfo, messages: PresenceMessage[]) => void;
   type tokenDetailsCallback = (error: ErrorInfo, Results: TokenDetails) => void;
@@ -299,10 +307,12 @@ declare namespace ablyLib {
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
   // Internal Classes
-  class EventEmitter<T> {
-    on: (eventOrCallback: string | T, callback?: T) => void;
-    once: (eventOrCallback: string | T, callback?: T) => void;
-    off: (eventOrCallback?: string | T, callback?: T) => void;
+  class EventEmitter<CallbackType, EventType, StateType> {
+    on: (eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType) => void;
+    once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
+    off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
+    whenState: (targetState: StateType, currentState: StateType, callback: CallbackType) => void;
+    listeners: (eventName?: EventType) => CallbackType[] | null;
   }
 
   // Classes
@@ -339,7 +349,7 @@ declare namespace ablyLib {
     publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
   }
 
-  class RealtimeChannel extends EventEmitter<channelEventCallback> {
+  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelEvent, ChannelState> {
     name: string;
     errorReason: ErrorInfo;
     state: ChannelState;
@@ -399,7 +409,7 @@ declare namespace ablyLib {
     generateRandomKey: (callback: (error: ErrorInfo, key: string) => void) => void;
   }
 
-  class Connection extends EventEmitter<connectionEventCallback> {
+  class Connection extends EventEmitter<connectionEventCallback, ConnectionEvent, ConnectionState> {
     errorReason: ErrorInfo;
     id: string;
     key: string;

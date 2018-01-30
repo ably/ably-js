@@ -1,7 +1,7 @@
 /**
- * @license Copyright 2017, Ably
+ * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.11
+ * Ably JavaScript Library v1.0.12
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4022,7 +4022,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.11';
+Defaults.version          = '1.0.12';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4075,8 +4075,14 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
-		Logger.logAction(LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
 		options.recover = null;
+	}
+
+	if(!('closeOnUnload' in options)) {
+		/* Have closeOnUnload default to true unless we have any indication that
+		 * the user may want to recover the connection */
+		options.closeOnUnload = !options.recover;
 	}
 
 	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
@@ -4132,7 +4138,7 @@ var EventEmitter = (function() {
 		try {
 			listener.apply(eventThis, args);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && e.stack));
 		}
 	}
 
@@ -5686,13 +5692,15 @@ var ConnectionManager = (function() {
 		   Utils.arrIndexOf(transportPreferenceOrder, b.shortName);
 	}
 
-	function TransportParams(options, host, mode, connectionKey, connectionSerial) {
+	function TransportParams(options, host, mode, connectionKey) {
 		this.options = options;
 		this.host = host;
 		this.mode = mode;
 		this.connectionKey = connectionKey;
-		this.connectionSerial = connectionSerial;
 		this.format = options.useBinaryProtocol ? 'msgpack' : 'json';
+
+		this.connectionSerial = undefined;
+		this.timeSerial = undefined;
 	}
 
 	TransportParams.prototype.getConnectParams = function(authParams) {
@@ -5704,34 +5712,59 @@ var ConnectionManager = (function() {
 				break;
 			case 'resume':
 				params.resume = this.connectionKey;
-				if(this.connectionSerial !== undefined)
-					params.connection_serial = this.connectionSerial;
+				if(this.timeSerial !== undefined) {
+					params.timeSerial = this.timeSerial;
+				} else if(this.connectionSerial !== undefined) {
+					params.connectionSerial = this.connectionSerial;
+				}
 				break;
 			case 'recover':
 				var match = options.recover.split(':');
 				if(match) {
 					params.recover = match[0];
-					params.connection_serial = match[1];
+					var recoverSerial = match[1];
+					if(isNaN(recoverSerial)) {
+						params.timeSerial = recoverSerial;
+					} else {
+						params.connectionSerial = recoverSerial;
+					}
 				}
 				break;
 			default:
 		}
-		if(options.clientId !== undefined)
+		if(options.clientId !== undefined) {
 			params.clientId = options.clientId;
-		if(options.echoMessages === false)
+		}
+		if(options.echoMessages === false) {
 			params.echo = 'false';
-		if(this.format !== undefined)
+		}
+		if(this.format !== undefined) {
 			params.format = this.format;
-		if(this.stream !== undefined)
+		}
+		if(this.stream !== undefined) {
 			params.stream = this.stream;
-		if(this.heartbeats !== undefined)
+		}
+		if(this.heartbeats !== undefined) {
 			params.heartbeats = this.heartbeats;
+		}
 		params.v = Defaults.apiVersion;
 		params.lib = Defaults.libstring;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
 		return params;
+	};
+
+	TransportParams.prototype.toString = function() {
+		var result = '[mode=' + this.mode;
+		if(this.host) { result += (',host=' + this.host); }
+		if(this.connectionKey) { result += (',connectionKey=' + this.connectionKey); }
+		if(this.connectionSerial) { result += (',connectionSerial=' + this.connectionSerial); }
+		if(this.timeSerial) { result += (',timeSerial=' + this.timeSerial); }
+		if(this.format) { result += (',format=' + this.format); }
+		result += ']';
+
+		return result;
 	};
 
 	/* public constructor */
@@ -5764,6 +5797,7 @@ var ConnectionManager = (function() {
 		this.connectionDetails = undefined;
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
+		this.timeSerial = undefined;
 		this.connectionSerial = undefined;
 		this.connectionStateTtl = timeouts.connectionStateTtl;
 		this.maxIdleInterval = null;
@@ -5837,6 +5871,16 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.supportedTransports = {};
 
+	ConnectionManager.prototype.createTransportParams = function(host, mode) {
+		var params = new TransportParams(this.options, host, mode, this.connectionKey);
+		if(this.timeSerial) {
+			params.timeSerial = this.timeSerial;
+		} else if(this.connectionSerial) {
+			params.connectionSerial = this.connectionSerial;
+		}
+		return params;
+	};
+
 	ConnectionManager.prototype.getTransportParams = function(callback) {
 		var self = this;
 
@@ -5869,6 +5913,7 @@ var ConnectionManager = (function() {
 		}
 
 		decideMode(function(mode) {
+			var transportParams = self.createTransportParams(null, mode);
 			if(mode === 'recover') {
 				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = recover; recoveryKey = ' + self.options.recover);
 				var match = self.options.recover.split(':');
@@ -5876,9 +5921,9 @@ var ConnectionManager = (function() {
 					self.msgSerial = match[2];
 				}
 			} else {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = ' + mode + (mode == 'clean' ? '' : '; connectionKey = ' + self.connectionKey + '; connectionSerial = ' + self.connectionSerial));
+				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport params = ' + transportParams.toString());
 			}
-			callback(new TransportParams(self.options, null, mode, self.connectionKey, self.connectionSerial));
+			callback(transportParams);
 		});
 	};
 
@@ -5953,18 +5998,18 @@ var ConnectionManager = (function() {
 		this.pendingTransports.push(transport);
 
 		var self = this;
-		transport.once('connected', function(error, connectionKey, connectionSerial, connectionId, connectionDetails) {
+		transport.once('connected', function(error, connectionId, connectionDetails, connectionPosition) {
 			if(mode == 'upgrade' && self.activeProtocol) {
 				/*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
 				if(transport.shortName !== optimalTransport && Utils.arrIn(self.getUpgradePossibilities(), optimalTransport)) {
 					setTimeout(function() {
-						self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
+						self.scheduleTransportActivation(error, transport, connectionId, connectionDetails, connectionPosition);
 					}, self.options.timeouts.parallelUpgradeDelay);
 				} else {
-					self.scheduleTransportActivation(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
+					self.scheduleTransportActivation(error, transport, connectionId, connectionDetails, connectionPosition);
 				}
 			} else {
-				self.activateTransport(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails);
+				self.activateTransport(error, transport, connectionId, connectionDetails, connectionPosition);
 
 				/* allow connectImpl to start the upgrade process if needed, but allow
 				 * other event handlers, including activating the transport, to run first */
@@ -5991,10 +6036,13 @@ var ConnectionManager = (function() {
 	/**
 	 * Called when an upgrade transport is connected,
 	 * to schedule the activation of that transport.
-	 * @param transport, the transport instance
-	 * @param connectionKey
+	 * @param error
+	 * @param transport
+	 * @param connectionId
+	 * @param connectionDetails
+	 * @param connectedMessage
 	 */
-	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
+	ConnectionManager.prototype.scheduleTransportActivation = function(error, transport, connectionId, connectionDetails, upgradeConnectionPosition) {
 		var self = this,
 			currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
 			abandon = function() {
@@ -6046,17 +6094,17 @@ var ConnectionManager = (function() {
 
 			/* If the connectionId has changed, the upgrade hasn't worked. But as
 			* it's still an upgrade, realtime still expects a sync - it just needs to
-			* be a sync with the new connectionSerial (which will be -1). (And it
+			* be a sync with the new connection position. (And it
 			* needs to be set in the library, which is done by activateTransport). */
 			var connectionReset = connectionId !== self.connectionId,
-				newConnectionSerial = connectionReset ? connectionSerial : self.connectionSerial;
+				syncPosition = connectionReset ? upgradeConnectionPosition : self;
 
 			if(connectionReset) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connectionSerial from ' + self.connectionSerial + ' to ' + newConnectionSerial + '; upgrade error was ' + error);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connection position from ' + (self.timeSerial || self.connectionSerial) + ' to ' + (syncPosition.timeSerial || syncPosition.connectionSerial) + '; upgrade error was ' + error);
 			}
 
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
-			self.sync(transport, function(syncErr, newConnectionSerial, connectionId) {
+			self.sync(transport, syncPosition, function(syncErr, connectionId, postSyncPosition) {
 				/* If there's been some problem with syncing (and the connection hasn't
 				 * closed or something in the meantime), we have a problem -- we can't
 				 * just fall back on the old transport, as we don't know whether
@@ -6071,7 +6119,7 @@ var ConnectionManager = (function() {
 				}
 				var finishUpgrade = function() {
 					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
-					self.activateTransport(error, transport, connectionKey, newConnectionSerial, connectionId, connectionDetails);
+					self.activateTransport(error, transport, connectionId, connectionDetails, postSyncPosition);
 					/* Restore pre-sync state. If state has changed in the meantime,
 					 * don't touch it -- since the websocket transport waits a tick before
 					 * disposing itself, it's possible for it to have happily synced
@@ -6116,23 +6164,24 @@ var ConnectionManager = (function() {
 	 * it will now be the active transport. Returns whether or not it activated
 	 * the transport (if the connection is closing/closed it will choose not to).
 	 * @param transport the transport instance
-	 * @param connectionKey the key of the new active connection
-	 * @param connectionSerial the current connectionSerial
 	 * @param connectionId the id of the new active connection
+	 * @param connectionDetails the details of the new active connection
+	 * @param connectionPosition the position at the point activation; either {connectionSerial: <serial>} or {timeSerial: <serial>}
 	 */
-	ConnectionManager.prototype.activateTransport = function(error, transport, connectionKey, connectionSerial, connectionId, connectionDetails) {
+	ConnectionManager.prototype.activateTransport = function(error, transport, connectionId, connectionDetails, connectionPosition) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
 		if(error) {
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
 		}
-		if(connectionKey)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionKey =  ' + connectionKey);
-		if(connectionSerial !== undefined)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionSerial =  ' + connectionSerial);
-		if(connectionId)
+		if(connectionId) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
-		if(connectionDetails)
+		}
+		if(connectionDetails) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
+		}
+		if(connectionPosition) {
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial));
+		}
 
 		this.persistTransportPreference(transport);
 
@@ -6162,8 +6211,10 @@ var ConnectionManager = (function() {
 		var existingActiveProtocol = this.activeProtocol;
 		this.activeProtocol = new Protocol(transport);
 		this.host = transport.params.host;
+
+		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionKey, connectionSerial);
+			this.setConnection(connectionId, connectionDetails, connectionPosition);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -6174,7 +6225,7 @@ var ConnectionManager = (function() {
 		this.onConnectionDetailsUpdate(connectionDetails, transport);
 		var self = this;
 		Utils.nextTick(function() {
-			transport.on('connected', function(connectedErr, _connectionKey, _connectionSerial, _connectionId, connectionDetails) {
+			transport.on('connected', function(connectedErr, _connectionId, connectionDetails) {
 				self.onConnectionDetailsUpdate(connectionDetails, transport);
 				self.emit('update', new ConnectionStateChange(connectedState, connectedState, null, connectedErr));
 			});
@@ -6197,7 +6248,7 @@ var ConnectionManager = (function() {
 
 		/* Send after the connection state update, as Channels hooks into this to
 		 * resend attaches on a new transport if necessary */
-		this.emit('transport.active', transport, connectionKey, transport.params);
+		this.emit('transport.active', transport);
 
 		/* Gracefully terminate existing protocol */
 		if(existingActiveProtocol) {
@@ -6296,7 +6347,7 @@ var ConnectionManager = (function() {
 	 * Called when activating a new transport, to ensure message delivery
 	 * on the new transport synchronises with the messages already received
 	 */
-	ConnectionManager.prototype.sync = function(transport, callback) {
+	ConnectionManager.prototype.sync = function(transport, requestedSyncPosition, callback) {
 		var timeout = setTimeout(function () {
 			transport.off('sync');
 			callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
@@ -6305,24 +6356,27 @@ var ConnectionManager = (function() {
 		/* send sync request */
 		var syncMessage = ProtocolMessage.fromValues({
 			action: actions.SYNC,
-			connectionKey: this.connectionKey,
-			connectionSerial: this.connectionSerial
+			connectionKey: this.connectionKey
 		});
 
+		if(requestedSyncPosition.timeSerial) {
+			syncMessage.timeSerial = requestedSyncPosition.timeSerial;
+		} else if(requestedSyncPosition.connectionSerial) {
+			syncMessage.connectionSerial = requestedSyncPosition.connectionSerial;
+		}
 		transport.send(syncMessage);
 
-		transport.once('sync', function(connectionSerial, connectionId) {
+		transport.once('sync', function(connectionId, syncPosition) {
 			clearTimeout(timeout);
-			callback(null, connectionSerial, connectionId);
+			callback(null, connectionId, syncPosition);
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionKey, connectionSerial) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
-		connectionSerial = (connectionSerial === undefined) ? -1 : connectionSerial;
 		/* If no previous connectionId, don't reset the msgSerial as it may have been set by recover data */
 		if(this.connectionId && (this.connectionId !== connectionId))  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
@@ -6340,26 +6394,54 @@ var ConnectionManager = (function() {
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});
-		} else {
-			/* don't allow the connectionSerial in the CONNECTED to lower the stored
-			 * connectionSerial, because messages can arrive on the upgrade transport
-			 * (validly incrementing the stored connectionSerial) after it's been
-			 * synced but before it gets activated */
-			connectionSerial = (this.connectionSerial === undefined) ? connectionSerial : Math.max(connectionSerial, this.connectionSerial);
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
-		this.realtime.connection.key = this.connectionKey = connectionKey;
-		this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-		this.realtime.connection.recoveryKey = connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
+		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
+		this.setConnectionSerial(connectionPosition);
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
 		this.realtime.connection.id = this.connectionId = undefined;
 		this.realtime.connection.key = this.connectionKey = undefined;
-		this.realtime.connection.serial = this.connectionSerial = undefined;
-		this.realtime.connection.recoveryKey = null;
+		this.clearConnectionSerial();
 		this.msgSerial = 0;
 		this.unpersistConnection();
+	};
+
+	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition) {
+		var timeSerial = connectionPosition.timeSerial;
+		if(timeSerial !== undefined) {
+			if(timeSerial <= this.timeSerial) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
+				return;
+			}
+			this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
+			this.setRecoveryKey();
+			return;
+		}
+		var connectionSerial = connectionPosition.connectionSerial;
+		if(connectionSerial !== undefined) {
+			if(connectionSerial <= this.connectionSerial) {
+				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				return;
+			}
+			this.realtime.connection.serial = this.connectionSerial = connectionSerial;
+			this.setRecoveryKey();
+		}
+	};
+
+	ConnectionManager.prototype.clearConnectionSerial = function() {
+		this.realtime.connection.serial = this.connectionSerial = undefined;
+		this.realtime.connection.timeSerial = this.timeSerial = undefined;
+		this.clearRecoveryKey();
+	};
+
+	ConnectionManager.prototype.setRecoveryKey = function() {
+		this.realtime.connection.recoveryKey = this.connectionKey + ':' + (this.timeSerial || this.connectionSerial) + ':' + this.msgSerial;
+	};
+
+	ConnectionManager.prototype.clearRecoveryKey = function() {
+		this.realtime.connection.recoveryKey = null;
 	};
 
 	ConnectionManager.prototype.checkConnectionStateFreshness = function() {
@@ -6379,13 +6461,16 @@ var ConnectionManager = (function() {
 	 * state for later recovery. Only applicable in the browser context.
 	 */
 	ConnectionManager.prototype.persistConnection = function() {
-		if(haveSessionStorage && this.connectionKey && this.connectionSerial !== undefined) {
-			setSessionRecoverData({
-				recoveryKey: this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial,
-				disconnectedAt: Utils.now(),
-				location: window.location,
-				clientId: this.realtime.auth.clientId
-			}, this.connectionStateTtl);
+		if(haveSessionStorage) {
+			var recoveryKey = this.realtime.connection.recoveryKey;
+			if(recoveryKey) {
+				setSessionRecoverData({
+					recoveryKey: recoveryKey,
+					disconnectedAt: Utils.now(),
+					location: window.location,
+					clientId: this.realtime.auth.clientId
+				}, this.connectionStateTtl);
+			}
 		}
 	};
 
@@ -6648,7 +6733,6 @@ var ConnectionManager = (function() {
 		}
 	};
 
-
 	/**
 	 * There are three stages in connecting:
 	 * - preference: if there is a cached transport preference, we try to connect
@@ -6818,7 +6902,7 @@ var ConnectionManager = (function() {
 
 		Utils.arrForEach(upgradePossibilities, function(upgradeTransport) {
 			/* Note: the transport may mutate the params, so give each transport a fresh one */
-			var upgradeTransportParams = new TransportParams(self.options, transportParams.host, 'upgrade', self.connectionKey);
+			var upgradeTransportParams = self.createTransportParams(transportParams.host, 'upgrade');
 			self.tryATransport(upgradeTransportParams, upgradeTransport, noop);
 		});
 	};
@@ -6991,7 +7075,7 @@ var ConnectionManager = (function() {
 		 * so Ably can dedup if the previous send succeeded */
 		if(pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
 			msg.msgSerial = this.msgSerial++;
-			this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
+			this.setRecoveryKey();
 		}
 		try {
 			this.activeProtocol.send(pendingMessage);
@@ -7047,15 +7131,7 @@ var ConnectionManager = (function() {
 		 * before it's become active (while waiting for the old one to become
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
-			var connectionSerial = message.connectionSerial;
-			if(connectionSerial <= this.connectionSerial) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
-				return;
-			}
-			if(connectionSerial !== undefined) {
-				this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-				this.realtime.connection.recoveryKey = this.connectionKey + ':' + connectionSerial + ':' + this.msgSerial;
-			}
+			this.setConnectionSerial(message);
 			var msgId = message.id;
 			if(msgId && (msgId === this.mostRecentMsgId)) {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
@@ -7218,7 +7294,8 @@ var Transport = (function() {
 	 * closed           error
 	 * failed           error
 	 * disposed
-	 * connected        null error, connectionKey
+	 * connected        null error, connectionSerial, connectionId, connectionDetails
+	 * sync             connectionSerial, connectionId
 	 * event            channel message object
 	 */
 
@@ -7287,12 +7364,12 @@ var Transport = (function() {
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionKey = ' + this.connectionManager.connectionKey);
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId);
 			this.emit('heartbeat', message.id);
 			break;
 		case actions.CONNECTED:
 			this.onConnect(message);
-			this.emit('connected', message.error, (message.connectionDetails ? message.connectionDetails.connectionKey : message.connectionKey), message.connectionSerial, message.connectionId, message.connectionDetails);
+			this.emit('connected', message.error, message.connectionId, message.connectionDetails, message);
 			break;
 		case actions.CLOSED:
 			this.onClose(message);
@@ -7309,7 +7386,7 @@ var Transport = (function() {
 		case actions.SYNC:
 			if(message.connectionId !== undefined) {
 				/* a transport SYNC */
-				this.emit('sync', message.connectionSerial, message.connectionId);
+				this.emit('sync', message.connectionId, message);
 				break;
 			}
 			/* otherwise it's a channel SYNC, so handle it in the channel */
@@ -7323,7 +7400,7 @@ var Transport = (function() {
 			});
 			break;
 		case actions.ERROR:
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionKey = ' + this.connectionManager.connectionKey + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionId = ' + this.connectionManager.connectionId + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				this.onFatalError(message);
 				break;
@@ -9371,6 +9448,7 @@ var Connection = (function() {
 		this.key = undefined;
 		this.id = undefined;
 		this.serial = undefined;
+		this.timeSerial = undefined;
 		this.recoveryKey = undefined;
 		this.errorReason = null;
 
