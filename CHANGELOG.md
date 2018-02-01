@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.13](https://github.com/ably/ably-js/tree/1.0.13) (2018-02-01)
+
+- Fix resume regression in 1.0.12
+
 ## [1.0.12](https://github.com/ably/ably-js/tree/1.0.12) (2018-01-30)
 
 - Fix Typescript definition files (https://github.com/ably/ably-js/pull/444)
