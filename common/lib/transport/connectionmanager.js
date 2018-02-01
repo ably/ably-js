@@ -91,7 +91,7 @@ var ConnectionManager = (function() {
 		var result = '[mode=' + this.mode;
 		if(this.host) { result += (',host=' + this.host); }
 		if(this.connectionKey) { result += (',connectionKey=' + this.connectionKey); }
-		if(this.connectionSerial) { result += (',connectionSerial=' + this.connectionSerial); }
+		if(this.connectionSerial !== undefined) { result += (',connectionSerial=' + this.connectionSerial); }
 		if(this.timeSerial) { result += (',timeSerial=' + this.timeSerial); }
 		if(this.format) { result += (',format=' + this.format); }
 		result += ']';
@@ -207,7 +207,7 @@ var ConnectionManager = (function() {
 		var params = new TransportParams(this.options, host, mode, this.connectionKey);
 		if(this.timeSerial) {
 			params.timeSerial = this.timeSerial;
-		} else if(this.connectionSerial) {
+		} else if(this.connectionSerial !== undefined) {
 			params.connectionSerial = this.connectionSerial;
 		}
 		return params;
@@ -693,7 +693,7 @@ var ConnectionManager = (function() {
 
 		if(requestedSyncPosition.timeSerial) {
 			syncMessage.timeSerial = requestedSyncPosition.timeSerial;
-		} else if(requestedSyncPosition.connectionSerial) {
+		} else if(requestedSyncPosition.connectionSerial !== undefined) {
 			syncMessage.connectionSerial = requestedSyncPosition.connectionSerial;
 		}
 		transport.send(syncMessage);
