@@ -520,11 +520,12 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Release Process
 
-- Make sure you have the closure compiler installed, needed to generate
-  the minified library. You can install it with `grunt compiler`
-- `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
-- `grunt release:deploy`
-- Visit https://github.com/ably/ably-js/tags and add release notes for the release including links to the changelog entry.
+- Make sure you have the closure compiler installed, needed to generate the minified library. You can install it with `grunt compiler`. (If you later get an error that it can't find it, it may have installed with an unexpected filename; try running `mv ably-js/tools/closure-compiler/build/*.jar ably-js/tools/closure-compiler/build/compiler.jar`)
+- Make sure the tests are passing in ci for the branch you're building
+- Update the CHANGELOG.md with any customer-affecting changes since the last release
+- Run `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
+- Run `grunt release:deploy`
+- Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
 - If the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have changed, submit a [PR to DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/pull/14524).
 - For nontrivial releases: update the ably-js submodule ref in the realtime repo
 
