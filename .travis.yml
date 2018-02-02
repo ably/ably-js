@@ -11,7 +11,7 @@ install: npm install
 env:
   - CXX=g++-4.8
 addons:
-  firefox: "59.0"
+  firefox: "58.0"
   apt:
     sources:
       - ubuntu-toolchain-r-test
