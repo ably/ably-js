@@ -130,10 +130,10 @@ module.exports = function(config) {
       os: 'Windows',
       os_version: '8'
     },
-    bs_ie8_win7: {
+    bs_ie9_win7: {
       base: 'BrowserStack',
       browser: 'ie',
-      browser_version: '8.0',
+      browser_version: '9.0',
       os: 'Windows',
       os_version: '7'
     },
