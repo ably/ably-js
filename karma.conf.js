@@ -84,7 +84,7 @@ module.exports = function(config) {
     bs_firefox_sierra: {
       base: 'BrowserStack',
       browser: 'firefox',
-      browser_version: '57.0',
+      browser_version: '58.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
@@ -98,7 +98,7 @@ module.exports = function(config) {
     bs_firefox_win8: {
       base: 'BrowserStack',
       browser: 'firefox',
-      browser_version: '57.0',
+      browser_version: '58.0',
       os: 'Windows',
       os_version: '8'
     },
