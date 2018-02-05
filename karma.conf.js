@@ -130,6 +130,13 @@ module.exports = function(config) {
       os: 'Windows',
       os_version: '7'
     },
+    bs_ie16_win10: {
+      base: 'BrowserStack',
+      browser: 'edge',
+      browser_version: '16.0',
+      os: 'Windows',
+      os_version: '10'
+    }
   };
 
   config.set({
