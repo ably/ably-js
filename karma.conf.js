@@ -136,6 +136,13 @@ module.exports = function(config) {
       browser_version: '16.0',
       os: 'Windows',
       os_version: '10'
+    },
+    bs_safari_10_3: {
+      base: 'BrowserStack',
+      browser: 'Mobile Safari',
+      os: 'ios',
+      os_version: '10.3',
+      devices: ['iPhone SE']
     }
   };
 
