@@ -261,7 +261,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: Object.keys(customLaunchers),
+    browsers: 'bs_firefox_sierra,bs_chrome_sierra',
     captureTimeout: 360000,
     browserDisconnectTimeout : 10000,
     browserNoActivityTimeout: 360000,
