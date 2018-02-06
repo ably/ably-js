@@ -59,6 +59,6 @@
     "main": "ably"
   },
   "scripts": {
-    "test": "grunt test:karma --browsers bs_chrome_sierra"
+    "test": "grunt test:karma --browsers bs_chrome_sierra,bs_firefox_win8,bs_ie11_win81,bs_ie10_win81,bs_ie16_win10"
   }
 }
