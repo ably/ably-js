@@ -323,7 +323,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test',
 		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
-		['build', 'karma:' + browsers]
+		['build', 'nodeunit', 'karma:' + browsers]
 	);
 
 	grunt.registerTask('test:karma',
