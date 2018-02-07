@@ -9,6 +9,10 @@ install: npm install
 env:
   global:
     - ABLY_LOG_LEVEL=1
+  matrix:
+    - B1=bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win81
+    - B2=bs_ie10_win81,bs_ie9_win7,bs_ie16_win10
+    - B3=bs_safari_10_3,bs_safari_11
 
 script:
   ./test/bin/ci-travis-all.sh
