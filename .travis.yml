@@ -3,14 +3,11 @@ language: node_js
 node_js:
   - '4.2'
 before_install:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
   - "npm install -g grunt-cli"
 install: npm install
 env:
   - CXX=g++-4.8
 addons:
-  firefox: "58.0"
   apt:
     sources:
       - ubuntu-toolchain-r-test
