@@ -130,7 +130,7 @@ module.exports = function(config) {
       os_version: '10.3',
       devices: ['iPhone SE']
     },
-    bs_safari_11_2: {
+    bs_safari_11: {
       base: 'BrowserStack',
       browser: 'Mobile Safari',
       os: 'ios',
