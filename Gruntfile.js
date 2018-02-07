@@ -4,10 +4,8 @@ var fs = require('fs');
 
 module.exports = function (grunt) {
 
-	grunt.loadNpmTasks('grunt-curl');
-	grunt.loadNpmTasks('grunt-zip');
 	grunt.loadNpmTasks('grunt-contrib-concat');
-	grunt.loadNpmTasks('grunt-closure-compiler');
+	grunt.loadNpmTasks('grunt-closure-tools');
 	grunt.loadNpmTasks('grunt-bump');
 
 	var dirs = {
@@ -18,17 +16,13 @@ module.exports = function (grunt) {
 		dest: 'browser/static',
 		compat: 'browser/compat',
 		crypto_js: 'node_modules/crypto-js/src',
-		tools_compiler: __dirname + '/tools/closure-compiler'
+		tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar'
 	};
 
 	function compilerSpec(src, dest) {
 		return {
-			closurePath: dirs.tools_compiler,
-			js: src,
-			jsOutputFile: (dest || src.replace(/\.js/, '.min.js')),
-			maxBuffer: 500,
-			noreport: true,
-			options: { compilation_level: 'SIMPLE_OPTIMIZATIONS' }
+			src: src,
+			dest: (dest || src.replace(/\.js/, '.min.js'))
 		};
 	}
 
@@ -45,24 +39,9 @@ module.exports = function (grunt) {
 		};
 	}
 
-
 	var gruntConfig = {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version
-	};
-
-	gruntConfig.curl = {
-		'compiler': {
-			src: 'http://dl.google.com/closure-compiler/compiler-latest.zip',
-			dest: '<%= dirs.tools_compiler %>/build/compiler-latest.zip'
-		}
-	};
-
-	gruntConfig.unzip = {
-		'compiler': {
-			src: '<%= dirs.tools_compiler %>/build/compiler-latest.zip',
-			dest: '<%= dirs.tools_compiler %>/build'
-		}
 	};
 
 	gruntConfig.concat = {
@@ -96,7 +75,13 @@ module.exports = function (grunt) {
 		}
 	};
 
-	gruntConfig['closure-compiler'] = {
+	gruntConfig['closureCompiler'] = {
+		options: {
+			compilerFile: dirs.tools_compiler,
+			compilerOpts: {
+				compilation_level: 'SIMPLE_OPTIMIZATIONS'
+			}
+		},
 		'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
 		'ably.noencryption.js': compilerSpec('<%= dirs.static %>/ably.noencryption.js')
 	};
@@ -304,19 +289,14 @@ module.exports = function (grunt) {
 
 	grunt.initConfig(gruntConfig);
 
-	grunt.registerTask('compiler', [
-		'curl:compiler',
-		'unzip:compiler'
-	]);
-
 	grunt.registerTask('build', [
 		'set-library-version',
 		'concat'
 	]);
 
 	grunt.registerTask('minify', [
-		'closure-compiler:ably.js',
-		'closure-compiler:ably.noencryption.js'
+		'closureCompiler:ably.js',
+		'closureCompiler:ably.noencryption.js'
 	]);
 
 	grunt.registerTask('all', ['build', 'minify', 'requirejs']);
