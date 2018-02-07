@@ -95,20 +95,6 @@ module.exports = function(config) {
       os: 'OS X',
       os_version: 'Sierra'
     },
-    bs_firefox_win8: {
-      base: 'BrowserStack',
-      browser: 'firefox',
-      browser_version: '58.0',
-      os: 'Windows',
-      os_version: '8'
-    },
-    bs_chrome_win10: {
-      base: 'BrowserStack',
-      browser: 'chrome',
-      browser_version: '63.0',
-      os: 'Windows',
-      os_version: '10'
-    },
     bs_ie11_win81: {
       base: 'BrowserStack',
       browser: 'ie',
