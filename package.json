@@ -17,18 +17,18 @@
   },
   "devDependencies": {
     "async": "git://github.com/ably-forks/async#requirejs",
+    "cors": "~2.7",
+    "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit",
     "ejs": "~2.3",
     "express": "~4.12",
-    "cors": "~2.7",
     "glob": "~4.4",
+    "google-closure-compiler": "^20180204.0.0",
     "grunt": "~0.4",
     "grunt-bump": "^0.3.1",
-    "grunt-closure-compiler": "~0.0",
+    "grunt-closure-tools": "^1.0.0",
     "grunt-contrib-compress": "~0.13",
     "grunt-contrib-concat": "~0.5",
-    "grunt-curl": "~2.1",
     "grunt-shell": "~1.1",
-    "grunt-zip": "~0.16",
     "hexy": "~0.2",
     "karma": "git://github.com/ably-forks/karma#ably-js-custom",
     "karma-chrome-launcher": "~0.1",
@@ -41,8 +41,7 @@
     "kexec": "^2.0.2",
     "nodeunit": "~0.9",
     "requirejs": "~2.1",
-    "shelljs": "~0.3",
-    "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit"
+    "shelljs": "~0.3"
   },
   "engines": {
     "node": ">=0.10.x"
