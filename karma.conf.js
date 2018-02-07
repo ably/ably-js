@@ -91,7 +91,7 @@ module.exports = function(config) {
     bs_chrome_sierra: {
       base: 'BrowserStack',
       browser: 'chrome',
-      browser_version: '63.0',
+      browser_version: '64.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
