@@ -11,6 +11,7 @@ env:
     - ABLY_LOG_LEVEL=1
   matrix:
     - B0=test:nodeunit
+    - B1=bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win81,bs_ie10_win81
 
 script:
   ./test/bin/ci-travis-all.sh
