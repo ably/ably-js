@@ -68,6 +68,14 @@ module.exports = function(config) {
       os: 'OS X',
       os_version: 'High Sierra'
     },
+    bs_android_6: {
+      base: 'BrowserStack',
+      browser: 'android',
+      os: 'android',
+      os_version: '6.0',
+      device: 'Google Nexus 6',
+      real_mobile: true
+    }
   };
 
   config.set({
