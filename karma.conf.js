@@ -60,7 +60,14 @@ module.exports = function(config) {
       os: 'ios',
       os_version: '11.0',
       real_devices: ['iPhone SE']
-    }
+    },
+    bs_safari_high_sierra: {
+      base: 'BrowserStack',
+      browser: 'Safari',
+      browser_version: '11.0',
+      os: 'OS X',
+      os_version: 'High Sierra'
+    },
   };
 
   config.set({
