@@ -175,15 +175,6 @@ module.exports = function(config) {
     // enable / disable watching file and executing tests whenever any file changes
     autoWatch: false,
 
-    sauceLabs: {
-      testName: 'Ably-JS Javascript Tests',
-      username: process.env.SAUCE_USERNAME || 'ably',
-      accessKey: process.env.SAUCE_ACCESS_KEY,
-      connectOptions: {
-        vmVersion: 'dev-varnish'
-      }
-    },
-
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
     browsers: 'bs_firefox_sierra,bs_chrome_sierra',
