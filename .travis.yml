@@ -15,5 +15,8 @@ matrix:
   include:
     - env: RUN_TESTS=./test/bin/ci-travis-all.sh
     - env: RUN_TESTS=./test/bin/ci-travis-short.sh
+before_script:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
 script:
   - $RUN_TESTS
