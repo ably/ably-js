@@ -9,6 +9,8 @@ install: npm install
 env:
   global:
     - ABLY_LOG_LEVEL=1
+addons:
+  firefox: "58.0"
 matrix:
   include:
     - env: RUN_TESTS=./test/bin/ci-travis-all.sh
