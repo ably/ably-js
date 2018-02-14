@@ -14,4 +14,4 @@ matrix:
     - env: RUN_TESTS=./test/bin/ci-travis-all.sh
     - env: RUN_TESTS=./test/bin/ci-travis-short.sh
 script:
-  - RUN_TESTS
+  - $RUN_TESTS
