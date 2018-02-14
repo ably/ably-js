@@ -9,6 +9,9 @@ install: npm install
 env:
   global:
     - ABLY_LOG_LEVEL=1
-
+matrix:
+  include:
+    - env: RUN_TESTS=./test/bin/ci-travis-all.sh
+    - env: RUN_TESTS=./test/bin/ci-travis-short.sh
 script:
-  ./test/bin/ci-travis-all.sh
+  - RUN_TESTS
