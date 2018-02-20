@@ -6,6 +6,9 @@ node_js:
 before_install:
   - "npm install -g grunt-cli"
 install: npm install
+branches:
+  only:
+  - master
 env:
   global:
     - ABLY_LOG_LEVEL=1
