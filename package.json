@@ -11,14 +11,14 @@
     "./nodejs/index.js": "./browser/static/ably-commonjs.js"
   },
   "dependencies": {
-    "msgpack-js": "git://github.com/ably-forks/msgpack-js",
+    "msgpack-js": "git://github.com/ably-forks/msgpack-js.git",
     "request": "^2.83.0",
     "ws": "~4.0"
   },
   "devDependencies": {
-    "async": "git://github.com/ably-forks/async#requirejs",
+    "async": "git://github.com/ably-forks/async.git#requirejs",
     "cors": "~2.7",
-    "crypto-js": "git://github.com/ably-forks/crypto-js#typedarray-webkit",
+    "crypto-js": "git://github.com/ably-forks/crypto-js.git#typedarray-webkit",
     "ejs": "~2.3",
     "express": "~4.12",
     "glob": "~4.4",
@@ -30,7 +30,7 @@
     "grunt-contrib-concat": "~0.5",
     "grunt-shell": "~1.1",
     "hexy": "~0.2",
-    "karma": "git://github.com/ably-forks/karma#ably-js-custom",
+    "karma": "git://github.com/ably-forks/karma.git#ably-js-custom",
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",
