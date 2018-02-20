@@ -47,12 +47,12 @@ module.exports = function(config) {
       os: 'Windows',
       os_version: '10'
     },
-    bs_safari_10_3: {
+    bs_ie8_win7: {
       base: 'BrowserStack',
-      browser: 'Mobile Safari',
-      os: 'ios',
-      os_version: '10.3',
-      devices: ['iPhone SE']
+      browser: 'ie',
+      browser_version: '8.0',
+      os: 'Windows',
+      os_version: '7'
     },
     bs_safari_11_iOS: {
       base: 'BrowserStack',
