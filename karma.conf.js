@@ -150,7 +150,8 @@ module.exports = function(config) {
       'ABLY_REST_HOST',
       'ABLY_PORT',
       'ABLY_TLS_PORT',
-      'ABLY_USE_TLS'
+      'ABLY_USE_TLS',
+      'ABLY_LOG_LEVEL'
     ],
 
     // test results reporter to use
