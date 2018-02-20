@@ -19,6 +19,7 @@
     "async": "git://github.com/ably-forks/async.git#requirejs",
     "cors": "~2.7",
     "crypto-js": "git://github.com/ably-forks/crypto-js.git#typedarray-webkit",
+    "karma-browserstack-launcher": "1.3.0",
     "ejs": "~2.3",
     "express": "~4.12",
     "glob": "~4.4",
