@@ -4,6 +4,18 @@ language: node_js
 before_install:
   - "npm install -g grunt-cli"
 install: npm install
+notifications:
+  slack:
+    rooms:
+      - secure: SOHut1xcPFnac2sh5ICL3Hehx/du3G7OuWZoMKejxzbUq3Stp29t6EQ9To7VNEHCEJLcewhZTataVOQkZLcDtDRZofXVHW0RSQJVigJTH+eJq1qyPLKuO+D9lM2djP28smb0SGxhOpOr7JH1l4+rvOeNhQMvNs5+yN45w7KSM7k=
+    on_success: change
+    on_failure: always
+  email:
+    recipients:
+      - simon@ably.io
+      - cesare@ably.io
+    on_success: change
+    on_failure: always
 branches:
   only:
   - master
