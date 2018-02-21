@@ -1,8 +1,6 @@
 sudo: false
 dist: trusty
 language: node_js
-node_js:
-  - '4.2'
 before_install:
   - "npm install -g grunt-cli"
 install: npm install
@@ -16,8 +14,16 @@ addons:
   firefox: "58.0"
 matrix:
   include:
-    - env: RUN_TESTS=./test/bin/ci-travis-short.sh
-    - env: RUN_TESTS=./test/bin/ci-travis-all.sh
+    - node_js: '4.2'
+      env: RUN_TESTS=./test/bin/ci-travis-short.sh
+    - node_js: '6.13.0'
+      env: RUN_TESTS=./test/bin/ci-travis-short.sh
+    - node_js: '8.9.4'
+      env: RUN_TESTS=./test/bin/ci-travis-short.sh
+    - node_js: 'node' # means latest stable
+      env: RUN_TESTS=./test/bin/ci-travis-short.sh
+    - node_js: '4.2'
+      env: RUN_TESTS=./test/bin/ci-travis-all.sh
 before_script:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
