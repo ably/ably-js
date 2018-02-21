@@ -14,15 +14,15 @@ addons:
   firefox: "58.0"
 matrix:
   include:
-    - node_js: '4.2'
+    - node_js: '4'
       env: RUN_TESTS=./test/bin/ci-travis-short.sh
-    - node_js: '6.13.0'
+    - node_js: '6'
       env: RUN_TESTS=./test/bin/ci-travis-short.sh
-    - node_js: '8.9.4'
+    - node_js: '8'
       env: RUN_TESTS=./test/bin/ci-travis-short.sh
     - node_js: 'node' # means latest stable
       env: RUN_TESTS=./test/bin/ci-travis-short.sh
-    - node_js: '4.2'
+    - node_js: '4'
       env: RUN_TESTS=./test/bin/ci-travis-all.sh
 before_script:
   - export DISPLAY=:99.0
