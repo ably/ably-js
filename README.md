@@ -18,8 +18,12 @@ A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime
 We maintain compatibility and explicitly support these platform versions, including performing CI testing on all library revisions.
 
 We do not explicitly maintain compatibility with older platform versions; we no longer perform CI testing on iOS7 as of version 1.0.13 (released on February 2nd 2018). Any known incompatibilities with older versions can be found [here](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
- 
-If you find any issues with unsupported platform versions, please [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
+
+**Note**: the ably-js browser library contains fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR.
+Each of these fallback transport mechanisms is supported and tested on all of the listed target browsers; even when those browsers do not themselves require those fallbacks.
+These mean that the library should be compatible with nearly any recent browser, on the majority of platforms.
+
+If, however, you do find compatibility issues with any specific platform and browser combination, please [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
 
 We also support React Native, NativeScript and TypeScript. See below for more details.
 
