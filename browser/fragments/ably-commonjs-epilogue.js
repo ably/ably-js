@@ -1,3 +1,8 @@
+var Types = {
+  ClientOptions: function(obj) { return (obj); }
+};
+
+Ably.Types = Types;
 Ably.msgpack = msgpack;
 Ably.Rest = Rest;
 Ably.Realtime = Realtime;
