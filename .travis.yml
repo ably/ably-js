@@ -18,9 +18,6 @@ notifications:
       - cesare@ably.io
     on_success: change
     on_failure: always
-branches:
-  only:
-  - master
 env:
   global:
     - ABLY_LOG_LEVEL=1
