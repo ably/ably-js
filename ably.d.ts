@@ -479,3 +479,29 @@ export declare class Realtime {
   connect: () => void;
   time: (paramsOrCallback?: ablyLib.timeCallback | any, callback?: ablyLib.timeCallback) => void;
 }
+
+export namespace Types {
+  export class ClientOptions {
+    key?: string;
+    clientId?: string;
+
+    /**
+     * When true, time is queried from the Ably servers. Example help text.
+     */
+    queryTime?: boolean;
+
+    constructor(options?: ClientOptions);
+  }
+
+  export class Message {
+    constructor(options?: Message);
+    clientId: string;
+    connectionId: string;
+    data: any;
+    encoding: string;
+    extras: any;
+    id: string;
+    name: string;
+    timestamp: number;
+  }
+}
