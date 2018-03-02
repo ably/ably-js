@@ -10022,6 +10022,10 @@ var JSONPTransport = (function() {
 })();
 
 	if(typeof Realtime !== 'undefined') {
+		var Types = {
+			ClientOptions: function(obj) { return (obj); }
+		};
+		Ably.Types = Types;
 		Ably.msgpack = msgpack;
 		Ably.Rest = Rest;
 		Ably.Realtime = Realtime;

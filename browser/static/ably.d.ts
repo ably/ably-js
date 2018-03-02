@@ -465,7 +465,7 @@ export declare class Rest {
 }
 
 export declare class Realtime {
-  constructor(options: ablyLib.ClientOptions | string);
+  constructor(options: Types.ClientOptions | string);
   static Crypto: ablyLib.Crypto;
   static Message: ablyLib.MessageStatic;
   static PresenceMessage: ablyLib.PresenceMessageStatic;
@@ -478,4 +478,30 @@ export declare class Realtime {
   close: () => void;
   connect: () => void;
   time: (paramsOrCallback?: ablyLib.timeCallback | any, callback?: ablyLib.timeCallback) => void;
+}
+
+export namespace Types {
+  export class ClientOptions {
+    key?: string;
+    clientId?: string;
+
+    /**
+     * When true, time is queried from the Ably servers. Example help text.
+     */
+    queryTime?: boolean;
+
+    constructor(options?: ClientOptions);
+  }
+
+  export class Message {
+    constructor(options?: Message);
+    clientId: string;
+    connectionId: string;
+    data: any;
+    encoding: string;
+    extras: any;
+    id: string;
+    name: string;
+    timestamp: number;
+  }
 }
