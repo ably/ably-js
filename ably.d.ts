@@ -465,7 +465,7 @@ export declare class Rest {
 }
 
 export declare class Realtime {
-  constructor(options: ablyLib.ClientOptions | string);
+  constructor(options: Types.ClientOptions | string);
   static Crypto: ablyLib.Crypto;
   static Message: ablyLib.MessageStatic;
   static PresenceMessage: ablyLib.PresenceMessageStatic;
