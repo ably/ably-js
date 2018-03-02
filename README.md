@@ -2,9 +2,30 @@
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
+## Supported platforms
+ 
+ This SDK is compatible with the following platforms:
+ 
+| Node.js  | Browsers           | 
+|----------|--------------------|
+|   4      | IE 8+              |
+|   6      | Chrome 64+         |
+|   8      | Firefox 58+        |
+|   9      | Safari macOS 11    |
+|          | Safari iOS 11      |
+|          | Chrome on Android 6|
+ 
+We maintain compatibility and explicitly support these platform versions, including performing CI testing on all library revisions.
+
+We do not explicitly maintain compatibility with older platform versions; we no longer perform CI testing on iOS7 as of version 1.0.13 (released on February 2nd 2018). Any known incompatibilities with older versions can be found [here](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
+ 
+If you find any issues with unsupported platform versions, please [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
+
+We also support React Native, NativeScript and TypeScript. See below for more details.
+
 ## Version: 1.0.13
 
-This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
+The latest stable version of the Ably Javascript client library is `1.0.13`.
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
