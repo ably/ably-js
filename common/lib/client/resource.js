@@ -23,7 +23,7 @@ var Resource = (function() {
 
 	function unenvelope(callback, format) {
 		return function(err, body, headers, unpacked, statusCode) {
-			if(err) {
+			if(err && !body) {
 				callback(err);
 				return;
 			}
@@ -49,16 +49,16 @@ var Resource = (function() {
 
 			if(statusCode < 200 || statusCode >= 300) {
 				/* handle wrapped errors */
-				var err = response && response.error;
+				var wrappedErr = (response && response.error) || err;
 				if(!err) {
 					err = new Error(String(res));
 					err.statusCode = statusCode;
 				}
-				callback(err);
+				callback(wrappedErr, response, headers, true, statusCode);
 				return;
 			}
 
-			callback(null, response, headers, true, statusCode);
+			callback(err, response, headers, true, statusCode);
 		};
 	}
 

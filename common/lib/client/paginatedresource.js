@@ -44,8 +44,16 @@ var PaginatedResource = (function() {
 		});
 	};
 
+	function returnErrOnly(err, body, useHPR) {
+		/* If using httpPaginatedResponse, errors from Ably are returned as part of
+		 * the HPR, only do callback(err) for network errors etc. which don't
+		 * return a body and/or have no ably-originated error code (non-numeric
+		 * error codes originate from node) */
+		return !(useHPR && (body || typeof err.code === 'number'));
+	}
+
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, statusCode, callback) {
-		if(err) {
+		if(err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
 			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
 			callback(err);
 			return;
@@ -54,7 +62,9 @@ var PaginatedResource = (function() {
 		try {
 			items = this.bodyHandler(body, headers, unpacked);
 		} catch(e) {
-			callback(e);
+			/* If we got an error, the failure to parse the body is almost certainly
+			 * due to that, so cb with that in preference to the parse error */
+			callback(err || e);
 			return;
 		}
 
@@ -63,7 +73,7 @@ var PaginatedResource = (function() {
 		}
 
 		if(this.useHttpPaginatedResponse) {
-			callback(null, new HttpPaginatedResponse(this, items, headers, statusCode, relParams));
+			callback(null, new HttpPaginatedResponse(this, items, headers, statusCode, relParams, err));
 		} else {
 			callback(null, new PaginatedResult(this, items, relParams));
 		}
@@ -100,15 +110,13 @@ var PaginatedResource = (function() {
 		});
 	};
 
-	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams) {
+	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams, err) {
 		PaginatedResult.call(this, resource, items, relParams);
 		this.statusCode = statusCode;
 		this.success = statusCode < 300 && statusCode >= 200;
 		this.headers = headers;
-		/* Note: we don't populate errorCode or errorMessage: for consistency with
-		 * the way the rest of the js library works, error data is passed as
-		 * ErrorInfos to the err argument of the callback; an  HttpPaginatedResponse
-		 * is only ever passed to the callback if there was no error */
+		this.errorCode = err && err.code;
+		this.errorMessage = err && err.message;
 	}
 	Utils.inherits(HttpPaginatedResponse, PaginatedResult);
 

@@ -1,5 +1,6 @@
 var Rest = (function() {
 	var noop = function() {};
+	var msgpack = Platform.msgpack;
 
 	function Rest(options) {
 		if(!(this instanceof Rest)){
@@ -58,7 +59,8 @@ var Rest = (function() {
 			}
 		}
 		var headers = Utils.copy(Utils.defaultGetHeaders()),
-			envelope = Http.supportsLinkHeaders ? undefined : 'json';
+			format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format;
 
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
@@ -105,14 +107,17 @@ var Rest = (function() {
 	};
 
 	Rest.prototype.request = function(method, path, params, body, customHeaders, callback) {
-		var format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+		var useBinary = this.options.useBinaryProtocol,
+			encoder = useBinary ? msgpack.encode: JSON.stringify,
+			decoder = useBinary ? msgpack.decode : JSON.parse,
+			format = useBinary ? 'msgpack' : 'json',
 			method = method.toLowerCase(),
-			envelope = Http.supportsLinkHeaders ? undefined : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
-			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders() : Utils.defaultPostHeaders(format));
+			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
 
 		if(typeof body !== 'string') {
-			body = JSON.stringify(body);
+			body = encoder(body);
 		}
 		if(this.options.headers) {
 			Utils.mixin(headers, this.options.headers);
@@ -121,7 +126,7 @@ var Rest = (function() {
 			Utils.mixin(headers, customHeaders);
 		}
 		var paginatedResource = new PaginatedResource(this, path, headers, envelope, function(resbody, headers, unpacked) {
-			return Utils.ensureArray(unpacked ? resbody : JSON.parse(resbody));
+			return Utils.ensureArray(unpacked ? resbody : decoder(resbody));
 		}, /* useHttpPaginatedResponse: */ true);
 
 		switch(method) {

@@ -211,7 +211,7 @@ var XHRRequest = (function() {
 			if(!err) {
 				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}
-			self.complete(err);
+			self.complete(err, responseBody, headers, unpacked, statusCode);
 		}
 
 		function onProgress() {

@@ -97,7 +97,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			test.expect(testData.messages.length * 5);
-			var realtime = helper.AblyRealtime(),
+			var realtime = helper.AblyRealtime({useBinaryProtocol: false}),
 				binaryrealtime = helper.AblyRealtime({useBinaryProtocol: true}),
 				channelName = 'message_encoding',
 				channelPath = '/channels/' + channelName + '/messages',
