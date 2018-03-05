@@ -1,6 +1,7 @@
 "use strict";
 this.Http = (function() {
 	var request = require('request');
+	var msgpack = Platform.msgpack;
 	var noop = function() {};
 
 	/***************************************************
@@ -26,7 +27,13 @@ this.Http = (function() {
 			}
 			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
-				if(headers['content-type'] == 'application/json') body = JSON.parse(body);
+				switch(headers['content-type']) {
+					case 'application/json':
+						body = JSON.parse(body);
+						break;
+					case 'application/x-msgpack':
+						body = msgpack.decode(body);
+				}
 				var error = body.error || {
 					statusCode: statusCode,
 					code: headers['x-ably-errorcode'],
