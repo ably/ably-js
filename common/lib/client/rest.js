@@ -16,6 +16,12 @@ var Rest = (function() {
 		if(typeof(options) == 'string') {
 			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
 		}
+
+		if(options.log) {
+			Logger.setLog(options.log.level, options.log.handler);
+		}
+		Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+
 		this.options = Defaults.normaliseOptions(options);
 
 		/* process options */
@@ -37,8 +43,6 @@ var Rest = (function() {
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		if(options.log)
-			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
