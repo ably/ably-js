@@ -10,8 +10,7 @@ var JSONPTransport = (function() {
 	 */
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
-	var isSupported = (typeof(document) !== 'undefined');
-	var head = isSupported ? document.getElementsByTagName('head')[0] : null;
+	var head = null;
 	var shortName = 'jsonp';
 
 	/* public constructor */
@@ -22,9 +21,12 @@ var JSONPTransport = (function() {
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
-	JSONPTransport.isAvailable = function() { return isSupported; };
-	if(isSupported) {
+	JSONPTransport.isAvailable = function() {
+		return Platform.jsonpSupported;
+	};
+	if(Platform.jsonpSupported) {
 		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+		head = document.getElementsByTagName('head')[0];
 	}
 
 	/* connectivity check; since this has a hard-coded callback id,
