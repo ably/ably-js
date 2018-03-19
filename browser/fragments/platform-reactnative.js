@@ -5,6 +5,7 @@ var Platform = {
 	binaryType: 'arraybuffer',
 	WebSocket: WebSocket,
 	xhrSupported: XMLHttpRequest,
+	jsonpSupported: false,
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
