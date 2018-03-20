@@ -121,7 +121,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			 * nodecomet+upgrade if comet is explicitly requested
 			 * */
 			if(!excludeUpgrade) {
-				exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
+				// exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
 				// exports[name + '_with_text_transport'] = testFn({transports: availableTransports, useBinaryProtocol: false});
 			}
 		}
