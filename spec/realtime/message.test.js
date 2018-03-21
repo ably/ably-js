@@ -166,7 +166,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							txChannel.publish('event', {num: i}, function(err) {
 								test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
 								ackd++;
-								if(ackd === 99) {
+								if(ackd === 100) {
 									parCb();
 								}
 							});
