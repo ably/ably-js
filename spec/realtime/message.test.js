@@ -173,7 +173,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							if(i < 99) {
 								setTimeout(function() {
 									publish(i + 1);
-								}, 20);
+								}, 10);
 							}
 						};
 						publish(0);
