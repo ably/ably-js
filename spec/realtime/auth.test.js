@@ -487,7 +487,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		authUrl: echoServer + '/respondwith?status=401'
 	});
 
-	/* 403 should cause the connection to go to failed, unlike the others */
+	/* RSA4d 403 should cause the connection to go to failed, unlike the others */
 	exports.authUrl_403 = authCallback_failures({
 		authUrl: echoServer + '/respondwith?status=403'
 	}, true); /* expectFailed: */
