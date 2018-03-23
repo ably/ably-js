@@ -58,12 +58,18 @@ For React Native, do not use this package. Instead use the [ably-react-native](h
 
 The TypeScript typings are included in the package and so all you have to do is:
 
-```javascript
- import * as Ably from 'ably';
- let realtime = new Ably.Realtime(options);
+```typescript
+import * as Ably from './ably';
+let options : Ably.Types.ClientOptions = { key: 'foo' };
+let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
+let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
 
-Additionally, the type definitions are registered with [DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ably).
+Intellisense in IDEs with TypeScript support is supported:
+
+![TypeScript suggestions](./resources/typescript-demo.gif)
+
+If your need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
 
 ### Using WebPack
 
