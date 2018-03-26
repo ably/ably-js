@@ -50,9 +50,9 @@ var Resource = (function() {
 			if(statusCode < 200 || statusCode >= 300) {
 				/* handle wrapped errors */
 				var wrappedErr = (response && response.error) || err;
-				if(!err) {
-					err = new Error(String(res));
-					err.statusCode = statusCode;
+				if(!wrappedErr) {
+					wrappedErr = new Error("Error in unenveloping " + body);
+					wrappedErr.statusCode = statusCode;
 				}
 				callback(wrappedErr, response, headers, true, statusCode);
 				return;
