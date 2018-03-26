@@ -19,6 +19,7 @@ notifications:
 branches:
   only:
   - master
+  - /^.*-ci$/
 env:
   global:
     - ABLY_LOG_LEVEL=1
