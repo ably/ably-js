@@ -571,116 +571,116 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	// };
 
 
-	// /*
-	//  * If using authcallback when a token expires, should automatically request a
-	//  * new token
-	//  */
-	// testOnAllTransports(exports, 'auth_tokenDetails_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
-	// 	test.expect(4);
+	/*
+	 * If using authcallback when a token expires, should automatically request a
+	 * new token
+	 */
+	testOnAllTransports(exports, 'auth_tokenDetails_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
+		test.expect(4);
 
-	// 	var realtime, rest = helper.AblyRest();
-	// 	var clientId = "test clientid";
-	// 	var authCallback = function(tokenParams, callback) {
-	// 		tokenParams.ttl = 5000;
-	// 		rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-	// 			if(err) {
-	// 				test.ok(false, displayError(err));
-	// 				closeAndFinish(test, realtime);
-	// 				return;
-	// 			}
-	// 			callback(null, tokenDetails);
-	// 		});
-	// 	};
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		var authCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 5000;
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
 
-	// 	realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
-	// 	monitorConnection(test, realtime);
-	// 	realtime.connection.once('connected', function(){
-	// 		test.ok(true, 'Verify connection connected');
-	// 		realtime.connection.once('disconnected', function(stateChange){
-	// 			test.ok(true, 'Verify connection disconnected');
-	// 			test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-	// 			realtime.connection.once('connected', function(){
-	// 				test.ok(true, 'Verify connection reconnected');
-	// 				realtime.close();
-	// 				test.done();
-	// 			});
-	// 		});
-	// 	});
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+		monitorConnection(test, realtime);
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			realtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection disconnected');
+				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
+				realtime.connection.once('connected', function(){
+					test.ok(true, 'Verify connection reconnected');
+					realtime.close();
+					test.done();
+				});
+			});
+		});
 
-	// 	monitorConnection(test, realtime);
-	// }});
+		monitorConnection(test, realtime);
+	}});
 
-	// /*
-	//  * Same as previous but with just a token, so ably-js doesn't know that the
-	//  * token's expired
-	//  */
-	// testOnAllTransports(exports, 'auth_token_string_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
-	// 	test.expect(4);
+	/*
+	 * Same as previous but with just a token, so ably-js doesn't know that the
+	 * token's expired
+	 */
+	testOnAllTransports(exports, 'auth_token_string_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
+		test.expect(4);
 
-	// 	var realtime, rest = helper.AblyRest();
-	// 	var clientId = "test clientid";
-	// 	var authCallback = function(tokenParams, callback) {
-	// 		tokenParams.ttl = 5000;
-	// 		rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-	// 			if(err) {
-	// 				test.ok(false, displayError(err));
-	// 				closeAndFinish(test, realtime);
-	// 				return;
-	// 			}
-	// 			callback(null, tokenDetails.token);
-	// 		});
-	// 	};
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		var authCallback = function(tokenParams, callback) {
+			tokenParams.ttl = 5000;
+			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
 
-	// 	realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
-	// 	monitorConnection(test, realtime);
-	// 	realtime.connection.once('connected', function(){
-	// 		test.ok(true, 'Verify connection connected');
-	// 		realtime.connection.once('disconnected', function(stateChange){
-	// 			test.ok(true, 'Verify connection disconnected');
-	// 			test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-	// 			realtime.connection.once('connected', function(){
-	// 				test.ok(true, 'Verify connection reconnected');
-	// 				realtime.close();
-	// 				test.done();
-	// 			});
-	// 		});
-	// 	});
+		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+		monitorConnection(test, realtime);
+		realtime.connection.once('connected', function(){
+			test.ok(true, 'Verify connection connected');
+			realtime.connection.once('disconnected', function(stateChange){
+				test.ok(true, 'Verify connection disconnected');
+				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
+				realtime.connection.once('connected', function(){
+					test.ok(true, 'Verify connection reconnected');
+					realtime.close();
+					test.done();
+				});
+			});
+		});
 
-	// 	monitorConnection(test, realtime);
-	// }});
+		monitorConnection(test, realtime);
+	}});
 
-	// /*
-	//  * Same as previous but with no way to generate a new token
-	//  */
-	// testOnAllTransports(exports, 'auth_token_string_expiry_with_token', function(realtimeOpts) { return function(test) {
-	// 	test.expect(6);
+	/*
+	 * Same as previous but with no way to generate a new token
+	 */
+	testOnAllTransports(exports, 'auth_token_string_expiry_with_token', function(realtimeOpts) { return function(test) {
+		test.expect(6);
 
-	// 	var realtime, rest = helper.AblyRest();
-	// 	var clientId = "test clientid";
-	// 	rest.auth.requestToken({ttl: 5000, clientId: clientId}, null, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			closeAndFinish(test, realtime);
-	// 			return;
-	// 		}
-	// 		realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
-	// 		realtime.connection.once('connected', function(){
-	// 			test.ok(true, 'Verify connection connected');
-	// 			realtime.connection.once('disconnected', function(stateChange){
-	// 				test.ok(true, 'Verify connection disconnected');
-	// 				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-	// 				realtime.connection.once('failed', function(stateChange){
-	// 					/* Library has no way to generate a new token, so should fail */
-	// 					test.ok(true, 'Verify connection failed');
-	// 					test.equal(stateChange.reason.code, 80019, 'Verify correct failure code');
-	// 					test.equal(stateChange.reason.cause.code, 40101, 'Verify correct cause failure code');
-	// 					realtime.close();
-	// 					test.done();
-	// 				});
-	// 			});
-	// 		});
-	// 	});
-	// }});
+		var realtime, rest = helper.AblyRest();
+		var clientId = "test clientid";
+		rest.auth.requestToken({ttl: 5000, clientId: clientId}, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
+			realtime.connection.once('connected', function(){
+				test.ok(true, 'Verify connection connected');
+				realtime.connection.once('disconnected', function(stateChange){
+					test.ok(true, 'Verify connection disconnected');
+					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
+					realtime.connection.once('failed', function(stateChange){
+						/* Library has no way to generate a new token, so should fail */
+						test.ok(true, 'Verify connection failed');
+						test.equal(stateChange.reason.code, 80019, 'Verify correct failure code');
+						test.equal(stateChange.reason.cause.code, 40101, 'Verify correct cause failure code');
+						realtime.close();
+						test.done();
+					});
+				});
+			});
+		});
+	}});
 
 	/*
 	 * Try to connect with an expired token string
