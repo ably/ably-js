@@ -278,297 +278,297 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	// 	});
 	// };
 
-	// /*
-	//  * Request a token using clientId, then initialize a connection without one,
-	//  * and check that the connection inherits the clientId from the tokenDetails
-	//  */
-	// exports.auth_clientid_inheritance = function(test) {
-	// 	test.expect(1);
+	/*
+	 * Request a token using clientId, then initialize a connection without one,
+	 * and check that the connection inherits the clientId from the tokenDetails
+	 */
+	exports.auth_clientid_inheritance = function(test) {
+		test.expect(1);
 
-	// 	var rest = helper.AblyRest(),
-	// 	testClientId = 'testClientId';
-	// 	var authCallback = function(tokenParams, callback) {
-	// 		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-	// 			if(err) {
-	// 				test.ok(false, displayError(err));
-	// 				test.done();
-	// 				return;
-	// 			}
-	// 			callback(null, tokenDetails);
-	// 		});
-	// 	};
+		var rest = helper.AblyRest(),
+		testClientId = 'testClientId';
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails);
+			});
+		};
 
-	// 	var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
 
-	// 	realtime.connection.on('connected', function() {
-	// 		test.equal(realtime.auth.clientId, testClientId);
-	// 		realtime.connection.close();
-	// 		test.done();
-	// 		return;
-	// 	});
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.auth.clientId, testClientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
 
-	// 	realtime.connection.on('failed', function(err) {
-	// 		realtime.close();
-	// 		test.ok(false, "Failed: " + displayError(err));
-	// 		test.done();
-	// 		return;
-	// 	});
-	// };
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + displayError(err));
+			test.done();
+			return;
+		});
+	};
 
-	// /*
-	//  * Rest token generation with clientId, then connecting with a
-	//  * different clientId, should fail with a library-generated message
-	//  * (RSA15a, RSA15c)
-	//  */
-	// exports.auth_clientid_inheritance2 = function(test) {
-	// 	test.expect(3);
-	// 	var clientRealtime,
-	// 		testClientId = 'test client id';
-	// 	var rest = helper.AblyRest();
-	// 	rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
-	// 		clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
-	// 		clientRealtime.connection.once('failed', function(stateChange){
-	// 			test.ok(true, 'Verify connection failed');
-	// 			test.equal(stateChange.reason.code, 80019);
-	// 			test.equal(stateChange.reason.cause.code, 40102);
-	// 			clientRealtime.close();
-	// 			test.done();
-	// 		});
-	// 	});
-	// };
+	/*
+	 * Rest token generation with clientId, then connecting with a
+	 * different clientId, should fail with a library-generated message
+	 * (RSA15a, RSA15c)
+	 */
+	exports.auth_clientid_inheritance2 = function(test) {
+		test.expect(3);
+		var clientRealtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
+			clientRealtime.connection.once('failed', function(stateChange){
+				test.ok(true, 'Verify connection failed');
+				test.equal(stateChange.reason.code, 80019);
+				test.equal(stateChange.reason.cause.code, 40102);
+				clientRealtime.close();
+				test.done();
+			});
+		});
+	};
 
-	// /*
-	//  * Rest token generation with clientId '*', then connecting with just the
-	//  * token string and a different clientId, should succeed (RSA15b)
-	//  */
-	// exports.auth_clientid_inheritance3 = function(test) {
-	// 	test.expect(1);
-	// 	var realtime,
-	// 		testClientId = 'test client id';
-	// 	var rest = helper.AblyRest();
-	// 	rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
-	// 		realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
-	// 		realtime.connection.on('connected', function() {
-	// 			test.equal(realtime.auth.clientId, testClientId);
-	// 			realtime.connection.close();
-	// 			test.done();
-	// 			return;
-	// 		});
-	// 		monitorConnection(test, realtime);
-	// 	});
-	// };
+	/*
+	 * Rest token generation with clientId '*', then connecting with just the
+	 * token string and a different clientId, should succeed (RSA15b)
+	 */
+	exports.auth_clientid_inheritance3 = function(test) {
+		test.expect(1);
+		var realtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.clientId, testClientId);
+				realtime.connection.close();
+				test.done();
+				return;
+			});
+			monitorConnection(test, realtime);
+		});
+	};
 
-	// /*
-	//  * Rest token generation with clientId '*', then connecting with
-	//  * tokenDetails and a clientId, should succeed (RSA15b)
-	//  */
-	// exports.auth_clientid_inheritance4 = function(test) {
-	// 	test.expect(1);
-	// 	var realtime,
-	// 		testClientId = 'test client id';
-	// 	var rest = helper.AblyRest();
-	// 	rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
-	// 		realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
-	// 		realtime.connection.on('connected', function() {
-	// 			test.equal(realtime.auth.clientId, testClientId);
-	// 			realtime.connection.close();
-	// 			test.done();
-	// 			return;
-	// 		});
-	// 		monitorConnection(test, realtime);
-	// 	});
-	// };
+	/*
+	 * Rest token generation with clientId '*', then connecting with
+	 * tokenDetails and a clientId, should succeed (RSA15b)
+	 */
+	exports.auth_clientid_inheritance4 = function(test) {
+		test.expect(1);
+		var realtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
+			realtime.connection.on('connected', function() {
+				test.equal(realtime.auth.clientId, testClientId);
+				realtime.connection.close();
+				test.done();
+				return;
+			});
+			monitorConnection(test, realtime);
+		});
+	};
 
-	// /*
-	//  * Request a token using clientId, then initialize a connection using just the token string,
-	//  * and check that the connection inherits the clientId from the connectionDetails
-	//  */
-	// exports.auth_clientid_inheritance5 = function(test) {
-	// 	test.expect(1);
-	// 	var clientRealtime,
-	// 		testClientId = 'test client id';
-	// 	var rest = helper.AblyRest();
-	// 	rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
-	// 		clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
-	// 		clientRealtime.connection.on('connected', function() {
-	// 			test.equal(clientRealtime.auth.clientId, testClientId);
-	// 			closeAndFinish(test, clientRealtime)
-	// 			return;
-	// 		});
-	// 		monitorConnection(test, clientRealtime);
-	// 	});
-	// };
+	/*
+	 * Request a token using clientId, then initialize a connection using just the token string,
+	 * and check that the connection inherits the clientId from the connectionDetails
+	 */
+	exports.auth_clientid_inheritance5 = function(test) {
+		test.expect(1);
+		var clientRealtime,
+			testClientId = 'test client id';
+		var rest = helper.AblyRest();
+		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
+			clientRealtime.connection.on('connected', function() {
+				test.equal(clientRealtime.auth.clientId, testClientId);
+				closeAndFinish(test, clientRealtime)
+				return;
+			});
+			monitorConnection(test, clientRealtime);
+		});
+	};
 
-	// /* RSA4c, RSA4e
-	//  * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
-	//  */
-	// function authCallback_failures(realtimeOptions, expectFailure) {
-	// 	return function(test) {
-	// 		test.expect(3);
+	/* RSA4c, RSA4e
+	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
+	 */
+	function authCallback_failures(realtimeOptions, expectFailure) {
+		return function(test) {
+			test.expect(3);
 
-	// 		var realtime = helper.AblyRealtime(realtimeOptions);
-	// 		realtime.connection.on(function(stateChange) {
-	// 			if(stateChange.previous !== 'initialized') {
-	// 				if (helper.bestTransport === 'jsonp') {
-	// 					// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
-	// 					test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
-	// 					// jsonp doesn't let you examine the statuscode
-	// 					test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
-	// 				} else {
-	// 					test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
-	// 					test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
-	// 				}
-	// 				test.equal(stateChange.reason.code, 80019, 'Check correct error code');
-	// 				realtime.connection.off();
-	// 				closeAndFinish(test, realtime);
-	// 			}
-	// 		});
-	// 	};
-	// }
+			var realtime = helper.AblyRealtime(realtimeOptions);
+			realtime.connection.on(function(stateChange) {
+				if(stateChange.previous !== 'initialized') {
+					if (helper.bestTransport === 'jsonp') {
+						// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
+						test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
+						// jsonp doesn't let you examine the statuscode
+						test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
+					} else {
+						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
+					}
+					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
+					realtime.connection.off();
+					closeAndFinish(test, realtime);
+				}
+			});
+		};
+	}
 
-	// exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
-	// 	callback(new Error("An error from client code that the authCallback might return"));
-	// }});
+	exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(new Error("An error from client code that the authCallback might return"));
+	}});
 
-	// exports.authCallback_timeout = authCallback_failures({
-	// 	authCallback: function() { /* (^._.^)ﾉ */ },
-	// 	realtimeRequestTimeout: 100});
+	exports.authCallback_timeout = authCallback_failures({
+		authCallback: function() { /* (^._.^)ﾉ */ },
+		realtimeRequestTimeout: 100});
 
-	// exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
-	// 	callback();
-	// }});
+	exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback();
+	}});
 
-	// exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
-	// 	callback(null, { horse: 'ebooks' });
-	// }});
+	exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(null, { horse: 'ebooks' });
+	}});
 
-	// exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
-	// 	var token = '';
-	// 	for(var i=0; i<390; i++) {
-	// 		token = token + 'a';
-	// 	}
-	// 	callback(null, token);
-	// }});
+	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
+		var token = '';
+		for(var i=0; i<390; i++) {
+			token = token + 'a';
+		}
+		callback(null, token);
+	}});
 
-	// exports.authUrl_timeout = authCallback_failures({
-	// 	authUrl: helper.unroutableAddress,
-	// 	realtimeRequestTimeout: 100
-	// });
+	exports.authUrl_timeout = authCallback_failures({
+		authUrl: helper.unroutableAddress,
+		realtimeRequestTimeout: 100
+	});
 
-	// exports.authUrl_404 = authCallback_failures({
-	// 	authUrl: 'http://example.com/404'
-	// });
+	exports.authUrl_404 = authCallback_failures({
+		authUrl: 'http://example.com/404'
+	});
 
-	// exports.authUrl_wrong_content_type = authCallback_failures({
-	// 	authUrl: 'http://example.com/'
-	// });
+	exports.authUrl_wrong_content_type = authCallback_failures({
+		authUrl: 'http://example.com/'
+	});
 
-	// exports.authUrl_401 = authCallback_failures({
-	// 	authUrl: echoServer + '/respondwith?status=401'
-	// });
+	exports.authUrl_401 = authCallback_failures({
+		authUrl: echoServer + '/respondwith?status=401'
+	});
 
-	// /* 403 should cause the connection to go to failed, unlike the others */
-	// exports.authUrl_403 = authCallback_failures({
-	// 	authUrl: echoServer + '/respondwith?status=403'
-	// }, true); /* expectFailed: */
+	/* 403 should cause the connection to go to failed, unlike the others */
+	exports.authUrl_403 = authCallback_failures({
+		authUrl: echoServer + '/respondwith?status=403'
+	}, true); /* expectFailed: */
 
-	// /*
-	//  * Check state change reason is propogated during a disconnect
-	//  * (when connecting with a token that expires while connected)
-	//  */
-	// testOnAllTransports(exports, 'auth_token_expires', function(realtimeOpts) { return function(test) {
-	// 	test.expect(4);
-	// 	var clientRealtime,
-	// 		rest = helper.AblyRest();
+	/*
+	 * Check state change reason is propogated during a disconnect
+	 * (when connecting with a token that expires while connected)
+	 */
+	testOnAllTransports(exports, 'auth_token_expires', function(realtimeOpts) { return function(test) {
+		test.expect(4);
+		var clientRealtime,
+			rest = helper.AblyRest();
 
-	// 	rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
-	// 		clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
+		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
 
-	// 		clientRealtime.connection.on('failed', function(){
-	// 			test.ok(false, 'Failed to connect before token expired');
-	// 			closeAndFinish(test, clientRealtime);
-	// 		});
-	// 		clientRealtime.connection.once('connected', function(){
-	// 			clientRealtime.connection.off('failed');
-	// 			test.ok(true, 'Verify connection connected');
-	// 			clientRealtime.connection.once('disconnected', function(stateChange){
-	// 				test.ok(true, 'Verify connection disconnected');
-	// 				test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
-	// 				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-	// 				closeAndFinish(test, clientRealtime);
-	// 			});
-	// 		});
-	// 	});
-	// }});
+			clientRealtime.connection.on('failed', function(){
+				test.ok(false, 'Failed to connect before token expired');
+				closeAndFinish(test, clientRealtime);
+			});
+			clientRealtime.connection.once('connected', function(){
+				clientRealtime.connection.off('failed');
+				test.ok(true, 'Verify connection connected');
+				clientRealtime.connection.once('disconnected', function(stateChange){
+					test.ok(true, 'Verify connection disconnected');
+					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
+					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
+					closeAndFinish(test, clientRealtime);
+				});
+			});
+		});
+	}});
 
-	// /*
-	//  * Check that when the queryTime option is provided
-	//  * that the time from the server is only requested once
-	//  * and all subsequent requests use the time offset
-	//  */
-	// exports.auth_query_time_once = function(test) {
-	// 	test.expect(12);
+	/*
+	 * Check that when the queryTime option is provided
+	 * that the time from the server is only requested once
+	 * and all subsequent requests use the time offset
+	 */
+	exports.auth_query_time_once = function(test) {
+		test.expect(12);
 
-	// 	var rest = helper.AblyRest({ queryTime: true }),
-	// 		timeRequestCount = 0,
-	// 		offset = 1000,
-	// 		originalTime = rest.time;
+		var rest = helper.AblyRest({ queryTime: true }),
+			timeRequestCount = 0,
+			offset = 1000,
+			originalTime = rest.time;
 
-	// 	/* stub time */
-	// 	rest.time = function(callback) {
-	// 		timeRequestCount += 1;
-	// 		originalTime.call(rest, callback);
-	// 	}
+		/* stub time */
+		rest.time = function(callback) {
+			timeRequestCount += 1;
+			originalTime.call(rest, callback);
+		}
 
-	// 	test.ok(isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset, 'Server time offset is empty and falsey until a time request has been made');
+		test.ok(isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset, 'Server time offset is empty and falsey until a time request has been made');
 
-	// 	var asyncFns = [];
-	// 	for(var i = 0; i < 10; i++) {
-	// 		asyncFns.push(function(callback) {
-	// 			rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
-	// 				if(err) { return callback(err); }
-	// 				test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
-	// 				callback();
-	// 			});
-	// 		});
-	// 	}
+		var asyncFns = [];
+		for(var i = 0; i < 10; i++) {
+			asyncFns.push(function(callback) {
+				rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
+					if(err) { return callback(err); }
+					test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
+					callback();
+				});
+			});
+		}
 
-	// 	async.series(asyncFns, function(err) {
-	// 		if(err) {
-	// 			test.ok(false, displayError(err));
-	// 			test.done();
-	// 			return;
-	// 		}
+		async.series(asyncFns, function(err) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
 
-	// 		test.equals(1, timeRequestCount, 'Time function is only called once per instance');
-	// 		test.done();
-	// 	});
-	// };
+			test.equals(1, timeRequestCount, 'Time function is only called once per instance');
+			test.done();
+		});
+	};
 
 
 	/*
