@@ -278,146 +278,146 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	// 	});
 	// };
 
-	/*
-	 * Request a token using clientId, then initialize a connection without one,
-	 * and check that the connection inherits the clientId from the tokenDetails
-	 */
-	exports.auth_clientid_inheritance = function(test) {
-		test.expect(1);
+	// /*
+	//  * Request a token using clientId, then initialize a connection without one,
+	//  * and check that the connection inherits the clientId from the tokenDetails
+	//  */
+	// exports.auth_clientid_inheritance = function(test) {
+	// 	test.expect(1);
 
-		var rest = helper.AblyRest(),
-		testClientId = 'testClientId';
-		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails);
-			});
-		};
+	// 	var rest = helper.AblyRest(),
+	// 	testClientId = 'testClientId';
+	// 	var authCallback = function(tokenParams, callback) {
+	// 		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+	// 			if(err) {
+	// 				test.ok(false, displayError(err));
+	// 				test.done();
+	// 				return;
+	// 			}
+	// 			callback(null, tokenDetails);
+	// 		});
+	// 	};
 
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+	// 	var realtime = helper.AblyRealtime({ authCallback: authCallback });
 
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.clientId, testClientId);
-			realtime.connection.close();
-			test.done();
-			return;
-		});
+	// 	realtime.connection.on('connected', function() {
+	// 		test.equal(realtime.auth.clientId, testClientId);
+	// 		realtime.connection.close();
+	// 		test.done();
+	// 		return;
+	// 	});
 
-		realtime.connection.on('failed', function(err) {
-			realtime.close();
-			test.ok(false, "Failed: " + displayError(err));
-			test.done();
-			return;
-		});
-	};
+	// 	realtime.connection.on('failed', function(err) {
+	// 		realtime.close();
+	// 		test.ok(false, "Failed: " + displayError(err));
+	// 		test.done();
+	// 		return;
+	// 	});
+	// };
 
-	/*
-	 * Rest token generation with clientId, then connecting with a
-	 * different clientId, should fail with a library-generated message
-	 * (RSA15a, RSA15c)
-	 */
-	exports.auth_clientid_inheritance2 = function(test) {
-		test.expect(3);
-		var clientRealtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
-			clientRealtime.connection.once('failed', function(stateChange){
-				test.ok(true, 'Verify connection failed');
-				test.equal(stateChange.reason.code, 80019);
-				test.equal(stateChange.reason.cause.code, 40102);
-				clientRealtime.close();
-				test.done();
-			});
-		});
-	};
+	// /*
+	//  * Rest token generation with clientId, then connecting with a
+	//  * different clientId, should fail with a library-generated message
+	//  * (RSA15a, RSA15c)
+	//  */
+	// exports.auth_clientid_inheritance2 = function(test) {
+	// 	test.expect(3);
+	// 	var clientRealtime,
+	// 		testClientId = 'test client id';
+	// 	var rest = helper.AblyRest();
+	// 	rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+	// 		if(err) {
+	// 			test.ok(false, displayError(err));
+	// 			test.done();
+	// 			return;
+	// 		}
+	// 		clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
+	// 		clientRealtime.connection.once('failed', function(stateChange){
+	// 			test.ok(true, 'Verify connection failed');
+	// 			test.equal(stateChange.reason.code, 80019);
+	// 			test.equal(stateChange.reason.cause.code, 40102);
+	// 			clientRealtime.close();
+	// 			test.done();
+	// 		});
+	// 	});
+	// };
 
-	/*
-	 * Rest token generation with clientId '*', then connecting with just the
-	 * token string and a different clientId, should succeed (RSA15b)
-	 */
-	exports.auth_clientid_inheritance3 = function(test) {
-		test.expect(1);
-		var realtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
-			realtime.connection.on('connected', function() {
-				test.equal(realtime.auth.clientId, testClientId);
-				realtime.connection.close();
-				test.done();
-				return;
-			});
-			monitorConnection(test, realtime);
-		});
-	};
+	// /*
+	//  * Rest token generation with clientId '*', then connecting with just the
+	//  * token string and a different clientId, should succeed (RSA15b)
+	//  */
+	// exports.auth_clientid_inheritance3 = function(test) {
+	// 	test.expect(1);
+	// 	var realtime,
+	// 		testClientId = 'test client id';
+	// 	var rest = helper.AblyRest();
+	// 	rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+	// 		if(err) {
+	// 			test.ok(false, displayError(err));
+	// 			test.done();
+	// 			return;
+	// 		}
+	// 		realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
+	// 		realtime.connection.on('connected', function() {
+	// 			test.equal(realtime.auth.clientId, testClientId);
+	// 			realtime.connection.close();
+	// 			test.done();
+	// 			return;
+	// 		});
+	// 		monitorConnection(test, realtime);
+	// 	});
+	// };
 
-	/*
-	 * Rest token generation with clientId '*', then connecting with
-	 * tokenDetails and a clientId, should succeed (RSA15b)
-	 */
-	exports.auth_clientid_inheritance4 = function(test) {
-		test.expect(1);
-		var realtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
-			realtime.connection.on('connected', function() {
-				test.equal(realtime.auth.clientId, testClientId);
-				realtime.connection.close();
-				test.done();
-				return;
-			});
-			monitorConnection(test, realtime);
-		});
-	};
+	// /*
+	//  * Rest token generation with clientId '*', then connecting with
+	//  * tokenDetails and a clientId, should succeed (RSA15b)
+	//  */
+	// exports.auth_clientid_inheritance4 = function(test) {
+	// 	test.expect(1);
+	// 	var realtime,
+	// 		testClientId = 'test client id';
+	// 	var rest = helper.AblyRest();
+	// 	rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+	// 		if(err) {
+	// 			test.ok(false, displayError(err));
+	// 			test.done();
+	// 			return;
+	// 		}
+	// 		realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
+	// 		realtime.connection.on('connected', function() {
+	// 			test.equal(realtime.auth.clientId, testClientId);
+	// 			realtime.connection.close();
+	// 			test.done();
+	// 			return;
+	// 		});
+	// 		monitorConnection(test, realtime);
+	// 	});
+	// };
 
-	/*
-	 * Request a token using clientId, then initialize a connection using just the token string,
-	 * and check that the connection inherits the clientId from the connectionDetails
-	 */
-	exports.auth_clientid_inheritance5 = function(test) {
-		test.expect(1);
-		var clientRealtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
-			clientRealtime.connection.on('connected', function() {
-				test.equal(clientRealtime.auth.clientId, testClientId);
-				closeAndFinish(test, clientRealtime)
-				return;
-			});
-			monitorConnection(test, clientRealtime);
-		});
-	};
+	// /*
+	//  * Request a token using clientId, then initialize a connection using just the token string,
+	//  * and check that the connection inherits the clientId from the connectionDetails
+	//  */
+	// exports.auth_clientid_inheritance5 = function(test) {
+	// 	test.expect(1);
+	// 	var clientRealtime,
+	// 		testClientId = 'test client id';
+	// 	var rest = helper.AblyRest();
+	// 	rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+	// 		if(err) {
+	// 			test.ok(false, displayError(err));
+	// 			test.done();
+	// 			return;
+	// 		}
+	// 		clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
+	// 		clientRealtime.connection.on('connected', function() {
+	// 			test.equal(clientRealtime.auth.clientId, testClientId);
+	// 			closeAndFinish(test, clientRealtime)
+	// 			return;
+	// 		});
+	// 		monitorConnection(test, clientRealtime);
+	// 	});
+	// };
 
 	/* RSA4c, RSA4e
 	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
