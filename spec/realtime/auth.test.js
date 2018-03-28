@@ -419,78 +419,78 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	// 	});
 	// };
 
-	/* RSA4c, RSA4e
-	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
-	 */
-	function authCallback_failures(realtimeOptions, expectFailure) {
-		return function(test) {
-			test.expect(3);
+	// /* RSA4c, RSA4e
+	//  * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
+	//  */
+	// function authCallback_failures(realtimeOptions, expectFailure) {
+	// 	return function(test) {
+	// 		test.expect(3);
 
-			var realtime = helper.AblyRealtime(realtimeOptions);
-			realtime.connection.on(function(stateChange) {
-				if(stateChange.previous !== 'initialized') {
-					if (helper.bestTransport === 'jsonp') {
-						// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
-						test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
-						// jsonp doesn't let you examine the statuscode
-						test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
-					} else {
-						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
-						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
-					}
-					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
-					realtime.connection.off();
-					closeAndFinish(test, realtime);
-				}
-			});
-		};
-	}
+	// 		var realtime = helper.AblyRealtime(realtimeOptions);
+	// 		realtime.connection.on(function(stateChange) {
+	// 			if(stateChange.previous !== 'initialized') {
+	// 				if (helper.bestTransport === 'jsonp') {
+	// 					// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
+	// 					test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
+	// 					// jsonp doesn't let you examine the statuscode
+	// 					test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
+	// 				} else {
+	// 					test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+	// 					test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
+	// 				}
+	// 				test.equal(stateChange.reason.code, 80019, 'Check correct error code');
+	// 				realtime.connection.off();
+	// 				closeAndFinish(test, realtime);
+	// 			}
+	// 		});
+	// 	};
+	// }
 
-	exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback(new Error("An error from client code that the authCallback might return"));
-	}});
+	// exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
+	// 	callback(new Error("An error from client code that the authCallback might return"));
+	// }});
 
-	exports.authCallback_timeout = authCallback_failures({
-		authCallback: function() { /* (^._.^)ﾉ */ },
-		realtimeRequestTimeout: 100});
+	// exports.authCallback_timeout = authCallback_failures({
+	// 	authCallback: function() { /* (^._.^)ﾉ */ },
+	// 	realtimeRequestTimeout: 100});
 
-	exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback();
-	}});
+	// exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
+	// 	callback();
+	// }});
 
-	exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback(null, { horse: 'ebooks' });
-	}});
+	// exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
+	// 	callback(null, { horse: 'ebooks' });
+	// }});
 
-	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
-		var token = '';
-		for(var i=0; i<390; i++) {
-			token = token + 'a';
-		}
-		callback(null, token);
-	}});
+	// exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
+	// 	var token = '';
+	// 	for(var i=0; i<390; i++) {
+	// 		token = token + 'a';
+	// 	}
+	// 	callback(null, token);
+	// }});
 
-	exports.authUrl_timeout = authCallback_failures({
-		authUrl: helper.unroutableAddress,
-		realtimeRequestTimeout: 100
-	});
+	// exports.authUrl_timeout = authCallback_failures({
+	// 	authUrl: helper.unroutableAddress,
+	// 	realtimeRequestTimeout: 100
+	// });
 
-	exports.authUrl_404 = authCallback_failures({
-		authUrl: 'http://example.com/404'
-	});
+	// exports.authUrl_404 = authCallback_failures({
+	// 	authUrl: 'http://example.com/404'
+	// });
 
-	exports.authUrl_wrong_content_type = authCallback_failures({
-		authUrl: 'http://example.com/'
-	});
+	// exports.authUrl_wrong_content_type = authCallback_failures({
+	// 	authUrl: 'http://example.com/'
+	// });
 
-	exports.authUrl_401 = authCallback_failures({
-		authUrl: echoServer + '/respondwith?status=401'
-	});
+	// exports.authUrl_401 = authCallback_failures({
+	// 	authUrl: echoServer + '/respondwith?status=401'
+	// });
 
-	/* 403 should cause the connection to go to failed, unlike the others */
-	exports.authUrl_403 = authCallback_failures({
-		authUrl: echoServer + '/respondwith?status=403'
-	}, true); /* expectFailed: */
+	// /* 403 should cause the connection to go to failed, unlike the others */
+	// exports.authUrl_403 = authCallback_failures({
+	// 	authUrl: echoServer + '/respondwith?status=403'
+	// }, true); /* expectFailed: */
 
 	/*
 	 * Check state change reason is propogated during a disconnect
