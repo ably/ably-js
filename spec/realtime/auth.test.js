@@ -690,7 +690,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 		var realtime, rest = helper.AblyRest();
 		var clientId = "test clientid";
-		rest.auth.requestToken({ttl: 3600000, clientId: clientId}, null, function(err, tokenDetails) {
+		rest.auth.requestToken({ttl: 1, clientId: clientId}, null, function(err, tokenDetails) {
 			if(err) {
 				test.ok(false, displayError(err));
 				closeAndFinish(test, realtime);
