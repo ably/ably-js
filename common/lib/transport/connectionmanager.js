@@ -758,7 +758,6 @@ var ConnectionManager = (function() {
 				return;
 			}
 			this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-			console.log("====================== this.realtime.connection.serial " + this.realtime.connection.serial);
 			this.setRecoveryKey();
 		}
 	};
