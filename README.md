@@ -9,11 +9,12 @@ A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime
 | Node.js  | Browsers           | 
 |----------|--------------------|
 |   4      | IE 8+              |
-|   6      | Chrome 64+         |
-|   8      | Firefox 58+        |
-|   9      | Safari macOS 11    |
-|          | Safari iOS 11      |
-|          | Chrome on Android 6|
+|   6      | Chrome 56+         |
+|   8      | Firefox 51+        |
+|   9      | Safari 10+ macOS   |
+|          | Safari 10+ iOS     |
+|          | Opera 41+          |
+|          | Chrome Android 4+  |
  
 We maintain compatibility and explicitly support these platform versions, including performing CI testing on all library revisions.
 
