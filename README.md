@@ -22,7 +22,7 @@ We do not explicitly maintain compatibility with older platform versions; we no 
 
 **Note**: the ably-js browser library contains fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR.
 Each of these fallback transport mechanisms is supported and tested on all of the listed target browsers; even when those browsers do not themselves require those fallbacks.
-These mean that the library should be compatible with nearly any recent browser, on the majority of platforms.
+These mean that the library should be compatible with nearly any browser, on the majority of platforms.
 
 If, however, you do find compatibility issues with any specific platform and browser combination, please [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
 
