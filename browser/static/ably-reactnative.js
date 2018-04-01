@@ -4043,9 +4043,9 @@ Defaults.TIMEOUTS = {
 	httpRequestTimeout         : 15000,
 	channelRetryTimeout        : 15000,
 	/* Not documented: */
-	connectionStateTtl         : 120000,
+	connectionStateTtl         : 60000,
 	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
+	recvTimeout                : 60000,
 	preferenceConnectTimeout   : 6000,
 	parallelUpgradeDelay       : 6000
 };
