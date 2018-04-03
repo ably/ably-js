@@ -5,8 +5,8 @@
 
 declare namespace Types {
   namespace ChannelState {
-    type INITIALIZED = 'initialized';
-    type ATTACHING = 'attaching';
+    type INITIALIZED = "initialized";
+    type ATTACHING = "attaching";
     type ATTACHED = "attached";
     type DETACHING = "detaching";
     type DETACHED = "detached";
@@ -16,8 +16,8 @@ declare namespace Types {
   type ChannelState = ChannelState.FAILED | ChannelState.INITIALIZED | ChannelState.SUSPENDED | ChannelState.ATTACHED | ChannelState.ATTACHING | ChannelState.DETACHED | ChannelState.DETACHING;
 
   namespace ChannelEvent {
-    type INITIALIZED = 'initialized';
-    type ATTACHING = 'attaching';
+    type INITIALIZED = "initialized";
+    type ATTACHING = "attaching";
     type ATTACHED = "attached";
     type DETACHING = "detaching";
     type DETACHED = "detached";
