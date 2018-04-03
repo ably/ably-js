@@ -69,7 +69,7 @@ Intellisense in IDEs with TypeScript support is supported:
 
 ![TypeScript suggestions](./resources/typescript-demo.gif)
 
-If your need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
+If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
 
 ### Using WebPack
 
