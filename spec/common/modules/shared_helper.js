@@ -112,17 +112,17 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
 		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
-			utils.arrForEach(availableTransports, function(transport) {
+			utils.arrForEach(['web_socket'], function(transport) {
 				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
-				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
+				// exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
 			});
 			/* Plus one for no transport specified (ie use upgrade mechanism if
 			 * present).  (we explicitly specify all transports since node only does
 			 * nodecomet+upgrade if comet is explicitly requested
 			 * */
 			if(!excludeUpgrade) {
-				exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
-				exports[name + '_with_text_transport'] = testFn({transports: availableTransports, useBinaryProtocol: false});
+				// exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
+				// exports[name + '_with_text_transport'] = testFn({transports: availableTransports, useBinaryProtocol: false});
 			}
 		}
 
