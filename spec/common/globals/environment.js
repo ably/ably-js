@@ -9,7 +9,7 @@ define(function(require) {
 		port = environment.ABLY_PORT || 80,
 		tlsPort = environment.ABLY_TLS_PORT || 443,
 		tls = ('ABLY_USE_TLS' in environment) ? (environment.ABLY_USE_TLS.toLowerCase() !== 'false') : true,
-		logLevel = environment.ABLY_LOG_LEVEL || defaultLogLevel;
+		logLevel = 4; //environment.ABLY_LOG_LEVEL || defaultLogLevel;
 
 	if (isBrowser) {
 		var url = window.location.href,
