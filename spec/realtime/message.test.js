@@ -130,7 +130,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Also checks they arrive in the right order
 	 */
 	testOnAllTransports(exports, 'publishQueued', function(realtimeOpts) { return function(test) {
-		test.expect(300);
+		test.expect(150);
 		var txRealtime, rxRealtime;
 		try {
 			txRealtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
@@ -155,7 +155,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.ok(true, 'Received event ' + num);
 							test.equal(expectedMsgNum, num, 'Event ' + num + ' was in the right order');
 							expectedMsgNum++;
-							if(num === 99) {
+							if(num === 49) {
 								parCb();
 							}
 						});
@@ -166,14 +166,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							txChannel.publish('event', {num: i}, function(err) {
 								test.ok(!err, 'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''));
 								ackd++;
-								if(ackd === 100) {
+								if(ackd === 50) {
 									parCb();
 								}
 							});
-							if(i < 99) {
+							if(i < 49) {
 								setTimeout(function() {
 									publish(i + 1);
-								}, 10);
+								}, 20);
 							}
 						};
 						publish(0);
