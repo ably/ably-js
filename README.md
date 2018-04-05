@@ -2,9 +2,29 @@
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
-## Version: 1.0.13
+## Supported platforms
 
-This repo contains the Ably Javascript client library, for the browser (including IE8+), Nodejs, React Native, NativeScript and Cordova.
+This SDK supports the following platforms:
+
+**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 8 or newer), Safari on iOS and macOS, Opera, and Android browsers.
+
+**Node.js:** version 4 or newer
+
+**React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
+
+**NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
+
+**TypeScript:** see [below](#TypeScript)
+
+We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
+
+However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
+
+Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.  Any known browser incompatibilities can be found [here](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
+
+#### Version: 1.0.13
+
+The latest stable version of the Ably Javascript client library is `1.0.13`.
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
@@ -50,11 +70,7 @@ For the REST only library:
 var rest = Ably.Rest;
 ```
 
-### For React Native
-
-For React Native, do not use this package. Instead use the [ably-react-native](https://github.com/ably/ably-js-react-native) package, which wraps ably-js and adds react-native-specific dependencies. See [that repo](https://github.com/ably/ably-js-react-native) for install instructions.
-
-### TypeScript support
+### TypeScript
 
 The TypeScript typings are included in the package and so all you have to do is:
 
@@ -87,11 +103,11 @@ import Ably from 'ably/browser/static/ably-commonjs.js'
 let realtime = new Ably.Realtime(options)
 ```
 
-## For React Native
+## React Native
 
 See the [ably-js-react-native repo](https://github.com/ably/ably-js-react-native) for React Native usage details.
 
-## For NativeScript
+## NativeScript
 
 See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript) for NativeScript usage details.
 
