@@ -1,11 +1,12 @@
 // Type definitions for Ably Realtime and Rest client library 1.0
 // Project: https://www.ably.io/
 // Definitions by: Ably <https://github.com/ably/>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-declare namespace ablyLib {
+declare namespace Types {
   namespace ChannelState {
-    type INITIALIZED = 'initialized';
-    type ATTACHING = 'attaching';
+    type INITIALIZED = "initialized";
+    type ATTACHING = "attaching";
     type ATTACHED = "attached";
     type DETACHING = "detaching";
     type DETACHED = "detached";
@@ -15,8 +16,8 @@ declare namespace ablyLib {
   type ChannelState = ChannelState.FAILED | ChannelState.INITIALIZED | ChannelState.SUSPENDED | ChannelState.ATTACHED | ChannelState.ATTACHING | ChannelState.DETACHED | ChannelState.DETACHING;
 
   namespace ChannelEvent {
-    type INITIALIZED = 'initialized';
-    type ATTACHING = 'attaching';
+    type INITIALIZED = "initialized";
+    type ATTACHING = "attaching";
     type ATTACHED = "attached";
     type DETACHING = "detaching";
     type DETACHED = "detached";
@@ -452,29 +453,29 @@ declare namespace ablyLib {
 }
 
 export declare class Rest {
-  constructor(options: ablyLib.ClientOptions | string);
-  static Crypto: ablyLib.Crypto;
-  static Message: ablyLib.MessageStatic;
-  static PresenceMessage: ablyLib.PresenceMessageStatic;
-  auth: ablyLib.Auth;
-  channels: ablyLib.Channels<ablyLib.Channel>;
-  request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: ablyLib.ErrorInfo, response: ablyLib.HttpPaginatedResponse) => void) => void;
-  stats: (paramsOrCallback?: ablyLib.paginatedResultCallback<ablyLib.Stats> | any, callback?: ablyLib.paginatedResultCallback<ablyLib.Stats>) => void;
-  time: (paramsOrCallback?: ablyLib.timeCallback | any, callback?: ablyLib.timeCallback) => void;
+  constructor(options: Types.ClientOptions | string);
+  static Crypto: Types.Crypto;
+  static Message: Types.MessageStatic;
+  static PresenceMessage: Types.PresenceMessageStatic;
+  auth: Types.Auth;
+  channels: Types.Channels<Types.Channel>;
+  request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+  stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+  time: (paramsOrCallback?: Types.timeCallback | any, callback?: Types.timeCallback) => void;
 }
 
 export declare class Realtime {
-  constructor(options: ablyLib.ClientOptions | string);
-  static Crypto: ablyLib.Crypto;
-  static Message: ablyLib.MessageStatic;
-  static PresenceMessage: ablyLib.PresenceMessageStatic;
-  auth: ablyLib.Auth;
-  channels: ablyLib.Channels<ablyLib.RealtimeChannel>;
+  constructor(options: Types.ClientOptions | string);
+  static Crypto: Types.Crypto;
+  static Message: Types.MessageStatic;
+  static PresenceMessage: Types.PresenceMessageStatic;
+  auth: Types.Auth;
+  channels: Types.Channels<Types.RealtimeChannel>;
   clientId: string;
-  connection: ablyLib.Connection;
-  request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: ablyLib.ErrorInfo, response: ablyLib.HttpPaginatedResponse) => void) => void;
-  stats: (paramsOrCallback?: ablyLib.paginatedResultCallback<ablyLib.Stats> | any, callback?: ablyLib.paginatedResultCallback<ablyLib.Stats>) => void;
+  connection: Types.Connection;
+  request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+  stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
   close: () => void;
   connect: () => void;
-  time: (paramsOrCallback?: ablyLib.timeCallback | any, callback?: ablyLib.timeCallback) => void;
+  time: (paramsOrCallback?: Types.timeCallback | any, callback?: Types.timeCallback) => void;
 }
