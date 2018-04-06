@@ -1,4 +1,4 @@
-# [Ably](https://www.ably.io)
+# [Ably](https://www.ably.io) FOR KICKS
 
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
