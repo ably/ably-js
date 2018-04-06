@@ -8,14 +8,14 @@ module.exports = function(config) {
     bs_firefox_sierra: {
       base: 'BrowserStack',
       browser: 'firefox',
-      browser_version: '58.0',
+      browser_version: '59.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
     bs_chrome_sierra: {
       base: 'BrowserStack',
       browser: 'chrome',
-      browser_version: '64.0',
+      browser_version: '65.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
