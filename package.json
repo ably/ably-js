@@ -33,6 +33,7 @@
     "hexy": "~0.2",
     "karma": "git://github.com/ably-forks/karma.git#ably-js-custom",
     "karma-chrome-launcher": "~0.1",
+    "karma-testingbot-launcher": "1.0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",
     "karma-firefox-launcher": "~0.1",

@@ -1,2 +1,2 @@
 grunt concat
-grunt test:karma --browsers bs_ie11_win81
+grunt test:karma --browsers TB_IE11

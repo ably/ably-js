@@ -5,85 +5,25 @@ module.exports = function(config) {
   var customLaunchers = {
     // BrowserStack launchers. List here: https://www.browserstack.com/list-of-browsers-and-platforms?product=automate
     // To get actual values run `curl -u "BROWSERSTACK_USERNAME:BROWSERSTACK_ACCESSKEY" https://api.browserstack.com/automate/browsers.json | json_pp`
-    bs_firefox_sierra: {
-      base: 'BrowserStack',
-      browser: 'firefox',
-      browser_version: '58.0',
-      os: 'OS X',
-      os_version: 'Sierra'
+    TB_IE11: {
+      base: 'TestingBot',
+      browserName: 'internet explorer',
+      version: '11',
+      platform: 'WIN8'
     },
-    bs_chrome_sierra: {
-      base: 'BrowserStack',
-      browser: 'chrome',
-      browser_version: '64.0',
-      os: 'OS X',
-      os_version: 'Sierra'
-    },
-    bs_ie11_win81: {
-      base: 'BrowserStack',
-      browser: 'ie',
-      browser_version: '11.0',
-      os: 'Windows',
-      os_version: '8.1'
-    },
-    bs_ie10_win81: {
-      base: 'BrowserStack',
-      browser: 'ie',
-      browser_version: '10.0',
-      os: 'Windows',
-      os_version: '8'
-    },
-    bs_ie9_win7: {
-      base: 'BrowserStack',
-      browser: 'ie',
-      browser_version: '9.0',
-      os: 'Windows',
-      os_version: '7'
-    },
-    bs_ie16_win10: {
-      base: 'BrowserStack',
-      browser: 'edge',
-      browser_version: '16.0',
-      os: 'Windows',
-      os_version: '10'
-    },
-    bs_ie8_win7: {
-      base: 'BrowserStack',
-      browser: 'ie',
-      browser_version: '8.0',
-      os: 'Windows',
-      os_version: '7'
-    },
-    bs_safari_11_iOS: {
-      base: 'BrowserStack',
-      browser: 'Mobile Safari',
-      os: 'ios',
-      os_version: '11.0',
-      real_devices: ['iPhone SE']
-    },
-    bs_safari_high_sierra: {
-      base: 'BrowserStack',
-      browser: 'Safari',
-      browser_version: '11.0',
-      os: 'OS X',
-      os_version: 'High Sierra'
-    },
-    bs_android_6: {
-      base: 'BrowserStack',
-      browser: 'android',
-      os: 'android',
-      os_version: '6.0',
-      device: 'Google Nexus 6',
-      real_mobile: true
-    }
   };
 
   config.set({
 
-    browserStack: {
-      username: process.env.BROWSERSTACK_USERNAME,
-      accessKey: process.env.BROWSERSTACK_ACCESSKEY,
-      timeout: 1800
+    testingbot: {
+      testName: 'Karma and TestingBot demo',
+      recordScreenshots: false,
+      connectOptions: {
+        verbose: true,
+        'se-port': 4445,
+        logfile: 'testingbot_tunnel.log'
+      },
+      public: 'public'
     },
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
@@ -157,7 +97,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['dots', 'BrowserStack'],
+    reporters: ['dots', 'testingbot'],
     reportSlowerThan: 5000,
 
     // web server port
