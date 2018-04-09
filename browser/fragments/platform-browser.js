@@ -13,7 +13,7 @@ function allowComet() {
 var Platform = {
 	libver: 'js-web-',
 	logTimestamps: true,
-	noUpgrade: true, //navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
+	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
 	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest() && allowComet()),
