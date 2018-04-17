@@ -32,7 +32,7 @@ For complete API documentation, see the [Ably documentation](https://www.ably.io
 
 ### Installation from npm
 
-    npm install ably
+    npm install ably --save
 
 ### Usage
 
