@@ -23,6 +23,7 @@ var Platform = {
 	binaryType: 'arraybuffer',
 	WebSocket: WebSocket,
 	xhrSupported: XMLHttpRequest,
+	allowComet: true,
 	jsonpSupported: false,
 	streamingSupported: false,
 	useProtocolHeartbeats: true,

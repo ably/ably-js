@@ -22,9 +22,9 @@ var JSONPTransport = (function() {
 	Utils.inherits(JSONPTransport, CometTransport);
 
 	JSONPTransport.isAvailable = function() {
-		return Platform.jsonpSupported;
+		return Platform.jsonpSupported && Platform.allowComet;
 	};
-	if(Platform.jsonpSupported) {
+	if(JSONPTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
 		head = document.getElementsByTagName('head')[0];
 	}
