@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.14](https://github.com/ably/ably-js/tree/1.0.14) (2018-05-16)
+
+- Avoid xhr with local files on chrome 65+ (https://github.com/ably/ably-js/pull/490)
+- Update websocket library on node
+- Improvements to Rest#request error handling
+- Update nodejs supported versions
+- TypeScript namespace change (`ablyLib` -> `Types` -- https://github.com/ably/ably-js/pull/492)
+
 ## [1.0.13](https://github.com/ably/ably-js/tree/1.0.13) (2018-02-01)
 
 - Fix resume regression in 1.0.12
