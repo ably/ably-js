@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.13
+ * Ably JavaScript Library v1.0.14
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2019,13 +2019,23 @@ if(typeof window !== 'object') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
 }
 
+function allowComet() {
+	/* xhr requests from local files are unreliable in some browsers, such as Chrome 65 and higher -- see eg
+	 * https://stackoverflow.com/questions/49256429/chrome-65-unable-to-make-post-requests-from-local-files-to-flask
+	 * So if websockets are supported, then just forget about comet transports and use that */
+	var loc = window.location;
+	return (!window.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
+}
+
 var Platform = {
 	libver: 'js-web-',
 	logTimestamps: true,
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: window.WebSocket || window.MozWebSocket,
-	xhrSupported: (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
+	xhrSupported: window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
+	jsonpSupported: typeof(document) !== 'undefined',
+	allowComet: allowComet(),
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
@@ -2661,7 +2671,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.13';
+Defaults.version          = '1.0.14';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -6731,7 +6741,7 @@ var Resource = (function() {
 
 	function unenvelope(callback, format) {
 		return function(err, body, headers, unpacked, statusCode) {
-			if(err) {
+			if(err && !body) {
 				callback(err);
 				return;
 			}
@@ -6757,16 +6767,16 @@ var Resource = (function() {
 
 			if(statusCode < 200 || statusCode >= 300) {
 				/* handle wrapped errors */
-				var err = response && response.error;
-				if(!err) {
-					err = new Error(String(res));
-					err.statusCode = statusCode;
+				var wrappedErr = (response && response.error) || err;
+				if(!wrappedErr) {
+					wrappedErr = new Error("Error in unenveloping " + body);
+					wrappedErr.statusCode = statusCode;
 				}
-				callback(err);
+				callback(wrappedErr, response, headers, true, statusCode);
 				return;
 			}
 
-			callback(null, response, headers, true, statusCode);
+			callback(err, response, headers, true, statusCode);
 		};
 	}
 
@@ -6921,8 +6931,16 @@ var PaginatedResource = (function() {
 		});
 	};
 
+	function returnErrOnly(err, body, useHPR) {
+		/* If using httpPaginatedResponse, errors from Ably are returned as part of
+		 * the HPR, only do callback(err) for network errors etc. which don't
+		 * return a body and/or have no ably-originated error code (non-numeric
+		 * error codes originate from node) */
+		return !(useHPR && (body || typeof err.code === 'number'));
+	}
+
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, statusCode, callback) {
-		if(err) {
+		if(err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
 			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
 			callback(err);
 			return;
@@ -6931,7 +6949,9 @@ var PaginatedResource = (function() {
 		try {
 			items = this.bodyHandler(body, headers, unpacked);
 		} catch(e) {
-			callback(e);
+			/* If we got an error, the failure to parse the body is almost certainly
+			 * due to that, so cb with that in preference to the parse error */
+			callback(err || e);
 			return;
 		}
 
@@ -6940,7 +6960,7 @@ var PaginatedResource = (function() {
 		}
 
 		if(this.useHttpPaginatedResponse) {
-			callback(null, new HttpPaginatedResponse(this, items, headers, statusCode, relParams));
+			callback(null, new HttpPaginatedResponse(this, items, headers, statusCode, relParams, err));
 		} else {
 			callback(null, new PaginatedResult(this, items, relParams));
 		}
@@ -6977,15 +6997,13 @@ var PaginatedResource = (function() {
 		});
 	};
 
-	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams) {
+	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams, err) {
 		PaginatedResult.call(this, resource, items, relParams);
 		this.statusCode = statusCode;
 		this.success = statusCode < 300 && statusCode >= 200;
 		this.headers = headers;
-		/* Note: we don't populate errorCode or errorMessage: for consistency with
-		 * the way the rest of the js library works, error data is passed as
-		 * ErrorInfos to the err argument of the callback; an  HttpPaginatedResponse
-		 * is only ever passed to the callback if there was no error */
+		this.errorCode = err && err.code;
+		this.errorMessage = err && err.message;
 	}
 	Utils.inherits(HttpPaginatedResponse, PaginatedResult);
 
@@ -7746,6 +7764,7 @@ var Auth = (function() {
 
 var Rest = (function() {
 	var noop = function() {};
+	var msgpack = Platform.msgpack;
 
 	function Rest(options) {
 		if(!(this instanceof Rest)){
@@ -7761,6 +7780,12 @@ var Rest = (function() {
 		if(typeof(options) == 'string') {
 			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
 		}
+
+		if(options.log) {
+			Logger.setLog(options.log.level, options.log.handler);
+		}
+		Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+
 		this.options = Defaults.normaliseOptions(options);
 
 		/* process options */
@@ -7782,8 +7807,6 @@ var Rest = (function() {
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		if(options.log)
-			Logger.setLog(options.log.level, options.log.handler);
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
@@ -7804,7 +7827,8 @@ var Rest = (function() {
 			}
 		}
 		var headers = Utils.copy(Utils.defaultGetHeaders()),
-			envelope = Http.supportsLinkHeaders ? undefined : 'json';
+			format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format;
 
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
@@ -7851,14 +7875,17 @@ var Rest = (function() {
 	};
 
 	Rest.prototype.request = function(method, path, params, body, customHeaders, callback) {
-		var format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+		var useBinary = this.options.useBinaryProtocol,
+			encoder = useBinary ? msgpack.encode: JSON.stringify,
+			decoder = useBinary ? msgpack.decode : JSON.parse,
+			format = useBinary ? 'msgpack' : 'json',
 			method = method.toLowerCase(),
-			envelope = Http.supportsLinkHeaders ? undefined : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
-			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders() : Utils.defaultPostHeaders(format));
+			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
 
 		if(typeof body !== 'string') {
-			body = JSON.stringify(body);
+			body = encoder(body);
 		}
 		if(this.options.headers) {
 			Utils.mixin(headers, this.options.headers);
@@ -7867,7 +7894,7 @@ var Rest = (function() {
 			Utils.mixin(headers, customHeaders);
 		}
 		var paginatedResource = new PaginatedResource(this, path, headers, envelope, function(resbody, headers, unpacked) {
-			return Utils.ensureArray(unpacked ? resbody : JSON.parse(resbody));
+			return Utils.ensureArray(unpacked ? resbody : decoder(resbody));
 		}, /* useHttpPaginatedResponse: */ true);
 
 		switch(method) {
@@ -9641,7 +9668,7 @@ var XHRRequest = (function() {
 			if(!err) {
 				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}
-			self.complete(err);
+			self.complete(err, responseBody, headers, unpacked, statusCode);
 		}
 
 		function onProgress() {
@@ -9750,7 +9777,7 @@ var XHRStreamingTransport = (function() {
 	Utils.inherits(XHRStreamingTransport, CometTransport);
 
 	XHRStreamingTransport.isAvailable = function() {
-		return Platform.xhrSupported && Platform.streamingSupported;
+		return Platform.xhrSupported && Platform.streamingSupported && Platform.allowComet;
 	};
 
 	XHRStreamingTransport.tryConnect = function(connectionManager, auth, params, callback) {
@@ -9789,7 +9816,7 @@ var XHRPollingTransport = (function() {
 	Utils.inherits(XHRPollingTransport, CometTransport);
 
 	XHRPollingTransport.isAvailable = function() {
-		return Platform.xhrSupported;
+		return Platform.xhrSupported && Platform.allowComet;
 	};
 
 	XHRPollingTransport.tryConnect = function(connectionManager, auth, params, callback) {
@@ -9829,8 +9856,7 @@ var JSONPTransport = (function() {
 	 */
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
-	var isSupported = (typeof(document) !== 'undefined');
-	var head = isSupported ? document.getElementsByTagName('head')[0] : null;
+	var head = null;
 	var shortName = 'jsonp';
 
 	/* public constructor */
@@ -9841,9 +9867,12 @@ var JSONPTransport = (function() {
 	}
 	Utils.inherits(JSONPTransport, CometTransport);
 
-	JSONPTransport.isAvailable = function() { return isSupported; };
-	if(isSupported) {
+	JSONPTransport.isAvailable = function() {
+		return Platform.jsonpSupported && Platform.allowComet;
+	};
+	if(JSONPTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+		head = document.getElementsByTagName('head')[0];
 	}
 
 	/* connectivity check; since this has a hard-coded callback id,
