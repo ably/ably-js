@@ -8,23 +8,23 @@ module.exports = function(config) {
     bs_firefox_sierra: {
       base: 'BrowserStack',
       browser: 'firefox',
-      browser_version: '59.0',
+      browser_version: '60.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
     bs_chrome_sierra: {
       base: 'BrowserStack',
       browser: 'chrome',
-      browser_version: '65.0',
+      browser_version: '66.0',
       os: 'OS X',
       os_version: 'Sierra'
     },
-    bs_ie11_win81: {
+    bs_ie11_win10: {
       base: 'BrowserStack',
       browser: 'ie',
       browser_version: '11.0',
       os: 'Windows',
-      os_version: '8.1'
+      os_version: '10'
     },
     bs_ie10_win81: {
       base: 'BrowserStack',
