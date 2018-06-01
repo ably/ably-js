@@ -2,7 +2,8 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, rest, exports = {},
-		utils = helper.Utils;
+		utils = helper.Utils,
+		echoServer = 'https://ably-echoserver-staging.herokuapp.com'; // TODO: change this. Will be echo.ably.io
 
 	var getServerTime = function(callback) {
 		rest.time(function(err, time) {
@@ -552,6 +553,49 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.done();
 		});
 	};
+
+	/*
+	 * Different combinations of params to request a JWT token
+	 */
+	var authParams = [
+		{},
+		{jwtType: 'embedded'},
+		{jwtType: 'embedded', encrypted: 1},
+		{returnType: 'jwt'}
+	]
+
+	function testJWTAuthParams(exports, name, testFn) {
+		utils.arrForEach(authParams, function(params) {
+			exports[name + '_with_' + Object.keys(params).join('_')] = testFn(params);
+		});
+	}
+
+	testJWTAuthParams(exports, 'rest_jwt', function(params) { return function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret}
+		var authParams = utils.mixin(keys, params);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(authParams);;
+		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
+
+		restJWTRequester.auth.requestToken(function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, err.message);
+				test.done();
+				return;
+			}
+			var restClient = helper.AblyRest({token: tokenDetails.token});
+			restClient.stats(function(err, stats) {
+				if(err) {
+					test.ok(false, err.message);
+					test.done();
+					return;
+				}
+				test.ok(true, 'Verify that stats request succeeded');
+				test.done();
+			});
+		})
+	}});
 
 	return module.exports = helper.withTimeout(exports);
 });
