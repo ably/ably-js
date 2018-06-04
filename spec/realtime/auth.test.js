@@ -9,8 +9,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports,
 		mixin = helper.Utils.mixin,
-		echoServer = "http://echo.ably.io";
+		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
+		echoServer = "http://echo.ably.io",
 		//echoServer = "http://localhost:5000";
+		jwtServer = 'https://ably-echoserver-staging.herokuapp.com'; // TODO: change this. Will become echoServer once deployed to echo.ably.io
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -818,6 +820,114 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			};
 			/* Inject a fake AUTH from realtime */
 			transport.onProtocolMessage({action: 17});
+		});
+	};
+
+	/*
+	 * Request a token specifying a clientId and verify that the returned token
+	 * has the requested clientId.
+	 */
+	exports.auth_jwt_with_clientid = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var rest = helper.AblyRest({authUrl: authUrl});
+		var clientId = 'testJWTClientId';
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken({clientId: clientId}, function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.auth.clientId, clientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + displayError(err));
+			test.done();
+			return;
+		});
+	};
+
+	/*
+	 * Request a token specifying subscribe-only capabilities and verify that posting
+	 * to a channel fails.
+	 */
+	exports.auth_jwt_with_subscribe_only_capability = function(test) {
+		test.expect(3);
+		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var rest = helper.AblyRest({authUrl: authUrl});
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var channel = realtime.channels.get(jwtTestChannelName);
+			channel.publish('greeting', 'Hello World!', function(err) {
+				test.strictEqual(err.code, 40160, 'Verify publish denied code');
+				test.strictEqual(err.statusCode, 401, 'Verify publish denied status code');
+				test.strictEqual(err.message, 'Channel denied access based on given capability; channelId = ' + jwtTestChannelName, 'Verify error message');
+				realtime.connection.close();
+				test.done();
+			})
+		});
+	};
+
+	/*
+	 * Request a token with publish capabilities and verify that posting
+	 * to a channel succeeds.
+	 */
+	exports.auth_jwt_with_publish_capability = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var rest = helper.AblyRest({authUrl: authUrl});
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var publishEvent = 'publishEvent',
+		  messageData = 'Hello World!';
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var channel = realtime.channels.get(jwtTestChannelName);
+			channel.subscribe(publishEvent, function(msg) {
+				test.strictEqual(msg.data, messageData, 'Verify message data matches');
+				realtime.connection.close();
+				test.done();
+			});
+			channel.publish(publishEvent, messageData)
 		});
 	};
 
