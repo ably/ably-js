@@ -626,5 +626,70 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Tests JWT with authCallback
+	 */
+
+	exports.rest_jwt_with_authCallback = function(test) {
+		test.expect(2);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
+
+		var authCallback = function(tokenParams, callback) {
+			restJWTRequester.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, err.message);
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var restClient = helper.AblyRest({ authCallback: authCallback });
+		restClient.stats(function(err, stats) {
+			if(err) {
+				test.ok(false, err.message);
+				test.done();
+				return;
+			}
+			test.strictEqual(err, null, 'Verify that the error is null');
+			test.ok(true, 'Verify that stats request succeeded');
+			test.done();
+		});
+	};
+
+		/*
+	 * Tests JWT with authCallback and invalid keys
+	 */
+
+	exports.rest_jwt_with_authCallback_and_invalid_keys = function(test) {
+		test.expect(3);
+		var keys = {keyName: 'invalid.invalid', keySecret: 'invalidinvalid'};
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
+
+		var authCallback = function(tokenParams, callback) {
+			restJWTRequester.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, err.message);
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var restClient = helper.AblyRest({ authCallback: authCallback });
+		restClient.stats(function(err, stats) {
+			test.strictEqual(err.code, 40400, 'Verify code is 40400');
+			test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
+			test.strictEqual(err.message, 'No application found with id invalid', 'Verify message about invalid app id');
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
