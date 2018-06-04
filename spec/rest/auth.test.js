@@ -570,6 +570,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
+	/*
+	 * Tests the different combinations of authParams declared above, with valid keys
+	 */
+
 	testJWTAuthParams(exports, 'rest_jwt', function(params) { return function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
@@ -596,6 +600,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		})
 	}});
+
+	/*
+	 * Tests JWT request with invalid keys
+	 */
+	exports.rest_jwt_with_invalid_keys = function(test) {
+		test.expect(3);
+		var keys = {keyName: 'invalid.invalid', keySecret: 'invalidinvalid'};
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
+
+		restJWTRequester.auth.requestToken(function(err, tokenDetails) {
+			if(err) {
+				test.ok(false, err.message);
+				test.done();
+				return;
+			}
+			var restClient = helper.AblyRest({token: tokenDetails.token});
+			restClient.stats(function(err, stats) {
+				test.strictEqual(err.code, 40400, 'Verify token is invalid because app id does not exist');
+				test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
+				test.strictEqual(err.message, 'No application found with id invalid', 'Verify message about invalid app id');
+				test.done();
+			});
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });
