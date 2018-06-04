@@ -931,5 +931,38 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Request a JWT token that is about to expire, check that the client disconnects
+	 * and receives the expected reason in the state change.
+	 */
+
+	exports.auth_jwt_with_token_that_expires = function(test) {
+		test.expect(2);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
+		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var rest = helper.AblyRest({authUrl: authUrl});
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			realtime.connection.once('disconnected', function(stateChange) {
+				test.strictEqual(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
+				test.strictEqual(stateChange.reason.message, 'Key/token status changed (expire)', 'Verify message of disconnected reason');
+				realtime.connection.close();
+				test.done();
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
