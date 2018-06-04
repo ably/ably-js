@@ -573,9 +573,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	testJWTAuthParams(exports, 'rest_jwt', function(params) { return function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret}
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
 		var authParams = utils.mixin(keys, params);
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(authParams);;
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(authParams);
 		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
 
 		restJWTRequester.auth.requestToken(function(err, tokenDetails) {
