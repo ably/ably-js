@@ -333,9 +333,9 @@ var Auth = (function() {
 						return;
 					}
 					var json = contentType.indexOf('application/json') > -1,
-						text = contentType.indexOf('text/plain') > -1;
+						text = contentType.indexOf('text/plain') > -1 || contentType.indexOf('application/jwt') > -1;
 					if(!json && !text) {
-						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain or application/json', 40170, 401));
+						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain, application/jwt or application/json', 40170, 401));
 						return;
 					}
 					if(json) {
