@@ -64,7 +64,7 @@ module.exports = function(config) {
     bs_safari_high_sierra: {
       base: 'BrowserStack',
       browser: 'Safari',
-      browser_version: '11.0',
+      browser_version: '11.1',
       os: 'OS X',
       os_version: 'High Sierra'
     },
