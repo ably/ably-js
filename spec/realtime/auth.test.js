@@ -964,5 +964,40 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/*
+	 * Request a JWT token that is about to be renewed, check that the client reauths
+	 * without going through a disconnected state.
+	 */
+
+	exports.auth_jwt_with_token_that_renews = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		// Sandbox sends an auth procolo message 30 seconds before a token expires.
+		// We create a token that lasts 35 so there's room to receive the update event message.
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
+		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var rest = helper.AblyRest({authUrl: authUrl});
+		var authCallback = function(tokenParams, callback) {
+			rest.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					test.ok(false, displayError(err));
+					test.done();
+					return;
+				}
+				callback(null, tokenDetails.token);
+			});
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var originalToken = realtime.auth.tokenDetails.token;
+			realtime.connection.once('update', function() {
+				test.notStrictEqual(originalToken, realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
+				realtime.connection.close();
+				test.done();
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
