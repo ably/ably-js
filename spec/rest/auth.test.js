@@ -570,7 +570,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
-	/*
+	/* RSC1, RSC1a, RSC1c, RSA4f, RSA8c, RSA3d
 	 * Tests the different combinations of authParams declared above, with valid keys
 	 */
 
@@ -626,7 +626,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/*
+	/* RSA8g
 	 * Tests JWT with authCallback
 	 */
 
@@ -661,7 +661,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-		/*
+		/* RSA8g
 	 * Tests JWT with authCallback and invalid keys
 	 */
 

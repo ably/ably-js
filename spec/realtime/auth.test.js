@@ -896,7 +896,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/*
+	/* RSA8c
 	 * Request a token with publish capabilities and verify that posting
 	 * to a channel succeeds.
 	 */
@@ -964,7 +964,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/*
+	/* RTC8a4
 	 * Request a JWT token that is about to be renewed, check that the client reauths
 	 * without going through a disconnected state.
 	 */
