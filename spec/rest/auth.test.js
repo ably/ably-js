@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var currentTime, rest, exports = {},
 		utils = helper.Utils,
-		echoServer = 'https://ably-echoserver-staging.herokuapp.com'; // TODO: change this. Will be echo.ably.io
+		echoServer = 'https://echo.ably.io';
 
 	var getServerTime = function(callback) {
 		rest.time(function(err, time) {

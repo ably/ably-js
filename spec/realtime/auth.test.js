@@ -10,9 +10,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		testOnAllTransports = helper.testOnAllTransports,
 		mixin = helper.Utils.mixin,
 		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
-		echoServer = "http://echo.ably.io",
+		echoServer = "http://echo.ably.io";
 		//echoServer = "http://localhost:5000";
-		jwtServer = 'https://ably-echoserver-staging.herokuapp.com'; // TODO: change this. Will become echoServer once deployed to echo.ably.io
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -831,7 +830,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var rest = helper.AblyRest({authUrl: authUrl});
 		var clientId = 'testJWTClientId';
 		var authCallback = function(tokenParams, callback) {
@@ -870,7 +869,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(3);
 		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var rest = helper.AblyRest({authUrl: authUrl});
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(function(err, tokenDetails) {
@@ -904,7 +903,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var rest = helper.AblyRest({authUrl: authUrl});
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(function(err, tokenDetails) {
@@ -940,7 +939,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(2);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
-		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var rest = helper.AblyRest({authUrl: authUrl});
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(function(err, tokenDetails) {
@@ -975,7 +974,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		// Sandbox sends an auth procolo message 30 seconds before a token expires.
 		// We create a token that lasts 35 so there's room to receive the update event message.
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
-		var authUrl = jwtServer + '/createJWT' + utils.toQueryString(keys);
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var rest = helper.AblyRest({authUrl: authUrl});
 		var authCallback = function(tokenParams, callback) {
 			rest.auth.requestToken(function(err, tokenDetails) {
