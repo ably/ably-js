@@ -1,1 +1,1 @@
-grunt test:karma
+./node_modules/.bin/grunt test:karma
