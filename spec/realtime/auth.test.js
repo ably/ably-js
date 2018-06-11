@@ -11,7 +11,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		mixin = helper.Utils.mixin,
 		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
 		echoServer = "http://echo.ably.io";
-		//echoServer = "http://localhost:5000";
 
 	exports.setupauth = function(test) {
 		test.expect(1);
