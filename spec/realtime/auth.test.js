@@ -933,7 +933,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Request a JWT token that is about to expire, check that the client disconnects
 	 * and receives the expected reason in the state change.
 	 */
-
 	exports.auth_jwt_with_token_that_expires = function(test) {
 		test.expect(2);
 		var currentKey = helper.getTestApp().keys[0];
@@ -966,7 +965,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Request a JWT token that is about to be renewed, check that the client reauths
 	 * without going through a disconnected state.
 	 */
-
 	exports.auth_jwt_with_token_that_renews = function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];

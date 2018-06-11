@@ -573,7 +573,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* RSC1, RSC1a, RSC1c, RSA4f, RSA8c, RSA3d
 	 * Tests the different combinations of authParams declared above, with valid keys
 	 */
-
 	testJWTAuthParams(exports, 'rest_jwt', function(params) { return function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
@@ -629,7 +628,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* RSA8g
 	 * Tests JWT with authCallback
 	 */
-
 	exports.rest_jwt_with_authCallback = function(test) {
 		test.expect(2);
 		var currentKey = helper.getTestApp().keys[0];
@@ -661,10 +659,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-		/* RSA8g
+	/* RSA8g
 	 * Tests JWT with authCallback and invalid keys
 	 */
-
 	exports.rest_jwt_with_authCallback_and_invalid_keys = function(test) {
 		test.expect(3);
 		var keys = {keyName: 'invalid.invalid', keySecret: 'invalidinvalid'};
