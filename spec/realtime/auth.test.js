@@ -13,6 +13,19 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
 		echoServer = "https://echo.ably.io";
 
+	/*
+	 * Helper function to fetch JWT tokens from the echo server
+	 */
+	function getJWT(params, callback) {
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(params);
+		http.getUri(null, authUrl, null, null, function(err, body) {
+			if(err) {
+				callback(err, null);
+			}
+			callback(null, body.toString());
+		});
+	}
+
 	exports.setupauth = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
@@ -827,21 +840,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * has the requested clientId.
 	 */
 	exports.auth_jwt_with_clientid = function(test) {
-		test.expect(2);
+		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
 		var clientId = 'testJWTClientId';
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(mixin(keys, {clientId: clientId}));
+		var params = mixin(keys, {clientId: clientId});
 		var authCallback = function(tokenParams, callback) {
-			http.getUri(null, authUrl, null, null, function(err, body, headers) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				test.equal(headers['content-type'], 'text/plain; charset=utf-8');
-				callback(null, body.toString());
-			});
+			getJWT(params, callback);
 		};
 
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -868,18 +873,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_jwt_with_subscribe_only_capability = function(test) {
 		test.expect(3);
 		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-		var rest = helper.AblyRest({authUrl: authUrl});
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails.token);
-			});
+			getJWT(params, callback);
 		};
 
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -902,18 +898,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_jwt_with_publish_capability = function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-		var rest = helper.AblyRest({authUrl: authUrl});
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails.token);
-			});
+			getJWT(params, callback);
 		};
 
 		var publishEvent = 'publishEvent',
@@ -937,18 +924,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_jwt_with_token_that_expires = function(test) {
 		test.expect(2);
 		var currentKey = helper.getTestApp().keys[0];
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-		var rest = helper.AblyRest({authUrl: authUrl});
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails.token);
-			});
+			getJWT(params, callback);
 		};
 
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -971,18 +949,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var currentKey = helper.getTestApp().keys[0];
 		// Sandbox sends an auth procolo message 30 seconds before a token expires.
 		// We create a token that lasts 35 so there's room to receive the update event message.
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-		var rest = helper.AblyRest({authUrl: authUrl});
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails.token);
-			});
+			getJWT(params, callback);
 		};
 
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
