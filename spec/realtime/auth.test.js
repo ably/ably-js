@@ -9,8 +9,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports,
 		mixin = helper.Utils.mixin,
+		http = Ably.Rest.Http,
 		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
-		echoServer = "http://echo.ably.io";
+		echoServer = "https://echo.ably.io";
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -826,20 +827,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * has the requested clientId.
 	 */
 	exports.auth_jwt_with_clientid = function(test) {
-		test.expect(1);
+		test.expect(2);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-		var rest = helper.AblyRest({authUrl: authUrl});
 		var clientId = 'testJWTClientId';
+		var authUrl = echoServer + '/createJWT' + utils.toQueryString(mixin(keys, {clientId: clientId}));
 		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken({clientId: clientId}, function(err, tokenDetails) {
+			http.getUri(null, authUrl, null, null, function(err, body, headers) {
 				if(err) {
 					test.ok(false, displayError(err));
 					test.done();
 					return;
 				}
-				callback(null, tokenDetails.token);
+				test.equal(headers['content-type'], 'text/plain; charset=utf-8');
+				callback(null, body.toString());
 			});
 		};
 
