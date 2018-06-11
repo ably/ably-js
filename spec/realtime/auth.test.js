@@ -867,6 +867,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	/*
+	 * Request a token specifying a clientId and verify that the returned token
+	 * has the requested clientId. Token will be returned with content-type application/jwt.
+	 */
+	exports.auth_jwt_with_clientid_application_jwt = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, returnType: 'jwt'};
+		var clientId = 'testJWTClientId';
+		var params = mixin(keys, {clientId: clientId});
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.auth.clientId, clientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + displayError(err));
+			test.done();
+			return;
+		});
+	};
+
+	/*
 	 * Request a token specifying subscribe-only capabilities and verify that posting
 	 * to a channel fails.
 	 */
