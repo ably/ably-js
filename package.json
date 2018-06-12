@@ -24,6 +24,7 @@
     "express": "~4.12",
     "glob": "~4.4",
     "google-closure-compiler": "^20180204.0.0",
+    "grunt-cli": "~1.2.0",
     "grunt": "~0.4",
     "grunt-bump": "^0.3.1",
     "grunt-closure-tools": "^1.0.0",

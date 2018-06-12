@@ -1,1 +1,1 @@
-grunt test:nodeunit
+./node_modules/.bin/grunt test:nodeunit

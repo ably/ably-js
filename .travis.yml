@@ -1,8 +1,6 @@
 sudo: false
 dist: trusty
 language: node_js
-before_install:
-  - "npm install -g grunt-cli"
 install: npm install
 notifications:
   slack:
