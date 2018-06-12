@@ -996,5 +996,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RSC1
+	 * Request a JWT token, initialize a realtime client with it and
+	 * verify it can make authenticated calls.
+	 */
+	exports.init_client_with_simple_jwt_tokem = function(test) {
+		var currentKey = helper.getTestApp().keys[0];
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		getJWT(params, function(err, token) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			var realtime = helper.AblyRealtime({ token: token });
+			realtime.connection.once('connected', function() {
+				test.strictEqual(token, realtime.auth.tokenDetails.token, 'Verify that token is the same');
+				realtime.connection.close();
+				test.done();
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
