@@ -978,7 +978,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.auth_jwt_with_token_that_renews = function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
-		// Sandbox sends an auth procolo message 30 seconds before a token expires.
+		// Sandbox sends an auth protocol message 30 seconds before a token expires.
 		// We create a token that lasts 35 so there's room to receive the update event message.
 		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
 		var authCallback = function(tokenParams, callback) {
