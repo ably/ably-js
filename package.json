@@ -11,7 +11,7 @@
     "./nodejs/index.js": "./browser/static/ably-commonjs.js"
   },
   "dependencies": {
-    "msgpack-js": "git://github.com/ably-forks/msgpack-js.git",
+    "msgpack-js": "https://github.com/ably-forks/msgpack-js.git",
     "request": "^2.83.0",
     "ws": "~4.0"
   },
