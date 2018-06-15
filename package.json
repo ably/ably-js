@@ -23,7 +23,7 @@
     "ejs": "~2.5",
     "express": "~4.12",
     "glob": "~4.4",
-    "google-closure-compiler": "^20180204.0.0",
+    "google-closure-compiler": "^20180610.0.1",
     "grunt-cli": "~1.2.0",
     "grunt": "~0.4",
     "grunt-bump": "^0.3.1",
