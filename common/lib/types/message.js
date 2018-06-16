@@ -20,6 +20,7 @@ var Message = (function() {
 	Message.prototype.toJSON = function() {
 		var result = {
 			name: this.name,
+			id: this.id,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			connectionKey: this.connectionKey,
