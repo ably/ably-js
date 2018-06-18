@@ -64,7 +64,7 @@ var Message = (function() {
 		if(this.extras)
 			result += '; extras =' + JSON.stringify(this.extras);
 		if(this.data) {
-			if (typeof(data) == 'string')
+			if (typeof(this.data) == 'string')
 				result += '; data=' + this.data;
 			else if (BufferUtils.isBuffer(this.data))
 				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
