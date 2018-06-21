@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.14
+ * Ably JavaScript Library v1.0.15
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2660,7 +2660,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.14';
+Defaults.version          = '1.0.15';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -3577,7 +3577,7 @@ var Message = (function() {
 		if(this.extras)
 			result += '; extras =' + JSON.stringify(this.extras);
 		if(this.data) {
-			if (typeof(data) == 'string')
+			if (typeof(this.data) == 'string')
 				result += '; data=' + this.data;
 			else if (BufferUtils.isBuffer(this.data))
 				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
@@ -7334,9 +7334,9 @@ var Auth = (function() {
 						return;
 					}
 					var json = contentType.indexOf('application/json') > -1,
-						text = contentType.indexOf('text/plain') > -1;
+						text = contentType.indexOf('text/plain') > -1 || contentType.indexOf('application/jwt') > -1;
 					if(!json && !text) {
-						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain or application/json', 40170, 401));
+						cb(new ErrorInfo('authUrl responded with unacceptable content-type ' + contentType + ', should be either text/plain, application/jwt or application/json', 40170, 401));
 						return;
 					}
 					if(json) {
@@ -9113,7 +9113,7 @@ var RealtimePresence = (function() {
 					if(members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
-					if(presence.connectionId === connId && !presence.isSynthesized) {
+					if(presence.connectionId === connId && !presence.isSynthesized()) {
 						myMembers.remove(presence);
 					}
 					break;
