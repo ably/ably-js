@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.15](https://github.com/ably/ably-js/tree/1.0.15) (2018-06-21)
+
+- Add support for JWT (https://github.com/ably/ably-js/pull/511)
+- Use https instead of git to pull dependencies (https://github.com/ably/ably-js/pull/515)
+- Fix compilation issue with Google Closure compiler (https://github.com/ably/ably-js/pull/517)
+
 ## [1.0.14](https://github.com/ably/ably-js/tree/1.0.14) (2018-05-16)
 
 - Avoid xhr with local files on chrome 65+ (https://github.com/ably/ably-js/pull/490)
