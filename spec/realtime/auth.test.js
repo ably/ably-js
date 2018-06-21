@@ -9,8 +9,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports,
 		mixin = helper.Utils.mixin,
-		echoServer = "http://echo.ably.io";
-		//echoServer = "http://localhost:5000";
+		http = Ably.Rest.Http,
+		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
+		echoServer = "https://echo.ably.io";
+
+	/*
+	 * Helper function to fetch JWT tokens from the echo server
+	 */
+	function getJWT(params, callback) {
+		var authUrl = echoServer + '/createJWT'
+		http.getUri(null, authUrl, null, params, function(err, body) {
+			if(err) {
+				callback(err, null);
+			}
+			callback(null, body.toString());
+		});
+	}
 
 	exports.setupauth = function(test) {
 		test.expect(1);
@@ -818,6 +832,189 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			};
 			/* Inject a fake AUTH from realtime */
 			transport.onProtocolMessage({action: 17});
+		});
+	};
+
+	/*
+	 * Request a token specifying a clientId and verify that the returned token
+	 * has the requested clientId.
+	 */
+	exports.auth_jwt_with_clientid = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var clientId = 'testJWTClientId';
+		var params = mixin(keys, {clientId: clientId});
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.auth.clientId, clientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + displayError(err));
+			test.done();
+			return;
+		});
+	};
+
+	/*
+	 * Request a token specifying a clientId and verify that the returned token
+	 * has the requested clientId. Token will be returned with content-type application/jwt.
+	 */
+	exports.auth_jwt_with_clientid_application_jwt = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, returnType: 'jwt'};
+		var clientId = 'testJWTClientId';
+		var params = mixin(keys, {clientId: clientId});
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+		realtime.connection.on('connected', function() {
+			test.equal(realtime.auth.clientId, clientId);
+			realtime.connection.close();
+			test.done();
+			return;
+		});
+
+		realtime.connection.on('failed', function(err) {
+			realtime.close();
+			test.ok(false, "Failed: " + displayError(err));
+			test.done();
+			return;
+		});
+	};
+
+	/*
+	 * Request a token specifying subscribe-only capabilities and verify that posting
+	 * to a channel fails.
+	 */
+	exports.auth_jwt_with_subscribe_only_capability = function(test) {
+		test.expect(3);
+		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var channel = realtime.channels.get(jwtTestChannelName);
+			channel.publish('greeting', 'Hello World!', function(err) {
+				test.strictEqual(err.code, 40160, 'Verify publish denied code');
+				test.strictEqual(err.statusCode, 401, 'Verify publish denied status code');
+				test.strictEqual(err.message, 'Channel denied access based on given capability; channelId = ' + jwtTestChannelName, 'Verify error message');
+				realtime.connection.close();
+				test.done();
+			})
+		});
+	};
+
+	/* RSA8c
+	 * Request a token with publish capabilities and verify that posting
+	 * to a channel succeeds.
+	 */
+	exports.auth_jwt_with_publish_capability = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var publishEvent = 'publishEvent',
+		  messageData = 'Hello World!';
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var channel = realtime.channels.get(jwtTestChannelName);
+			channel.subscribe(publishEvent, function(msg) {
+				test.strictEqual(msg.data, messageData, 'Verify message data matches');
+				realtime.connection.close();
+				test.done();
+			});
+			channel.publish(publishEvent, messageData)
+		});
+	};
+
+	/*
+	 * Request a JWT token that is about to expire, check that the client disconnects
+	 * and receives the expected reason in the state change.
+	 */
+	exports.auth_jwt_with_token_that_expires = function(test) {
+		test.expect(2);
+		var currentKey = helper.getTestApp().keys[0];
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			realtime.connection.once('disconnected', function(stateChange) {
+				test.strictEqual(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
+				test.strictEqual(stateChange.reason.message, 'Key/token status changed (expire)', 'Verify message of disconnected reason');
+				realtime.connection.close();
+				test.done();
+			});
+		});
+	};
+
+	/* RTC8a4
+	 * Request a JWT token that is about to be renewed, check that the client reauths
+	 * without going through a disconnected state.
+	 */
+	exports.auth_jwt_with_token_that_renews = function(test) {
+		test.expect(1);
+		var currentKey = helper.getTestApp().keys[0];
+		// Sandbox sends an auth protocol message 30 seconds before a token expires.
+		// We create a token that lasts 35 so there's room to receive the update event message.
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
+		var authCallback = function(tokenParams, callback) {
+			getJWT(params, callback);
+		};
+
+		var realtime = helper.AblyRealtime({ authCallback: authCallback });
+		realtime.connection.once('connected', function() {
+			var originalToken = realtime.auth.tokenDetails.token;
+			realtime.connection.once('update', function() {
+				test.notStrictEqual(originalToken, realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
+				realtime.connection.close();
+				test.done();
+			});
+		});
+	};
+
+	/* RSC1
+	 * Request a JWT token, initialize a realtime client with it and
+	 * verify it can make authenticated calls.
+	 */
+	exports.init_client_with_simple_jwt_tokem = function(test) {
+		var currentKey = helper.getTestApp().keys[0];
+		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+		getJWT(params, function(err, token) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			var realtime = helper.AblyRealtime({ token: token });
+			realtime.connection.once('connected', function() {
+				test.strictEqual(token, realtime.auth.tokenDetails.token, 'Verify that token is the same');
+				realtime.connection.close();
+				test.done();
+			});
 		});
 	};
 
