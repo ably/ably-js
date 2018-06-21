@@ -256,7 +256,7 @@ var RealtimePresence = (function() {
 					if(members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
-					if(presence.connectionId === connId && !presence.isSynthesized) {
+					if(presence.connectionId === connId && !presence.isSynthesized()) {
 						myMembers.remove(presence);
 					}
 					break;
