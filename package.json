@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "msgpack-js": "https://github.com/ably-forks/msgpack-js.git",
-    "request": "^2.83.0",
+    "request": "^2.87.0",
     "ws": "~4.0"
   },
   "devDependencies": {
