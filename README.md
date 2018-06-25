@@ -24,7 +24,7 @@ Ably-js has fallback mechanisms in order to be able to support older browsers; s
 
 #### Version: 1.0.16
 
-The latest stable version of the Ably Javascript client library is `1.0.15`.
+The latest stable version of the Ably Javascript client library is `1.0.16`.
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
