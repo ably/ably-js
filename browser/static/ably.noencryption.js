@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.15
+ * Ably JavaScript Library v1.0.16
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2671,7 +2671,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.15';
+Defaults.version          = '1.0.16';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -3544,6 +3544,7 @@ var Message = (function() {
 	Message.prototype.toJSON = function() {
 		var result = {
 			name: this.name,
+			id: this.id,
 			clientId: this.clientId,
 			connectionId: this.connectionId,
 			connectionKey: this.connectionKey,
