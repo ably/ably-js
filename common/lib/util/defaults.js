@@ -1,4 +1,3 @@
-Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
 Defaults.REALTIME_HOST            = 'realtime.ably.io';
