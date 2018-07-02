@@ -424,7 +424,7 @@ var Auth = (function() {
 				return;
 			}
 			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
-			if(objectSize > MAX_TOKENOBJECT_LENGTH) {
+			if(objectSize > MAX_TOKENOBJECT_LENGTH && !authOptions.suppressMaxLengthCheck) {
 				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
