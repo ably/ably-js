@@ -106,7 +106,7 @@ var RealtimePresence = (function() {
 					break;
 				case 'initialized':
 				case 'detached':
-					channel.autonomousAttach();
+					channel.attach();
 				case 'attaching':
 					self.pendingPresence.push({
 						presence : presence,
@@ -412,11 +412,7 @@ var RealtimePresence = (function() {
 		}
 
 		this.subscriptions.on(event, listener);
-		if(callback) {
-			channel.attach(callback);
-		} else {
-			channel.autonomousAttach();
-		}
+		channel.attach(callback);
 	};
 
 	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
