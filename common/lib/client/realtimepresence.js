@@ -18,6 +18,7 @@ var RealtimePresence = (function() {
 		return !realtime.auth.clientId && realtime.connection.state === 'connected';
 	}
 
+	/* Callback is called only in the event of an error */
 	function waitAttached(channel, callback, action) {
 		switch(channel.state) {
 			case 'attached':
@@ -402,11 +403,20 @@ var RealtimePresence = (function() {
 		var event = args[0];
 		var listener = args[1];
 		var callback = args[2];
+		var channel = this.channel;
 		var self = this;
 
-		waitAttached(this.channel, callback, function() {
-			self.subscriptions.on(event, listener);
-		});
+		if(channel.state === 'failed') {
+			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+			return;
+		}
+
+		this.subscriptions.on(event, listener);
+		if(callback) {
+			channel.attach(callback);
+		} else {
+			channel.autonomousAttach();
+		}
 	};
 
 	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
@@ -415,8 +425,10 @@ var RealtimePresence = (function() {
 		var listener = args[1];
 		var callback = args[2];
 
-		if(this.channel.state === 'failed')
+		if(this.channel.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+			return;
+		}
 
 		this.subscriptions.off(event, listener);
 	};
