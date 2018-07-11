@@ -111,7 +111,11 @@ var RealtimeChannel = (function() {
 			callback = flags;
 			flags = null;
 		}
-		callback = callback || noop;
+		callback = callback || function(err) {
+			if(err) {
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+			}
+		};
 		if(flags) {
 			this._requestedFlags = flags;
 		}
@@ -190,16 +194,6 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.autonomousAttach = function() {
-		var self = this;
-		this.attach(function(err) {
-			if(err) {
-				var msg = 'Channel auto-attach failed: ' + err.toString();
-				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.autonomousAttach()', msg);
-			}
-		});
-	};
-
 	RealtimeChannel.prototype.detachImpl = function(callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.setInProgress(statechangeOp, true);
@@ -222,11 +216,7 @@ var RealtimeChannel = (function() {
 
 		subscriptions.on(event, listener);
 
-		if(callback) {
-			this.attach(callback);
-		} else {
-			this.autonomousAttach();
-		}
+		this.attach(callback);
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {

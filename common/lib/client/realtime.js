@@ -57,7 +57,7 @@ var Realtime = (function() {
 			if(channel.state === 'attaching' || channel.state === 'detaching') {
 				channel.checkPendingState();
 			} else if(channel.state === 'suspended') {
-				channel.autonomousAttach();
+				channel.attach();
 			}
 		}
 	};
