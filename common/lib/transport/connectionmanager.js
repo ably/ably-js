@@ -174,7 +174,10 @@ var ConnectionManager = (function() {
 			}
 
 			if(options.closeOnUnload === true) {
-				addEventListener('beforeunload', function() { self.requestState({state: 'closing'}); });
+				addEventListener('beforeunload', function() {
+					Logger.logAction(Logger.LOG_MAJOR, 'Realtime.ConnectionManager()', 'beforeunload event has triggered the connection to close as closeOnUnload is true');
+					self.requestState({state: 'closing'});
+				});
 			}
 
 			/* Listen for online and offline events */
