@@ -13,7 +13,6 @@ var RealtimeChannel = (function() {
 		this.connectionManager = realtime.connection.connectionManager;
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
-		this.pendingEvents = [];
 		this.syncChannelSerial = undefined;
 		this.attachSerial = undefined;
 		this.setOptions(options);
@@ -396,20 +395,6 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.onAttached = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
-
-		var pendingEvents = this.pendingEvents, pendingCount = pendingEvents.length;
-		if(pendingCount) {
-			this.pendingEvents = [];
-			var msg = ProtocolMessage.fromValues({action: actions.MESSAGE, channel: this.name, messages: []});
-			var multicaster = Multicaster();
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.setAttached', 'sending ' + pendingCount + ' queued messages');
-			for(var i = 0; i < pendingCount; i++) {
-				var event = pendingEvents[i];
-				Array.prototype.push.apply(msg.messages, event.messages);
-				multicaster.push(event.callback);
-			}
-			this.sendMessage(msg, multicaster);
-		}
 	};
 
 	RealtimeChannel.prototype.notifyState = function(state, reason, resumed, hasPresence) {
@@ -420,9 +405,6 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		this.presence.actOnChannelState(state, hasPresence, reason);
-		if(state !== 'attached' && state !== 'attaching') {
-			this.failPendingMessages(reason || RealtimeChannel.invalidStateError(state));
-		}
 		if(state === 'suspended' && this.connectionManager.state.sendEvents) {
 			this.startRetryTimer();
 		} else {
@@ -544,18 +526,6 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.setInProgress = function(operation, value) {
 		this.rest.channels.setInProgress(this, operation, value);
-	};
-
-	RealtimeChannel.prototype.failPendingMessages = function(err) {
-		var numPending = this.pendingEvents.length;
-		if(numPending > 0) {
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.failPendingMessages', 'channel; name = ' + this.name + ', failing' + numPending + ' pending messages, err = ' + Utils.inspectError(err));
-			for(var i = 0; i < this.pendingEvents.length; i++)
-				try {
-					this.pendingEvents[i].callback(err);
-				} catch(e) {}
-			this.pendingEvents = [];
-		}
 	};
 
 	RealtimeChannel.prototype.history = function(params, callback) {
