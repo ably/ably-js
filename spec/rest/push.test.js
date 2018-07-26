@@ -6,7 +6,29 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		exports = {},
 		displayError = helper.displayError,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
-		msgpack = (typeof require !== 'function') ? Ably.msgpack : require('msgpack-js');
+		testDevice = {
+			id: 'testId',
+			deviceSecret: 'secret-testId',
+			platform: 'android',
+			formFactor: 'phone',
+			push: {
+				recipient: {
+					transportType: 'gcm',
+					registrationToken: 'xxxxxxxxxxx',
+				}
+			}
+		},
+		testDevice_withoutSecret = {
+			id: 'testId',
+			platform: 'android',
+			formFactor: 'phone',
+			push: {
+				recipient: {
+					transportType: 'gcm',
+					registrationToken: 'xxxxxxxxxxx',
+				}
+			}
+		};
 
 	exports.setup_push = function(test) {
 		test.expect(1);
@@ -19,21 +41,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.push_subscribeClientId_ok = function(test) {
 		var rest = helper.AblyRest({clientId: 'testClient'});
 		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
+		var pushChannel = rest.channels.get('pushenabled:foo').push
 
 		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.subscribeClientId(callback);
+			pushChannel.subscribeClientId(callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			pushChannel.getSubscriptions(subscription, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var subs = result[1][0];
-			test.deepEqual([subscription], subs);
+			var subscribeHttpCode = result[0][3];
+			test.equal(subscribeHttpCode, 201);
+			var subs = result[1].items;
+			test.equal(subs.length, 1);
+			var sub = subs[0];
+			// deepEqual would fail because `sub` will have also a deviceId field
+			test.equal(sub.channel, subscription.channel);
+			test.equal(sub.clientId, subscription.clientId);
 			test.done();
 		});
 	};
@@ -47,15 +76,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				callback(err);
 			});
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', {channel: 'pushenabled:foo'}, null, null, callback);
+			rest.channels.get('pushenabled:foo').push.getSubscriptions({channel: 'pushenabled:foo'}, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var subs = result[1][0];
-			test.deepEqual([], subs);
+			var subResult = result[0];
+			test.equal(subResult, undefined);
+			var subs = result[1].items;
+			test.equal(subs.length, 0);
 			test.done();
 		});
 	};
@@ -63,21 +94,24 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.push_unsubscribeClientId_ok = function(test) {
 		var rest = helper.AblyRest({clientId: 'testClient'});
 		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
+		var pushChannel = rest.channels.get('pushenabled:foo').push;
 
 		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.subscribeClientId(callback);
+			pushChannel.subscribeClientId(callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo').push.unsubscribeClientId(callback);
+			pushChannel.unsubscribeClientId(callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			pushChannel.getSubscriptions(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var subs = result[2][0];
-			test.deepEqual([], subs);
+			var subscribeHttpCode = result[0][3];
+			test.equal(subscribeHttpCode, 201);
+			var subs = result[2].items;
+			test.equal(0, subs.length);
 			test.done();
 		});
 	};
@@ -91,14 +125,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				callback(err);
 			});
 		}], function(err, result) {
+			test.deepEqual(result, [undefined]);
 			test.ok(!err, err);
 			test.done();
 		});
 	};
 
 	exports.push_getSubscriptions = function(test) {
-		var subscribes = [];
-		var deletes = [];
+		var subscribes = [], deletes = [];
 		var subsByChannel = {};
 		for (var i = 0; i < 5; i++) { (function(i) {
 			var sub = {channel: 'pushenabled:foo' + ((i % 2) + 1), clientId: 'testClient' + ((i % 3) + 1)};
@@ -112,7 +146,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.channels.get(sub.channel).push.subscribeClientId(callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/channelSubscriptions', sub, null, null, callback);
+				rest.push.admin.channelSubscriptions.remove(sub, callback);
 			});
 		})(i) }
 
@@ -186,31 +220,24 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_deviceRegistrations_save = function(test) {
 		var rest = helper.AblyRest();
-		var device = {
-			id: 'testId',
-			deviceSecret: 'secret-testId',
-			platform: 'android',
-			formFactor: 'phone',
-			push: {
-				transportType: 'gcm',
-				metadata: {registrationToken: 'xxxxxxxxxxx'},
-			},
-		};
 
 		async.series([function(callback) {
-			rest.push.admin.deviceRegistrations.save(device, callback);
+			rest.push.admin.deviceRegistrations.save(testDevice, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/deviceRegistrations/' + encodeURIComponent(device.id), null, null, null, callback);
+			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/deviceRegistrations', {deviceId: device.id}, null, null, callback);
+			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var got = result[1][0];
-			includesUnordered(test, got, device);
+			var got = result[1].items[0];
+			test.equal(got.push.state, 'ACTIVE');
+			delete got.metadata; // Ignore these properties for testing
+			delete got.push.state;
+			includesUnordered(test, untyped(got), testDevice_withoutSecret);
 			test.done();
 		});
 	};
@@ -219,8 +246,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var registrations = [];
 		var deletes = [];
 		var devices = [];
+		var devices_withoutSecret = [];
 		var devicesByClientId = {};
-		for (var i = 0; i < 5; i++) { (function(i) {
+		let numberOfDevices = 5;
+		for (var i = 0; i < numberOfDevices; i++) { (function(i) {
 			var device = {
 				id: 'device' + (i + 1),
 				deviceSecret: 'secret-device' + (i + 1),
@@ -228,22 +257,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				platform: 'android',
 				formFactor: 'phone',
 				push: {
-					transportType: 'gcm',
-					metadata: {registrationToken: 'xxxxxxxxxxx'},
+					recipient: {
+						transportType: 'gcm',
+						registrationToken: 'xxxxxxxxxxx',
+					},
+				},
+			};
+			var device_withoutSecret = {
+				id: 'device' + (i + 1),
+				clientId: 'testClient' + ((i % 2) + 1),
+				platform: 'android',
+				formFactor: 'phone',
+				push: {
+					recipient: {
+						transportType: 'gcm',
+						registrationToken: 'xxxxxxxxxxx',
+					},
 				},
 			};
 			if (!devicesByClientId[device.clientId]) {
 				devicesByClientId[device.clientId] = [];
 			}
-			devicesByClientId[device.clientId].push(device);
+			devicesByClientId[device.clientId].push(device_withoutSecret);
 			devices.push(device);
+			devices_withoutSecret.push(device_withoutSecret);
 
 			var rest = helper.AblyRest({clientId: device.clientId});
 			registrations.push(function(callback) {
 				rest.push.admin.deviceRegistrations.save(device, callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {deviceId: 'device' + (i + 1)}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({deviceId: 'device' + (i + 1)}, callback);
 			});
 		})(i) }
 
@@ -259,9 +303,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rest.push.admin.deviceRegistrations.get({clientId: 'testClient2'}, callback);
 		}, function(callback) {
 			async.parallel([function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {clientId: 'testClient1'}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient1'}, callback);
 			}, function(callback) {
-				req(rest, 'delete', '/push/deviceRegistrations', {clientId: 'testClient2'}, null, null, callback);
+				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient2'}, callback);
 			}], callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
@@ -271,7 +315,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			includesUnordered(test, untyped(result[1].items), untyped(devices));
+			test.equal(numberOfDevices, result[0].length);
+			includesUnordered(test, untyped(result[1].items), untyped(devices_withoutSecret));
 			includesUnordered(test, untyped(result[2].items), untyped(devicesByClientId['testClient1']));
 			includesUnordered(test, untyped(result[3].items), untyped(devicesByClientId['testClient2']));
 			test.done();
@@ -280,30 +325,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_deviceRegistrations_remove = function(test) {
 		var rest = helper.AblyRest();
-		var device = {
-			id: 'testId',
-			deviceSecret: 'secret-testId',
-			platform: 'android',
-			formFactor: 'phone',
-			push: {
-				transportType: 'gcm',
-				metadata: {registrationToken: 'xxxxxxxxxxx'},
-			},
-		};
 
 		async.series([function(callback) {
-			rest.push.admin.deviceRegistrations.save(device, callback);
+			rest.push.admin.deviceRegistrations.save(testDevice, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.remove({deviceId: device.id}, callback);
+			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/deviceRegistrations/' + encodeURIComponent(device.id), null, null, null, callback);
+			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}], function(err, result) {
-			if (err) {
-				test.equal(err.statusCode, 404, 'Verify device is not found');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Device erroneously returned');
+			var devices = result[2].items;
+			test.equal(devices.length, 0);
 			test.done();
 		});
 	};
@@ -315,17 +346,20 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
-			req(rest, 'get', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
 		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
+			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var got = result[1][0];
-			includesUnordered(test, got, [subscription]);
+			var sub = result[1].items[0];
+			test.equal(subscription.clientId, sub.clientId);
+			test.equal(subscription.channel, sub.channel);
+			var subscriptionsAfterDelete = result[2][0];
+			test.deepEqual(subscriptionsAfterDelete, []);
 			test.done();
 		});
 	};
@@ -346,7 +380,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.push.admin.channelSubscriptions.save(sub, callback);
 			});
 			deletes.push(function(callback) {
-				req(rest, 'delete', '/push/channelSubscriptions', {clientId: 'testClient' + i}, null, null, callback);
+				rest.push.admin.channelSubscriptions.remove({clientId: 'testClient' + i}, callback);
 			});
 		})(i) }
 
@@ -380,15 +414,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
 			rest.push.admin.channelSubscriptions.remove(subscription, callback);
-		}, function(callback) {
-			req(rest, 'delete', '/push/channelSubscriptions', subscription, null, null, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
 				test.done();
 				return;
 			}
-			var got = result[2][0];
+			var got = result[1][0];
 			test.ok(got.length === 0, got);
 			test.done();
 		});
@@ -421,20 +453,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	function req(rest, method, path, params, headers, body, callback) {
-		headers = Utils.mixin(Utils.copy(defaultHeaders), headers || {});
-		Resource.do(method, rest, path, body, headers, params, false, function(err, body, headers) {
-			if (err) {
-				callback(err);
-				return;
-			}
-			try {
-				body = msgpack.decode(body);
-			} catch(e) {}
-			callback(null, body, headers);
-		});
-	};
-
 	function untyped(x) {
 		return JSON.parse(JSON.stringify(x));
 	}
@@ -445,8 +463,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * order.
 	 *
 	 * includesUnordered(x, y) -> string | true
-     * includesUnordered(test, x, y) -> void
-     */
+	 * includesUnordered(test, x, y) -> void
+	*/
 	function includesUnordered() {
 		if (arguments.length == 2) {
 			var x = arguments[0];
