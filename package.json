@@ -13,7 +13,7 @@
   "dependencies": {
     "msgpack-js": "https://github.com/ably-forks/msgpack-js.git",
     "request": "^2.87.0",
-    "ws": "~4.0"
+    "ws": "^5.1"
   },
   "devDependencies": {
     "async": "git://github.com/ably-forks/async.git#requirejs",
@@ -46,7 +46,7 @@
     "shelljs": "~0.3"
   },
   "engines": {
-    "node": ">=4.2.x"
+    "node": ">=4.5.x"
   },
   "repository": {
     "type": "git",

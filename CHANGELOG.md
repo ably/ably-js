@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.17](https://github.com/ably/ably-js/tree/1.0.17) (in progress)
+
+Note: this release drops support for node 4 version below 4.5. Customers using node v4 are highly encouraged to update to the latest 4.x branch, for security reasons.
+
 ## [1.0.16](https://github.com/ably/ably-js/tree/1.0.16) (2018-06-25)
 
 - Ensure a message id is included when serialized (https://github.com/ably/ably-js/pull/518)
