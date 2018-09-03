@@ -8,13 +8,16 @@ This SDK supports the following platforms:
 
 **Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 8 or newer), Safari on iOS and macOS, Opera, and Android browsers.
 
+**Browsers with webpack:** see [using webpack](#using-webpack)
+
 **Node.js:** version 4.5 or newer
 
 **React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
 
 **NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
 
-**TypeScript:** see [below](#TypeScript)
+**TypeScript:** see [below](#typescript)
+
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
