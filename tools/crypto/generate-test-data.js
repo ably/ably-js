@@ -7,7 +7,7 @@
  ************************************************************/
 
 var crypto = require('crypto'),
-	msgpack = require('msgpack-js'),
+	msgpack = require('@ably/msgpack-js'),
 	util = require('util'),
 	ably = require('../../nodejs/rest'),
 	hexy = require('hexy'),

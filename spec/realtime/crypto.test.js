@@ -8,7 +8,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Message = Ably.Realtime.Message,
 		displayError = helper.displayError,
 		testResourcesPath = helper.testResourcesPath,
-		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('msgpack-js'),
+		msgpack = (typeof(window) == 'object') ? Ably.msgpack : require('@ably/msgpack-js'),
 		testOnAllTransports = helper.testOnAllTransports,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;

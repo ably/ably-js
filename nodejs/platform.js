@@ -7,7 +7,7 @@ this.Platform = {
 	WebSocket: require('ws'),
 	useProtocolHeartbeats: false,
 	createHmac: require('crypto').createHmac,
-	msgpack: require('msgpack-js'),
+	msgpack: require('@ably/msgpack-js'),
 	supportsBinary: true,
 	preferBinary: true,
 	nextTick: process.nextTick,
