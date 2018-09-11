@@ -51,6 +51,10 @@ For the rest-only library:
 var rest = require('ably').Rest;
 ```
 
+#### Serverside usage with webpack
+
+Add 'ably' to `externals` in your webpack config to exclude it from webpack processing, and require and use it in as a external module using require('ably') as above.
+
 ## For browsers
 
 Include the Ably library in your HTML:
