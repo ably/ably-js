@@ -8,7 +8,7 @@ This SDK supports the following platforms:
 
 **Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 8 or newer), Safari on iOS and macOS, Opera, and Android browsers.
 
-**Browsers with webpack:** see [using webpack](#using-webpack)
+**Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
 **Node.js:** version 4.5 or newer
 
