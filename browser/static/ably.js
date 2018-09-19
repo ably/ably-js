@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.16
+ * Ably JavaScript Library v1.0.17
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4081,7 +4081,6 @@ var Base64 = (function() {
 	return Base64;
 })();
 
-Defaults.protocolVersion          = 1;
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
 Defaults.REALTIME_HOST            = 'realtime.ably.io';
@@ -4103,7 +4102,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.16';
+Defaults.version          = '1.0.17';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -7440,7 +7439,7 @@ var Transport = (function() {
 
 	Transport.prototype.onProtocolMessage = function(message) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message));
+			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message) + '; connectionId = ' + this.connectionManager.connectionId);
 		}
 		this.onActivity();
 
@@ -8855,7 +8854,9 @@ var Auth = (function() {
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
 			if(typeof(tokenRequestOrDetails) === 'string') {
-				if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+				if(tokenRequestOrDetails.length === 0) {
+					callback(new ErrorInfo('Token string is empty', 40170, 401));
+				} else if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
 					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
@@ -8869,7 +8870,7 @@ var Auth = (function() {
 				return;
 			}
 			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
-			if(objectSize > MAX_TOKENOBJECT_LENGTH) {
+			if(objectSize > MAX_TOKENOBJECT_LENGTH && !authOptions.suppressMaxLengthCheck) {
 				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
