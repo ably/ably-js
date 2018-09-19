@@ -410,7 +410,9 @@ var Auth = (function() {
 			}
 			/* the response from the callback might be a token string, a signed request or a token details */
 			if(typeof(tokenRequestOrDetails) === 'string') {
-				if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+				if(tokenRequestOrDetails.length === 0) {
+					callback(new ErrorInfo('Token string is empty', 40170, 401));
+				} else if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
 					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});

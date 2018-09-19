@@ -484,6 +484,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		callback(null, token);
 	}});
 
+	exports.authCallback_empty_string = authCallback_failures({authCallback: function(tokenParams, callback) {
+		callback(null, '');
+	}});
+
 	exports.authUrl_timeout = authCallback_failures({
 		authUrl: helper.unroutableAddress,
 		realtimeRequestTimeout: 100
