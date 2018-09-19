@@ -8,7 +8,7 @@ This contains only the most important and/or user-facing changes; for a full cha
 - Handle empty string response from an authUrl or authCallback as a token error
 - Upgrade ws module to v5 (nodejs only) (https://github.com/ably/ably-js/pull/525)
 
-**Note: this release drops support for node 4 version below 4.5.** Customers using node v4 are highly encouraged to update to the latest 4.x branch for security reasons
+**Note: this release drops support for nodejs versions < 4.5.** node v4 versions 4.5 or later are still supported; customers using node v4 are highly encouraged to update to the latest 4.x branch for security reasons
 
 ## [1.0.16](https://github.com/ably/ably-js/tree/1.0.16) (2018-06-25)
 
