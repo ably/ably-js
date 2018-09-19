@@ -2,9 +2,13 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [1.0.17](https://github.com/ably/ably-js/tree/1.0.17) (in progress)
+## [1.0.17](https://github.com/ably/ably-js/tree/1.0.17) (2018-09-19)
 
-Note: this release drops support for node 4 version below 4.5. Customers using node v4 are highly encouraged to update to the latest 4.x branch, for security reasons.
+- Give presence.subscribe attach callback the same behaviour as channel.subscribe, for consistency (so it calls back once attached rather than only in the event of an attach error) (https://github.com/ably/ably-js/pull/526)
+- Handle empty string response from an authUrl or authCallback as a token error
+- Upgrade ws module to v5 (nodejs only) (https://github.com/ably/ably-js/pull/525)
+
+**Note: this release drops support for node 4 version below 4.5.** Customers using node v4 are highly encouraged to update to the latest 4.x branch for security reasons
 
 ## [1.0.16](https://github.com/ably/ably-js/tree/1.0.16) (2018-06-25)
 
