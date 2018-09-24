@@ -9,5 +9,5 @@ this.Defaults = {
 	baseTransportOrder: ['comet', 'web_socket'],
 	transportPreferenceOrder: ['comet', 'web_socket'],
 	upgradeTransports: ['web_socket'],
-	restAgentOptions: {maxSockets: 40}
+	restAgentOptions: {maxSockets: 40, keepAlive: true}
 };
