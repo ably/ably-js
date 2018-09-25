@@ -14,6 +14,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(Platform.promisify) {
+					return Platform.promisify(this.get).apply(this, arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -43,6 +46,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(Platform.promisify) {
+					return Platform.promisify(this._history).apply(this, arguments);
+				}
 				callback = noop;
 			}
 		}

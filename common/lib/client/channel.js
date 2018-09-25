@@ -36,6 +36,9 @@ var Channel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(Platform.promisify) {
+					return Platform.promisify(this.history).apply(this, arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -66,6 +69,9 @@ var Channel = (function() {
 			self = this;
 
 		if(typeof(callback) !== 'function') {
+			if(Platform.promisify) {
+				return Platform.promisify(this.publish).apply(this, arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
