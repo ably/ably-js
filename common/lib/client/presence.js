@@ -14,6 +14,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, 'get', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -43,6 +46,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, '_history', arguments);
+				}
 				callback = noop;
 			}
 		}

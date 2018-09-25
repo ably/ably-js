@@ -39,6 +39,7 @@ var Platform = {
 			(new window.TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	Promise: window.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;

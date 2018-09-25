@@ -456,5 +456,13 @@ var Utils = (function() {
 		return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
 	};
 
+	Utils.promisify = function(ob, fnName, args) {
+		return new Promise(function(resolve, reject) {
+			ob[fnName].apply(ob, Array.prototype.slice.call(args).concat(function(err, res) {
+				err ? reject(err) : resolve(res);
+			}));
+		});
+	};
+
 	return Utils;
 })();

@@ -54,30 +54,33 @@ var RealtimePresence = (function() {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		}
-		this._enterOrUpdateClient(undefined, data, callback, 'enter');
+		return this._enterOrUpdateClient(undefined, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
 		}
-		this._enterOrUpdateClient(undefined, data, callback, 'update');
+		return this._enterOrUpdateClient(undefined, data, 'update', callback);
 	};
 
 	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'enter');
+		return this._enterOrUpdateClient(clientId, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'update');
+		return this._enterOrUpdateClient(clientId, data, 'update', callback);
 	};
 
-	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
+	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, action, callback) {
 		if (!callback) {
 			if (typeof(data)==='function') {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+				}
 				callback = noop;
 			}
 		}
@@ -130,7 +133,7 @@ var RealtimePresence = (function() {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		}
-		this.leaveClient(undefined, data, callback);
+		return this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
@@ -139,6 +142,9 @@ var RealtimePresence = (function() {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'leaveClient', [clientId, data]);
+				}
 				callback = noop;
 			}
 		}
@@ -186,8 +192,15 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true)
+			callback = args[1],
+			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'get', args);
+			}
+			callback = noop;
+		}
 
 		function returnMembers(members) {
 			callback(null, params ? members.list(params) : members.values());
@@ -228,6 +241,9 @@ var RealtimePresence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'history', args);
+				}
 				callback = noop;
 			}
 		}
@@ -371,7 +387,7 @@ var RealtimePresence = (function() {
 			if(!(memberKey in members.map)) {
 				var entry = myMembers.map[memberKey];
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
-				this._enterOrUpdateClient(entry.clientId, entry.data, reenterCb, 'enter');
+				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
 			}
 		}
@@ -411,6 +427,13 @@ var RealtimePresence = (function() {
 		var callback = args[2];
 		var channel = this.channel;
 		var self = this;
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'subscribe', [event, listener]);
+			}
+			callback = noop;
+		}
 
 		if(channel.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));

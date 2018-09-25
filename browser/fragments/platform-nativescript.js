@@ -45,6 +45,7 @@ var Platform = {
 			(new TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	Promise: window.Promise,
 	getRandomValues: function(arr, callback) {
 		var bytes = randomBytes(arr.length);
 		for (var i = 0; i < arr.length; i++) {
