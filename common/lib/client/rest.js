@@ -59,6 +59,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(Platform.promisify) {
+					return Platform.promisify(this.stats).apply(this, arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -83,6 +86,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(Platform.promisify) {
+					return Platform.promisify(this.time).apply(this, arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -119,6 +125,13 @@ var Rest = (function() {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
 			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
+
+		if(callback === undefined) {
+			if(Platform.promisify) {
+				return Platform.promisify(this.request).apply(this, arguments);
+			}
+			callback = noop;
+		}
 
 		if(typeof body !== 'string') {
 			body = encoder(body);

@@ -13,5 +13,6 @@ this.Platform = {
 	nextTick: process.nextTick,
 	inspect: require('util').inspect,
 	inherits: require('util').inherits,
-	addEventListener: null
+	addEventListener: null,
+	promisify: require('util').promisify
 };
