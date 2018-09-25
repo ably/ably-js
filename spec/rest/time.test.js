@@ -33,5 +33,21 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
+	exports.timePromise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		test.expect(1);
+		var rest = helper.AblyRest({promises: true});
+		rest.time().then(function() {
+			test.ok(true, 'time succeeded');
+			test.done();
+		}).catch(function(err) {
+			test.ok(false, 'time call failed with error: ' + displayError(err));
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

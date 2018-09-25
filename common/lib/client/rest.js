@@ -61,6 +61,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'stats', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -85,6 +88,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'time', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -121,6 +127,13 @@ var Rest = (function() {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
 			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
+
+		if(callback === undefined) {
+			if(this.options.promises) {
+				return Utils.promisify(this, 'request', arguments);
+			}
+			callback = noop;
+		}
 
 		if(typeof body !== 'string') {
 			body = encoder(body);

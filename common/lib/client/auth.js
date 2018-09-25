@@ -176,7 +176,12 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
-		callback = callback || noop;
+		if(!callback) {
+			if(this.client.options.promises) {
+				return Utils.promisify(this, 'authorize', arguments);
+			}
+			callback = noop;
+		}
 		var self = this;
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
@@ -296,6 +301,9 @@ var Auth = (function() {
 		else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
 			authOptions = null;
+		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'requestToken', arguments);
 		}
 
 		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
@@ -504,6 +512,9 @@ var Auth = (function() {
 		} else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
 			authOptions = null;
+		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'createTokenRequest', arguments);
 		}
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */

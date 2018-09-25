@@ -18,6 +18,7 @@ var Platform = {
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: null,
 	inspect: JSON.stringify,
+	Promise: window.Promise,
 	getRandomValues: (function(randomBytes) {
 		return function(arr, callback) {
 			randomBytes(arr.length, function(err, bytes) {
