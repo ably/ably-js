@@ -243,5 +243,27 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.restpublishpromise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		test.expect(2);
+		var rest = helper.AblyRest({promises: true});
+		var channel = rest.channels.get('publishpromise');
+
+		channel.publish('name', 'data').then(function() {
+			test.ok(true, 'Check publish returns a promise that resolves on publish');
+			return channel.history();
+		}).then(function(page) {
+			var message = page.items[0];
+			test.ok(message.data == 'data', 'Check publish and history promise methods both worked as expected');
+			test.done();
+		}).catch(function(err) {
+			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

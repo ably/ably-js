@@ -22,4 +22,5 @@ this.Platform = {
 			callback(null);
 		}
 	}
+	Promise: global && global.Promise,
 };

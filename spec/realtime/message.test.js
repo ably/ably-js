@@ -743,6 +743,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 	};
 
+<<<<<<< HEAD
 	/* TO3l8; CD2C; RSL1i */
 	exports.maxMessageSize = function(test) {
 		test.expect(2);
@@ -813,6 +814,45 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 		realtime.connect();
 	};
+||||||| parent of df648251... Add support for promises to public api
+=======
+	exports.publishpromise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		test.expect(7);
+		var realtime = helper.AblyRealtime({promises: true});
+		var channel = realtime.channels.get('publishpromise');
+
+		var publishPromise = realtime.connection.once('connected').then(function(connectionStateChange) {
+			test.ok(true, 'Check once() returns a promise');
+			test.equal(connectionStateChange.current, 'connected', 'Check promise is resolved with a connectionStateChange');
+			return channel.attach();
+		}).then(function() {
+			return channel.publish('name', 'data');
+		}).then(function() {
+			test.ok(true, 'Check publish returns a promise that resolves on publish');
+		}).catch(function(err) {
+			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
+		})
+
+		var subscribePromise = channel.subscribe('name', function(msg) {
+			test.ok(true, 'Received message');
+		}).then(function() {
+			test.ok(true, 'Check subscribe returns a promise that resolves on attach');
+		});
+
+		var channelFailedPromise = realtime.channels.get(':invalid').attach().catch(function(err) {
+			test.ok(true, 'Check attach returns a promise that is rejected on attach fail');
+			test.equal(err.code, 40010, 'Check err passed through correctly');
+		});
+
+		Promise.all([publishPromise, subscribePromise, channelFailedPromise]).then(function() {
+			closeAndFinish(test, realtime);
+		});
+	};
+>>>>>>> df648251... Add support for promises to public api
 
 	return module.exports = helper.withTimeout(exports);
 });

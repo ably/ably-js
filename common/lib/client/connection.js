@@ -1,4 +1,5 @@
 var Connection = (function() {
+	function noop() {}
 
 	/* public constructor */
 	function Connection(ably, options) {
@@ -39,7 +40,12 @@ var Connection = (function() {
 
 	Connection.prototype.ping = function(callback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-		callback = callback || function() {};
+		if(!callback) {
+			if(this.ably.options.promises) {
+				return Utils.promisify(this, 'ping', arguments);
+			}
+			callback = noop;
+		}
 		this.connectionManager.ping(null, callback);
 	};
 
