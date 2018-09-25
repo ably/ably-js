@@ -701,5 +701,33 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 		});
 	};
 
+	exports.auth_promises = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		test.expect(6);
+		var rest = helper.AblyRest({promises: true});
+
+		var promise1 = rest.auth.requestToken();
+		var promise2 = rest.auth.requestToken({ttl: 100});
+		var promise3 = rest.auth.requestToken({ttl: 100}, {key: helper.getTestApp().keys[1].keyStr});
+		var promise4 = rest.auth.createTokenRequest();
+		var promise5 = rest.auth.createTokenRequest({ttl: 100});
+		var promise6 = rest.auth.requestToken({ttl: 100}, {key: 'bad'}).catch(function(err) {
+			test.ok(true, 'Token attempt with bad key was rejected')
+		});
+
+		Promise.all([promise1, promise2, promise3, promise4, promise5, promise6]).then(function(results) {
+			for(var i=0; i<5; i++) {
+				test.ok(results[i].token || results[i].nonce)
+			}
+			test.done();
+		}).catch(function(err) {
+			test.ok(false, 'a token request failed with error: ' + displayError(err));
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

@@ -27,6 +27,7 @@ var Platform = {
 			(new TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	Promise: window.Promise,
 	getRandomValues: (function(randomBytes) {
 		return function(arr, callback) {
 			randomBytes(arr.length, function(err, bytes) {
