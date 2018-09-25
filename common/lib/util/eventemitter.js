@@ -171,6 +171,12 @@ var EventEmitter = (function() {
 	 * @param listener the listener to be called
 	 */
 	EventEmitter.prototype.once = function(event, listener) {
+		var argCount = arguments.length, self = this;
+		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.promisify) {
+			return new Promise(function(resolve) {
+				self.once(event, resolve);
+			});
+		}
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
 		} else if(Utils.isEmptyArg(event)) {
@@ -193,13 +199,17 @@ var EventEmitter = (function() {
 	 */
 	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
 		var eventThis = {event:targetState},
-				listenerArgs = Array.prototype.slice.call(arguments, 3);
+			self = this,
+			listenerArgs = Array.prototype.slice.call(arguments, 3);
 
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
 			throw("whenState requires a valid event String argument");
-		if (typeof(listener) !== 'function')
-			throw("whenState requires a valid listener argument");
-
+		}
+		if(typeof listener !== 'function' && Platform.promisify) {
+			return new Promise(function(resolve) {
+				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+			});
+		}
 		if(targetState === currentState) {
 			callListener(eventThis, listener, listenerArgs);
 		} else {

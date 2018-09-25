@@ -37,11 +37,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.processListenerArgs = function(args) {
 		/* [event], listener, [callback] */
-		if(typeof(args[0]) == 'function')
-			return [null, args[0], args[1] || noop];
-		else
-			return [args[0], args[1], (args[2] || noop)];
-	}
+		args = Array.prototype.slice.call(args);
+		if(typeof args[0] === 'function') {
+			args.unshift(null);
+		}
+		if(args[args.length - 1] == undefined) {
+			args.pop();
+		}
+		return args;
+	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
@@ -49,6 +53,9 @@ var RealtimeChannel = (function() {
 			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
+			if(Platform.promisify) {
+				return Platform.promisify(this.publish).apply(this, arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
@@ -110,11 +117,16 @@ var RealtimeChannel = (function() {
 			callback = flags;
 			flags = null;
 		}
-		callback = callback || function(err) {
-			if(err) {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+		if(!callback) {
+			if(Platform.promisify) {
+				return Platform.promisify(this.attach).apply(this, arguments);
 			}
-		};
+			callback = function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
 		if(flags) {
 			this._requestedFlags = flags;
 		}
@@ -161,6 +173,12 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
+		if(!callback) {
+			if(Platform.promisify) {
+				return Platform.promisify(this.detach).apply(this, arguments);
+			}
+			callback = noop;
+		}
 		callback = callback || noop;
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
@@ -208,6 +226,13 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		var events;
 
+		if(!callback) {
+			if(Platform.promisify) {
+				return Platform.promisify(this.subscribe).call(this, event, listener);
+			}
+			callback = noop;
+		}
+
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
@@ -215,7 +240,7 @@ var RealtimeChannel = (function() {
 
 		subscriptions.on(event, listener);
 
-		this.attach(callback);
+		return this.attach(callback);
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
@@ -226,12 +251,20 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		var events;
 
+		if(!callback) {
+			if(Platform.promisify) {
+				return Platform.promisify(this.unsubscribe).call(this, event, listener);
+			}
+			callback = noop;
+		}
+
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
 		}
 
 		subscriptions.off(event, listener);
+		callback();
 	};
 
 	RealtimeChannel.prototype.sync = function() {
