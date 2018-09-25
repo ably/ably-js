@@ -38,6 +38,9 @@ var Channel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.rest.options.promises) {
+					return Utils.promisify(this, 'history', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -74,6 +77,9 @@ var Channel = (function() {
 			self = this;
 
 		if(typeof(callback) !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
