@@ -122,5 +122,10 @@ Defaults.normaliseOptions = function(options) {
 		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
+	if(options.promises && !Platform.Promise) {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
+		options.promises = false;
+	}
+
 	return options;
 };

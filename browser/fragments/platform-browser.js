@@ -30,6 +30,7 @@ var Platform = {
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: window.addEventListener,
 	inspect: JSON.stringify,
+	Promise: window.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;
