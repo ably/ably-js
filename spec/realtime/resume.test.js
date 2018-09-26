@@ -277,7 +277,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			attachedChannel = realtime.channels.get(attachedChannelName),
 			suspendedChannel = realtime.channels.get(suspendedChannelName);
 
-		test.expect(3);
+		test.expect(6);
 		async.series([
 			function(cb) {
 				connection.once('connected', function() { cb(); });
@@ -290,6 +290,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				/* Sabotage the resume */
 				connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____',
 				connection.connectionManager.connectionId = 'ablyjs_tes';
+				connection.connectionManager.connectionSerial = 17;
+				connection.connectionManager.msgSerial = 15;
 				connection.once('disconnected', function() { cb(); });
 				connection.connectionManager.disconnectAllTransports();
 			},
@@ -298,6 +300,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(stateChange.reason && stateChange.reason.code, 80008, 'Unable to recover connection correctly set in the stateChange');
 					test.equal(attachedChannel.state, 'attaching', 'Attached channel went into attaching');
 					test.equal(suspendedChannel.state, 'attaching', 'Suspended channel went into attaching');
+					test.equal(connection.connectionManager.msgSerial, 0, 'Check msgSerial is reset to 0');
+					test.equal(connection.connectionManager.connectionSerial, -1, 'Check connectionSerial is reset by the new CONNECTED');
+					test.ok(connection.connectionManager.connectionId !== 'ablyjs_tes', 'Check connectionId is set by the new CONNECTED');
 					cb();
 				});
 			}
