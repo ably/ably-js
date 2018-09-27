@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.17
+ * Ably JavaScript Library v1.0.18
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4091,7 +4091,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.17';
+Defaults.version          = '1.0.18';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -6287,7 +6287,7 @@ var ConnectionManager = (function() {
 
 		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionDetails, connectionPosition);
+			this.setConnection(connectionId, connectionDetails, connectionPosition, true);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -6445,7 +6445,7 @@ var ConnectionManager = (function() {
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
 		 * on a new connection, with implications for msgSerial and channel state */
@@ -6470,7 +6470,7 @@ var ConnectionManager = (function() {
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
-		this.setConnectionSerial(connectionPosition);
+		this.setConnectionSerial(connectionPosition, forceSetPosition);
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -6481,10 +6481,12 @@ var ConnectionManager = (function() {
 		this.unpersistConnection();
 	};
 
-	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition) {
+	/* force: set the connectionSerial even if it's less than the current connectionSerial. Used when
+	 * activating a new transport, where the connectionSerial realtime tells us we have must be authoritative */
+	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
 		var timeSerial = connectionPosition.timeSerial;
 		if(timeSerial !== undefined) {
-			if(timeSerial <= this.timeSerial) {
+			if(timeSerial <= this.timeSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
 				return;
 			}
@@ -6494,7 +6496,7 @@ var ConnectionManager = (function() {
 		}
 		var connectionSerial = connectionPosition.connectionSerial;
 		if(connectionSerial !== undefined) {
-			if(connectionSerial <= this.connectionSerial) {
+			if(connectionSerial <= this.connectionSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
 				return;
 			}
