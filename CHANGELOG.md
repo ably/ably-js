@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.18](https://github.com/ably/ably-js/tree/1.0.18) (2018-09-27)
+
+- Fix bug where connectionSerial was not getting reset after a resume failure (https://github.com/ably/ably-js/pull/540)
+
 ## [1.0.17](https://github.com/ably/ably-js/tree/1.0.17) (2018-09-19)
 
 - Give presence.subscribe attach callback the same behaviour as channel.subscribe, for consistency (so it calls back once attached rather than only in the event of an attach error) (https://github.com/ably/ably-js/pull/526)
