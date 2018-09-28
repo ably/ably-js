@@ -720,7 +720,8 @@ var ConnectionManager = (function() {
 		/* but do need to reattach channels, for channels that were previously in
 		 * the attached state even though the connection mode was 'clean' due to a
 		 * freshness check - see https://github.com/ably/ably-js/issues/394 */
-		if(this.connectionId !== connectionId)  {
+		/* ### WORKAROUND FOR POTENTIAL REALTIME RACE CONDITION https://github.com/ably/realtime/issues/2026 ### */
+		if(true || this.connectionId !== connectionId)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
