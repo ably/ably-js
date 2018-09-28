@@ -86,7 +86,7 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,
