@@ -145,6 +145,10 @@ var Rest = (function() {
 		}
 	};
 
+	Rest.prototype.setLog = function(logOptions) {
+		Logger.setLog(logOptions.level, logOptions.handler);
+	};
+
 	function Channels(rest) {
 		this.rest = rest;
 		this.attached = {};
