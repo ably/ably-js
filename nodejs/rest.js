@@ -47,3 +47,5 @@ Rest.Crypto = context.Crypto;
 Rest.Defaults = context.Defaults;
 Rest.Http = context.Http;
 Rest.Utils = context.Utils;
+Rest.Message = context.Message;
+Rest.PresenceMessage = context.PresenceMessage;
