@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.18
+ * Ably JavaScript Library v1.0.18-lsworkaround-2
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4102,7 +4102,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.18';
+Defaults.version          = '1.0.18-lsworkaround-2';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -6469,7 +6469,8 @@ var ConnectionManager = (function() {
 		/* but do need to reattach channels, for channels that were previously in
 		 * the attached state even though the connection mode was 'clean' due to a
 		 * freshness check - see https://github.com/ably/ably-js/issues/394 */
-		if(this.connectionId !== connectionId)  {
+		/* ### WORKAROUND FOR POTENTIAL REALTIME RACE CONDITION https://github.com/ably/realtime/issues/2026 ### */
+		if(true || this.connectionId !== connectionId)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
@@ -8521,8 +8522,7 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.clientId     ||
-			  options.authCallback ||
+			 (options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -8543,12 +8543,10 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(options.clientId || !options.key) {
-				var msg = 'Cannot authenticate with basic auth' +
-					(options.clientId ? ' as a clientId implies token auth' :
-					 (!options.key ? ' as no key was given' : ''));
-					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-					 throw new Error(msg);
+			if(!options.key) {
+				var msg = 'Cannot authenticate with basic auth as no key was given';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
@@ -9346,6 +9344,10 @@ var Rest = (function() {
 			default:
 				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
 		}
+	};
+
+	Rest.prototype.setLog = function(logOptions) {
+		Logger.setLog(logOptions.level, logOptions.handler);
 	};
 
 	function Channels(rest) {
@@ -10353,7 +10355,7 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,
