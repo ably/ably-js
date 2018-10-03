@@ -72,8 +72,7 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.clientId     ||
-			  options.authCallback ||
+			 (options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -94,12 +93,10 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(options.clientId || !options.key) {
-				var msg = 'Cannot authenticate with basic auth' +
-					(options.clientId ? ' as a clientId implies token auth' :
-					 (!options.key ? ' as no key was given' : ''));
-					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-					 throw new Error(msg);
+			if(!options.key) {
+				var msg = 'Cannot authenticate with basic auth as no key was given';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
