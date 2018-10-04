@@ -26,6 +26,8 @@ var JSONPTransport = (function() {
 	};
 	if(JSONPTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+	}
+	if(Platform.jsonpSupported) {
 		head = document.getElementsByTagName('head')[0];
 	}
 
@@ -168,7 +170,7 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	if(!Http.Request) {
+	if(Platform.jsonpSupported && !Http.Request) {
 		Http.Request = function(rest, uri, headers, params, body, callback) {
 			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 			req.once('complete', callback);
