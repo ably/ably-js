@@ -278,10 +278,11 @@ var RealtimeChannel = (function() {
 			this.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {
-				if(!message.hasFlag('RESUMED')) {
+				var resumed = message.hasFlag('RESUMED');
+				if(!resumed || this.channelOptions.updateOnAttached) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
 					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
-					var change = new ChannelStateChange(this.state, this.state, false, message.error);
+					var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
 					this.emit('update', change);
 				}
 			} else {
