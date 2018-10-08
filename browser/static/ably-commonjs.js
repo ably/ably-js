@@ -6394,11 +6394,15 @@ var ConnectionManager = (function() {
 			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
 			if(state === 'failed' && Auth.isTokenErr(error)) { state = 'disconnected' }
 			this.notifyState({state: state, error: error});
-		} else if(wasActive && (state === 'disconnected')) {
+		} else if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
-			* transition timers in case that never happens) */
+			* transition timers in case that never happens). (If we were in the
+			* synchronizing state, then that's fine, the old transport just got its
+			* disconnected before the new one got the sync -- ignore it and keep
+			* waiting for the sync. If it fails we have a separate sync timer that
+			* will expire). */
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
 			this.startSuspendTimer();
 			this.startTransitionTimer(this.states.connecting);
