@@ -604,7 +604,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Tests JWT request with invalid keys
 	 */
 	exports.rest_jwt_with_invalid_keys = function(test) {
-		test.expect(3);
+		test.expect(2);
 		var keys = {keyName: 'invalid.invalid', keySecret: 'invalidinvalid'};
 		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
@@ -619,7 +619,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			restClient.stats(function(err, stats) {
 				test.strictEqual(err.code, 40400, 'Verify token is invalid because app id does not exist');
 				test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
-				test.strictEqual(err.message, 'No application found with id invalid', 'Verify message about invalid app id');
 				test.done();
 			});
 		});
@@ -663,7 +662,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Tests JWT with authCallback and invalid keys
 	 */
 	exports.rest_jwt_with_authCallback_and_invalid_keys = function(test) {
-		test.expect(3);
+		test.expect(2);
 		var keys = {keyName: 'invalid.invalid', keySecret: 'invalidinvalid'};
 		var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
 		var restJWTRequester = helper.AblyRest({authUrl: authUrl});
@@ -683,7 +682,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		restClient.stats(function(err, stats) {
 			test.strictEqual(err.code, 40400, 'Verify code is 40400');
 			test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
-			test.strictEqual(err.message, 'No application found with id invalid', 'Verify message about invalid app id');
 			test.done();
 		});
 	};
