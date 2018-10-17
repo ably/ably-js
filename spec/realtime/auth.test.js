@@ -906,7 +906,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * to a channel fails.
 	 */
 	exports.auth_jwt_with_subscribe_only_capability = function(test) {
-		test.expect(3);
+		test.expect(2);
 		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
 		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
 		var authCallback = function(tokenParams, callback) {
@@ -919,7 +919,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			channel.publish('greeting', 'Hello World!', function(err) {
 				test.strictEqual(err.code, 40160, 'Verify publish denied code');
 				test.strictEqual(err.statusCode, 401, 'Verify publish denied status code');
-				test.strictEqual(err.message, 'Channel denied access based on given capability; channelId = ' + jwtTestChannelName, 'Verify error message');
 				realtime.connection.close();
 				test.done();
 			})
@@ -957,7 +956,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * and receives the expected reason in the state change.
 	 */
 	exports.auth_jwt_with_token_that_expires = function(test) {
-		test.expect(2);
+		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
 		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
 		var authCallback = function(tokenParams, callback) {
@@ -968,7 +967,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		realtime.connection.once('connected', function() {
 			realtime.connection.once('disconnected', function(stateChange) {
 				test.strictEqual(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
-				test.strictEqual(stateChange.reason.message, 'Key/token status changed (expire)', 'Verify message of disconnected reason');
 				realtime.connection.close();
 				test.done();
 			});
