@@ -1749,7 +1749,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	/* RTP5f; RTP11d
 	 * Check that on ATTACHED -> SUSPENDED -> ATTACHED, members map is preserved
-	 * and only members that changedbetween ATTACHED stats should result in
+	 * and only members that changed between ATTACHED states should result in
 	 * presence events */
 	exports.suspended_preserves_presence = function(test) {
 		test.expect(8);
@@ -1806,7 +1806,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				mainChannel.presence.get(function(err) {
 					/* Check RTP11d: get() returns an error by default */
 					test.ok(err, 'Check error returned by get() while suspended');
-					test.equal(err && err.code, 91005, 'Check error code for get() while suspende');
+					test.equal(err && err.code, 91005, 'Check error code for get() while suspended');
 					cb();
 				});
 			},
