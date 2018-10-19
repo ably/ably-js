@@ -680,19 +680,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					/* Abort comet transport nonfatally */
 					var baseTransport = connectionManager.activeProtocol.getTransport();
 					test.ok(helper.isComet(baseTransport), 'Check original transport is still comet');
-					connection.once(function(stateChange) {
+					/* Check that if we do get a statechange, it's to connecting, not disconnected. */
+					var stateChangeListener = function(stateChange) {
 						test.equal(stateChange.current, 'connecting', 'check that deactivateTransport only drops us to connecting as another transport is ready for activation');
+					};
+					connection.once(stateChangeListener);
+					connectionManager.once('connectiondetails', function() {
+						connection.off(stateChangeListener);
+						/* Check the upgrade completed  */
+						var newActiveTransport = connectionManager.activeProtocol.getTransport();
+						test.equal(transport, newActiveTransport, 'Check the upgrade transport is now active');
 						cb();
-					});
+					})
 					transport.once('connected', function() {
 						baseTransport.disconnect({code: 50000, statusCode: 500, message: "a non-fatal transport error"});
 					});
-				});
-			},
-			function(cb) {
-				connection.once(function(stateChange) {
-					test.equal(stateChange.current, 'connected', 'check we transition to connected after the sync');
-					cb();
 				});
 			}
 		], function() {
