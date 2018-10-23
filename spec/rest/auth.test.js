@@ -1,6 +1,6 @@
 "use strict";
 
-define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
+define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, async, globals) {
 	var currentTime, rest, exports = {},
 		utils = helper.Utils,
 		echoServer = 'https://echo.ably.io';
@@ -554,26 +554,18 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	/*
-	 * Different combinations of params to request a JWT token
-	 */
-	var authParams = [
-		{},
-		{jwtType: 'embedded'},
-		{jwtType: 'embedded', encrypted: 1},
-		{returnType: 'jwt'}
-	]
-
-	function testJWTAuthParams(exports, name, testFn) {
-		utils.arrForEach(authParams, function(params) {
-			exports[name + '_with_' + Object.keys(params).join('_')] = testFn(params);
-		});
-	}
-
 	/* RSC1, RSC1a, RSC1c, RSA4f, RSA8c, RSA3d
 	 * Tests the different combinations of authParams declared above, with valid keys
 	 */
-	testJWTAuthParams(exports, 'rest_jwt', function(params) { return function(test) {
+	exports.rest_jwt = testJWTAuthParams({});
+	exports.rest_jwt_with_jwt_return_type = testJWTAuthParams({returnType: 'jwt'});
+	/* The embedded tests rely on the echoserver getting a token from realtime, so won't work against a local realtime */
+	if(globals.environment !== 'local') {
+		exports.rest_jwt_embedded = testJWTAuthParams({jwtType: 'embedded', environment: globals.environment});
+		exports.rest_jwt_embedded_encrypted = testJWTAuthParams({jwtType: 'embedded', environment: globals.environment});
+	}
+
+	function testJWTAuthParams(params) { return function(test) {
 		test.expect(1);
 		var currentKey = helper.getTestApp().keys[0];
 		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
