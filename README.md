@@ -37,19 +37,13 @@ For complete API documentation, see the [Ably documentation](https://www.ably.io
 
     npm install ably --save
 
-### Usage
-
-For the realtime library:
+and require as:
 
 ```javascript
-var realtime = require('ably').Realtime;
+var Ably = require('ably')
 ```
 
-For the rest-only library:
-
-```javascript
-var rest = require('ably').Rest;
-```
+For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
 
 #### Serverside usage with webpack
 
@@ -65,17 +59,7 @@ Include the Ably library in your HTML:
 
 The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.io/lib/ably.min-1.js for all v1.* versions, or https://cdn.ably.io/lib/ably.min-1.0.js for all v1.0.* versions, or you can lock into a single release with https://cdn.ably.io/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.io/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
-For the realtime library:
-
-```javascript
-var realtime = Ably.Realtime;
-```
-
-For the REST only library:
-
-```javascript
-var rest = Ably.Rest;
-```
+For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
 
 ### TypeScript
 
@@ -120,6 +104,8 @@ See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript
 
 ## Using the Realtime API
 
+This readme gives some basic examples; for our full API documentation, please go to https://www.ably.io/documentation .
+
 ### Introduction
 
 All examples assume a client has been created as follows:
@@ -128,10 +114,7 @@ All examples assume a client has been created as follows:
 // basic auth with an API key
 var client = new Ably.Realtime(<key string>)
 
-// using a token string
-var client = new Ably.Realtime(<token string>)
-
-// using an Options object, see https://www.ably.io/documentation/rest/usage#options
+// using a Client Options object, see https://www.ably.io/documentation/rest/usage#options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(<options>)
@@ -302,6 +285,8 @@ channel.setOptions({cipher: {key: <key>}}, function() {
 
 ## Using the REST API
 
+This readme gives some basic examples. For our full API documentation, please go to https://www.ably.io/documentation .
+
 ### Introduction
 
 All examples assume a client and/or channel has been created as follows:
@@ -310,10 +295,7 @@ All examples assume a client and/or channel has been created as follows:
 // basic auth with an API key
 var client = new Ably.Rest(<key string>)
 
-// using token auth
-var client = new Ably.Rest(<token string>)
-
-// using an Options object, see https://www.ably.io/documentation/realtime/usage#client-options
+// using a Client Options object, see https://www.ably.io/documentation/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Rest(<options>)
