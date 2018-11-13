@@ -1786,12 +1786,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				enter(mainRealtime, cb);
 			},
 			function(cb) {
-				waitFor('continuous')(cb);
-				enter(continuousRealtime, function(err) { if(err) cb(err); });
+				async.parallel([
+					parCb => waitFor('continuous')(parCb),
+					parCb => enter(continuousRealtime, parCb)
+				], cb)
 			},
 			function(cb) {
-				waitFor('leaves')(cb);
-				enter(leavesRealtime, function(err) { if(err) cb(err); });
+				async.parallel([
+					parCb => waitFor('leaves')(parCb),
+					parCb => enter(leavesRealtime, parCb)
+				], cb)
 			},
 			function(cb) {
 				mainChannel.presence.get(function(err, members) {
