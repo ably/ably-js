@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.18
+ * Ably JavaScript Library v1.0.19
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4023,7 +4023,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.18';
+Defaults.version          = '1.0.19';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4119,6 +4119,11 @@ Defaults.normaliseOptions = function(options) {
 		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
 	} else {
 		options.useBinaryProtocol = Platform.preferBinary;
+	}
+
+	if(options.clientId) {
+		var headers = options.headers = options.headers || {};
+		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
 	return options;
@@ -6326,11 +6331,15 @@ var ConnectionManager = (function() {
 			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
 			if(state === 'failed' && Auth.isTokenErr(error)) { state = 'disconnected' }
 			this.notifyState({state: state, error: error});
-		} else if(wasActive && (state === 'disconnected')) {
+		} else if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
-			* transition timers in case that never happens) */
+			* transition timers in case that never happens). (If we were in the
+			* synchronizing state, then that's fine, the old transport just got its
+			* disconnected before the new one got the sync -- ignore it and keep
+			* waiting for the sync. If it fails we have a separate sync timer that
+			* will expire). */
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
 			this.startSuspendTimer();
 			this.startTransitionTimer(this.states.connecting);
@@ -8442,8 +8451,7 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.clientId     ||
-			  options.authCallback ||
+			 (options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -8464,12 +8472,10 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(options.clientId || !options.key) {
-				var msg = 'Cannot authenticate with basic auth' +
-					(options.clientId ? ' as a clientId implies token auth' :
-					 (!options.key ? ' as no key was given' : ''));
-					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-					 throw new Error(msg);
+			if(!options.key) {
+				var msg = 'Cannot authenticate with basic auth as no key was given';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
@@ -9269,6 +9275,10 @@ var Rest = (function() {
 		}
 	};
 
+	Rest.prototype.setLog = function(logOptions) {
+		Logger.setLog(logOptions.level, logOptions.handler);
+	};
+
 	function Channels(rest) {
 		this.rest = rest;
 		this.attached = {};
@@ -9324,7 +9334,10 @@ var Realtime = (function() {
 		this.realtime = realtime;
 		this.all = {};
 		this.inProgress = {};
-		realtime.connection.connectionManager.on('transport.active', this.onTransportActive.bind(this));
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function() {
+			self.onTransportActive();
+		});
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -9901,10 +9914,11 @@ var RealtimeChannel = (function() {
 			this.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {
-				if(!message.hasFlag('RESUMED')) {
+				var resumed = message.hasFlag('RESUMED');
+				if(!resumed || this.channelOptions.updateOnAttached) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
 					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
-					var change = new ChannelStateChange(this.state, this.state, false, message.error);
+					var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
 					this.emit('update', change);
 				}
 			} else {
@@ -10274,7 +10288,7 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,

@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.18
+ * Ably JavaScript Library v1.0.19
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4091,7 +4091,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.18';
+Defaults.version          = '1.0.19';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4187,6 +4187,11 @@ Defaults.normaliseOptions = function(options) {
 		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
 	} else {
 		options.useBinaryProtocol = Platform.preferBinary;
+	}
+
+	if(options.clientId) {
+		var headers = options.headers = options.headers || {};
+		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
 	return options;
@@ -8514,8 +8519,7 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.clientId     ||
-			  options.authCallback ||
+			 (options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -8536,12 +8540,10 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(options.clientId || !options.key) {
-				var msg = 'Cannot authenticate with basic auth' +
-					(options.clientId ? ' as a clientId implies token auth' :
-					 (!options.key ? ' as no key was given' : ''));
-					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-					 throw new Error(msg);
+			if(!options.key) {
+				var msg = 'Cannot authenticate with basic auth as no key was given';
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+				throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
@@ -9341,6 +9343,10 @@ var Rest = (function() {
 		}
 	};
 
+	Rest.prototype.setLog = function(logOptions) {
+		Logger.setLog(logOptions.level, logOptions.handler);
+	};
+
 	function Channels(rest) {
 		this.rest = rest;
 		this.attached = {};
@@ -9396,7 +9402,10 @@ var Realtime = (function() {
 		this.realtime = realtime;
 		this.all = {};
 		this.inProgress = {};
-		realtime.connection.connectionManager.on('transport.active', this.onTransportActive.bind(this));
+		var self = this;
+		realtime.connection.connectionManager.on('transport.active', function() {
+			self.onTransportActive();
+		});
 	}
 	Utils.inherits(Channels, EventEmitter);
 
@@ -9973,10 +9982,11 @@ var RealtimeChannel = (function() {
 			this.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {
-				if(!message.hasFlag('RESUMED')) {
+				var resumed = message.hasFlag('RESUMED');
+				if(!resumed || this.channelOptions.updateOnAttached) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
 					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
-					var change = new ChannelStateChange(this.state, this.state, false, message.error);
+					var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
 					this.emit('update', change);
 				}
 			} else {
@@ -10346,7 +10356,7 @@ var RealtimePresence = (function() {
 		}
 
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-		  action + 'ing; channel = ' + channel.name + ', client = ' + clientId || '(implicit) ' + getClientId(this));
+		  'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
 
 		var presence = PresenceMessage.fromValues({
 			action : action,
@@ -11272,6 +11282,8 @@ var JSONPTransport = (function() {
 	};
 	if(JSONPTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+	}
+	if(Platform.jsonpSupported) {
 		head = document.getElementsByTagName('head')[0];
 	}
 
@@ -11414,7 +11426,7 @@ var JSONPTransport = (function() {
 		this.emit('disposed');
 	};
 
-	if(!Http.Request) {
+	if(Platform.jsonpSupported && !Http.Request) {
 		Http.Request = function(rest, uri, headers, params, body, callback) {
 			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 			req.once('complete', callback);

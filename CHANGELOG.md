@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.19](https://github.com/ably/ably-js/tree/1.0.19) (2018-11-22)
+
+- Expose rest#setLog method to change log level or handler at runtime
+- Allow jsonp for REST requests even if allowComet is false
+- Expose Rest.Message for node, for consistency with Realtime.Message
+- Add updateOnAttached channel option to force 'update' event even if `resumed` is true
+- Stop a clientId from forcing token auth (https://github.com/ably/ably-js/issues/542)
+- Fix package bloat through mistaken node_modules_node6 includes (due to npm not correctly parsing .gitignore)
+
 ## [1.0.18](https://github.com/ably/ably-js/tree/1.0.18) (2018-09-27)
 
 - Fix bug where connectionSerial was not getting reset after a resume failure (https://github.com/ably/ably-js/pull/540)
