@@ -538,10 +538,7 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 - Run `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
 - Run `grunt release:deploy`
 - Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-- If the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have changed, submit a [PR to DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/pull/14524).
 - For nontrivial releases: update the ably-js submodule ref in the realtime repo
-
-Warning: if publishing to npm, please use npm version 5.1 (`npm install -g npm@5.1`), as 5.5 has a bug that results in the creation of an invalid package, see https://github.com/ably/ably-js/issues/422 and https://github.com/npm/npm/issues/18870 for more info
 
 ## License
 
