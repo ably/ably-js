@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2018, Ably
  *
- * Ably JavaScript Library v1.0.19
+ * Ably JavaScript Library v1.0.20
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4023,7 +4023,7 @@ Defaults.TIMEOUTS = {
 };
 Defaults.httpMaxRetryCount = 3;
 
-Defaults.version          = '1.0.19';
+Defaults.version          = '1.0.20';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -4119,11 +4119,6 @@ Defaults.normaliseOptions = function(options) {
 		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
 	} else {
 		options.useBinaryProtocol = Platform.preferBinary;
-	}
-
-	if(options.clientId) {
-		var headers = options.headers = options.headers || {};
-		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
 	return options;
@@ -8451,7 +8446,8 @@ var Auth = (function() {
 	function useTokenAuth(options) {
 		return options.useTokenAuth ||
 			(!basicAuthForced(options) &&
-			 (options.authCallback ||
+			 (options.clientId     ||
+			  options.authCallback ||
 			  options.authUrl      ||
 			  options.token        ||
 			  options.tokenDetails))
@@ -8472,10 +8468,12 @@ var Auth = (function() {
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
-			if(!options.key) {
-				var msg = 'Cannot authenticate with basic auth as no key was given';
-				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-				throw new Error(msg);
+			if(options.clientId || !options.key) {
+				var msg = 'Cannot authenticate with basic auth' +
+					(options.clientId ? ' as a clientId implies token auth' :
+					 (!options.key ? ' as no key was given' : ''));
+					 Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+					 throw new Error(msg);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
