@@ -117,10 +117,5 @@ Defaults.normaliseOptions = function(options) {
 		options.useBinaryProtocol = Platform.preferBinary;
 	}
 
-	if(options.clientId) {
-		var headers = options.headers = options.headers || {};
-		headers['X-Ably-ClientId'] = options.clientId;
-	}
-
 	return options;
 };
