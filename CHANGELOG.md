@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.20](https://github.com/ably/ably-js/tree/1.0.20) (2018-12-02)
+- Temporarily back out of clientId change due to CORS issue
+
 ## [1.0.19](https://github.com/ably/ably-js/tree/1.0.19) (2018-11-22)
 
 - Expose rest#setLog method to change log level or handler at runtime
