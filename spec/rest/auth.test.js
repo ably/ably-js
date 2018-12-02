@@ -590,7 +590,7 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 				test.done();
 			});
 		})
-	}});
+	}};
 
 	/*
 	 * Tests JWT request with invalid keys
