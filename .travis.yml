@@ -4,10 +4,10 @@ language: node_js
 install: npm install
 notifications:
   slack:
-    rooms:
-      - secure: SOHut1xcPFnac2sh5ICL3Hehx/du3G7OuWZoMKejxzbUq3Stp29t6EQ9To7VNEHCEJLcewhZTataVOQkZLcDtDRZofXVHW0RSQJVigJTH+eJq1qyPLKuO+D9lM2djP28smb0SGxhOpOr7JH1l4+rvOeNhQMvNs5+yN45w7KSM7k=
+    secure: NMKqWNNcqmEuOY9xovbXb7g/MD3OrJLtMDeUO7xUPYZBCCYLsPrGCCfoD8XtdU0ByFPGlNhJGolwR8GXBSCXOtC7wyE/j32NFKK1AB8zVj+++vAS/ADhpt3fsLN+IuekGd3MASw0KBn64dPsTB1xWXDN1YA/Fy7bYxDZHsLJ3vw=
     on_success: change
     on_failure: always
+    on_pull_requests: true
   email:
     recipients:
       - simon@ably.io
