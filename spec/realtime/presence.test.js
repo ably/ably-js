@@ -1753,21 +1753,23 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * presence events */
 	exports.suspended_preserves_presence = function(test) {
 		test.expect(8);
-		var mainRealtime = helper.AblyRealtime({clientId: 'main'}),
-			continuousRealtime = helper.AblyRealtime({clientId: 'continuous'}),
-			leavesRealtime = helper.AblyRealtime({clientId: 'leaves'}),
+		var mainRealtime = helper.AblyRealtime({clientId: 'main', log: {level: 4}}),
+			continuousRealtime = helper.AblyRealtime({clientId: 'continuous', log: {level: 4}}),
+			leavesRealtime = helper.AblyRealtime({clientId: 'leaves', log: {level: 4}}),
 			channelName = 'suspended_preserves_presence',
 			mainChannel = mainRealtime.channels.get(channelName);
 
 		monitorConnection(test, continuousRealtime);
 		monitorConnection(test, leavesRealtime);
-		var enter = function(rt, outerCb) {
-			var channel = rt.channels.get(channelName);
-			async.series([
-				function(cb) { rt.connection.whenState('connected', function() { cb(); }); },
-				function(cb) { channel.attach(cb); },
-				function(cb) { channel.presence.enter(cb); }
-			], outerCb);
+		var enter = function(rt) {
+			return function(outerCb) {
+				var channel = rt.channels.get(channelName);
+				async.series([
+					function(cb) { rt.connection.whenState('connected', function() { cb(); }); },
+					function(cb) { channel.attach(cb); },
+					function(cb) { channel.presence.enter(cb); }
+				], outerCb);
+			};
 		};
 		var waitFor = function(expectedClientId) {
 			return function(cb) {
@@ -1782,19 +1784,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		};
 
 		async.series([
-			function(cb) {
-				enter(mainRealtime, cb);
-			},
+			enter(mainRealtime),
 			function(cb) {
 				async.parallel([
-					parCb => waitFor('continuous')(parCb),
-					parCb => enter(continuousRealtime, parCb)
+					waitFor('continuous'),
+					enter(continuousRealtime)
 				], cb)
 			},
 			function(cb) {
 				async.parallel([
-					parCb => waitFor('leaves')(parCb),
-					parCb => enter(leavesRealtime, parCb)
+					waitFor('leaves'),
+					enter(leavesRealtime)
 				], cb)
 			},
 			function(cb) {
