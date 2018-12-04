@@ -11,7 +11,8 @@ main() {
   echo "** Started xvfb"
 
   npm rebuild
-  "${ROOT}/test/bin/ci-travis-nodeunit.sh"
+  npm install
+  npm test
 }
 
 main $@
