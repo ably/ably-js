@@ -36,8 +36,5 @@ matrix:
       env: RUN_TESTS=./test/bin/ci-travis-nodeunit.sh
     - node_js: '4'
       env: RUN_TESTS=./test/bin/ci-travis-all.sh
-before_script:
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
 script:
   - $RUN_TESTS
