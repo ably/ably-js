@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {};
+	var displayError = helper.displayError;
 
 	exports.setupInit = function(test) {
 		test.expect(1);
@@ -35,13 +36,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		channel.publish('event0', null, function(err) {
 			if (err) {
-				test.ok(err, 'Publish failed with implicit clientId');
+				test.ok(false, 'Publish failed with implicit clientId: ' + displayError(err));
 				return test.done();
 			}
 
 			channel.history(function(err, page) {
 				if (err) {
-					test.ok(err, 'History failed with implicit clientId');
+					test.ok(false, 'History failed with implicit clientId: ' + displayError(err));
 					return test.done();
 				}
 
@@ -71,13 +72,13 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 		channel.publish({ name: 'event0', clientId: clientId}, function(err) {
 			if (err) {
-				test.ok(err, 'Publish failed with explicit clientId');
+				test.ok(false, 'Publish failed with explicit clientId: ' + displayError(err));
 				return test.done();
 			}
 
 			channel.history(function(err, page) {
 				if (err) {
-					test.ok(err, 'History failed with explicit clientId');
+					test.ok(false, 'History failed with explicit clientId: ' + displayError(err));
 					return test.done();
 				}
 
@@ -119,7 +120,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 				channel.history(function(err, page) {
 					if (err) {
-						test.ok(err, 'History failed with explicit clientId');
+						test.ok(false, 'History failed with explicit clientId: ' + displayError(err));
 						return test.done();
 					}
 
