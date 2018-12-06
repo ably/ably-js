@@ -76,7 +76,7 @@ this.Http = (function() {
 
 	/**
 	 * Perform an HTTP GET request for a given resolved URI
-	 * @param rest
+	 * @param rest (optional)
 	 * @param the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param params optional hash of params
@@ -101,7 +101,7 @@ this.Http = (function() {
 
 	/**
 	 * Perform an HTTP POST request for a given resolved URI
-	 * @param rest
+	 * @param rest (optional)
 	 * @param the full path of the POST request
 	 * @param headers optional hash of headers
 	 * @param body object or buffer containing request body
@@ -128,21 +128,52 @@ this.Http = (function() {
 		Http.doUri('put', rest, uri, headers, body, params, callback);
 	};
 
+	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
 	Http['do'] = function(method, rest, path, headers, body, params, callback) {
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var uriFromHost = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var doArgs = arguments;
+
+		var currentFallback = rest._currentFallback;
+		if(currentFallback) {
+			if(currentFallback.validUntil > Date.now()) {
+				/* Use stored fallback */
+				Http.doUri(method, rest, uriFromHost(currentFallback.host), headers, body, params, function(err) {
+					if(err && shouldFallback(err)) {
+						/* unstore the fallback and start from the top with the default sequence */
+						rest._currentFallback = null;
+						Http['do'].apply(Http, doArgs);
+						return;
+					}
+					callback.apply(null, arguments);
+				});
+				return;
+			} else {
+				/* Fallback expired; remove it and fallthrough to normal sequence */
+				rest._currentFallback = null;
+			}
+		}
+
 		var hosts = Defaults.getHosts(rest.options);
 
 		/* see if we have one or more than one host */
 		if(hosts.length == 1) {
-			Http.doUri(method, rest, uri(hosts[0]), headers, body, params, callback);
+			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
 			return;
 		}
 
-		var tryAHost = function(candidateHosts) {
-			Http.doUri(method, rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
+		var tryAHost = function(candidateHosts, persistOnSuccess) {
+			var host = candidateHosts.shift();
+			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
 				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts);
+					tryAHost(candidateHosts, true);
 					return;
+				}
+				if(persistOnSuccess) {
+					/* RSC15f */
+					rest._currentFallback = {
+						host: host,
+						validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout
+					};
 				}
 				callback.apply(null, arguments);
 			});
