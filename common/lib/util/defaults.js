@@ -10,6 +10,7 @@ Defaults.TIMEOUTS = {
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
 	channelRetryTimeout        : 15000,
+	fallbackRetryTimeout       : 600000,
 	/* Not documented: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
