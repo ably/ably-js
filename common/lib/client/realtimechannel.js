@@ -143,6 +143,10 @@ var RealtimeChannel = (function() {
 						case 'suspended':
 						case 'failed':
 							callback(stateChange.reason || connectionManager.getStateError());
+							break;
+						case 'detaching':
+							callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
+							break;
 					}
 				});
 			}
@@ -180,13 +184,13 @@ var RealtimeChannel = (function() {
 						case 'detached':
 							callback();
 							break;
-						case 'failed':
 						case 'attached':
+						case 'suspended':
+						case 'failed':
 							callback(stateChange.reason || connectionManager.getStateError());
 							break;
-						default:
-							/* this shouldn't happen ... */
-							callback(ConnectionError.unknownChannelErr);
+						case 'detached':
+							callback(new ErrorInfo('Detach request superseded by a subsequent attach request', 90000, 409));
 							break;
 					}
 				});
