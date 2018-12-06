@@ -53,7 +53,7 @@ var RealtimeChannel = (function() {
 			++argCount;
 		}
 		if(!this.connectionManager.activeState()) {
-			callback(this.connectionManager.getStateError());
+			callback(this.connectionManager.getError());
 			return;
 		}
 		if(argCount == 2) {
@@ -120,7 +120,7 @@ var RealtimeChannel = (function() {
 		}
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
-			callback(connectionManager.getStateError());
+			callback(connectionManager.getError());
 			return;
 		}
 		switch(this.state) {
@@ -142,7 +142,7 @@ var RealtimeChannel = (function() {
 						case 'detached':
 						case 'suspended':
 						case 'failed':
-							callback(stateChange.reason || connectionManager.getStateError());
+							callback(stateChange.reason || connectionManager.getError());
 							break;
 						case 'detaching':
 							callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
@@ -168,7 +168,7 @@ var RealtimeChannel = (function() {
 		callback = callback || noop;
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
-			callback(connectionManager.getStateError());
+			callback(connectionManager.getError());
 			return;
 		}
 		switch(this.state) {
@@ -187,7 +187,7 @@ var RealtimeChannel = (function() {
 						case 'attached':
 						case 'suspended':
 						case 'failed':
-							callback(stateChange.reason || connectionManager.getStateError());
+							callback(stateChange.reason || connectionManager.getError());
 							break;
 						case 'detached':
 							callback(new ErrorInfo('Detach request superseded by a subsequent attach request', 90000, 409));
@@ -249,7 +249,7 @@ var RealtimeChannel = (function() {
 		}
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
-			throw connectionManager.getStateError();
+			throw connectionManager.getError();
 		}
 
 		/* send sync request */
