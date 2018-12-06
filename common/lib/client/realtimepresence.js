@@ -84,7 +84,7 @@ var RealtimePresence = (function() {
 
 		var channel = this.channel;
 		if(!channel.connectionManager.activeState()) {
-			callback(channel.connectionManager.getStateError());
+			callback(channel.connectionManager.getError());
 			return;
 		}
 
@@ -145,7 +145,7 @@ var RealtimePresence = (function() {
 
 		var channel = this.channel;
 		if(!channel.connectionManager.activeState()) {
-			callback(channel.connectionManager.getStateError());
+			callback(channel.connectionManager.getError());
 			return;
 		}
 

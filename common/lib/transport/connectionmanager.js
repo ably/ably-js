@@ -821,6 +821,10 @@ var ConnectionManager = (function() {
 	 * state management
 	 *********************/
 
+	ConnectionManager.prototype.getError = function() {
+		return this.errorReason || this.getStateError();
+	};
+
 	ConnectionManager.prototype.getStateError = function() {
 		return ConnectionError[this.state.state];
 	};
