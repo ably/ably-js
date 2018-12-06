@@ -46,6 +46,7 @@ var Rest = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
+		this._currentFallback = null;
 
 		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);

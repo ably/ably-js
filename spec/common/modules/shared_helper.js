@@ -16,7 +16,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				supportedTransports,
 			bestTransport = availableTransports[0],
 			/* IANA reserved; requests to it will hang forever */
-			unroutableAddress = 'http://10.255.255.1/';
+			unroutableHost = '10.255.255.1',
+			unroutableAddress = 'http://' + unroutableHost + '/';
 
 		function displayError(err) {
 			if(typeof(err) == 'string' || err == null)
@@ -231,6 +232,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			clearTransportPreference:  clearTransportPreference,
 			isComet:                   isComet,
 			isWebsocket:               isWebsocket,
+			unroutableHost:            unroutableHost,
 			unroutableAddress:         unroutableAddress,
 			arrFind:                   arrFind,
 			arrFilter:                 arrFilter
