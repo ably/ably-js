@@ -124,5 +124,9 @@ Defaults.normaliseOptions = function(options) {
 		headers['X-Ably-ClientId'] = options.clientId;
 	}
 
+	if(!('idempotentRestPublishing' in options)) {
+		options.idempotentRestPublishing = false;
+	}
+
 	return options;
 };

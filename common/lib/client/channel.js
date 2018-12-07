@@ -1,5 +1,6 @@
 var Channel = (function() {
 	function noop() {}
+	var MSG_ID_ENTROPY_BYTES = 9;
 
 	/* public constructor */
 	function Channel(rest, name, channelOptions) {
@@ -60,6 +61,12 @@ var Channel = (function() {
 		})).get(params, callback);
 	};
 
+	function allEmptyIds(messages) {
+		return Utils.arrEvery(messages, function(message) {
+			return !message.id;
+		});
+	}
+
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
@@ -84,10 +91,18 @@ var Channel = (function() {
 		var rest = this.rest,
 			options = rest.options,
 			format = options.useBinaryProtocol ? 'msgpack' : 'json',
+			idempotentRestPublishing = rest.options.idempotentRestPublishing,
 			headers = Utils.defaultPostHeaders(format);
 
 		if(options.headers)
 			Utils.mixin(headers, options.headers);
+
+		if(idempotentRestPublishing && allEmptyIds(messages)) {
+			var msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
+			Utils.arrForEach(messages, function(message, index) {
+				message.id = msgIdBase + ':' + index.toString();
+			});
+		}
 
 		Message.encodeArray(messages, this.channelOptions, function(err) {
 			if(err) {

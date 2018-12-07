@@ -67,7 +67,7 @@ var JSONPTransport = (function() {
 		this.id = id;
 		this.uri = uri;
 		this.params = params || {};
-		this.params.rnd = Utils.randStr();
+		this.params.rnd = Utils.cheapRandStr();
 		if(headers) {
 			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
 			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
