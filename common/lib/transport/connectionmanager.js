@@ -1508,7 +1508,7 @@ var ConnectionManager = (function() {
 			};
 
 			var pingStart = Utils.now(),
-				id = Utils.randStr();
+				id = Utils.cheapRandStr();
 
 			var onHeartbeat = function (responseId) {
 				if(responseId === id) {
