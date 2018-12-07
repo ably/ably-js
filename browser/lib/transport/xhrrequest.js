@@ -52,7 +52,7 @@ var XHRRequest = (function() {
 	function XHRRequest(uri, headers, params, body, requestMode, timeouts, method) {
 		EventEmitter.call(this);
 		params = params || {};
-		params.rnd = Utils.randStr();
+		params.rnd = Utils.cheapRandStr();
 		if(needJsonEnvelope() && !params.envelope)
 			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);

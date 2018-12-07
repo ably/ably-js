@@ -19,7 +19,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			unroutableAddress = 'http://10.255.255.1/';
 
 		function displayError(err) {
-			if(typeof(err) == 'string')
+			if(typeof(err) == 'string' || err == null)
 				return err;
 
 			var result = '';

@@ -1,7 +1,8 @@
 "use strict";
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
+define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {};
+	var _exports = {};
 	var displayError = helper.displayError;
 
 	exports.setupInit = function(test) {
@@ -127,6 +128,82 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 					test.equal(page.items.length, 0, 'Message should not have been published');
 					test.done();
 				});
+			});
+		});
+	};
+
+	/* Check ids are correctly sent */
+	// TODO enable when idempotent publishing works on sandbox
+	// until then, test with ABLY_ENV=idempotent-dev
+	exports.idempotent_rest_publishing = function(test) {
+		test.expect(2);
+		var rest = helper.AblyRest({idempotentRestPublishing: false, useBinaryProtocol: false}),
+			channel = rest.channels.get('idempotent_rest_publishing'),
+			originalPost = Ably.Rest.Http.post,
+			originalPublish = channel._publish,
+			message = {name: 'test', id: 'idempotent-msg-id:0'};
+
+		async.parallel([
+			function(parCb) { channel.publish(message, parCb); },
+			function(parCb) { channel.publish(message, parCb); },
+			function(parCb) { channel.publish(message, parCb); }
+		], function(err) {
+			if(err) {
+				test.ok(false, 'Publish failed with error ' + displayError(err));
+				return test.done();
+			}
+
+			channel.history(function(err, page) {
+				if(err) {
+					test.ok(false, 'History failed with error ' + displayError(err));
+					return test.done();
+				}
+				test.equal(page.items.length, 1, 'Check only one message published');
+				test.equal(page.items[0].id, message.id, 'Check message id preserved in history');
+				test.done();
+			});
+		});
+	};
+
+	/* Check ids are added when automatic idempotent rest publishing option enabled */
+	exports.automatic_idempotent_rest_publishing = function(test) {
+		test.expect(9);
+		var rest = helper.AblyRest({idempotentRestPublishing: true, useBinaryProtocol: false}),
+			channel = rest.channels.get('automatic_idempotent_rest_publishing'),
+			originalPost = Ably.Rest.Http.post,
+			idOne,
+			idTwo,
+			originalPublish = channel._publish;
+
+		channel._publish = function(requestBody) {
+			var messageOne = JSON.parse(requestBody)[0];
+			var messageTwo = JSON.parse(requestBody)[1];
+			test.equal(messageOne.name, 'one', 'Outgoing message 1 interecepted');
+			test.equal(messageTwo.name, 'two', 'Outgoing message 2 interecepted');
+			idOne = messageOne.id;
+			idTwo = messageTwo.id;
+			test.ok(idOne, 'id set on message 1');
+			test.ok(idTwo, 'id set on message 2');
+			test.equal(idOne && idOne.split(':')[1], '0', 'check zero-based index');
+			test.equal(idTwo && idTwo.split(':')[1], '1', 'check zero-based index');
+			originalPublish.apply(channel, arguments);
+		};
+
+		channel.publish([ {name: 'one'}, {name: 'two'} ], function(err) {
+			if(err) {
+				test.ok(false, 'Publish failed with error ' + displayError(err));
+				return test.done();
+			}
+
+			channel.history({direction: 'forwards'}, function(err, page) {
+				if(err) {
+					test.ok(false, 'History failed with error ' + displayError(err));
+					return test.done();
+				}
+				test.equal(page.items.length, 2, 'Only one message (with two items) should have been published');
+				test.equal(page.items[0].id, idOne, 'Check message id 1 preserved in history');
+				test.equal(page.items[1].id, idTwo, 'Check message id 1 preserved in history');
+				test.done();
 			});
 		});
 	};

@@ -13,5 +13,12 @@ this.Platform = {
 	nextTick: process.nextTick,
 	inspect: require('util').inspect,
 	inherits: require('util').inherits,
-	addEventListener: null
+	addEventListener: null,
+	getRandomValues: function(arr, callback) {
+		var bytes = require('crypto').randomBytes(arr.length);
+		arr.set(bytes);
+		if(callback) {
+			callback(null);
+		}
+	}
 };

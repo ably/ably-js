@@ -41,7 +41,9 @@ var Platform = {
 		for (var i = 0; i < arr.length; i++) {
 			arr[i] = bytes[i];
 		}
-		callback(null);
+		if(callback) {
+			callback(null);
+		}
 	}
 };
 
