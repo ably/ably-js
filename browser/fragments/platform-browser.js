@@ -45,7 +45,9 @@ var Platform = {
 		}
 		return function(arr, callback) {
 			crypto.getRandomValues(arr);
-			callback(null);
+			if(callback) {
+				callback(null);
+			}
 		};
 	})(window.crypto || window.msCrypto) // mscrypto for IE11
 };

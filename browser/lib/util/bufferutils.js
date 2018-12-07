@@ -2,6 +2,7 @@ var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
+	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
@@ -9,7 +10,7 @@ var BufferUtils = (function() {
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function arrayBufferToBase64(ArrayBuffer) {
 		var base64    = ''
-		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		var encodings = base64CharSet;
 
 		var bytes         = new Uint8Array(ArrayBuffer)
 		var byteLength    = bytes.byteLength
@@ -71,6 +72,8 @@ var BufferUtils = (function() {
 	}
 
 	function BufferUtils() {}
+
+	BufferUtils.base64CharSet = base64CharSet;
 
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 

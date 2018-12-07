@@ -14,5 +14,12 @@ this.Platform = {
 	inspect: require('util').inspect,
 	stringByteSize: Buffer.byteLength,
 	inherits: require('util').inherits,
-	addEventListener: null
+	addEventListener: null,
+	getRandomValues: function(arr, callback) {
+		var bytes = require('crypto').randomBytes(arr.length);
+		arr.set(bytes);
+		if(callback) {
+			callback(null);
+		}
+	}
 };
