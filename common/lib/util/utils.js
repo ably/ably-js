@@ -1,6 +1,10 @@
 var Utils = (function() {
 	function Utils() {}
 
+	function randomPosn(arrOrStr) {
+		return Math.floor(Math.random() * arrOrStr.length);
+	}
+
 	/*
 	 * Add a set of properties to a target object
 	 * target: the target object
@@ -344,7 +348,7 @@ var Utils = (function() {
 	};
 
 	Utils.arrPopRandomElement = function(arr) {
-		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+		return arr.splice(randomPosn(arr), 1)[0];
 	};
 
 	Utils.toQueryString = function(params) {
@@ -409,9 +413,31 @@ var Utils = (function() {
 		throw new Error("Expected input of Utils.dataSizeBytes to be a buffer or string, but was: " + (typeof data));
 	};
 
-	Utils.randStr = function() {
+	Utils.cheapRandStr = function() {
 		return String(Math.random()).substr(2);
 	};
+
+	/* Takes param the minimum number of bytes of entropy the string must
+	 * include, not the length of the string. String length produced is not
+	 * guaranteed. */
+	Utils.randomString = (Platform.getRandomValues && typeof Uint8Array !== 'undefined') ?
+		function(numBytes) {
+			var uIntArr = new Uint8Array(numBytes);
+			Platform.getRandomValues(uIntArr);
+			return BufferUtils.base64Encode(uIntArr.buffer);
+		} : function(numBytes) {
+			/* Old browser; fall back to Math.random. Could just use a
+			 * CryptoJS version of the above, but want this to still work in nocrypto
+			 * versions of the library */
+			var charset = BufferUtils.base64CharSet;
+			/* base64 has 33% overhead; round length up */
+			var length = Math.round(numBytes * 4/3);
+			var result = '';
+			for(var i=0; i<length; i++) {
+				result += charset[randomPosn(charset)];
+			}
+			return result;
+		};
 
 	/* Pick n elements at random without replacement from an array */
 	Utils.arrChooseN = function(arr, n) {
