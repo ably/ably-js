@@ -133,8 +133,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(150);
 		var txRealtime, rxRealtime;
 		try {
-			txRealtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
-			rxRealtime = helper.AblyRealtime();
+			txRealtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false, log: {level: 4} }));
+			rxRealtime = helper.AblyRealtime({log: {level: 4}});
 			var txChannel = txRealtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
 			var rxChannel = rxRealtime.channels.get(txChannel.name);
 
