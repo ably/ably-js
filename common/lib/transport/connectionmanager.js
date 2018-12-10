@@ -1507,6 +1507,7 @@ var ConnectionManager = (function() {
 
 			var onHeartbeat = function (responseId) {
 				if(responseId === id) {
+					transport.off('heartbeat', onHeartbeat);
 					clearTimeout(timer);
 					var responseTime = Utils.now() - pingStart;
 					callback(null, responseTime);
@@ -1515,7 +1516,7 @@ var ConnectionManager = (function() {
 
 			var timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
 
-			transport.once('heartbeat', onHeartbeat);
+			transport.on('heartbeat', onHeartbeat);
 			transport.ping(id);
 			return;
 		}
