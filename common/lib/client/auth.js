@@ -94,9 +94,9 @@ var Auth = (function() {
 		} else {
 			/* Basic auth */
 			if(!options.key) {
-				var msg = 'Cannot authenticate with basic auth as no key was given';
+				var msg = 'No authentication options provided; need one of: key, authUrl, or authCallback (or for testing only, token or tokenDetails)';
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-				throw new Error(msg);
+				throw new ErrorInfo(msg, 40160, 401);
 			}
 			Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
 			this._saveBasicOptions(options);
