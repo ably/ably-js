@@ -726,8 +726,6 @@ var Auth = (function() {
 			var err = new ErrorInfo(msg, 40102, 401);
 			Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
 			return err;
-		} else if(clientId === '*') {
-			this.tokenParams.clientId = clientId;
 		} else {
 			/* RSA7a4: if options.clientId is provided and is not
 			 * null, it overrides defaultTokenParams.clientId */
