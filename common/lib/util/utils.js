@@ -378,6 +378,16 @@ var Utils = (function() {
 			Utils.inspect(x);
 	};
 
+	Utils.inspectBody = function(body) {
+		if(BufferUtils.isBuffer(body)) {
+			return body.toString();
+		} else if(typeof body === 'string') {
+			return body;
+		} else {
+			return Platform.inspect(body);
+		}
+	};
+
 	Utils.randStr = function() {
 		return String(Math.random()).substr(2);
 	};
