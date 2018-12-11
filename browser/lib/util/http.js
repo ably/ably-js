@@ -34,7 +34,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request('get', rest, uri, headers, params, null, callback);
+		Http.doUri('get', rest, uri, headers, null, params, callback);
 	};
 
 	/**
@@ -60,7 +60,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request('post', rest, uri, headers, params, body, callback);
+		Http.doUri('post', rest, uri, headers, body, params, callback);
 	};
 
 	Http['delete'] = function(rest, path, headers, params, callback) {
@@ -68,7 +68,7 @@ var Http = (function() {
 	}
 
 	Http.deleteUri = function(rest, uri, headers, params, callback) {
-		Http.Request('delete', rest, uri, headers, params, null, callback);
+		Http.doUri('delete', rest, uri, headers, null, params, callback);
 	};
 
 	Http.put = function(rest, path, headers, body, params, callback) {
@@ -76,7 +76,7 @@ var Http = (function() {
 	};
 
 	Http.putUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request('put', rest, uri, headers, params, body, callback);
+		Http.doUri('put', rest, uri, headers, body, params, callback);
 	};
 
 	Http['do'] = function(method, rest, path, headers, body, params, callback) {
@@ -92,13 +92,13 @@ var Http = (function() {
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
-			Http.Request(method, rest, uri(hosts[0]), headers, params, body, callback);
+			Http.doUri(method, rest, uri(hosts[0]), headers, body, params, callback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
 		var tryAHost = function(candidateHosts) {
-			Http.Request(method, rest, uri(candidateHosts.shift()), headers, params, body, function(err) {
+			Http.doUri(method, rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
 				if(err && shouldFallback(err) && candidateHosts.length) {
 					tryAHost(candidateHosts);
 					return;
@@ -107,6 +107,10 @@ var Http = (function() {
 			});
 		};
 		tryAHost(hosts);
+	};
+
+	Http.doUri = function(method, rest, uri, headers, body, params, callback) {
+		Http.Request(method, rest, uri, headers, params, body, callback);
 	};
 
 	Http.supportsAuthHeaders = false;
