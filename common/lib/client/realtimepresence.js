@@ -9,13 +9,14 @@ var RealtimePresence = (function() {
 		return realtimePresence.channel.realtime.auth.clientId;
 	}
 
-	function isAnonymous(realtimePresence) {
+	function isAnonymousOrWildcard(realtimePresence) {
 		var realtime = realtimePresence.channel.realtime;
 		/* If not currently connected, we can't assume that we're an anonymous
 		 * client, as realtime may inform us of our clientId in the CONNECTED
 		 * message. So assume we're not anonymous and leave it to realtime to
 		 * return an error if we are */
-		return !realtime.auth.clientId && realtime.connection.state === 'connected';
+		var clientId = realtime.auth.clientId;
+		return (!clientId || (clientId === '*')) && realtime.connection.state === 'connected';
 	}
 
 	/* Callback is called only in the event of an error */
@@ -50,14 +51,16 @@ var RealtimePresence = (function() {
 	Utils.inherits(RealtimePresence, Presence);
 
 	RealtimePresence.prototype.enter = function(data, callback) {
-		if(isAnonymous(this))
+		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
+		}
 		this._enterOrUpdateClient(undefined, data, callback, 'enter');
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
-		if(isAnonymous(this))
+		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
+		}
 		this._enterOrUpdateClient(undefined, data, callback, 'update');
 	};
 
@@ -92,7 +95,9 @@ var RealtimePresence = (function() {
 			action : action,
 			data   : data
 		});
-		if (clientId) { presence.clientId = clientId; }
+		if (clientId) {
+			presence.clientId = clientId;
+		}
 
 		var self = this;
 		PresenceMessage.encode(presence, channel.channelOptions, function(err) {
@@ -122,8 +127,9 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.leave = function(data, callback) {
-		if(isAnonymous(this))
+		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
+		}
 		this.leaveClient(undefined, data, callback);
 	};
 
