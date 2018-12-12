@@ -736,6 +736,7 @@ var Auth = (function() {
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
 		return this.clientId &&
+			(this.clientId !== '*') &&
 			tokenClientId &&
 			(tokenClientId !== '*') &&
 			(this.clientId !== tokenClientId);
