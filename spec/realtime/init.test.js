@@ -113,9 +113,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.equal(realtime.auth.clientId, null);
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.auth.tokenDetails.clientId, '*');
-				/* auth.clientId does not inherit the value '*'; it remains null as
-				* client is not identified */
-				test.equal(realtime.auth.clientId, null);
+				/* auth.clientId now does inherit the value '*' -- RSA7b4 */
+				test.equal(realtime.auth.clientId, '*');
 				test.equal(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued, 12345);
 				closeAndFinish(test, realtime);
 			});
