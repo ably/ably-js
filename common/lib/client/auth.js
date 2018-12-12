@@ -78,6 +78,13 @@ var Auth = (function() {
 			  options.tokenDetails))
 	}
 
+	/* RSA4a */
+	function noWayToRenew(options) {
+		return !options.key &&
+			!options.authCallback &&
+			!options.authUrl;
+	}
+
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
@@ -88,6 +95,9 @@ var Auth = (function() {
 				var msg = 'client-side token request signing not supported';
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 				throw new Error(msg);
+			}
+			if(noWayToRenew(options)) {
+				Logger.logAction(Logger.LOG_MAJOR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
 			}
 			this._saveTokenOptions(options.defaultTokenParams, options);
 			logAndValidateTokenAuthMethod(this.authOptions);
@@ -366,9 +376,9 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(params, authOptions, cb); };
 		} else {
-			var msg = "Need a new token, but authOptions does not include any way to request one";
-			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-			callback(new ErrorInfo(msg, 40101, 403));
+			var msg = "Need a new token, but authOptions does not include any way to request one (no authUrl, authCallback, or key)";
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
+			callback(new ErrorInfo(msg, 40171, 403));
 			return;
 		}
 
