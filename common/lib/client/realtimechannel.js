@@ -66,11 +66,17 @@ var RealtimeChannel = (function() {
 		} else {
 			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
 		}
-		var options = this.channelOptions;
-		var self = this;
-		Message.encodeArray(messages, options, function(err) {
+		var self = this,
+			maxMessageSize = this.realtime.options.maxMessageSize;
+		Message.encodeArray(messages, this.channelOptions, function(err) {
 			if (err) {
 				callback(err);
+				return;
+			}
+			/* RSL1i */
+			var size = Message.getMessagesSize(messages);
+			if(size > maxMessageSize) {
+				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
 				return;
 			}
 			self._publish(messages, callback);
@@ -369,29 +375,6 @@ var RealtimeChannel = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
 		}
-	};
-
-	RealtimeChannel.mergeTo = function(dest, src) {
-		var result = false;
-		var action;
-		if(dest.channel == src.channel) {
-			if((action = dest.action) == src.action) {
-				switch(action) {
-				case actions.MESSAGE:
-					for(var i = 0; i < src.messages.length; i++)
-						dest.messages.push(src.messages[i]);
-					result = true;
-					break;
-				case actions.PRESENCE:
-					for(var i = 0; i < src.presence.length; i++)
-						dest.presence.push(src.presence[i]);
-					result = true;
-					break;
-				default:
-				}
-			}
-		}
-		return result;
 	};
 
 	RealtimeChannel.prototype.onAttached = function() {

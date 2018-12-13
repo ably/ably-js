@@ -11,6 +11,7 @@ var Message = (function() {
 		this.data = undefined;
 		this.encoding = undefined;
 		this.extras = undefined;
+		this.size = undefined;
 	}
 
 	/**
@@ -133,14 +134,8 @@ var Message = (function() {
 		}
 	};
 
-	Message.toRequestBody = function(messages, options, format, callback) {
-		Message.encodeArray(messages, options, function(err) {
-			if (err) {
-				callback(err);
-				return;
-			}
-			callback(null, (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages));
-		});
+	Message.serialize = function(messages, format) {
+		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
 	};
 
 	Message.decode = function(message, options) {
@@ -243,6 +238,34 @@ var Message = (function() {
 		return Utils.arrMap(encodedArray, function(encoded) {
 			return Message.fromEncoded(encoded, options);
 		});
+	};
+
+	function getMessageSize(msg) {
+		var size = 0;
+		if(msg.name) {
+			size += msg.name.length;
+		}
+		if(msg.clientId) {
+			size += msg.clientId.length;
+		}
+		if(msg.extras) {
+			size += JSON.stringify(msg.extras).length;
+		}
+		if(msg.data) {
+			size += Utils.dataSizeBytes(msg.data);
+		}
+		return size;
+	};
+
+	/* This should be called on encode()d (and encrypt()d) Messages (as it
+	 * assumes the data is a string or buffer) */
+	Message.getMessagesSize = function(messages) {
+		var msg, total = 0;
+		for(var i=0; i<messages.length; i++) {
+			msg = messages[i];
+			total += (msg.size || (msg.size = getMessageSize(msg)))
+		}
+		return total;
 	};
 
 	return Message;

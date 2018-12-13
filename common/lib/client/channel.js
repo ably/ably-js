@@ -81,18 +81,28 @@ var Channel = (function() {
 		}
 
 		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			options = rest.options,
+			format = options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultPostHeaders(format));
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if(options.headers)
+			Utils.mixin(headers, options.headers);
 
-		Message.toRequestBody(messages, this.channelOptions, format, function(err, requestBody) {
-			if (err) {
+		Message.encodeArray(messages, this.channelOptions, function(err) {
+			if(err) {
 				callback(err);
 				return;
 			}
-			self._publish(requestBody, headers, callback);
+
+			/* RSL1i */
+			var size = Message.getMessagesSize(messages),
+				maxMessageSize = options.maxMessageSize;
+			if(size > maxMessageSize) {
+				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
+				return;
+			}
+
+			self._publish(Message.serialize(messages, format), headers, callback);
 		});
 	};
 

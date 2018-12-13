@@ -131,5 +131,19 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
+	/* TO3l8; CD2C; RSL1i */
+	exports.maxMessageSize = function(test) {
+		test.expect(2);
+		/* No connectionDetails mechanism for REST, so just pass the override into the constructor */
+		var realtime = helper.AblyRest({maxMessageSize: 64}),
+			channel = realtime.channels.get('maxMessageSize');
+
+		channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', function(err) {
+			test.ok(err, 'Check publish refused');
+			test.equal(err.code, 40009);
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

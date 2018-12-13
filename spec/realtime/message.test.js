@@ -2,9 +2,11 @@
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {},
+		_exports = {},
 		displayError = helper.displayError,
 		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		monitorConnection = helper.monitorConnection,
 		testOnAllTransports = helper.testOnAllTransports;
 
@@ -741,6 +743,76 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 	};
 
+	/* TO3l8; CD2C; RSL1i */
+	exports.maxMessageSize = function(test) {
+		test.expect(2);
+		var realtime = helper.AblyRealtime(),
+			connectionManager = realtime.connection.connectionManager,
+			channel = realtime.channels.get('maxMessageSize');
+
+		realtime.connection.once('connected', function() {
+			connectionManager.once('connectiondetails', function(details) {
+				channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', function(err) {
+					test.ok(err, 'Check publish refused');
+					test.equal(err.code, 40009);
+					closeAndFinish(test, realtime);
+				});
+			});
+			var connectionDetails = connectionManager.connectionDetails;
+			connectionDetails.maxMessageSize = 64;
+			connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 4,
+				connectionDetails: connectionDetails
+			}));
+		});
+	};
+
+	/* RTL6d: publish a series of messages that exercise various bundling
+	 * constraints, check they're satisfied */
+	exports.bundling = function(test) {
+		test.expect(28);
+		var realtime = helper.AblyRealtime({maxMessageSize: 256, autoConnect: false}),
+			channelOne = realtime.channels.get('bundlingOne'),
+			channelTwo = realtime.channels.get('bundlingTwo');
+
+		/* RTL6d3; RTL6d5 */
+		channelTwo.publish('2a', {expectedBundle: 0});
+		channelOne.publish('a', {expectedBundle: 1});
+		channelOne.publish([{name: 'b', data: {expectedBundle: 1}}, {name: 'c', data: {expectedBundle: 1}}]);
+		channelOne.publish('d', {expectedBundle: 1});
+		channelTwo.publish('2b', {expectedBundle: 2});
+		channelOne.publish('e', {expectedBundle: 3});
+		channelOne.publish({name: 'f', data: {expectedBundle: 3}});
+		/* RTL6d2 */
+		channelOne.publish({name: 'g', data: {expectedBundle: 4}, clientId: 'foo'});
+		channelOne.publish({name: 'h', data: {expectedBundle: 4}, clientId: 'foo'});
+		channelOne.publish({name: 'i', data: {expectedBundle: 5}, clientId: 'bar'});
+		channelOne.publish('j', {expectedBundle: 6});
+		/* RTL6d1 */
+		channelOne.publish('k', {expectedBundle: 7, moreData: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
+		channelOne.publish('l', {expectedBundle: 8});
+		channelOne.publish('z_last', {expectedBundle: 8});
+
+		var queue = realtime.connection.connectionManager.queuedMessages;
+		var messages;
+		for(var i=0; i<=8; i++) {
+			messages = queue.messages[i].message.messages || queue.messages[i].message.presence;
+			for(var j=0; j<messages.length; j++) {
+				test.equal(JSON.parse(messages[j].data).expectedBundle, i);
+			}
+		}
+
+		/* RTL6d6 */
+		var currentName = '';
+		channelOne.subscribe(function(msg) {
+			test.ok(currentName < msg.name, 'Check final ordering preserved');
+			currentName = msg.name;
+			if(currentName === 'z_last') {
+				closeAndFinish(test, realtime);
+			}
+		});
+		realtime.connect();
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });

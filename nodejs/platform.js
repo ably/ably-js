@@ -12,6 +12,7 @@ this.Platform = {
 	preferBinary: true,
 	nextTick: process.nextTick,
 	inspect: require('util').inspect,
+	stringByteSize: Buffer.byteLength,
 	inherits: require('util').inherits,
 	addEventListener: null
 };

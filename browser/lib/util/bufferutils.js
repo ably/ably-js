@@ -148,5 +148,13 @@ var BufferUtils = (function() {
 		return 0;
 	};
 
+	BufferUtils.byteLength = function(buffer) {
+		if(isArrayBuffer(buffer)) {
+			return buf.byteLength
+		} else if(isWordArray(buf)) {
+			return buf.sigBytes;
+		}
+	};
+
 	return BufferUtils;
 })();
