@@ -18,6 +18,7 @@ Defaults.TIMEOUTS = {
 	parallelUpgradeDelay       : 6000
 };
 Defaults.httpMaxRetryCount = 3;
+Defaults.maxMessageSize    = 65536;
 
 Defaults.version          = '1.0.20';
 Defaults.libstring        = Platform.libver + Defaults.version;
@@ -103,6 +104,7 @@ Defaults.normaliseOptions = function(options) {
 	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
+	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
 	if(!('tls' in options)) options.tls = true;
 
 	/* Allow values passed in options to override default timeouts */

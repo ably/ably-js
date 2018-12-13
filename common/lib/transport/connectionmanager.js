@@ -1425,13 +1425,40 @@ var ConnectionManager = (function() {
 		}
 	};
 
+	function bundleWith(dest, src, maxSize) {
+		var action;
+		if(dest.channel !== src.channel) {
+			/* RTL6d3 */
+			return false;
+		}
+		if((action = dest.action) !== src.action) {
+			/* RTL6d4 */
+			return false;
+		}
+		var kind = (action === actions.PRESENCE) ? 'presence' : 'messages',
+			proposed = dest[kind].concat(src[kind]),
+			size = Message.getMessagesSize(proposed);
+		if(size > maxSize) {
+			/* RTL6d1 */
+			return false;
+		}
+		if(!Utils.allSame(proposed, 'clientId')) {
+			/* RTL6d2 */
+			return false;
+		}
+		/* we're good to go! */
+		dest[kind] = proposed;
+		return true;
+	};
+
 	ConnectionManager.prototype.queue = function(msg, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
 		var lastQueued = this.queuedMessages.last();
+		var maxSize = this.options.maxMessageSize;
 		/* If have already attempted to send a message, don't merge more messages
 		 * into it, as if the previous send actually succeeded and realtime ignores
 		 * the dup, they'll be lost */
-		if(lastQueued && !lastQueued.sendAttempted && RealtimeChannel.mergeTo(lastQueued.message, msg)) {
+		if(lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
 			if(!lastQueued.merged) {
 				lastQueued.callback = Multicaster([lastQueued.callback]);
 				lastQueued.merged = true;
@@ -1602,6 +1629,7 @@ var ConnectionManager = (function() {
 			return;
 		}
 		this.connectionDetails = connectionDetails;
+		this.options.maxMessageSize = connectionDetails.maxMessageSize;
 		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);

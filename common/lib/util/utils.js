@@ -302,6 +302,16 @@ var Utils = (function() {
 			return true;
 		};
 
+	Utils.allSame = function(arr, prop) {
+		if(arr.length === 0) {
+			return true;
+		}
+		var first = arr[0][prop];
+		return Utils.arrEvery(arr, function(item) {
+			return item[prop] === first;
+		});
+	};
+
 	Utils.nextTick = Platform.nextTick;
 
 	var contentTypes = {
@@ -386,6 +396,17 @@ var Utils = (function() {
 		} else {
 			return Platform.inspect(body);
 		}
+	};
+
+	/* Data is assumed to be either a string or a buffer. */
+	Utils.dataSizeBytes = function(data) {
+		if(BufferUtils.isBuffer(data)) {
+			return BufferUtils.byteLength(data);
+		}
+		if(typeof data === 'string') {
+			return Platform.stringByteSize(data);
+		}
+		throw new Error("Expected input of Utils.dataSizeBytes to be a buffer or string, but was: " + (typeof data));
 	};
 
 	Utils.randStr = function() {

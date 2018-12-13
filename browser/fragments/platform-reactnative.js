@@ -18,6 +18,15 @@ var Platform = {
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: null,
 	inspect: JSON.stringify,
+	stringByteSize: function(str) {
+		/* str.length will be an underestimate for non-ascii strings. But if we're
+		 * in a browser too old to support TextDecoder, not much we can do. Better
+		 * to underestimate, so if we do go over-size, the server will reject the
+		 * message */
+		return (typeof TextDecoder !== 'undefined') &&
+			(new TextEncoder().encode(str)).length ||
+			str.length;
+	},
 	getRandomValues: (function(randomBytes) {
 		return function(arr, callback) {
 			randomBytes(arr.length, function(err, bytes) {

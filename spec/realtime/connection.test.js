@@ -211,6 +211,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.equal(connectionManager.connectionStateTtl, 12345, 'Check connectionStateTtl set in connectionManager');
 				test.equal(details.clientId, 'foo', 'Check clientId in event');
 				test.equal(realtime.auth.clientId, 'foo', 'Check clientId set in auth');
+				test.equal(realtime.options.maxMessageSize, 98765, 'Check maxMessageSize set');
 				closeAndFinish(test, realtime);
 			});
 			connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
@@ -220,6 +221,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				connectionSerial: -1,
 				connectionDetails: {
 					clientId: 'foo',
+					maxMessageSize: 98765,
 					connectionStateTtl: 12345
 				}
 			}));

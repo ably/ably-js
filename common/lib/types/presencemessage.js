@@ -13,6 +13,7 @@ var PresenceMessage = (function() {
 		this.connectionId = undefined;
 		this.data = undefined;
 		this.encoding = undefined;
+		this.size = undefined;
 	}
 
 	PresenceMessage.Actions = [
@@ -147,6 +148,8 @@ var PresenceMessage = (function() {
 			return PresenceMessage.fromEncoded(encoded, options);
 		});
 	};
+
+	PresenceMessage.getMessagesSize = Message.getMessagesSize;
 
 	return PresenceMessage;
 })();

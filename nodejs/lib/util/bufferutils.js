@@ -25,5 +25,9 @@ this.BufferUtils = (function() {
 		return buf1.compare(buf2);
 	};
 
+	BufferUtils.byteLength = function(buffer) {
+		return buffer.byteLength;
+	};
+
 	return BufferUtils;
 })();
