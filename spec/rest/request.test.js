@@ -5,6 +5,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		exports = {},
 		_exports = {},
 		utils = helper.Utils,
+		echoServerHost = 'echo.ably.io',
 		restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
 	exports.setuptime = function(test) {
@@ -173,6 +174,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.done();
 		});
 	});
+
+	exports.checkPut = function(test) {
+		test.expect(1);
+		var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
+		restEcho.request("PUT", "/methods", {}, {}, {}, function(err, res) {
+			test.equal(res.items[0] && res.items[0].method, 'put');
+			test.done();
+		});
+	};
 
 	return module.exports = helper.withTimeout(exports);
 });
