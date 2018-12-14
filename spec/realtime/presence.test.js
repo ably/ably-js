@@ -1728,7 +1728,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				/* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
 				channel.onMessage(createPM({
 					"action": 11,
-					"channelSerial": channel.attachSerial,
+					"channelSerial": channel.properties.attachSerial,
 					"flags": 0
 				}));
 			},
