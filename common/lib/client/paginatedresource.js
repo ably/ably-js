@@ -44,6 +44,13 @@ var PaginatedResource = (function() {
 		});
 	};
 
+	PaginatedResource.prototype.put = function(params, body, callback) {
+		var self = this;
+		Resource.put(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
+			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+		});
+	};
+
 	function returnErrOnly(err, body, useHPR) {
 		/* If using httpPaginatedResponse, errors from Ably are returned as part of
 		 * the HPR, only do callback(err) for network errors etc. which don't

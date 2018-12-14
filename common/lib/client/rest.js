@@ -141,6 +141,9 @@ var Rest = (function() {
 			case 'post':
 				paginatedResource.post(params, body, callback);
 				break;
+			case 'put':
+				paginatedResource.put(params, body, callback);
+				break;
 			default:
 				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
 		}
