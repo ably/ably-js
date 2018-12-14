@@ -935,12 +935,17 @@ var ConnectionManager = (function() {
 		/* We retry immediately if:
 		 * - something disconnects us while we're connected, or
 		 * - a viable (but not yet active) transport fails due to a token error (so
-		 *   this.errorReason will be set, and startConnect will do a forced authorize) */
+		 *   this.errorReason will be set, and startConnect will do a forced
+		 *   authorize). If this.errorReason is already set (to a token error),
+		 *   then there has been at least one previous attempt to connect that also
+		 *   failed for a token error, so by RTN14b we go to DISCONNECTED and wait
+		 *   before trying again */
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
-				(this.state === this.states.connecting  &&
-					indicated.error && Auth.isTokenErr(indicated.error))));
+				(this.state === this.states.connecting &&
+					indicated.error && Auth.isTokenErr(indicated.error) &&
+					!(this.errorReason && Auth.isTokenErr(this.errorReason)))));
 
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
 		/* do nothing if we're already in the indicated state */
