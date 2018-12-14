@@ -1020,5 +1020,35 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RTN14b */
+	exports.reauth_consistently_expired_token = function(test) {
+		test.expect(2);
+		var realtime, rest = helper.AblyRest();
+		rest.auth.requestToken({ttl: 1}, function(err, token) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			var authCallbackCallCount = 0;
+			var authCallback = function(_, callback) {
+				authCallbackCallCount++;
+				callback(null, token.token);
+			};
+			/* Wait a few ms to ensure token is expired */
+			setTimeout(function() {
+				realtime = helper.AblyRealtime({authCallback: authCallback, disconnectedRetryTimeout: 15000});
+				/* Wait 5s, expect to have seen two attempts to get a token -- so the
+				 * authCallback called twice -- and the connection to now be sitting in
+				 * the disconnected state */
+				setTimeout(function() {
+					test.equal(authCallbackCallCount, 2);
+					test.equal(realtime.connection.state, 'disconnected');
+					closeAndFinish(test, realtime);
+				}, 3000);
+			}, 100);
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
