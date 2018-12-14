@@ -229,7 +229,7 @@ var RealtimePresence = (function() {
 		if(params && params.untilAttach) {
 			if(this.channel.state === 'attached') {
 				delete params.untilAttach;
-				params.from_serial = this.channel.attachSerial;
+				params.from_serial = this.channel.properties.attachSerial;
 			} else {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
 			}

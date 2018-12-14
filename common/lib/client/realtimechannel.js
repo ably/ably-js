@@ -14,7 +14,9 @@ var RealtimeChannel = (function() {
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
 		this.syncChannelSerial = undefined;
-		this.attachSerial = undefined;
+		this.properties = {
+			attachSerial: undefined
+		};
 		this.setOptions(options);
 		this.errorReason = null;
 		this._requestedFlags = null;
@@ -275,7 +277,7 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
-			this.attachSerial = message.channelSerial;
+			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {
 				var resumed = message.hasFlag('RESUMED');
@@ -546,12 +548,12 @@ var RealtimeChannel = (function() {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 				return;
 			}
-			if(!this.attachSerial) {
+			if(!this.properties.attachSerial) {
 				callback(new ErrorInfo("untilAttach was specified and channel is attached, but attachSerial is not defined", 40000, 400));
 				return;
 			}
 			delete params.untilAttach;
-			params.from_serial = this.attachSerial;
+			params.from_serial = this.properties.attachSerial;
 		}
 
 		Channel.prototype._history.call(this, params, callback);
