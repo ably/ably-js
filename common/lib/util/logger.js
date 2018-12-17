@@ -1,17 +1,18 @@
 var Logger = (function() {
-	var consoleLogger;
+	var consoleLogger, errorLogger;
 
 	/* Can't just check for console && console.log; fails in IE <=9 */
 	if((typeof window === 'undefined') /* node */ ||
 		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
 		consoleLogger = function() { console.log.apply(console, arguments); };
+		errorLogger = console.warn ? function() { console.warn.apply(console, arguments); } : consoleLogger;
 	} else if(window.console && window.console.log) {
 		/* IE <= 9 with the console open -- console.log does not
 		 * inherit from Function, so has no apply method */
-		consoleLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
+		consoleLogger = errorLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
 	} else {
 		/* IE <= 9 when dev tools are closed - window.console not even defined */
-		consoleLogger = function() {};
+		consoleLogger = errorLogger = function() {};
 	}
 
 	function pad(str, three) {
@@ -28,11 +29,17 @@ var Logger = (function() {
 	LOG_DEBUG   = LOG_MICRO;
 
 	var logLevel = LOG_DEFAULT;
-	var logHandler = Platform.logTimestamps ?
-		function(msg) {
-			var time = new Date();
-			consoleLogger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
-		} : consoleLogger;
+
+	function getHandler(logger) {
+		return Platform.logTimestamps ?
+			function(msg) {
+				var time = new Date();
+				logger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
+			} : logger;
+	}
+
+	var logHandler = getHandler(consoleLogger),
+		logErrorHandler = getHandler(errorLogger);
 
 	/* public constructor */
 	function Logger(args) {}
@@ -50,13 +57,13 @@ var Logger = (function() {
 	/* public static functions */
 	Logger.logAction = function(level, action, message) {
 		if (Logger.shouldLog(level)) {
-			logHandler('Ably: ' + action + ': ' + message);
+			(level === LOG_ERROR ? logErrorHandler : logHandler)('Ably: ' + action + ': ' + message);
 		}
 	};
 
 	Logger.deprecated = function(original, replacement) {
 		if (Logger.shouldLog(LOG_ERROR)) {
-			logHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+			logErrorHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
 		}
 	}
 
@@ -68,7 +75,7 @@ var Logger = (function() {
 
 	Logger.setLog = function(level, handler) {
 		if(level !== undefined) logLevel = level;
-		if(handler !== undefined) logHandler = handler;
+		if(handler !== undefined) logHandler = logErrorHandler = handler;
 	};
 
 	return Logger;
