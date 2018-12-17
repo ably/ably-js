@@ -337,5 +337,26 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		})
 	}
 
+	exports.init_callbacks_promises = function(test) {
+		var realtime,
+			keyStr = helper.getTestApp().keys[0].keyStr,
+			getOptions = function() { return {key: keyStr, autoConnect: false}; };
+
+		realtime = new Ably.Realtime(getOptions());
+		test.ok(!realtime.options.promises, 'Check promises defaults to false');
+
+		realtime = new Ably.Realtime.Promise(getOptions());
+		test.ok(realtime.options.promises, 'Check promises default to true with promise constructor');
+
+		if(!isBrowser && typeof require == 'function') {
+			realtime = new require('../../promises').Realtime(getOptions());
+			test.ok(realtime.options.promises, 'Check promises default to true with promise require target');
+
+			realtime = new require('../../callbacks').Realtime(getOptions());
+			test.ok(!realtime.options.promises, 'Check promises default to false with callback require target');
+		}
+		test.done();
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

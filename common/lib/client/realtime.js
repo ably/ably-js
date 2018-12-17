@@ -144,3 +144,9 @@ var Realtime = (function() {
 
 	return Realtime;
 })();
+
+Realtime.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Realtime(options);
+};
