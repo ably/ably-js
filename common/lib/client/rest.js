@@ -13,9 +13,7 @@ var Rest = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
-		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
-		}
+		options = Defaults.objectifyOptions(options);
 
 		if(options.log) {
 			Logger.setLog(options.log.level, options.log.handler);
@@ -189,3 +187,9 @@ var Rest = (function() {
 
 	return Rest;
 })();
+
+Rest.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Rest(options);
+};
