@@ -5,20 +5,6 @@ var CometTransport = (function() {
 		REQ_RECV_POLL = 2,
 		REQ_RECV_STREAM = 3;
 
-	function actOnConnectHeaders(headers, host, connectionManager) {
-		if(headers && headers.server && (headers.server.indexOf('cloudflare') > -1)) {
-			/* Cloudflare doesn't support xhr streaming */
-			var blacklist = connectionManager.transportHostBlacklist[host];
-			if(!blacklist) {
-				connectionManager.transportHostBlacklist[host] = ['xhr_streaming'];
-				return;
-			}
-			if(!Utils.arrIn(blacklist, 'xhr_streaming')) {
-				blacklist.push('xhr_streaming');
-			}
-		}
-	}
-
 	/* TODO: can remove once realtime sends protocol message responses for comet errors */
 	function shouldBeErrorAction(err) {
 		var UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
@@ -103,7 +89,6 @@ var CometTransport = (function() {
 				self.onData(data);
 			});
 			connectRequest.on('complete', function(err, _body, headers) {
-				actOnConnectHeaders(headers, host, self.connectionManager);
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
 					err = err || new ErrorInfo('Request cancelled', 80000, 400);
