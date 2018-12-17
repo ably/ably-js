@@ -51,6 +51,13 @@ Defaults.getHosts = function(options) {
 	return hosts;
 };
 
+Defaults.objectifyOptions = function(options) {
+	if(typeof options == 'string') {
+		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
+	}
+	return options;
+};
+
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
 	if(options.host) {
