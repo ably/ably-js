@@ -462,7 +462,7 @@ export declare class Rest {
   channels: Types.Channels<Types.Channel>;
   request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
   stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
-  time: (paramsOrCallback?: Types.timeCallback | any, callback?: Types.timeCallback) => void;
+  time: (callback?: Types.timeCallback) => void;
 }
 
 export declare class Realtime {
@@ -478,5 +478,5 @@ export declare class Realtime {
   stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
   close: () => void;
   connect: () => void;
-  time: (paramsOrCallback?: Types.timeCallback | any, callback?: Types.timeCallback) => void;
+  time: (callback?: Types.timeCallback) => void;
 }
