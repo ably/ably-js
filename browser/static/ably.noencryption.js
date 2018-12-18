@@ -2047,6 +2047,7 @@ var Platform = {
 	nextTick: function(f) { setTimeout(f, 0); },
 	addEventListener: window.addEventListener,
 	inspect: JSON.stringify,
+	Promise: window.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;
@@ -2695,6 +2696,13 @@ Defaults.getHosts = function(options) {
 	return hosts;
 };
 
+Defaults.objectifyOptions = function(options) {
+	if(typeof options == 'string') {
+		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
+	}
+	return options;
+};
+
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
 	if(options.host) {
@@ -2764,6 +2772,11 @@ Defaults.normaliseOptions = function(options) {
 	if(options.clientId) {
 		var headers = options.headers = options.headers || {};
 		headers['X-Ably-ClientId'] = options.clientId;
+	}
+
+	if(options.promises && !Platform.Promise) {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
+		options.promises = false;
 	}
 
 	return options;
@@ -2942,6 +2955,12 @@ var EventEmitter = (function() {
 	 * @param listener the listener to be called
 	 */
 	EventEmitter.prototype.once = function(event, listener) {
+		var argCount = arguments.length, self = this;
+		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.once(event, resolve);
+			});
+		}
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
 		} else if(Utils.isEmptyArg(event)) {
@@ -2964,13 +2983,17 @@ var EventEmitter = (function() {
 	 */
 	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
 		var eventThis = {event:targetState},
-				listenerArgs = Array.prototype.slice.call(arguments, 3);
+			self = this,
+			listenerArgs = Array.prototype.slice.call(arguments, 3);
 
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
 			throw("whenState requires a valid event String argument");
-		if (typeof(listener) !== 'function')
-			throw("whenState requires a valid listener argument");
-
+		}
+		if(typeof listener !== 'function' && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+			});
+		}
 		if(targetState === currentState) {
 			callListener(eventThis, listener, listenerArgs);
 		} else {
@@ -3456,6 +3479,14 @@ var Utils = (function() {
 		return str.trim();
 	} : function(str) {
 		return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+	};
+
+	Utils.promisify = function(ob, fnName, args) {
+		return new Promise(function(resolve, reject) {
+			ob[fnName].apply(ob, Array.prototype.slice.call(args).concat(function(err, res) {
+				err ? reject(err) : resolve(res);
+			}));
+		});
 	};
 
 	return Utils;
@@ -6828,6 +6859,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, 'get', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -6857,6 +6891,9 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, '_history', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -7331,7 +7368,12 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
-		callback = callback || noop;
+		if(!callback) {
+			if(this.client.options.promises) {
+				return Utils.promisify(this, 'authorize', arguments);
+			}
+			callback = noop;
+		}
 		var self = this;
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
@@ -7451,6 +7493,9 @@ var Auth = (function() {
 		else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
 			authOptions = null;
+		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'requestToken', arguments);
 		}
 
 		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
@@ -7659,6 +7704,9 @@ var Auth = (function() {
 		} else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
 			authOptions = null;
+		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'createTokenRequest', arguments);
 		}
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
@@ -7929,9 +7977,7 @@ var Rest = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
-		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
-		}
+		options = Defaults.objectifyOptions(options);
 
 		if(options.log) {
 			Logger.setLog(options.log.level, options.log.handler);
@@ -7976,6 +8022,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'stats', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -8000,6 +8049,9 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'time', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -8036,6 +8088,13 @@ var Rest = (function() {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
 			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
+
+		if(callback === undefined) {
+			if(this.options.promises) {
+				return Utils.promisify(this, 'request', arguments);
+			}
+			callback = noop;
+		}
 
 		if(typeof body !== 'string') {
 			body = encoder(body);
@@ -8089,6 +8148,12 @@ var Rest = (function() {
 
 	return Rest;
 })();
+
+Rest.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Rest(options);
+};
 
 var Realtime = (function() {
 
@@ -8237,6 +8302,12 @@ var Realtime = (function() {
 	return Realtime;
 })();
 
+Realtime.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Realtime(options);
+};
+
 var ConnectionStateChange = (function() {
 
 	/* public constructor */
@@ -8264,6 +8335,7 @@ var ChannelStateChange = (function() {
 })();
 
 var Connection = (function() {
+	function noop() {}
 
 	/* public constructor */
 	function Connection(ably, options) {
@@ -8304,7 +8376,12 @@ var Connection = (function() {
 
 	Connection.prototype.ping = function(callback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-		callback = callback || function() {};
+		if(!callback) {
+			if(this.ably.options.promises) {
+				return Utils.promisify(this, 'ping', arguments);
+			}
+			callback = noop;
+		}
 		this.connectionManager.ping(null, callback);
 	};
 
@@ -8576,6 +8653,9 @@ var Channel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.rest.options.promises) {
+					return Utils.promisify(this, 'history', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -8606,6 +8686,9 @@ var Channel = (function() {
 			self = this;
 
 		if(typeof(callback) !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
@@ -8682,11 +8765,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.processListenerArgs = function(args) {
 		/* [event], listener, [callback] */
-		if(typeof(args[0]) == 'function')
-			return [null, args[0], args[1] || noop];
-		else
-			return [args[0], args[1], (args[2] || noop)];
-	}
+		args = Array.prototype.slice.call(args);
+		if(typeof args[0] === 'function') {
+			args.unshift(null);
+		}
+		if(args[args.length - 1] == undefined) {
+			args.pop();
+		}
+		return args;
+	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
@@ -8694,6 +8781,9 @@ var RealtimeChannel = (function() {
 			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
@@ -8755,11 +8845,16 @@ var RealtimeChannel = (function() {
 			callback = flags;
 			flags = null;
 		}
-		callback = callback || function(err) {
-			if(err) {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'attach', arguments);
 			}
-		};
+			callback = function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
 		if(flags) {
 			this._requestedFlags = flags;
 		}
@@ -8806,6 +8901,12 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'detach', arguments);
+			}
+			callback = noop;
+		}
 		callback = callback || noop;
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
@@ -8853,6 +8954,13 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		var events;
 
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'subscribe', [event, listener]);
+			}
+			callback = noop;
+		}
+
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
@@ -8860,7 +8968,7 @@ var RealtimeChannel = (function() {
 
 		subscriptions.on(event, listener);
 
-		this.attach(callback);
+		return this.attach(callback);
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
@@ -9263,29 +9371,32 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.enter = function(data, callback) {
 		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
-		this._enterOrUpdateClient(undefined, data, callback, 'enter');
+		return this._enterOrUpdateClient(undefined, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
-		this._enterOrUpdateClient(undefined, data, callback, 'update');
+		return this._enterOrUpdateClient(undefined, data, 'update', callback);
 	};
 
 	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'enter');
+		return this._enterOrUpdateClient(clientId, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'update');
+		return this._enterOrUpdateClient(clientId, data, 'update', callback);
 	};
 
-	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
+	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, action, callback) {
 		if (!callback) {
 			if (typeof(data)==='function') {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+				}
 				callback = noop;
 			}
 		}
@@ -9335,7 +9446,7 @@ var RealtimePresence = (function() {
 	RealtimePresence.prototype.leave = function(data, callback) {
 		if(isAnonymous(this))
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
-		this.leaveClient(undefined, data, callback);
+		return this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
@@ -9344,6 +9455,9 @@ var RealtimePresence = (function() {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'leaveClient', [clientId, data]);
+				}
 				callback = noop;
 			}
 		}
@@ -9391,8 +9505,15 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true)
+			callback = args[1],
+			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'get', args);
+			}
+			callback = noop;
+		}
 
 		function returnMembers(members) {
 			callback(null, params ? members.list(params) : members.values());
@@ -9433,6 +9554,9 @@ var RealtimePresence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'history', args);
+				}
 				callback = noop;
 			}
 		}
@@ -9576,7 +9700,7 @@ var RealtimePresence = (function() {
 			if(!(memberKey in members.map)) {
 				var entry = myMembers.map[memberKey];
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
-				this._enterOrUpdateClient(entry.clientId, entry.data, reenterCb, 'enter');
+				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
 			}
 		}
@@ -9616,6 +9740,13 @@ var RealtimePresence = (function() {
 		var callback = args[2];
 		var channel = this.channel;
 		var self = this;
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'subscribe', [event, listener]);
+			}
+			callback = noop;
+		}
 
 		if(channel.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
