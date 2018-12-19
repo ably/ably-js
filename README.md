@@ -40,8 +40,10 @@ For complete API documentation, see the [Ably documentation](https://www.ably.io
 and require as:
 
 ```javascript
-var Ably = require('ably')
+var Ably = require('ably');
 ```
+
+For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. (You can also use `require('ably/callbacks')` to get a version that for now behaves the same as the normal lib, but is guaranteed to not return promises even if we make returning a promise the default for `require('ably')` in some future major version).
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
 
@@ -72,11 +74,13 @@ let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
 let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
 
+For the version of the library where async methods return promises, use `import * as Ably from 'ably/promises';` instead. (You can also use `import * as Ably from 'ably/callbacks'` to get a version that for now behaves the same as the normal lib, but is guaranteed to not return promises even if we make returning a promise the default in some future major version).
+
 Intellisense in IDEs with TypeScript support is supported:
 
 ![TypeScript suggestions](./resources/typescript-demo.gif)
 
-If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
+If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
 
 ### Using WebPack
 
@@ -87,11 +91,13 @@ var Ably = require('ably/browser/static/ably-commonjs.js');
 var realtime = new Ably.Realtime(options);
 ```
 
+Or `new Ably.Realtime.Promise(options)` for the version of the library where async methods return promises.
+
 If you are using ES6 and or a transpiler that suppots ES6 modules with WebPack, you can include Ably as follows:
 
 ```javascript
 import * as Ably from 'ably/browser/static/ably-commonjs.js'
-let realtime = new Ably.Realtime(options)
+let realtime = new Ably.Realtime(options) // or new Ably.Realtime.Promise(options)
 ```
 
 ## React Native
@@ -118,6 +124,10 @@ var client = new Ably.Realtime(<key string>)
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(<options>)
+
+// For a version of the library where async methods return promises if
+// you don't pass a callback:
+var client = new Ably.Realtime.Promise(<options / key string>)
 ```
 
 ### Connection
@@ -299,6 +309,10 @@ var client = new Ably.Rest(<key string>)
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Rest(<options>)
+
+// For a version of the library where async methods return promises if
+// you don't pass a callback:
+var client = new Ably.Rest.Promise(<options / key string>)
 ```
 
 Given:
