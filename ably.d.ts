@@ -238,7 +238,7 @@ declare namespace Types {
     cipher: any;
   }
 
-  interface RestPresenceHistoryParams {
+  interface RestHistoryParams {
     start?: number;
     end?: number;
     direction?: string;
@@ -257,7 +257,7 @@ declare namespace Types {
     connectionId?: string;
   }
 
-  interface RealtimePresenceHistoryParams {
+  interface RealtimeHistoryParams {
     start?: number;
     end?: number;
     direction?: string;
@@ -307,14 +307,37 @@ declare namespace Types {
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
   // Internal Classes
-  class EventEmitter<CallbackType, EventType, StateType> {
-    on: (eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType) => void;
-    once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
-    off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
-    listeners: (eventName?: EventType) => CallbackType[] | null;
+
+  // To allow a uniform (callback) interface between on and once even in the
+  // promisified version of the lib, but still allow once to be used in a way
+  // that returns a Promise if desired, EventEmitter uses method overloading to
+  // present both methods
+  class EventEmitter<CallbackType, ResultType, EventType, StateType> {
+    on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
+    once(eventOrCallback: EventType | CallbackType, callback?: CallbackType): void;
+    once(event: EventType): Promise<ResultType>;
+    off(eventOrCallback?: EventType | CallbackType, callback?: CallbackType): void;
+    listeners(eventName?: EventType): CallbackType[] | null;
   }
 
   // Classes
+  class RestPromise extends Rest {
+    auth: Types.AuthPromise;
+    channels: Types.Channels<Types.ChannelPromise>;
+    request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
+    stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
+    time: () => Promise<number>;
+  }
+
+  class RealtimePromise extends Realtime {
+    auth: Types.AuthPromise;
+    channels: Types.Channels<Types.RealtimeChannelPromise>;
+    connection: Types.ConnectionPromise;
+    request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
+    stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
+    time: () => Promise<number>;
+  }
+
   class Auth {
     clientId: string;
     authorize: (tokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
@@ -322,16 +345,27 @@ declare namespace Types {
     requestToken: (TokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
   }
 
+  class AuthPromise extends Auth {
+    authorize: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
+    createTokenRequest: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenRequest>;
+    requestToken: (TokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
+  }
+
   class Presence {
-    get: (params: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-    history: (params: RestPresenceHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+    get: (paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+    history: (paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+  }
+
+  class PresencePromise extends Presence {
+    get: (params?: RestPresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
+    history: (params?: RestHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
   }
 
   class RealtimePresence {
     syncComplete: boolean;
-    get: (Params: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
-    history: (ParamsOrCallback: RealtimePresenceHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-    subscribe: (presenceOrCallback: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => void;
+    get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
+    history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+    subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: standardCallback) => void;
     unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
     enter: (data?: errorCallback | any, callback?: errorCallback) => void;
     update: (data?: errorCallback | any, callback?: errorCallback) => void;
@@ -341,26 +375,51 @@ declare namespace Types {
     leaveClient: (clientId: string, data?: errorCallback | any, callback?: errorCallback) => void;
   }
 
+  class RealtimePresencePromise extends RealtimePresence {
+    get: (params?: RealtimePresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
+    history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
+    subscribe: (action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => Promise<void>;
+    enter: (data?: any) => Promise<void>;
+    update: (data?: any) => Promise<void>;
+    leave: (data?: any) => Promise<void>;
+    enterClient: (clientId: string, data?: any) => Promise<void>;
+    updateClient: (clientId: string, data?: any) => Promise<void>;
+    leaveClient: (clientId: string, data?: any) => Promise<void>;
+  }
+
   class Channel {
     name: string;
     presence: Presence;
-    history: (paramsOrCallback?: RestPresenceHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+    history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
     publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
   }
 
-  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelEvent, ChannelState> {
+  class ChannelPromise extends Channel {
+    history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
+    publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+  }
+
+  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
     name: string;
     errorReason: ErrorInfo;
     state: ChannelState;
     presence: RealtimePresence;
     attach: (callback?: standardCallback) => void;
     detach: (callback?: standardCallback) => void;
-    history: (paramsOrCallback?: RealtimePresenceHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
-    subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => void;
+    history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+    subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: standardCallback) => void;
     unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
     publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
     setOptions: (options: any, callback?: errorCallback) => void;
     whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
+  }
+
+  class RealtimeChannelPromise extends RealtimeChannel {
+    attach: () => Promise<void>;
+    detach: () => Promise<void>;
+    history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
+    subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
+    publish: (messagesOrName: any, messageData?: any) => Promise<void>;
   }
 
   class Channels<T> {
@@ -409,7 +468,7 @@ declare namespace Types {
     generateRandomKey: (callback: (error: ErrorInfo, key: string) => void) => void;
   }
 
-  class Connection extends EventEmitter<connectionEventCallback, ConnectionEvent, ConnectionState> {
+  class Connection extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
     errorReason: ErrorInfo;
     id: string;
     key: string;
@@ -420,6 +479,10 @@ declare namespace Types {
     connect: () => void;
     ping: (callback?: (error: ErrorInfo, responseTime: number ) => void ) => void;
     whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
+  }
+
+  class ConnectionPromise extends Connection {
+    ping: () => Promise<number>;
   }
 
   class Stats {
@@ -454,6 +517,7 @@ declare namespace Types {
 }
 
 export declare class Rest {
+  static Promise: typeof Types.RestPromise;
   constructor(options: Types.ClientOptions | string);
   static Crypto: Types.Crypto;
   static Message: Types.MessageStatic;
@@ -466,6 +530,7 @@ export declare class Rest {
 }
 
 export declare class Realtime {
+  static Promise: typeof Types.RealtimePromise;
   constructor(options: Types.ClientOptions | string);
   static Crypto: Types.Crypto;
   static Message: Types.MessageStatic;
