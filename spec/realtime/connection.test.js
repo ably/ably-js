@@ -202,7 +202,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Inject a new CONNECTED with different connectionDetails; check they're used
 	 */
 	exports.connectionDetails = function(test) {
-		test.expect(4);
+		test.expect(5);
 		var realtime = helper.AblyRealtime(),
 			connectionManager = realtime.connection.connectionManager;
 		realtime.connection.once('connected', function() {
