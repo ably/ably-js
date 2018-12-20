@@ -191,7 +191,6 @@ var RealtimeChannel = (function() {
 			}
 			callback = noop;
 		}
-		callback = callback || noop;
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
