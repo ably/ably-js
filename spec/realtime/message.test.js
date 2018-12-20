@@ -743,7 +743,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 	};
 
-<<<<<<< HEAD
 	/* TO3l8; CD2C; RSL1i */
 	exports.maxMessageSize = function(test) {
 		test.expect(2);
@@ -814,8 +813,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 		realtime.connect();
 	};
-||||||| parent of df648251... Add support for promises to public api
-=======
+
 	exports.publishpromise = function(test) {
 		if(typeof Promise === 'undefined') {
 			test.done();
@@ -852,7 +850,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			closeAndFinish(test, realtime);
 		});
 	};
->>>>>>> df648251... Add support for promises to public api
 
 	return module.exports = helper.withTimeout(exports);
 });
