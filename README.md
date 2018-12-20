@@ -25,6 +25,12 @@ However, we aim to be compatible with a much wider set of platforms and browsers
 
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.  Any known browser incompatibilities can be found [here](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
 
+## Async API style
+
+This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
+
+For this library version, and for all future 1.x versions, the callback-based API will be the default, and the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. However, a move to the promises-based variant as the default is possible at the next major release. If you are not handling promises, and want a version of the library that will not start returning promises for calls where you don't pass a callback in future versions, you can explicitly require the callback variant.
+
 #### Version: 1.0.20
 
 The latest stable version of the Ably Javascript client library is version: 1.0.20 .
@@ -43,7 +49,7 @@ and require as:
 var Ably = require('ably');
 ```
 
-For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. (You can also use `require('ably/callbacks')` to get a version that for now behaves the same as the normal lib, but is guaranteed to not return promises even if we make returning a promise the default for `require('ably')` in some future major version).
+For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. For the explicitly-callback-based variant use `require('ably/callbacks')`– see [Async API style](#async-api-style).
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
 
@@ -74,7 +80,7 @@ let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
 let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
 
-For the version of the library where async methods return promises, use `import * as Ably from 'ably/promises';` instead. (You can also use `import * as Ably from 'ably/callbacks'` to get a version that for now behaves the same as the normal lib, but is guaranteed to not return promises even if we make returning a promise the default in some future major version).
+For the version of the library where async methods return promises, use `import * as Ably from 'ably/promises';` instead. For the explicitly-callback-based variant use `import * as Ably from 'ably/callbacks'` – see [Async API style](#async-api-style).
 
 Intellisense in IDEs with TypeScript support is supported:
 
