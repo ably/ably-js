@@ -134,6 +134,9 @@ var client = new Ably.Realtime(<options>)
 // For a version of the library where async methods return promises if
 // you don't pass a callback:
 var client = new Ably.Realtime.Promise(<options / key string>)
+
+// For the explicitly-callback-based variant (see 'Async API style' above):
+var client = new Ably.Rest.Callbacks(<options / key string>)
 ```
 
 ### Connection
@@ -319,6 +322,9 @@ var client = new Ably.Rest(<options>)
 // For a version of the library where async methods return promises if
 // you don't pass a callback:
 var client = new Ably.Rest.Promise(<options / key string>)
+
+// For the explicitly-callback-based variant (see 'Async API style' above):
+var client = new Ably.Rest.Callbacks(<options / key string>)
 ```
 
 Given:
