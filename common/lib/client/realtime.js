@@ -150,3 +150,5 @@ Realtime.Promise = function(options) {
 	options.promises = true;
 	return new Realtime(options);
 };
+
+Realtime.Callbacks = Realtime;

@@ -194,3 +194,5 @@ Rest.Promise = function(options) {
 	options.promises = true;
 	return new Rest(options);
 };
+
+Rest.Callbacks = Rest;
