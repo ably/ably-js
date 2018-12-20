@@ -518,6 +518,7 @@ declare namespace Types {
 
 export declare class Rest {
   static Promise: typeof Types.RestPromise;
+  static Callbacks: typeof Rest;
   constructor(options: Types.ClientOptions | string);
   static Crypto: Types.Crypto;
   static Message: Types.MessageStatic;
@@ -531,6 +532,7 @@ export declare class Rest {
 
 export declare class Realtime {
   static Promise: typeof Types.RealtimePromise;
+  static Callbacks: typeof Realtime;
   constructor(options: Types.ClientOptions | string);
   static Crypto: Types.Crypto;
   static Message: Types.MessageStatic;
