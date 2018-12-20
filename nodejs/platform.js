@@ -21,6 +21,6 @@ this.Platform = {
 		if(callback) {
 			callback(null);
 		}
-	}
+	},
 	Promise: global && global.Promise,
 };
