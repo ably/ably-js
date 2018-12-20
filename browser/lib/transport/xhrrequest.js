@@ -33,8 +33,8 @@ var XHRRequest = (function() {
 	/* Safari mysteriously returns 'Identity' for transfer-encoding when in fact
 	 * it is 'chunked'. So instead, decide that it is chunked when
 	 * transfer-encoding is present or content-length is absent.  ('or' because
-	 * while streaming does not work with cloudflare, it still strips the
-	 * transfer-encoding header out) */
+	 * when using http2 streaming, there's no transfer-encoding header, but can
+	 * still deduce streaming from lack of content-length) */
 	function isEncodingChunked(xhr) {
 		return xhr.getResponseHeader
 			&& (xhr.getResponseHeader('transfer-encoding')
