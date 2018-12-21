@@ -1429,7 +1429,11 @@ var ConnectionManager = (function() {
 			/* RTL6d3 */
 			return false;
 		}
-		if((action = dest.action) !== src.action) {
+		if((action = dest.action) !== actions.PRESENCE && action !== actions.MESSAGE) {
+			/* RTL6d - can only bundle messages or presence */
+			return false;
+		}
+		if(action !== src.action) {
 			/* RTL6d4 */
 			return false;
 		}
