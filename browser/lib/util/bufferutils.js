@@ -148,8 +148,8 @@ var BufferUtils = (function() {
 		return 0;
 	};
 
-	BufferUtils.byteLength = function(buffer) {
-		if(isArrayBuffer(buffer)) {
+	BufferUtils.byteLength = function(buf) {
+		if(isArrayBuffer(buf)) {
 			return buf.byteLength
 		} else if(isWordArray(buf)) {
 			return buf.sigBytes;
