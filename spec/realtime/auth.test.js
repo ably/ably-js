@@ -691,7 +691,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						/* Library has no way to generate a new token, so should fail */
 						test.ok(true, 'Verify connection failed');
 						test.equal(stateChange.reason.code, 80019, 'Verify correct failure code');
-						test.equal(stateChange.reason.cause.code, 40101, 'Verify correct cause failure code');
+						test.equal(stateChange.reason.cause.code, 40171, 'Verify correct cause failure code');
 						realtime.close();
 						test.done();
 					});
@@ -718,7 +718,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
 				realtime.connection.once('failed', function(stateChange){
 					test.ok(true, 'Verify connection failed');
-					test.equal(stateChange.reason.cause.code, 40101, 'Verify correct failure code');
+					test.equal(stateChange.reason.cause.code, 40171, 'Verify correct failure code');
 					realtime.close();
 					test.done();
 				});
