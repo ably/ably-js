@@ -134,7 +134,7 @@ var CometTransport = (function() {
 
 			request.on('complete', function (err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + err);
+					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + Utils.inspectError(err));
 					self.finish('disconnected', err);
 				}
 			});
