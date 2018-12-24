@@ -300,7 +300,7 @@ var XHRRequest = (function() {
 			Http.checkConnectivity = function(callback) {
 				var upUrl = Defaults.internetUpUrl;
 				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-				Http.Request(null, upUrl, null, null, null, function(err, responseText) {
+				Http.getUri(null, upUrl, null, null, function(err, responseText) {
 					var result = (!err && responseText.replace(/\n/, '') == 'yes');
 					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
 					callback(null, result);
