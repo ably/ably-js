@@ -59,12 +59,12 @@ var Stats = (function() {
 
 	function PushStats(values) {
 		this.messages = (values && values.messages) || 0;
-		var notifications = value && values.notifications;
+		var notifications = values && values.notifications;
 		this.notifications = {
-			invalid: notifications.invalid || 0,
-			attempted: notifications.attempted || 0,
-			successful: notifications.successful || 0,
-			failed: notifications.failed || 0
+			invalid: notifications && notifications.invalid || 0,
+			attempted: notifications && notifications.attempted || 0,
+			successful: notifications && notifications.successful || 0,
+			failed: notifications && notifications.failed || 0
 		};
 		this.directPublishes = (values && values.directPublishes) || 0;
 	}
