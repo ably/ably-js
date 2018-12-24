@@ -81,7 +81,7 @@ var Resource = (function() {
 			if (err) {
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
 			if (callback) { callback(err, body, headers, unpacked, statusCode); }
