@@ -65,7 +65,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.expect(6);
 		var realtime;
 		try {
-			realtime = helper.AblyRealtime();
+			realtime = helper.AblyRealtime({log: {level: 4}});
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.connection.serial, -1, "verify serial is -1 on connect");
 				test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify correct recovery key');
@@ -81,8 +81,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						function(cb) {
 							channel.subscribe(function() {
 								setTimeout(function() {
-									console.log("connectionAttributes test: connection serial is " + realtime.connection.serial)
 									test.equal(realtime.connection.serial, 0, "verify serial is 0 after message received")
+									if(realtime.connection.serial !== 0) {
+										var cm = realtime.connection.connectionManager;
+										console.log("connectionAttributes test: connection serial is " + realtime.connection.serial + "; active transport" + (cm.activeProtocol && cm.activeProtocol.transport && cm.activeProtocol.transport.shortName))
+									}
 									test.equal(realtime.connection.recoveryKey, realtime.connection.key + ':' + realtime.connection.serial + ':' + realtime.connection.connectionManager.msgSerial, 'verify recovery key still correct');
 									cb();
 								}, 0);
