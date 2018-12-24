@@ -744,7 +744,9 @@ var ConnectionManager = (function() {
 	/* force: set the connectionSerial even if it's less than the current connectionSerial. Used when
 	 * activating a new transport, where the connectionSerial realtime tells us we have must be authoritative */
 	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
-		var timeSerial = connectionPosition.timeSerial;
+		var timeSerial = connectionPosition.timeSerial,
+			connectionSerial = connectionPosition.connectionSerial;
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
 		if(timeSerial !== undefined) {
 			if(timeSerial <= this.timeSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
@@ -754,7 +756,6 @@ var ConnectionManager = (function() {
 			this.setRecoveryKey();
 			return;
 		}
-		var connectionSerial = connectionPosition.connectionSerial;
 		if(connectionSerial !== undefined) {
 			if(connectionSerial <= this.connectionSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
