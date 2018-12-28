@@ -311,7 +311,6 @@ declare namespace Types {
     on: (eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType) => void;
     once: (eventOrCallback: EventType | CallbackType, callback?: CallbackType) => void;
     off: (eventOrCallback?: EventType | CallbackType, callback?: CallbackType) => void;
-    whenState: (targetState: StateType, currentState: StateType, callback: CallbackType) => void;
     listeners: (eventName?: EventType) => CallbackType[] | null;
   }
 
@@ -361,6 +360,7 @@ declare namespace Types {
     unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
     publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
     setOptions: (options: any, callback?: errorCallback) => void;
+    whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
   }
 
   class Channels<T> {
@@ -419,6 +419,7 @@ declare namespace Types {
     close: () => void;
     connect: () => void;
     ping: (callback?: (error: ErrorInfo, responseTime: number ) => void ) => void;
+    whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
   }
 
   class Stats {
