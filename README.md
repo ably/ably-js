@@ -90,7 +90,7 @@ var realtime = new Ably.Realtime(options);
 If you are using ES6 and or a transpiler that suppots ES6 modules with WebPack, you can include Ably as follows:
 
 ```javascript
-import Ably from 'ably/browser/static/ably-commonjs.js'
+import * as Ably from 'ably/browser/static/ably-commonjs.js'
 let realtime = new Ably.Realtime(options)
 ```
 
