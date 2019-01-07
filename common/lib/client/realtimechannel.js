@@ -195,7 +195,7 @@ var RealtimeChannel = (function() {
 						case 'failed':
 							callback(stateChange.reason || connectionManager.getError());
 							break;
-						case 'detached':
+						case 'attaching':
 							callback(new ErrorInfo('Detach request superseded by a subsequent attach request', 90000, 409));
 							break;
 					}
