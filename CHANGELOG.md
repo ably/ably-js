@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.0.21](https://github.com/ably/ably-js/tree/1.0.20) (2019-01-07)
+- Reinstate 'stop clientId forcing token auth' change (https://github.com/ably/ably-js/issues/542)
+- Prioritise a tokenParam over an authParam of the same name
+- Fix behaviour with multiple concurrent pings in-flight
+- Use console.warn (if present) when logging at ERROR level
+- Implement client-side-enforced maxMessageSize limit and bundling constraints
+- Deduce streaming response from lack of content-length header even if no transfer-encoding
+
 ## [1.0.20](https://github.com/ably/ably-js/tree/1.0.20) (2018-12-02)
 - Temporarily back out of clientId change due to CORS issue
 
