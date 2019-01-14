@@ -42,7 +42,6 @@ includeScript('../common/lib/client/paginatedresource.js');
 includeScript('../common/lib/client/auth.js');
 includeScript('../common/lib/client/presence.js');
 includeScript('../common/lib/client/push.js');
-includeScript('../common/lib/client/pushchannel.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/rest.js');
 

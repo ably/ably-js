@@ -38,99 +38,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.push_subscribeClientId_ok = function(test) {
-		var rest = helper.AblyRest({clientId: 'testClient'});
-		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
-		var pushChannel = rest.channels.get('pushenabled:foo').push
-
-		async.series([function(callback) {
-			pushChannel.subscribeClientId(callback);
-		}, function(callback) {
-			pushChannel.getSubscriptions(subscription, callback);
-		}, function(callback) {
-			rest.push.admin.channelSubscriptions.remove(subscription, callback);
-		}], function(err, result) {
-			if (err) {
-				test.ok(false, err.message);
-				test.done();
-				return;
-			}
-			var subscribeHttpCode = result[0][3];
-			test.equal(subscribeHttpCode, 201);
-			var subs = result[1].items;
-			test.equal(subs.length, 1);
-			var sub = subs[0];
-			// deepEqual would fail because `sub` will have also a deviceId field
-			test.equal(sub.channel, subscription.channel);
-			test.equal(sub.clientId, subscription.clientId);
-			test.done();
-		});
-	};
-
-	exports.push_subscribeClientId_no_client_id = function(test) {
-		var rest = helper.AblyRest();
-
-		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.subscribeClientId(function(err) {
-				err = err ? null : new Error('subscription subscription to fail');
-				callback(err);
-			});
-		}, function(callback) {
-			rest.channels.get('pushenabled:foo').push.getSubscriptions({channel: 'pushenabled:foo'}, callback);
-		}], function(err, result) {
-			if (err) {
-				test.ok(false, err.message);
-				test.done();
-				return;
-			}
-			var subResult = result[0];
-			test.equal(subResult, undefined);
-			var subs = result[1].items;
-			test.equal(subs.length, 0);
-			test.done();
-		});
-	};
-
-	exports.push_unsubscribeClientId_ok = function(test) {
-		var rest = helper.AblyRest({clientId: 'testClient'});
-		var subscription = {channel: 'pushenabled:foo', clientId: 'testClient'};
-		var pushChannel = rest.channels.get('pushenabled:foo').push;
-
-		async.series([function(callback) {
-			pushChannel.subscribeClientId(callback);
-		}, function(callback) {
-			pushChannel.unsubscribeClientId(callback);
-		}, function(callback) {
-			pushChannel.getSubscriptions(subscription, callback);
-		}], function(err, result) {
-			if (err) {
-				test.ok(false, err.message);
-				test.done();
-				return;
-			}
-			var subscribeHttpCode = result[0][3];
-			test.equal(subscribeHttpCode, 201);
-			var subs = result[2].items;
-			test.equal(0, subs.length);
-			test.done();
-		});
-	};
-
-	exports.push_unsubscribeClientId_no_client_id = function(test) {
-		var rest = helper.AblyRest();
-
-		async.series([function(callback) {
-			rest.channels.get('pushenabled:foo').push.unsubscribeClientId(function(err) {
-				err = err ? null : new Error('subscription subscription to fail');
-				callback(err);
-			});
-		}], function(err, result) {
-			test.deepEqual(result, [undefined]);
-			test.ok(!err, err);
-			test.done();
-		});
-	};
-
 	exports.push_getSubscriptions = function(test) {
 		var subscribes = [], deletes = [];
 		var subsByChannel = {};
@@ -143,7 +50,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			var rest = helper.AblyRest({clientId: sub.clientId});
 			subscribes.push(function(callback) {
-				rest.channels.get(sub.channel).push.subscribeClientId(callback);
+				rest.push.admin.channelSubscriptions.save(sub, callback);
 			});
 			deletes.push(function(callback) {
 				rest.push.admin.channelSubscriptions.remove(sub, callback);
@@ -155,9 +62,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			async.parallel(subscribes, callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo1').push.getSubscriptions(callback);
+			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo1'}, callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo2').push.getSubscriptions(callback);
+			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo2'}, callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
 		}], function(err, result) {
@@ -346,7 +253,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
-			rest.channels.get('pushenabled:foo').push.getSubscriptions(subscription, callback);
+			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo'}, callback);
 		}, function(callback) {
 			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
