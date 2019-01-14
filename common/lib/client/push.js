@@ -1,5 +1,6 @@
 var Push = (function() {
 	var msgpack = Platform.msgpack;
+	var noop = function() {};
 
 	function Push(rest) {
 		this.rest = rest;
@@ -18,6 +19,13 @@ var Push = (function() {
 			requestBody = Utils.mixin({recipient: recipient}, payload),
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
+			callback = noop;
+		}
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -40,6 +48,13 @@ var Push = (function() {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'save', arguments);
+			}
+			callback = noop;
+		}
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
@@ -56,6 +71,13 @@ var Push = (function() {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'get', arguments);
+			}
+			callback = noop;
+		}
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
@@ -71,6 +93,13 @@ var Push = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'remove', arguments);
+			}
+			callback = noop;
+		}
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -92,6 +121,13 @@ var Push = (function() {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'save', arguments);
+			}
+			callback = noop;
+		}
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
@@ -107,6 +143,13 @@ var Push = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'get', arguments);
+			}
+			callback = noop;
+		}
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -124,6 +167,13 @@ var Push = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'remove', arguments);
+			}
+			callback = noop;
+		}
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
@@ -138,6 +188,13 @@ var Push = (function() {
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'listChannels', arguments);
+			}
+			callback = noop;
+		}
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);

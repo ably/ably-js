@@ -5,6 +5,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		Utils = Ably.Rest.Utils,
 		exports = {},
 		displayError = helper.displayError,
+		closeAndFinish = helper.closeAndFinish,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
 		testDevice = {
 			id: 'testId',
@@ -81,17 +82,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_publish = function(test) {
 		var realtime = helper.AblyRealtime();
-		var testDone = test.done;
-		test.done = function() {
-			realtime.close();
-			testDone.apply(this, arguments);
-		};
 
 		var channel = realtime.channels.get('pushenabled:foo');
 		channel.attach(function(err) {
 			if (err) {
 				test.ok(false, err.message);
-				test.done();
+				closeAndFinish(test, realtime);
 				return;
 			}
 
@@ -113,14 +109,59 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.deepEqual(receivedPushPayload.data, pushPayload.data);
 				test.deepEqual(receivedPushPayload.notification.title, pushPayload.notification.title);
 				test.deepEqual(receivedPushPayload.notification.body, pushPayload.notification.body);
-				test.done();
+				closeAndFinish(test, realtime);
 			});
 
 			realtime.push.admin.publish(pushRecipient, pushPayload, function(err) {
 				if (err) {
 					test.ok(false, err.message);
-					test.done();
+					closeAndFinish(test, realtime);
 				}
+			});
+		});
+	};
+
+	exports.push_publish_promise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		var realtime = helper.AblyRealtime({promises: true});
+		var channelName = 'pushenabled:publish_promise';
+		var channel = realtime.channels.get(channelName);
+		channel.attach(function(err) {
+			if (err) {
+				test.ok(false, err.message);
+				closeAndFinish(test, realtime);
+				return;
+			}
+
+			var pushPayload =  {
+				notification: {title: 'Test message', body:'Test message body'},
+				data: {foo: 'bar'}
+			};
+
+			const baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+			const pushRecipient = {
+				transportType: 'ablyChannel',
+				channel: 'pushenabled:foo',
+				ablyKey: realtime.options.key,
+				ablyUrl: baseUri
+			};
+
+			channel.subscribe('__ably_push__', function(msg) {
+				var receivedPushPayload = JSON.parse(msg.data);
+				test.deepEqual(receivedPushPayload.data, pushPayload.data);
+				test.deepEqual(receivedPushPayload.notification.title, pushPayload.notification.title);
+				test.deepEqual(receivedPushPayload.notification.body, pushPayload.notification.body);
+				closeAndFinish(test, realtime);
+			})
+
+			realtime.push.admin.publish(pushRecipient, pushPayload).then(function() {
+				closeAndFinish(test, realtime);
+			}).catch(function(err) {
+				test.ok(false, displayError(err));
+				closeAndFinish(test, realtime);
 			});
 		});
 	};
@@ -246,6 +287,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	exports.push_deviceRegistrations_promise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		var rest = helper.AblyRest({promises: true});
+
+		rest.push.admin.deviceRegistrations.save(testDevice).then(function() {
+			return rest.push.admin.deviceRegistrations.get(testDevice.id);
+		}).then(function(result) {
+			var got = result.items[0];
+			test.equal(got.push.state, 'ACTIVE');
+			delete got.metadata; // Ignore these properties for testing
+			delete got.push.state;
+			includesUnordered(test, untyped(got), testDevice_withoutSecret);
+			return rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id});
+		}).then(function() {
+			test.done();
+		}).catch(function(err) {
+			test.ok(false, displayError(err));
+			test.done();
+		});
+	};
+
 	exports.push_channelSubscriptions_save = function(test) {
 		var rest = helper.AblyRest({clientId: 'testClient'});
 		var subscription = {clientId: 'testClient', channel: 'pushenabled:foo'};
@@ -265,8 +330,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var sub = result[1].items[0];
 			test.equal(subscription.clientId, sub.clientId);
 			test.equal(subscription.channel, sub.channel);
-			var subscriptionsAfterDelete = result[2][0];
-			test.deepEqual(subscriptionsAfterDelete, []);
 			test.done();
 		});
 	};
@@ -356,6 +419,33 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			includesUnordered(test, ['pushenabled:listChannels1', 'pushenabled:listChannels2'], result[1].items);
+			test.done();
+		});
+	};
+
+	exports.push_channelSubscriptions_promise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		var rest = helper.AblyRest({promises: true});
+		var channelId = 'pushenabled:channelsubscriptions_promise';
+		var subscription = {clientId: 'testClient', channel: channelId};
+
+		rest.push.admin.channelSubscriptions.save(subscription).then(function() {
+			return rest.push.admin.channelSubscriptions.get({channel: channelId});
+		}).then(function(result) {
+			var sub = result.items[0];
+			test.equal(subscription.clientId, sub.clientId);
+			test.equal(subscription.channel, sub.channel);
+			return rest.push.admin.channelSubscriptions.listChannels(null);
+		}).then(function(result) {
+			includesUnordered(test, [channelId], result.items);
+			return rest.push.admin.channelSubscriptions.remove(subscription);
+		}).then(function() {
+			test.done();
+		}).catch(function(err) {
+			test.ok(false, displayError(err));
 			test.done();
 		});
 	};
