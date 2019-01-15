@@ -37,7 +37,11 @@ var PushChannelSubscription = (function() {
 			body = Utils.decodeBody(body, format);
 		}
 
-		return PushChannelSubscription.fromValuesArray(body);
+		if(Utils.isArray(body)) {
+			return PushChannelSubscription.fromValuesArray(body);
+		} else {
+			return PushChannelSubscription.fromValues(body);
+		}
 	};
 
 	PushChannelSubscription.fromValues = function(values) {

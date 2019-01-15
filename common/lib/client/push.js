@@ -61,7 +61,9 @@ var Push = (function() {
 			Utils.mixin(params, {fullWait: 'true'});
 
 		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, callback);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, function(err, body, headers, unpacked) {
+			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
+		});
 	};
 
 	DeviceRegistrations.prototype.get = function(params, callback) {
@@ -134,7 +136,9 @@ var Push = (function() {
 			Utils.mixin(params, {fullWait: 'true'});
 
 		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, callback);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, function(err, body, headers, unpacked) {
+			callback(err, !err && PushChannelSubscription.fromResponseBody(body, !unpacked && format));
+		});
 	};
 
 	ChannelSubscriptions.prototype.get = function(params, callback) {
