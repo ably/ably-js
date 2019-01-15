@@ -426,8 +426,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
-			var got = result[1][0];
-			test.ok(got.length === 0, got);
 			test.done();
 		});
 	};

@@ -33,7 +33,7 @@ var Push = (function() {
 			Utils.mixin(params, {fullWait: 'true'});
 
 		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
+		Resource.post(rest, '/push/publish', requestBody, headers, params, false, function(err) { callback(err); });
 	};
 
 	function DeviceRegistrations(rest) {
@@ -138,7 +138,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, false, callback);
+		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, false, function(err) { callback(err); });
 	};
 
 	DeviceRegistrations.prototype.removeWhere = function(params, callback) {
@@ -159,7 +159,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, function(err) { callback(err); });
 	};
 
 	function ChannelSubscriptions(rest) {
@@ -231,7 +231,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, function(err) { callback(err); });
 	};
 
 	/* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
