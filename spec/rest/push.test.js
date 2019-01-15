@@ -422,11 +422,15 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.push_channelSubscriptions_listChannels = function(test) {
 		var subscribes = [];
+		var deletes = [];
 		for (var i = 0; i < 5; i++) { (function(i) {
 			var sub = {channel: 'pushenabled:listChannels' + ((i % 2) + 1), clientId: 'testClient' + ((i % 3) + 1)};
 			var rest = helper.AblyRest({clientId: sub.clientId});
 			subscribes.push(function(callback) {
 				rest.push.admin.channelSubscriptions.save(sub, callback);
+			});
+			deletes.push(function(callback) {
+				rest.push.admin.channelSubscriptions.remove(sub, callback);
 			});
 		})(i) }
 
@@ -436,6 +440,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			async.parallel(subscribes, callback);
 		}, function(callback) {
 			rest.push.admin.channelSubscriptions.listChannels(null, callback);
+		}, function(callback) {
+			async.parallel(deletes, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -466,7 +472,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.equal(subscription.channel, sub.channel);
 			return rest.push.admin.channelSubscriptions.listChannels(null);
 		}).then(function(result) {
-			includesUnordered(test, [channelId], result.items);
+			test.ok(Utils.arrIn(result.items, channelId));
 			return rest.push.admin.channelSubscriptions.remove(subscription);
 		}).then(function() {
 			test.done();
