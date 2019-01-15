@@ -64,9 +64,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			async.parallel(subscribes, callback);
 		}, function(callback) {
-			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo1'}, callback);
+			rest.push.admin.channelSubscriptions.list({channel: 'pushenabled:foo1'}, callback);
 		}, function(callback) {
-			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo2'}, callback);
+			rest.push.admin.channelSubscriptions.list({channel: 'pushenabled:foo2'}, callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
 		}], function(err, result) {
@@ -183,7 +183,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 			var saved = result[0];
-			var got = result[1].items[0];
+			var got = result[1];
 			test.equal(got.push.state, 'ACTIVE');
 			delete got.metadata; // Ignore these properties for testing
 			delete got.push.state;
@@ -193,7 +193,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.push_deviceRegistrations_get = function(test) {
+	exports.push_deviceRegistrations_get_and_list = function(test) {
 		var registrations = [];
 		var deletes = [];
 		var devices = [];
@@ -247,11 +247,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			async.parallel(registrations, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get(null, callback);
+			rest.push.admin.deviceRegistrations.list(null, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get({clientId: 'testClient1'}, callback);
+			rest.push.admin.deviceRegistrations.list({clientId: 'testClient1'}, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get({clientId: 'testClient2'}, callback);
+			rest.push.admin.deviceRegistrations.list({clientId: 'testClient2'}, callback);
+		}, function(callback) {
+			rest.push.admin.deviceRegistrations.get(devices[0].id, callback);
 		}, function(callback) {
 			async.parallel([function(callback) {
 				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient1'}, callback);
@@ -270,6 +272,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			includesUnordered(test, untyped(result[1].items), untyped(devices_withoutSecret));
 			includesUnordered(test, untyped(result[2].items), untyped(devicesByClientId['testClient1']));
 			includesUnordered(test, untyped(result[3].items), untyped(devicesByClientId['testClient2']));
+			includesUnordered(test, untyped(result[4]), untyped(devices[0]));
 			test.done();
 		});
 	};
@@ -282,10 +285,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
+			rest.push.admin.deviceRegistrations.get(testDevice.id, function(err, result) {
+				test.equal(err && err.statusCode, 404, 'Check device reg not found after removal');
+				callback(null);
+			});
 		}], function(err, result) {
-			var devices = result[2].items;
-			test.equal(devices.length, 0);
+			if(err) {
+				test.ok(false, displayError(err));
+			}
 			test.done();
 		});
 	};
@@ -297,16 +304,25 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 		var rest = helper.AblyRest({promises: true});
 
+		/* save */
 		rest.push.admin.deviceRegistrations.save(testDevice).then(function(saved) {
 			test.equal(saved.push.state, 'ACTIVE');
 			includesUnordered(test, untyped(saved), testDevice_withoutSecret);
+		/* get */
 			return rest.push.admin.deviceRegistrations.get(testDevice.id);
-		}).then(function(result) {
-			var got = result.items[0];
+		}).then(function(got) {
 			test.equal(got.push.state, 'ACTIVE');
 			delete got.metadata; // Ignore these properties for testing
 			delete got.push.state;
 			includesUnordered(test, untyped(got), testDevice_withoutSecret);
+		/* list */
+			return rest.push.admin.deviceRegistrations.list({clientId: testDevice.clientId});
+		}).then(function(result) {
+			test.equal(result.items.length, 1);
+			var got = result.items[0];
+			test.equal(got.push.state, 'ACTIVE');
+			includesUnordered(test, untyped(got), testDevice_withoutSecret);
+		/* remove */
 			return rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id});
 		}).then(function() {
 			test.done();

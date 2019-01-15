@@ -66,11 +66,11 @@ var Push = (function() {
 		});
 	};
 
-	DeviceRegistrations.prototype.get = function(params, callback) {
+	DeviceRegistrations.prototype.get = function(deviceIdOrDetails, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
@@ -79,11 +79,34 @@ var Push = (function() {
 			callback = noop;
 		}
 
+		if(typeof deviceId !== 'string' || !deviceId.length) {
+			callback(new ErrorInfo('First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails', 40000, 400));
+			return;
+		}
+
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		Resource.get(rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, {}, false, function(err, body, headers, unpacked) {
+			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
+		});
+	};
+
+	DeviceRegistrations.prototype.list = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'list', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
 
 		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
 			return DeviceDetails.fromResponseBody(body, !unpacked && format);
