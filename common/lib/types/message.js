@@ -1,5 +1,4 @@
 var Message = (function() {
-	var msgpack = Platform.msgpack;
 
 	function Message() {
 		this.name = undefined;
@@ -136,9 +135,7 @@ var Message = (function() {
 		}
 	};
 
-	Message.serialize = function(messages, format) {
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
-	};
+	Message.serialize = Utils.encodeBody;
 
 	Message.decode = function(message, options) {
 		var encoding = message.encoding;
@@ -189,8 +186,9 @@ var Message = (function() {
 	};
 
 	Message.fromResponseBody = function(body, options, format) {
-		if(format)
-			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = Message.fromValues(body[i]);

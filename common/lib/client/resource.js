@@ -30,7 +30,7 @@ var Resource = (function() {
 
 			if(!unpacked) {
 				try {
-					body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(body);
+					body = Utils.decodeBody(body, format);
 				} catch(e) {
 					callback(e);
 					return;

@@ -1,5 +1,4 @@
 var ProtocolMessage = (function() {
-	var msgpack = Platform.msgpack;
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -73,12 +72,10 @@ var ProtocolMessage = (function() {
 		return this.flags && (this.flags & flags.MODE_ALL);
 	};
 
-	ProtocolMessage.serialize = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
-	};
+	ProtocolMessage.serialize = Utils.encodeBody;
 
 	ProtocolMessage.deserialize = function(serialized, format) {
-		var deserialized = (format == 'msgpack') ? msgpack.decode(serialized) : JSON.parse(String(serialized));
+		var deserialized = Utils.decodeBody(serialized, format);
 		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 

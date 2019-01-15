@@ -170,7 +170,7 @@ var RealtimeChannel = (function() {
 					}
 				});
 			}
-    };
+	};
 
 	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');

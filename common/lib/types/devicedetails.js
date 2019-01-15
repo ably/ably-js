@@ -1,5 +1,4 @@
 var DeviceDetails = (function() {
-	var msgpack = Platform.msgpack;
 
 	function DeviceDetails() {
 		this.id = undefined;
@@ -63,13 +62,12 @@ var DeviceDetails = (function() {
 		return result;
 	};
 
-	DeviceDetails.toRequestBody = function(subscription, format) {
-		return (format == 'msgpack') ? msgpack.encode(subscription, true): JSON.stringify(subscription);
-	};
+	DeviceDetails.toRequestBody = Utils.encodeBody;
 
 	DeviceDetails.fromResponseBody = function(body, format) {
-		if(format)
-			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
 
 		for(var i = 0; i < body.length; i++) {
 			body[i] = DeviceDetails.fromDecoded(body[i]);

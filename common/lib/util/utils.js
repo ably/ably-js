@@ -1,4 +1,6 @@
 var Utils = (function() {
+	var msgpack = Platform.msgpack;
+
 	function Utils() {}
 
 	function randomPosn(arrOrStr) {
@@ -462,6 +464,14 @@ var Utils = (function() {
 				err ? reject(err) : resolve(res);
 			}));
 		});
+	};
+
+	Utils.decodeBody = function(body, format) {
+		return (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+	};
+
+	Utils.encodeBody = function(body, format) {
+		return (format == 'msgpack') ? msgpack.encode(body, true) : JSON.stringify(body);
 	};
 
 	return Utils;
