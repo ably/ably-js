@@ -1,5 +1,4 @@
 var Push = (function() {
-	var msgpack = Platform.msgpack;
 	var noop = function() {};
 
 	function Push(rest) {
@@ -33,7 +32,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		requestBody = Utils.encodeBody(requestBody, format);
 		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
 	};
 
@@ -61,7 +60,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		requestBody = Utils.encodeBody(requestBody, format);
 		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, callback);
 	};
 
@@ -134,7 +133,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		requestBody = Utils.encodeBody(requestBody, format);
 		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, callback);
 	};
 
@@ -205,8 +204,9 @@ var Push = (function() {
 		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
 			var f = !unpacked && format;
 
-			if(f)
-				body = (f == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+			if(f) {
+				body = Utils.decodeBody(body, format);
+			}
 
 			for(var i = 0; i < body.length; i++) {
 				body[i] = String(body[i]);

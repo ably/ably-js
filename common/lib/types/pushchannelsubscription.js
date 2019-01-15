@@ -1,5 +1,4 @@
 var PushChannelSubscription = (function() {
-	var msgpack = Platform.msgpack;
 
 	function PushChannelSubscription() {
 		this.channel = undefined;
@@ -31,13 +30,12 @@ var PushChannelSubscription = (function() {
 		return result;
 	};
 
-	PushChannelSubscription.toRequestBody = function(subscription, format) {
-		return (format == 'msgpack') ? msgpack.encode(subscription, true): JSON.stringify(subscription);
-	};
+	PushChannelSubscription.toRequestBody = Utils.encodeBody;
 
 	PushChannelSubscription.fromResponseBody = function(body, format) {
-		if(format)
-			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
 
 		return PushChannelSubscription.fromValuesArray(body);
 	};
