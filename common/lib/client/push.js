@@ -69,7 +69,7 @@ var Push = (function() {
 	DeviceRegistrations.prototype.get = function(deviceIdOrDetails, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			headers = Utils.defaultGetHeaders(format),
 			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
 		if(typeof callback !== 'function') {
@@ -96,7 +96,7 @@ var Push = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
@@ -116,7 +116,7 @@ var Push = (function() {
 	DeviceRegistrations.prototype.remove = function(deviceIdOrDetails, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			headers = Utils.defaultGetHeaders(format),
 			params = {},
 			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
@@ -144,7 +144,7 @@ var Push = (function() {
 	DeviceRegistrations.prototype.removeWhere = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
@@ -196,7 +196,7 @@ var Push = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
@@ -216,7 +216,7 @@ var Push = (function() {
 	ChannelSubscriptions.prototype.removeWhere = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
@@ -241,7 +241,7 @@ var Push = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
