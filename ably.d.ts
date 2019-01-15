@@ -292,6 +292,48 @@ declare namespace Types {
 		retryIn?: number;
 	}
 
+	interface DeviceDetails {
+		id: string;
+		clientId?: string;
+		platform: "android" | "ios" | "browser";
+		formFactor: "phone" | "tablet" | "desktop" | "tv" | "watch" | "car" | "embedded" | "other";
+		metadata?: any;
+		deviceSecret?: string;
+		push: DevicePushDetails;
+	}
+
+	interface PushChannelSubscription {
+		channel: string;
+		deviceId?: string;
+		clientId?: string;
+	}
+
+	type DevicePushState = "ACTIVE" | "FAILING" | "FAILED";
+
+	interface DevicePushDetails {
+		recipient: any;
+		state?: DevicePushState;
+		errorReason?: ErrorInfo;
+	}
+
+	interface DeviceRegistrationParams {
+		clientId?: string;
+		deviceId?: string;
+		limit?: number;
+		state?: DevicePushState;
+	}
+
+	interface PushChannelSubscriptionParams {
+		channel? : string;
+		clientId?: string;
+		deviceId?: string;
+		limit?: number;
+	}
+
+	interface PushChannelsParams {
+		limit?: number;
+	}
+
 	// Common Listeners
 	type paginatedResultCallback<T> = (error: ErrorInfo, results: PaginatedResult<T> ) => void;
 	type standardCallback = (error: ErrorInfo, results: any) => void;
@@ -840,6 +882,7 @@ declare namespace Types {
 		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
+		push: Types.PushPromise;
 	}
 
 	class RealtimePromise extends Realtime {
@@ -849,6 +892,7 @@ declare namespace Types {
 		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
+		push: Types.PushPromise;
 	}
 
 	class Auth {
@@ -1025,6 +1069,58 @@ declare namespace Types {
 		errorMessage: string;
 		headers: any;
 	}
+
+	class Push {
+		admin: PushAdmin;
+	}
+
+	class PushPromise extends Push {
+		admin: PushAdminPromise;
+	}
+
+	class PushAdmin {
+		deviceRegistrations: PushDeviceRegistrations;
+		channelSubscriptions: PushChannelSubscriptions;
+		publish: (recipient: any, payload: any, callback?: errorCallback) => void;
+	}
+
+	class PushAdminPromise extends PushAdmin {
+		deviceRegistrations: PushDeviceRegistrationsPromise;
+		channelSubscriptions: PushChannelSubscriptionsPromise;
+		publish: (recipient: any, payload: any) => Promise<void>;
+	}
+
+	class PushDeviceRegistrations {
+		save: (deviceDetails: DeviceDetails, callback?: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
+		get: (deviceIdOrDetails: DeviceDetails | string, callback: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
+		list: (params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>) => void;
+		remove: (deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback) => void;
+		removeWhere: (params: DeviceRegistrationParams, callback?: errorCallback) => void;
+	}
+
+	class PushDeviceRegistrationsPromise {
+		save: (deviceDetails: DeviceDetails) => Promise<DeviceDetails>;
+		get: (deviceIdOrDetails: DeviceDetails | string) => Promise<DeviceDetails>;
+		list: (params: DeviceRegistrationParams) => Promise<PaginatedResult<DeviceDetails>>;
+		remove: (deviceIdOrDetails: DeviceDetails | string) => Promise<void>;
+		removeWhere: (params: DeviceRegistrationParams) => Promise<void>;
+	}
+
+	class PushChannelSubscriptions {
+		save: (subscription: PushChannelSubscription, callback?: (error: ErrorInfo, subscription: PushChannelSubscription) => void) => void;
+		list: (params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>) => void;
+		listChannels: (params: PushChannelsParams, callback: paginatedResultCallback<string>) => void;
+		remove: (subscription: PushChannelSubscription, callback?: errorCallback) => void;
+		removeWhere: (params: PushChannelSubscriptionParams, callback?: errorCallback) => void;
+	}
+
+	class PushChannelSubscriptionsPromise {
+		save: (subscription: PushChannelSubscription) => Promise<PushChannelSubscription>;
+		list: (params: PushChannelSubscriptionParams) => Promise<PaginatedResult<PushChannelSubscription>>;
+		listChannels: (params: PushChannelsParams) => Promise<PaginatedResult<string>>;
+		remove: (subscription: PushChannelSubscription) => Promise<void>;
+		removeWhere: (params: PushChannelSubscriptionParams) => Promise<void>;
+	}
 }
 
 export declare class Rest {
@@ -1039,6 +1135,7 @@ export declare class Rest {
 	request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
 	stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
 	time: (callback?: Types.timeCallback) => void;
+	push: Types.Push;
 }
 
 export declare class Realtime {
@@ -1057,4 +1154,5 @@ export declare class Realtime {
 	close: () => void;
 	connect: () => void;
 	time: (callback?: Types.timeCallback) => void;
+	push: Types.Push;
 }
