@@ -393,7 +393,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			presence: [
 				{
 					action: 'enter',
-					clientId: 'two',
+					clientId: 'two'
 				}
 			]});
 

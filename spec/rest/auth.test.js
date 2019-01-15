@@ -714,7 +714,7 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 		var promise3 = rest.auth.requestToken({ttl: 100}, {key: helper.getTestApp().keys[1].keyStr});
 		var promise4 = rest.auth.createTokenRequest();
 		var promise5 = rest.auth.createTokenRequest({ttl: 100});
-		var promise6 = rest.auth.requestToken({ttl: 100}, {key: 'bad'}).catch(function(err) {
+		var promise6 = rest.auth.requestToken({ttl: 100}, {key: 'bad'})['catch'](function(err) {
 			test.ok(true, 'Token attempt with bad key was rejected')
 		});
 
@@ -723,7 +723,7 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 				test.ok(results[i].token || results[i].nonce)
 			}
 			test.done();
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, 'a token request failed with error: ' + displayError(err));
 			test.done();
 		});

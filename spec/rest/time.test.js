@@ -43,7 +43,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		rest.time().then(function() {
 			test.ok(true, 'time succeeded');
 			test.done();
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, 'time call failed with error: ' + displayError(err));
 			test.done();
 		});

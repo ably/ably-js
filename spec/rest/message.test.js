@@ -259,7 +259,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var message = page.items[0];
 			test.ok(message.data == 'data', 'Check publish and history promise methods both worked as expected');
 			test.done();
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
 			test.done();
 		});

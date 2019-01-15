@@ -831,7 +831,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return channel.publish('name', 'data');
 		}).then(function() {
 			test.ok(true, 'Check publish returns a promise that resolves on publish');
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
 		})
 
@@ -841,7 +841,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(true, 'Check subscribe returns a promise that resolves on attach');
 		});
 
-		var channelFailedPromise = realtime.channels.get(':invalid').attach().catch(function(err) {
+		var channelFailedPromise = realtime.channels.get(':invalid').attach()['catch'](function(err) {
 			test.ok(true, 'Check attach returns a promise that is rejected on attach fail');
 			test.equal(err.code, 40010, 'Check err passed through correctly');
 		});
