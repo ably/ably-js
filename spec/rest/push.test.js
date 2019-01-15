@@ -339,7 +339,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			rest.push.admin.channelSubscriptions.save(subscription, callback);
 		}, function(callback) {
-			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo'}, callback);
+			rest.push.admin.channelSubscriptions.list({channel: 'pushenabled:foo'}, callback);
 		}, function(callback) {
 			rest.push.admin.channelSubscriptions.remove(subscription, callback);
 		}], function(err, result) {
@@ -383,9 +383,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.series([function(callback) {
 			async.parallel(subscribes, callback);
 		}, function(callback) {
-			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo1'}, callback);
+			rest.push.admin.channelSubscriptions.list({channel: 'pushenabled:foo1'}, callback);
 		}, function(callback) {
-			rest.push.admin.channelSubscriptions.get({channel: 'pushenabled:foo2'}, callback);
+			rest.push.admin.channelSubscriptions.list({channel: 'pushenabled:foo2'}, callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
 		}], function(err, result) {
@@ -459,7 +459,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		rest.push.admin.channelSubscriptions.save(subscription).then(function(saved) {
 			test.equal(subscription.clientId, saved.clientId);
 			test.equal(subscription.channel, saved.channel);
-			return rest.push.admin.channelSubscriptions.get({channel: channelId});
+			return rest.push.admin.channelSubscriptions.list({channel: channelId});
 		}).then(function(result) {
 			var sub = result.items[0];
 			test.equal(subscription.clientId, sub.clientId);

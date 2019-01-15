@@ -164,7 +164,7 @@ var Push = (function() {
 		});
 	};
 
-	ChannelSubscriptions.prototype.get = function(params, callback) {
+	ChannelSubscriptions.prototype.list = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
@@ -172,16 +172,13 @@ var Push = (function() {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'get', arguments);
+				return Utils.promisify(this, 'list', arguments);
 			}
 			callback = noop;
 		}
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
-
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
 			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
