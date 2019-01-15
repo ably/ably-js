@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var Resource = Ably.Rest.Resource,
 		Utils = Ably.Rest.Utils,
 		exports = {},
+		_exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
@@ -181,11 +182,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			var saved = result[0];
 			var got = result[1].items[0];
 			test.equal(got.push.state, 'ACTIVE');
 			delete got.metadata; // Ignore these properties for testing
 			delete got.push.state;
 			includesUnordered(test, untyped(got), testDevice_withoutSecret);
+			includesUnordered(test, untyped(saved), testDevice_withoutSecret);
 			test.done();
 		});
 	};
@@ -294,7 +297,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 		var rest = helper.AblyRest({promises: true});
 
-		rest.push.admin.deviceRegistrations.save(testDevice).then(function() {
+		rest.push.admin.deviceRegistrations.save(testDevice).then(function(saved) {
+			test.equal(saved.push.state, 'ACTIVE');
+			includesUnordered(test, untyped(saved), testDevice_withoutSecret);
 			return rest.push.admin.deviceRegistrations.get(testDevice.id);
 		}).then(function(result) {
 			var got = result.items[0];
@@ -327,7 +332,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				test.done();
 				return;
 			}
+			var saved = result[0];
 			var sub = result[1].items[0];
+			test.equal(subscription.clientId, saved.clientId);
+			test.equal(subscription.channel, saved.channel);
 			test.equal(subscription.clientId, sub.clientId);
 			test.equal(subscription.channel, sub.channel);
 			test.done();
@@ -432,7 +440,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var channelId = 'pushenabled:channelsubscriptions_promise';
 		var subscription = {clientId: 'testClient', channel: channelId};
 
-		rest.push.admin.channelSubscriptions.save(subscription).then(function() {
+		rest.push.admin.channelSubscriptions.save(subscription).then(function(saved) {
+			test.equal(subscription.clientId, saved.clientId);
+			test.equal(subscription.channel, saved.channel);
 			return rest.push.admin.channelSubscriptions.get({channel: channelId});
 		}).then(function(result) {
 			var sub = result.items[0];

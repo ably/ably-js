@@ -69,14 +69,11 @@ var DeviceDetails = (function() {
 			body = Utils.decodeBody(body, format);
 		}
 
-		for(var i = 0; i < body.length; i++) {
-			body[i] = DeviceDetails.fromDecoded(body[i]);
+		if(Utils.isArray(body)) {
+			return DeviceDetails.fromValuesArray(body);
+		} else {
+			return DeviceDetails.fromValues(body);
 		}
-		return body;
-	};
-
-	DeviceDetails.fromDecoded = function(values) {
-		return Utils.mixin(new DeviceDetails(), values);
 	};
 
 	DeviceDetails.fromValues = function(values) {
