@@ -65,7 +65,7 @@ var Rest = (function() {
 				callback = noop;
 			}
 		}
-		var headers = Utils.copy(Utils.defaultGetHeaders()),
+		var headers = Utils.defaultGetHeaders(),
 			format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format;
 
@@ -92,7 +92,7 @@ var Rest = (function() {
 				callback = noop;
 			}
 		}
-		var headers = Utils.copy(Utils.defaultGetHeaders());
+		var headers = Utils.defaultGetHeaders();
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
@@ -124,7 +124,7 @@ var Rest = (function() {
 			method = method.toLowerCase(),
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
-			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
+			headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
 
 		if(callback === undefined) {
 			if(this.options.promises) {

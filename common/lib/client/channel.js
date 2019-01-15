@@ -51,7 +51,7 @@ var Channel = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			headers = Utils.defaultGetHeaders(format),
 			channel = this;
 
 		if(rest.options.headers)
