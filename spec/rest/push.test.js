@@ -175,7 +175,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}, function(callback) {
 			rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
+			rest.push.admin.deviceRegistrations.remove(testDevice.id, callback);
 		}], function(err, result) {
 			if (err) {
 				test.ok(false, err.message);
@@ -238,7 +238,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				rest.push.admin.deviceRegistrations.save(device, callback);
 			});
 			deletes.push(function(callback) {
-				rest.push.admin.deviceRegistrations.remove({deviceId: 'device' + (i + 1)}, callback);
+				rest.push.admin.deviceRegistrations.remove('device' + (i + 1), callback);
 			});
 		})(i) }
 
@@ -256,9 +256,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			rest.push.admin.deviceRegistrations.get(devices[0].id, callback);
 		}, function(callback) {
 			async.parallel([function(callback) {
-				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient1'}, callback);
+				rest.push.admin.deviceRegistrations.removeWhere({clientId: 'testClient1'}, callback);
 			}, function(callback) {
-				rest.push.admin.deviceRegistrations.remove({clientId: 'testClient2'}, callback);
+				rest.push.admin.deviceRegistrations.removeWhere({clientId: 'testClient2'}, callback);
 			}], callback);
 		}, function(callback) {
 			async.parallel(deletes, callback);
@@ -277,19 +277,31 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.push_deviceRegistrations_remove = function(test) {
+	exports.push_deviceRegistrations_remove_removeWhere = function(test) {
 		var rest = helper.AblyRest();
 
-		async.series([function(callback) {
+		async.series([
+		function(callback) {
 			rest.push.admin.deviceRegistrations.save(testDevice, callback);
 		}, function(callback) {
-			rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id}, callback);
+			rest.push.admin.deviceRegistrations.remove(testDevice.id, callback);
 		}, function(callback) {
 			rest.push.admin.deviceRegistrations.get(testDevice.id, function(err, result) {
 				test.equal(err && err.statusCode, 404, 'Check device reg not found after removal');
 				callback(null);
 			});
-		}], function(err, result) {
+		},
+		function(callback) {
+			rest.push.admin.deviceRegistrations.save(testDevice, callback);
+		}, function(callback) {
+			rest.push.admin.deviceRegistrations.removeWhere({deviceId: testDevice.id}, callback);
+		}, function(callback) {
+			rest.push.admin.deviceRegistrations.get(testDevice.id, function(err, result) {
+				test.equal(err && err.statusCode, 404, 'Check device reg not found after removal');
+				callback(null);
+			});
+		}
+		], function(err, result) {
 			if(err) {
 				test.ok(false, displayError(err));
 			}
@@ -323,7 +335,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.equal(got.push.state, 'ACTIVE');
 			includesUnordered(test, untyped(got), testDevice_withoutSecret);
 		/* remove */
-			return rest.push.admin.deviceRegistrations.remove({deviceId: testDevice.id});
+			return rest.push.admin.deviceRegistrations.removeWhere({deviceId: testDevice.id});
 		}).then(function() {
 			test.done();
 		}).catch(function(err) {

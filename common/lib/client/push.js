@@ -113,14 +113,42 @@ var Push = (function() {
 		})).get(params, callback);
 	};
 
-	DeviceRegistrations.prototype.remove = function(params, callback) {
+	DeviceRegistrations.prototype.remove = function(deviceIdOrDetails, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			params = {},
+			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'remove', arguments);
+			}
+			callback = noop;
+		}
+
+		if(typeof deviceId !== 'string' || !deviceId.length) {
+			callback(new ErrorInfo('First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails', 40000, 400));
+			return;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, false, callback);
+	};
+
+	DeviceRegistrations.prototype.removeWhere = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'remove', arguments);
+				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
