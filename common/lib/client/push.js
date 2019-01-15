@@ -213,14 +213,14 @@ var Push = (function() {
 		})).get(params, callback);
 	};
 
-	ChannelSubscriptions.prototype.remove = function(params, callback) {
+	ChannelSubscriptions.prototype.removeWhere = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'remove', arguments);
+				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
@@ -233,6 +233,9 @@ var Push = (function() {
 
 		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
 	};
+
+	/* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
+	ChannelSubscriptions.prototype.remove = ChannelSubscriptions.prototype.removeWhere;
 
 	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
 		var rest = this.rest,
