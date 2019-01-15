@@ -11,7 +11,7 @@ var DeviceDetails = (function() {
 		this.push = {
 			recipient: undefined,
 			state: undefined,
-			errorReason: undefined,
+			errorReason: undefined
 		};
 	}
 
@@ -31,8 +31,8 @@ var DeviceDetails = (function() {
 			push: {
 				recipient: this.push.recipient,
 				state: this.push.state,
-				errorReason: this.push.errorReason,
-			},
+				errorReason: this.push.errorReason
+			}
 		};
 	};
 

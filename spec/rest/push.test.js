@@ -16,7 +16,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			push: {
 				recipient: {
 					transportType: 'gcm',
-					registrationToken: 'xxxxxxxxxxx',
+					registrationToken: 'xxxxxxxxxxx'
 				}
 			}
 		},
@@ -27,7 +27,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			push: {
 				recipient: {
 					transportType: 'gcm',
-					registrationToken: 'xxxxxxxxxxx',
+					registrationToken: 'xxxxxxxxxxx'
 				}
 			}
 		};
@@ -97,8 +97,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				data: {foo: 'bar'}
 			};
 
-			const baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
-			const pushRecipient = {
+			var baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+			var pushRecipient = {
 				transportType: 'ablyChannel',
 				channel: 'pushenabled:foo',
 				ablyKey: realtime.options.key,
@@ -142,8 +142,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				data: {foo: 'bar'}
 			};
 
-			const baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
-			const pushRecipient = {
+			var baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+			var pushRecipient = {
 				transportType: 'ablyChannel',
 				channel: 'pushenabled:foo',
 				ablyKey: realtime.options.key,
@@ -160,7 +160,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 			realtime.push.admin.publish(pushRecipient, pushPayload).then(function() {
 				closeAndFinish(test, realtime);
-			}).catch(function(err) {
+			})['catch'](function(err) {
 				test.ok(false, displayError(err));
 				closeAndFinish(test, realtime);
 			});
@@ -199,7 +199,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var devices = [];
 		var devices_withoutSecret = [];
 		var devicesByClientId = {};
-		let numberOfDevices = 5;
+		var numberOfDevices = 5;
 		for (var i = 0; i < numberOfDevices; i++) { (function(i) {
 			var device = {
 				id: 'device' + (i + 1),
@@ -210,9 +210,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				push: {
 					recipient: {
 						transportType: 'gcm',
-						registrationToken: 'xxxxxxxxxxx',
-					},
-				},
+						registrationToken: 'xxxxxxxxxxx'
+					}
+				}
 			};
 			var device_withoutSecret = {
 				id: 'device' + (i + 1),
@@ -222,9 +222,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				push: {
 					recipient: {
 						transportType: 'gcm',
-						registrationToken: 'xxxxxxxxxxx',
-					},
-				},
+						registrationToken: 'xxxxxxxxxxx'
+					}
+				}
 			};
 			if (!devicesByClientId[device.clientId]) {
 				devicesByClientId[device.clientId] = [];
@@ -338,7 +338,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return rest.push.admin.deviceRegistrations.removeWhere({deviceId: testDevice.id});
 		}).then(function() {
 			test.done();
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, displayError(err));
 			test.done();
 		});
@@ -486,7 +486,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return rest.push.admin.channelSubscriptions.remove(subscription);
 		}).then(function() {
 			test.done();
-		}).catch(function(err) {
+		})['catch'](function(err) {
 			test.ok(false, displayError(err));
 			test.done();
 		});

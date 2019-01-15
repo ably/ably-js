@@ -202,7 +202,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				key: 'not_a.real:key',
 				disconnectedRetryTimeout: 123,
 				suspendedRetryTimeout: 456,
-				httpRequestTimeout: 789,
+				httpRequestTimeout: 789
 			});
 			/* Note: uses internal knowledge of connectionManager */
 			test.equal(realtime.connection.connectionManager.states.disconnected.retryDelay, 123, 'Verify disconnected retry frequency is settable');
