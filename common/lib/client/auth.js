@@ -81,6 +81,8 @@ var Auth = (function() {
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
+		this.tokenRequestInProgress = false;
+		this.waitingForTokenRequest = null;
 
 		if(useTokenAuth(options)) {
 			/* Token auth */
@@ -668,8 +670,21 @@ var Auth = (function() {
 		var self = this,
 			token = this.tokenDetails;
 
+		if(this.tokenRequestInProgress) {
+			(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
+			return;
+		}
+
 		var requestToken = function() {
+			self.tokenRequestInProgress = true;
 			self.requestToken(self.tokenParams, self.authOptions, function(err, tokenResponse) {
+				self.tokenRequestInProgress = false;
+				var waiting = self.waitingForTokenRequest;
+				if(waiting) {
+					waiting.push(callback);
+					callback = waiting;
+					self.waitingForTokenRequest = null;
+				}
 				if(err) {
 					callback(err);
 					return;

@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, async, globals) {
 	var currentTime, rest, exports = {},
+		_exports = {},
 		utils = helper.Utils,
 		echoServer = 'https://echo.ably.io';
 
@@ -675,6 +676,28 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 			test.strictEqual(err.code, 40400, 'Verify code is 40400');
 			test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
 			test.done();
+		});
+	};
+
+	exports.auth_concurrent = function(test) {
+		var authCallbackInvocations = 0;
+		function authCallback(tokenParams, callback) {
+			authCallbackInvocations++;
+			rest.auth.createTokenRequest(tokenParams, callback);
+		}
+
+		/* Example client-side using the token */
+		var restClient = helper.AblyRest({ authCallback: authCallback });
+		var channel = restClient.channels.get('auth_concurrent');
+
+		async.parallel([
+			channel.history.bind(channel),
+			channel.history.bind(channel)
+		], function(err) {
+			test.ok(!err, err && helper.displayError(err));
+			test.equal(authCallbackInvocations, 1, 'Check authCallback only invoked once -- was: ' + authCallbackInvocations)
+			test.done();
+			return;
 		});
 	};
 
