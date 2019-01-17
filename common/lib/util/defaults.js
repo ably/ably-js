@@ -52,6 +52,15 @@ Defaults.getHosts = function(options) {
 	return [options.restHost].concat(Defaults.getFallbackHosts(options));
 };
 
+function checkHost(host) {
+	if(typeof host !== 'string') {
+		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+	};
+	if(!host.length) {
+		throw new ErrorInfo('host must not be zero-length', 40000, 400);
+	};
+}
+
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
 	if(options.host) {
@@ -102,6 +111,8 @@ Defaults.normaliseOptions = function(options) {
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 	}
 	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
+	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
+
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
