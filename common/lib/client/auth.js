@@ -381,11 +381,12 @@ var Auth = (function() {
 		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
+				path = '/keys/' + keyName + '/requestToken',
+				tokenUri = function(host) { return client.baseUri(host) + path; };
 
 			var requestHeaders = Utils.defaultPostHeaders();
 			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
+			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams));
 			signedTokenParams = JSON.stringify(signedTokenParams);
 			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
