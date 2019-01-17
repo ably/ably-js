@@ -13,6 +13,20 @@ var Http = (function() {
 			(statusCode >= 500 && statusCode <= 504);
 	}
 
+	function getHosts(client) {
+		/* If we're a connected realtime client, try the endpoint we're connected
+		 * to first -- but still have fallbacks, being connected is not an absolute
+		 * guarantee that a datacenter has free capacity to service REST requests. */
+		var connection = client.connection,
+			connectionHost = connection && connection.connectionManager.host;
+
+		if(connectionHost) {
+			return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+		}
+
+		return Defaults.getHosts(client.options);
+	}
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -25,12 +39,7 @@ var Http = (function() {
 		callback = callback || noop;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
@@ -77,12 +86,7 @@ var Http = (function() {
 		callback = callback || noop;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
