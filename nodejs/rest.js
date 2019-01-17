@@ -24,11 +24,11 @@ var includeScript = function(name) {
 includeScript('./platform.js');
 includeScript('./lib/util/defaults.js');
 includeScript('./lib/util/bufferutils.js');
+includeScript('../common/lib/util/utils.js');
 includeScript('./lib/util/http.js');
 includeScript('../common/lib/util/defaults.js');
 includeScript('../common/lib/util/eventemitter.js');
 includeScript('../common/lib/util/logger.js');
-includeScript('../common/lib/util/utils.js');
 includeScript('../common/lib/util/multicaster.js');
 includeScript('./lib/util/crypto.js');
 includeScript('../common/lib/types/errorinfo.js');

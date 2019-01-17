@@ -77,71 +77,45 @@ this.Http = (function() {
 	}
 	Http._getHosts = getHosts;
 
-	/**
-	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
+	Http.methods = ['get', 'delete', 'post', 'put', 'patch'];
+	Http.methodsWithoutBody = ['get', 'delete'];
+	Http.methodsWithBody = Utils.arrSubtract(Http.methods, Http.methodsWithoutBody);
+
+	/** Http.get, Http.post, Http.put, ...
+	 * Perform an HTTP request for a given path against prime and fallback Ably hosts
 	 * @param rest
-	 * @param path the full path of the POST request
+	 * @param path the full path
 	 * @param headers optional hash of headers
+	 * [only for methods with body: @param body object or buffer containing request body]
 	 * @param params optional hash of params
 	 * @param callback (err, response)
-	 */
-	Http.get = function(rest, path, headers, params, callback) {
-		Http['do']('get', rest, path, headers, null, params, callback);
-	}
-
-	/**
-	 * Perform an HTTP GET request for a given resolved URI
-	 * @param rest (optional)
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.doUri('get', rest, uri, headers, null, params, callback);
-	};
-
-	/**
-	 * Perform an HTTP POST request for a given path against prime and fallback Ably hosts
+	 *
+	 ** Http.getUri, Http.postUri, Http.putUri, ...
+	 * Perform an HTTP request for a given full URI
 	 * @param rest
-	 * @param the full path of the POST request
+	 * @param uri the full URI
 	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
+	 * [only for methods with body: @param body object or buffer containing request body]
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 */
-	Http.post = function(rest, path, headers, body, params, callback) {
-		Http['do']('post', rest, path, headers, body, params, callback);
-	};
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		Http[method] = function(rest, path, headers, params, callback) {
+			Http['do'](method, rest, path, headers, null, params, callback);
+		};
+		Http[method + 'Uri'] = function(rest, uri, headers, params, callback) {
+			Http.doUri(method, rest, uri, headers, null, params, callback);
+		};
+	});
 
-	/**
-	 * Perform an HTTP POST request for a given resolved URI
-	 * @param rest (optional)
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.doUri('post', rest, uri, headers, body, params, callback);
-	};
-
-	Http['delete'] = function(rest, path, headers, params, callback) {
-		Http['do']('delete', rest, path, headers, null, params, callback);
-	};
-
-	Http.deleteUri = function(rest, uri, headers, params, callback) {
-		Http.doUri('delete', rest, uri, headers, null, params, callback);
-	};
-
-	Http.put = function(rest, path, headers, body, params, callback) {
-		Http['do']('put', rest, path, headers, body, params, callback);
-	};
-
-	Http.putUri = function(rest, uri, headers, body, params, callback) {
-		Http.doUri('put', rest, uri, headers, body, params, callback);
-	};
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		Http[method] = function(rest, path, headers, body, params, callback) {
+			Http['do'](method, rest, path, headers, body, params, callback);
+		};
+		Http[method + 'Uri'] = function(rest, uri, headers, body, params, callback) {
+			Http.doUri(method, rest, uri, headers, body, params, callback);
+		};
+	});
 
 	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
 	Http['do'] = function(method, rest, path, headers, body, params, callback) {

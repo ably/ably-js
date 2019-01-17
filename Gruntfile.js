@@ -89,13 +89,13 @@ module.exports = function (grunt) {
 	var ablyFiles = [
 		'<%= dirs.browser %>/lib/util/defaults.js',
 		'<%= dirs.browser %>/lib/util/bufferutils.js',
+		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.browser %>/lib/util/http.js',
 		'<%= dirs.browser %>/lib/util/base64.js',
 
 		'<%= dirs.common %>/lib/util/defaults.js',
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
-		'<%= dirs.common %>/lib/util/utils.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
 
 		'<%= dirs.common %>/lib/types/errorinfo.js',

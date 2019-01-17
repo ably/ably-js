@@ -88,21 +88,17 @@ var Resource = (function() {
 		}
 	}
 
-	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, callback);
-	};
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		Resource[method] = function(rest, path, origheaders, origparams, envelope, callback) {
+			Resource['do'](method, rest, path, null, origheaders, origparams, envelope, callback);
+		};
+	});
 
-	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, callback);
-	};
-
-	Resource['delete'] = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, callback);
-	};
-
-	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, callback);
-	};
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		Resource[method] = function(rest, path, body, origheaders, origparams, envelope, callback) {
+			Resource['do'](method, rest, path, body, origheaders, origparams, envelope, callback);
+		};
+	});
 
 	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
