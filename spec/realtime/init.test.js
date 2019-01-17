@@ -306,5 +306,36 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		}
 	};
 
+	exports.init_fallbacks_once_connected = function(test) {
+		var realtime = helper.AblyRealtime({
+			httpMaxRetryCount: 3,
+			fallbackHosts: ['a', 'b', 'c']
+		});
+		realtime.connection.once('connected', function() {
+			var hosts = Ably.Rest.Http._getHosts(realtime);
+			/* restHost rather than realtimeHost as that's what connectionManager
+			 * knows about; converted to realtimeHost by the websocketTransport */
+			test.equal(hosts[0], realtime.options.restHost, 'Check connected realtime host is the first option');
+			test.equal(hosts.length, 4, 'Check also have three fallbacks');
+			closeAndFinish(test, realtime);
+		})
+	};
+
+	exports.init_fallbacks_once_connected_2 = function(test) {
+		var goodHost = helper.AblyRest().options.realtimeHost;
+		var realtime = helper.AblyRealtime({
+			httpMaxRetryCount: 3,
+			restHost: 'a',
+			fallbackHosts: [goodHost, 'b', 'c']
+		});
+		realtime.connection.once('connected', function() {
+			var hosts = Ably.Rest.Http._getHosts(realtime);
+			/* restHost rather than realtimeHost as that's what connectionManager
+			 * knows about; converted to realtimeHost by the websocketTransport */
+			test.equal(hosts[0], goodHost, 'Check connected realtime host is the first option');
+			closeAndFinish(test, realtime);
+		})
+	}
+
 	return module.exports = helper.withTimeout(exports);
 });

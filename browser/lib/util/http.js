@@ -26,6 +26,7 @@ var Http = (function() {
 
 		return Defaults.getHosts(client.options);
 	}
+	Http._getHosts = getHosts;
 
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
