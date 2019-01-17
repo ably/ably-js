@@ -146,18 +146,14 @@ var Rest = (function() {
 			return Utils.ensureArray(unpacked ? resbody : decoder(resbody));
 		}, /* useHttpPaginatedResponse: */ true);
 
-		switch(method) {
-			case 'get':
-				paginatedResource.get(params, callback);
-				break;
-			case 'post':
-				paginatedResource.post(params, body, callback);
-				break;
-			case 'put':
-				paginatedResource.put(params, body, callback);
-				break;
-			default:
-				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
+		if(!Utils.arrIn(Http.methods, method)) {
+			throw new ErrorInfo('Unsupported method ' + method, 40500, 405);
+		}
+
+		if(Utils.arrIn(Http.methodsWithBody, method)) {
+			paginatedResource[method](params, body, callback);
+		} else {
+			paginatedResource[method](params, callback);
 		}
 	};
 

@@ -30,26 +30,25 @@ var PaginatedResource = (function() {
 		this.useHttpPaginatedResponse = useHttpPaginatedResponse || false;
 	}
 
-	PaginatedResource.prototype.get = function(params, callback) {
-		var self = this;
-		Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked, statusCode) {
-			self.handlePage(err, body, headers, unpacked, statusCode, callback);
-		});
-	};
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		PaginatedResource.prototype[method] = function(params, callback) {
+			var self = this;
+			Resource[method](self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked, statusCode) {
+				self.handlePage(err, body, headers, unpacked, statusCode, callback);
+			});
+		};
+	})
 
-	PaginatedResource.prototype.post = function(params, body, callback) {
-		var self = this;
-		Resource.post(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
-		});
-	};
-
-	PaginatedResource.prototype.put = function(params, body, callback) {
-		var self = this;
-		Resource.put(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
-		});
-	};
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		PaginatedResource.prototype[method] = function(params, body, callback) {
+			var self = this;
+			Resource[method](self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
+				if(callback) {
+					self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+				}
+			});
+		};
+	});
 
 	function returnErrOnly(err, body, useHPR) {
 		/* If using httpPaginatedResponse, errors from Ably are returned as part of

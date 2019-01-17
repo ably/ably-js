@@ -175,14 +175,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	});
 
-	exports.checkPut = function(test) {
-		test.expect(1);
-		var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
-		restEcho.request("PUT", "/methods", {}, {}, {}, function(err, res) {
-			test.equal(res.items[0] && res.items[0].method, 'put');
-			test.done();
-		});
-	};
+	utils.arrForEach(['put', 'patch', 'delete'], function(method) {
+		exports['check' + method] = function(test) {
+			test.expect(1);
+			var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
+			restEcho.request(method, "/methods", {}, {}, {}, function(err, res) {
+				test.equal(res.items[0] && res.items[0].method, method);
+				test.done();
+			});
+		};
+	})
 
 	return module.exports = helper.withTimeout(exports);
 });
