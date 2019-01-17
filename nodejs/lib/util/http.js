@@ -62,6 +62,20 @@ this.Http = (function() {
 			(statusCode >= 500 && statusCode <= 504);
 	}
 
+	function getHosts(client) {
+		/* If we're a connected realtime client, try the endpoint we're connected
+		 * to first -- but still have fallbacks, being connected is not an absolute
+		 * guarantee that a datacenter has free capacity to service REST requests. */
+		var connection = client.connection,
+			connectionHost = connection && connection.connectionManager.host;
+
+		if(connectionHost) {
+			return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+		}
+
+		return Defaults.getHosts(client.options);
+	}
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -72,7 +86,7 @@ this.Http = (function() {
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* see if we have one or more than one host */
 		if(hosts.length == 1) {
@@ -127,7 +141,7 @@ this.Http = (function() {
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* see if we have one or more than one host */
 		if(hosts.length == 1) {

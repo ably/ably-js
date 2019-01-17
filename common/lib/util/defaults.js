@@ -41,15 +41,15 @@ Defaults.getHttpScheme = function(options) {
 	return options.tls ? 'https://' : 'http://';
 };
 
-Defaults.getHosts = function(options) {
-	var hosts = [options.restHost],
-		fallbackHosts = options.fallbackHosts,
+Defaults.getFallbackHosts = function(options) {
+	var fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) {
-		hosts = hosts.concat(Utils.arrChooseN(fallbackHosts, httpMaxRetryCount));
-	}
-	return hosts;
+	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
+};
+
+Defaults.getHosts = function(options) {
+	return [options.restHost].concat(Defaults.getFallbackHosts(options));
 };
 
 Defaults.normaliseOptions = function(options) {
