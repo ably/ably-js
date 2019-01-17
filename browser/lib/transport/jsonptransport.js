@@ -53,15 +53,15 @@ var JSONPTransport = (function() {
 		return 'JSONPTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+	var createRequest = JSONPTransport.prototype.createRequest = function(uri, headers, params, body, requestMode, timeouts, method) {
 		/* JSONP requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
 		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
-		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts);
+		return new Request(undefined, uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 
-	function Request(id, uri, headers, params, body, requestMode, timeouts) {
+	function Request(id, uri, headers, params, body, requestMode, timeouts, method) {
 		EventEmitter.call(this);
 		if(id === undefined) id = idCounter++;
 		this.id = id;
@@ -74,6 +74,7 @@ var JSONPTransport = (function() {
 			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
 		}
 		this.body = body;
+		this.method = method;
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
 		this.requestComplete = false;
@@ -83,6 +84,7 @@ var JSONPTransport = (function() {
 	Request.prototype.exec = function() {
 		var id = this.id,
 			body = this.body,
+			method = this.method,
 			uri = this.uri,
 			params = this.params,
 			self = this;
@@ -90,8 +92,12 @@ var JSONPTransport = (function() {
 		params.callback = '_ablyjs_jsonp._(' + id + ')';
 
 		params.envelope = 'jsonp';
-		if(body)
+		if(body) {
 			params.body = body;
+		}
+		if(method && method !== 'get') {
+			params.method = method;
+		}
 
 		var script = this.script = document.createElement('script');
 		var src = uri + Utils.toQueryString(params);
@@ -172,8 +178,7 @@ var JSONPTransport = (function() {
 
 	if(Platform.jsonpSupported && !Http.Request) {
 		Http.Request = function(method, rest, uri, headers, params, body, callback) {
-			/* ignore method; always GET */
-			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
+			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts, method);
 			req.once('complete', callback);
 			Utils.nextTick(function() {
 				req.exec();
