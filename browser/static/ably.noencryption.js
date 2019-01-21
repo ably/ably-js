@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.0.23
+ * Ably JavaScript Library v1.1.0-beta.0
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2056,13 +2056,16 @@ var Platform = {
 			(new window.TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	Promise: window.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;
 		}
 		return function(arr, callback) {
 			crypto.getRandomValues(arr);
-			callback(null);
+			if(callback) {
+				callback(null);
+			}
 		};
 	})(window.crypto || window.msCrypto) // mscrypto for IE11
 };
@@ -2165,6 +2168,7 @@ var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
+	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
@@ -2172,7 +2176,7 @@ var BufferUtils = (function() {
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function arrayBufferToBase64(ArrayBuffer) {
 		var base64    = ''
-		var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		var encodings = base64CharSet;
 
 		var bytes         = new Uint8Array(ArrayBuffer)
 		var byteLength    = bytes.byteLength
@@ -2234,6 +2238,8 @@ var BufferUtils = (function() {
 	}
 
 	function BufferUtils() {}
+
+	BufferUtils.base64CharSet = base64CharSet;
 
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
 
@@ -2327,6 +2333,11 @@ var Http = (function() {
 
 	function Http() {}
 
+	var now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
+	};
+
 	function shouldFallback(err) {
 		var statusCode = err.statusCode;
 		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
@@ -2361,30 +2372,8 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.get = function(rest, path, headers, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-		var hosts = getHosts(rest);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.getUri(rest, uri(hosts[0]), headers, params, callback);
-			return;
-		}
-
-		/* so host is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.getUri(rest, uri(candidateHosts.shift()), headers, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					/* use a fallback host if available */
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		}
-		tryAHost(hosts);
-	};
+		Http['do']('get', rest, path, headers, null, params, callback);
+	}
 
 	/**
 	 * Perform an HTTP GET request for a given resolved URI
@@ -2395,7 +2384,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.Request(rest, uri, headers, params, null, callback || noop);
+		Http.doUri('get', rest, uri, headers, null, params, callback);
 	};
 
 	/**
@@ -2408,28 +2397,7 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.post = function(rest, path, headers, body, params, callback) {
-		callback = callback || noop;
-		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-		var hosts = getHosts(rest);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.postUri(rest, uri(hosts[0]), headers, body, params, callback);
-			return;
-		}
-
-		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
-			Http.postUri(rest, uri(candidateHosts.shift()), headers, body, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts);
-					return;
-				}
-				callback.apply(null, arguments);
-			});
-		};
-		tryAHost(hosts);
+		Http['do']('post', rest, path, headers, body, params, callback);
 	};
 
 	/**
@@ -2442,7 +2410,83 @@ var Http = (function() {
 	 * @param callback (err, response)
 	 */
 	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.Request(rest, uri, headers, params, body, callback || noop);
+		Http.doUri('post', rest, uri, headers, body, params, callback);
+	};
+
+	Http['delete'] = function(rest, path, headers, params, callback) {
+		Http['do']('delete', rest, path, headers, null, params, callback);
+	}
+
+	Http.deleteUri = function(rest, uri, headers, params, callback) {
+		Http.doUri('delete', rest, uri, headers, null, params, callback);
+	};
+
+	Http.put = function(rest, path, headers, body, params, callback) {
+		Http['do']('put', rest, path, headers, body, params, callback);
+	};
+
+	Http.putUri = function(rest, uri, headers, body, params, callback) {
+		Http.doUri('put', rest, uri, headers, body, params, callback);
+	};
+
+	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
+	Http['do'] = function(method, rest, path, headers, body, params, callback) {
+		callback = callback || noop;
+		var uriFromHost = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+		var doArgs = arguments;
+
+		var currentFallback = rest._currentFallback;
+		if(currentFallback) {
+			if(currentFallback.validUntil > now()) {
+				/* Use stored fallback */
+				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err) {
+					if(err && shouldFallback(err)) {
+						/* unstore the fallback and start from the top with the default sequence */
+						rest._currentFallback = null;
+						Http['do'].apply(Http, doArgs);
+						return;
+					}
+					callback.apply(null, arguments);
+				});
+				return;
+			} else {
+				/* Fallback expired; remove it and fallthrough to normal sequence */
+				rest._currentFallback = null;
+			}
+		}
+
+		var hosts = getHosts(rest);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
+			return;
+		}
+
+		/* hosts is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts) {
+			var host = candidateHosts.shift();
+			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts, true);
+					return;
+				}
+				if(persistOnSuccess) {
+					/* RSC15f */
+					rest._currentFallback = {
+						host: host,
+						validUntil: now() + rest.options.timeouts.fallbackRetryTimeout
+					};
+				}
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
+	};
+
+	Http.doUri = function(method, rest, uri, headers, body, params, callback) {
+		Http.Request(method, rest, uri, headers, params, body, callback);
 	};
 
 	Http.supportsAuthHeaders = false;
@@ -2683,6 +2727,7 @@ Defaults.TIMEOUTS = {
 	suspendedRetryTimeout      : 30000,
 	httpRequestTimeout         : 15000,
 	channelRetryTimeout        : 15000,
+	fallbackRetryTimeout       : 600000,
 	/* Not documented: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
@@ -2693,7 +2738,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.0.23';
+Defaults.version          = '1.1.0-beta.0';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -2733,6 +2778,13 @@ function checkHost(host) {
 		throw new ErrorInfo('host must not be zero-length', 40000, 400);
 	};
 }
+
+Defaults.objectifyOptions = function(options) {
+	if(typeof options == 'string') {
+		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
+	}
+	return options;
+};
 
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
@@ -2806,6 +2858,15 @@ Defaults.normaliseOptions = function(options) {
 	if(options.clientId) {
 		var headers = options.headers = options.headers || {};
 		headers['X-Ably-ClientId'] = options.clientId;
+	}
+
+	if(!('idempotentRestPublishing' in options)) {
+		options.idempotentRestPublishing = false;
+	}
+
+	if(options.promises && !Platform.Promise) {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
+		options.promises = false;
 	}
 
 	return options;
@@ -2984,6 +3045,12 @@ var EventEmitter = (function() {
 	 * @param listener the listener to be called
 	 */
 	EventEmitter.prototype.once = function(event, listener) {
+		var argCount = arguments.length, self = this;
+		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.once(event, resolve);
+			});
+		}
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.anyOnce.push(event);
 		} else if(Utils.isEmptyArg(event)) {
@@ -3006,13 +3073,17 @@ var EventEmitter = (function() {
 	 */
 	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
 		var eventThis = {event:targetState},
-				listenerArgs = Array.prototype.slice.call(arguments, 3);
+			self = this,
+			listenerArgs = Array.prototype.slice.call(arguments, 3);
 
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string'))
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
 			throw("whenState requires a valid event String argument");
-		if (typeof(listener) !== 'function')
-			throw("whenState requires a valid listener argument");
-
+		}
+		if(typeof listener !== 'function' && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+			});
+		}
 		if(targetState === currentState) {
 			callListener(eventThis, listener, listenerArgs);
 		} else {
@@ -3107,7 +3178,13 @@ var Logger = (function() {
 })();
 
 var Utils = (function() {
+	var msgpack = Platform.msgpack;
+
 	function Utils() {}
+
+	function randomPosn(arrOrStr) {
+		return Math.floor(Math.random() * arrOrStr.length);
+	}
 
 	/*
 	 * Add a set of properties to a target object
@@ -3452,7 +3529,7 @@ var Utils = (function() {
 	};
 
 	Utils.arrPopRandomElement = function(arr) {
-		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+		return arr.splice(randomPosn(arr), 1)[0];
 	};
 
 	Utils.toQueryString = function(params) {
@@ -3517,9 +3594,31 @@ var Utils = (function() {
 		throw new Error("Expected input of Utils.dataSizeBytes to be a buffer or string, but was: " + (typeof data));
 	};
 
-	Utils.randStr = function() {
+	Utils.cheapRandStr = function() {
 		return String(Math.random()).substr(2);
 	};
+
+	/* Takes param the minimum number of bytes of entropy the string must
+	 * include, not the length of the string. String length produced is not
+	 * guaranteed. */
+	Utils.randomString = (Platform.getRandomValues && typeof Uint8Array !== 'undefined') ?
+		function(numBytes) {
+			var uIntArr = new Uint8Array(numBytes);
+			Platform.getRandomValues(uIntArr);
+			return BufferUtils.base64Encode(uIntArr.buffer);
+		} : function(numBytes) {
+			/* Old browser; fall back to Math.random. Could just use a
+			 * CryptoJS version of the above, but want this to still work in nocrypto
+			 * versions of the library */
+			var charset = BufferUtils.base64CharSet;
+			/* base64 has 33% overhead; round length up */
+			var length = Math.round(numBytes * 4/3);
+			var result = '';
+			for(var i=0; i<length; i++) {
+				result += charset[randomPosn(charset)];
+			}
+			return result;
+		};
 
 	/* Pick n elements at random without replacement from an array */
 	Utils.arrChooseN = function(arr, n) {
@@ -3536,6 +3635,22 @@ var Utils = (function() {
 		return str.trim();
 	} : function(str) {
 		return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+	};
+
+	Utils.promisify = function(ob, fnName, args) {
+		return new Promise(function(resolve, reject) {
+			ob[fnName].apply(ob, Array.prototype.slice.call(args).concat(function(err, res) {
+				err ? reject(err) : resolve(res);
+			}));
+		});
+	};
+
+	Utils.decodeBody = function(body, format) {
+		return (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+	};
+
+	Utils.encodeBody = function(body, format) {
+		return (format == 'msgpack') ? msgpack.encode(body, true) : JSON.stringify(body);
 	};
 
 	return Utils;
@@ -3575,6 +3690,7 @@ var ErrorInfo = (function() {
 		this.code = code;
 		this.statusCode = statusCode;
 		this.cause = cause;
+		this.href = undefined;
 	}
 
 	ErrorInfo.prototype.toString = function() {
@@ -3583,6 +3699,7 @@ var ErrorInfo = (function() {
 		if(this.statusCode) result += '; statusCode=' + this.statusCode;
 		if(this.code) result += '; code=' + this.code;
 		if(this.cause) result += '; cause=' + Utils.inspectError(this.cause);
+		if(this.href && !(this.message && this.message.indexOf('help.ably.io') > -1)) result += '; see ' + this.href + ' ';
 		result += ']';
 		return result;
 	};
@@ -3593,6 +3710,9 @@ var ErrorInfo = (function() {
 			/* Error.message is not enumerable, so mixin loses the message */
 			result.message = values.message;
 		}
+		if(result.code && !result.href) {
+			result.href = 'https://help.ably.io/error/' + result.code;
+		}
 		return result;
 	};
 
@@ -3600,7 +3720,6 @@ var ErrorInfo = (function() {
 })();
 
 var Message = (function() {
-	var msgpack = Platform.msgpack;
 
 	function Message() {
 		this.name = undefined;
@@ -3674,6 +3793,8 @@ var Message = (function() {
 			else
 				result += '; data (json)=' + JSON.stringify(this.data);
 		}
+		if(this.extras)
+			result += '; extras=' + JSON.stringify(this.extras);
 		result += ']';
 		return result;
 	};
@@ -3735,9 +3856,7 @@ var Message = (function() {
 		}
 	};
 
-	Message.serialize = function(messages, format) {
-		return (format == 'msgpack') ? msgpack.encode(messages, true): JSON.stringify(messages);
-	};
+	Message.serialize = Utils.encodeBody;
 
 	Message.decode = function(message, options) {
 		var encoding = message.encoding;
@@ -3788,8 +3907,9 @@ var Message = (function() {
 	};
 
 	Message.fromResponseBody = function(body, options, format) {
-		if(format)
-			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = Message.fromValues(body[i]);
@@ -3977,8 +4097,9 @@ var PresenceMessage = (function() {
 	PresenceMessage.decode = Message.decode;
 
 	PresenceMessage.fromResponseBody = function(body, options, format) {
-		if(format)
-			body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
 
 		for(var i = 0; i < body.length; i++) {
 			var msg = body[i] = PresenceMessage.fromValues(body[i], true);
@@ -4029,7 +4150,6 @@ var PresenceMessage = (function() {
 })();
 
 var ProtocolMessage = (function() {
-	var msgpack = Platform.msgpack;
 
 	function ProtocolMessage() {
 		this.action = undefined;
@@ -4103,12 +4223,10 @@ var ProtocolMessage = (function() {
 		return this.flags && (this.flags & flags.MODE_ALL);
 	};
 
-	ProtocolMessage.serialize = function(msg, format) {
-		return (format == 'msgpack') ? msgpack.encode(msg, true): JSON.stringify(msg);
-	};
+	ProtocolMessage.serialize = Utils.encodeBody;
 
 	ProtocolMessage.deserialize = function(serialized, format) {
-		var deserialized = (format == 'msgpack') ? msgpack.decode(serialized) : JSON.parse(String(serialized));
+		var deserialized = Utils.decodeBody(serialized, format);
 		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
@@ -4212,18 +4330,45 @@ var Stats = (function() {
 		this.push = new MessageTypes(values && values.push);
 		this.sharedQueue = new MessageTypes(values && values.sharedQueue);
 		this.externalQueue = new MessageTypes(values && values.externalQueue);
+		this.httpEvent = new MessageTypes(values && values.httpEvent);
+		this.push = new MessageTypes(values && values.push);
 		this.all = new MessageTypes(values && values.all);
 	}
 
-	function Stats(values) {
+	function MessageDirections(values) {
 		this.all           = new MessageTypes(values && values.all);
 		this.inbound       = new MessageTraffic(values && values.inbound);
 		this.outbound      = new MessageTraffic(values && values.outbound);
+	}
+
+	function XchgMessages(values) {
+		this.all           = new MessageTypes(values && values.all);
+		this.producerPaid  = new MessageDirections(values && values.producerPaid);
+		this.consumerPaid  = new MessageDirections(values && values.consumerPaid);
+	}
+
+	function PushStats(values) {
+		this.messages = (values && values.messages) || 0;
+		var notifications = values && values.notifications;
+		this.notifications = {
+			invalid: notifications && notifications.invalid || 0,
+			attempted: notifications && notifications.attempted || 0,
+			successful: notifications && notifications.successful || 0,
+			failed: notifications && notifications.failed || 0
+		};
+		this.directPublishes = (values && values.directPublishes) || 0;
+	}
+
+	function Stats(values) {
+		MessageDirections.call(this, values);
 		this.persisted     = new MessageTypes(values && values.persisted);
 		this.connections   = new ConnectionTypes(values && values.connections);
 		this.channels      = new ResourceCount(values && values.channels);
 		this.apiRequests   = new RequestCount(values && values.apiRequests);
 		this.tokenRequests = new RequestCount(values && values.tokenRequests);
+		this.xchgProducer  = new XchgMessages(values && values.xchgProducer);
+		this.xchgConsumer  = new XchgMessages(values && values.xchgConsumer);
+		this.push          = new PushStats(values && values.pushStats);
 		this.inProgress    = (values && values.inProgress) || undefined;
 		this.unit          = (values && values.unit) || undefined;
 		this.intervalId    = (values && values.intervalId) || undefined;
@@ -4234,6 +4379,156 @@ var Stats = (function() {
 	};
 
 	return Stats;
+})();
+
+var DeviceDetails = (function() {
+
+	function DeviceDetails() {
+		this.id = undefined;
+		this.deviceSecret = undefined;
+		this.platform = undefined;
+		this.formFactor = undefined;
+		this.clientId = undefined;
+		this.metadata = undefined;
+		this.deviceIdentityToken = undefined;
+		this.push = {
+			recipient: undefined,
+			state: undefined,
+			errorReason: undefined
+		};
+	}
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	DeviceDetails.prototype.toJSON = function() {
+		return {
+			id: this.id,
+			deviceSecret: this.deviceSecret,
+			platform: this.platform,
+			formFactor: this.formFactor,
+			clientId: this.clientId,
+			metadata: this.metadata,
+			deviceIdentityToken: this.deviceIdentityToken,
+			push: {
+				recipient: this.push.recipient,
+				state: this.push.state,
+				errorReason: this.push.errorReason
+			}
+		};
+	};
+
+	DeviceDetails.prototype.toString = function() {
+		var result = '[DeviceDetails';
+		if(this.id)
+			result += '; id=' + this.id;
+		if(this.platform)
+			result += '; platform=' + this.platform;
+		if(this.formFactor)
+			result += '; formFactor=' + this.formFactor;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		if(this.metadata)
+			result += '; metadata=' + this.metadata;
+		if(this.deviceIdentityToken)
+			result += '; deviceIdentityToken=' + JSON.stringify(this.deviceIdentityToken);
+		if(this.push.recipient)
+			result += '; push.recipient=' + JSON.stringify(this.push.recipient);
+		if(this.push.state)
+			result += '; push.state=' + this.push.state;
+		if(this.push.errorReason)
+			result += '; push.errorReason=' + this.push.errorReason;
+		if(this.push.metadata)
+			result += '; push.metadata=' + this.push.metadata;
+		result += ']';
+		return result;
+	};
+
+	DeviceDetails.toRequestBody = Utils.encodeBody;
+
+	DeviceDetails.fromResponseBody = function(body, format) {
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
+
+		if(Utils.isArray(body)) {
+			return DeviceDetails.fromValuesArray(body);
+		} else {
+			return DeviceDetails.fromValues(body);
+		}
+	};
+
+	DeviceDetails.fromValues = function(values) {
+		return Utils.mixin(new DeviceDetails(), values);
+	};
+
+	DeviceDetails.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = DeviceDetails.fromValues(values[i]);
+		return result;
+	};
+
+	return DeviceDetails;
+})();
+
+var PushChannelSubscription = (function() {
+
+	function PushChannelSubscription() {
+		this.channel = undefined;
+		this.deviceId = undefined;
+		this.clientId = undefined;
+	}
+
+	/**
+	 * Overload toJSON() to intercept JSON.stringify()
+	 * @return {*}
+	 */
+	PushChannelSubscription.prototype.toJSON = function() {
+		return {
+			channel: this.channel,
+			deviceId: this.deviceId,
+			clientId: this.clientId
+		};
+	};
+
+	PushChannelSubscription.prototype.toString = function() {
+		var result = '[PushChannelSubscription';
+		if(this.channel)
+			result += '; channel=' + this.channel;
+		if(this.deviceId)
+			result += '; deviceId=' + this.deviceId;
+		if(this.clientId)
+			result += '; clientId=' + this.clientId;
+		result += ']';
+		return result;
+	};
+
+	PushChannelSubscription.toRequestBody = Utils.encodeBody;
+
+	PushChannelSubscription.fromResponseBody = function(body, format) {
+		if(format) {
+			body = Utils.decodeBody(body, format);
+		}
+
+		if(Utils.isArray(body)) {
+			return PushChannelSubscription.fromValuesArray(body);
+		} else {
+			return PushChannelSubscription.fromValues(body);
+		}
+	};
+
+	PushChannelSubscription.fromValues = function(values) {
+		return Utils.mixin(new PushChannelSubscription(), values);
+	};
+
+	PushChannelSubscription.fromValuesArray = function(values) {
+		var count = values.length, result = new Array(count);
+		for(var i = 0; i < count; i++) result[i] = PushChannelSubscription.fromValues(values[i]);
+		return result;
+	};
+
+	return PushChannelSubscription;
 })();
 
 var ConnectionError = {
@@ -5165,7 +5460,9 @@ var ConnectionManager = (function() {
 	/* force: set the connectionSerial even if it's less than the current connectionSerial. Used when
 	 * activating a new transport, where the connectionSerial realtime tells us we have must be authoritative */
 	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
-		var timeSerial = connectionPosition.timeSerial;
+		var timeSerial = connectionPosition.timeSerial,
+			connectionSerial = connectionPosition.connectionSerial;
+		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
 		if(timeSerial !== undefined) {
 			if(timeSerial <= this.timeSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
@@ -5175,7 +5472,6 @@ var ConnectionManager = (function() {
 			this.setRecoveryKey();
 			return;
 		}
-		var connectionSerial = connectionPosition.connectionSerial;
 		if(connectionSerial !== undefined) {
 			if(connectionSerial <= this.connectionSerial && !force) {
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
@@ -5354,12 +5650,17 @@ var ConnectionManager = (function() {
 		/* We retry immediately if:
 		 * - something disconnects us while we're connected, or
 		 * - a viable (but not yet active) transport fails due to a token error (so
-		 *   this.errorReason will be set, and startConnect will do a forced authorize) */
+		 *   this.errorReason will be set, and startConnect will do a forced
+		 *   authorize). If this.errorReason is already set (to a token error),
+		 *   then there has been at least one previous attempt to connect that also
+		 *   failed for a token error, so by RTN14b we go to DISCONNECTED and wait
+		 *   before trying again */
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
-				(this.state === this.states.connecting  &&
-					indicated.error && Auth.isTokenErr(indicated.error))));
+				(this.state === this.states.connecting &&
+					indicated.error && Auth.isTokenErr(indicated.error) &&
+					!(this.errorReason && Auth.isTokenErr(this.errorReason)))));
 
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
 		/* do nothing if we're already in the indicated state */
@@ -5953,7 +6254,7 @@ var ConnectionManager = (function() {
 			};
 
 			var pingStart = Utils.now(),
-				id = Utils.randStr();
+				id = Utils.cheapRandStr();
 
 			var onHeartbeat = function (responseId) {
 				if(responseId === id) {
@@ -6795,13 +7096,16 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, 'get', arguments);
+				}
 				callback = noop;
 			}
 		}
 		var rest = this.channel.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format));
+			headers = Utils.defaultGetHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -6824,13 +7128,16 @@ var Presence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.rest.options.promises) {
+					return Utils.promisify(this, '_history', arguments);
+				}
 				callback = noop;
 			}
 		}
 		var rest = this.channel.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			headers = Utils.defaultGetHeaders(format),
 			channel = this.channel;
 
 		if(rest.options.headers)
@@ -6877,7 +7184,7 @@ var Resource = (function() {
 
 			if(!unpacked) {
 				try {
-					body = (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(body);
+					body = Utils.decodeBody(body, format);
 				} catch(e) {
 					callback(e);
 					return;
@@ -6923,12 +7230,12 @@ var Resource = (function() {
 		return path + (params ? '?' : '') + paramString(params);
 	}
 
-	function logResponseHandler(callback, verb, path, params) {
+	function logResponseHandler(callback, method, path, params) {
 		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + verb + '()',
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
 			if (callback) { callback(err, body, headers, unpacked, statusCode); }
@@ -6936,8 +7243,24 @@ var Resource = (function() {
 	}
 
 	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource['delete'] = function(rest, path, origheaders, origparams, envelope, callback) {
+		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, callback);
+	};
+
+	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
+		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, callback);
+	};
+
+	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'get', path, origparams);
+			callback = logResponseHandler(callback, method, path, origparams);
 		}
 
 		if(envelope) {
@@ -6945,12 +7268,12 @@ var Resource = (function() {
 			(origparams = (origparams || {}))['envelope'] = envelope;
 		}
 
-		function doGet(headers, params) {
+		function doRequest(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.get()', 'Sending; ' + urlFromPathAndParams(path, params));
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
-			Http.get(rest, path, headers, params, function(err, res, headers, unpacked, statusCode) {
+			var args = [rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
 				if(err && Auth.isTokenErr(err)) {
 					/* token has expired, so get a new one */
 					rest.auth.authorize(null, null, function(err) {
@@ -6959,56 +7282,31 @@ var Resource = (function() {
 							return;
 						}
 						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doGet);
+						withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 					});
 					return;
 				}
 				callback(err, res, headers, unpacked, statusCode);
-			});
-		}
-		withAuthDetails(rest, origheaders, origparams, callback, doGet);
-	};
+			}];
+			if (!body) {
+				args.splice(3, 1);
+			}
 
-	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			callback = logResponseHandler(callback, 'post', path, origparams);
-		}
-
-		if(envelope) {
-			callback = unenvelope(callback, envelope);
-			origparams['envelope'] = envelope;
-		}
-
-		function doPost(headers, params) {
 			if (Logger.shouldLog(Logger.LOG_MICRO)) {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
 						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
-						Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
+						Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
 					}
 				}
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.post()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
-
-			Http.post(rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
-				if(err && Auth.isTokenErr(err)) {
-					/* token has expired, so get a new one */
-					rest.auth.authorize(null, null, function(err) {
-						if(err) {
-							callback(err);
-							return;
-						}
-						/* retry ... */
-						withAuthDetails(rest, origheaders, origparams, callback, doPost);
-					});
-					return;
-				}
-				callback(err, res, headers, unpacked, statusCode);
-			});
+			Http[method].apply(this, args);
 		}
-		withAuthDetails(rest, origheaders, origparams, callback, doPost);
+
+		withAuthDetails(rest, origheaders, origparams, callback, doRequest);
 	};
 
 	return Resource;
@@ -7056,6 +7354,13 @@ var PaginatedResource = (function() {
 	PaginatedResource.prototype.post = function(params, body, callback) {
 		var self = this;
 		Resource.post(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
+			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+		});
+	};
+
+	PaginatedResource.prototype.put = function(params, body, callback) {
+		var self = this;
+		Resource.put(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
 			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
 		});
 	};
@@ -7219,6 +7524,13 @@ var Auth = (function() {
 			  options.tokenDetails))
 	}
 
+	/* RSA4a */
+	function noWayToRenew(options) {
+		return !options.key &&
+			!options.authCallback &&
+			!options.authUrl;
+	}
+
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
@@ -7231,6 +7543,9 @@ var Auth = (function() {
 				var msg = 'client-side token request signing not supported';
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
 				throw new Error(msg);
+			}
+			if(noWayToRenew(options)) {
+				Logger.logAction(Logger.LOG_MAJOR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
 			}
 			this._saveTokenOptions(options.defaultTokenParams, options);
 			logAndValidateTokenAuthMethod(this.authOptions);
@@ -7309,7 +7624,12 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
-		callback = callback || noop;
+		if(!callback) {
+			if(this.client.options.promises) {
+				return Utils.promisify(this, 'authorize', arguments);
+			}
+			callback = noop;
+		}
 		var self = this;
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
@@ -7430,6 +7750,9 @@ var Auth = (function() {
 			callback = authOptions;
 			authOptions = null;
 		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'requestToken', arguments);
+		}
 
 		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
 		authOptions = authOptions || this.authOptions;
@@ -7509,9 +7832,9 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
 			tokenRequestCallback = function(params, cb) { self.createTokenRequest(params, authOptions, cb); };
 		} else {
-			var msg = "Need a new token, but authOptions does not include any way to request one";
-			Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-			callback(new ErrorInfo(msg, 40101, 403));
+			var msg = "Need a new token, but authOptions does not include any way to request one (no authUrl, authCallback, or key)";
+			Logger.logAction(Logger.LOG_ERROR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
+			callback(new ErrorInfo(msg, 40171, 403));
 			return;
 		}
 
@@ -7639,6 +7962,9 @@ var Auth = (function() {
 		} else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
 			authOptions = null;
+		}
+		if(!callback && this.client.options.promises) {
+			return Utils.promisify(this, 'createTokenRequest', arguments);
 		}
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
@@ -7921,9 +8247,7 @@ var Rest = (function() {
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
-		if(typeof(options) == 'string') {
-			options = (options.indexOf(':') == -1) ? {token: options} : {key: options};
-		}
+		options = Defaults.objectifyOptions(options);
 
 		if(options.log) {
 			Logger.setLog(options.log.level, options.log.handler);
@@ -7954,10 +8278,12 @@ var Rest = (function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
+		this._currentFallback = null;
 
 		this.serverTimeOffset = null;
 		this.auth = new Auth(this, options);
 		this.channels = new Channels(this);
+		this.push = new Push(this);
 	}
 
 	Rest.prototype.stats = function(params, callback) {
@@ -7967,10 +8293,13 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'stats', arguments);
+				}
 				callback = noop;
 			}
 		}
-		var headers = Utils.copy(Utils.defaultGetHeaders()),
+		var headers = Utils.defaultGetHeaders(),
 			format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format;
 
@@ -7991,10 +8320,13 @@ var Rest = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.options.promises) {
+					return Utils.promisify(this, 'time', arguments);
+				}
 				callback = noop;
 			}
 		}
-		var headers = Utils.copy(Utils.defaultGetHeaders());
+		var headers = Utils.defaultGetHeaders();
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
@@ -8026,7 +8358,14 @@ var Rest = (function() {
 			method = method.toLowerCase(),
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			params = params || {},
-			headers = Utils.copy(method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format));
+			headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
+
+		if(callback === undefined) {
+			if(this.options.promises) {
+				return Utils.promisify(this, 'request', arguments);
+			}
+			callback = noop;
+		}
 
 		if(typeof body !== 'string') {
 			body = encoder(body);
@@ -8047,6 +8386,9 @@ var Rest = (function() {
 				break;
 			case 'post':
 				paginatedResource.post(params, body, callback);
+				break;
+			case 'put':
+				paginatedResource.put(params, body, callback);
 				break;
 			default:
 				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
@@ -8080,6 +8422,14 @@ var Rest = (function() {
 
 	return Rest;
 })();
+
+Rest.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Rest(options);
+};
+
+Rest.Callbacks = Rest;
 
 var Realtime = (function() {
 
@@ -8228,6 +8578,14 @@ var Realtime = (function() {
 	return Realtime;
 })();
 
+Realtime.Promise = function(options) {
+	options = Defaults.objectifyOptions(options);
+	options.promises = true;
+	return new Realtime(options);
+};
+
+Realtime.Callbacks = Realtime;
+
 var ConnectionStateChange = (function() {
 
 	/* public constructor */
@@ -8255,6 +8613,7 @@ var ChannelStateChange = (function() {
 })();
 
 var Connection = (function() {
+	function noop() {}
 
 	/* public constructor */
 	function Connection(ably, options) {
@@ -8295,7 +8654,12 @@ var Connection = (function() {
 
 	Connection.prototype.ping = function(callback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-		callback = callback || function() {};
+		if(!callback) {
+			if(this.ably.options.promises) {
+				return Utils.promisify(this, 'ping', arguments);
+			}
+			callback = noop;
+		}
 		this.connectionManager.ping(null, callback);
 	};
 
@@ -8307,8 +8671,284 @@ var Connection = (function() {
 	return Connection;
 })();
 
+var Push = (function() {
+	var noop = function() {};
+
+	function Push(rest) {
+		this.rest = rest;
+		this.admin = new Admin(rest);
+	}
+
+	function Admin(rest) {
+		this.rest = rest;
+		this.deviceRegistrations = new DeviceRegistrations(rest);
+		this.channelSubscriptions = new ChannelSubscriptions(rest);
+	}
+
+	Admin.prototype.publish = function(recipient, payload, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			requestBody = Utils.mixin({recipient: recipient}, payload),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		requestBody = Utils.encodeBody(requestBody, format);
+		Resource.post(rest, '/push/publish', requestBody, headers, params, false, function(err) { callback(err); });
+	};
+
+	function DeviceRegistrations(rest) {
+		this.rest = rest;
+	}
+
+	DeviceRegistrations.prototype.save = function(device, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			requestBody = DeviceDetails.fromValues(device),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'save', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		requestBody = Utils.encodeBody(requestBody, format);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, function(err, body, headers, unpacked) {
+			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
+		});
+	};
+
+	DeviceRegistrations.prototype.get = function(deviceIdOrDetails, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.defaultGetHeaders(format),
+			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'get', arguments);
+			}
+			callback = noop;
+		}
+
+		if(typeof deviceId !== 'string' || !deviceId.length) {
+			callback(new ErrorInfo('First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails', 40000, 400));
+			return;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		Resource.get(rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, {}, false, function(err, body, headers, unpacked) {
+			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
+		});
+	};
+
+	DeviceRegistrations.prototype.list = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.defaultGetHeaders(format);
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'list', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
+			return DeviceDetails.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	DeviceRegistrations.prototype.remove = function(deviceIdOrDetails, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.defaultGetHeaders(format),
+			params = {},
+			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'remove', arguments);
+			}
+			callback = noop;
+		}
+
+		if(typeof deviceId !== 'string' || !deviceId.length) {
+			callback(new ErrorInfo('First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails', 40000, 400));
+			return;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, false, function(err) { callback(err); });
+	};
+
+	DeviceRegistrations.prototype.removeWhere = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.defaultGetHeaders(format);
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'removeWhere', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, function(err) { callback(err); });
+	};
+
+	function ChannelSubscriptions(rest) {
+		this.rest = rest;
+	}
+
+	ChannelSubscriptions.prototype.save = function(subscription, callback) {
+		var rest = this.rest;
+		var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			requestBody = PushChannelSubscription.fromValues(subscription),
+			headers = Utils.defaultPostHeaders(format),
+			params = {};
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'save', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		requestBody = Utils.encodeBody(requestBody, format);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, function(err, body, headers, unpacked) {
+			callback(err, !err && PushChannelSubscription.fromResponseBody(body, !unpacked && format));
+		});
+	};
+
+	ChannelSubscriptions.prototype.list = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.defaultGetHeaders(format);
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'list', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
+			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
+		})).get(params, callback);
+	};
+
+	ChannelSubscriptions.prototype.removeWhere = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			headers = Utils.defaultGetHeaders(format);
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'removeWhere', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, function(err) { callback(err); });
+	};
+
+	/* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
+	ChannelSubscriptions.prototype.remove = ChannelSubscriptions.prototype.removeWhere;
+
+	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
+		var rest = this.rest,
+			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+			envelope = Http.supportsLinkHeaders ? undefined : format,
+			headers = Utils.defaultGetHeaders(format);
+
+		if(typeof callback !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'listChannels', arguments);
+			}
+			callback = noop;
+		}
+
+		if(rest.options.headers)
+			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
+
+		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
+			var f = !unpacked && format;
+
+			if(f) {
+				body = Utils.decodeBody(body, format);
+			}
+
+			for(var i = 0; i < body.length; i++) {
+				body[i] = String(body[i]);
+			}
+			return body;
+		})).get(params, callback);
+	};
+
+	return Push;
+})();
+
 var Channel = (function() {
 	function noop() {}
+	var MSG_ID_ENTROPY_BYTES = 9;
 
 	/* public constructor */
 	function Channel(rest, name, channelOptions) {
@@ -8345,6 +8985,9 @@ var Channel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.rest.options.promises) {
+					return Utils.promisify(this, 'history', arguments);
+				}
 				callback = noop;
 			}
 		}
@@ -8356,7 +8999,7 @@ var Channel = (function() {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.copy(Utils.defaultGetHeaders(format)),
+			headers = Utils.defaultGetHeaders(format),
 			channel = this;
 
 		if(rest.options.headers)
@@ -8368,6 +9011,12 @@ var Channel = (function() {
 		})).get(params, callback);
 	};
 
+	function allEmptyIds(messages) {
+		return Utils.arrEvery(messages, function(message) {
+			return !message.id;
+		});
+	}
+
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
@@ -8375,6 +9024,9 @@ var Channel = (function() {
 			self = this;
 
 		if(typeof(callback) !== 'function') {
+			if(this.rest.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
@@ -8392,10 +9044,18 @@ var Channel = (function() {
 		var rest = this.rest,
 			options = rest.options,
 			format = options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.copy(Utils.defaultPostHeaders(format));
+			idempotentRestPublishing = rest.options.idempotentRestPublishing,
+			headers = Utils.defaultPostHeaders(format);
 
 		if(options.headers)
 			Utils.mixin(headers, options.headers);
+
+		if(idempotentRestPublishing && allEmptyIds(messages)) {
+			var msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
+			Utils.arrForEach(messages, function(message, index) {
+				message.id = msgIdBase + ':' + index.toString();
+			});
+		}
 
 		Message.encodeArray(messages, this.channelOptions, function(err) {
 			if(err) {
@@ -8438,7 +9098,9 @@ var RealtimeChannel = (function() {
 		this.state = 'initialized';
 		this.subscriptions = new EventEmitter();
 		this.syncChannelSerial = undefined;
-		this.attachSerial = undefined;
+		this.properties = {
+			attachSerial: undefined
+		};
 		this.setOptions(options);
 		this.errorReason = null;
 		this._requestedFlags = null;
@@ -8461,11 +9123,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.processListenerArgs = function(args) {
 		/* [event], listener, [callback] */
-		if(typeof(args[0]) == 'function')
-			return [null, args[0], args[1] || noop];
-		else
-			return [args[0], args[1], (args[2] || noop)];
-	}
+		args = Array.prototype.slice.call(args);
+		if(typeof args[0] === 'function') {
+			args.unshift(null);
+		}
+		if(args[args.length - 1] == undefined) {
+			args.pop();
+		}
+		return args;
+	};
 
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
@@ -8473,6 +9139,9 @@ var RealtimeChannel = (function() {
 			callback = arguments[argCount - 1];
 
 		if(typeof(callback) !== 'function') {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'publish', arguments);
+			}
 			callback = noop;
 			++argCount;
 		}
@@ -8540,11 +9209,16 @@ var RealtimeChannel = (function() {
 			callback = flags;
 			flags = null;
 		}
-		callback = callback || function(err) {
-			if(err) {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'attach', arguments);
 			}
-		};
+			callback = function(err) {
+				if(err) {
+					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
 		if(flags) {
 			this._requestedFlags = flags;
 		}
@@ -8580,7 +9254,7 @@ var RealtimeChannel = (function() {
 					}
 				});
 			}
-    };
+	};
 
 	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
@@ -8595,7 +9269,12 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.detach = function(callback) {
-		callback = callback || noop;
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'detach', arguments);
+			}
+			callback = noop;
+		}
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
@@ -8642,6 +9321,13 @@ var RealtimeChannel = (function() {
 		var subscriptions = this.subscriptions;
 		var events;
 
+		if(!callback) {
+			if(this.realtime.options.promises) {
+				return Utils.promisify(this, 'subscribe', [event, listener]);
+			}
+			callback = noop;
+		}
+
 		if(this.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
@@ -8649,7 +9335,7 @@ var RealtimeChannel = (function() {
 
 		subscriptions.on(event, listener);
 
-		this.attach(callback);
+		return this.attach(callback);
 	};
 
 	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
@@ -8709,7 +9395,7 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
-			this.attachSerial = message.channelSerial;
+			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {
 				var resumed = message.hasFlag('RESUMED');
@@ -8957,12 +9643,12 @@ var RealtimeChannel = (function() {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 				return;
 			}
-			if(!this.attachSerial) {
+			if(!this.properties.attachSerial) {
 				callback(new ErrorInfo("untilAttach was specified and channel is attached, but attachSerial is not defined", 40000, 400));
 				return;
 			}
 			delete params.untilAttach;
-			params.from_serial = this.attachSerial;
+			params.from_serial = this.properties.attachSerial;
 		}
 
 		Channel.prototype._history.call(this, params, callback);
@@ -9031,30 +9717,33 @@ var RealtimePresence = (function() {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		}
-		this._enterOrUpdateClient(undefined, data, callback, 'enter');
+		return this._enterOrUpdateClient(undefined, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.update = function(data, callback) {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
 		}
-		this._enterOrUpdateClient(undefined, data, callback, 'update');
+		return this._enterOrUpdateClient(undefined, data, 'update', callback);
 	};
 
 	RealtimePresence.prototype.enterClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'enter');
+		return this._enterOrUpdateClient(clientId, data, 'enter', callback);
 	};
 
 	RealtimePresence.prototype.updateClient = function(clientId, data, callback) {
-		this._enterOrUpdateClient(clientId, data, callback, 'update');
+		return this._enterOrUpdateClient(clientId, data, 'update', callback);
 	};
 
-	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, callback, action) {
+	RealtimePresence.prototype._enterOrUpdateClient = function(clientId, data, action, callback) {
 		if (!callback) {
 			if (typeof(data)==='function') {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+				}
 				callback = noop;
 			}
 		}
@@ -9107,7 +9796,7 @@ var RealtimePresence = (function() {
 		if(isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		}
-		this.leaveClient(undefined, data, callback);
+		return this.leaveClient(undefined, data, callback);
 	};
 
 	RealtimePresence.prototype.leaveClient = function(clientId, data, callback) {
@@ -9116,6 +9805,9 @@ var RealtimePresence = (function() {
 				callback = data;
 				data = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'leaveClient', [clientId, data]);
+				}
 				callback = noop;
 			}
 		}
@@ -9163,8 +9855,15 @@ var RealtimePresence = (function() {
 			args.unshift(null);
 
 		var params = args[0],
-			callback = args[1] || noop,
-			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true)
+			callback = args[1],
+			waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'get', args);
+			}
+			callback = noop;
+		}
 
 		function returnMembers(members) {
 			callback(null, params ? members.list(params) : members.values());
@@ -9205,6 +9904,9 @@ var RealtimePresence = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.channel.realtime.options.promises) {
+					return Utils.promisify(this, 'history', args);
+				}
 				callback = noop;
 			}
 		}
@@ -9212,7 +9914,7 @@ var RealtimePresence = (function() {
 		if(params && params.untilAttach) {
 			if(this.channel.state === 'attached') {
 				delete params.untilAttach;
-				params.from_serial = this.channel.attachSerial;
+				params.from_serial = this.channel.properties.attachSerial;
 			} else {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
 			}
@@ -9348,7 +10050,7 @@ var RealtimePresence = (function() {
 			if(!(memberKey in members.map)) {
 				var entry = myMembers.map[memberKey];
 				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
-				this._enterOrUpdateClient(entry.clientId, entry.data, reenterCb, 'enter');
+				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
 			}
 		}
@@ -9388,6 +10090,13 @@ var RealtimePresence = (function() {
 		var callback = args[2];
 		var channel = this.channel;
 		var self = this;
+
+		if(!callback) {
+			if(this.channel.realtime.options.promises) {
+				return Utils.promisify(this, 'subscribe', [event, listener]);
+			}
+			callback = noop;
+		}
 
 		if(channel.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
@@ -9631,15 +10340,16 @@ var XHRRequest = (function() {
 		return headers;
 	}
 
-	function XHRRequest(uri, headers, params, body, requestMode, timeouts) {
+	function XHRRequest(uri, headers, params, body, requestMode, timeouts, method) {
 		EventEmitter.call(this);
 		params = params || {};
-		params.rnd = Utils.randStr();
+		params.rnd = Utils.cheapRandStr();
 		if(needJsonEnvelope() && !params.envelope)
 			params.envelope = 'json';
 		this.uri = uri + Utils.toQueryString(params);
 		this.headers = headers || {};
 		this.body = body;
+		this.method = method ? method.toUpperCase() : (Utils.isEmptyArg(body) ? 'GET' : 'POST');
 		this.requestMode = requestMode;
 		this.timeouts = timeouts;
 		this.timedOut = false;
@@ -9648,12 +10358,12 @@ var XHRRequest = (function() {
 	}
 	Utils.inherits(XHRRequest, EventEmitter);
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts) {
+	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts, method) {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
 		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
-		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts);
+		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
@@ -9678,7 +10388,7 @@ var XHRRequest = (function() {
 				xhr.abort();
 			}, timeout),
 			body = this.body,
-			method = Utils.isEmptyArg(body) ? 'GET' : 'POST',
+			method = this.method,
 			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
 			accept = headers['accept'],
@@ -9869,8 +10579,8 @@ var XHRRequest = (function() {
 		}
 		if(typeof(Http) !== 'undefined') {
 			Http.supportsAuthHeaders = true;
-			Http.Request = function(rest, uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts);
+			Http.Request = function(method, rest, uri, headers, params, body, callback) {
+				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
 				req.once('complete', callback);
 				req.exec();
 				return req;
@@ -9879,7 +10589,7 @@ var XHRRequest = (function() {
 			Http.checkConnectivity = function(callback) {
 				var upUrl = Defaults.internetUpUrl;
 				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-				Http.Request(null, upUrl, null, null, null, function(err, responseText) {
+				Http.getUri(null, upUrl, null, null, function(err, responseText) {
 					var result = (!err && responseText.replace(/\n/, '') == 'yes');
 					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
 					callback(null, result);
@@ -10038,7 +10748,7 @@ var JSONPTransport = (function() {
 		this.id = id;
 		this.uri = uri;
 		this.params = params || {};
-		this.params.rnd = Utils.randStr();
+		this.params.rnd = Utils.cheapRandStr();
 		if(headers) {
 			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
 			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
@@ -10142,7 +10852,8 @@ var JSONPTransport = (function() {
 	};
 
 	if(Platform.jsonpSupported && !Http.Request) {
-		Http.Request = function(rest, uri, headers, params, body, callback) {
+		Http.Request = function(method, rest, uri, headers, params, body, callback) {
+			/* ignore method; always GET */
 			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts);
 			req.once('complete', callback);
 			Utils.nextTick(function() {
