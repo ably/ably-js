@@ -3,12 +3,12 @@
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
 
-## [1.0.22](https://github.com/ably/ably-js/tree/1.0.20) (2019-01-21)
+## [1.0.23](https://github.com/ably/ably-js/tree/1.0.23) (2019-01-21)
 - Only make a single token request at a time
 - Fix crash with react-native on some Android versions when making REST requests
 - Tweak fallback host logic for connected realtime clients making REST requests
 
-## [1.0.21](https://github.com/ably/ably-js/tree/1.0.20) (2019-01-07)
+## [1.0.21](https://github.com/ably/ably-js/tree/1.0.21) (2019-01-07)
 - Reinstate 'stop clientId forcing token auth' change (https://github.com/ably/ably-js/issues/542)
 - Prioritise a tokenParam over an authParam of the same name
 - Fix behaviour with multiple concurrent pings in-flight
