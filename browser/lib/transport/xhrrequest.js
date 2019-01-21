@@ -120,7 +120,7 @@ var XHRRequest = (function() {
 		xhr.responseType = responseType;
 
 		if ('authorization' in headers) {
-			xhr.withCredentials = 'true';
+			xhr.withCredentials = true;
 		}
 
 		for(var h in headers)
