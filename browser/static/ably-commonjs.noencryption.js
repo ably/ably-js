@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.0.21
+ * Ably JavaScript Library v1.0.22
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -2326,6 +2326,21 @@ var Http = (function() {
 			(statusCode >= 500 && statusCode <= 504);
 	}
 
+	function getHosts(client) {
+		/* If we're a connected realtime client, try the endpoint we're connected
+		 * to first -- but still have fallbacks, being connected is not an absolute
+		 * guarantee that a datacenter has free capacity to service REST requests. */
+		var connection = client.connection,
+			connectionHost = connection && connection.connectionManager.host;
+
+		if(connectionHost) {
+			return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+		}
+
+		return Defaults.getHosts(client.options);
+	}
+	Http._getHosts = getHosts;
+
 	/**
 	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
 	 * @param rest
@@ -2338,12 +2353,7 @@ var Http = (function() {
 		callback = callback || noop;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
@@ -2390,12 +2400,7 @@ var Http = (function() {
 		callback = callback || noop;
 		var uri = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
 		var binary = (headers && headers.accept != 'application/json');
-
-		var hosts, connection = rest.connection;
-		if(connection && connection.state == 'connected')
-			hosts = [connection.connectionManager.host];
-		else
-			hosts = Defaults.getHosts(rest.options);
+		var hosts = getHosts(rest);
 
 		/* if there is only one host do it */
 		if(hosts.length == 1) {
@@ -2677,7 +2682,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.0.21';
+Defaults.version          = '1.0.22';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
@@ -2698,16 +2703,25 @@ Defaults.getHttpScheme = function(options) {
 	return options.tls ? 'https://' : 'http://';
 };
 
-Defaults.getHosts = function(options) {
-	var hosts = [options.restHost],
-		fallbackHosts = options.fallbackHosts,
+Defaults.getFallbackHosts = function(options) {
+	var fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
-	if(fallbackHosts) {
-		hosts = hosts.concat(Utils.arrChooseN(fallbackHosts, httpMaxRetryCount));
-	}
-	return hosts;
+	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 };
+
+Defaults.getHosts = function(options) {
+	return [options.restHost].concat(Defaults.getFallbackHosts(options));
+};
+
+function checkHost(host) {
+	if(typeof host !== 'string') {
+		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+	};
+	if(!host.length) {
+		throw new ErrorInfo('host must not be zero-length', 40000, 400);
+	};
+}
 
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
@@ -2759,6 +2773,8 @@ Defaults.normaliseOptions = function(options) {
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 	}
 	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
+	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
+
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
 	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
@@ -7195,6 +7211,8 @@ var Auth = (function() {
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
+		this.tokenRequestInProgress = false;
+		this.waitingForTokenRequest = null;
 
 		if(useTokenAuth(options)) {
 			/* Token auth */
@@ -7493,11 +7511,12 @@ var Auth = (function() {
 		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var keyName = signedTokenParams.keyName,
-				tokenUri = function(host) { return client.baseUri(host) + '/keys/' + keyName + '/requestToken'; };
+				path = '/keys/' + keyName + '/requestToken',
+				tokenUri = function(host) { return client.baseUri(host) + path; };
 
 			var requestHeaders = Utils.defaultPostHeaders();
 			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
-			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST; ' + tokenUri + '; Token params: ' + JSON.stringify(signedTokenParams));
+			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams));
 			signedTokenParams = JSON.stringify(signedTokenParams);
 			Http.post(client, tokenUri, requestHeaders, signedTokenParams, null, tokenCb);
 		};
@@ -7782,8 +7801,21 @@ var Auth = (function() {
 		var self = this,
 			token = this.tokenDetails;
 
+		if(this.tokenRequestInProgress) {
+			(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
+			return;
+		}
+
 		var requestToken = function() {
+			self.tokenRequestInProgress = true;
 			self.requestToken(self.tokenParams, self.authOptions, function(err, tokenResponse) {
+				self.tokenRequestInProgress = false;
+				var waiting = self.waitingForTokenRequest;
+				if(waiting) {
+					waiting.push(callback);
+					callback = waiting;
+					self.waitingForTokenRequest = null;
+				}
 				if(err) {
 					callback(err);
 					return;
@@ -9657,7 +9689,7 @@ var XHRRequest = (function() {
 		xhr.responseType = responseType;
 
 		if ('authorization' in headers) {
-			xhr.withCredentials = 'true';
+			xhr.withCredentials = true;
 		}
 
 		for(var h in headers)
