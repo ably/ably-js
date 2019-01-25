@@ -1621,7 +1621,10 @@ var ConnectionManager = (function() {
 	 * RSA4c2, and RSA4d. In particular it is not invoked for
 	 * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
 	ConnectionManager.prototype.actOnErrorFromAuthorize = function(err) {
-		if(err.statusCode === 403) {
+		if(err.code === 40171) {
+			/* No way to reauth */
+			this.notifyState({state: 'failed', error: err});
+		} else if(err.statusCode === 403) {
 			var msg = 'Client configured authentication provider returned 403; failing the connection';
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
 			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});
