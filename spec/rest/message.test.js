@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var exports = {};
 	var _exports = {};
 	var displayError = helper.displayError;
+	var noop = function() {};
 
 	exports.setupInit = function(test) {
 		test.expect(1);
@@ -263,6 +264,30 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
 			test.done();
 		});
+	};
+
+	exports.restpublishparams = function(test) {
+		test.expect(8);
+		var rest = helper.AblyRest(),
+			channel = rest.channels.get('publish_params');
+
+		/* Stub out _publish to check params */
+		var i = 0;
+		channel._publish = function(requestBody, headers, params) {
+			test.equal(params && params.testParam, 'testParamValue');
+			if(++i === 8) {
+				test.done();
+			}
+		};
+
+		channel.publish('foo', 'bar', {testParam: 'testParamValue'});
+		channel.publish('foo', {data: 'data'}, {testParam: 'testParamValue'});
+		channel.publish('foo', {data: 'data'}, {testParam: 'testParamValue'}, noop);
+		channel.publish('foo', null, {testParam: 'testParamValue'});
+		channel.publish(null, 'foo', {testParam: 'testParamValue'});
+		channel.publish({name: 'foo', data: 'bar'}, {testParam: 'testParamValue'});
+		channel.publish([{name: 'foo', data: 'bar'}], {testParam: 'testParamValue'});
+		channel.publish([{name: 'foo', data: 'bar'}], {testParam: 'testParamValue'}, noop);
 	};
 
 	return module.exports = helper.withTimeout(exports);
