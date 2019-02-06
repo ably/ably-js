@@ -135,7 +135,7 @@ var Http = (function() {
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
+		var tryAHost = function(candidateHosts, persistOnSuccess) {
 			var host = candidateHosts.shift();
 			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
 				if(err && shouldFallback(err) && candidateHosts.length) {
