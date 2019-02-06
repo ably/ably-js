@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.0
+ * Ably JavaScript Library v1.1.1
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3818,7 +3818,7 @@ var Http = (function() {
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts) {
+		var tryAHost = function(candidateHosts, persistOnSuccess) {
 			var host = candidateHosts.shift();
 			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
 				if(err && shouldFallback(err) && candidateHosts.length) {
@@ -4091,7 +4091,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.0';
+Defaults.version          = '1.1.1';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
