@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1](https://github.com/ably/ably-js/tree/1.1) (2019-02-06)
+- Promises support
+- Admin api for push notifications
+- Many minor bugfixes
 
 ## [1.0.23](https://github.com/ably/ably-js/tree/1.0.23) (2019-01-21)
 - Only make a single token request at a time
