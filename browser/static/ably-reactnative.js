@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.2
+ * Ably JavaScript Library v1.1.3-beta.0
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3123,25 +3123,14 @@ var Platform = {
 			str.length;
 	},
 	Promise: window.Promise,
-	getRandomValues: (function(randomBytes) {
-		return function(arr, callback) {
-			randomBytes(arr.length, function(err, bytes) {
-				if (err) {
-					callback(err);
-					return;
-				}
-
-				for (var i = 0; i < arr.length; i++) {
-					arr[i] = bytes[i];
-				}
-				if(callback) {
-					callback(null);
-				}
+	getRandomWordArray: (function(RNRandomBytes) {
+		return function(byteLength, callback) {
+			RNRandomBytes.randomBytes(byteLength, function(err, base64String) {
+				callback(err, !err && CryptoJS.enc.Base64.parse(base64String));
 			});
 		};
-	})(require('react-native-randombytes').randomBytes)
+	})(require('react-native').NativeModules.RNRandomBytes)
 };
-
 
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
@@ -3159,7 +3148,9 @@ var Crypto = (function() {
 	 * @param callback
 	 */
 	var generateRandom;
-	if(typeof Uint32Array !== 'undefined' && Platform.getRandomValues) {
+	if(Platform.getRandomWordArray) {
+		generateRandom = Platform.getRandomWordArray;
+	} else if(typeof Uint32Array !== 'undefined' && Platform.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
@@ -4120,7 +4111,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.2';
+Defaults.version          = '1.1.3-beta.0';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 

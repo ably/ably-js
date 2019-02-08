@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.2
+ * Ably JavaScript Library v1.1.3-beta.0
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3209,7 +3209,9 @@ var Crypto = (function() {
 	 * @param callback
 	 */
 	var generateRandom;
-	if(typeof Uint32Array !== 'undefined' && Platform.getRandomValues) {
+	if(Platform.getRandomWordArray) {
+		generateRandom = Platform.getRandomWordArray;
+	} else if(typeof Uint32Array !== 'undefined' && Platform.getRandomValues) {
 		var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
 		generateRandom = function(bytes, callback) {
 			var words = bytes / 4, nativeArray = (words == DEFAULT_BLOCKLENGTH_WORDS) ? blockRandomArray : new Uint32Array(words);
@@ -4170,7 +4172,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.2';
+Defaults.version          = '1.1.3-beta.0';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.0';
 
