@@ -28,22 +28,11 @@ var Platform = {
 			str.length;
 	},
 	Promise: window.Promise,
-	getRandomValues: (function(randomBytes) {
-		return function(arr, callback) {
-			randomBytes(arr.length, function(err, bytes) {
-				if (err) {
-					callback(err);
-					return;
-				}
-
-				for (var i = 0; i < arr.length; i++) {
-					arr[i] = bytes[i];
-				}
-				if(callback) {
-					callback(null);
-				}
+	getRandomWordArray: (function(RNRandomBytes) {
+		return function(byteLength, callback) {
+			RNRandomBytes.randomBytes(byteLength, function(err, base64String) {
+				callback(err, !err && CryptoJS.enc.Base64.parse(base64String));
 			});
 		};
-	})(require('react-native-randombytes').randomBytes)
+	})(require('react-native').NativeModules.RNRandomBytes)
 };
-
