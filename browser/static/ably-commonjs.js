@@ -9625,19 +9625,11 @@ var Auth = (function() {
 
 	/* Ably-set: no typechecking, '*' is allowed but not set on this.clientId), return errors to the caller */
 	Auth.prototype._uncheckedSetClientId = function(clientId) {
-		if(this._tokenClientIdMismatch(clientId)) {
-			/* Should never happen in normal circumstances as realtime should
-			 * recognise mismatch and return an error */
-			var msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
-			var err = new ErrorInfo(msg, 40102, 401);
-			Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
-			return err;
-		} else {
-			/* RSA7a4: if options.clientId is provided and is not
-			 * null, it overrides defaultTokenParams.clientId */
-			this.clientId = this.tokenParams.clientId = clientId;
-			return null;
-		}
+		/* RSA7a4: if options.clientId is provided and is not
+			* null, it overrides defaultTokenParams.clientId */
+		this.clientId = this.tokenParams.clientId = clientId;
+		return null;
+		
 	};
 
 	Auth.prototype._tokenClientIdMismatch = function(tokenClientId) {
