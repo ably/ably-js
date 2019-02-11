@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.3](https://github.com/ably/ably-js/tree/1.1.3) (2019-02-11)
+- Rewrite typescript typings to satisfy `tsc --strict`
+- PNRG changes needed for newer versions of react-native
+
 ## [1.1](https://github.com/ably/ably-js/tree/1.1) (2019-02-06)
 - Promises support
 - Admin api for push notifications
