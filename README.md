@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the Ably 1.1 client library specification. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support.
+A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support.
 
 ## Supported platforms
 
