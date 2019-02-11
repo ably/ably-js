@@ -29,9 +29,12 @@ Ably-js has fallback mechanisms in order to be able to support older browsers; s
 
 This client library is currently *not compatible* with some of the Ably features:
 
-- Feature A
-- Feature B
-- Feature C
+| Feature | Spec reference |
+| --- | --- |
+| Feature 1 | spec |
+| Feature 2 | spec |
+| Feature 3 | spec |
+| Feature 4 | spec |
 
 
 ## Async API style
