@@ -363,7 +363,27 @@ declare namespace Types {
 	}
 
 	// Classes
-	class RestPromise extends Rest {
+	class RestBase {
+		constructor(options: Types.ClientOptions | string);
+		static Crypto: Types.Crypto;
+		static Message: Types.MessageStatic;
+		static PresenceMessage: Types.PresenceMessageStatic;
+	}
+
+	class RestCallbacks extends RestBase {
+		static Promise: typeof Types.RestPromise;
+		static Callbacks: typeof Types.RestCallbacks;
+		auth: Types.AuthCallbacks;
+		channels: Types.Channels<Types.ChannelCallbacks>;
+		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		time: (callback?: Types.timeCallback) => void;
+		push: Types.PushCallbacks;
+	}
+
+	class RestPromise extends RestBase {
+		static Promise: typeof Types.RestPromise;
+		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.ChannelPromise>;
 		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
@@ -372,7 +392,25 @@ declare namespace Types {
 		push: Types.PushPromise;
 	}
 
-	class RealtimePromise extends Realtime {
+	class RealtimeBase extends RestBase {
+		static Promise: typeof Types.RealtimePromise;
+		static Callbacks: typeof Types.RealtimeCallbacks;
+		clientId: string;
+		close: () => void;
+		connect: () => void;
+	}
+
+	class RealtimeCallbacks extends RealtimeBase {
+		auth: Types.AuthCallbacks;
+		channels: Types.Channels<Types.RealtimeChannelCallbacks>;
+		connection: Types.ConnectionCallbacks;
+		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		time: (callback?: Types.timeCallback) => void;
+		push: Types.PushCallbacks;
+	}
+
+	class RealtimePromise extends RealtimeBase {
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.RealtimeChannelPromise>;
 		connection: Types.ConnectionPromise;
@@ -382,31 +420,37 @@ declare namespace Types {
 		push: Types.PushPromise;
 	}
 
-	class Auth {
+	class AuthBase {
 		clientId: string;
+	}
+
+	class AuthCallbacks extends AuthBase {
 		authorize: (tokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
 		createTokenRequest: (tokenParams?: TokenParams | tokenRequestCallback, authOptions?: AuthOptions | tokenRequestCallback, callback?: tokenRequestCallback) => void;
 		requestToken: (TokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
 	}
 
-	class AuthPromise extends Auth {
+	class AuthPromise extends AuthBase {
 		authorize: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
 		createTokenRequest: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenRequest>;
 		requestToken: (TokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
 	}
 
-	class Presence {
+	class PresenceCallbacks {
 		get: (paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
 		history: (paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
 	}
 
-	class PresencePromise extends Presence {
+	class PresencePromise {
 		get: (params?: RestPresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
 		history: (params?: RestHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
 	}
 
-	class RealtimePresence {
+	class RealtimePresenceBase {
 		syncComplete: boolean;
+	}
+
+	class RealtimePresenceCallbacks extends RealtimePresenceBase {
 		get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
 		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: standardCallback) => void;
@@ -419,7 +463,7 @@ declare namespace Types {
 		leaveClient: (clientId: string, data?: errorCallback | any, callback?: errorCallback) => void;
 	}
 
-	class RealtimePresencePromise extends RealtimePresence {
+	class RealtimePresencePromise extends RealtimePresenceBase {
 		get: (params?: RealtimePresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
 		subscribe: (action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => Promise<void>;
@@ -431,39 +475,48 @@ declare namespace Types {
 		leaveClient: (clientId: string, data?: any) => Promise<void>;
 	}
 
-	class Channel {
+	class ChannelBase {
 		name: string;
-		presence: Presence;
+	}
+
+	class ChannelCallbacks extends ChannelBase {
+		presence: PresenceCallbacks;
 		history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
 		publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
 	}
 
-	class ChannelPromise extends Channel {
+	class ChannelPromise extends ChannelBase {
+		presence: PresencePromise;
 		history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
 		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
 	}
 
-	class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
+	class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
 		name: string;
 		errorReason: ErrorInfo;
 		state: ChannelState;
-		presence: RealtimePresence;
+		setOptions: (options: any) => void;
+		unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
+	}
+
+	class RealtimeChannelCallbacks extends RealtimeChannelBase {
+		presence: RealtimePresenceCallbacks;
 		attach: (callback?: standardCallback) => void;
 		detach: (callback?: standardCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: standardCallback) => void;
-		unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
 		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
-		setOptions: (options: any, callback?: errorCallback) => void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
 	}
 
-	class RealtimeChannelPromise extends RealtimeChannel {
+	class RealtimeChannelPromise extends RealtimeChannelBase {
+		presence: RealtimePresencePromise;
 		attach: () => Promise<void>;
 		detach: () => Promise<void>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
 		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
 	}
 
 	class Channels<T> {
@@ -512,7 +565,7 @@ declare namespace Types {
 		generateRandomKey: (callback: (error: ErrorInfo, key: string) => void) => void;
 	}
 
-	class Connection extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
+	class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
 		errorReason: ErrorInfo;
 		id: string;
 		key: string;
@@ -521,12 +574,16 @@ declare namespace Types {
 		state: ConnectionState;
 		close: () => void;
 		connect: () => void;
+	}
+
+	class ConnectionCallbacks extends ConnectionBase {
 		ping: (callback?: (error: ErrorInfo, responseTime: number) => void) => void;
 		whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
 	}
 
-	class ConnectionPromise extends Connection {
+	class ConnectionPromise extends ConnectionBase {
 		ping: () => Promise<number>;
+		whenState: (targetState: ConnectionState) => Promise<ConnectionStateChange>;
 	}
 
 	class Stats {
@@ -559,27 +616,27 @@ declare namespace Types {
 		headers: any;
 	}
 
-	class Push {
-		admin: PushAdmin;
+	class PushCallbacks {
+		admin: PushAdminCallbacks;
 	}
 
-	class PushPromise extends Push {
+	class PushPromise {
 		admin: PushAdminPromise;
 	}
 
-	class PushAdmin {
-		deviceRegistrations: PushDeviceRegistrations;
-		channelSubscriptions: PushChannelSubscriptions;
+	class PushAdminCallbacks {
+		deviceRegistrations: PushDeviceRegistrationsCallbacks;
+		channelSubscriptions: PushChannelSubscriptionsCallbacks;
 		publish: (recipient: any, payload: any, callback?: errorCallback) => void;
 	}
 
-	class PushAdminPromise extends PushAdmin {
+	class PushAdminPromise {
 		deviceRegistrations: PushDeviceRegistrationsPromise;
 		channelSubscriptions: PushChannelSubscriptionsPromise;
 		publish: (recipient: any, payload: any) => Promise<void>;
 	}
 
-	class PushDeviceRegistrations {
+	class PushDeviceRegistrationsCallbacks {
 		save: (deviceDetails: DeviceDetails, callback?: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
 		get: (deviceIdOrDetails: DeviceDetails | string, callback: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
 		list: (params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>) => void;
@@ -595,7 +652,7 @@ declare namespace Types {
 		removeWhere: (params: DeviceRegistrationParams) => Promise<void>;
 	}
 
-	class PushChannelSubscriptions {
+	class PushChannelSubscriptionsCallbacks {
 		save: (subscription: PushChannelSubscription, callback?: (error: ErrorInfo, subscription: PushChannelSubscription) => void) => void;
 		list: (params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>) => void;
 		listChannels: (params: PushChannelsParams, callback: paginatedResultCallback<string>) => void;
@@ -612,36 +669,6 @@ declare namespace Types {
 	}
 }
 
-export declare class Rest {
-	static Promise: typeof Types.RestPromise;
-	static Callbacks: typeof Rest;
-	constructor(options: Types.ClientOptions | string);
-	static Crypto: Types.Crypto;
-	static Message: Types.MessageStatic;
-	static PresenceMessage: Types.PresenceMessageStatic;
-	auth: Types.Auth;
-	channels: Types.Channels<Types.Channel>;
-	request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
-	stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
-	time: (callback?: Types.timeCallback) => void;
-	push: Types.Push;
-}
+export declare class Rest extends Types.RestCallbacks {}
 
-export declare class Realtime {
-	static Promise: typeof Types.RealtimePromise;
-	static Callbacks: typeof Realtime;
-	constructor(options: Types.ClientOptions | string);
-	static Crypto: Types.Crypto;
-	static Message: Types.MessageStatic;
-	static PresenceMessage: Types.PresenceMessageStatic;
-	auth: Types.Auth;
-	channels: Types.Channels<Types.RealtimeChannel>;
-	clientId: string;
-	connection: Types.Connection;
-	request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
-	stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
-	close: () => void;
-	connect: () => void;
-	time: (callback?: Types.timeCallback) => void;
-	push: Types.Push;
-}
+export declare class Realtime extends Types.RealtimeCallbacks {}
