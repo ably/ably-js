@@ -82,12 +82,6 @@ declare namespace Types {
 		 */
 		autoConnect?: boolean;
 
-		/**
-		 * Optional clientId that can be used to specify the identity for this client. In most cases
-		 * it is preferable to instead specift a clientId in the token issued to this client.
-		 */
-		clientId?: string;
-
 		defaultTokenParams?: TokenParams;
 
 		/**
@@ -155,6 +149,12 @@ declare namespace Types {
 		token?: TokenDetails | string;
 		tokenDetails?: TokenDetails;
 		useTokenAuth?: boolean;
+
+		/**
+		 * Optional clientId that can be used to specify the identity for this client. In most cases
+		 * it is preferable to instead specift a clientId in the token issued to this client.
+		 */
+		clientId?: string;
 	}
 
 	interface TokenParams {
@@ -324,7 +324,7 @@ declare namespace Types {
 	}
 
 	interface PushChannelSubscriptionParams {
-		channel? : string;
+		channel?: string;
 		clientId?: string;
 		deviceId?: string;
 		limit?: number;
@@ -335,7 +335,7 @@ declare namespace Types {
 	}
 
 	// Common Listeners
-	type paginatedResultCallback<T> = (error: ErrorInfo, results: PaginatedResult<T> ) => void;
+	type paginatedResultCallback<T> = (error: ErrorInfo, results: PaginatedResult<T>) => void;
 	type standardCallback = (error: ErrorInfo, results: any) => void;
 	type messageCallback<T> = (message: T) => void;
 	type errorCallback = (error: ErrorInfo) => void;
@@ -521,7 +521,7 @@ declare namespace Types {
 		state: ConnectionState;
 		close: () => void;
 		connect: () => void;
-		ping: (callback?: (error: ErrorInfo, responseTime: number ) => void ) => void;
+		ping: (callback?: (error: ErrorInfo, responseTime: number) => void) => void;
 		whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
 	}
 
