@@ -1,5 +1,8 @@
 # [Ably](https://www.ably.io)
 
+[![npm version](https://badge.fury.io/js/ably.svg)](https://badge.fury.io/js/ably)
+[![Bower version](https://badge.fury.io/bo/ably.svg)](https://badge.fury.io/bo/ably)
+
 A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
 
 ## Supported platforms
