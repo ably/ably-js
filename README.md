@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support.
+A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or visit the [Feature Support Matrix](https://www.ably.io/feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -27,14 +27,11 @@ Ably-js has fallback mechanisms in order to be able to support older browsers; s
 
 ## Known Limitations
 
-This client library is currently *not compatible* with some of the Ably features:
+This client library is currently *not compatible* with the following Ably feature:
 
 | Feature | Spec reference |
-| --- | --- |
-| Feature 1 | spec |
-| Feature 2 | spec |
-| Feature 3 | spec |
-| Feature 4 | spec |
+| :--- | :--- |
+| Push Notifications target | [RSH2](https://ably.io/documentation/client-lib-development-guide/features/#RSH2) |
 
 
 ## Async API style
