@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/ably.svg)](https://badge.fury.io/js/ably)
 [![Bower version](https://badge.fury.io/bo/ably.svg)](https://badge.fury.io/bo/ably)
 
-A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or visit the [Feature Support Matrix](https://www.ably.io/feature-support-matrix) to see the list of all the available features.
+A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -30,12 +30,7 @@ Ably-js has fallback mechanisms in order to be able to support older browsers; s
 
 ## Known Limitations
 
-This client library is currently *not compatible* with the following Ably feature:
-
-| Feature | Spec reference |
-| :--- | :--- |
-| Push Notifications target | [RSH2](https://ably.io/documentation/client-lib-development-guide/features/#RSH2) |
-
+This library currently *does not* support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push)
 
 ## Async API style
 
