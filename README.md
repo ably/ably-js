@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/ably.svg)](https://badge.fury.io/js/ably)
 [![Bower version](https://badge.fury.io/bo/ably.svg)](https://badge.fury.io/bo/ably)
 
-A Javascript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
+A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -27,6 +27,10 @@ We regression-test the library against a selection of those (which will change o
 However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
 
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.  Any known browser incompatibilities can be found [here](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
+
+## Known Limitations
+
+This library currently *does not* support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push)
 
 ## Async API style
 
