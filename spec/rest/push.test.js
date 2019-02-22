@@ -10,6 +10,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		defaultHeaders = Utils.defaultPostHeaders('msgpack'),
 		testDevice = {
 			id: 'testId',
+			clientId: 'testClientId',
 			deviceSecret: 'secret-testId',
 			platform: 'android',
 			formFactor: 'phone',
