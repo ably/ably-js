@@ -49,7 +49,6 @@ var ProtocolMessage = (function() {
 		'HAS_PRESENCE':       1 << 0,
 		'HAS_BACKLOG':        1 << 1,
 		'RESUMED':            1 << 2,
-		'HAS_LOCAL_PRESENCE': 1 << 3,
 		'TRANSIENT':          1 << 4,
 		/* Channel mode flags */
 		'PRESENCE':           1 << 16,
