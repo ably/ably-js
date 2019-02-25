@@ -28,7 +28,9 @@ var XHRPollingTransport = (function() {
 		return 'XHRPollingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRPollingTransport.prototype.createRequest = XHRRequest.createRequest;
+	XHRPollingTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
+		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+	};
 
 	if(typeof(ConnectionManager) !== 'undefined' && XHRPollingTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = XHRPollingTransport;

@@ -73,7 +73,7 @@ var XHRRequest = (function() {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
-		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
+		timeouts = timeouts || Defaults.TIMEOUTS;
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 

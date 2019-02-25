@@ -28,7 +28,9 @@ var XHRStreamingTransport = (function() {
 		return 'XHRStreamingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRStreamingTransport.prototype.createRequest = XHRRequest.createRequest;
+	XHRStreamingTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
+		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+	};
 
 	if(typeof(ConnectionManager) !== 'undefined' && XHRStreamingTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = XHRStreamingTransport;
