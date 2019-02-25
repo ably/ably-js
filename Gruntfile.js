@@ -34,6 +34,8 @@ module.exports = function (grunt) {
 				if (err) {
 					grunt.fatal('Error executing "' + cmd + '": ' + stderr);
 				}
+				console.log(stdout)
+				stderr && console.error(stderr)
 				done();
 			});
 		};
