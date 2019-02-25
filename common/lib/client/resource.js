@@ -22,7 +22,7 @@ var Resource = (function() {
 	}
 
 	function unenvelope(callback, format) {
-		return function(err, body, headers, unpacked, statusCode) {
+		return function(err, body, outerHeaders, unpacked, outerStatusCode) {
 			if(err && !body) {
 				callback(err);
 				return;
@@ -39,26 +39,26 @@ var Resource = (function() {
 
 			if(body.statusCode === undefined) {
 				/* Envelope already unwrapped by the transport */
-				callback(err, body, headers, true, statusCode);
+				callback(err, body, outerHeaders, true, outerStatusCode);
 				return;
 			}
 
-			var statusCode = body.statusCode,
+			var wrappedStatusCode = body.statusCode,
 				response = body.response,
-				headers = body.headers;
+				wrappedHeaders = body.headers;
 
-			if(statusCode < 200 || statusCode >= 300) {
+			if(wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
 				/* handle wrapped errors */
 				var wrappedErr = (response && response.error) || err;
 				if(!wrappedErr) {
 					wrappedErr = new Error("Error in unenveloping " + body);
-					wrappedErr.statusCode = statusCode;
+					wrappedErr.statusCode = wrappedStatusCode;
 				}
-				callback(wrappedErr, response, headers, true, statusCode);
+				callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
 				return;
 			}
 
-			callback(err, response, headers, true, statusCode);
+			callback(err, response, wrappedHeaders, true, wrappedStatusCode);
 		};
 	}
 

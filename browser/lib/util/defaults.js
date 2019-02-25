@@ -9,8 +9,7 @@ var Defaults = {
 	defaultTransports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	baseTransportOrder: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
-	upgradeTransports: ['xhr_streaming', 'web_socket'],
-	minified: !(function _(){}).name
+	upgradeTransports: ['xhr_streaming', 'web_socket']
 };
 
 /* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -

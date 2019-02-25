@@ -121,10 +121,10 @@ var Rest = (function() {
 			encoder = useBinary ? msgpack.encode: JSON.stringify,
 			decoder = useBinary ? msgpack.decode : JSON.parse,
 			format = useBinary ? 'msgpack' : 'json',
-			method = method.toLowerCase(),
-			envelope = Http.supportsLinkHeaders ? undefined : format,
-			params = params || {},
-			headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
+			envelope = Http.supportsLinkHeaders ? undefined : format;
+		params = params || {};
+		method = method.toLowerCase();
+		var headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
 
 		if(callback === undefined) {
 			if(this.options.promises) {
