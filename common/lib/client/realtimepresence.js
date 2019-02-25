@@ -122,7 +122,7 @@ var RealtimePresence = (function() {
 					});
 					break;
 				default:
-					var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
 					err.code = 90001;
 					callback(err);
 			}
@@ -242,7 +242,7 @@ var RealtimePresence = (function() {
 				params = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, 'history', args);
+					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
 			}

@@ -396,7 +396,6 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var keyName = signedTokenParams.keyName,
 				path = '/keys/' + keyName + '/requestToken',
