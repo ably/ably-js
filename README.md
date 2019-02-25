@@ -3,7 +3,9 @@
 [![npm version](https://badge.fury.io/js/ably.svg)](https://badge.fury.io/js/ably)
 [![Bower version](https://badge.fury.io/bo/ably.svg)](https://badge.fury.io/bo/ably)
 
-A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
+A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
+
+This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -30,7 +32,7 @@ Ably-js has fallback mechanisms in order to be able to support older browsers; s
 
 ## Known Limitations
 
-This library currently *does not* support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push)
+This library currently does not support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push)
 
 ## Async API style
 
@@ -38,9 +40,9 @@ This library exposes two API variants. Firstly, the original (and presently the 
 
 For this library version, and for all future 1.x versions, the callback-based API will be the default, and the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. However, a move to the promises-based variant as the default is possible at the next major release. If you are not handling promises, and want a version of the library that will not start returning promises for calls where you don't pass a callback in future versions, you can explicitly require the callback variant.
 
-#### Version: 1.1.3
+#### Version: 1.1.4
 
-The latest stable version of the Ably Javascript client library is version: 1.1.3 .
+The latest stable version of the Ably Javascript client library is version: 1.1.4 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 

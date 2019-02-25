@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.4](https://github.com/ably/ably-js/tree/1.1.4) (2019-02-25)
+- Support PUSH, PATCH, and DELETE in Rest#request()
+- Support arbitrary params for REST publishes
+- Fix scope leak issue when using the minified version of the library
+
 ## [1.1.3](https://github.com/ably/ably-js/tree/1.1.3) (2019-02-11)
 - Rewrite typescript typings to satisfy `tsc --strict`
 - PNRG changes needed for newer versions of react-native

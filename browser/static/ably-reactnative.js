@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.3
+ * Ably JavaScript Library v1.1.4
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3524,8 +3524,7 @@ var Defaults = {
 	defaultTransports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	baseTransportOrder: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
 	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
-	upgradeTransports: ['xhr_streaming', 'web_socket'],
-	minified: !(function _(){}).name
+	upgradeTransports: ['xhr_streaming', 'web_socket']
 };
 
 /* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -
@@ -3699,855 +3698,6 @@ var BufferUtils = (function() {
 	};
 
 	return BufferUtils;
-})();
-
-var Http = (function() {
-	var noop = function() {};
-
-	function Http() {}
-
-	var now = Date.now || function() {
-		/* IE 8 */
-		return new Date().getTime();
-	};
-
-	function shouldFallback(err) {
-		var statusCode = err.statusCode;
-		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
-		 * detail to know whether it's fallback-fixable, but it may be (eg if a
-		 * network issue), so try just in case */
-		return (statusCode === 408 && !err.code) ||
-			(statusCode === 400 && !err.code)      ||
-			(statusCode >= 500 && statusCode <= 504);
-	}
-
-	function getHosts(client) {
-		/* If we're a connected realtime client, try the endpoint we're connected
-		 * to first -- but still have fallbacks, being connected is not an absolute
-		 * guarantee that a datacenter has free capacity to service REST requests. */
-		var connection = client.connection,
-			connectionHost = connection && connection.connectionManager.host;
-
-		if(connectionHost) {
-			return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
-		}
-
-		return Defaults.getHosts(client.options);
-	}
-	Http._getHosts = getHosts;
-
-	/**
-	 * Perform an HTTP GET request for a given path against prime and fallback Ably hosts
-	 * @param rest
-	 * @param path the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.get = function(rest, path, headers, params, callback) {
-		Http['do']('get', rest, path, headers, null, params, callback);
-	}
-
-	/**
-	 * Perform an HTTP GET request for a given resolved URI
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.getUri = function(rest, uri, headers, params, callback) {
-		Http.doUri('get', rest, uri, headers, null, params, callback);
-	};
-
-	/**
-	 * Perform an HTTP POST request
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.post = function(rest, path, headers, body, params, callback) {
-		Http['do']('post', rest, path, headers, body, params, callback);
-	};
-
-	/**
-	 * Perform an HTTP POST request for a given resolved URI
-	 * @param rest
-	 * @param the full path of the POST request
-	 * @param headers optional hash of headers
-	 * @param body object or buffer containing request body
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
-	Http.postUri = function(rest, uri, headers, body, params, callback) {
-		Http.doUri('post', rest, uri, headers, body, params, callback);
-	};
-
-	Http['delete'] = function(rest, path, headers, params, callback) {
-		Http['do']('delete', rest, path, headers, null, params, callback);
-	}
-
-	Http.deleteUri = function(rest, uri, headers, params, callback) {
-		Http.doUri('delete', rest, uri, headers, null, params, callback);
-	};
-
-	Http.put = function(rest, path, headers, body, params, callback) {
-		Http['do']('put', rest, path, headers, body, params, callback);
-	};
-
-	Http.putUri = function(rest, uri, headers, body, params, callback) {
-		Http.doUri('put', rest, uri, headers, body, params, callback);
-	};
-
-	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
-	Http['do'] = function(method, rest, path, headers, body, params, callback) {
-		callback = callback || noop;
-		var uriFromHost = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
-		var binary = (headers && headers.accept != 'application/json');
-		var doArgs = arguments;
-
-		var currentFallback = rest._currentFallback;
-		if(currentFallback) {
-			if(currentFallback.validUntil > now()) {
-				/* Use stored fallback */
-				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err) {
-					if(err && shouldFallback(err)) {
-						/* unstore the fallback and start from the top with the default sequence */
-						rest._currentFallback = null;
-						Http['do'].apply(Http, doArgs);
-						return;
-					}
-					callback.apply(null, arguments);
-				});
-				return;
-			} else {
-				/* Fallback expired; remove it and fallthrough to normal sequence */
-				rest._currentFallback = null;
-			}
-		}
-
-		var hosts = getHosts(rest);
-
-		/* if there is only one host do it */
-		if(hosts.length == 1) {
-			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
-			return;
-		}
-
-		/* hosts is an array with preferred host plus at least one fallback */
-		var tryAHost = function(candidateHosts, persistOnSuccess) {
-			var host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
-					tryAHost(candidateHosts, true);
-					return;
-				}
-				if(persistOnSuccess) {
-					/* RSC15f */
-					rest._currentFallback = {
-						host: host,
-						validUntil: now() + rest.options.timeouts.fallbackRetryTimeout
-					};
-				}
-				callback.apply(null, arguments);
-			});
-		};
-		tryAHost(hosts);
-	};
-
-	Http.doUri = function(method, rest, uri, headers, body, params, callback) {
-		Http.Request(method, rest, uri, headers, params, body, callback);
-	};
-
-	Http.supportsAuthHeaders = false;
-	Http.supportsLinkHeaders = false;
-	return Http;
-})();
-
-/*
- Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
-
- Permission is hereby granted, free of charge, to any person
- obtaining a copy of this software and associated documentation
- files (the "Software"), to deal in the Software without
- restriction, including without limitation the rights to use,
- copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following
- conditions:
-
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
- */
-var Base64 = (function() {
-	function StringBuffer()
-	{
-		this.buffer = [];
-	}
-
-	StringBuffer.prototype.append = function append(string)
-	{
-		this.buffer.push(string);
-		return this;
-	};
-
-	StringBuffer.prototype.toString = function toString()
-	{
-		return this.buffer.join("");
-	};
-
-	var Base64 =
-	{
-		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-		encode : function (input)
-		{
-			var output = new StringBuffer();
-			var codex = Base64.codex;
-
-			var enumerator = new Utf8EncodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var chr1 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr2 = enumerator.current;
-
-				enumerator.moveNext();
-				var chr3 = enumerator.current;
-
-				var enc1 = chr1 >> 2;
-				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-				var enc4 = chr3 & 63;
-
-				if (isNaN(chr2))
-				{
-					enc3 = enc4 = 64;
-				}
-				else if (isNaN(chr3))
-				{
-					enc4 = 64;
-				}
-
-				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
-			}
-
-			return output.toString();
-		},
-
-		decode : function (input)
-		{
-			var output = new StringBuffer();
-
-			var enumerator = new Base64DecodeEnumerator(input);
-			while (enumerator.moveNext())
-			{
-				var charCode = enumerator.current;
-
-				if (charCode < 128)
-					output.append(String.fromCharCode(charCode));
-				else if ((charCode > 191) && (charCode < 224))
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
-				}
-				else
-				{
-					enumerator.moveNext();
-					var charCode2 = enumerator.current;
-
-					enumerator.moveNext();
-					var charCode3 = enumerator.current;
-
-					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
-				}
-			}
-
-			return output.toString();
-		}
-	};
-
-	function Utf8EncodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Utf8EncodeEnumerator.prototype =
-	{
-		current: Number.NaN,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = Number.NaN;
-				return false;
-			}
-			else
-			{
-				var charCode = this._input.charCodeAt(++this._index);
-
-				// "\r\n" -> "\n"
-				//
-				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
-				{
-					charCode = 10;
-					this._index += 2;
-				}
-
-				if (charCode < 128)
-				{
-					this.current = charCode;
-				}
-				else if ((charCode > 127) && (charCode < 2048))
-				{
-					this.current = (charCode >> 6) | 192;
-					this._buffer.push((charCode & 63) | 128);
-				}
-				else
-				{
-					this.current = (charCode >> 12) | 224;
-					this._buffer.push(((charCode >> 6) & 63) | 128);
-					this._buffer.push((charCode & 63) | 128);
-				}
-
-				return true;
-			}
-		}
-	};
-
-	function Base64DecodeEnumerator(input)
-	{
-		this._input = input;
-		this._index = -1;
-		this._buffer = [];
-	}
-
-	Base64DecodeEnumerator.prototype =
-	{
-		current: 64,
-
-		moveNext: function()
-		{
-			if (this._buffer.length > 0)
-			{
-				this.current = this._buffer.shift();
-				return true;
-			}
-			else if (this._index >= (this._input.length - 1))
-			{
-				this.current = 64;
-				return false;
-			}
-			else
-			{
-				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
-				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
-
-				var chr1 = (enc1 << 2) | (enc2 >> 4);
-				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-				var chr3 = ((enc3 & 3) << 6) | enc4;
-
-				this.current = chr1;
-
-				if (enc3 != 64)
-					this._buffer.push(chr2);
-
-				if (enc4 != 64)
-					this._buffer.push(chr3);
-
-				return true;
-			}
-		}
-	};
-
-	return Base64;
-})();
-
-Defaults.ENVIRONMENT              = '';
-Defaults.REST_HOST                = 'rest.ably.io';
-Defaults.REALTIME_HOST            = 'realtime.ably.io';
-Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
-Defaults.PORT                     = 80;
-Defaults.TLS_PORT                 = 443;
-Defaults.TIMEOUTS = {
-	/* Documented as options params: */
-	disconnectedRetryTimeout   : 15000,
-	suspendedRetryTimeout      : 30000,
-	httpRequestTimeout         : 15000,
-	channelRetryTimeout        : 15000,
-	fallbackRetryTimeout       : 600000,
-	/* Not documented: */
-	connectionStateTtl         : 120000,
-	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
-	preferenceConnectTimeout   : 6000,
-	parallelUpgradeDelay       : 6000
-};
-Defaults.httpMaxRetryCount = 3;
-Defaults.maxMessageSize    = 65536;
-
-Defaults.version          = '1.1.3';
-Defaults.libstring        = Platform.libver + Defaults.version;
-Defaults.apiVersion       = '1.0';
-
-Defaults.getHost = function(options, host, ws) {
-	if(ws)
-		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
-	else
-		host = host || options.restHost;
-
-	return host;
-};
-
-Defaults.getPort = function(options, tls) {
-	return (tls || options.tls) ? options.tlsPort : options.port;
-};
-
-Defaults.getHttpScheme = function(options) {
-	return options.tls ? 'https://' : 'http://';
-};
-
-Defaults.getFallbackHosts = function(options) {
-	var fallbackHosts = options.fallbackHosts,
-		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
-
-	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
-};
-
-Defaults.getHosts = function(options) {
-	return [options.restHost].concat(Defaults.getFallbackHosts(options));
-};
-
-function checkHost(host) {
-	if(typeof host !== 'string') {
-		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
-	};
-	if(!host.length) {
-		throw new ErrorInfo('host must not be zero-length', 40000, 400);
-	};
-}
-
-Defaults.objectifyOptions = function(options) {
-	if(typeof options == 'string') {
-		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
-	}
-	return options;
-};
-
-Defaults.normaliseOptions = function(options) {
-	/* Deprecated options */
-	if(options.host) {
-		Logger.deprecated('host', 'restHost');
-		options.restHost = options.host;
-	}
-	if(options.wsHost) {
-		Logger.deprecated('wsHost', 'realtimeHost');
-		options.realtimeHost = options.wsHost;
-	}
-	if(options.queueEvents) {
-		Logger.deprecated('queueEvents', 'queueMessages');
-		options.queueMessages = options.queueEvents;
-	}
-
-	if(options.recover === true) {
-		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
-		options.recover = function(lastConnectionDetails, cb) { cb(true); };
-	}
-
-	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
-		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
-		options.recover = null;
-	}
-
-	if(!('closeOnUnload' in options)) {
-		/* Have closeOnUnload default to true unless we have any indication that
-		 * the user may want to recover the connection */
-		options.closeOnUnload = !options.recover;
-	}
-
-	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
-		Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
-		Utils.arrDeleteValue(options.transports, 'xhr');
-		options.transports.push('xhr_streaming');
-	}
-
-	if(!('queueMessages' in options))
-		options.queueMessages = true;
-
-	var production = false;
-	if(options.restHost) {
-		options.realtimeHost = options.realtimeHost || options.restHost;
-	} else {
-		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-		production = !environment || (environment === 'production');
-		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
-		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
-	}
-	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
-	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
-
-	options.port = options.port || Defaults.PORT;
-	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
-	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
-	if(!('tls' in options)) options.tls = true;
-
-	/* Allow values passed in options to override default timeouts */
-	options.timeouts = {};
-	for(var prop in Defaults.TIMEOUTS) {
-		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
-	};
-
-	if('useBinaryProtocol' in options) {
-		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
-	} else {
-		options.useBinaryProtocol = Platform.preferBinary;
-	}
-
-	if(options.clientId) {
-		var headers = options.headers = options.headers || {};
-		headers['X-Ably-ClientId'] = options.clientId;
-	}
-
-	if(!('idempotentRestPublishing' in options)) {
-		options.idempotentRestPublishing = false;
-	}
-
-	if(options.promises && !Platform.Promise) {
-		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
-		options.promises = false;
-	}
-
-	return options;
-};
-
-var EventEmitter = (function() {
-
-	/* public constructor */
-	function EventEmitter() {
-		this.any = [];
-		this.events = {};
-		this.anyOnce = [];
-		this.eventsOnce = {};
-	}
-
-	/* Call the listener, catch any exceptions and log, but continue operation*/
-	function callListener(eventThis, listener, args) {
-		try {
-			listener.apply(eventThis, args);
-		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && e.stack));
-		}
-	}
-
-	/**
-	 * Remove listeners that match listener
-	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
-	 * @param listener the listener callback to remove
-	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
-	 */
-	function removeListener(targetListeners, listener, eventFilter) {
-		var listeners, idx, eventName, targetListenersIndex;
-
-		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
-			listeners = targetListeners[targetListenersIndex];
-			if (eventFilter) { listeners = listeners[eventFilter]; }
-
-			if (Utils.isArray(listeners)) {
-				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
-					listeners.splice(idx, 1);
-				}
-				/* If events object has an event name key with no listeners then
-				   remove the key to stop the list growing indefinitely */
-				if (eventFilter && (listeners.length === 0)) {
-					delete targetListeners[targetListenersIndex][eventFilter];
-				}
-			} else if (Utils.isObject(listeners)) {
-				/* events */
-				for (eventName in listeners) {
-					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
-						removeListener([listeners], listener, eventName);
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Add an event listener
-	 * @param event (optional) the name of the event to listen to
-	 *        if not supplied, all events trigger a call to the listener
-	 * @param listener the listener to be called
-	 */
-	EventEmitter.prototype.on = function(event, listener) {
-		if(arguments.length == 1 && typeof(event) == 'function') {
-			this.any.push(event);
-		} else if(Utils.isEmptyArg(event)) {
-			this.any.push(listener);
-		} else if(Utils.isArray(event)) {
-			var self = this;
-			Utils.arrForEach(event, function(ev) {
-				self.on(ev, listener);
-			});
-		} else {
-			var listeners = (this.events[event] || (this.events[event] = []));
-			listeners.push(listener);
-		}
-	};
-
-	/**
-	 * Remove one or more event listeners
-	 * @param event (optional) the name of the event whose listener
-	 *        is to be removed. If not supplied, the listener is
-	 *        treated as an 'any' listener
-	 * @param listener (optional) the listener to remove. If not
-	 *        supplied, all listeners are removed.
-	 */
-	EventEmitter.prototype.off = function(event, listener) {
-		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
-			this.any = [];
-			this.events = {};
-			this.anyOnce = [];
-			this.eventsOnce = {};
-			return;
-		}
-		if(arguments.length == 1) {
-			if(typeof(event) == 'function') {
-				/* we take this to be the listener and treat the event as "any" .. */
-				listener = event;
-				event = null;
-			}
-			/* ... or we take event to be the actual event name and listener to be all */
-		}
-
-		if(listener && Utils.isEmptyArg(event)) {
-			removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
-			return;
-		}
-
-		if(Utils.isArray(event)) {
-			var self = this;
-			Utils.arrForEach(event, function(ev) {
-				self.off(ev, listener);
-			});
-		}
-
-		/* "normal" case where event is an actual event */
-		if(listener) {
-			removeListener([this.events, this.eventsOnce], listener, event);
-		} else {
-			delete this.events[event];
-			delete this.eventsOnce[event];
-		}
-	};
-
-	/**
-	 * Get the array of listeners for a given event; excludes once events
-	 * @param event (optional) the name of the event, or none for 'any'
-	 * @return array of events, or null if none
-	 */
-	EventEmitter.prototype.listeners = function(event) {
-		if(event) {
-			var listeners = (this.events[event] || []);
-			if(this.eventsOnce[event])
-				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
-			return listeners.length ? listeners : null;
-		}
-		return this.any.length ? this.any : null;
-	};
-
-	/**
-	 * Emit an event
-	 * @param event the event name
-	 * @param args the arguments to pass to the listener
-	 */
-	EventEmitter.prototype.emit = function(event  /* , args... */) {
-		var args = Array.prototype.slice.call(arguments, 1);
-		var eventThis = {event:event};
-		var listeners = [];
-
-		if(this.anyOnce.length) {
-			Array.prototype.push.apply(listeners, this.anyOnce);
-			this.anyOnce = [];
-		}
-		if(this.any.length) {
-			Array.prototype.push.apply(listeners, this.any);
-		}
-		var eventsOnceListeners = this.eventsOnce[event];
-		if(eventsOnceListeners) {
-			Array.prototype.push.apply(listeners, eventsOnceListeners);
-			delete this.eventsOnce[event];
-		}
-		var eventsListeners = this.events[event];
-		if(eventsListeners) {
-			Array.prototype.push.apply(listeners, eventsListeners);
-		}
-
-		Utils.arrForEach(listeners, function(listener) {
-			callListener(eventThis, listener, args);
-		});
-	};
-
-	/**
-	 * Listen for a single occurrence of an event
-	 * @param event the name of the event to listen to
-	 * @param listener the listener to be called
-	 */
-	EventEmitter.prototype.once = function(event, listener) {
-		var argCount = arguments.length, self = this;
-		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
-			return new Platform.Promise(function(resolve) {
-				self.once(event, resolve);
-			});
-		}
-		if(arguments.length == 1 && typeof(event) == 'function') {
-			this.anyOnce.push(event);
-		} else if(Utils.isEmptyArg(event)) {
-			this.anyOnce.push(listener);
-		} else if(Utils.isArray(event)){
-			throw("Arrays of events can only be used with on(), not once()");
-		} else {
-			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
-			listeners.push(listener);
-		}
-	};
-
-	/**
-	 * Private API
-	 *
-	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
-	 * @param targetState the name of the state event to listen to
-	 * @param currentState the name of the current state of this object
-	 * @param listener the listener to be called
-	 */
-	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
-		var eventThis = {event:targetState},
-			self = this,
-			listenerArgs = Array.prototype.slice.call(arguments, 3);
-
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
-			throw("whenState requires a valid event String argument");
-		}
-		if(typeof listener !== 'function' && Platform.Promise) {
-			return new Platform.Promise(function(resolve) {
-				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
-			});
-		}
-		if(targetState === currentState) {
-			callListener(eventThis, listener, listenerArgs);
-		} else {
-			this.once(targetState, listener);
-		}
-	}
-
-	return EventEmitter;
-})();
-
-var Logger = (function() {
-	var consoleLogger, errorLogger;
-
-	/* Can't just check for console && console.log; fails in IE <=9 */
-	if((typeof window === 'undefined') /* node */ ||
-		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
-		consoleLogger = function() { console.log.apply(console, arguments); };
-		errorLogger = console.warn ? function() { console.warn.apply(console, arguments); } : consoleLogger;
-	} else if(window.console && window.console.log) {
-		/* IE <= 9 with the console open -- console.log does not
-		 * inherit from Function, so has no apply method */
-		consoleLogger = errorLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
-	} else {
-		/* IE <= 9 when dev tools are closed - window.console not even defined */
-		consoleLogger = errorLogger = function() {};
-	}
-
-	function pad(str, three) {
-		return ('000' + str).slice(-2-(three || 0));
-	}
-
-	var LOG_NONE  = 0,
-	LOG_ERROR = 1,
-	LOG_MAJOR = 2,
-	LOG_MINOR = 3,
-	LOG_MICRO = 4;
-
-	var LOG_DEFAULT = LOG_ERROR,
-	LOG_DEBUG   = LOG_MICRO;
-
-	var logLevel = LOG_DEFAULT;
-
-	function getHandler(logger) {
-		return Platform.logTimestamps ?
-			function(msg) {
-				var time = new Date();
-				logger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
-			} : logger;
-	}
-
-	var logHandler = getHandler(consoleLogger),
-		logErrorHandler = getHandler(errorLogger);
-
-	/* public constructor */
-	function Logger(args) {}
-
-	/* public constants */
-	Logger.LOG_NONE    = LOG_NONE,
-	Logger.LOG_ERROR   = LOG_ERROR,
-	Logger.LOG_MAJOR   = LOG_MAJOR,
-	Logger.LOG_MINOR   = LOG_MINOR,
-	Logger.LOG_MICRO   = LOG_MICRO;
-
-	Logger.LOG_DEFAULT = LOG_DEFAULT,
-	Logger.LOG_DEBUG   = LOG_DEBUG;
-
-	/* public static functions */
-	Logger.logAction = function(level, action, message) {
-		if (Logger.shouldLog(level)) {
-			(level === LOG_ERROR ? logErrorHandler : logHandler)('Ably: ' + action + ': ' + message);
-		}
-	};
-
-	Logger.deprecated = function(original, replacement) {
-		if (Logger.shouldLog(LOG_ERROR)) {
-			logErrorHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
-		}
-	}
-
-	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
-	   the object being serialised if the log level will not output the message */
-	Logger.shouldLog = function(level) {
-		return level <= logLevel;
-	};
-
-	Logger.setLog = function(level, handler) {
-		if(level !== undefined) logLevel = level;
-		if(handler !== undefined) logHandler = logErrorHandler = handler;
-	};
-
-	return Logger;
 })();
 
 var Utils = (function() {
@@ -5027,6 +4177,829 @@ var Utils = (function() {
 	};
 
 	return Utils;
+})();
+
+var Http = (function() {
+	var noop = function() {};
+
+	function Http() {}
+
+	var now = Date.now || function() {
+		/* IE 8 */
+		return new Date().getTime();
+	};
+
+	function shouldFallback(err) {
+		var statusCode = err.statusCode;
+		/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
+		 * detail to know whether it's fallback-fixable, but it may be (eg if a
+		 * network issue), so try just in case */
+		return (statusCode === 408 && !err.code) ||
+			(statusCode === 400 && !err.code)      ||
+			(statusCode >= 500 && statusCode <= 504);
+	}
+
+	function getHosts(client) {
+		/* If we're a connected realtime client, try the endpoint we're connected
+		 * to first -- but still have fallbacks, being connected is not an absolute
+		 * guarantee that a datacenter has free capacity to service REST requests. */
+		var connection = client.connection,
+			connectionHost = connection && connection.connectionManager.host;
+
+		if(connectionHost) {
+			return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+		}
+
+		return Defaults.getHosts(client.options);
+	}
+	Http._getHosts = getHosts;
+
+	Http.methods = ['get', 'delete', 'post', 'put', 'patch'];
+	Http.methodsWithoutBody = ['get', 'delete'];
+	Http.methodsWithBody = Utils.arrSubtract(Http.methods, Http.methodsWithoutBody);
+
+	/* - Http.get, Http.post, Http.put, ...
+	 * Perform an HTTP request for a given path against prime and fallback Ably hosts
+	 * @param rest
+	 * @param path the full path
+	 * @param headers optional hash of headers
+	 * [only for methods with body: @param body object or buffer containing request body]
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 *
+	 * - Http.getUri, Http.postUri, Http.putUri, ...
+	 * Perform an HTTP request for a given full URI
+	 * @param rest
+	 * @param uri the full URI
+	 * @param headers optional hash of headers
+	 * [only for methods with body: @param body object or buffer containing request body]
+	 * @param params optional hash of params
+	 * @param callback (err, response)
+	 */
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		Http[method] = function(rest, path, headers, params, callback) {
+			Http['do'](method, rest, path, headers, null, params, callback);
+		};
+		Http[method + 'Uri'] = function(rest, uri, headers, params, callback) {
+			Http.doUri(method, rest, uri, headers, null, params, callback);
+		};
+	});
+
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		Http[method] = function(rest, path, headers, body, params, callback) {
+			Http['do'](method, rest, path, headers, body, params, callback);
+		};
+		Http[method + 'Uri'] = function(rest, uri, headers, body, params, callback) {
+			Http.doUri(method, rest, uri, headers, body, params, callback);
+		};
+	});
+
+	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
+	Http['do'] = function(method, rest, path, headers, body, params, callback) {
+		callback = callback || noop;
+		var uriFromHost = (typeof(path) == 'function') ? path : function(host) { return rest.baseUri(host) + path; };
+		var binary = (headers && headers.accept != 'application/json');
+		var doArgs = arguments;
+
+		var currentFallback = rest._currentFallback;
+		if(currentFallback) {
+			if(currentFallback.validUntil > now()) {
+				/* Use stored fallback */
+				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err) {
+					if(err && shouldFallback(err)) {
+						/* unstore the fallback and start from the top with the default sequence */
+						rest._currentFallback = null;
+						Http['do'].apply(Http, doArgs);
+						return;
+					}
+					callback.apply(null, arguments);
+				});
+				return;
+			} else {
+				/* Fallback expired; remove it and fallthrough to normal sequence */
+				rest._currentFallback = null;
+			}
+		}
+
+		var hosts = getHosts(rest);
+
+		/* if there is only one host do it */
+		if(hosts.length == 1) {
+			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
+			return;
+		}
+
+		/* hosts is an array with preferred host plus at least one fallback */
+		var tryAHost = function(candidateHosts, persistOnSuccess) {
+			var host = candidateHosts.shift();
+			Http.doUri(method, rest, uriFromHost(host), headers, body, params, function(err) {
+				if(err && shouldFallback(err) && candidateHosts.length) {
+					tryAHost(candidateHosts, true);
+					return;
+				}
+				if(persistOnSuccess) {
+					/* RSC15f */
+					rest._currentFallback = {
+						host: host,
+						validUntil: now() + rest.options.timeouts.fallbackRetryTimeout
+					};
+				}
+				callback.apply(null, arguments);
+			});
+		};
+		tryAHost(hosts);
+	};
+
+	Http.doUri = function(method, rest, uri, headers, body, params, callback) {
+		Http.Request(method, rest, uri, headers, params, body, callback);
+	};
+
+	Http.supportsAuthHeaders = false;
+	Http.supportsLinkHeaders = false;
+	return Http;
+})();
+
+/*
+ Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
+
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal in the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following
+ conditions:
+
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+ */
+var Base64 = (function() {
+	function StringBuffer()
+	{
+		this.buffer = [];
+	}
+
+	StringBuffer.prototype.append = function append(string)
+	{
+		this.buffer.push(string);
+		return this;
+	};
+
+	StringBuffer.prototype.toString = function toString()
+	{
+		return this.buffer.join("");
+	};
+
+	var Base64 =
+	{
+		codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+		encode : function (input)
+		{
+			var output = new StringBuffer();
+			var codex = Base64.codex;
+
+			var enumerator = new Utf8EncodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var chr1 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr2 = enumerator.current;
+
+				enumerator.moveNext();
+				var chr3 = enumerator.current;
+
+				var enc1 = chr1 >> 2;
+				var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+				var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+				var enc4 = chr3 & 63;
+
+				if (isNaN(chr2))
+				{
+					enc3 = enc4 = 64;
+				}
+				else if (isNaN(chr3))
+				{
+					enc4 = 64;
+				}
+
+				output.append(codex.charAt(enc1) + codex.charAt(enc2) + codex.charAt(enc3) + codex.charAt(enc4));
+			}
+
+			return output.toString();
+		},
+
+		decode : function (input)
+		{
+			var output = new StringBuffer();
+
+			var enumerator = new Base64DecodeEnumerator(input);
+			while (enumerator.moveNext())
+			{
+				var charCode = enumerator.current;
+
+				if (charCode < 128)
+					output.append(String.fromCharCode(charCode));
+				else if ((charCode > 191) && (charCode < 224))
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
+				}
+				else
+				{
+					enumerator.moveNext();
+					var charCode2 = enumerator.current;
+
+					enumerator.moveNext();
+					var charCode3 = enumerator.current;
+
+					output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
+				}
+			}
+
+			return output.toString();
+		}
+	};
+
+	function Utf8EncodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Utf8EncodeEnumerator.prototype =
+	{
+		current: Number.NaN,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = Number.NaN;
+				return false;
+			}
+			else
+			{
+				var charCode = this._input.charCodeAt(++this._index);
+
+				// "\r\n" -> "\n"
+				//
+				if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
+				{
+					charCode = 10;
+					this._index += 2;
+				}
+
+				if (charCode < 128)
+				{
+					this.current = charCode;
+				}
+				else if ((charCode > 127) && (charCode < 2048))
+				{
+					this.current = (charCode >> 6) | 192;
+					this._buffer.push((charCode & 63) | 128);
+				}
+				else
+				{
+					this.current = (charCode >> 12) | 224;
+					this._buffer.push(((charCode >> 6) & 63) | 128);
+					this._buffer.push((charCode & 63) | 128);
+				}
+
+				return true;
+			}
+		}
+	};
+
+	function Base64DecodeEnumerator(input)
+	{
+		this._input = input;
+		this._index = -1;
+		this._buffer = [];
+	}
+
+	Base64DecodeEnumerator.prototype =
+	{
+		current: 64,
+
+		moveNext: function()
+		{
+			if (this._buffer.length > 0)
+			{
+				this.current = this._buffer.shift();
+				return true;
+			}
+			else if (this._index >= (this._input.length - 1))
+			{
+				this.current = 64;
+				return false;
+			}
+			else
+			{
+				var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
+				var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
+
+				var chr1 = (enc1 << 2) | (enc2 >> 4);
+				var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				var chr3 = ((enc3 & 3) << 6) | enc4;
+
+				this.current = chr1;
+
+				if (enc3 != 64)
+					this._buffer.push(chr2);
+
+				if (enc4 != 64)
+					this._buffer.push(chr3);
+
+				return true;
+			}
+		}
+	};
+
+	return Base64;
+})();
+
+Defaults.ENVIRONMENT              = '';
+Defaults.REST_HOST                = 'rest.ably.io';
+Defaults.REALTIME_HOST            = 'realtime.ably.io';
+Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
+Defaults.PORT                     = 80;
+Defaults.TLS_PORT                 = 443;
+Defaults.TIMEOUTS = {
+	/* Documented as options params: */
+	disconnectedRetryTimeout   : 15000,
+	suspendedRetryTimeout      : 30000,
+	httpRequestTimeout         : 15000,
+	channelRetryTimeout        : 15000,
+	fallbackRetryTimeout       : 600000,
+	/* Not documented: */
+	connectionStateTtl         : 120000,
+	realtimeRequestTimeout     : 10000,
+	recvTimeout                : 90000,
+	preferenceConnectTimeout   : 6000,
+	parallelUpgradeDelay       : 6000
+};
+Defaults.httpMaxRetryCount = 3;
+Defaults.maxMessageSize    = 65536;
+
+Defaults.version          = '1.1.4';
+Defaults.libstring        = Platform.libver + Defaults.version;
+Defaults.apiVersion       = '1.1';
+
+Defaults.getHost = function(options, host, ws) {
+	if(ws)
+		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
+	else
+		host = host || options.restHost;
+
+	return host;
+};
+
+Defaults.getPort = function(options, tls) {
+	return (tls || options.tls) ? options.tlsPort : options.port;
+};
+
+Defaults.getHttpScheme = function(options) {
+	return options.tls ? 'https://' : 'http://';
+};
+
+Defaults.getFallbackHosts = function(options) {
+	var fallbackHosts = options.fallbackHosts,
+		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
+
+	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
+};
+
+Defaults.getHosts = function(options) {
+	return [options.restHost].concat(Defaults.getFallbackHosts(options));
+};
+
+function checkHost(host) {
+	if(typeof host !== 'string') {
+		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+	};
+	if(!host.length) {
+		throw new ErrorInfo('host must not be zero-length', 40000, 400);
+	};
+}
+
+Defaults.objectifyOptions = function(options) {
+	if(typeof options == 'string') {
+		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
+	}
+	return options;
+};
+
+Defaults.normaliseOptions = function(options) {
+	/* Deprecated options */
+	if(options.host) {
+		Logger.deprecated('host', 'restHost');
+		options.restHost = options.host;
+	}
+	if(options.wsHost) {
+		Logger.deprecated('wsHost', 'realtimeHost');
+		options.realtimeHost = options.wsHost;
+	}
+	if(options.queueEvents) {
+		Logger.deprecated('queueEvents', 'queueMessages');
+		options.queueMessages = options.queueEvents;
+	}
+
+	if(options.recover === true) {
+		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+		options.recover = function(lastConnectionDetails, cb) { cb(true); };
+	}
+
+	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		options.recover = null;
+	}
+
+	if(!('closeOnUnload' in options)) {
+		/* Have closeOnUnload default to true unless we have any indication that
+		 * the user may want to recover the connection */
+		options.closeOnUnload = !options.recover;
+	}
+
+	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
+		Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
+		Utils.arrDeleteValue(options.transports, 'xhr');
+		options.transports.push('xhr_streaming');
+	}
+
+	if(!('queueMessages' in options))
+		options.queueMessages = true;
+
+	var production = false;
+	if(options.restHost) {
+		options.realtimeHost = options.realtimeHost || options.restHost;
+	} else {
+		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
+		production = !environment || (environment === 'production');
+		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
+		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
+	}
+	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
+	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
+
+	options.port = options.port || Defaults.PORT;
+	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
+	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
+	if(!('tls' in options)) options.tls = true;
+
+	/* Allow values passed in options to override default timeouts */
+	options.timeouts = {};
+	for(var prop in Defaults.TIMEOUTS) {
+		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
+	};
+
+	if('useBinaryProtocol' in options) {
+		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
+	} else {
+		options.useBinaryProtocol = Platform.preferBinary;
+	}
+
+	if(options.clientId) {
+		var headers = options.headers = options.headers || {};
+		headers['X-Ably-ClientId'] = options.clientId;
+	}
+
+	if(!('idempotentRestPublishing' in options)) {
+		options.idempotentRestPublishing = false;
+	}
+
+	if(options.promises && !Platform.Promise) {
+		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
+		options.promises = false;
+	}
+
+	return options;
+};
+
+var EventEmitter = (function() {
+
+	/* public constructor */
+	function EventEmitter() {
+		this.any = [];
+		this.events = {};
+		this.anyOnce = [];
+		this.eventsOnce = {};
+	}
+
+	/* Call the listener, catch any exceptions and log, but continue operation*/
+	function callListener(eventThis, listener, args) {
+		try {
+			listener.apply(eventThis, args);
+		} catch(e) {
+			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && e.stack));
+		}
+	}
+
+	/**
+	 * Remove listeners that match listener
+	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
+	 * @param listener the listener callback to remove
+	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
+	 */
+	function removeListener(targetListeners, listener, eventFilter) {
+		var listeners, idx, eventName, targetListenersIndex;
+
+		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
+			listeners = targetListeners[targetListenersIndex];
+			if (eventFilter) { listeners = listeners[eventFilter]; }
+
+			if (Utils.isArray(listeners)) {
+				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
+					listeners.splice(idx, 1);
+				}
+				/* If events object has an event name key with no listeners then
+				   remove the key to stop the list growing indefinitely */
+				if (eventFilter && (listeners.length === 0)) {
+					delete targetListeners[targetListenersIndex][eventFilter];
+				}
+			} else if (Utils.isObject(listeners)) {
+				/* events */
+				for (eventName in listeners) {
+					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+						removeListener([listeners], listener, eventName);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Add an event listener
+	 * @param event (optional) the name of the event to listen to
+	 *        if not supplied, all events trigger a call to the listener
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.on = function(event, listener) {
+		if(arguments.length == 1 && typeof(event) == 'function') {
+			this.any.push(event);
+		} else if(Utils.isEmptyArg(event)) {
+			this.any.push(listener);
+		} else if(Utils.isArray(event)) {
+			var self = this;
+			Utils.arrForEach(event, function(ev) {
+				self.on(ev, listener);
+			});
+		} else {
+			var listeners = (this.events[event] || (this.events[event] = []));
+			listeners.push(listener);
+		}
+	};
+
+	/**
+	 * Remove one or more event listeners
+	 * @param event (optional) the name of the event whose listener
+	 *        is to be removed. If not supplied, the listener is
+	 *        treated as an 'any' listener
+	 * @param listener (optional) the listener to remove. If not
+	 *        supplied, all listeners are removed.
+	 */
+	EventEmitter.prototype.off = function(event, listener) {
+		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
+			this.any = [];
+			this.events = {};
+			this.anyOnce = [];
+			this.eventsOnce = {};
+			return;
+		}
+		if(arguments.length == 1) {
+			if(typeof(event) == 'function') {
+				/* we take this to be the listener and treat the event as "any" .. */
+				listener = event;
+				event = null;
+			}
+			/* ... or we take event to be the actual event name and listener to be all */
+		}
+
+		if(listener && Utils.isEmptyArg(event)) {
+			removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
+			return;
+		}
+
+		if(Utils.isArray(event)) {
+			var self = this;
+			Utils.arrForEach(event, function(ev) {
+				self.off(ev, listener);
+			});
+		}
+
+		/* "normal" case where event is an actual event */
+		if(listener) {
+			removeListener([this.events, this.eventsOnce], listener, event);
+		} else {
+			delete this.events[event];
+			delete this.eventsOnce[event];
+		}
+	};
+
+	/**
+	 * Get the array of listeners for a given event; excludes once events
+	 * @param event (optional) the name of the event, or none for 'any'
+	 * @return array of events, or null if none
+	 */
+	EventEmitter.prototype.listeners = function(event) {
+		if(event) {
+			var listeners = (this.events[event] || []);
+			if(this.eventsOnce[event])
+				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
+			return listeners.length ? listeners : null;
+		}
+		return this.any.length ? this.any : null;
+	};
+
+	/**
+	 * Emit an event
+	 * @param event the event name
+	 * @param args the arguments to pass to the listener
+	 */
+	EventEmitter.prototype.emit = function(event  /* , args... */) {
+		var args = Array.prototype.slice.call(arguments, 1);
+		var eventThis = {event:event};
+		var listeners = [];
+
+		if(this.anyOnce.length) {
+			Array.prototype.push.apply(listeners, this.anyOnce);
+			this.anyOnce = [];
+		}
+		if(this.any.length) {
+			Array.prototype.push.apply(listeners, this.any);
+		}
+		var eventsOnceListeners = this.eventsOnce[event];
+		if(eventsOnceListeners) {
+			Array.prototype.push.apply(listeners, eventsOnceListeners);
+			delete this.eventsOnce[event];
+		}
+		var eventsListeners = this.events[event];
+		if(eventsListeners) {
+			Array.prototype.push.apply(listeners, eventsListeners);
+		}
+
+		Utils.arrForEach(listeners, function(listener) {
+			callListener(eventThis, listener, args);
+		});
+	};
+
+	/**
+	 * Listen for a single occurrence of an event
+	 * @param event the name of the event to listen to
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.once = function(event, listener) {
+		var argCount = arguments.length, self = this;
+		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.once(event, resolve);
+			});
+		}
+		if(arguments.length == 1 && typeof(event) == 'function') {
+			this.anyOnce.push(event);
+		} else if(Utils.isEmptyArg(event)) {
+			this.anyOnce.push(listener);
+		} else if(Utils.isArray(event)){
+			throw("Arrays of events can only be used with on(), not once()");
+		} else {
+			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
+			listeners.push(listener);
+		}
+	};
+
+	/**
+	 * Private API
+	 *
+	 * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
+	 * @param targetState the name of the state event to listen to
+	 * @param currentState the name of the current state of this object
+	 * @param listener the listener to be called
+	 */
+	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
+		var eventThis = {event:targetState},
+			self = this,
+			listenerArgs = Array.prototype.slice.call(arguments, 3);
+
+		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
+			throw("whenState requires a valid event String argument");
+		}
+		if(typeof listener !== 'function' && Platform.Promise) {
+			return new Platform.Promise(function(resolve) {
+				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+			});
+		}
+		if(targetState === currentState) {
+			callListener(eventThis, listener, listenerArgs);
+		} else {
+			this.once(targetState, listener);
+		}
+	}
+
+	return EventEmitter;
+})();
+
+var Logger = (function() {
+	var consoleLogger, errorLogger;
+
+	/* Can't just check for console && console.log; fails in IE <=9 */
+	if((typeof window === 'undefined') /* node */ ||
+		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
+		consoleLogger = function() { console.log.apply(console, arguments); };
+		errorLogger = console.warn ? function() { console.warn.apply(console, arguments); } : consoleLogger;
+	} else if(window.console && window.console.log) {
+		/* IE <= 9 with the console open -- console.log does not
+		 * inherit from Function, so has no apply method */
+		consoleLogger = errorLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
+	} else {
+		/* IE <= 9 when dev tools are closed - window.console not even defined */
+		consoleLogger = errorLogger = function() {};
+	}
+
+	function pad(str, three) {
+		return ('000' + str).slice(-2-(three || 0));
+	}
+
+	var LOG_NONE  = 0,
+	LOG_ERROR = 1,
+	LOG_MAJOR = 2,
+	LOG_MINOR = 3,
+	LOG_MICRO = 4;
+
+	var LOG_DEFAULT = LOG_ERROR,
+	LOG_DEBUG   = LOG_MICRO;
+
+	var logLevel = LOG_DEFAULT;
+
+	function getHandler(logger) {
+		return Platform.logTimestamps ?
+			function(msg) {
+				var time = new Date();
+				logger(pad(time.getHours()) + ':' + pad(time.getMinutes()) + ':' + pad(time.getSeconds()) + '.' + pad(time.getMilliseconds(), true) + ' ' + msg);
+			} : logger;
+	}
+
+	var logHandler = getHandler(consoleLogger),
+		logErrorHandler = getHandler(errorLogger);
+
+	/* public constructor */
+	function Logger(args) {}
+
+	/* public constants */
+	Logger.LOG_NONE    = LOG_NONE,
+	Logger.LOG_ERROR   = LOG_ERROR,
+	Logger.LOG_MAJOR   = LOG_MAJOR,
+	Logger.LOG_MINOR   = LOG_MINOR,
+	Logger.LOG_MICRO   = LOG_MICRO;
+
+	Logger.LOG_DEFAULT = LOG_DEFAULT,
+	Logger.LOG_DEBUG   = LOG_DEBUG;
+
+	/* public static functions */
+	Logger.logAction = function(level, action, message) {
+		if (Logger.shouldLog(level)) {
+			(level === LOG_ERROR ? logErrorHandler : logHandler)('Ably: ' + action + ': ' + message);
+		}
+	};
+
+	Logger.deprecated = function(original, replacement) {
+		if (Logger.shouldLog(LOG_ERROR)) {
+			logErrorHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+		}
+	}
+
+	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
+	   the object being serialised if the log level will not output the message */
+	Logger.shouldLog = function(level) {
+		return level <= logLevel;
+	};
+
+	Logger.setLog = function(level, handler) {
+		if(level !== undefined) logLevel = level;
+		if(handler !== undefined) logHandler = logErrorHandler = handler;
+	};
+
+	return Logger;
 })();
 
 var Multicaster = (function() {
@@ -5573,7 +5546,6 @@ var ProtocolMessage = (function() {
 		'HAS_PRESENCE':       1 << 0,
 		'HAS_BACKLOG':        1 << 1,
 		'RESUMED':            1 << 2,
-		'HAS_LOCAL_PRESENCE': 1 << 3,
 		'TRANSIENT':          1 << 4,
 		/* Channel mode flags */
 		'PRESENCE':           1 << 16,
@@ -8551,7 +8523,7 @@ var Resource = (function() {
 	}
 
 	function unenvelope(callback, format) {
-		return function(err, body, headers, unpacked, statusCode) {
+		return function(err, body, outerHeaders, unpacked, outerStatusCode) {
 			if(err && !body) {
 				callback(err);
 				return;
@@ -8568,26 +8540,26 @@ var Resource = (function() {
 
 			if(body.statusCode === undefined) {
 				/* Envelope already unwrapped by the transport */
-				callback(err, body, headers, true, statusCode);
+				callback(err, body, outerHeaders, true, outerStatusCode);
 				return;
 			}
 
-			var statusCode = body.statusCode,
+			var wrappedStatusCode = body.statusCode,
 				response = body.response,
-				headers = body.headers;
+				wrappedHeaders = body.headers;
 
-			if(statusCode < 200 || statusCode >= 300) {
+			if(wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
 				/* handle wrapped errors */
 				var wrappedErr = (response && response.error) || err;
 				if(!wrappedErr) {
 					wrappedErr = new Error("Error in unenveloping " + body);
-					wrappedErr.statusCode = statusCode;
+					wrappedErr.statusCode = wrappedStatusCode;
 				}
-				callback(wrappedErr, response, headers, true, statusCode);
+				callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
 				return;
 			}
 
-			callback(err, response, headers, true, statusCode);
+			callback(err, response, wrappedHeaders, true, wrappedStatusCode);
 		};
 	}
 
@@ -8617,21 +8589,17 @@ var Resource = (function() {
 		}
 	}
 
-	Resource.get = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('get', rest, path, null, origheaders, origparams, envelope, callback);
-	};
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		Resource[method] = function(rest, path, origheaders, origparams, envelope, callback) {
+			Resource['do'](method, rest, path, null, origheaders, origparams, envelope, callback);
+		};
+	});
 
-	Resource.post = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('post', rest, path, body, origheaders, origparams, envelope, callback);
-	};
-
-	Resource['delete'] = function(rest, path, origheaders, origparams, envelope, callback) {
-		Resource['do']('delete', rest, path, null, origheaders, origparams, envelope, callback);
-	};
-
-	Resource.put = function(rest, path, body, origheaders, origparams, envelope, callback) {
-		Resource['do']('put', rest, path, body, origheaders, origparams, envelope, callback);
-	};
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		Resource[method] = function(rest, path, body, origheaders, origparams, envelope, callback) {
+			Resource['do'](method, rest, path, body, origheaders, origparams, envelope, callback);
+		};
+	});
 
 	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
@@ -8719,26 +8687,25 @@ var PaginatedResource = (function() {
 		this.useHttpPaginatedResponse = useHttpPaginatedResponse || false;
 	}
 
-	PaginatedResource.prototype.get = function(params, callback) {
-		var self = this;
-		Resource.get(self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked, statusCode) {
-			self.handlePage(err, body, headers, unpacked, statusCode, callback);
-		});
-	};
+	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
+		PaginatedResource.prototype[method] = function(params, callback) {
+			var self = this;
+			Resource[method](self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked, statusCode) {
+				self.handlePage(err, body, headers, unpacked, statusCode, callback);
+			});
+		};
+	})
 
-	PaginatedResource.prototype.post = function(params, body, callback) {
-		var self = this;
-		Resource.post(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
-		});
-	};
-
-	PaginatedResource.prototype.put = function(params, body, callback) {
-		var self = this;
-		Resource.put(self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-			if(callback) self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
-		});
-	};
+	Utils.arrForEach(Http.methodsWithBody, function(method) {
+		PaginatedResource.prototype[method] = function(params, body, callback) {
+			var self = this;
+			Resource[method](self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
+				if(callback) {
+					self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+				}
+			});
+		};
+	});
 
 	function returnErrOnly(err, body, useHPR) {
 		/* If using httpPaginatedResponse, errors from Ably are returned as part of
@@ -9217,7 +9184,6 @@ var Auth = (function() {
 		if('capability' in tokenParams)
 			tokenParams.capability = c14n(tokenParams.capability);
 
-		var client = this.client;
 		var tokenRequest = function(signedTokenParams, tokenCb) {
 			var keyName = signedTokenParams.keyName,
 				path = '/keys/' + keyName + '/requestToken',
@@ -9730,10 +9696,10 @@ var Rest = (function() {
 			encoder = useBinary ? msgpack.encode: JSON.stringify,
 			decoder = useBinary ? msgpack.decode : JSON.parse,
 			format = useBinary ? 'msgpack' : 'json',
-			method = method.toLowerCase(),
-			envelope = Http.supportsLinkHeaders ? undefined : format,
-			params = params || {},
-			headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
+			envelope = Http.supportsLinkHeaders ? undefined : format;
+		params = params || {};
+		method = method.toLowerCase();
+		var headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
 
 		if(callback === undefined) {
 			if(this.options.promises) {
@@ -9755,18 +9721,14 @@ var Rest = (function() {
 			return Utils.ensureArray(unpacked ? resbody : decoder(resbody));
 		}, /* useHttpPaginatedResponse: */ true);
 
-		switch(method) {
-			case 'get':
-				paginatedResource.get(params, callback);
-				break;
-			case 'post':
-				paginatedResource.post(params, body, callback);
-				break;
-			case 'put':
-				paginatedResource.put(params, body, callback);
-				break;
-			default:
-				throw new ErrorInfo('Currently only GET and POST methods are supported', 40500, 405);
+		if(!Utils.arrIn(Http.methods, method)) {
+			throw new ErrorInfo('Unsupported method ' + method, 40500, 405);
+		}
+
+		if(Utils.arrIn(Http.methodsWithBody, method)) {
+			paginatedResource[method](params, body, callback);
+		} else {
+			paginatedResource[method](params, callback);
 		}
 	};
 
@@ -10394,8 +10356,11 @@ var Channel = (function() {
 
 	Channel.prototype.publish = function() {
 		var argCount = arguments.length,
-			messages = arguments[0],
+			first = arguments[0],
+			second = arguments[1],
 			callback = arguments[argCount - 1],
+			messages,
+			params,
 			self = this;
 
 		if(typeof(callback) !== 'function') {
@@ -10403,17 +10368,25 @@ var Channel = (function() {
 				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
-			++argCount;
 		}
-		if(argCount == 2) {
-			if(Utils.isObject(messages))
-				messages = [Message.fromValues(messages)];
-			else if(Utils.isArray(messages))
-				messages = Message.fromValuesArray(messages);
-			else
-				throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
+
+		if(typeof first === 'string' || first === null) {
+			/* (name, data, ...) */
+			messages = [Message.fromValues({name: first, data: second})];
+			params = arguments[2];
+		} else if(Utils.isObject(first)) {
+			messages = [Message.fromValues(first)];
+			params = arguments[1];
+		} else if(Utils.isArray(first)) {
+			messages = Message.fromValuesArray(first);
+			params = arguments[1];
 		} else {
-			messages = [Message.fromValues({name: arguments[0], data: arguments[1]})];
+			throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
+		}
+
+		if(typeof params !== 'object' || !params) {
+			/* No params supplied (so after-message argument is just the callback or undefined) */
+			params = {};
 		}
 
 		var rest = this.rest,
@@ -10446,12 +10419,12 @@ var Channel = (function() {
 				return;
 			}
 
-			self._publish(Message.serialize(messages, format), headers, callback);
+			self._publish(Message.serialize(messages, format), headers, params, callback);
 		});
 	};
 
-	Channel.prototype._publish = function(requestBody, headers, callback) {
-		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, null, false, callback);
+	Channel.prototype._publish = function(requestBody, headers, params, callback) {
+		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, false, callback);
 	};
 
 	return Channel;
@@ -11160,7 +11133,7 @@ var RealtimePresence = (function() {
 					});
 					break;
 				default:
-					var err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
 					err.code = 90001;
 					callback(err);
 			}
@@ -11280,7 +11253,7 @@ var RealtimePresence = (function() {
 				params = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, 'history', args);
+					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
 			}
@@ -11737,7 +11710,7 @@ var XHRRequest = (function() {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
-		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
+		timeouts = timeouts || Defaults.TIMEOUTS;
 		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
 	};
 
@@ -12006,7 +11979,9 @@ var XHRStreamingTransport = (function() {
 		return 'XHRStreamingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRStreamingTransport.prototype.createRequest = XHRRequest.createRequest;
+	XHRStreamingTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
+		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+	};
 
 	if(typeof(ConnectionManager) !== 'undefined' && XHRStreamingTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = XHRStreamingTransport;
@@ -12045,7 +12020,9 @@ var XHRPollingTransport = (function() {
 		return 'XHRPollingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
 	};
 
-	XHRPollingTransport.prototype.createRequest = XHRRequest.createRequest;
+	XHRPollingTransport.prototype.createRequest = function(uri, headers, params, body, requestMode) {
+		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+	};
 
 	if(typeof(ConnectionManager) !== 'undefined' && XHRPollingTransport.isAvailable()) {
 		ConnectionManager.supportedTransports[shortName] = XHRPollingTransport;

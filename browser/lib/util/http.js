@@ -37,7 +37,7 @@ var Http = (function() {
 	Http.methodsWithoutBody = ['get', 'delete'];
 	Http.methodsWithBody = Utils.arrSubtract(Http.methods, Http.methodsWithoutBody);
 
-	/** Http.get, Http.post, Http.put, ...
+	/* - Http.get, Http.post, Http.put, ...
 	 * Perform an HTTP request for a given path against prime and fallback Ably hosts
 	 * @param rest
 	 * @param path the full path
@@ -46,7 +46,7 @@ var Http = (function() {
 	 * @param params optional hash of params
 	 * @param callback (err, response)
 	 *
-	 ** Http.getUri, Http.postUri, Http.putUri, ...
+	 * - Http.getUri, Http.postUri, Http.putUri, ...
 	 * Perform an HTTP request for a given full URI
 	 * @param rest
 	 * @param uri the full URI
