@@ -565,7 +565,6 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Release Process
 
-- Make sure you have the closure compiler installed, needed to generate the minified library. You can install it with `grunt compiler`. (If you later get an error that it can't find it, it may have installed with an unexpected filename; try running `mv ably-js/tools/closure-compiler/build/*.jar ably-js/tools/closure-compiler/build/compiler.jar`)
 - Make sure the tests are passing in ci for the branch you're building
 - Update the CHANGELOG.md with any customer-affecting changes since the last release
 - Run `grunt release:patch` (or: "major", "minor", "patch", "prepatch")

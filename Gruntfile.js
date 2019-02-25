@@ -79,7 +79,19 @@ module.exports = function (grunt) {
 		options: {
 			compilerFile: dirs.tools_compiler,
 			compilerOpts: {
-				compilation_level: 'SIMPLE_OPTIMIZATIONS'
+				compilation_level: 'SIMPLE_OPTIMIZATIONS',
+				/* By default, the compiler assumes you're using es6 and transpiles to
+				 * es3, adding various (unnecessary and undesired) polyfills. Specify
+				 * both in and out to es3 to avoid transpilation */
+				language_in: 'ECMASCRIPT3',
+				language_out: 'ECMASCRIPT3',
+				/* The compiler strips all 'use strict' directives. Can have it add it
+				 * by targeting ECMASCRIPT5_STRICT, but that means targeting es5; no
+				 * way to target es3 and include 'use strict'. So add it manually */
+				output_wrapper_file: dirs.fragments + '/minifieroutputwrapper',
+				strict_mode_input: true,
+				/* Let it know that we wrap everything in an IIFE, to enable additional optimizations */
+				assume_function_wrapper: true,
 			}
 		},
 		'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
