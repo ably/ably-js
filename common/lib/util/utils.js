@@ -13,12 +13,14 @@ var Utils = (function() {
 	 * props:  an object whose enumerable properties are
 	 *         added, by reference only
 	 */
-	Utils.mixin = function(target, src) {
-		if(src) {
-			var hasOwnProperty = src.hasOwnProperty;
-			for(var key in src) {
-				if(!hasOwnProperty || hasOwnProperty.call(src, key)) {
-					target[key] = src[key];
+	Utils.mixin = function(target) {
+		for(let i = 1; i < arguments.length; i++) {
+			var source = arguments[i];
+			if(!source) { break; }
+			var hasOwnProperty = source.hasOwnProperty;
+			for(var key in source) {
+				if(!hasOwnProperty || hasOwnProperty.call(source, key)) {
+					target[key] = source[key];
 				}
 			}
 		}
