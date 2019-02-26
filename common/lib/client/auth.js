@@ -634,18 +634,19 @@ var Auth = (function() {
 	 * only one request to the server to get the time is ever needed
 	 */
 	Auth.prototype.getTimestamp = function(queryTime, callback) {
-		var offsetSet = !isNaN(parseInt(this.client.serverTimeOffset));
-		if (!offsetSet && (queryTime || this.authOptions.queryTime)) {
-			this.client.time(function(err, time) {
-				if(err) {
-					callback(err);
-					return;
-				}
-				callback(null, time);
-			});
+		if (!this.isTimeOffsetSet() && (queryTime || this.authOptions.queryTime)) {
+			this.client.time(callback);
 		} else {
-			callback(null, Utils.now() + (this.client.serverTimeOffset || 0));
+			callback(null, this.getTimestampUsingOffset());
 		}
+	};
+
+	Auth.prototype.getTimestampUsingOffset = function() {
+		return Utils.now() + (this.client.serverTimeOffset || 0);
+	};
+
+	Auth.prototype.isTimeOffsetSet = function() {
+		return this.client.serverTimeOffset !== null;
 	};
 
 	Auth.prototype._saveBasicOptions = function(authOptions) {
@@ -696,48 +697,41 @@ var Auth = (function() {
 			return;
 		}
 
-		var requestToken = function() {
-			self.tokenRequestInProgress = true;
-			self.requestToken(self.tokenParams, self.authOptions, function(err, tokenResponse) {
-				self.tokenRequestInProgress = false;
-				var waiting = self.waitingForTokenRequest;
-				if(waiting) {
-					waiting.push(callback);
-					callback = waiting;
-					self.waitingForTokenRequest = null;
-				}
-				if(err) {
-					callback(err);
-					return;
-				}
-				callback(null, (self.tokenDetails = tokenResponse));
-			});
-		};
-
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
 				/* 403 to trigger a permanently failed client - RSA15c */
 				callback(new ErrorInfo('Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')', 40102, 403));
 				return;
 			}
-			this.getTimestamp(self.authOptions && self.authOptions.queryTime, function(err, time) {
-				if(err)
-					callback(err);
-
-				if(token.expires === undefined || (token.expires >= time)) {
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-					callback(null, token);
-					return;
-				} else {
-					/* expired, so remove */
-					Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
-					self.tokenDetails = null;
-				}
-				requestToken();
-			});
-		} else {
-			requestToken();
+			/* RSA4b1 -- if we have a server time offset set already, we can
+			 * autoremove expired tokens. Else just use the cached token. If it is
+			 * expired Ably will tell us and we'll discard it then. */
+			if(!this.isTimeOffsetSet() || !token.expires || (token.expires >= this.getTimestampUsingOffset())) {
+				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+				callback(null, token);
+				return;
+			}
+			/* expired, so remove and fallthrough to getting a new one */
+			Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+			this.tokenDetails = null;
 		}
+
+		/* Request a new token */
+		this.tokenRequestInProgress = true;
+		this.requestToken(this.tokenParams, this.authOptions, function(err, tokenResponse) {
+			self.tokenRequestInProgress = false;
+			var waiting = self.waitingForTokenRequest;
+			if(waiting) {
+				waiting.push(callback);
+				callback = waiting;
+				self.waitingForTokenRequest = null;
+			}
+			if(err) {
+				callback(err);
+				return;
+			}
+			callback(null, (self.tokenDetails = tokenResponse));
+		});
 	};
 
 
