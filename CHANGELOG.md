@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.5](https://github.com/ably/ably-js/tree/1.1.5) (2019-02-27)
+- Only autoremove an expired token if we know the local offset from server time
+- Fix tokenParams not being correctly mixed in to authParams in some circumstances
+
 ## [1.1.4](https://github.com/ably/ably-js/tree/1.1.4) (2019-02-25)
 - Support PUSH, PATCH, and DELETE in Rest#request()
 - Support arbitrary params for REST publishes
