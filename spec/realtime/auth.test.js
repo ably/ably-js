@@ -1049,5 +1049,59 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RSA4b1 - only autoremove expired tokens if have a server time offset set */
+	exports.expired_token_no_autoremove_when_dont_have_servertime = function(test) {
+		test.expect(1);
+		var realtime, rest = helper.AblyRest();
+		rest.auth.requestToken(function(err, token) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			/* Fake an expired token */
+			token.expires = Date.now() - 5000;
+			var authCallbackCallCount = 0;
+			var authCallback = function(_, callback) {
+				authCallbackCallCount++;
+				callback(null, token);
+			};
+			realtime = helper.AblyRealtime({authCallback: authCallback});
+			realtime.connection.on('connected', function() {
+				test.equal(authCallbackCallCount, 1, 'Check we did not autoremove an expired token ourselves');
+				closeAndFinish(test, realtime);
+			});
+		});
+	};
+
+	/* RSA4b1 second case */
+	exports.expired_token_autoremove_when_have_servertime = function(test) {
+		test.expect(1);
+		var realtime, rest = helper.AblyRest();
+		rest.auth.requestToken(function(err, token) {
+			if(err) {
+				test.ok(false, displayError(err));
+				test.done();
+				return;
+			}
+			/* Fake an expired token */
+			token.expires = Date.now() - 5000;
+			var authCallbackCallCount = 0;
+			var authCallback = function(_, callback) {
+				authCallbackCallCount++;
+				callback(null, token);
+			};
+			realtime = helper.AblyRealtime({authCallback: authCallback, autoConnect: false});
+			/* Set the server time offset */
+			realtime.time(function() {
+				realtime.connect();
+				realtime.connection.on('connected', function() {
+					test.equal(authCallbackCallCount, 2, 'Check we did autoremove the expired token ourselves, so authCallback is called a second time');
+					closeAndFinish(test, realtime);
+				});
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
