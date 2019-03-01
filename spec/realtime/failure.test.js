@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		utils = helper.Utils,
 		noop = function() {},
 		simulateDroppedConnection = helper.simulateDroppedConnection,
+		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		availableTransports = helper.availableTransports;
 
 	exports.setupFailure = function(test) {
@@ -358,6 +359,34 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			});
 		});
 	};
+
+	/* RTN14d last sentence: Check that if we received a 5xx disconnected, when
+	 * we try again we use a fallback host */
+	helper.testOnAllTransports(exports, 'try_fallback_hosts_on_placement_constraint', function(realtimeOpts) { return function(test) {
+		/* Use the echoserver as a fallback host because it doesn't support
+		 * websockets, so it'll fail to connect, which we can detect */
+		var realtime = helper.AblyRealtime(utils.mixin({fallbackHosts: ['echo.ably.io']}, realtimeOpts)),
+			connection = realtime.connection,
+			connectionManager = connection.connectionManager;
+
+		test.expect(1);
+		connection.once('connected', function() {
+			connection.once('connecting', function() {
+				connection.once(function(stateChange) {
+					test.equal(stateChange.current, 'disconnected', 'expect next connection attempt to fail due to using the (bad) fallback host')
+					closeAndFinish(test, realtime);
+				});
+			});
+			connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 6,
+				error: {
+					message: "fake placement constraint",
+					code: 50320,
+					statusCode: 503
+				}
+			}));
+		});
+	}});
 
 	return module.exports = helper.withTimeout(exports);
 });
