@@ -10,7 +10,13 @@ var Auth = (function() {
 		}
 		/* network errors will not have an inherent error code */
 		if(!err.code) {
-			err.code = (err.statusCode === 403) ? 40300 : 40170;
+			if(err.statusCode === 403) {
+				err.code = 40300;
+			} else {
+				err.code = 40170;
+				/* normalise statusCode to 401 per RSA4e */
+				err.statusCode = 401;
+			}
 		}
 		return err;
 	}
