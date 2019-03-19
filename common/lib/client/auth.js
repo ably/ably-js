@@ -438,6 +438,9 @@ var Auth = (function() {
 					callback(new ErrorInfo('Token string is empty', 40170, 401));
 				} else if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
 					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
+				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
+					/* common failure mode with poorly-implemented authCallbacks */
+					callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
 				}
