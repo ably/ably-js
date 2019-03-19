@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.6](https://github.com/ably/ably-js/tree/1.1.6) (2019-03-19)
+- Improve handling of responso to active traffic management placement constraint error for smooth cluster handover
+- Normalise statuscode for 40170-failure to obtain token from client auth callback to 401 per spec
+
 ## [1.1.5](https://github.com/ably/ably-js/tree/1.1.5) (2019-02-27)
 - Only autoremove an expired token if we know the local offset from server time
 - Fix tokenParams not being correctly mixed in to authParams in some circumstances
