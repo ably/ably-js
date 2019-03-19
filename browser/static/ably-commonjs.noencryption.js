@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.5
+ * Ably JavaScript Library v1.1.6
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3181,7 +3181,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.5';
+Defaults.version          = '1.1.6';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -4829,6 +4829,7 @@ var ConnectionManager = (function() {
 		this.lastAutoReconnectAttempt = null;
 		this.lastActivity = null;
 		this.mostRecentMsgId = null;
+		this.forceFallbackHost = false;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -4984,7 +4985,7 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.chooseTransportForHost()', 'viable transport ' + candidate + '; setting pending');
+			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'viable transport ' + candidate + '; setting pending');
 			self.setTransportPending(transport, transportParams);
 			callback(null, transport);
 		});
@@ -5325,8 +5326,24 @@ var ConnectionManager = (function() {
 		if((wasActive && noTransportsScheduledForActivation) ||
 			(wasActive && (state === 'failed') || (state === 'closed')) ||
 			(currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+			/* If we're disconnected with a 5xx we need to try fallback hosts
+			 * (RTN14d), but (a) due to how the upgrade sequence works, the
+			 * host/transport selection sequence only cares about getting to
+			 * `preconnect` (eg establishing a websocket) getting a `disconnected`
+			 * protocol message afterwards is too late; and (b) host retry only
+			 * applies to connectBase unless the stored preference transport doesn't
+			 * work. We solve this by unpersisting the transport preference and
+			 * setting an instance variable to force fallback hosts to be used (if
+			 * any) here. Bit of a kludge, but no real better alternatives without
+			 * rewriting the entire thing */
+			if(state === 'disconnected' && error && error.statusCode > 500) {
+				this.unpersistTransportPreference();
+				this.forceFallbackHost = true;
+			}
 			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
-			if(state === 'failed' && Auth.isTokenErr(error)) { state = 'disconnected' }
+			if(state === 'failed' && Auth.isTokenErr(error)) {
+				state = 'disconnected'
+			}
 			this.notifyState({state: state, error: error});
 		} else if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
 			/* If we were active but there is another transport scheduled for
@@ -5898,6 +5915,12 @@ var ConnectionManager = (function() {
 				transportParams.host = Utils.arrPopRandomElement(candidateHosts);
 				self.tryATransport(transportParams, self.baseTransport, hostAttemptCb);
 			});
+		}
+
+		if(this.forceFallbackHost && candidateHosts.length) {
+			this.forceFallbackHost = false;
+			tryFallbackHosts();
+			return;
 		}
 
 		this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
@@ -7416,7 +7439,13 @@ var Auth = (function() {
 		}
 		/* network errors will not have an inherent error code */
 		if(!err.code) {
-			err.code = (err.statusCode === 403) ? 40300 : 40170;
+			if(err.statusCode === 403) {
+				err.code = 40300;
+			} else {
+				err.code = 40170;
+				/* normalise statusCode to 401 per RSA4e */
+				err.statusCode = 401;
+			}
 		}
 		return err;
 	}
