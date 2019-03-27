@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.6
+ * Ably JavaScript Library v1.1.7
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3181,7 +3181,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.6';
+Defaults.version          = '1.1.7';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -7867,6 +7867,9 @@ var Auth = (function() {
 					callback(new ErrorInfo('Token string is empty', 40170, 401));
 				} else if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
 					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
+				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
+					/* common failure mode with poorly-implemented authCallbacks */
+					callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
 				}

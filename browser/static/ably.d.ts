@@ -157,8 +157,10 @@ declare namespace Types {
 		clientId?: string;
 	}
 
+	type capabilityOp = "publish" | "subscribe" | "presence" | "history" | "stats" | "channel-metadata" | "push-subscribe" | "push-admin";
+
 	interface TokenParams {
-		capability?: string;
+		capability?: { [key: string]: capabilityOp[]; } | string;
 		clientId?: string;
 		nonce?: string;
 		timestamp?: number;
