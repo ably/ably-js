@@ -648,6 +648,7 @@ var ConnectionManager = (function() {
 		if((wasActive && noTransportsScheduledForActivation) ||
 			(wasActive && (state === 'failed') || (state === 'closed')) ||
 			(currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+
 			/* If we're disconnected with a 5xx we need to try fallback hosts
 			 * (RTN14d), but (a) due to how the upgrade sequence works, the
 			 * host/transport selection sequence only cares about getting to
@@ -658,16 +659,21 @@ var ConnectionManager = (function() {
 			 * setting an instance variable to force fallback hosts to be used (if
 			 * any) here. Bit of a kludge, but no real better alternatives without
 			 * rewriting the entire thing */
-			if(state === 'disconnected' && error && error.statusCode > 500) {
+			if(state === 'disconnected' && error && error.statusCode > 500 && this.httpHosts.length > 1) {
 				this.unpersistTransportPreference();
 				this.forceFallbackHost = true;
+				/* and try to connect again to try a fallback host without waiting for the usual 15s disconnectedRetryTimeout */
+				this.notifyState({state: state, error: error, retryImmediately: true});
+				return;
 			}
+
 			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
-			if(state === 'failed' && Auth.isTokenErr(error)) {
-				state = 'disconnected'
-			}
-			this.notifyState({state: state, error: error});
-		} else if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
+			var newConnectionState = (state === 'failed' && Auth.isTokenErr(error)) ? 'disconnected' : state;
+			this.notifyState({state: newConnectionState, error: error});
+			return;
+		}
+
+		if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
@@ -959,6 +965,7 @@ var ConnectionManager = (function() {
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
+			 indicated.retryImmediately               ||
 				(this.state === this.states.connecting &&
 					indicated.error && Auth.isTokenErr(indicated.error) &&
 					!(this.errorReason && Auth.isTokenErr(this.errorReason)))));
