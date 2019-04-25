@@ -117,15 +117,16 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.unrecoverableConnection = function(test) {
-		test.expect(4);
+		test.expect(5);
 		var realtime,
-			fakeRecoveryKey = '_____!ablyjs_test_fake-key____:5';
+			fakeRecoveryKey = '_____!ablyjs_test_fake-key____:5:3';
 		try {
 			realtime = helper.AblyRealtime({recover: fakeRecoveryKey});
 			realtime.connection.on('connected', function(stateChange) {
 				test.equal(stateChange.reason.code, 80008, "verify unrecoverable-connection error set in stateChange.reason");
 				test.equal(realtime.connection.errorReason.code, 80008, "verify unrecoverable-connection error set in connection.errorReason");
 				test.equal(realtime.connection.serial, -1, "verify serial is -1 (new connection), not 5");
+				test.equal(realtime.connection.connectionManager.msgSerial, 0, "verify msgSerial is 0 (new connection), not 3");
 				test.equal(realtime.connection.key.indexOf('ablyjs_test_fake'), -1, "verify connection using a new connectionkey");
 				closeAndFinish(test, realtime);
 			});

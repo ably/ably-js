@@ -544,7 +544,7 @@ var ConnectionManager = (function() {
 
 		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionDetails, connectionPosition, true);
+			this.setConnection(connectionId, connectionDetails, connectionPosition, true, !!error);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -728,13 +728,17 @@ var ConnectionManager = (function() {
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition, hasConnectionError) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
-		/* If no previous connectionId, don't reset the msgSerial as it may have been set by recover data */
-		if(this.connectionId && (this.connectionId !== connectionId))  {
+		/* If no previous connectionId, don't reset the msgSerial as it may have
+		 * been set by recover data (unless the recover failed) */
+		var prevConnId = this.connectionid,
+			connIdChanged = prevConnId && (prevConnId !== connectionId),
+			recoverFailure = !prevConnId && hasConnectionError;
+		if(connIdChanged || recoverFailure)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
 			this.msgSerial = 0;
 		}
