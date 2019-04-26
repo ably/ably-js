@@ -1126,5 +1126,21 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	testOnAllTransports(exports, 'authorize_immediately_after_init', function(realtimeOpts) { return function(test) {
+		test.expect(1);
+		var realtime = helper.AblyRealtime({useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
+		realtime.auth.authorize({ capability: {'right': ['*']} })
+		realtime.connection.once('disconnected', function() {
+			test.ok(false, 'Connection should not have become disconnected');
+			closeAndFinish(test, realtime);
+		});
+		realtime.connection.once('connected', function() {
+			realtime.channels.get('right').attach(function(err) {
+				test.ok(!err, err && displayError(err) || 'Successfully attached');
+				closeAndFinish(test, realtime);
+			});
+		});
+	}});
+
 	return module.exports = helper.withTimeout(exports);
 });
