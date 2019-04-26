@@ -27,6 +27,7 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.isDisposed = false;
 		this.maxIdleInterval = null;
 		this.idleTimer = null;
 		this.lastActivity = null;
@@ -182,6 +183,7 @@ var Transport = (function() {
 
 	Transport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
+		this.isDisposed = true;
 		this.off();
 	};
 
