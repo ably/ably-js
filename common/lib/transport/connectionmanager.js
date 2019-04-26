@@ -152,6 +152,7 @@ var ConnectionManager = (function() {
 		this.lastActivity = null;
 		this.mostRecentMsgId = null;
 		this.forceFallbackHost = false;
+		this.connectCounter = 0;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -1076,10 +1077,21 @@ var ConnectionManager = (function() {
 		var auth = this.realtime.auth,
 			self = this;
 
+		/* The point of the connectCounter mechanism is to ensure that the
+		 * connection procedure can be cancelled. We want disconnectAllTransports
+		 * to be able to stop any in-progress connection, even before it gets to
+		 * the stage of having a pending (or even a proposed) transport that it can
+		 * dispose() of. So we check that it's still current after any async stage,
+		 * up until the stage that is synchronous with instantiating a transport */
+		var connectCount = ++this.connectCounter;
+
 		var connect = function() {
 			self.checkConnectionStateFreshness();
 			self.getTransportParams(function(transportParams) {
-				self.connectImpl(transportParams);
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
+				self.connectImpl(transportParams, connectCount);
 			});
 		};
 
@@ -1091,6 +1103,9 @@ var ConnectionManager = (function() {
 			connect();
 		} else {
 			var authCb = function(err) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				if(err) {
 					self.actOnErrorFromAuthorize(err);
 				} else {
@@ -1125,7 +1140,7 @@ var ConnectionManager = (function() {
 	 * and dispatches accordingly. After a transport has been set pending,
 	 * tryATransport calls connectImpl to see if there's another stage to be done.
 	 * */
-	ConnectionManager.prototype.connectImpl = function(transportParams) {
+	ConnectionManager.prototype.connectImpl = function(transportParams, connectCount) {
 		var state = this.state.state;
 
 		if(state !== this.states.connecting.state && state !== this.states.connected.state) {
@@ -1140,7 +1155,7 @@ var ConnectionManager = (function() {
 		} else if(this.transports.length > 1 && this.getTransportPreference()) {
 			this.connectPreference(transportParams);
 		} else {
-			this.connectBase(transportParams);
+			this.connectBase(transportParams, connectCount);
 		}
 	};
 
@@ -1199,13 +1214,16 @@ var ConnectionManager = (function() {
 	 * fallback hosts if applicable.
 	 * @param transportParams
 	 */
-	ConnectionManager.prototype.connectBase = function(transportParams) {
+	ConnectionManager.prototype.connectBase = function(transportParams, connectCount) {
 		var self = this,
 			giveUp = function(err) {
 				self.notifyState({state: self.states.connecting.failState, error: err});
 			},
 			candidateHosts = this.httpHosts.slice(),
 			hostAttemptCb = function(fatal, transport) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				if(!transport && !fatal) {
 					tryFallbackHosts();
 				}
@@ -1232,6 +1250,9 @@ var ConnectionManager = (function() {
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
 			Http.checkConnectivity(function(err, connectivity) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				/* we know err won't happen but handle it here anyway */
 				if(err) {
 					giveUp(err);
@@ -1401,6 +1422,9 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.disconnectAllTransports = function(exceptActive) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''));
+
+		/* This will prevent any connection procedure in an async part of one of its early stages from continuing */
+		this.connectCounter++;
 
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
