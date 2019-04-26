@@ -1103,5 +1103,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* Check that only the last authorize matters */
+	exports.multiple_concurrent_authorize = function(test) {
+		test.expect(4);
+		var realtime = helper.AblyRealtime({log: {level: 4}, useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
+		realtime.connection.once('connected', function() {
+			realtime.auth.authorize({ capability: {'stillWrong': ['*']} }, function(err) {
+				test.ok(!err, 'Check first authorize cb was called');
+			});
+			realtime.auth.authorize({ capability: {'alsoNope': ['*']} }, function(err) {
+				test.ok(!err, 'Check second authorize cb was called');
+			});
+			realtime.auth.authorize({ capability: {'wtfAreYouThinking': ['*']} }, function(err) {
+				test.ok(!err, 'Check third authorize one cb was called');
+			});
+			realtime.auth.authorize({ capability: {'right': ['*']} }, function(err) {
+				realtime.channels.get('right').attach(function(err) {
+					test.ok(!err, err && displayError(err) || 'Successfully attached');
+					closeAndFinish(test, realtime);
+				});
+			});
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });

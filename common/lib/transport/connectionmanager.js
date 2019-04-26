@@ -1101,7 +1101,7 @@ var ConnectionManager = (function() {
 				/* Force a refetch of a new token */
 				auth._forceNewToken(null, null, authCb);
 			} else {
-				auth._ensureValidAuthCredentials(authCb);
+				auth._ensureValidAuthCredentials(false, authCb);
 			}
 		}
 	};

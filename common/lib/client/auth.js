@@ -91,10 +91,16 @@ var Auth = (function() {
 			!options.authUrl;
 	}
 
+	var trId = 0;
+	function getTokenRequestId() {
+		return trId++;
+	}
+
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
-		this.tokenRequestInProgress = false;
+		/* The id of the current token request if one is in progress, else null */
+		this.currentTokenRequestId = null;
 		this.waitingForTokenRequest = null;
 
 		if(useTokenAuth(options)) {
@@ -246,7 +252,7 @@ var Auth = (function() {
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
-		this._ensureValidAuthCredentials(function(err, tokenDetails) {
+		this._ensureValidAuthCredentials(true, function(err, tokenDetails) {
 			/* RSA10g */
 			delete self.tokenParams.timestamp;
 			delete self.authOptions.queryTime;
@@ -609,7 +615,7 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -626,7 +632,7 @@ var Auth = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -697,14 +703,11 @@ var Auth = (function() {
 		}
 	};
 
-	Auth.prototype._ensureValidAuthCredentials = function(callback) {
+	/* @param forceSupersede: force a new token request even if there's one in
+	 * progress, making all pending callbacks wait for the new one */
+	Auth.prototype._ensureValidAuthCredentials = function(forceSupersede, callback) {
 		var self = this,
 			token = this.tokenDetails;
-
-		if(this.tokenRequestInProgress) {
-			(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
-			return;
-		}
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
@@ -725,21 +728,26 @@ var Auth = (function() {
 			this.tokenDetails = null;
 		}
 
+		(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
+		if(this.currentTokenRequestId !== null && !forceSupersede) {
+			return;
+		}
+
 		/* Request a new token */
-		this.tokenRequestInProgress = true;
+		var tokenRequestId = this.currentTokenRequestId = getTokenRequestId();
 		this.requestToken(this.tokenParams, this.authOptions, function(err, tokenResponse) {
-			self.tokenRequestInProgress = false;
-			var waiting = self.waitingForTokenRequest;
-			if(waiting) {
-				waiting.push(callback);
-				callback = waiting;
-				self.waitingForTokenRequest = null;
-			}
-			if(err) {
-				callback(err);
+			if(self.currentTokenRequestId > tokenRequestId) {
+				Logger.logAction(Logger.LOG_MINOR, 'Auth._ensureValidAuthCredentials()', 'Discarding token request response; overtaken by newer one');
 				return;
 			}
-			callback(null, (self.tokenDetails = tokenResponse));
+			self.currentTokenRequestId = null;
+			var callbacks = self.waitingForTokenRequest || noop;
+			self.waitingForTokenRequest = null;
+			if(err) {
+				callbacks(err);
+				return;
+			}
+			callbacks(null, (self.tokenDetails = tokenResponse));
 		});
 	};
 
