@@ -200,7 +200,7 @@ var Auth = (function() {
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
 		 * just check if it doesn't clash and assume we're generating a token from it */
-		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
+		if(authOptions && authOptions.key && (this.authOptions.key !== authOptions.key)) {
 			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
 
