@@ -42,7 +42,6 @@ var CometTransport = (function() {
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
-		this.disposed = false;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -66,6 +65,9 @@ var CometTransport = (function() {
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
 				self.disconnect(err);
+				return;
+			}
+			if(self.isDisposed) {
 				return;
 			}
 			self.authParams = authParams;
@@ -144,8 +146,8 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
-		if(!this.disposed) {
-			this.disposed = true;
+		if(!this.isDisposed) {
+			this.isDisposed = true;
 			if(this.recvRequest) {
 				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
 				this.recvRequest.abort();
@@ -163,7 +165,9 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.onConnect = function(message) {
 		/* if this transport has been disposed whilst awaiting connection, do nothing */
-		if(this.disposed) return;
+		if(this.isDisposed) {
+			return;
+		}
 
 		/* the connectionKey in a comet connected response is really
 		 * <instId>-<connectionKey> */

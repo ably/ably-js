@@ -53,6 +53,9 @@ var WebSocketTransport = (function() {
 		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
+			if(self.isDisposed) {
+				return;
+			}
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
@@ -148,6 +151,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+		this.isDisposed = true;
 		var wsConnection = this.wsConnection;
 		if(wsConnection) {
 			/* Ignore any messages that come through after dispose() is called but before
