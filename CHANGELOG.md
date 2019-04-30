@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.8](https://github.com/ably/ably-js/tree/1.1.8) (2019-04-30)
+- Auth: if you do multiple concurrent authorize()s, make sure the token from last one wins
+- If fallback hosts are enabled and a connection is abruptly disconnected with a 5xx error, retry immediately to a fallback rather than waiting the usual 15s disconnectedRetryTimeout
+
 ## [1.1.7](https://github.com/ably/ably-js/tree/1.1.7) (2019-03-27)
 - Catch common failure mode with poorly-implemented authCallback
 - Fix typings of TokenParams.capability
