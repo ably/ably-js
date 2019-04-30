@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.7
+ * Ably JavaScript Library v1.1.8
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4626,7 +4626,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.7';
+Defaults.version          = '1.1.8';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -6275,6 +6275,7 @@ var ConnectionManager = (function() {
 		this.lastActivity = null;
 		this.mostRecentMsgId = null;
 		this.forceFallbackHost = false;
+		this.connectCounter = 0;
 
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
 		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
@@ -6667,7 +6668,7 @@ var ConnectionManager = (function() {
 
 		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionDetails, connectionPosition, true);
+			this.setConnection(connectionId, connectionDetails, connectionPosition, true, !!error);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -6771,6 +6772,7 @@ var ConnectionManager = (function() {
 		if((wasActive && noTransportsScheduledForActivation) ||
 			(wasActive && (state === 'failed') || (state === 'closed')) ||
 			(currentProtocol === null && wasPending && this.pendingTransports.length === 0)) {
+
 			/* If we're disconnected with a 5xx we need to try fallback hosts
 			 * (RTN14d), but (a) due to how the upgrade sequence works, the
 			 * host/transport selection sequence only cares about getting to
@@ -6781,16 +6783,21 @@ var ConnectionManager = (function() {
 			 * setting an instance variable to force fallback hosts to be used (if
 			 * any) here. Bit of a kludge, but no real better alternatives without
 			 * rewriting the entire thing */
-			if(state === 'disconnected' && error && error.statusCode > 500) {
+			if(state === 'disconnected' && error && error.statusCode > 500 && this.httpHosts.length > 1) {
 				this.unpersistTransportPreference();
 				this.forceFallbackHost = true;
+				/* and try to connect again to try a fallback host without waiting for the usual 15s disconnectedRetryTimeout */
+				this.notifyState({state: state, error: error, retryImmediately: true});
+				return;
 			}
+
 			/* TODO remove below line once realtime sends token errors as DISCONNECTEDs */
-			if(state === 'failed' && Auth.isTokenErr(error)) {
-				state = 'disconnected'
-			}
-			this.notifyState({state: state, error: error});
-		} else if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
+			var newConnectionState = (state === 'failed' && Auth.isTokenErr(error)) ? 'disconnected' : state;
+			this.notifyState({state: newConnectionState, error: error});
+			return;
+		}
+
+		if(wasActive && (state === 'disconnected') && (this.state !== this.states.synchronizing)) {
 			/* If we were active but there is another transport scheduled for
 			* activation, go into to the connecting state until that transport
 			* activates and sets us back to connected. (manually starting the
@@ -6845,13 +6852,17 @@ var ConnectionManager = (function() {
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition, hasConnectionError) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
 		 * on a new connection, with implications for msgSerial and channel state */
 		var self = this;
-		/* If no previous connectionId, don't reset the msgSerial as it may have been set by recover data */
-		if(this.connectionId && (this.connectionId !== connectionId))  {
+		/* If no previous connectionId, don't reset the msgSerial as it may have
+		 * been set by recover data (unless the recover failed) */
+		var prevConnId = this.connectionid,
+			connIdChanged = prevConnId && (prevConnId !== connectionId),
+			recoverFailure = !prevConnId && hasConnectionError;
+		if(connIdChanged || recoverFailure)  {
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
 			this.msgSerial = 0;
 		}
@@ -7082,6 +7093,7 @@ var ConnectionManager = (function() {
 		var retryImmediately = (state === 'disconnected' &&
 			(this.state === this.states.connected     ||
 			 this.state === this.states.synchronizing ||
+			 indicated.retryImmediately               ||
 				(this.state === this.states.connecting &&
 					indicated.error && Auth.isTokenErr(indicated.error) &&
 					!(this.errorReason && Auth.isTokenErr(this.errorReason)))));
@@ -7188,10 +7200,21 @@ var ConnectionManager = (function() {
 		var auth = this.realtime.auth,
 			self = this;
 
+		/* The point of the connectCounter mechanism is to ensure that the
+		 * connection procedure can be cancelled. We want disconnectAllTransports
+		 * to be able to stop any in-progress connection, even before it gets to
+		 * the stage of having a pending (or even a proposed) transport that it can
+		 * dispose() of. So we check that it's still current after any async stage,
+		 * up until the stage that is synchronous with instantiating a transport */
+		var connectCount = ++this.connectCounter;
+
 		var connect = function() {
 			self.checkConnectionStateFreshness();
 			self.getTransportParams(function(transportParams) {
-				self.connectImpl(transportParams);
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
+				self.connectImpl(transportParams, connectCount);
 			});
 		};
 
@@ -7203,6 +7226,9 @@ var ConnectionManager = (function() {
 			connect();
 		} else {
 			var authCb = function(err) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				if(err) {
 					self.actOnErrorFromAuthorize(err);
 				} else {
@@ -7213,7 +7239,7 @@ var ConnectionManager = (function() {
 				/* Force a refetch of a new token */
 				auth._forceNewToken(null, null, authCb);
 			} else {
-				auth._ensureValidAuthCredentials(authCb);
+				auth._ensureValidAuthCredentials(false, authCb);
 			}
 		}
 	};
@@ -7237,7 +7263,7 @@ var ConnectionManager = (function() {
 	 * and dispatches accordingly. After a transport has been set pending,
 	 * tryATransport calls connectImpl to see if there's another stage to be done.
 	 * */
-	ConnectionManager.prototype.connectImpl = function(transportParams) {
+	ConnectionManager.prototype.connectImpl = function(transportParams, connectCount) {
 		var state = this.state.state;
 
 		if(state !== this.states.connecting.state && state !== this.states.connected.state) {
@@ -7252,7 +7278,7 @@ var ConnectionManager = (function() {
 		} else if(this.transports.length > 1 && this.getTransportPreference()) {
 			this.connectPreference(transportParams);
 		} else {
-			this.connectBase(transportParams);
+			this.connectBase(transportParams, connectCount);
 		}
 	};
 
@@ -7311,13 +7337,16 @@ var ConnectionManager = (function() {
 	 * fallback hosts if applicable.
 	 * @param transportParams
 	 */
-	ConnectionManager.prototype.connectBase = function(transportParams) {
+	ConnectionManager.prototype.connectBase = function(transportParams, connectCount) {
 		var self = this,
 			giveUp = function(err) {
 				self.notifyState({state: self.states.connecting.failState, error: err});
 			},
 			candidateHosts = this.httpHosts.slice(),
 			hostAttemptCb = function(fatal, transport) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				if(!transport && !fatal) {
 					tryFallbackHosts();
 				}
@@ -7344,6 +7373,9 @@ var ConnectionManager = (function() {
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
 			Http.checkConnectivity(function(err, connectivity) {
+				if(connectCount !== self.connectCounter) {
+					return;
+				}
 				/* we know err won't happen but handle it here anyway */
 				if(err) {
 					giveUp(err);
@@ -7513,6 +7545,9 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.disconnectAllTransports = function(exceptActive) {
 		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''));
+
+		/* This will prevent any connection procedure in an async part of one of its early stages from continuing */
+		this.connectCounter++;
 
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
 			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
@@ -7837,6 +7872,7 @@ var Transport = (function() {
 		this.format = params.format;
 		this.isConnected = false;
 		this.isFinished = false;
+		this.isDisposed = false;
 		this.maxIdleInterval = null;
 		this.idleTimer = null;
 		this.lastActivity = null;
@@ -7992,6 +8028,7 @@ var Transport = (function() {
 
 	Transport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
+		this.isDisposed = true;
 		this.off();
 	};
 
@@ -8083,6 +8120,9 @@ var WebSocketTransport = (function() {
 		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
+			if(self.isDisposed) {
+				return;
+			}
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
@@ -8178,6 +8218,7 @@ var WebSocketTransport = (function() {
 
 	WebSocketTransport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+		this.isDisposed = true;
 		var wsConnection = this.wsConnection;
 		if(wsConnection) {
 			/* Ignore any messages that come through after dispose() is called but before
@@ -8241,7 +8282,6 @@ var CometTransport = (function() {
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
-		this.disposed = false;
 	}
 	Utils.inherits(CometTransport, Transport);
 
@@ -8265,6 +8305,9 @@ var CometTransport = (function() {
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
 				self.disconnect(err);
+				return;
+			}
+			if(self.isDisposed) {
 				return;
 			}
 			self.authParams = authParams;
@@ -8343,8 +8386,8 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.dispose = function() {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
-		if(!this.disposed) {
-			this.disposed = true;
+		if(!this.isDisposed) {
+			this.isDisposed = true;
 			if(this.recvRequest) {
 				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
 				this.recvRequest.abort();
@@ -8362,7 +8405,9 @@ var CometTransport = (function() {
 
 	CometTransport.prototype.onConnect = function(message) {
 		/* if this transport has been disposed whilst awaiting connection, do nothing */
-		if(this.disposed) return;
+		if(this.isDisposed) {
+			return;
+		}
 
 		/* the connectionKey in a comet connected response is really
 		 * <instId>-<connectionKey> */
@@ -8965,10 +9010,16 @@ var Auth = (function() {
 			!options.authUrl;
 	}
 
+	var trId = 0;
+	function getTokenRequestId() {
+		return trId++;
+	}
+
 	function Auth(client, options) {
 		this.client = client;
 		this.tokenParams = options.defaultTokenParams || {};
-		this.tokenRequestInProgress = false;
+		/* The id of the current token request if one is in progress, else null */
+		this.currentTokenRequestId = null;
 		this.waitingForTokenRequest = null;
 
 		if(useTokenAuth(options)) {
@@ -9068,7 +9119,7 @@ var Auth = (function() {
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
 		 * just check if it doesn't clash and assume we're generating a token from it */
-		if(authOptions && authOptions.key && (this.key !== authOptions.key)) {
+		if(authOptions && authOptions.key && (this.authOptions.key !== authOptions.key)) {
 			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
 
@@ -9120,7 +9171,7 @@ var Auth = (function() {
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
-		this._ensureValidAuthCredentials(function(err, tokenDetails) {
+		this._ensureValidAuthCredentials(true, function(err, tokenDetails) {
 			/* RSA10g */
 			delete self.tokenParams.timestamp;
 			delete self.authOptions.queryTime;
@@ -9483,7 +9534,7 @@ var Auth = (function() {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -9500,7 +9551,7 @@ var Auth = (function() {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this._ensureValidAuthCredentials(function(err, tokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err, tokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -9571,14 +9622,11 @@ var Auth = (function() {
 		}
 	};
 
-	Auth.prototype._ensureValidAuthCredentials = function(callback) {
+	/* @param forceSupersede: force a new token request even if there's one in
+	 * progress, making all pending callbacks wait for the new one */
+	Auth.prototype._ensureValidAuthCredentials = function(forceSupersede, callback) {
 		var self = this,
 			token = this.tokenDetails;
-
-		if(this.tokenRequestInProgress) {
-			(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
-			return;
-		}
 
 		if(token) {
 			if(this._tokenClientIdMismatch(token.clientId)) {
@@ -9599,21 +9647,26 @@ var Auth = (function() {
 			this.tokenDetails = null;
 		}
 
+		(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
+		if(this.currentTokenRequestId !== null && !forceSupersede) {
+			return;
+		}
+
 		/* Request a new token */
-		this.tokenRequestInProgress = true;
+		var tokenRequestId = this.currentTokenRequestId = getTokenRequestId();
 		this.requestToken(this.tokenParams, this.authOptions, function(err, tokenResponse) {
-			self.tokenRequestInProgress = false;
-			var waiting = self.waitingForTokenRequest;
-			if(waiting) {
-				waiting.push(callback);
-				callback = waiting;
-				self.waitingForTokenRequest = null;
-			}
-			if(err) {
-				callback(err);
+			if(self.currentTokenRequestId > tokenRequestId) {
+				Logger.logAction(Logger.LOG_MINOR, 'Auth._ensureValidAuthCredentials()', 'Discarding token request response; overtaken by newer one');
 				return;
 			}
-			callback(null, (self.tokenDetails = tokenResponse));
+			self.currentTokenRequestId = null;
+			var callbacks = self.waitingForTokenRequest || noop;
+			self.waitingForTokenRequest = null;
+			if(err) {
+				callbacks(err);
+				return;
+			}
+			callbacks(null, (self.tokenDetails = tokenResponse));
 		});
 	};
 
