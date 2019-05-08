@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.8
+ * Ably JavaScript Library v1.1.9
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4615,7 +4615,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.8';
+Defaults.version          = '1.1.9';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -9256,7 +9256,7 @@ var Auth = (function() {
 					}
 				}
 				/* RSA8c2 */
-				var authParams = Utils.mixin({},  authOptions.authParams, params);
+				var authParams = Utils.mixin({}, authOptions.authParams || {}, params);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
