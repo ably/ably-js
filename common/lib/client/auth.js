@@ -348,7 +348,7 @@ var Auth = (function() {
 					}
 				}
 				/* RSA8c2 */
-				var authParams = Utils.mixin({},  authOptions.authParams, params);
+				var authParams = Utils.mixin({}, authOptions.authParams || {}, params);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
 					if (err) {
 						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
