@@ -444,17 +444,10 @@ var RealtimePresence = (function() {
 		channel.attach(callback);
 	};
 
-	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+	RealtimePresence.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
-		var callback = args[2];
-
-		if(this.channel.state === 'failed') {
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
-			return;
-		}
-
 		this.subscriptions.off(event, listener);
 	};
 
