@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.9
+ * Ably JavaScript Library v1.1.10
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3192,7 +3192,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.9';
+Defaults.version          = '1.1.10';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -9374,8 +9374,6 @@ var RealtimeChannel = (function() {
 		var event = args[0];
 		var listener = args[1];
 		var callback = args[2];
-		var subscriptions = this.subscriptions;
-		var events;
 
 		if(!callback) {
 			if(this.realtime.options.promises) {
@@ -9389,25 +9387,16 @@ var RealtimeChannel = (function() {
 			return;
 		}
 
-		subscriptions.on(event, listener);
+		this.subscriptions.on(event, listener);
 
 		return this.attach(callback);
 	};
 
-	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+	RealtimeChannel.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
-		var callback = args[2];
-		var subscriptions = this.subscriptions;
-		var events;
-
-		if(this.state === 'failed') {
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
-			return;
-		}
-
-		subscriptions.off(event, listener);
+		this.subscriptions.off(event, listener);
 	};
 
 	RealtimeChannel.prototype.sync = function() {
@@ -10163,17 +10152,10 @@ var RealtimePresence = (function() {
 		channel.attach(callback);
 	};
 
-	RealtimePresence.prototype.unsubscribe = function(/* [event], listener, [callback] */) {
+	RealtimePresence.prototype.unsubscribe = function(/* [event], listener */) {
 		var args = RealtimeChannel.processListenerArgs(arguments);
 		var event = args[0];
 		var listener = args[1];
-		var callback = args[2];
-
-		if(this.channel.state === 'failed') {
-			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
-			return;
-		}
-
 		this.subscriptions.off(event, listener);
 	};
 
