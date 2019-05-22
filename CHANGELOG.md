@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.11](https://github.com/ably/ably-js/tree/1.1.11) (2019-05-22)
+- Allow token strings (including JWT tokens) up to 128kB
+
 ## [1.1.10](https://github.com/ably/ably-js/tree/1.1.10) (2019-05-16)
 - Fix channel#unsubscribe() throwing an error if called on a failed channel
 (also removes the optional callback argument to subscribe(), which was
