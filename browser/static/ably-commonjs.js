@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.10
+ * Ably JavaScript Library v1.1.11
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4615,7 +4615,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.10';
+Defaults.version          = '1.1.11';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -8907,8 +8907,7 @@ var PaginatedResource = (function() {
 })();
 
 var Auth = (function() {
-	var MAX_TOKENOBJECT_LENGTH = Math.pow(2, 17);
-	var MAX_TOKENSTRING_LENGTH = 384;
+	var MAX_TOKEN_LENGTH = Math.pow(2, 17);
 	function noop() {}
 	function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
 	function normaliseAuthcallbackError(err) {
@@ -9277,7 +9276,7 @@ var Auth = (function() {
 						return;
 					}
 					if(json) {
-						if(body.length > MAX_TOKENOBJECT_LENGTH) {
+						if(body.length > MAX_TOKEN_LENGTH) {
 							cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401));
 							return;
 						}
@@ -9350,7 +9349,7 @@ var Auth = (function() {
 			if(typeof(tokenRequestOrDetails) === 'string') {
 				if(tokenRequestOrDetails.length === 0) {
 					callback(new ErrorInfo('Token string is empty', 40170, 401));
-				} else if(tokenRequestOrDetails.length > MAX_TOKENSTRING_LENGTH) {
+				} else if(tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
 					callback(new ErrorInfo('Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)', 40170, 401));
 				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
 					/* common failure mode with poorly-implemented authCallbacks */
@@ -9367,7 +9366,7 @@ var Auth = (function() {
 				return;
 			}
 			var objectSize = JSON.stringify(tokenRequestOrDetails).length;
-			if(objectSize > MAX_TOKENOBJECT_LENGTH && !authOptions.suppressMaxLengthCheck) {
+			if(objectSize > MAX_TOKEN_LENGTH && !authOptions.suppressMaxLengthCheck) {
 				callback(new ErrorInfo('Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)', 40170, 401));
 				return;
 			}
