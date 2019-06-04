@@ -150,7 +150,7 @@ var ConnectionManager = (function() {
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
 		this.lastActivity = null;
-		this.mostRecentMsgId = null;
+		this.mostRecentMsg = null;
 		this.forceFallbackHost = false;
 		this.connectCounter = 0;
 
@@ -1566,12 +1566,11 @@ var ConnectionManager = (function() {
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
 			this.setConnectionSerial(message);
-			var msgId = message.id;
-			if(msgId && (msgId === this.mostRecentMsgId)) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
+			if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
 				return;
 			}
-			this.mostRecentMsgId = msgId;
+			this.mostRecentMsg = message;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding

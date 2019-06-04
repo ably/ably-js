@@ -133,5 +133,10 @@ var ProtocolMessage = (function() {
 		return result;
 	};
 
+	/* Only valid for channel messages */
+	ProtocolMessage.isDuplicate = function(a, b) {
+		return a && b && (a.id === b.id) && (a.channel === b.channel);
+	};
+
 	return ProtocolMessage;
 })();
