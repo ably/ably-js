@@ -164,7 +164,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * Check operations on a failed channel give the right errors
 	 */
 	exports.failed_channel = function(test) {
-		test.expect(18);
+		test.expect(16);
 		var realtime = helper.AblyRealtime();
 		var failChan;
 		var channelFailedCode = 90001;
@@ -181,13 +181,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				failChan.subscribe('event', noop, function(err) {
 					test.ok(err, "subscribe failed");
 					test.equal(err.code, channelFailedCode, "subscribe failure code");
-					callback();
-				});
-			},
-			function(callback) {
-				failChan.unsubscribe('event', noop, function(err) {
-					test.ok(err, "unsubscribe failed");
-					test.equal(err.code, channelFailedCode, "unsubscribe failure code");
 					callback();
 				});
 			},
