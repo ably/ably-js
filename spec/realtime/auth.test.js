@@ -478,7 +478,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
 		var token = '';
-		for(var i=0; i<2**17 + 1; i++) {
+		for(var i=0; i<Math.pow(2,17) + 1; i++) {
 			token = token + 'a';
 		}
 		callback(null, token);
