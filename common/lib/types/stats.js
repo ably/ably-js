@@ -3,6 +3,7 @@ var Stats = (function() {
 	function MessageCount(values) {
 		this.count = (values && values.count) || 0;
 		this.data = (values && values.data) || 0;
+		this.uncompressedData = (values && values.uncompressedData) || 0;
 		this.failed = (values && values.failed) || 0;
 		this.refused = (values && values.refused) || 0;
 	}
