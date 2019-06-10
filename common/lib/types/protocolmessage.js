@@ -18,7 +18,7 @@ var ProtocolMessage = (function() {
 		this.auth = undefined;
 	}
 
-	ProtocolMessage.Action = {
+	const actions = ProtocolMessage.Action = {
 		'HEARTBEAT' : 0,
 		'ACK' : 1,
 		'NACK' : 2,
@@ -41,7 +41,7 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.ActionName = [];
 	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
-		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
+		ProtocolMessage.ActionName[actions[name]] = name;
 	});
 
 	var flags = {
@@ -135,7 +135,11 @@ var ProtocolMessage = (function() {
 
 	/* Only valid for channel messages */
 	ProtocolMessage.isDuplicate = function(a, b) {
-		return a && b && (a.id === b.id) && (a.channel === b.channel);
+		return a && b &&
+			(a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
+			(a.action === b.action) &&
+			(a.channel === b.channel) &&
+			(a.id === b.id);
 	};
 
 	return ProtocolMessage;
