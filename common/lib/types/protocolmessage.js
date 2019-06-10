@@ -18,7 +18,7 @@ var ProtocolMessage = (function() {
 		this.auth = undefined;
 	}
 
-	const actions = ProtocolMessage.Action = {
+	var actions = ProtocolMessage.Action = {
 		'HEARTBEAT' : 0,
 		'ACK' : 1,
 		'NACK' : 2,
