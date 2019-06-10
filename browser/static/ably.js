@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.11
+ * Ably JavaScript Library v1.1.12
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4626,7 +4626,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.11';
+Defaults.version          = '1.1.12';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -5578,7 +5578,7 @@ var ProtocolMessage = (function() {
 		this.auth = undefined;
 	}
 
-	ProtocolMessage.Action = {
+	var actions = ProtocolMessage.Action = {
 		'HEARTBEAT' : 0,
 		'ACK' : 1,
 		'NACK' : 2,
@@ -5601,7 +5601,7 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.ActionName = [];
 	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
-		ProtocolMessage.ActionName[ProtocolMessage.Action[name]] = name;
+		ProtocolMessage.ActionName[actions[name]] = name;
 	});
 
 	var flags = {
@@ -5691,6 +5691,15 @@ var ProtocolMessage = (function() {
 
 		result += ']';
 		return result;
+	};
+
+	/* Only valid for channel messages */
+	ProtocolMessage.isDuplicate = function(a, b) {
+		return a && b &&
+			(a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
+			(a.action === b.action) &&
+			(a.channel === b.channel) &&
+			(a.id === b.id);
 	};
 
 	return ProtocolMessage;
@@ -6274,7 +6283,7 @@ var ConnectionManager = (function() {
 		this.host = null;
 		this.lastAutoReconnectAttempt = null;
 		this.lastActivity = null;
-		this.mostRecentMsgId = null;
+		this.mostRecentMsg = null;
 		this.forceFallbackHost = false;
 		this.connectCounter = 0;
 
@@ -7690,12 +7699,11 @@ var ConnectionManager = (function() {
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
 			this.setConnectionSerial(message);
-			var msgId = message.id;
-			if(msgId && (msgId === this.mostRecentMsgId)) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + msgId);
+			if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
 				return;
 			}
-			this.mostRecentMsgId = msgId;
+			this.mostRecentMsg = message;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
