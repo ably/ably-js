@@ -349,14 +349,15 @@ var Auth = (function() {
 				/* RSA8c2 */
 				var authParams = Utils.mixin({}, authOptions.authParams || {}, params);
 				var authUrlRequestCallback = function(err, body, headers, unpacked) {
+					var contentType;
 					if (err) {
-						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error; ' + Utils.inspectError(err));
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received Error: ' + Utils.inspectError(err));
 					} else {
-						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; body: ' + Utils.inspectBody(body));
+						contentType = headers['content-type'];
+						Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body));
 					}
 					if(err || unpacked) return cb(err, body);
 					if(BufferUtils.isBuffer(body)) body = body.toString();
-					var contentType = headers['content-type'];
 					if(!contentType) {
 						cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401));
 						return;
