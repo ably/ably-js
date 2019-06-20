@@ -13,23 +13,24 @@
 		Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 		Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
 	}
-}).call({});
 
-/* CommonJS support */
-if (typeof exports === "object" && exports) {
-	for (var obj in window.Ably) {
-		if (window.Ably.hasOwnProperty(obj)) {
-			exports[obj] = window.Ably[obj];
+	/* CommonJS support */
+	if (typeof global.exports === "object") {
+		for (var obj in global.Ably) {
+			if (global.Ably.hasOwnProperty(obj)) {
+				exports[obj] = global.Ably[obj];
+			}
 		}
+		/* SystemJS support for default exports to be added to the root of the module
+		   https://github.com/frankwallis/plugin-typescript/issues/185 */
+		exports.__esModule = true;
 	}
-	/* SystemJS support for default exports to be added to the root of the module
-	   https://github.com/frankwallis/plugin-typescript/issues/185 */
-	exports.__esModule = true;
-}
-
-/* AMD support */
-if (typeof define === "function" && define.amd) {
-  define("ably", [], function() {
-    return window.Ably;
-  });
-}
+	
+	/* AMD support */
+	if (typeof global.define === "function" && global.define.amd) {
+		global.define("ably", [], function() {
+			return global.Ably;
+		});
+	}
+	
+}).call({});

@@ -4907,11 +4907,11 @@ var Logger = (function() {
 	var consoleLogger, errorLogger;
 
 	/* Can't just check for console && console.log; fails in IE <=9 */
-	if((typeof window === 'undefined') /* node */ ||
-		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
+	if((typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') /* node */ ||
+		 (global.console && global.console.log && (typeof global.console.log.apply === 'function')) /* sensible browsers */) {
 		consoleLogger = function() { console.log.apply(console, arguments); };
 		errorLogger = console.warn ? function() { console.warn.apply(console, arguments); } : consoleLogger;
-	} else if(window.console && window.console.log) {
+	} else if(global.console && global.console.log) {
 		/* IE <= 9 with the console open -- console.log does not
 		 * inherit from Function, so has no apply method */
 		consoleLogger = errorLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
@@ -6885,7 +6885,7 @@ var ConnectionManager = (function() {
 				setSessionRecoverData({
 					recoveryKey: recoveryKey,
 					disconnectedAt: Utils.now(),
-					location: window.location,
+					location: global.location,
 					clientId: this.realtime.auth.clientId
 				}, this.connectionStateTtl);
 			}
@@ -11704,7 +11704,7 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
+	var isIE = typeof global !== 'undefined' && global.XDomainRequest;
 
 	function ieVersion() {
 		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);

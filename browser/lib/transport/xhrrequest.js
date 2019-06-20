@@ -13,7 +13,7 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
+	var isIE = typeof global !== 'undefined' && global.XDomainRequest;
 
 	function ieVersion() {
 		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);

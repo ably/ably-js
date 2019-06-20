@@ -6,19 +6,19 @@ var WebStorage = (function() {
 	/* Even just accessing the session/localStorage object can throw a
 	 * security exception in some circumstances with some browsers. In
 	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no window object,
+	 * somewhat roundabout way. (If unsupported or no global object,
 	 * will throw on accessing a property of undefined) */
 	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
+		global.sessionStorage.setItem(test, test);
+		global.sessionStorage.removeItem(test);
 		sessionSupported = true;
 	} catch(e) {
 		sessionSupported = false;
 	}
 
 	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
+		global.localStorage.setItem(test, test);
+		global.localStorage.removeItem(test);
 		localSupported = true;
 	} catch(e) {
 		localSupported = false;
@@ -27,7 +27,7 @@ var WebStorage = (function() {
 	function WebStorage() {}
 
 	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
+		return session ? global.sessionStorage : global.localStorage;
 	}
 
 	function set(name, value, ttl, session) {
