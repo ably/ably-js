@@ -1,4 +1,4 @@
-if(typeof window !== 'object') {
+if(typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
 }
 
@@ -6,8 +6,8 @@ function allowComet() {
 	/* xhr requests from local files are unreliable in some browsers, such as Chrome 65 and higher -- see eg
 	 * https://stackoverflow.com/questions/49256429/chrome-65-unable-to-make-post-requests-from-local-files-to-flask
 	 * So if websockets are supported, then just forget about comet transports and use that */
-	var loc = window.location;
-	return (!window.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
+	var loc = global.location;
+	return (!global.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
 }
 
 var Platform = {
@@ -15,31 +15,31 @@ var Platform = {
 	logTimestamps: true,
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
-	WebSocket: window.WebSocket || window.MozWebSocket,
-	xhrSupported: window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
+	WebSocket: global.WebSocket || global.MozWebSocket,
+	xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
 	jsonpSupported: typeof(document) !== 'undefined',
 	allowComet: allowComet(),
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: msgpack,
-	supportsBinary: !!window.TextDecoder,
+	supportsBinary: !!global.TextDecoder,
 	preferBinary: false,
-	ArrayBuffer: window.ArrayBuffer,
-	atob: window.atob,
+	ArrayBuffer: global.ArrayBuffer,
+	atob: global.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
-	addEventListener: window.addEventListener,
+	addEventListener: global.addEventListener,
 	inspect: JSON.stringify,
 	stringByteSize: function(str) {
 		/* str.length will be an underestimate for non-ascii strings. But if we're
 		 * in a browser too old to support TextDecoder, not much we can do. Better
 		 * to underestimate, so if we do go over-size, the server will reject the
 		 * message */
-		return window.TextDecoder &&
-			(new window.TextEncoder().encode(str)).length ||
+		return global.TextDecoder &&
+			(new global.TextEncoder().encode(str)).length ||
 			str.length;
 	},
-	Promise: window.Promise,
+	Promise: global.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;
@@ -50,5 +50,5 @@ var Platform = {
 				callback(null);
 			}
 		};
-	})(window.crypto || window.msCrypto) // mscrypto for IE11
+	})(global.crypto || global.msCrypto) // mscrypto for IE11
 };

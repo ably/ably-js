@@ -1,7 +1,7 @@
 var JSONPTransport = (function() {
 	var noop = function() {};
-	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
-	var _ = window._ablyjs_jsonp = {};
+	/* Can't just use window.Ably, as that won't exist if using the commonjs version. */
+	var _ = global._ablyjs_jsonp = {};
 
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
@@ -35,7 +35,7 @@ var JSONPTransport = (function() {
 	 * we just make sure that we handle concurrent requests (but the
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
-	window.JSONPTransport = JSONPTransport
+	global.JSONPTransport = JSONPTransport
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);

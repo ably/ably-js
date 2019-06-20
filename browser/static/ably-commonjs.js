@@ -2299,7 +2299,7 @@ var DomEvent = (function() {
 	};
 
 	DomEvent.addUnloadListener = function(listener) {
-		DomEvent.addListener(window, 'unload', listener);
+		DomEvent.addListener(global, 'unload', listener);
 	};
 
 	return DomEvent;
@@ -3127,7 +3127,7 @@ var msgpack = (function() {
 	return exports;
 })();
 
-if(typeof window !== 'object') {
+if(typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
 }
 
@@ -3135,8 +3135,8 @@ function allowComet() {
 	/* xhr requests from local files are unreliable in some browsers, such as Chrome 65 and higher -- see eg
 	 * https://stackoverflow.com/questions/49256429/chrome-65-unable-to-make-post-requests-from-local-files-to-flask
 	 * So if websockets are supported, then just forget about comet transports and use that */
-	var loc = window.location;
-	return (!window.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
+	var loc = global.location;
+	return (!global.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
 }
 
 var Platform = {
@@ -3144,31 +3144,31 @@ var Platform = {
 	logTimestamps: true,
 	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
-	WebSocket: window.WebSocket || window.MozWebSocket,
-	xhrSupported: window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
+	WebSocket: global.WebSocket || global.MozWebSocket,
+	xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
 	jsonpSupported: typeof(document) !== 'undefined',
 	allowComet: allowComet(),
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: msgpack,
-	supportsBinary: !!window.TextDecoder,
+	supportsBinary: !!global.TextDecoder,
 	preferBinary: false,
-	ArrayBuffer: window.ArrayBuffer,
-	atob: window.atob,
+	ArrayBuffer: global.ArrayBuffer,
+	atob: global.atob,
 	nextTick: function(f) { setTimeout(f, 0); },
-	addEventListener: window.addEventListener,
+	addEventListener: global.addEventListener,
 	inspect: JSON.stringify,
 	stringByteSize: function(str) {
 		/* str.length will be an underestimate for non-ascii strings. But if we're
 		 * in a browser too old to support TextDecoder, not much we can do. Better
 		 * to underestimate, so if we do go over-size, the server will reject the
 		 * message */
-		return window.TextDecoder &&
-			(new window.TextEncoder().encode(str)).length ||
+		return global.TextDecoder &&
+			(new global.TextEncoder().encode(str)).length ||
 			str.length;
 	},
-	Promise: window.Promise,
+	Promise: global.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
 			return undefined;
@@ -3179,7 +3179,7 @@ var Platform = {
 				callback(null);
 			}
 		};
-	})(window.crypto || window.msCrypto) // mscrypto for IE11
+	})(global.crypto || global.msCrypto) // mscrypto for IE11
 };
 
 var Crypto = (function() {
@@ -3501,19 +3501,19 @@ var WebStorage = (function() {
 	/* Even just accessing the session/localStorage object can throw a
 	 * security exception in some circumstances with some browsers. In
 	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no window object,
+	 * somewhat roundabout way. (If unsupported or no global object,
 	 * will throw on accessing a property of undefined) */
 	try {
-		window.sessionStorage.setItem(test, test);
-		window.sessionStorage.removeItem(test);
+		global.sessionStorage.setItem(test, test);
+		global.sessionStorage.removeItem(test);
 		sessionSupported = true;
 	} catch(e) {
 		sessionSupported = false;
 	}
 
 	try {
-		window.localStorage.setItem(test, test);
-		window.localStorage.removeItem(test);
+		global.localStorage.setItem(test, test);
+		global.localStorage.removeItem(test);
 		localSupported = true;
 	} catch(e) {
 		localSupported = false;
@@ -3522,7 +3522,7 @@ var WebStorage = (function() {
 	function WebStorage() {}
 
 	function storageInterface(session) {
-		return session ? window.sessionStorage : window.localStorage;
+		return session ? global.sessionStorage : global.localStorage;
 	}
 
 	function set(name, value, ttl, session) {
@@ -4975,11 +4975,11 @@ var Logger = (function() {
 	var consoleLogger, errorLogger;
 
 	/* Can't just check for console && console.log; fails in IE <=9 */
-	if((typeof window === 'undefined') /* node */ ||
-		 (window.console && window.console.log && (typeof window.console.log.apply === 'function')) /* sensible browsers */) {
+	if((typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') /* node */ ||
+		 (global.console && global.console.log && (typeof global.console.log.apply === 'function')) /* sensible browsers */) {
 		consoleLogger = function() { console.log.apply(console, arguments); };
 		errorLogger = console.warn ? function() { console.warn.apply(console, arguments); } : consoleLogger;
-	} else if(window.console && window.console.log) {
+	} else if(global.console && global.console.log) {
 		/* IE <= 9 with the console open -- console.log does not
 		 * inherit from Function, so has no apply method */
 		consoleLogger = errorLogger = function() { Function.prototype.apply.call(console.log, console, arguments); };
@@ -6953,7 +6953,7 @@ var ConnectionManager = (function() {
 				setSessionRecoverData({
 					recoveryKey: recoveryKey,
 					disconnectedAt: Utils.now(),
-					location: window.location,
+					location: global.location,
 					clientId: this.realtime.auth.clientId
 				}, this.connectionStateTtl);
 			}
@@ -11772,7 +11772,7 @@ var XHRRequest = (function() {
 			pendingRequests[id].dispose();
 	}
 
-	var isIE = typeof window !== 'undefined' && window.XDomainRequest;
+	var isIE = typeof global !== 'undefined' && global.XDomainRequest;
 
 	function ieVersion() {
 		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
@@ -12155,8 +12155,8 @@ var XHRPollingTransport = (function() {
 
 var JSONPTransport = (function() {
 	var noop = function() {};
-	/* Can't just use windows.Ably, as that won't exist if using the commonjs version. */
-	var _ = window._ablyjs_jsonp = {};
+	/* Can't just use window.Ably, as that won't exist if using the commonjs version. */
+	var _ = global._ablyjs_jsonp = {};
 
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
@@ -12190,7 +12190,7 @@ var JSONPTransport = (function() {
 	 * we just make sure that we handle concurrent requests (but the
 	 * connectionmanager should ensure this doesn't happen anyway */
 	var checksInProgress = null;
-	window.JSONPTransport = JSONPTransport
+	global.JSONPTransport = JSONPTransport
 
 	JSONPTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new JSONPTransport(connectionManager, auth, params);

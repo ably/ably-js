@@ -831,7 +831,7 @@ var ConnectionManager = (function() {
 				setSessionRecoverData({
 					recoveryKey: recoveryKey,
 					disconnectedAt: Utils.now(),
-					location: window.location,
+					location: global.location,
 					clientId: this.realtime.auth.clientId
 				}, this.connectionStateTtl);
 			}

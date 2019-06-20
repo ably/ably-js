@@ -26,7 +26,7 @@ var DomEvent = (function() {
 	};
 
 	DomEvent.addUnloadListener = function(listener) {
-		DomEvent.addListener(window, 'unload', listener);
+		DomEvent.addListener(global, 'unload', listener);
 	};
 
 	return DomEvent;
