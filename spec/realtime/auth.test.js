@@ -1,7 +1,7 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var currentTime, exports = {},
+	var currentTime, exampleTokenDetails, exports = {},
 		_exports = {},
 		utils = helper.Utils,
 		displayError = helper.displayError,
@@ -41,7 +41,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.ok(false, helper.displayError(err));
 				} else {
 					currentTime = time;
-					test.ok(true, 'Obtained time via REST');
+					rest.auth.requestToken({}, function(err, tokenDetails) {
+						test.ok(!err, err && displayError(err));
+					})
 				}
 				test.done();
 			});
@@ -504,6 +506,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.authUrl_401 = authCallback_failures({
 		authUrl: echoServer + '/respondwith?status=401'
 	});
+
+	exports.authUrl_double_encoded = authCallback_failures({
+		authUrl: echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(JSON.stringify({keyName: "foo.bar"})))
+	});
+
 
 	/* 403 should cause the connection to go to failed, unlike the others */
 	exports.authUrl_403 = authCallback_failures({
