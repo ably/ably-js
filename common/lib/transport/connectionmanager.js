@@ -545,7 +545,7 @@ var ConnectionManager = (function() {
 
 		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionDetails, connectionPosition, true, !!error);
+			this.setConnection(connectionId, connectionDetails, connectionPosition, !!error);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -729,10 +729,11 @@ var ConnectionManager = (function() {
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition, hasConnectionError) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, hasConnectionError) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
-		 * on a new connection, with implications for msgSerial and channel state */
+		 * on a new connection, with implications for msgSerial and channel state,
+		 * and resetting the connectionSerial position */
 		var self = this;
 		/* If no previous connectionId, don't reset the msgSerial as it may have
 		 * been set by recover data (unless the recover failed) */
@@ -758,7 +759,8 @@ var ConnectionManager = (function() {
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
-		this.setConnectionSerial(connectionPosition, forceSetPosition);
+		var forceResetMessageSerial = connIdChanged || !prevConnId;
+		this.setConnectionSerial(connectionPosition, forceResetMessageSerial);
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -769,16 +771,17 @@ var ConnectionManager = (function() {
 		this.unpersistConnection();
 	};
 
-	/* force: set the connectionSerial even if it's less than the current connectionSerial. Used when
-	 * activating a new transport, where the connectionSerial realtime tells us we have must be authoritative */
+	/* force: set the connectionSerial even if it's less than the current
+	 * connectionSerial. Used for new connections.
+	 * Returns true iff the message was rejected as a duplicate. */
 	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
 		var timeSerial = connectionPosition.timeSerial,
 			connectionSerial = connectionPosition.connectionSerial;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
 		if(timeSerial !== undefined) {
 			if(timeSerial <= this.timeSerial && !force) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
-				return;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
+				return true;
 			}
 			this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
 			this.setRecoveryKey();
@@ -786,8 +789,8 @@ var ConnectionManager = (function() {
 		}
 		if(connectionSerial !== undefined) {
 			if(connectionSerial <= this.connectionSerial && !force) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
-				return;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				return true;
 			}
 			this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 			this.setRecoveryKey();
@@ -1567,9 +1570,12 @@ var ConnectionManager = (function() {
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
 			if(notControlMsg) {
-				this.setConnectionSerial(message);
+				var suppressed = this.setConnectionSerial(message);
+				if(suppressed) {
+					return;
+				}
 				if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage()', 'received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
 					return;
 				}
 				this.mostRecentMsg = message;
