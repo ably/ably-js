@@ -380,7 +380,7 @@ var Auth = (function() {
 							return;
 						}
 					}
-					cb(null, body);
+					cb(null, body, contentType);
 				};
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Requesting token from ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams) + '; method: ' + (usePost ? 'POST' : 'GET'));
 				if(usePost) {
@@ -429,7 +429,7 @@ var Auth = (function() {
 				callback(new ErrorInfo(msg, 40170, 401));
 			}, timeoutLength);
 
-		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
+		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails, contentType) {
 			if(tokenRequestCallbackTimeoutExpired) return;
 			clearTimeout(tokenRequestCallbackTimeout);
 
@@ -447,6 +447,8 @@ var Auth = (function() {
 				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
 					/* common failure mode with poorly-implemented authCallbacks */
 					callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
+				} else if(tokenRequestOrDetails.indexOf('{' === 0) && !(contentType && contentType.indexOf('application/jwt') > -1)) {
+					callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
 				}
