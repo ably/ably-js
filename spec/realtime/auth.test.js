@@ -43,9 +43,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					currentTime = time;
 					rest.auth.requestToken({}, function(err, tokenDetails) {
 						test.ok(!err, err && displayError(err));
-					})
+						test.done();
+					});
 				}
-				test.done();
 			});
 		});
 	};
