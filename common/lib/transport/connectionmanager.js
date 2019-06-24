@@ -1559,18 +1559,21 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		var onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing,
+			notControlMsg = message.action === actions.MESSAGE || message.action === actions.PRESENCE;
 
 		/* As the lib now has a period where the upgrade transport is synced but
 		 * before it's become active (while waiting for the old one to become
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
-			this.setConnectionSerial(message);
-			if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
-				return;
+			if(notControlMsg) {
+				this.setConnectionSerial(message);
+				if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
+					return;
+				}
+				this.mostRecentMsg = message;
 			}
-			this.mostRecentMsg = message;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding

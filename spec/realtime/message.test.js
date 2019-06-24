@@ -555,6 +555,44 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}});
 
+	exports.duplicateMsgId = function(test) {
+		test.expect(1);
+		var realtime = helper.AblyRealtime({log: {level: 4}}),
+			connectionManager = realtime.connection.connectionManager,
+			channel = realtime.channels.get('duplicateMsgId'),
+			received = 0;
+
+		channel.subscribe(function(_msg) {
+			received++;
+		})
+		channel.once('attached', function() {
+			realtime.connection.connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 15,
+				channel: channel.name,
+				id: "foo:0",
+				connectionSerial: 0,
+				messages: [{name: null, data: null}]
+			}));
+
+			/* add some nonmessage channel message inbetween */
+			realtime.connection.connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 11,
+				channel: channel.name
+			}));
+
+			realtime.connection.connectionManager.activeProtocol.getTransport().onProtocolMessage(createPM({
+				action: 15,
+				channel: channel.name,
+				id: "foo:0",
+				connectionSerial: 1,
+				messages: [{name: null, data: null}]
+			}));
+
+			test.equal(received, 1);
+			closeAndFinish(test, realtime);
+		});
+	};
+
 	/* Authenticate with a clientId and ensure that the clientId is not sent in the Message
 	   and is implicitly added when published */
 	exports.implicit_client_id_0 = function(test) {
