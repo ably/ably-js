@@ -447,7 +447,7 @@ var Auth = (function() {
 				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
 					/* common failure mode with poorly-implemented authCallbacks */
 					callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
-				} else if(tokenRequestOrDetails.indexOf('{' === 0) && !(contentType && contentType.indexOf('application/jwt') > -1)) {
+				} else if(tokenRequestOrDetails[0] === '{') && !(contentType && contentType.indexOf('application/jwt') > -1)) {
 					callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
