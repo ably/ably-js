@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.14](https://github.com/ably/ably-js/tree/1.1.14) (2019-06-25)
+- Add check for double-encoded tokens
+- Reinstate message suppression based on connectionSerial to ensure no duplicate messages during transport upgrades
+- Support running in a webworker context that uses `self` as the global object (thanks to Clifton Hensley for that contribution!)
+
 ## [1.1.13](https://github.com/ably/ably-js/tree/1.1.13) (2019-06-19)
 - Log the content-type of an authUrl response
 

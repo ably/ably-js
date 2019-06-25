@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.13
+ * Ably JavaScript Library v1.1.14
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4632,7 +4632,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.13';
+Defaults.version          = '1.1.14';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -6684,7 +6684,7 @@ var ConnectionManager = (function() {
 
 		var connectionKey = connectionDetails.connectionKey;
 		if(connectionKey && this.connectionKey != connectionKey)  {
-			this.setConnection(connectionId, connectionDetails, connectionPosition, true, !!error);
+			this.setConnection(connectionId, connectionDetails, connectionPosition, !!error);
 		}
 
 		/* Rebroadcast any new connectionDetails from the active transport, which
@@ -6868,10 +6868,11 @@ var ConnectionManager = (function() {
 		});
 	};
 
-	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, forceSetPosition, hasConnectionError) {
+	ConnectionManager.prototype.setConnection = function(connectionId, connectionDetails, connectionPosition, hasConnectionError) {
 		/* if connectionKey changes but connectionId stays the same, then just a
 		 * transport change on the same connection. If connectionId changes, we're
-		 * on a new connection, with implications for msgSerial and channel state */
+		 * on a new connection, with implications for msgSerial and channel state,
+		 * and resetting the connectionSerial position */
 		var self = this;
 		/* If no previous connectionId, don't reset the msgSerial as it may have
 		 * been set by recover data (unless the recover failed) */
@@ -6897,7 +6898,8 @@ var ConnectionManager = (function() {
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
-		this.setConnectionSerial(connectionPosition, forceSetPosition);
+		var forceResetMessageSerial = connIdChanged || !prevConnId;
+		this.setConnectionSerial(connectionPosition, forceResetMessageSerial);
 	};
 
 	ConnectionManager.prototype.clearConnection = function() {
@@ -6908,16 +6910,17 @@ var ConnectionManager = (function() {
 		this.unpersistConnection();
 	};
 
-	/* force: set the connectionSerial even if it's less than the current connectionSerial. Used when
-	 * activating a new transport, where the connectionSerial realtime tells us we have must be authoritative */
+	/* force: set the connectionSerial even if it's less than the current
+	 * connectionSerial. Used for new connections.
+	 * Returns true iff the message was rejected as a duplicate. */
 	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
 		var timeSerial = connectionPosition.timeSerial,
 			connectionSerial = connectionPosition.connectionSerial;
 		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
 		if(timeSerial !== undefined) {
 			if(timeSerial <= this.timeSerial && !force) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
-				return;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
+				return true;
 			}
 			this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
 			this.setRecoveryKey();
@@ -6925,8 +6928,8 @@ var ConnectionManager = (function() {
 		}
 		if(connectionSerial !== undefined) {
 			if(connectionSerial <= this.connectionSerial && !force) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial() received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
-				return;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				return true;
 			}
 			this.realtime.connection.serial = this.connectionSerial = connectionSerial;
 			this.setRecoveryKey();
@@ -7698,18 +7701,24 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.onChannelMessage = function(message, transport) {
 		var onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+			onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing,
+			notControlMsg = message.action === actions.MESSAGE || message.action === actions.PRESENCE;
 
 		/* As the lib now has a period where the upgrade transport is synced but
 		 * before it's become active (while waiting for the old one to become
 		 * idle), message can validly arrive on it even though it isn't active */
 		if(onActiveTransport || onUpgradeTransport) {
-			this.setConnectionSerial(message);
-			if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage() received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
-				return;
+			if(notControlMsg) {
+				var suppressed = this.setConnectionSerial(message);
+				if(suppressed) {
+					return;
+				}
+				if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
+					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage()', 'received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
+					return;
+				}
+				this.mostRecentMsg = message;
 			}
-			this.mostRecentMsg = message;
 			this.realtime.channels.onChannelMessage(message);
 		} else {
 			// Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
@@ -9314,7 +9323,7 @@ var Auth = (function() {
 							return;
 						}
 					}
-					cb(null, body);
+					cb(null, body, contentType);
 				};
 				Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().tokenRequestCallback', 'Requesting token from ' + authOptions.authUrl + '; Params: ' + JSON.stringify(authParams) + '; method: ' + (usePost ? 'POST' : 'GET'));
 				if(usePost) {
@@ -9363,7 +9372,7 @@ var Auth = (function() {
 				callback(new ErrorInfo(msg, 40170, 401));
 			}, timeoutLength);
 
-		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails) {
+		tokenRequestCallback(tokenParams, function(err, tokenRequestOrDetails, contentType) {
 			if(tokenRequestCallbackTimeoutExpired) return;
 			clearTimeout(tokenRequestCallbackTimeout);
 
@@ -9381,6 +9390,8 @@ var Auth = (function() {
 				} else if(tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
 					/* common failure mode with poorly-implemented authCallbacks */
 					callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
+				} else if((tokenRequestOrDetails[0] === '{') && !(contentType && contentType.indexOf('application/jwt') > -1)) {
+					callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
 					callback(null, {token: tokenRequestOrDetails});
 				}
