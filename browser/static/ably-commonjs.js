@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.14
+ * Ably JavaScript Library v1.1.15
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4615,7 +4615,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.14';
+Defaults.version          = '1.1.15';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -6712,16 +6712,30 @@ var ConnectionManager = (function() {
 				 * the old transport to be idle. So log an error. */
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
 			}
-			existingActiveProtocol.finish();
+			if(existingActiveProtocol.transport === transport) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that was also the transport for the previous active protocol, stack = ' + new Error().stack);
+			} else {
+				existingActiveProtocol.finish();
+			}
 		}
 
 		/* Terminate any other pending transport(s), and
 		 * abort any not-yet-pending transport attempts */
-		Utils.safeArrForEach(this.pendingTransports, function(transport) {
-			transport.disconnect();
+		Utils.safeArrForEach(this.pendingTransports, function(pendingTransport) {
+			if(pendingTransport === transport) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a pending transport, stack = ' + new Error().stack);
+				Utils.arrDeleteValue(self.pendingTransports, transport);
+			} else {
+				pendingTransport.disconnect();
+			}
 		});
-		Utils.safeArrForEach(this.proposedTransports, function(transport) {
-			transport.dispose();
+		Utils.safeArrForEach(this.proposedTransports, function(proposedTransport) {
+			if(proposedTransport === transport) {
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a proposed transport, stack = ' + new Error().stack);
+				Utils.arrDeleteValue(self.proposedTransports, transport);
+			} else {
+				proposedTransport.dispose();
+			}
 		});
 
 		return true;

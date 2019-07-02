@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.15](https://github.com/ably/ably-js/tree/1.1.15) (2019-07-02)
+- Fix type definition for realtime presence.get() with the Promise API
+
 ## [1.1.14](https://github.com/ably/ably-js/tree/1.1.14) (2019-06-25)
 - Add check for double-encoded tokens
 - Reinstate message suppression based on connectionSerial to ensure no duplicate messages during transport upgrades
