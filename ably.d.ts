@@ -466,7 +466,7 @@ declare namespace Types {
 	}
 
 	class RealtimePresencePromise extends RealtimePresenceBase {
-		get: (params?: RealtimePresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
+		get: (params?: RealtimePresenceParams) => Promise<PresenceMessage[]>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
 		subscribe: (action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => Promise<void>;
 		enter: (data?: any) => Promise<void>;
