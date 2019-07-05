@@ -140,7 +140,7 @@ Defaults.normaliseOptions = function(options) {
 
 	if(options.clientId) {
 		var headers = options.headers = options.headers || {};
-		headers['X-Ably-ClientId'] = options.clientId;
+		headers['X-Ably-ClientId'] = BufferUtils.base64Encode(BufferUtils.utf8Encode(options.clientId));
 	}
 
 	if(!('idempotentRestPublishing' in options)) {
