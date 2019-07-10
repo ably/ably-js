@@ -338,6 +338,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	}
 
 	exports.init_callbacks_promises = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+
 		var realtime,
 			keyStr = helper.getTestApp().keys[0].keyStr,
 			getOptions = function() { return {key: keyStr, autoConnect: false}; };
