@@ -18,19 +18,19 @@
 	if (typeof global.exports === "object") {
 		for (var obj in global.Ably) {
 			if (global.Ably.hasOwnProperty(obj)) {
-				exports[obj] = global.Ably[obj];
+				global.exports[obj] = global.Ably[obj];
 			}
 		}
 		/* SystemJS support for default exports to be added to the root of the module
 		   https://github.com/frankwallis/plugin-typescript/issues/185 */
-		exports.__esModule = true;
+		global.exports.__esModule = true;
 	}
-	
+
 	/* AMD support */
 	if (typeof global.define === "function" && global.define.amd) {
 		global.define("ably", [], function() {
 			return global.Ably;
 		});
 	}
-	
+
 }).call({});
