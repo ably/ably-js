@@ -8,6 +8,19 @@ var Stats = (function() {
 		this.refused = (values && values.refused) || 0;
 	}
 
+	function MessageCategory(values) {
+		MessageCount.call(this, values);
+		this.category = undefined;
+		if (values && values.category) {
+			this.category = { };
+			for (const [key, value] of Object.entries(values.category)) {
+				if (value) {
+					this.category[key] = new MessageCount(value);
+				}
+			}
+		}
+	}
+
 	function ResourceCount(values) {
 		this.peak = (values && values.peak) || 0;
 		this.min = (values && values.min) || 0;
@@ -29,9 +42,9 @@ var Stats = (function() {
 	}
 
 	function MessageTypes(values) {
-		this.messages = new MessageCount(values && values.messages);
-		this.presence = new MessageCount(values && values.presence);
-		this.all = new MessageCount(values && values.all);
+		this.messages = new MessageCategory(values && values.messages);
+		this.presence = new MessageCategory(values && values.presence);
+		this.all = new MessageCategory(values && values.all);
 	}
 
 	function MessageTraffic(values) {
