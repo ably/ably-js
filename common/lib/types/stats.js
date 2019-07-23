@@ -13,8 +13,9 @@ var Stats = (function() {
 		this.category = undefined;
 		if (values && values.category) {
 			this.category = { };
-			for (const [key, value] of Object.entries(values.category)) {
-				if (value) {
+			for (var key in values.category) {
+				var value = values.category[key];
+				if (Object.prototype.hasOwnProperty.call(values.category, key) && value) {
 					this.category[key] = new MessageCount(value);
 				}
 			}
