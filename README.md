@@ -562,8 +562,9 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
    Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
 6. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
 7. Ensure the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have been updated if the public API has changed
-8. Push to the branch (`git push origin my-new-feature`)
-9. Create a new Pull Request
+8. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`grunt closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
+9. Push to the branch (`git push origin my-new-feature`)
+10. Create a new Pull Request
 
 ## Release Process
 
