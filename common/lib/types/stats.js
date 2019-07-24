@@ -83,6 +83,25 @@ var Stats = (function() {
 		this.directPublishes = (values && values.directPublishes) || 0;
 	}
 
+	function ProcessedCount(values) {
+		this.succeeded = (values && values.succeeded) || 0;
+		this.skipped = (values && values.skipped) || 0;
+		this.failed = (values && values.failed) || 0;
+	}
+
+	function ProcessedMessages(values) {
+		this.delta = undefined;
+		if (values && values.delta) {
+			this.delta = { };
+			for (var key in values.delta) {
+				var value = values.delta[key];
+				if (Object.prototype.hasOwnProperty.call(values.delta, key) && value) {
+					this.delta[key] = new ProcessedCount(value);
+				}
+			}
+		}
+	}
+
 	function Stats(values) {
 		MessageDirections.call(this, values);
 		this.persisted     = new MessageTypes(values && values.persisted);
@@ -93,6 +112,7 @@ var Stats = (function() {
 		this.xchgProducer  = new XchgMessages(values && values.xchgProducer);
 		this.xchgConsumer  = new XchgMessages(values && values.xchgConsumer);
 		this.push          = new PushStats(values && values.pushStats);
+		this.processed     = new ProcessedMessages(values && values.processed);
 		this.inProgress    = (values && values.inProgress) || undefined;
 		this.unit          = (values && values.unit) || undefined;
 		this.intervalId    = (values && values.intervalId) || undefined;
