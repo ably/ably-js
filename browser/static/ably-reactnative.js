@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.15
+ * Ably JavaScript Library v1.1.16
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -11,6 +11,8 @@
  */
 
 var Ably = {};
+
+var global = (typeof window === 'object' && window) || (typeof self === 'object' && self);
 
 /**
  * CryptoJS core components.
@@ -4565,7 +4567,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.15';
+Defaults.version          = '1.1.16';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -4684,7 +4686,7 @@ Defaults.normaliseOptions = function(options) {
 
 	if(options.clientId) {
 		var headers = options.headers = options.headers || {};
-		headers['X-Ably-ClientId'] = options.clientId;
+		headers['X-Ably-ClientId'] = BufferUtils.base64Encode(BufferUtils.utf8Encode(options.clientId));
 	}
 
 	if(!('idempotentRestPublishing' in options)) {

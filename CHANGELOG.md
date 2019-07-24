@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.16](https://github.com/ably/ably-js/tree/1.1.16) (2019-07-24)
+- Fix regression for browser commonjs distribution
+- Allow non-ascii clientIds for REST requests
+
 ## [1.1.15](https://github.com/ably/ably-js/tree/1.1.15) (2019-07-02)
 - Fix type definition for realtime presence.get() with the Promise API
 
