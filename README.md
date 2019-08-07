@@ -99,21 +99,11 @@ If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.
 
 ### Using WebPack
 
-WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require` Ably. Alternatively, you can reference the `ably-commonjs.js` static file directly if not in your `node_modules` folder.
+(This applies to using webpack to compile for a browser; for node, see [Serverside usage with webpack](#serverside-usage-with-webpack))
 
-```javascript
-var Ably = require('ably/browser/static/ably-commonjs.js');
-var realtime = new Ably.Realtime(options);
-```
+WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
 
-Or `new Ably.Realtime.Promise(options)` for the version of the library where async methods return promises.
-
-If you are using ES6 and or a transpiler that suppots ES6 modules with WebPack, you can include Ably as follows:
-
-```javascript
-import * as Ably from 'ably/browser/static/ably-commonjs.js'
-let realtime = new Ably.Realtime(options) // or new Ably.Realtime.Promise(options)
-```
+If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/browser/static/ably-commonjs.js');` (or `import * as Ably from 'ably/browser/static/ably-commonjs.js'` for typescript / ES6 modules)
 
 ## React Native
 
