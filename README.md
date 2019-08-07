@@ -575,6 +575,12 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 - Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
 - For nontrivial releases: update the ably-js submodule ref in the realtime repo
 
+## Credits
+
+Automated browser testing supported by
+
+[<img src="./resources/Browserstack-logo@2x.png" width="200px"></img>](https://www.browserstack.com/)
+
 ## License
 
 Copyright (c) 2017 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
