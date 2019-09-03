@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.17](https://github.com/ably/ably-js/tree/1.1.17) (2019-09-03)
+- Fix TS1036 tslint warning when importing ably/promises
+- Add delta generation stats infrastructure
+
 ## [1.1.16](https://github.com/ably/ably-js/tree/1.1.16) (2019-07-24)
 - Fix regression for browser commonjs distribution
 - Allow non-ascii clientIds for REST requests

@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.16
+ * Ably JavaScript Library v1.1.17
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3183,7 +3183,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.16';
+Defaults.version          = '1.1.17';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -4272,6 +4272,20 @@ var Stats = (function() {
 		this.refused = (values && values.refused) || 0;
 	}
 
+	function MessageCategory(values) {
+		MessageCount.call(this, values);
+		this.category = undefined;
+		if (values && values.category) {
+			this.category = { };
+			for (var key in values.category) {
+				var value = values.category[key];
+				if (Object.prototype.hasOwnProperty.call(values.category, key) && value) {
+					this.category[key] = new MessageCount(value);
+				}
+			}
+		}
+	}
+
 	function ResourceCount(values) {
 		this.peak = (values && values.peak) || 0;
 		this.min = (values && values.min) || 0;
@@ -4293,9 +4307,9 @@ var Stats = (function() {
 	}
 
 	function MessageTypes(values) {
-		this.messages = new MessageCount(values && values.messages);
-		this.presence = new MessageCount(values && values.presence);
-		this.all = new MessageCount(values && values.all);
+		this.messages = new MessageCategory(values && values.messages);
+		this.presence = new MessageCategory(values && values.presence);
+		this.all = new MessageCategory(values && values.all);
 	}
 
 	function MessageTraffic(values) {
@@ -4333,6 +4347,25 @@ var Stats = (function() {
 		this.directPublishes = (values && values.directPublishes) || 0;
 	}
 
+	function ProcessedCount(values) {
+		this.succeeded = (values && values.succeeded) || 0;
+		this.skipped = (values && values.skipped) || 0;
+		this.failed = (values && values.failed) || 0;
+	}
+
+	function ProcessedMessages(values) {
+		this.delta = undefined;
+		if (values && values.delta) {
+			this.delta = { };
+			for (var key in values.delta) {
+				var value = values.delta[key];
+				if (Object.prototype.hasOwnProperty.call(values.delta, key) && value) {
+					this.delta[key] = new ProcessedCount(value);
+				}
+			}
+		}
+	}
+
 	function Stats(values) {
 		MessageDirections.call(this, values);
 		this.persisted     = new MessageTypes(values && values.persisted);
@@ -4343,6 +4376,7 @@ var Stats = (function() {
 		this.xchgProducer  = new XchgMessages(values && values.xchgProducer);
 		this.xchgConsumer  = new XchgMessages(values && values.xchgConsumer);
 		this.push          = new PushStats(values && values.pushStats);
+		this.processed     = new ProcessedMessages(values && values.processed);
 		this.inProgress    = (values && values.inProgress) || undefined;
 		this.unit          = (values && values.unit) || undefined;
 		this.intervalId    = (values && values.intervalId) || undefined;
