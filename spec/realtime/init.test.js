@@ -247,7 +247,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 				}
 			};
 			realtime.connection.on('disconnected', function(stateChange) {
-				test.equal(stateChange.reason.code, 80000, 'Expected error code after no fallback host works');
+				test.equal(stateChange.reason.code, 80003, 'Expected error code after no fallback host works');
 				closeAndFinish(test, realtime);
 			})
 			realtime.connection.connect();

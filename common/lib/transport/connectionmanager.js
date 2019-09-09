@@ -1251,7 +1251,7 @@ var ConnectionManager = (function() {
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {
-			giveUp(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
+			giveUp(new ErrorInfo('Unable to connect (no available host)', 80003, 404));
 			return;
 		}
 		transportParams.host = host;
@@ -1260,7 +1260,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				giveUp(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80000, 404));
+				giveUp(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80003, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
@@ -1277,7 +1277,7 @@ var ConnectionManager = (function() {
 				}
 				if(!connectivity) {
 					/* the internet isn't reachable, so don't try the fallback hosts */
-					giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80000, 404));
+					giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80003, 404));
 					return;
 				}
 				/* the network is there, so there's a problem with the main host, or
