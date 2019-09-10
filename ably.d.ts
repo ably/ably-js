@@ -450,7 +450,7 @@ declare namespace Types {
 
 	class RealtimePresenceBase {
 		syncComplete: boolean;
-		unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
+		unsubscribe: (presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;
 	}
 
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
@@ -498,7 +498,7 @@ declare namespace Types {
 		errorReason: ErrorInfo;
 		state: ChannelState;
 		setOptions: (options: any) => void;
-		unsubscribe: (eventOrCallback?: messageCallback<Message> | string, listener?: messageCallback<Message>) => void;
+		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
 	}
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
