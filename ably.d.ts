@@ -450,13 +450,13 @@ declare namespace Types {
 
 	class RealtimePresenceBase {
 		syncComplete: boolean;
+		unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
 	}
 
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
 		get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
 		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: standardCallback) => void;
-		unsubscribe: (presence?: PresenceAction, listener?: messageCallback<PresenceMessage>) => void;
 		enter: (data?: errorCallback | any, callback?: errorCallback) => void;
 		update: (data?: errorCallback | any, callback?: errorCallback) => void;
 		leave: (data?: errorCallback | any, callback?: errorCallback) => void;
