@@ -128,7 +128,7 @@ var Rest = (function() {
 
 		if(callback === undefined) {
 			if(this.options.promises) {
-				return Utils.promisify(this, 'request', arguments);
+				return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]);
 			}
 			callback = noop;
 		}
