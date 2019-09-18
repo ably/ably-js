@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.18](https://github.com/ably/ably-js/tree/1.1.18) (2019-09-18)
+- Fix typings for channel.presence.unsubscribe https://github.com/ably/ably-js/pull/608
+- Tweak connection code for generic connection issues (80000 -> 80003)
+- Make promisified rest.request() easier to use correctly
+
 ## [1.1.17](https://github.com/ably/ably-js/tree/1.1.17) (2019-09-03)
 - Fix TS1036 tslint warning when importing ably/promises
 - Add delta generation stats infrastructure

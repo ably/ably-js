@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.17
+ * Ably JavaScript Library v1.1.18
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4632,7 +4632,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.17';
+Defaults.version          = '1.1.18';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -7424,7 +7424,7 @@ var ConnectionManager = (function() {
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
 		if(!host) {
-			giveUp(new ErrorInfo('Unable to connect (no available host)', 80000, 404));
+			giveUp(new ErrorInfo('Unable to connect (no available host)', 80003, 404));
 			return;
 		}
 		transportParams.host = host;
@@ -7433,7 +7433,7 @@ var ConnectionManager = (function() {
 		function tryFallbackHosts() {
 			/* if there aren't any fallback hosts, fail */
 			if(!candidateHosts.length) {
-				giveUp(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80000, 404));
+				giveUp(new ErrorInfo('Unable to connect (and no more fallback hosts to try)', 80003, 404));
 				return;
 			}
 			/* before trying any fallback (or any remaining fallback) we decide if
@@ -7450,7 +7450,7 @@ var ConnectionManager = (function() {
 				}
 				if(!connectivity) {
 					/* the internet isn't reachable, so don't try the fallback hosts */
-					giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80000, 404));
+					giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80003, 404));
 					return;
 				}
 				/* the network is there, so there's a problem with the main host, or
@@ -8405,7 +8405,7 @@ var CometTransport = (function() {
 			connectRequest.on('complete', function(err, _body, headers) {
 				if(!self.recvRequest) {
 					/* the transport was disposed before we connected */
-					err = err || new ErrorInfo('Request cancelled', 80000, 400);
+					err = err || new ErrorInfo('Request cancelled', 80003, 400);
 				}
 				self.recvRequest = null;
 				self.onActivity();
@@ -9919,7 +9919,7 @@ var Rest = (function() {
 
 		if(callback === undefined) {
 			if(this.options.promises) {
-				return Utils.promisify(this, 'request', arguments);
+				return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]);
 			}
 			callback = noop;
 		}
@@ -11018,7 +11018,7 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, options);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
