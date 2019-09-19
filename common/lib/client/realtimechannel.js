@@ -364,14 +364,18 @@ var RealtimeChannel = (function() {
 				timestamp = message.timestamp;
 
 			var options = this.channelOptions;
+			var codecs = this.realtime.options.codecs;
 			for(var i = 0; i < messages.length; i++) {
+				var msg = messages[i];
+				var rawData = msg.data;
+				var codecsContext = { codecs: codecs, previousPayload: this.lastPayload };
 				try {
-					var msg = messages[i];
-					Message.decode(msg, options);
+					Message.decode(msg, options, codecsContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
 				}
+				this.lastPayload = codecsContext.vcdiffDecodedPayload ? codecsContext.vcdiffDecodedPayload : rawData;
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
 				if(!msg.id) msg.id = id + ':' + i;

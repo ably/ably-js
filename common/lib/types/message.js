@@ -137,7 +137,7 @@ var Message = (function() {
 
 	Message.serialize = Utils.encodeBody;
 
-	Message.decode = function(message, options) {
+	Message.decode = function(message, options, codecsContext) {
 		var encoding = message.encoding;
 		if(encoding) {
 			var xforms = encoding.split('/'),
@@ -171,6 +171,24 @@ var Message = (function() {
 							} else {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
+						case 'vcdiff':
+							let codec = codecsContext && codecsContext.codecs && codecsContext.codecs[xform];
+							if(!codec) {
+								throw new Error("No VCDIFF codec found");
+							}
+							if(!codec.decode) {
+								throw new Error("The provided VCDIFF codec does not support decoding");
+							}
+							if(!codecsContext.previousPayload) {
+								throw new Error("previousPayload is required for VCDIFF decoding");
+							}
+							data = codec.decode(data, {
+								channelOptions: options,
+								encoding: match[0],
+								previousPayload: codecsContext.previousPayload
+							});
+							codecsContext.vcdiffDecodedPayload = data;
+							continue;
 						default:
 							throw new Error("Unknown encoding");
 					}
