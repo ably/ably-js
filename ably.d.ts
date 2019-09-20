@@ -360,7 +360,7 @@ declare namespace Types {
 		on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
 		once(event: EventType, callback: CallbackType): void;
 		once(callback: CallbackType): void;
-		once(event: EventType): Promise<ResultType>;
+		once(event?: EventType): Promise<ResultType>;
 		off(eventOrCallback?: EventType | CallbackType, callback?: CallbackType): void;
 		listeners(eventName?: EventType): CallbackType[] | null;
 	}
