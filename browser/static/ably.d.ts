@@ -358,8 +358,9 @@ declare namespace Types {
 	// present both methods
 	class EventEmitter<CallbackType, ResultType, EventType, StateType> {
 		on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
-		once(eventOrCallback: EventType | CallbackType, callback?: CallbackType): void;
-		once(event: EventType): Promise<ResultType>;
+		once(event: EventType, callback: CallbackType): void;
+		once(callback: CallbackType): void;
+		once(event?: EventType): Promise<ResultType>;
 		off(eventOrCallback?: EventType | CallbackType, callback?: CallbackType): void;
 		listeners(eventName?: EventType): CallbackType[] | null;
 	}
