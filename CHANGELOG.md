@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.19](https://github.com/ably/ably-js/tree/1.1.19) (2019-10-03)
+- Fix EventEmitter.once typings https://github.com/ably/ably-js/pull/610
+
 ## [1.1.18](https://github.com/ably/ably-js/tree/1.1.18) (2019-09-18)
 - Fix typings for channel.presence.unsubscribe https://github.com/ably/ably-js/pull/608
 - Tweak connection code for generic connection issues (80000 -> 80003)
