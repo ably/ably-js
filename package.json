@@ -16,6 +16,7 @@
     "ws": "^5.1"
   },
   "devDependencies": {
+    "ably-delta-codec": "git+ssh://git@github.com:ably/ably-delta-codec-js.git#7eeafd0c0f6e84b7720388ba296732f0e862e3e3",
     "async": "git://github.com/ably-forks/async.git#requirejs",
     "cors": "~2.7",
     "crypto-js": "git://github.com/ably-forks/crypto-js.git#typedarray-webkit",
