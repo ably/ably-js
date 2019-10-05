@@ -539,6 +539,9 @@ var RealtimeChannel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.rest.options.promises) {
+					return Utils.promisify(this, 'history', arguments);
+				}
 				callback = noop;
 			}
 		}
