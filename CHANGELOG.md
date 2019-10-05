@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.20](https://github.com/ably/ably-js/tree/1.1.20) (2019-10-05)
+- Fix channel.history with promises bug when using the realtime client
+- Auth no way to renew warning: upgrade to error
+
 ## [1.1.19](https://github.com/ably/ably-js/tree/1.1.19) (2019-10-03)
 - Fix EventEmitter.once typings https://github.com/ably/ably-js/pull/610
 

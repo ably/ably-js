@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.19
+ * Ably JavaScript Library v1.1.20
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3183,7 +3183,7 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.19';
+Defaults.version          = '1.1.20';
 Defaults.libstring        = Platform.libver + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -7652,7 +7652,7 @@ var Auth = (function() {
 				throw new Error(msg);
 			}
 			if(noWayToRenew(options)) {
-				Logger.logAction(Logger.LOG_MAJOR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', 'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
 			}
 			this._saveTokenOptions(options.defaultTokenParams, options);
 			logAndValidateTokenAuthMethod(this.authOptions);
@@ -9738,6 +9738,9 @@ var RealtimeChannel = (function() {
 				callback = params;
 				params = null;
 			} else {
+				if(this.rest.options.promises) {
+					return Utils.promisify(this, 'history', arguments);
+				}
 				callback = noop;
 			}
 		}
