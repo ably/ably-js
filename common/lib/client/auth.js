@@ -110,7 +110,7 @@ var Auth = (function() {
 				throw new Error(msg);
 			}
 			if(noWayToRenew(options)) {
-				Logger.logAction(Logger.LOG_MAJOR, 'Auth()', 'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
+				Logger.logAction(Logger.LOG_ERROR, 'Auth()', 'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
 			}
 			this._saveTokenOptions(options.defaultTokenParams, options);
 			logAndValidateTokenAuthMethod(this.authOptions);
