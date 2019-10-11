@@ -16,6 +16,7 @@ var ProtocolMessage = (function() {
 		this.messages = undefined;
 		this.presence = undefined;
 		this.auth = undefined;
+		this.params = undefined;
 	}
 
 	var actions = ProtocolMessage.Action = {
@@ -46,15 +47,16 @@ var ProtocolMessage = (function() {
 
 	var flags = {
 		/* Channel attach state flags */
-		'HAS_PRESENCE':       1 << 0,
-		'HAS_BACKLOG':        1 << 1,
-		'RESUMED':            1 << 2,
-		'TRANSIENT':          1 << 4,
+		'HAS_PRESENCE':             1 << 0,
+		'HAS_BACKLOG':              1 << 1,
+		'RESUMED':                  1 << 2,
+		'TRANSIENT':                1 << 4,
 		/* Channel mode flags */
-		'PRESENCE':           1 << 16,
-		'PUBLISH':            1 << 17,
-		'SUBSCRIBE':          1 << 18,
-		'PRESENCE_SUBSCRIBE': 1 << 19
+		'PRESENCE':                 1 << 16,
+		'PUBLISH':                  1 << 17,
+		'SUBSCRIBE':                1 << 18,
+		'PRESENCE_SUBSCRIBE':       1 << 19,
+		'LOCAL_PRESENCE_SUBSCRIBE': 1 << 20,
 	};
 	var flagNames = Utils.keysArray(flags);
 	flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
@@ -69,6 +71,30 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.prototype.getMode = function() {
 		return this.flags && (this.flags & flags.MODE_ALL);
+	};
+
+	ProtocolMessage.prototype.encodeModesToFlags = function(modes) {
+		var self = this;
+		Utils.arrForEach(modes, function(mode) {
+			self.setFlag(mode);
+		});
+	};
+
+	ProtocolMessage.prototype.decodeModesFromFlags = function() {
+		var modes = [],
+			self = this;
+		Utils.arrForEach([
+			'PRESENCE',
+			'PUBLISH',
+			'SUBSCRIBE',
+			'PRESENCE_SUBSCRIBE',
+			'LOCAL_PRESENCE_SUBSCRIBE'
+		], function(flag) {
+			if(self.hasFlag(flag)) {
+				modes.push(flag);
+			}
+		});
+		return modes.length > 0 ? modes : undefined;
 	};
 
 	ProtocolMessage.serialize = Utils.encodeBody;
@@ -128,7 +154,20 @@ var ProtocolMessage = (function() {
 			result += '; flags=' + Utils.arrFilter(flagNames, function(flag) {
 				return msg.hasFlag(flag);
 			}).join(',');
-
+		if(msg.params) {
+			var stringifiedParams = '';
+			for (var key in msg.params) {
+				if (Object.prototype.hasOwnProperty.call(msg.params, key) && msg.params[key]) {
+					if (stringifiedParams.length > 0) {
+						stringifiedParams += '; ';
+					}
+					stringifiedParams += key + '=' + msg.params[key];
+				}
+			}
+			if (stringifiedParams.length > 0) {
+				result += '; params=[' + stringifiedParams + ']';
+			}
+		}
 		result += ']';
 		return result;
 	};
