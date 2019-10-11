@@ -476,5 +476,17 @@ var Utils = (function() {
 		return (format == 'msgpack') ? msgpack.encode(body, true) : JSON.stringify(body);
 	};
 
+	Utils.allToLowerCase = function(arr) {
+		return Utils.arrMap(arr, function(element) {
+			return element && element.toLowerCase();
+		});
+	};
+
+	Utils.allToUpperCase = function(arr) {
+		return Utils.arrMap(arr, function(element) {
+			return element && element.toUpperCase();
+		});
+	};
+
 	return Utils;
 })();

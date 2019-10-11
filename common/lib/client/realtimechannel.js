@@ -49,6 +49,31 @@ var RealtimeChannel = (function() {
 		return args;
 	};
 
+	RealtimeChannel.prototype.setOptions = function(options, callback) {
+		if(!callback) {
+			if (this.rest.options.promises) {
+				return Utils.promisify(this, 'setOptions', arguments);
+			}
+
+			callback = (err) => {
+				if(err) {
+					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
+				}
+			};
+		}
+		Channel.prototype.setOptions.call(this, options);
+		if(this.shouldReattachToSetOptions(options)) {
+			this._attach(true, callback);
+		} else {
+			callback();
+		}
+	};
+
+	RealtimeChannel.prototype.shouldReattachToSetOptions = function(options) {
+		// TODO: Check if the new options are different than the old ones
+		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
+	};
+
 	RealtimeChannel.prototype.publish = function() {
 		var argCount = arguments.length,
 			messages = arguments[0],
@@ -136,50 +161,53 @@ var RealtimeChannel = (function() {
 			}
 		}
 		if(flags) {
+			/* If flags requested, always do a re-attach. TODO only do this if
+			 * current mode differs from requested mode */
 			this._requestedFlags = flags;
+		} else if (this.state === 'attached') {
+			callback();
+			return;
 		}
+
+		this._attach(false, callback);
+	};
+
+	RealtimeChannel.prototype._attach = function(forceReattach, callback) {
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
 			return;
 		}
-		switch(this.state) {
-			case 'attached':
-				/* If flags requested, always do a re-attach. TODO only do this if if
-				* current mode differs from requested mode */
-				if(!flags) {
+
+		if (this.state !== 'attaching' || forceReattach) {
+			this.requestState('attaching');
+		}
+
+		this.once(function(stateChange) {
+			switch(this.event) {
+				case 'attached':
 					callback();
 					break;
-				} /* else fallthrough */
-			default:
-				this.requestState('attaching');
-			case 'attaching':
-				this.once(function(stateChange) {
-					switch(this.event) {
-						case 'attached':
-							callback();
-							break;
-						case 'detached':
-						case 'suspended':
-						case 'failed':
-							callback(stateChange.reason || connectionManager.getError());
-							break;
-						case 'detaching':
-							callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
-							break;
-					}
-				});
+				case 'detached':
+				case 'suspended':
+				case 'failed':
+					callback(stateChange.reason || connectionManager.getError());
+					break;
+				case 'detaching':
+					callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
+					break;
 			}
+		});
 	};
 
 	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.setInProgress(statechangeOp, true);
-		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name, params: this.channelOptions.params});
 		if(this._requestedFlags) {
-			Utils.arrForEach(this._requestedFlags, function(flag) {
-				attachMsg.setFlag(flag);
-			})
+			attachMsg.encodeModesToFlags(this._requestedFlags);
+		} else if(this.channelOptions.modes) {
+			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes));
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -302,6 +330,8 @@ var RealtimeChannel = (function() {
 		case actions.ATTACHED:
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
+			this.params = message.params;
+			this.modes = Utils.allToLowerCase(message.decodeModesFromFlags());
 			if(this.state === 'attached') {
 				var resumed = message.hasFlag('RESUMED');
 				if(!resumed || this.channelOptions.updateOnAttached) {
