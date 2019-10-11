@@ -124,6 +124,9 @@ var Realtime = (function() {
 		if(!channel) {
 			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
 		} else if(channelOptions) {
+			if (channel.shouldReattachToSetOptions(channelOptions)) {
+				throw new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.", 40000, 400);
+			}
 			channel.setOptions(channelOptions);
 		}
 		return channel;
