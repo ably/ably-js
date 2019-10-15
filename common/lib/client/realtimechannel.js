@@ -61,6 +61,11 @@ var RealtimeChannel = (function() {
 				}
 			};
 		}
+		var err = validateChannelOptions(options);
+		if(err) {
+			callback(err);
+			return;
+		}
 		Channel.prototype.setOptions.call(this, options);
 		if(this.shouldReattachToSetOptions(options)) {
 			this._attach(true, callback);
@@ -68,6 +73,24 @@ var RealtimeChannel = (function() {
 			callback();
 		}
 	};
+
+	function validateChannelOptions(options) {
+		if(options && options.params) {
+			var params = options.params;
+			if(params.modes && typeof params.modes !== 'string') {
+				return new ErrorInfo('options.params.modes must be a string', 40000, 400);
+			}
+			if(params.delta && typeof params.delta !== 'string') {
+				return new ErrorInfo('options.params.delta must be a string', 40000, 400);
+			}
+		}
+		if(options && options.modes) {
+			var isString = function(ob) { return typeof ob === 'string' };
+			if(!Utils.isArray(options.modes) || !Utils.arrEvery(options.modes, isString)) {
+				return new ErrorInfo('options.modes must be an array of strings', 40000, 400);
+			}
+		}
+	}
 
 	RealtimeChannel.prototype.shouldReattachToSetOptions = function(options) {
 		// TODO: Check if the new options are different than the old ones
