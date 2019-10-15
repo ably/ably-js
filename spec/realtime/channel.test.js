@@ -336,6 +336,274 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
+	testOnAllTransports(_exports, 'attachWithChannelParamsBasicChannelsGet', function(realtimeOpts) { return function(test) {
+		test.expect(3);
+		var testName = 'attachWithChannelParamsBasicChannelsGet';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var params = {
+					modes: 'subscribe',
+					delta: 'vcdiff'
+				};
+				var channelOptions = {
+					params: params
+				};
+				var channel = realtime.channels.get(testName, channelOptions);
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
+					test.deepEqual(channel.params, params, 'Check result params');
+					test.deepEqual(channel.modes, ['subscribe'], 'Check result modes');
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
+	testOnAllTransports(_exports, 'attachWithChannelParamsBasicSetOptions', function(realtimeOpts) { return function(test) {
+		test.expect(3);
+		var testName = 'attachWithChannelParamsBasicSetOptions';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var params = {
+					modes: 'subscribe',
+					delta: 'vcdiff'
+				};
+				var channelOptions = {
+					params: params
+				};
+				var channel = realtime.channels.get(testName);
+				channel.setOptions(channelOptions);
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
+					test.deepEqual(channel.params, params, 'Check result params');
+					test.deepEqual(channel.modes, ['subscribe'], 'Check result modes');
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
+	_exports.channelGetShouldThrowWhenWouldCauseReattach = function(test) {
+		test.expect(3);
+		var testName = 'channelGetShouldThrowWhenWouldCauseReattach';
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.on('connected', function() {
+				var params = {
+					modes: 'subscribe',
+					delta: 'vcdiff'
+				};
+				var channel = realtime.channels.get(testName, {
+					params: params
+				});
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+
+					try {
+						realtime.channels.get(testName, {
+							params: params
+						});
+					} catch(e) {
+						test.equal(e.code, 40000, 'Check error code');
+						test.equal(e.statusCode, 400, 'Check error status code');
+						test.ok(e.message.includes('setOptions'), 'Check error message');
+						closeAndFinish(test, realtime);
+					}
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
+	testOnAllTransports(_exports, 'setOptionsCallbackBehaviour', function(realtimeOpts) { return function(test) {
+		test.expect(6);
+		var testName = 'setOptionsCallbackBehaviour';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var params = {
+					modes: 'subscribe',
+					delta: 'vcdiff'
+				};
+				var modes = ['publish'];
+				var channel = realtime.channels.get(testName);
+
+				async.series([
+					function(cb) {
+						var setOptionsReturned = false;
+						channel.setOptions({
+							params: params,
+							modes: modes
+						}, function() {
+							test.ok(!setOptionsReturned, 'setOptions failed to call back immediately, when no reattach is required');
+							cb();
+						});
+						setOptionsReturned = true;
+					},
+					function(cb) {
+						channel.attach(function(err) {
+							cb(err);
+						});
+					},
+					function(cb) {
+						var channelReattached = false;
+						channel.on('attaching', function() {
+							channelReattached = true;
+						});
+
+						var setOptionsReturned = false;
+						channel.setOptions({
+							params: params
+						}, function() {
+							test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
+							test.ok(channelReattached, 'Check reattach with params occurred');
+							cb();
+						});
+						setOptionsReturned = true;
+					},
+					function(cb) {
+						var channelReattached = false;
+						channel.on('attaching', function() {
+							channelReattached = true;
+						});
+
+						var setOptionsReturned = false;
+						channel.setOptions({
+							modes: modes
+						}, function() {
+							test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
+							test.ok(channelReattached, 'Check reattach with modes occurred');
+							cb();
+						});
+						setOptionsReturned = true;
+					},
+					function(cb) {
+						var setOptionsReturned = false;
+						channel.setOptions({ }, function() {
+							test.ok(!setOptionsReturned, 'setOptions failed to call back immediately, when no reattach is required');
+							cb();
+						});
+						setOptionsReturned = true;
+					}
+				], function(err) {
+					if(err)
+						test.ok(false, testName + ' failed with error: ' + displayError(err));
+
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
+	/* Verify modes is ignored when params.modes is present */
+	testOnAllTransports(_exports, 'attachWithChannelParamsModesAndChannelModes', function(realtimeOpts) { return function(test) {
+		test.expect(3);
+		var testName = 'attachWithChannelParamsModesAndChannelModes';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var paramsModes = ['presence', 'subscribe'];
+				var params = {
+					modes: paramsModes.join(',')
+				};
+				var channelOptions = {
+					params: params,
+					modes: ['publish', 'presence_subscribe']
+				};
+				var channel = realtime.channels.get(testName, channelOptions);
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
+					test.deepEqual(channel.params, params, 'Check result params');
+					test.deepEqual(channel.modes, paramsModes, 'Check result modes');
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
+	testOnAllTransports(_exports, 'attachWithChannelModes', function(realtimeOpts) { return function(test) {
+		test.expect(3);
+		var testName = 'attachWithChannelModes';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var modes = ['publish', 'presence_subscribe'];
+				var channelOptions = {
+					modes: modes
+				};
+				var channel = realtime.channels.get(testName, channelOptions);
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
+					test.deepEqual(channel.params, { modes: modes.join(',') }, 'Check result params');
+					test.deepEqual(channel.modes, modes, 'Check result modes');
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
+	testOnAllTransports(_exports, 'attachWithChannelParamsDeltaAndModes', function(realtimeOpts) { return function(test) {
+		test.expect(3);
+		var testName = 'attachWithChannelParamsDeltaAndModes';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var modes = ['publish', 'subscribe', 'local_presence_subscribe'];
+				var channelOptions = {
+					modes: modes,
+					params: { delta: 'vcdiff' }
+				};
+				var channel = realtime.channels.get(testName, channelOptions);
+				channel.attach(function(err) {
+					if(err)
+						test.ok(false, 'Attach failed with error: ' + displayError(err));
+					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
+					test.deepEqual(channel.params, { modes: modes.join(','), delta: 'vcdiff' }, 'Check result params');
+					test.deepEqual(channel.modes, modes, 'Check result modes');
+					closeAndFinish(test, realtime);
+				});
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
 	/*
 	 * Subscribe, then unsubscribe, binary transport
 	 */
