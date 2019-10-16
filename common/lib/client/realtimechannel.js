@@ -75,16 +75,19 @@ var RealtimeChannel = (function() {
 	};
 
 	function validateChannelOptions(options) {
-		if(options && options.params) {
+		if(options && 'params' in options) {
 			var params = options.params;
-			if(params.modes && typeof params.modes !== 'string') {
-				return new ErrorInfo('options.params.modes must be a string', 40000, 400);
+			if(!Utils.isObject(params)){
+				return new ErrorInfo('options.params must be an object', 40000, 400);
 			}
-			if(params.delta && typeof params.delta !== 'string') {
-				return new ErrorInfo('options.params.delta must be a string', 40000, 400);
+			if('modes' in params && (typeof params.modes !== 'string' || !params.modes.length)) {
+				return new ErrorInfo('options.params.modes must be a non-empty string', 40000, 400);
+			}
+			if('delta' in params && (typeof params.delta !== 'string' || !params.delta.length)) {
+				return new ErrorInfo('options.params.delta must be a non-empty string', 40000, 400);
 			}
 		}
-		if(options && options.modes) {
+		if(options && 'modes' in options) {
 			var isString = function(ob) { return typeof ob === 'string' };
 			if(!Utils.isArray(options.modes) || !Utils.arrEvery(options.modes, isString)) {
 				return new ErrorInfo('options.modes must be an array of strings', 40000, 400);
