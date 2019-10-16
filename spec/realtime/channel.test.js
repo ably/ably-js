@@ -604,6 +604,149 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
+	_exports.attachWithInvalidChannelParams = function(test) {
+		test.expect(33);
+		var testName = 'attachWithInvalidChannelParams';
+		var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe,local_presence_subscribe';
+		var defaultChannelParams = { modes: defaultChannelModes };
+		try {
+			var realtime = helper.AblyRealtime();
+			realtime.connection.on('connected', function() {
+				var channel = realtime.channels.get(testName);
+				async.series([
+					function(cb) {
+						channel.attach(function(err) {
+							cb(err);
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							modes: 'subscribe'
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							modes: [1, 'subscribe']
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: 'test'
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: {
+								modes: ['subscribe']
+							}
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: {
+								modes: 'subscribe',
+								delta: true
+							}
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: null
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: {
+								modes: ''
+							}
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							params: {
+								delta: ''
+							}
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					},
+					function(cb) {
+						var channelOptions = {
+							modes: undefined
+						};
+						channel.setOptions(channelOptions, function(err) {
+							test.equal(err.code, 40000, 'Check channelOptions validation error code');
+							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
+							test.deepEqual(channel.params, defaultChannelParams, 'Check channel options params result');
+							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							cb();
+						});
+					}
+				], function(err) {
+					if(err)
+						test.ok(false, testName + ' failed with error: ' + displayError(err));
+
+					closeAndFinish(test, realtime);
+				})
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
 	/*
 	 * Subscribe, then unsubscribe, binary transport
 	 */
