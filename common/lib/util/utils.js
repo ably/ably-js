@@ -428,7 +428,7 @@ var Utils = (function() {
 		function(numBytes) {
 			var uIntArr = new Uint8Array(numBytes);
 			Platform.getRandomValues(uIntArr);
-			return BufferUtils.base64Encode(uIntArr.buffer);
+			return BufferUtils.base64Encode(uIntArr);
 		} : function(numBytes) {
 			/* Old browser; fall back to Math.random. Could just use a
 			 * CryptoJS version of the above, but want this to still work in nocrypto

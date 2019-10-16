@@ -1,23 +1,23 @@
 this.BufferUtils = (function() {
 	function BufferUtils() {}
 
-	BufferUtils.isBuffer = Buffer.isBuffer;
+	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
 
-	BufferUtils.toArrayBuffer = function(buf) { return buf; };
+	BufferUtils.isBuffer = function(buf) { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
 
-	BufferUtils.base64Encode = function(buf) { return buf.toString('base64'); };
+	BufferUtils.toBuffer = function(buf) { return Buffer.from(buf); };
+
+	BufferUtils.toArrayBuffer = function(buf) { return Buffer.from(buf).buffer; };
+
+	BufferUtils.base64Encode = function(buf) { return Buffer.from(buf).toString('base64'); };
 
 	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };
 
-	BufferUtils.hexEncode = function(buf) { return buf.toString('hex'); };
+	BufferUtils.hexEncode = function(buf) { return Buffer.from(buf).toString('hex'); };
 
 	BufferUtils.utf8Encode = function(string) { return new Buffer(string, 'utf8'); };
 
-	BufferUtils.utf8Decode = function(buf) {
-		if(BufferUtils.isBuffer(buf))
-			return buf.toString('utf8');
-		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
-	};
+	BufferUtils.utf8Decode = function(buf) { return Buffer.from(buf).toString('utf8'); };
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
 		if(!buf1) return -1;
