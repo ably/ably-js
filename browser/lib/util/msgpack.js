@@ -519,6 +519,11 @@ var msgpack = (function() {
 			}
 		}
 
+		if(ArrayBuffer.isView && ArrayBuffer.isView(value)) {
+			// extract the arraybuffer and fallthrough
+			value = value.buffer;
+		}
+
 		// There are three bin types: bin8/bin16/bin32
 		if (value instanceof ArrayBuffer) {
 			var length = value.byteLength;
@@ -713,6 +718,11 @@ var msgpack = (function() {
 			if (length < 0x100000000) {
 				return 5 + length;
 			}
+		}
+
+		if(ArrayBuffer.isView && ArrayBuffer.isView(value)) {
+			// extract the arraybuffer and fallthrough
+			value = value.buffer;
 		}
 
 		// bin8 or bin16 or bin32
