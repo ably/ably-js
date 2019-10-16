@@ -2,7 +2,8 @@ var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
-	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	var hexCharSet = '0123456789abcdef';
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
@@ -74,6 +75,7 @@ var BufferUtils = (function() {
 	function BufferUtils() {}
 
 	BufferUtils.base64CharSet = base64CharSet;
+	BufferUtils.hexCharSet = hexCharSet;
 
 	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf) || isTypedArray(buf); };
 

@@ -443,6 +443,21 @@ var Utils = (function() {
 			return result;
 		};
 
+	Utils.randomHexString = (Platform.getRandomValues && typeof Uint8Array !== 'undefined') ?
+		function(numBytes) {
+			var uIntArr = new Uint8Array(numBytes);
+			Platform.getRandomValues(uIntArr);
+			return BufferUtils.hexEncode(uIntArr);
+		} : function(numBytes) {
+			var charset = BufferUtils.hexCharSet;
+			var length = numBytes * 2;
+			var result = '';
+			for(var i=0; i<length; i++) {
+				result += charset[randomPosn(charset)];
+			}
+			return result;
+		};
+
 	/* Pick n elements at random without replacement from an array */
 	Utils.arrChooseN = function(arr, n) {
 		var numItems = Math.min(n, arr.length),
