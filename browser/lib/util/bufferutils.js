@@ -2,12 +2,14 @@ var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
+	var TextEncoder = Platform.TextEncoder;
+	var TextDecoder = Platform.TextDecoder;
 	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	var hexCharSet = '0123456789abcdef';
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
-	function isTypedArray(ob) { ArrayBuffer.isView && ArrayBuffer.isView(ob); }
+	function isTypedArray(ob) { return ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob); }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
 	function uint8ViewToBase64(bytes) {
@@ -72,6 +74,9 @@ var BufferUtils = (function() {
 		return bytes.buffer;
 	}
 
+	/* Most BufferUtils methods that return a binary object return an ArrayBuffer
+	 * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
+	 * returns a Uint8Array (and won't work on browsers too old to support it) */
 	function BufferUtils() {}
 
 	BufferUtils.base64CharSet = base64CharSet;
@@ -131,8 +136,9 @@ var BufferUtils = (function() {
 	};
 
 	BufferUtils.base64Decode = function(str) {
-		if(ArrayBuffer && atob)
+		if(ArrayBuffer && atob) {
 			return base64ToArrayBuffer(str);
+		}
 		return CryptoJS.enc.Base64.parse(str);
 	};
 
@@ -141,11 +147,22 @@ var BufferUtils = (function() {
 		return CryptoJS.enc.Hex.stringify(buf);
 	};
 
+	BufferUtils.hexDecode = function(string) {
+		var wordArray = CryptoJS.enc.Hex.parse(string);
+		return ArrayBuffer ? BufferUtils.toArrayBuffer(wordArray) : wordArray;
+	};
+
 	BufferUtils.utf8Encode = function(string) {
+		if(TextEncoder) {
+			return (new TextEncoder()).encode(string).buffer;
+		}
 		return CryptoJS.enc.Utf8.parse(string);
 	};
 
 	BufferUtils.utf8Decode = function(buf) {
+		if(TextDecoder && !isWordArray(buf)) {
+			return (new TextDecoder()).decode(buf);
+		}
 		buf = BufferUtils.toWordArray(buf);
 		return CryptoJS.enc.Utf8.stringify(buf);
 	};

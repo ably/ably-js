@@ -3,6 +3,8 @@ this.BufferUtils = (function() {
 
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
 
+	/* In node, BufferUtils methods that return binary objects return a Buffer
+	 * for historical reasons; the browser equivalents return ArrayBuffers */
 	BufferUtils.isBuffer = function(buf) { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
 
 	BufferUtils.toBuffer = function(buf) { return Buffer.from(buf); };
@@ -14,6 +16,8 @@ this.BufferUtils = (function() {
 	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };
 
 	BufferUtils.hexEncode = function(buf) { return Buffer.from(buf).toString('hex'); };
+
+	BufferUtils.hexDecode = function(string) { return new Buffer(string, 'hex'); };
 
 	BufferUtils.utf8Encode = function(string) { return new Buffer(string, 'utf8'); };
 
