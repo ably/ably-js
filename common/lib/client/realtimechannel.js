@@ -189,6 +189,7 @@ var RealtimeChannel = (function() {
 			}
 		}
 		if(flags) {
+			Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
 			/* If flags requested, always do a re-attach. TODO only do this if
 			 * current mode differs from requested mode */
 			this._requestedFlags = flags;
