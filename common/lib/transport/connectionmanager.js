@@ -653,6 +653,7 @@ var ConnectionManager = (function() {
 				currentProtocol.clearPendingMessages();
 			});
 			this.activeProtocol = this.host = null;
+			clearTimeout(this.channelResumeCheckTimer);
 		}
 
 		this.emit('transport.inactive', transport);
@@ -776,6 +777,18 @@ var ConnectionManager = (function() {
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});
+		} else if(this.options.checkChannelsOnResume) {
+			/* For attached channels, set the attached msg indicator variable to false,
+			 * wait 30s, and check we got an attached for each one.
+			 * 30s was chosen to be 5s longer than the transport idle timeout expire
+			 * time, in an attempt to avoid false positives due to a transport
+			 * silently failing immediately after a resume */
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Same connectionId; checkChannelsOnResume is enabled');
+			clearTimeout(this.channelResumeCheckTimer);
+			this.realtime.channels.resetAttachedMsgIndicators();
+			this.channelResumeCheckTimer = setTimeout(function() {
+				self.realtime.channels.checkAttachedMsgIndicators(connectionId);
+			}, 30000);
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
