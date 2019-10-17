@@ -82,7 +82,7 @@ var BufferUtils = (function() {
 	BufferUtils.base64CharSet = base64CharSet;
 	BufferUtils.hexCharSet = hexCharSet;
 
-	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf) || isTypedArray(buf); };
+	var isBuffer = BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf) || isTypedArray(buf); };
 
 	/* In browsers, returns a Uint8Array */
 	var toBuffer = BufferUtils.toBuffer = function(buf) {
@@ -159,7 +159,15 @@ var BufferUtils = (function() {
 		return CryptoJS.enc.Utf8.parse(string);
 	};
 
+	/* For utf8 decoding we apply slightly stricter input validation than to
+	 * hexEncode/base64Encode/etc: in those we accept anything that Buffer.from
+	 * can take (in particular allowing strings, which are just interpreted as
+	 * binary); here we ensure that the input is actually a buffer since trying
+	 * to utf8-decode a string to another string is almost certainly a mistake */
 	BufferUtils.utf8Decode = function(buf) {
+		if(!isBuffer(buf)) {
+			throw new Error("Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray");
+		}
 		if(TextDecoder && !isWordArray(buf)) {
 			return (new TextDecoder()).decode(buf);
 		}
