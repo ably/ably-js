@@ -111,6 +111,7 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/util/eventemitter.js',
 		'<%= dirs.common %>/lib/util/logger.js',
 		'<%= dirs.common %>/lib/util/multicaster.js',
+		'<%= dirs.common %>/lib/util/errorreporter.js',
 
 		'<%= dirs.common %>/lib/types/errorinfo.js',
 		'<%= dirs.common %>/lib/types/message.js',

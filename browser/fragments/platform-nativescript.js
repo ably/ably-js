@@ -17,7 +17,7 @@ if (global.android) {
 }
 
 var Platform = {
-	libver: 'js-ns-',
+	libver: 'js-ns',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',

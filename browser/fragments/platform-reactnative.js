@@ -1,5 +1,5 @@
 var Platform = {
-	libver: 'js-rn-',
+	libver: 'js-rn',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',

@@ -1,7 +1,6 @@
 this.Platform = {
-	libver: 'js-node-',
+	libver: 'js-node',
 	logTimestamps: true,
-	hasWindow: false,
 	userAgent: null,
 	binaryType: 'nodebuffer',
 	WebSocket: require('ws'),

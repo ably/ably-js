@@ -21,8 +21,14 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
+Defaults.errorReportingUrl = 'https://errors.ably.io/api/15/store/';
+Defaults.errorReportingHeaders = {
+	"X-Sentry-Auth": "Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1",
+	"Content-Type": "application/json"
+};
+
 Defaults.version          = '1.1.20';
-Defaults.libstring        = Platform.libver + Defaults.version;
+Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
 Defaults.getHost = function(options, host, ws) {
