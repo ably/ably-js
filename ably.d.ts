@@ -247,7 +247,7 @@ declare namespace Types {
 		ttl?: number;
 	}
 
-	type ChannelParams = Map<string, string>;
+	type ChannelParams = { [key: string]: string };
 
 	type ChannelModes = Array<string>;
 
