@@ -591,7 +591,9 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
 			}
 			if(existingActiveProtocol.transport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that was also the transport for the previous active protocol, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-previously-active');
 			} else {
 				existingActiveProtocol.finish();
 			}
@@ -601,7 +603,9 @@ var ConnectionManager = (function() {
 		 * abort any not-yet-pending transport attempts */
 		Utils.safeArrForEach(this.pendingTransports, function(pendingTransport) {
 			if(pendingTransport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a pending transport, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-activating-pending');
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			} else {
 				pendingTransport.disconnect();
@@ -609,7 +613,9 @@ var ConnectionManager = (function() {
 		});
 		Utils.safeArrForEach(this.proposedTransports, function(proposedTransport) {
 			if(proposedTransport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a proposed transport, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-activating-proposed');
 				Utils.arrDeleteValue(self.proposedTransports, transport);
 			} else {
 				proposedTransport.dispose();
