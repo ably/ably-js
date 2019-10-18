@@ -28,6 +28,10 @@ var RealtimeChannel = (function() {
 			 * I.e. all encodings added by Ably Realtime have been decoded. */
 			baseEncodedPreviousPayload: undefined
 		};
+		this.lastPayloadMessageId = null;
+		this.lastPayloadProtocolMessageChannelSerial = null;
+		this.decodeFailureRecoveryInProgress = false;
+		this.decodeFailureRecoveryForChannelSerial = null;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -207,6 +211,14 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype._attach = function(forceReattach, callback) {
+		if(!callback) {
+			callback = function(err) {
+				if (err) {
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
+
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
@@ -242,6 +254,9 @@ var RealtimeChannel = (function() {
 			attachMsg.encodeModesToFlags(this._requestedFlags);
 		} else if(this.channelOptions.modes) {
 			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes));
+		}
+		if(this.decodeFailureRecoveryInProgress) {
+			attachMsg.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -423,9 +438,27 @@ var RealtimeChannel = (function() {
 
 		case actions.MESSAGE:
 			var messages = message.messages,
+				firstMessage = messages[0],
+				lastMessage = messages[messages.length - 1],
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
+
+			if(this.decodeFailureRecoveryInProgress) {
+				if(message.channelSerial === this.decodeFailureRecoveryForChannelSerial) {
+					this.decodeFailureRecoveryInProgress = false;
+					this.decodeFailureRecoveryForChannelSerial = null;
+				} else {
+					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Discarding message received during delta failure recovery process.');
+					break;
+				}
+			} else if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this.lastPayloadMessageId) {
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available. Starting decode failure recovery process.');
+				this.decodeFailureRecoveryInProgress = true;
+				this.decodeFailureRecoveryForChannelSerial = message.channelSerial;
+				this._attach(true);
+				break;
+			}
 
 			for(var i = 0; i < messages.length; i++) {
 				var msg = messages[i];
@@ -434,11 +467,20 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
+					if(e.recoveryStrategy && e.recoveryStrategy === 'reattach') {
+						Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message decode failure. Starting decode failure recovery process.');
+						this.decodeFailureRecoveryInProgress = true;
+						this.decodeFailureRecoveryForChannelSerial = message.channelSerial;
+						this._attach(true);
+						return;
+					}
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
 				if(!msg.id) msg.id = id + ':' + i;
 			}
+			this.lastPayloadMessageId = lastMessage.id;
+			this.lastPayloadProtocolMessageChannelSerial = message.channelSerial;
 			this.onEvent(messages);
 			break;
 

@@ -198,7 +198,7 @@ var Message = (function() {
 										lastPayload = data;
 									}
 								} catch(e) {
-									throw new Error('Decoding failed for codec ' + xform);
+									throw new ErrorInfo('Decoding failed for codec ' + xform, undefined, undefined, undefined, e.recoveryStrategy);
 								}
 								continue;
 							}
@@ -207,7 +207,7 @@ var Message = (function() {
 					break;
 				}
 			} catch(e) {
-				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400, undefined, e.recoveryStrategy);
 			} finally {
 				message.encoding = (lastProcessedEncodingIndex <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
 				message.data = data;

@@ -174,11 +174,29 @@ var ProtocolMessage = (function() {
 
 	/* Only valid for channel messages */
 	ProtocolMessage.isDuplicate = function(a, b) {
-		return a && b &&
-			(a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
-			(a.action === b.action) &&
-			(a.channel === b.channel) &&
-			(a.id === b.id);
+		if (a && b) {
+			if ((a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
+				(a.action === b.action) &&
+				(a.channel === b.channel) &&
+				(a.id === b.id)) {
+				if (a.action === actions.PRESENCE) {
+					return true;
+				} else if (a.messages.length === b.messages.length) {
+					for (var i = 0; i < a.messages.length; i++) {
+						var aMessage = a.messages[i];
+						var bMessage = b.messages[i];
+						if ((aMessage.extras && aMessage.extras.delta && aMessage.extras.delta.format) !==
+							(bMessage.extras && bMessage.extras.delta && bMessage.extras.delta.format)) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			}
+		}
+
+		return false;
 	};
 
 	return ProtocolMessage;
