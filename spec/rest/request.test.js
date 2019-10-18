@@ -180,7 +180,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			test.expect(1);
 			var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
 			restEcho.request(method, "/methods", {}, {}, {}, function(err, res) {
-				test.equal(res.items[0] && res.items[0].method, method);
+				if(err) {
+					test.ok(false, helper.displayError(err));
+				} else {
+					test.equal(res.items[0] && res.items[0].method, method);
+				}
 				test.done();
 			});
 		};
