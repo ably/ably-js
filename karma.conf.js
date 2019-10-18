@@ -107,6 +107,7 @@ module.exports = function(config) {
       { pattern: 'browser/lib/util/base64.js', included: false },
 
       { pattern: 'node_modules/async/lib/async.js', included: false },
+      { pattern: 'node_modules/ably-delta-codec/dist/ably-delta-codec.js', included: false },
 
       // shared test set up files
       { pattern: 'spec/common/**/*.js', included: false },

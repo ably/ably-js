@@ -137,21 +137,35 @@ var Message = (function() {
 
 	Message.serialize = Utils.encodeBody;
 
-	Message.decode = function(message, options) {
+	Message.decode = function(message, context) {
+		/* Ensures backward compatibility */
+		if(!context.channelOptions) {
+			var channelOptions = context;
+			context = {
+				channelOptions: channelOptions,
+				codecs: { },
+				baseEncodedPreviousPayload: undefined
+			};
+		}
+
+		var lastPayload = message.data;
 		var encoding = message.encoding;
 		if(encoding) {
 			var xforms = encoding.split('/'),
-				i, j = xforms.length,
+				lastProcessedEncodingIndex, encodingsToProcess = xforms.length,
 				data = message.data;
 
 			try {
-				while((i = j) > 0) {
-					var match = xforms[--j].match(/([\-\w]+)(\+([\w\-]+))?/);
+				while((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
+					var match = xforms[--encodingsToProcess].match(/([\-\w]+)(\+([\w\-]+))?/);
 					if(!match) break;
 					var xform = match[1];
 					switch(xform) {
 						case 'base64':
 							data = BufferUtils.base64Decode(String(data));
+							if(lastProcessedEncodingIndex == xforms.length) {
+								lastPayload = data;
+							}
 							continue;
 						case 'utf-8':
 							data = BufferUtils.utf8Decode(data);
@@ -160,8 +174,8 @@ var Message = (function() {
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
-							if(options != null && options.cipher) {
-								var xformAlgorithm = match[3], cipher = options.channelCipher;
+							if(context.channelOptions != null && context.channelOptions.cipher) {
+								var xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -172,6 +186,22 @@ var Message = (function() {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						default:
+							var codec = context.codecs[xform];
+							if(codec) {
+								try {
+									data = codec.decode(data, {
+										channelOptions: context.channelOptions,
+										encoding: match[0],
+										baseEncodedPreviousPayload: context.baseEncodedPreviousPayload
+									});
+									if(xform === 'vcdiff') {
+										lastPayload = data;
+									}
+								} catch(e) {
+									throw new Error('Decoding failed for codec ' + xform);
+								}
+								continue;
+							}
 							throw new Error("Unknown encoding");
 					}
 					break;
@@ -179,10 +209,12 @@ var Message = (function() {
 			} catch(e) {
 				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
 			} finally {
-				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
+				message.encoding = (lastProcessedEncodingIndex <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
 				message.data = data;
 			}
 		}
+
+		context.baseEncodedPreviousPayload = lastPayload;
 	};
 
 	Message.fromResponseBody = function(body, options, format) {

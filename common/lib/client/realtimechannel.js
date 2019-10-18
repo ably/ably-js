@@ -21,6 +21,13 @@ var RealtimeChannel = (function() {
 		this.errorReason = null;
 		this._requestedFlags = null;
 		this._mode = null;
+		this.encodingDecodingContext = {
+			channelOptions: this.channelOptions,
+			codecs: realtime.options.codecs || { },
+			/* The payload of the previous message encoded the same way as when it was received by Ably Realtime.
+			 * I.e. all encodings added by Ably Realtime have been decoded. */
+			baseEncodedPreviousPayload: undefined
+		};
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -420,11 +427,10 @@ var RealtimeChannel = (function() {
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			var options = this.channelOptions;
 			for(var i = 0; i < messages.length; i++) {
+				var msg = messages[i];
 				try {
-					var msg = messages[i];
-					Message.decode(msg, options);
+					Message.decode(msg, this.encodingDecodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());

@@ -82,6 +82,8 @@ declare namespace Types {
 		 */
 		autoConnect?: boolean;
 
+		codecs?: Map<string, AblyCodec>;
+
 		defaultTokenParams?: TokenParams;
 
 		/**
@@ -678,6 +680,19 @@ declare namespace Types {
 		listChannels: (params: PushChannelsParams) => Promise<PaginatedResult<string>>;
 		remove: (subscription: PushChannelSubscription) => Promise<void>;
 		removeWhere: (params: PushChannelSubscriptionParams) => Promise<void>;
+	}
+
+	type Payload = Buffer | string;
+
+	type EncodingContext = {
+		channelOptions: ChannelOptions
+		encoding: string
+		previousPayload?: Payload
+	}
+
+	interface AblyCodec {
+		encode?: (payload: Payload, encodingContext: EncodingContext) => { newPayload: Payload, encoding: string | null };
+		decode?: (payload: Payload, encodingContext: EncodingContext) => Payload;
 	}
 }
 
