@@ -37,7 +37,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			test.equal(BufferUtils.toArrayBuffer(BufferUtils.utf8Encode(testString)).constructor, ArrayBuffer);
 		} else if(typeof ArrayBuffer !== 'undefined') {
 			/* modern browsers */
-			test.equal(BufferUtils.utf8Encode(testString).constructor, ArrayBuffer);
+			if(typeof TextDecoder !== 'undefined') {
+				test.equal(BufferUtils.utf8Encode(testString).constructor, ArrayBuffer);
+			} else {
+				test.ok(isWordArray(BufferUtils.utf8Encode(testString)));
+			}
 			test.equal(BufferUtils.hexDecode(testHex).constructor, ArrayBuffer);
 			test.equal(BufferUtils.base64Decode(testBase64).constructor, ArrayBuffer);
 			test.equal(BufferUtils.toBuffer(BufferUtils.utf8Encode(testString)).constructor, Uint8Array);
