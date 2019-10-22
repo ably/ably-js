@@ -28,7 +28,7 @@ var ErrorReporter = (function() {
 					'User-Agent': Platform.userAgent
 				},
 				url: Platform.currentUrl
-			},
+			}
 		};
 
 		Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter: ' + message);

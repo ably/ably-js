@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.20
+ * Ably JavaScript Library v1.1.21
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -1720,6 +1720,11 @@ var msgpack = (function() {
 			}
 		}
 
+		if(ArrayBuffer.isView && ArrayBuffer.isView(value)) {
+			// extract the arraybuffer and fallthrough
+			value = value.buffer;
+		}
+
 		// There are three bin types: bin8/bin16/bin32
 		if (value instanceof ArrayBuffer) {
 			var length = value.byteLength;
@@ -1916,6 +1921,11 @@ var msgpack = (function() {
 			}
 		}
 
+		if(ArrayBuffer.isView && ArrayBuffer.isView(value)) {
+			// extract the arraybuffer and fallthrough
+			value = value.buffer;
+		}
+
 		// bin8 or bin16 or bin32
 		if (value instanceof ArrayBuffer) {
 			var length = value.byteLength;
@@ -2033,10 +2043,15 @@ function allowComet() {
 	return (!global.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
 }
 
+var userAgent = global.navigator && global.navigator.userAgent.toString();
+var currentUrl = global.location && global.location.href;
+
 var Platform = {
-	libver: 'js-web-',
+	libver: 'js-web',
 	logTimestamps: true,
-	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
+	userAgent: userAgent,
+	currentUrl: currentUrl,
+	noUpgrade: userAgent && userAgent.match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: global.WebSocket || global.MozWebSocket,
 	xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
@@ -2062,6 +2077,8 @@ var Platform = {
 			(new global.TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	TextEncoder: global.TextEncoder,
+	TextDecoder: global.TextDecoder,
 	Promise: global.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
@@ -2173,17 +2190,20 @@ var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
-	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+	var TextEncoder = Platform.TextEncoder;
+	var TextDecoder = Platform.TextDecoder;
+	var base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	var hexCharSet = '0123456789abcdef';
 
 	function isWordArray(ob) { return ob !== null && ob !== undefined && ob.sigBytes !== undefined; }
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
+	function isTypedArray(ob) { return ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob); }
 
 	// https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
-	function arrayBufferToBase64(ArrayBuffer) {
+	function uint8ViewToBase64(bytes) {
 		var base64    = ''
 		var encodings = base64CharSet;
 
-		var bytes         = new Uint8Array(ArrayBuffer)
 		var byteLength    = bytes.byteLength
 		var byteRemainder = byteLength % 3
 		var mainLength    = byteLength - byteRemainder
@@ -2242,18 +2262,29 @@ var BufferUtils = (function() {
 		return bytes.buffer;
 	}
 
+	/* Most BufferUtils methods that return a binary object return an ArrayBuffer
+	 * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
+	 * returns a Uint8Array (and won't work on browsers too old to support it) */
 	function BufferUtils() {}
 
 	BufferUtils.base64CharSet = base64CharSet;
+	BufferUtils.hexCharSet = hexCharSet;
 
-	BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf); };
+	var isBuffer = BufferUtils.isBuffer = function(buf) { return isArrayBuffer(buf) || isWordArray(buf) || isTypedArray(buf); };
 
-	BufferUtils.toArrayBuffer = function(buf) {
-		if(!ArrayBuffer)
-			throw new Error("Can't convert to ArrayBuffer: ArrayBuffer not supported");
+	/* In browsers, returns a Uint8Array */
+	var toBuffer = BufferUtils.toBuffer = function(buf) {
+		if(!ArrayBuffer) {
+			throw new Error("Can't convert to Buffer: browser does not support the necessary types");
+		}
 
-		if(isArrayBuffer(buf))
-			return buf;
+		if(isArrayBuffer(buf)) {
+			return new Uint8Array(buf);
+		}
+
+		if(isTypedArray(buf)) {
+			return new Uint8Array(buf.buffer);
+		}
 
 		if(isWordArray(buf)) {
 			/* Backported from unreleased CryptoJS
@@ -2265,44 +2296,71 @@ var BufferUtils = (function() {
 				uint8View[i] = (buf.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
 			}
 
-			return arrayBuffer;
+			return uint8View;
 		};
 
-		throw new Error("BufferUtils.toArrayBuffer expected a buffer");
+		throw new Error("BufferUtils.toBuffer expected an arraybuffer, typed array, or CryptoJS wordarray");
+	};
+
+	BufferUtils.toArrayBuffer = function(buf) {
+		if(isArrayBuffer(buf)) {
+			return buf;
+		}
+		return toBuffer(buf).buffer;
 	};
 
 	BufferUtils.toWordArray = function(buf) {
+		if(isTypedArray(buf)) {
+			buf = buf.buffer;
+		}
 		return isWordArray(buf) ? buf : WordArray.create(buf);
 	};
 
 	BufferUtils.base64Encode = function(buf) {
-		if(isArrayBuffer(buf))
-			return arrayBufferToBase64(buf);
-		if(isWordArray(buf))
+		if(isWordArray(buf)) {
 			return CryptoJS.enc.Base64.stringify(buf);
+		}
+		return uint8ViewToBase64(toBuffer(buf));
 	};
 
 	BufferUtils.base64Decode = function(str) {
-		if(ArrayBuffer && atob)
+		if(ArrayBuffer && atob) {
 			return base64ToArrayBuffer(str);
+		}
 		return CryptoJS.enc.Base64.parse(str);
 	};
 
 	BufferUtils.hexEncode = function(buf) {
-		if(isArrayBuffer(buf)) buf = WordArray.create(buf);
+		buf = BufferUtils.toWordArray(buf);
 		return CryptoJS.enc.Hex.stringify(buf);
 	};
 
+	BufferUtils.hexDecode = function(string) {
+		var wordArray = CryptoJS.enc.Hex.parse(string);
+		return ArrayBuffer ? BufferUtils.toArrayBuffer(wordArray) : wordArray;
+	};
+
 	BufferUtils.utf8Encode = function(string) {
+		if(TextEncoder) {
+			return (new TextEncoder()).encode(string).buffer;
+		}
 		return CryptoJS.enc.Utf8.parse(string);
 	};
 
+	/* For utf8 decoding we apply slightly stricter input validation than to
+	 * hexEncode/base64Encode/etc: in those we accept anything that Buffer.from
+	 * can take (in particular allowing strings, which are just interpreted as
+	 * binary); here we ensure that the input is actually a buffer since trying
+	 * to utf8-decode a string to another string is almost certainly a mistake */
 	BufferUtils.utf8Decode = function(buf) {
-		if(isArrayBuffer(buf))
-			buf = BufferUtils.toWordArray(buf) // CryptoJS only works with WordArrays
-		if(isWordArray(buf))
-			return CryptoJS.enc.Utf8.stringify(buf);
-		throw new Error("Expected input of utf8Decode to be a buffer or CryptoJS WordArray");
+		if(!isBuffer(buf)) {
+			throw new Error("Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray");
+		}
+		if(TextDecoder && !isWordArray(buf)) {
+			return (new TextDecoder()).decode(buf);
+		}
+		buf = BufferUtils.toWordArray(buf);
+		return CryptoJS.enc.Utf8.stringify(buf);
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
@@ -2323,7 +2381,7 @@ var BufferUtils = (function() {
 	};
 
 	BufferUtils.byteLength = function(buf) {
-		if(isArrayBuffer(buf)) {
+		if(isArrayBuffer(buf) || isTypedArray(buf)) {
 			return buf.byteLength
 		} else if(isWordArray(buf)) {
 			return buf.sigBytes;
@@ -2763,7 +2821,7 @@ var Utils = (function() {
 		function(numBytes) {
 			var uIntArr = new Uint8Array(numBytes);
 			Platform.getRandomValues(uIntArr);
-			return BufferUtils.base64Encode(uIntArr.buffer);
+			return BufferUtils.base64Encode(uIntArr);
 		} : function(numBytes) {
 			/* Old browser; fall back to Math.random. Could just use a
 			 * CryptoJS version of the above, but want this to still work in nocrypto
@@ -2771,6 +2829,21 @@ var Utils = (function() {
 			var charset = BufferUtils.base64CharSet;
 			/* base64 has 33% overhead; round length up */
 			var length = Math.round(numBytes * 4/3);
+			var result = '';
+			for(var i=0; i<length; i++) {
+				result += charset[randomPosn(charset)];
+			}
+			return result;
+		};
+
+	Utils.randomHexString = (Platform.getRandomValues && typeof Uint8Array !== 'undefined') ?
+		function(numBytes) {
+			var uIntArr = new Uint8Array(numBytes);
+			Platform.getRandomValues(uIntArr);
+			return BufferUtils.hexEncode(uIntArr);
+		} : function(numBytes) {
+			var charset = BufferUtils.hexCharSet;
+			var length = numBytes * 2;
 			var result = '';
 			for(var i=0; i<length; i++) {
 				result += charset[randomPosn(charset)];
@@ -3198,8 +3271,14 @@ Defaults.TIMEOUTS = {
 Defaults.httpMaxRetryCount = 3;
 Defaults.maxMessageSize    = 65536;
 
-Defaults.version          = '1.1.20';
-Defaults.libstring        = Platform.libver + Defaults.version;
+Defaults.errorReportingUrl = 'https://errors.ably.io/api/15/store/';
+Defaults.errorReportingHeaders = {
+	"X-Sentry-Auth": "Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1",
+	"Content-Type": "application/json"
+};
+
+Defaults.version          = '1.1.21';
+Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
 Defaults.getHost = function(options, host, ws) {
@@ -3664,6 +3743,50 @@ var Multicaster = (function() {
 	return Multicaster;
 })();
 
+var ErrorReporter = (function() {
+	function ErrorReporter() {}
+
+	var levels = ErrorReporter.levels = [
+		'fatal',
+		'error',
+		'warning',
+		'info',
+		'debug'
+	];
+
+	/* (level: typeof ErrorReporter.levels[number], message: string, fingerprint?: string, tags?: {[key: string]: string}): void */
+	ErrorReporter.report = function(level, message, fingerprint, tags) {
+		var eventId = Utils.randomHexString(16);
+
+		var event = {
+			event_id: eventId,
+			tags: Utils.mixin({
+				lib: Platform.libver
+			}, tags),
+			platform: 'javascript',
+			level: level,
+			release: Defaults.version,
+			fingerprint: fingerprint && [ fingerprint ],
+			message: message,
+			request: {
+				headers: {
+					'User-Agent': Platform.userAgent
+				},
+				url: Platform.currentUrl
+			}
+		};
+
+		Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter: ' + message);
+		Http.postUri(null, Defaults.errorReportingUrl, Defaults.errorReportingHeaders, JSON.stringify(event), {}, function(err, res) {
+			Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter resulted in: ' +
+				(err ? Utils.inspectError(err) : Utils.inspectBody(res))
+			);
+		});
+	};
+
+	return ErrorReporter;
+})();
+
 var ErrorInfo = (function() {
 
 	function ErrorInfo(message, code, statusCode, cause) {
@@ -3741,9 +3864,10 @@ var Message = (function() {
 				result.encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
-				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
-				* understand WordArrays */
-				data = BufferUtils.toArrayBuffer(data);
+				/* Called by msgpack. toBuffer returns a datatype understandable by
+				 * that platform's msgpack implementation (Buffer in node, Uint8Array
+				 * in browsers) */
+				data = BufferUtils.toBuffer(data);
 			}
 		}
 		result.data = data;
@@ -4041,9 +4165,10 @@ var PresenceMessage = (function() {
 				result.encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
-				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
-				* understand WordArrays */
-				data = BufferUtils.toArrayBuffer(data);
+				/* Called by msgpack. toBuffer returns a datatype understandable by
+				 * that platform's msgpack implementation (Buffer in node, Uint8Array
+				 * in browsers) */
+				data = BufferUtils.toBuffer(data);
 			}
 		}
 		result.data = data;
@@ -5330,7 +5455,9 @@ var ConnectionManager = (function() {
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
 			}
 			if(existingActiveProtocol.transport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that was also the transport for the previous active protocol, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-previously-active');
 			} else {
 				existingActiveProtocol.finish();
 			}
@@ -5340,7 +5467,9 @@ var ConnectionManager = (function() {
 		 * abort any not-yet-pending transport attempts */
 		Utils.safeArrForEach(this.pendingTransports, function(pendingTransport) {
 			if(pendingTransport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a pending transport, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-activating-pending');
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			} else {
 				pendingTransport.disconnect();
@@ -5348,7 +5477,9 @@ var ConnectionManager = (function() {
 		});
 		Utils.safeArrForEach(this.proposedTransports, function(proposedTransport) {
 			if(proposedTransport === transport) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a proposed transport, stack = ' + new Error().stack);
+				var msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				ErrorReporter.report('error', msg, 'transport-activating-proposed');
 				Utils.arrDeleteValue(self.proposedTransports, transport);
 			} else {
 				proposedTransport.dispose();
@@ -5386,6 +5517,7 @@ var ConnectionManager = (function() {
 				currentProtocol.clearPendingMessages();
 			});
 			this.activeProtocol = this.host = null;
+			clearTimeout(this.channelResumeCheckTimer);
 		}
 
 		this.emit('transport.inactive', transport);
@@ -5509,6 +5641,18 @@ var ConnectionManager = (function() {
 			Utils.nextTick(function() {
 				self.realtime.channels.reattach();
 			});
+		} else if(this.options.checkChannelsOnResume) {
+			/* For attached channels, set the attached msg indicator variable to false,
+			 * wait 30s, and check we got an attached for each one.
+			 * 30s was chosen to be 5s longer than the transport idle timeout expire
+			 * time, in an attempt to avoid false positives due to a transport
+			 * silently failing immediately after a resume */
+			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Same connectionId; checkChannelsOnResume is enabled');
+			clearTimeout(this.channelResumeCheckTimer);
+			this.realtime.channels.resetAttachedMsgIndicators();
+			this.channelResumeCheckTimer = setTimeout(function() {
+				self.realtime.channels.checkAttachedMsgIndicators(connectionId);
+			}, 30000);
 		}
 		this.realtime.connection.id = this.connectionId = connectionId;
 		this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
@@ -8628,6 +8772,27 @@ var Realtime = (function() {
 		}
 	};
 
+	Channels.prototype.resetAttachedMsgIndicators = function() {
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
+			if(channel.state === 'attached') {
+			channel._attachedMsgIndicator = false;
+			}
+		}
+	};
+
+	Channels.prototype.checkAttachedMsgIndicators = function(connectionId) {
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
+			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
+				var msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
+				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
+				ErrorReporter.report('error', msg, 'channel-no-attached-after-resume');
+				channel.requestState('attaching');
+			};
+		}
+	};
+
 	/* Connection interruptions (ie when the connection will no longer queue
 	 * events) imply connection state changes for any channel which is either
 	 * attached, pending, or will attempt to become attached in the future */
@@ -9235,6 +9400,8 @@ var RealtimeChannel = (function() {
 		this.errorReason = null;
 		this._requestedFlags = null;
 		this._mode = null;
+		/* Temporary; only used for the checkChannelsOnResume option */
+		this._attachedMsgIndicator = false;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -9514,6 +9681,7 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
+			this._attachedMsgIndicator = true;
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {

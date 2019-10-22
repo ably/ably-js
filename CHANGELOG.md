@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.21](https://github.com/ably/ably-js/tree/1.1.21) (2019-10-22)
+- BufferUtils overhaul (consistent return type on browsers (ArrayBuffer vs WordArray), hexDecode, support typed arrays, and more
+- Add error reporting mechanism
+
 ## [1.1.20](https://github.com/ably/ably-js/tree/1.1.20) (2019-10-05)
 - Fix channel.history with promises bug when using the realtime client
 - Auth no way to renew warning: upgrade to error
