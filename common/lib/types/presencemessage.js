@@ -66,9 +66,10 @@ var PresenceMessage = (function() {
 				result.encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
-				/* Called by msgpack. Need to feed it an ArrayBuffer, msgpack doesn't
-				* understand WordArrays */
-				data = BufferUtils.toArrayBuffer(data);
+				/* Called by msgpack. toBuffer returns a datatype understandable by
+				 * that platform's msgpack implementation (Buffer in node, Uint8Array
+				 * in browsers) */
+				data = BufferUtils.toBuffer(data);
 			}
 		}
 		result.data = data;

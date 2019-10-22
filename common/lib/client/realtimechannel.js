@@ -21,6 +21,8 @@ var RealtimeChannel = (function() {
 		this.errorReason = null;
 		this._requestedFlags = null;
 		this._mode = null;
+		/* Temporary; only used for the checkChannelsOnResume option */
+		this._attachedMsgIndicator = false;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -300,6 +302,7 @@ var RealtimeChannel = (function() {
 		var syncChannelSerial, isSync = false;
 		switch(message.action) {
 		case actions.ATTACHED:
+			this._attachedMsgIndicator = true;
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			if(this.state === 'attached') {

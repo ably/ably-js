@@ -1,5 +1,5 @@
 var Platform = {
-	libver: 'js-rn-',
+	libver: 'js-rn',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
@@ -27,7 +27,9 @@ var Platform = {
 			(new TextEncoder().encode(str)).length ||
 			str.length;
 	},
-	Promise: window.Promise,
+	TextEncoder: global.TextEncoder,
+	TextDecoder: global.TextDecoder,
+	Promise: global.Promise,
 	getRandomWordArray: (function(RNRandomBytes) {
 		return function(byteLength, callback) {
 			RNRandomBytes.randomBytes(byteLength, function(err, base64String) {

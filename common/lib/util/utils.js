@@ -428,7 +428,7 @@ var Utils = (function() {
 		function(numBytes) {
 			var uIntArr = new Uint8Array(numBytes);
 			Platform.getRandomValues(uIntArr);
-			return BufferUtils.base64Encode(uIntArr.buffer);
+			return BufferUtils.base64Encode(uIntArr);
 		} : function(numBytes) {
 			/* Old browser; fall back to Math.random. Could just use a
 			 * CryptoJS version of the above, but want this to still work in nocrypto
@@ -436,6 +436,21 @@ var Utils = (function() {
 			var charset = BufferUtils.base64CharSet;
 			/* base64 has 33% overhead; round length up */
 			var length = Math.round(numBytes * 4/3);
+			var result = '';
+			for(var i=0; i<length; i++) {
+				result += charset[randomPosn(charset)];
+			}
+			return result;
+		};
+
+	Utils.randomHexString = (Platform.getRandomValues && typeof Uint8Array !== 'undefined') ?
+		function(numBytes) {
+			var uIntArr = new Uint8Array(numBytes);
+			Platform.getRandomValues(uIntArr);
+			return BufferUtils.hexEncode(uIntArr);
+		} : function(numBytes) {
+			var charset = BufferUtils.hexCharSet;
+			var length = numBytes * 2;
 			var result = '';
 			for(var i=0; i<length; i++) {
 				result += charset[randomPosn(charset)];

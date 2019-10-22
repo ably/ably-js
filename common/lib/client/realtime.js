@@ -76,6 +76,27 @@ var Realtime = (function() {
 		}
 	};
 
+	Channels.prototype.resetAttachedMsgIndicators = function() {
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
+			if(channel.state === 'attached') {
+			channel._attachedMsgIndicator = false;
+			}
+		}
+	};
+
+	Channels.prototype.checkAttachedMsgIndicators = function(connectionId) {
+		for(var channelId in this.all) {
+			var channel = this.all[channelId];
+			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
+				var msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
+				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
+				ErrorReporter.report('error', msg, 'channel-no-attached-after-resume');
+				channel.requestState('attaching');
+			};
+		}
+	};
+
 	/* Connection interruptions (ie when the connection will no longer queue
 	 * events) imply connection state changes for any channel which is either
 	 * attached, pending, or will attempt to become attached in the future */

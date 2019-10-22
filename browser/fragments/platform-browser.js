@@ -10,10 +10,15 @@ function allowComet() {
 	return (!global.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
 }
 
+var userAgent = global.navigator && global.navigator.userAgent.toString();
+var currentUrl = global.location && global.location.href;
+
 var Platform = {
-	libver: 'js-web-',
+	libver: 'js-web',
 	logTimestamps: true,
-	noUpgrade: navigator && navigator.userAgent.toString().match(/MSIE\s8\.0/),
+	userAgent: userAgent,
+	currentUrl: currentUrl,
+	noUpgrade: userAgent && userAgent.match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
 	WebSocket: global.WebSocket || global.MozWebSocket,
 	xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
@@ -39,6 +44,8 @@ var Platform = {
 			(new global.TextEncoder().encode(str)).length ||
 			str.length;
 	},
+	TextEncoder: global.TextEncoder,
+	TextDecoder: global.TextDecoder,
 	Promise: global.Promise,
 	getRandomValues: (function(crypto) {
 		if (crypto === undefined) {
