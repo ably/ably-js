@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.22](https://github.com/ably/ably-js/tree/1.1.22) (2019-10-28)
+- Add some missing ClientOptions to typescript type definition file
+
 ## [1.1.21](https://github.com/ably/ably-js/tree/1.1.21) (2019-10-22)
 - BufferUtils overhaul (consistent return type on browsers (ArrayBuffer vs WordArray), hexDecode, support typed arrays, and more
 - Add error reporting mechanism
