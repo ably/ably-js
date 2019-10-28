@@ -8,10 +8,11 @@ Defaults.TIMEOUTS = {
 	/* Documented as options params: */
 	disconnectedRetryTimeout   : 15000,
 	suspendedRetryTimeout      : 30000,
+	/* Undocumented, but part of the api and can be used by customers: */
 	httpRequestTimeout         : 15000,
 	channelRetryTimeout        : 15000,
 	fallbackRetryTimeout       : 600000,
-	/* Not documented: */
+	/* For internal / test use only: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000,
