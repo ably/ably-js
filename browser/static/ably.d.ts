@@ -75,6 +75,8 @@ declare namespace Types {
 	}
 	type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
+	type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
+
 	// Interfaces
 	interface ClientOptions extends AuthOptions {
 		/**
@@ -109,6 +111,7 @@ declare namespace Types {
 		restHost?: string;
 		realtimeHost?: string;
 		fallbackHosts?: string[];
+		fallbackHostsUseDefault?: boolean;
 
 		/**
 		 * Can be used to explicitly recover a connection.
@@ -127,6 +130,13 @@ declare namespace Types {
 		 * When false, JSON text encoding is used.
 		 */
 		useBinaryProtocol?: boolean;
+
+		disconnectedRetryTimeout?: number;
+		suspendedRetryTimeout?: number;
+		closeOnUnload?: boolean;
+		idempotentRestPublishing?: boolean;
+		transportParams?: {[k: string]: string};
+		transports?: Transport[];
 	}
 
 	interface AuthOptions {
@@ -277,7 +287,7 @@ declare namespace Types {
 		/**
 		 * A function to handle each line of log output. If handler is not specified, console.log is used.
 		 **/
-		handler?: (...args: any[]) => void;
+		handler?: (msg: string) => void;
 	}
 
 	interface ChannelStateChange {

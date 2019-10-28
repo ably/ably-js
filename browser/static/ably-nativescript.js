@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2019, Ably
  *
- * Ably JavaScript Library v1.1.21
+ * Ably JavaScript Library v1.1.22
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4604,10 +4604,11 @@ Defaults.TIMEOUTS = {
 	/* Documented as options params: */
 	disconnectedRetryTimeout   : 15000,
 	suspendedRetryTimeout      : 30000,
+	/* Undocumented, but part of the api and can be used by customers: */
 	httpRequestTimeout         : 15000,
 	channelRetryTimeout        : 15000,
 	fallbackRetryTimeout       : 600000,
-	/* Not documented: */
+	/* For internal / test use only: */
 	connectionStateTtl         : 120000,
 	realtimeRequestTimeout     : 10000,
 	recvTimeout                : 90000,
@@ -4623,7 +4624,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.21';
+Defaults.version          = '1.1.22';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
