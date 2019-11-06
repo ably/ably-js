@@ -456,7 +456,7 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
-					if(e.recoveryStrategy && e.recoveryStrategy === 'reattach') {
+					if(e.code === 40018) {
 						Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message decode failed.');
 						this.startDecodeFailureRecovery();
 						return;

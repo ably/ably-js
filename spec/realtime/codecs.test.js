@@ -119,7 +119,7 @@ define(['shared_helper', 'ably-delta-codec'], function(helper, AblyDeltaCodec) {
 			var failingTestDeltaCodec = {
 				decode: function(payload, decodingContext) {
 					var err = new Error('Delta decode failed.');
-					err.recoveryStrategy = 'reattach';
+					err.code = 40018;
 					throw err;
 				}
 			};

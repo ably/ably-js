@@ -694,10 +694,6 @@ declare namespace Types {
 		encode?: (payload: Payload, encodingContext: EncodingContext) => { newPayload: Payload, encoding: string | null };
 		decode?: (payload: Payload, encodingContext: EncodingContext) => Payload;
 	}
-
-	interface ErrorWithRecoveryStrategy extends Error {
-		recoveryStrategy: 'reattach'
-	};
 }
 
 export declare class Rest extends Types.RestCallbacks {}

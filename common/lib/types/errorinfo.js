@@ -1,11 +1,10 @@
 var ErrorInfo = (function() {
 
-	function ErrorInfo(message, code, statusCode, cause, recoveryStrategy) {
+	function ErrorInfo(message, code, statusCode, cause) {
 		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;
 		this.cause = cause;
-		this.recoveryStrategy = recoveryStrategy;
 		this.href = undefined;
 	}
 
@@ -15,7 +14,6 @@ var ErrorInfo = (function() {
 		if(this.statusCode) result += '; statusCode=' + this.statusCode;
 		if(this.code) result += '; code=' + this.code;
 		if(this.cause) result += '; cause=' + Utils.inspectError(this.cause);
-		if(this.recoveryStrategy) result += '; recoveryStrategy=' + this.recoveryStrategy;
 		if(this.href && !(this.message && this.message.indexOf('help.ably.io') > -1)) result += '; see ' + this.href + ' ';
 		result += ']';
 		return result;
