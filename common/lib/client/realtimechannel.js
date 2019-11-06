@@ -3,6 +3,7 @@ var RealtimeChannel = (function() {
 	var noop = function() {};
 	var statechangeOp = 'statechange';
 	var syncOp = 'sync';
+	var channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE','PRESENCE_SUBSCRIBE','LOCAL_PRESENCE_SUBSCRIBE'];
 
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
@@ -57,9 +58,9 @@ var RealtimeChannel = (function() {
 				return Utils.promisify(this, 'setOptions', arguments);
 			}
 
-			callback = (err) => {
+			callback = function(err){
 				if(err) {
-					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
 				}
 			};
 		}
@@ -77,22 +78,18 @@ var RealtimeChannel = (function() {
 	};
 
 	function validateChannelOptions(options) {
-		if(options && 'params' in options) {
-			var params = options.params;
-			if(!Utils.isObject(params)){
-				return new ErrorInfo('options.params must be an object', 40000, 400);
-			}
-			if('modes' in params && (typeof params.modes !== 'string' || !params.modes.length)) {
-				return new ErrorInfo('options.params.modes must be a non-empty string', 40000, 400);
-			}
-			if('delta' in params && (typeof params.delta !== 'string' || !params.delta.length)) {
-				return new ErrorInfo('options.params.delta must be a non-empty string', 40000, 400);
-			}
+		if(options && 'params' in options && !Utils.isObject(options.params)) {
+			return new ErrorInfo('options.params must be an object', 40000, 400);
 		}
-		if(options && 'modes' in options) {
-			var isString = function(ob) { return typeof ob === 'string' };
-			if(!Utils.isArray(options.modes) || !Utils.arrEvery(options.modes, isString)) {
-				return new ErrorInfo('options.modes must be an array of strings', 40000, 400);
+		if(options && 'modes' in options){
+			if(!Utils.isArray(options.modes)){
+				return new ErrorInfo('options.modes must be an array', 40000, 400);
+			}
+			for(var i = 0; i < options.modes.length; i++){
+				var currentMode = options.modes[i];
+				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(channelModes, String.prototype.toUpperCase.call(currentMode))){
+					return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
+				}
 			}
 		}
 	}
