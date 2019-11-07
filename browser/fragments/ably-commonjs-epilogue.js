@@ -11,6 +11,7 @@ Realtime.Http = Rest.Http = Http;
 Realtime.Message = Rest.Message = Message;
 Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
+Realtime.ErrorInfo = ErrorInfo;
 
 module.exports = Ably;
 

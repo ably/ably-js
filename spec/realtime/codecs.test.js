@@ -1,6 +1,6 @@
 "use strict";
 
-define(['shared_helper', 'ably-delta-codec'], function(helper, AblyDeltaCodec) {
+define(['shared_helper', 'ably-delta-codec', 'ably'], function(helper, AblyDeltaCodec, Ably) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
@@ -118,9 +118,7 @@ define(['shared_helper', 'ably-delta-codec'], function(helper, AblyDeltaCodec) {
 		try {
 			var failingTestDeltaCodec = {
 				decode: function(payload, decodingContext) {
-					var err = new Error('Delta decode failed.');
-					err.code = 40018;
-					throw err;
+					throw new Ably.Realtime.ErrorInfo('Delta decode failed.', 40018, 400);
 				}
 			};
 
