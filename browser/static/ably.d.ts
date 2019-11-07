@@ -82,6 +82,8 @@ declare namespace Types {
 		 */
 		autoConnect?: boolean;
 
+		codecs?: Map<string, AblyCodec>;
+
 		defaultTokenParams?: TokenParams;
 
 		/**
@@ -236,8 +238,14 @@ declare namespace Types {
 		ttl?: number;
 	}
 
+	type ChannelParams = { [key: string]: string };
+
+	type ChannelModes = Array<string>;
+
 	interface ChannelOptions {
 		cipher: any;
+		params: ChannelParams;
+		modes: ChannelModes;
 	}
 
 	interface RestHistoryParams {
@@ -498,7 +506,8 @@ declare namespace Types {
 		name: string;
 		errorReason: ErrorInfo;
 		state: ChannelState;
-		setOptions: (options: any) => void;
+		params: ChannelParams;
+		modes: ChannelModes;
 		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
 	}
 
@@ -507,6 +516,7 @@ declare namespace Types {
 		attach: (callback?: standardCallback) => void;
 		detach: (callback?: standardCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: standardCallback) => void;
 		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
@@ -517,6 +527,7 @@ declare namespace Types {
 		attach: () => Promise<void>;
 		detach: () => Promise<void>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
+		setOptions: (options: ChannelOptions) => Promise<void>;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
 		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
 		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
@@ -669,6 +680,19 @@ declare namespace Types {
 		listChannels: (params: PushChannelsParams) => Promise<PaginatedResult<string>>;
 		remove: (subscription: PushChannelSubscription) => Promise<void>;
 		removeWhere: (params: PushChannelSubscriptionParams) => Promise<void>;
+	}
+
+	type Payload = Buffer | string;
+
+	type EncodingContext = {
+		channelOptions: ChannelOptions
+		encoding: string
+		previousPayload?: Payload
+	}
+
+	interface AblyCodec {
+		encode?: (payload: Payload, encodingContext: EncodingContext) => { newPayload: Payload, encoding: string | null };
+		decode?: (payload: Payload, encodingContext: EncodingContext) => Payload;
 	}
 }
 
