@@ -42,7 +42,7 @@ For this library version, and for all future 1.x versions, the callback-based AP
 
 #### Version: 1.1.22
 
-The latest stable version of the Ably Javascript client library is version: 1.1.22 .
+The latest stable version of the Ably JavaScript client library is version: 1.1.22 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 

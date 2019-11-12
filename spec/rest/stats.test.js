@@ -8,7 +8,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	var lastYear = new Date().getUTCFullYear() - 1;
 	var anHourAgo = new Date().valueOf() - 60 * 60 * 1000;
 
-	// Set last interval to 3rd Feb 20xx 16:03:00, Javascript uses zero based months
+	// Set last interval to 3rd Feb 20xx 16:03:00, JavaScript uses zero based months
 	var firstIntervalEpoch = Date.UTC(lastYear, 1, 3, 15, 3, 0);
 
 	var statsFixtures = [

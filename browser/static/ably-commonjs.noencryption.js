@@ -7845,7 +7845,7 @@ var Auth = (function() {
 	 *
 	 * - token:        (optional) string: the `token` property of a tokenDetails object
 	 *
-	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 * - authCallback:  (optional) a JavaScript callback to be called to get auth information.
 	 *                  authCallback should be a function of (tokenParams, callback) that calls
 	 *                  the callback with (err, result), where result is any of:
 	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
@@ -7952,7 +7952,7 @@ var Auth = (function() {
 	 * an object containing the request options:
 	 * - key:           the key to use.
 	 *
-	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 * - authCallback:  (optional) a JavaScript callback to be called to get auth information.
 	 *                  authCallback should be a function of (tokenParams, callback) that calls
 	 *                  the callback with (err, result), where result is any of:
 	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),

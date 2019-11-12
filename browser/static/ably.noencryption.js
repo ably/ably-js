@@ -24,7 +24,7 @@
 	  Prevent libraries such as msgpack plugging into AMD or CommonJS
 	  as the libraries loaded are expected in the `this` context.
 	  `require` is only used within the Node.js library, the ably-js browser library
-	  is built as a single Javascript file.
+	  is built as a single JavaScript file.
 	*/
 	var define, exports, require;
 
@@ -7860,7 +7860,7 @@ var Auth = (function() {
 	 *
 	 * - token:        (optional) string: the `token` property of a tokenDetails object
 	 *
-	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 * - authCallback:  (optional) a JavaScript callback to be called to get auth information.
 	 *                  authCallback should be a function of (tokenParams, callback) that calls
 	 *                  the callback with (err, result), where result is any of:
 	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
@@ -7967,7 +7967,7 @@ var Auth = (function() {
 	 * an object containing the request options:
 	 * - key:           the key to use.
 	 *
-	 * - authCallback:  (optional) a javascript callback to be called to get auth information.
+	 * - authCallback:  (optional) a JavaScript callback to be called to get auth information.
 	 *                  authCallback should be a function of (tokenParams, callback) that calls
 	 *                  the callback with (err, result), where result is any of:
 	 *                  - a tokenRequest object (ie the result of a rest.auth.createTokenRequest call),
