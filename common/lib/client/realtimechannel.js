@@ -21,7 +21,7 @@ var RealtimeChannel = (function() {
 		this.errorReason = null;
 		this._requestedFlags = null;
 		this._mode = null;
-		this.encodingDecodingContext = {
+		this._encodingDecodingContext = {
 			channelOptions: this.channelOptions,
 			codecs: realtime.options.codecs || { },
 			/* The payload of the previous message encoded the same way as when it was received by Ably Realtime.
@@ -373,7 +373,7 @@ var RealtimeChannel = (function() {
 			for(var i = 0; i < messages.length; i++) {
 				var msg = messages[i];
 				try {
-					Message.decode(msg, this.encodingDecodingContext);
+					Message.decode(msg, this._encodingDecodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
