@@ -3,6 +3,8 @@ var Utils = (function() {
 
 	function Utils() {}
 
+	Utils.modes = [ 'PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE', 'LOCAL_PRESENCE_SUBSCRIBE' ];
+
 	function randomPosn(arrOrStr) {
 		return Math.floor(Math.random() * arrOrStr.length);
 	}
@@ -251,6 +253,14 @@ var Utils = (function() {
 			result.push(ob[prop]);
 		}
 		return result;
+	};
+
+	Utils.forInOwnNonNullProps = function(ob, fn) {
+		for (var prop in ob) {
+			if (Object.prototype.hasOwnProperty.call(ob, prop) && ob[prop]) {
+				fn(prop);
+			}
+		}
 	};
 
 	Utils.arrForEach = Array.prototype.forEach ?
