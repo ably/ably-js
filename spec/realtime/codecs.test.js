@@ -127,7 +127,7 @@ define(['shared_helper', 'ably-delta-codec', 'ably'], function(helper, AblyDelta
 
 				if (index === 1) {
 					/* Simulate issue */
-					channel.lastPayloadMessageId = null;
+					channel._lastPayload.messageId = null;
 				} else if (index === testData.length - 1) {
 					test.equal(testDeltaCodec.numberOfCalls, testData.length - 2, 'Check number of delta messages');
 					closeAndFinish(test, realtime);

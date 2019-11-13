@@ -28,9 +28,11 @@ var RealtimeChannel = (function() {
 			 * I.e. all encodings added by Ably Realtime have been decoded. */
 			baseEncodedPreviousPayload: undefined
 		};
-		this.lastPayloadMessageId = null;
-		this.lastPayloadProtocolMessageChannelSerial = null;
-		this.decodeFailureRecoveryInProgress = false;
+		this._lastPayload = {
+			messageId: null,
+			protocolMessageChannelSerial: null,
+			decodeFailureRecoveryInProgress: null
+		};
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -254,8 +256,8 @@ var RealtimeChannel = (function() {
 		} else if(this.channelOptions.modes) {
 			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes));
 		}
-		if(this.decodeFailureRecoveryInProgress) {
-			attachMsg.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
+		if(this._lastPayload.decodeFailureRecoveryInProgress) {
+			attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -443,9 +445,9 @@ var RealtimeChannel = (function() {
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this.lastPayloadMessageId) {
+			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
 				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available.');
-				this.startDecodeFailureRecovery();
+				this._startDecodeFailureRecovery();
 				break;
 			}
 
@@ -458,7 +460,7 @@ var RealtimeChannel = (function() {
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
 					if(e.code === 40018) {
 						Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message decode failed.');
-						this.startDecodeFailureRecovery();
+						this._startDecodeFailureRecovery();
 						return;
 					}
 				}
@@ -466,8 +468,8 @@ var RealtimeChannel = (function() {
 				if(!msg.timestamp) msg.timestamp = timestamp;
 				if(!msg.id) msg.id = id + ':' + i;
 			}
-			this.lastPayloadMessageId = lastMessage.id;
-			this.lastPayloadProtocolMessageChannelSerial = message.channelSerial;
+			this._lastPayload.messageId = lastMessage.id;
+			this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
 			this.onEvent(messages);
 			break;
 
@@ -488,13 +490,13 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype.startDecodeFailureRecovery = function() {
+	RealtimeChannel.prototype._startDecodeFailureRecovery = function() {
 		var self = this;
-		if(!this.decodeFailureRecoveryInProgress) {
+		if(!this._lastPayload.decodeFailureRecoveryInProgress) {
 			Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
-			this.decodeFailureRecoveryInProgress = true;
+			this._lastPayload.decodeFailureRecoveryInProgress = true;
 			this._attach(true, function() {
-				self.decodeFailureRecoveryInProgress = false;
+				self._lastPayload.decodeFailureRecoveryInProgress = false;
 			});
 		}
 	};
