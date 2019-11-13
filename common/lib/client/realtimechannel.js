@@ -3,7 +3,6 @@ var RealtimeChannel = (function() {
 	var noop = function() {};
 	var statechangeOp = 'statechange';
 	var syncOp = 'sync';
-	var channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE','PRESENCE_SUBSCRIBE','LOCAL_PRESENCE_SUBSCRIBE'];
 
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
@@ -87,7 +86,7 @@ var RealtimeChannel = (function() {
 			}
 			for(var i = 0; i < options.modes.length; i++){
 				var currentMode = options.modes[i];
-				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(channelModes, String.prototype.toUpperCase.call(currentMode))){
+				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(Utils.modes, String.prototype.toUpperCase.call(currentMode))){
 					return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
 				}
 			}
