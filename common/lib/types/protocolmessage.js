@@ -83,15 +83,9 @@ var ProtocolMessage = (function() {
 	ProtocolMessage.prototype.decodeModesFromFlags = function() {
 		var modes = [],
 			self = this;
-		Utils.arrForEach([
-			'PRESENCE',
-			'PUBLISH',
-			'SUBSCRIBE',
-			'PRESENCE_SUBSCRIBE',
-			'LOCAL_PRESENCE_SUBSCRIBE'
-		], function(flag) {
-			if(self.hasFlag(flag)) {
-				modes.push(flag);
+		Utils.arrForEach(Utils.modes, function(mode) {
+			if(self.hasFlag(mode)) {
+				modes.push(mode);
 			}
 		});
 		return modes.length > 0 ? modes : undefined;
@@ -156,14 +150,12 @@ var ProtocolMessage = (function() {
 			}).join(',');
 		if(msg.params) {
 			var stringifiedParams = '';
-			for (var key in msg.params) {
-				if (Object.prototype.hasOwnProperty.call(msg.params, key) && msg.params[key]) {
-					if (stringifiedParams.length > 0) {
-						stringifiedParams += '; ';
-					}
-					stringifiedParams += key + '=' + msg.params[key];
+			Utils.forInOwnNonNullProps(msg.params, function(prop) {
+				if (stringifiedParams.length > 0) {
+					stringifiedParams += '; ';
 				}
-			}
+				stringifiedParams += prop + '=' + msg.params[prop];
+			});
 			if (stringifiedParams.length > 0) {
 				result += '; params=[' + stringifiedParams + ']';
 			}
