@@ -13,12 +13,9 @@ var Stats = (function() {
 		this.category = undefined;
 		if (values && values.category) {
 			this.category = { };
-			for (var key in values.category) {
-				var value = values.category[key];
-				if (Object.prototype.hasOwnProperty.call(values.category, key) && value) {
-					this.category[key] = new MessageCount(value);
-				}
-			}
+			Utils.forInOwnNonNullProps(values.category, function(prop) {
+				this.category[prop] = new MessageCount(values.category[prop]);
+			});
 		}
 	}
 
@@ -93,12 +90,9 @@ var Stats = (function() {
 		this.delta = undefined;
 		if (values && values.delta) {
 			this.delta = { };
-			for (var key in values.delta) {
-				var value = values.delta[key];
-				if (Object.prototype.hasOwnProperty.call(values.delta, key) && value) {
-					this.delta[key] = new ProcessedCount(value);
-				}
-			}
+			Utils.forInOwnNonNullProps(values.delta, function(prop) {
+				this.delta[prop] = new ProcessedCount(values.delta[prop]);
+			});
 		}
 	}
 
