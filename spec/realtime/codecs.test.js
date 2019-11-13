@@ -75,6 +75,41 @@ define(['shared_helper', 'ably-delta-codec', 'ably'], function(helper, AblyDelta
 		}
 	};
 
+	exports.unusedCodec = function(test) {
+		test.expect(testData.length + 1);
+		var testName = 'unusedCodec';
+		try {
+			var testDeltaCodec = getTestDeltaCodec();
+			var realtime = helper.AblyRealtime({
+				codecs: {
+					'vcdiff': testDeltaCodec
+				}
+			});
+			var channel = realtime.channels.get(testName);
+
+			channel.subscribe(function(message) {
+				var index = Number(message.name);
+				test.ok(equals(testData[index], message.data), 'Check message.data');
+
+				if (index === testData.length - 1) {
+					test.equal(testDeltaCodec.numberOfCalls, 0, 'Check number of delta messages');
+					closeAndFinish(test, realtime);
+				}
+			});
+
+			realtime.connection.on('connected', function() {
+				for (var i = 0; i < testData.length; i++) {
+					channel.publish(i.toString(), testData[i]);
+				}
+			});
+
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' test failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
 	exports.lastMessageNotFoundRecovery = function(test) {
 		test.expect(testData.length + 1);
 		var testName = 'lastMessageNotFoundRecovery';
