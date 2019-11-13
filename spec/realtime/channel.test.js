@@ -397,6 +397,32 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
+	testOnAllTransports(_exports, 'subscribeAfterSetOptions', function(realtimeOpts) { return function(test) {
+		test.expect(1);
+		var testName = 'subscribeAfterSetOptions';
+		try {
+			var realtime = helper.AblyRealtime(realtimeOpts);
+			realtime.connection.on('connected', function() {
+				var channel = realtime.channels.get(testName);
+				channel.setOptions({
+					params: {
+						modes: 'publish,subscribe'
+					}
+				});
+				var testData = 'Test data';
+				channel.subscribe(function(message) {
+					test.equal(message.data, testData, 'Check data');
+					closeAndFinish(test, realtime);
+				});
+				channel.publish(undefined, testData);
+			});
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	}});
+
 	_exports.channelGetShouldThrowWhenWouldCauseReattach = function(test) {
 		test.expect(3);
 		var testName = 'channelGetShouldThrowWhenWouldCauseReattach';
