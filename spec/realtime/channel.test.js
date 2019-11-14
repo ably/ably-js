@@ -608,7 +608,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		try {
 			var realtime = helper.AblyRealtime(realtimeOpts);
 			realtime.connection.on('connected', function() {
-				var modes = ['publish', 'subscribe', 'local_presence_subscribe'];
+				var modes = ['publish', 'subscribe', 'presence_subscribe'];
 				var channelOptions = {
 					modes: modes,
 					params: { delta: 'vcdiff' }
@@ -633,7 +633,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.attachWithInvalidChannelParams = function(test) {
 		test.expect(17);
 		var testName = 'attachWithInvalidChannelParams';
-		var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe,local_presence_subscribe';
+		var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe';
 		try {
 			var realtime = helper.AblyRealtime();
 			realtime.connection.on('connected', function() {
