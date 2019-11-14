@@ -3,7 +3,7 @@ var Utils = (function() {
 
 	function Utils() {}
 
-	Utils.modes = [ 'PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE', 'LOCAL_PRESENCE_SUBSCRIBE' ];
+	Utils.modes = [ 'PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE' ];
 
 	function randomPosn(arrOrStr) {
 		return Math.floor(Math.random() * arrOrStr.length);
