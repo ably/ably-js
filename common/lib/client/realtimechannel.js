@@ -69,7 +69,7 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		Channel.prototype.setOptions.call(this, options);
-		if(this.shouldReattachToSetOptions(options)) {
+		if(this._shouldReattachToSetOptions(options)) {
 			this._attach(true, callback);
 		} else {
 			callback();
@@ -93,7 +93,7 @@ var RealtimeChannel = (function() {
 		}
 	}
 
-	RealtimeChannel.prototype.shouldReattachToSetOptions = function(options) {
+	RealtimeChannel.prototype._shouldReattachToSetOptions = function(options) {
 		// TODO: Check if the new options are different than the old ones
 		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
 	};
