@@ -39,7 +39,7 @@
     "karma-nodeunit": "~0.2",
     "karma-requirejs": "~0.2",
     "karma-story-reporter": "~0.3",
-    "kexec": "^2.0.2",
+    "kexec": "git://github.com/ably-forks/node-kexec.git#update-for-node-12",
     "nodeunit": "^0.11.3",
     "requirejs": "~2.1",
     "shelljs": "~0.3"
