@@ -1739,7 +1739,9 @@ var ConnectionManager = (function() {
 			return;
 		}
 		this.connectionDetails = connectionDetails;
-		this.options.maxMessageSize = connectionDetails.maxMessageSize;
+		if(connectionDetails.maxMessageSize) {
+			this.options.maxMessageSize = connectionDetails.maxMessageSize;
+		}
 		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
