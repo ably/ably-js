@@ -17,17 +17,28 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		async.map(channels, function(channel, cb) { channel.attach(cb); }, callback);
 	}
 
-	function compareMessage(one, two) {
-		if(one.encoding != two.encoding) return false;
-		if(typeof(one.data) == 'string' && typeof(two.data) == 'string') {
-			return one.data == two.data;
-		}
-		if(BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-			return (BufferUtils.bufferCompare(one.data, two.data) === 0);
-		}
-		return JSON.stringify(one.data) == JSON.stringify(two.data);
-	}
+	function testMessageEquality(test, one, two) {
+		// treat `null` same as `undefined` (using ==, rather than ===)
+		test.ok(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').");
 
+		if(typeof(one.data) === 'string' && typeof(two.data) === 'string') {
+			test.ok(one.data === two.data, "String data contents mismatch.");
+			return;
+		}
+
+		if(BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+			test.ok(BufferUtils.bufferCompare(one.data, two.data) === 0, "Buffer data contents mismatch.");
+			return;
+		}
+
+		var json1 = JSON.stringify(one.data);
+		var json2 = JSON.stringify(two.data);
+		if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
+			test.ok(false, "JSON stringify failed.");
+			return;
+		}
+		test.ok(json1 === json2, "JSON data contents mismatch.");
+	}
 
 	function testEachFixture(test, filename, channelName, testsPerFixture, fixtureTest) {
 		if(!Crypto) {
@@ -147,40 +158,59 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}
 
 	exports.encrypt_message_128 = function(test) {
-		testEachFixture(test, 'crypto-data-128.json', 'encrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
+		testEachFixture(test, 'crypto-data-128.json', 'encrypt_message_128', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
 			Message.encode(testMessage, channelOpts, function() {
 				/* compare */
-				test.ok(compareMessage(testMessage, encryptedMessage));
+				testMessageEquality(test, testMessage, encryptedMessage);
 			});
 		});
 	};
 
 	exports.encrypt_message_256 = function(test) {
-		testEachFixture(test, 'crypto-data-256.json', 'encrypt_message_256', 1, function(channelOpts, testMessage, encryptedMessage) {
+		testEachFixture(test, 'crypto-data-256.json', 'encrypt_message_256', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
 			Message.encode(testMessage, channelOpts, function() {
 				/* compare */
-				test.ok(compareMessage(testMessage, encryptedMessage));
+				testMessageEquality(test, testMessage, encryptedMessage);
+			});
+		});
+	};
+
+	exports.encrypt_message_256_variable_lengths = function(test) {
+		testEachFixture(test, 'crypto-data-256-variable-lengths.json', 'encrypt_message_256_variable_lengths', 2, function(channelOpts, testMessage, encryptedMessage) {
+			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+			Message.encode(testMessage, channelOpts, function() {
+				/* compare */
+				testMessageEquality(test, testMessage, encryptedMessage);
 			});
 		});
 	};
 
 	exports.decrypt_message_128 = function(test) {
-		testEachFixture(test, 'crypto-data-128.json', 'decrypt_message_128', 1, function(channelOpts, testMessage, encryptedMessage) {
+		testEachFixture(test, 'crypto-data-128.json', 'decrypt_message_128', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
 			Message.decode(encryptedMessage, channelOpts);
 			/* compare */
-			test.ok(compareMessage(testMessage, encryptedMessage));
+			testMessageEquality(test, testMessage, encryptedMessage);
 		});
 	};
 
 	exports.decrypt_message_256 = function(test) {
-		testEachFixture(test, 'crypto-data-256.json', 'decrypt_message_256', 1, function(channelOpts, testMessage, encryptedMessage) {
+		testEachFixture(test, 'crypto-data-256.json', 'decrypt_message_256', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
 			Message.decode(encryptedMessage, channelOpts);
 			/* compare */
-			test.ok(compareMessage(testMessage, encryptedMessage));
+			testMessageEquality(test, testMessage, encryptedMessage);
+		});
+	};
+
+	exports.decrypt_message_256_variable_lengths = function(test) {
+		testEachFixture(test, 'crypto-data-256-variable-lengths.json', 'decrypt_message_256_variable_lengths', 2, function(channelOpts, testMessage, encryptedMessage) {
+			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+			Message.decode(encryptedMessage, channelOpts);
+			/* compare */
+			testMessageEquality(test, testMessage, encryptedMessage);
 		});
 	};
 
@@ -199,12 +229,12 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			var key = BufferUtils.base64Decode(testData.key);
 			var iv = BufferUtils.base64Decode(testData.iv);
 
-			test.expect(testData.items.length);
+			test.expect(testData.items.length * 2);
 			for(var i = 0; i < testData.items.length; i++) {
 				var item = testData.items[i];
 				var testMessage = Message.fromEncoded(item.encoded);
 				var decryptedMessage = Message.fromEncoded(item.encrypted, {cipher: {key: key, iv: iv}});
-				test.ok(compareMessage(testMessage, decryptedMessage));
+				testMessageEquality(test, testMessage, decryptedMessage);
 			}
 			test.done();
 		});
