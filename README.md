@@ -456,17 +456,17 @@ client.time(function(err, time) { ... }); // time is in ms since epoch
 
 To run both the NodeUnit & Karma Browser tests, simply run the following command:
 
-    grunt test
+    npm test
 
 ## NodeUnit Tests
 
 Run the NodeUnit test suite
 
-    grunt test:nodeunit
+    npm run test:nodeunit
 
 Or run just one or more test files
 
-    grunt test:nodeunit --test spec/realtime/auth.test.js
+    npm run test:nodeunit -- --test spec/realtime/auth.test.js
 
 ## Browser Tests
 
@@ -474,19 +474,19 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
 ### To build & run the tests in a single step
 
-    grunt test:karma
+    npm run test:karma
 
 ### Debugging the tests in your browser with NodeUnit test runner
 
 Simply open [spec/nodeunit.html](./spec/nodeunit.html) in your browser to run the test suite with a nice GUI.
 
-Note: If any files have been added or remove, running the task `grunt requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
+Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
 
 ### Debugging the tests in a remote browser with NodeUnit test runner
 
 Run the following command to start a local Nodeunit test runner web server
 
-    grunt test:webserver
+    npm run test:webserver
 
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Nodeunit runner web server.
 
@@ -504,7 +504,7 @@ Click on the Debug button in the top right, and open your browser's debugging co
 
 Then run the tests against the Karma server.  The `test:karma:run` command will concatenate the Ably files beforehand so any changes made in the source will be reflected in the test run.
 
-    grunt test:karma:run
+    npm run test:karma:run
 
 ### Testing environment variables for Node.js
 
@@ -520,7 +520,7 @@ All tests are run against the sandbox environment by default.  However, the foll
 
 ### Testing environment variables for browser tests
 
-When using the test webserver `grunt test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/nodeunit.html?log_level=4`.
+When using the test webserver `npm run test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/nodeunit.html?log_level=4`.
 
 * `env` - defaults to sandbox, however this can be set to another known environment such as 'staging'
 * `realtime_host` - explicitly tell the client library to use an alternate host for real-time websocket communication.
@@ -550,9 +550,9 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 4. Create your feature branch (`git checkout -b my-new-feature`)
 5. Commit your changes (`git commit -am 'Add some feature'`)
    Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
-6. Ensure you have added suitable tests and the test suite is passing(`grunt test`)
+6. Ensure you have added suitable tests and the test suite is passing(`npm test`)
 7. Ensure the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have been updated if the public API has changed
-8. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`grunt closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
+8. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
 9. Push to the branch (`git push origin my-new-feature`)
 10. Create a new Pull Request
 
@@ -560,8 +560,8 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 - Make sure the tests are passing in ci for the branch you're building
 - Update the CHANGELOG.md with any customer-affecting changes since the last release
-- Run `grunt release:patch` (or: "major", "minor", "patch", "prepatch")
-- Run `grunt release:deploy`
+- Run `npm run grunt -- release:patch` (or: "major", "minor", "patch", "prepatch")
+- Run `npm run grunt -- release:deploy`
 - Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
 - For nontrivial releases: update the ably-js submodule ref in the realtime repo
 
