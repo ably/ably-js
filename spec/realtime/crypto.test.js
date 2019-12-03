@@ -177,16 +177,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	exports.encrypt_message_256_variable_lengths = function(test) {
-		testEachFixture(test, 'crypto-data-256-variable-lengths.json', 'encrypt_message_256_variable_lengths', 2, function(channelOpts, testMessage, encryptedMessage) {
-			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-			Message.encode(testMessage, channelOpts, function() {
-				/* compare */
-				testMessageEquality(test, testMessage, encryptedMessage);
-			});
-		});
-	};
-
 	exports.decrypt_message_128 = function(test) {
 		testEachFixture(test, 'crypto-data-128.json', 'decrypt_message_128', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
@@ -198,15 +188,6 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	exports.decrypt_message_256 = function(test) {
 		testEachFixture(test, 'crypto-data-256.json', 'decrypt_message_256', 2, function(channelOpts, testMessage, encryptedMessage) {
-			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-			Message.decode(encryptedMessage, channelOpts);
-			/* compare */
-			testMessageEquality(test, testMessage, encryptedMessage);
-		});
-	};
-
-	exports.decrypt_message_256_variable_lengths = function(test) {
-		testEachFixture(test, 'crypto-data-256-variable-lengths.json', 'decrypt_message_256_variable_lengths', 2, function(channelOpts, testMessage, encryptedMessage) {
 			/* decrypt encrypted message; decode() also to handle data that is not string or buffer */
 			Message.decode(encryptedMessage, channelOpts);
 			/* compare */
