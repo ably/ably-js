@@ -24,6 +24,10 @@ var RealtimeChannel = (function() {
 		/* Temporary; only used for the checkChannelsOnResume option */
 		this._attachedMsgIndicator = false;
 		this._attachResume = false;
+		this._encodingDecodingContext = {
+			channelOptions: this.channelOptions,
+			baseEncodedPreviousPayload: undefined
+		};
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -423,11 +427,10 @@ var RealtimeChannel = (function() {
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			var options = this.channelOptions;
 			for(var i = 0; i < messages.length; i++) {
+				var msg = messages[i];
 				try {
-					var msg = messages[i];
-					Message.decode(msg, options);
+					Message.decode(msg, this._encodingDecodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
