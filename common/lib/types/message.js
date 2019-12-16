@@ -144,7 +144,7 @@ var Message = (function() {
 			var channelOptions = context;
 			context = {
 				channelOptions: channelOptions,
-				codecs: { },
+				plugins: { },
 				baseEncodedPreviousPayload: undefined
 			};
 		}
@@ -187,9 +187,13 @@ var Message = (function() {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						case 'vcdiff':
-								if(vcdiffDecoder) {
+								if(context.plugins && context.plugins.vcdiffDecoder) {
 									try {
-										data = vcdiffDecoder.decode(data, context.baseEncodedPreviousPayload);
+										var deltaBase = context.baseEncodedPreviousPayload;
+										if(typeof deltaBase === 'string')
+											deltaBase = BufferUtils.utf8Encode(deltaBase);
+											
+										data = BufferUtils.toBuffer(context.plugins.vcdiffDecoder.decodeSync(data, deltaBase));
 										lastPayload = data;
 									} catch(e) {
 										throw new ErrorInfo('VCDIFF delta decode failed.', 40018, 400, e);;
