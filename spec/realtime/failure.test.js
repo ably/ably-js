@@ -381,5 +381,56 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}});
 
+	exports.no_messages_if_not_attached = function(test) {
+		
+		var testName = 'no_messages_if_not_attached';
+		var testMessage = { foo: 'bar', count: 1, status: 'active' };
+		var testMessage2 = { foo: 'bar', count: 2, status: 'active' };
+		
+		test.expect(2);
+		
+		try {
+
+			var sender_realtime = helper.AblyRealtime();
+			var sender_channel = sender_realtime.channels.get(testName);
+
+			var messageReceived = false;
+			
+			sender_channel.subscribe(function(message) {
+
+				if(messageReceived) {
+					test.ok(false, 'Message received when channel not in ATTACHED state.');
+				}
+
+				messageReceived = true;
+				test.ok(JSON.stringify(testMessage) === JSON.stringify(message.data), 'Check first message received');
+				
+				var connectionManager = sender_realtime.connection.connectionManager;
+
+				var onChannelMsgOrig = connectionManager.onChannelMessage;
+				connectionManager.onChannelMessage = function(msg, transport) {
+					if(msg.action === 15) {
+						sender_channel.requestState('attaching');
+					}
+					onChannelMsgOrig.call(connectionManager, msg, transport);
+				};
+				
+				sender_channel.publish('1', testMessage2);
+
+				var success = setTimeout(() => {
+					test.ok(true);
+					closeAndFinish(test, sender_realtime);
+				}, 7000);
+				
+			});
+
+			sender_realtime.connection.on('connected', function() {
+				sender_channel.publish('0', testMessage);
+			});
+		} catch(e) {
+			test.ok(false, testName + ' test failed with exception: ' + e.stack);
+			closeAndFinish(test, sender_realtime); }
+	};
+	
 	return module.exports = helper.withTimeout(exports);
 });
