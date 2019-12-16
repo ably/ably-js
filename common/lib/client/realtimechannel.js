@@ -26,6 +26,7 @@ var RealtimeChannel = (function() {
 		this._attachResume = false;
 		this._encodingDecodingContext = {
 			channelOptions: this.channelOptions,
+			plugins: realtime.options.plugins || { },
 			baseEncodedPreviousPayload: undefined
 		};
 	}

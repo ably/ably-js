@@ -43,5 +43,9 @@ this.BufferUtils = (function() {
 		return buffer.byteLength;
 	};
 
+	BufferUtils.toBuffer = function(typedArray) {
+		return Buffer.from(typedArray.buffer);
+	};
+	
 	return BufferUtils;
 })();
