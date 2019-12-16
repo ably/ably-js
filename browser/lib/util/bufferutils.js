@@ -200,5 +200,9 @@ var BufferUtils = (function() {
 		}
 	};
 
+	BufferUtils.toBuffer = function(typedArray) {
+		return typedArray.buffer;
+	};
+	
 	return BufferUtils;
 })();
