@@ -13,7 +13,8 @@
   "dependencies": {
     "@ably/msgpack-js": "^0.3.2-v5",
     "request": "^2.87.0",
-    "ws": "^5.1"
+    "ws": "^5.1",
+    "@ably/vcdiff-decoder": "^1.0.1"
   },
   "devDependencies": {
     "async": "git://github.com/ably-forks/async.git#requirejs",
