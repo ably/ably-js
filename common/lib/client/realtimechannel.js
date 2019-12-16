@@ -441,6 +441,13 @@ var RealtimeChannel = (function() {
 			break;
 
 		case actions.MESSAGE:
+
+			//RTL17
+			if(this.state !== 'attached') {
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message skipped. Channel not in ATTACHED state.');
+				return;
+			}
+
 			var messages = message.messages,
 				firstMessage = messages[0],
 				lastMessage = messages[messages.length - 1],
