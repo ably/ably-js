@@ -32,7 +32,7 @@
     "ws": "^5.1"
   },
   "devDependencies": {
-    "vcdiff-decoder": "git://github.com/ably-forks/vcdiff-decoder.git#c442b35fa42f3e241de7c9e21e88943a80bf50ef",
+    "vcdiff-decoder": "git://github.com/ably-forks/vcdiff-decoder.git#feature-delta-plugins",
     "async": "ably-forks/async#requirejs",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#typedarray-webkit",
@@ -59,7 +59,7 @@
     "kexec": "ably-forks/node-kexec#update-for-node-12",
     "nodeunit": "^0.11.3",
     "requirejs": "~2.1",
-    "shelljs": "~0.3"
+    "shelljs": "~0.3",
   },
   "engines": {
     "node": ">=4.5.x"
