@@ -14,7 +14,6 @@ this.Platform = {
 	stringByteSize: Buffer.byteLength,
 	inherits: require('util').inherits,
 	addEventListener: null,
-	vcdiffDecoder: require('@ably/vcdiff-decoder')
 	getRandomValues: function(arr, callback) {
 		var bytes = require('crypto').randomBytes(arr.length);
 		arr.set(bytes);
