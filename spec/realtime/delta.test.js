@@ -1,6 +1,6 @@
 "use strict";
 
-define(['shared_helper', 'vcdiff-decoder'], function(helper, AblyDeltaCodec) {
+define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
@@ -34,7 +34,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, AblyDeltaCodec) {
 
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiff': new AblyDeltaCodec.AblyVcdiffCodec()
+					'vcdiff': vcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get('[?delta=vcdiff]' + testName);
