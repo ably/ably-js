@@ -1,6 +1,6 @@
 "use strict";
 
-define(['shared_helper', 'ably-delta-codec'], function(helper, AblyDeltaCodec) {
+define(['shared_helper', 'vcdiff-decoder'], function(helper, AblyDeltaCodec) {
 	var exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
