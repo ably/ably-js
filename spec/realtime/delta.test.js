@@ -34,7 +34,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiff': vcdiffDecoder
+					'vcdiffDecoder': vcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get('[?delta=vcdiff]' + testName);
