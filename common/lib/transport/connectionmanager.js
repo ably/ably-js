@@ -1548,6 +1548,12 @@ var ConnectionManager = (function() {
 			/* RTL6d2 */
 			return false;
 		}
+		if(!Utils.arrEvery(proposed, function(msg) {
+			return !msg.id;
+		})) {
+			/* RTL6d7 */
+			return false;
+		}
 		/* we're good to go! */
 		dest[kind] = proposed;
 		return true;

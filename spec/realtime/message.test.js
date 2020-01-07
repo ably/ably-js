@@ -840,7 +840,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* RTL6d: publish a series of messages that exercise various bundling
 	 * constraints, check they're satisfied */
 	exports.bundling = function(test) {
-		test.expect(28);
+		test.expect(30);
 		var realtime = helper.AblyRealtime({maxMessageSize: 256, autoConnect: false}),
 			channelOne = realtime.channels.get('bundlingOne'),
 			channelTwo = realtime.channels.get('bundlingTwo');
@@ -861,11 +861,13 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		/* RTL6d1 */
 		channelOne.publish('k', {expectedBundle: 7, moreData: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'});
 		channelOne.publish('l', {expectedBundle: 8});
-		channelOne.publish('z_last', {expectedBundle: 8});
+		/* RTL6d7 */
+		channelOne.publish({name: 'm', id: 'bundle_m', data: {expectedBundle: 9}});
+		channelOne.publish('z_last', {expectedBundle: 10});
 
 		var queue = realtime.connection.connectionManager.queuedMessages;
 		var messages;
-		for(var i=0; i<=8; i++) {
+		for(var i=0; i<=10; i++) {
 			messages = queue.messages[i].message.messages || queue.messages[i].message.presence;
 			for(var j=0; j<messages.length; j++) {
 				test.equal(JSON.parse(messages[j].data).expectedBundle, i);
@@ -883,6 +885,40 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 		realtime.connect();
 	};
+
+	exports.idempotentRealtimePublishing = function(test) {
+		test.expect(3);
+		var realtime = helper.AblyRealtime(),
+			channel = realtime.channels.get('idempotentRealtimePublishing');
+
+		channel.attach(function(err) {
+			if(err) {
+				test.ok(false, 'Attach failed with error: ' + displayError(err));
+				closeAndFinish(test, realtime);
+				return;
+			}
+
+			/* subscribe to event */
+			var event0Msgs = [];
+			channel.subscribe('event0', function(msg) {
+				test.ok(true, 'Received event0');
+				event0Msgs.push(msg);
+			});
+
+			channel.subscribe('end', function(msg) {
+				test.ok(true, 'Received end');
+				test.equal(event0Msgs.length, 1, 'Expect only one event0 message to be received');
+				closeAndFinish(test, realtime);
+			});
+
+			/* publish event */
+			channel.publish({name: 'event0', id: 'some_msg_id'});
+			channel.publish({name: 'event0', id: 'some_msg_id'});
+			channel.publish({name: 'event0', id: 'some_msg_id'});
+			channel.publish('end', null);
+		});
+	};
+
 
 	exports.publishpromise = function(test) {
 		if(typeof Promise === 'undefined') {
