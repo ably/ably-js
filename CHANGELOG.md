@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.23](https://github.com/ably/ably-js/tree/1.1.23) (2020-01-08)
+- Disable bundling for messages with user-set ids
+
 ## [1.1.22](https://github.com/ably/ably-js/tree/1.1.22) (2019-10-28)
 - Add some missing ClientOptions to typescript type definition file
 
