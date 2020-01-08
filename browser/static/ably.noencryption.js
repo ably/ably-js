@@ -1,7 +1,7 @@
 /**
- * @license Copyright 2019, Ably
+ * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.1.22
+ * Ably JavaScript Library v1.1.23
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3278,7 +3278,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.22';
+Defaults.version          = '1.1.23';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -6413,6 +6413,12 @@ var ConnectionManager = (function() {
 			/* RTL6d2 */
 			return false;
 		}
+		if(!Utils.arrEvery(proposed, function(msg) {
+			return !msg.id;
+		})) {
+			/* RTL6d7 */
+			return false;
+		}
 		/* we're good to go! */
 		dest[kind] = proposed;
 		return true;
@@ -6604,7 +6610,9 @@ var ConnectionManager = (function() {
 			return;
 		}
 		this.connectionDetails = connectionDetails;
-		this.options.maxMessageSize = connectionDetails.maxMessageSize;
+		if(connectionDetails.maxMessageSize) {
+			this.options.maxMessageSize = connectionDetails.maxMessageSize;
+		}
 		var clientId = connectionDetails.clientId;
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
