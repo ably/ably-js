@@ -9,6 +9,162 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		testOnAllTransports = helper.testOnAllTransports;
 
+	/* Helpers */
+
+	function randomString() {
+		return Math.random().toString().slice(2);
+	}
+
+	function checkCanSubscribe(channel, testChannel) {
+		return function(callback) {
+			var timeout,
+				received = false,
+				eventName = randomString();
+
+			channel.subscribe(eventName, function(msg) {
+				channel.unsubscribe(eventName);
+				received = true;
+				clearTimeout(timeout);
+				callback();
+			});
+
+			testChannel.publish(eventName, null, function(err) {
+				if(received)
+					return;
+				if(err)
+					callback(err);
+				timeout = setTimeout(function() {
+					channel.unsubscribe(eventName);
+					callback('checkCanSubscribe: message not received within 5s');
+				}, 5000);
+			});
+		};
+	}
+
+	function checkCantSubscribe(channel, testChannel) {
+		return function(callback) {
+			var timeout,
+				received = false,
+				eventName = randomString();
+
+			channel.subscribe(eventName, function(message) {
+				channel.presence.unsubscribe(eventName);
+				received = true;
+				clearTimeout(timeout);
+				callback('checkCantSubscribe: unexpectedly received message');
+			});
+
+			testChannel.publish(eventName, null, function(err) {
+				if(received)
+					return;
+				if(err)
+					callback(err);
+				timeout = setTimeout(function() {
+					channel.unsubscribe(eventName);
+					callback();
+				}, 500);
+			});
+		};
+	}
+
+	function checkCanPublish(channel) {
+		return function(callback) {
+			channel.publish(null, null, callback);
+		};
+	}
+
+	function checkCantPublish(channel) {
+		return function(callback) {
+			channel.publish(null, null, function(err) {
+				if(err && err.code === 40160) {
+					callback();
+				} else {
+					callback(err || 'checkCantPublish: unexpectedly allowed to publish');
+				}
+			});
+		};
+	}
+
+	function checkCanEnterPresence(channel) {
+		return function(callback) {
+			var clientId = randomString();
+			channel.presence.enterClient(clientId, null, function(err) {
+				channel.presence.leaveClient(clientId);
+				callback(err);
+			});
+		};
+	}
+
+	function checkCantEnterPresence(channel) {
+		return function(callback) {
+			channel.presence.enterClient(randomString(), null, function(err) {
+				if(err && err.code === 40160) {
+					callback();
+				} else {
+					callback(err || 'checkCantEnterPresence: unexpectedly allowed to enter presence');
+				}
+			});
+		};
+	}
+
+	function checkCanPresenceSubscribe(channel, testChannel) {
+		return function(callback) {
+			var timeout,
+				received = false,
+				clientId = randomString();
+
+			channel.presence.subscribe('enter', function(message) {
+				channel.presence.unsubscribe('enter');
+				testChannel.presence.leaveClient(clientId);
+				received = true;
+				clearTimeout(timeout);
+				callback();
+			});
+
+			testChannel.presence.enterClient(clientId, null, function(err) {
+				if(received)
+					return;
+				if(err)
+					callback(err);
+				timeout = setTimeout(function() {
+					channel.presence.unsubscribe('enter');
+					testChannel.presence.leaveClient(clientId);
+					callback('checkCanPresenceSubscribe: message not received within 5s');
+				}, 5000);
+			});
+		};
+	}
+
+	function checkCantPresenceSubscribe(channel, testChannel) {
+		return function(callback) {
+			var timeout,
+				received = false,
+				clientId = randomString();
+
+			channel.presence.subscribe('enter', function(message) {
+				channel.presence.unsubscribe('enter');
+				testChannel.presence.leaveClient(clientId);
+				received = true;
+				clearTimeout(timeout);
+				callback('checkCantPresenceSubscribe: unexpectedly received message');
+			});
+
+			testChannel.presence.enterClient(clientId, null, function(err) {
+				if(received)
+					return;
+				if(err)
+					callback(err);
+				timeout = setTimeout(function() {
+					channel.presence.unsubscribe('enter');
+					testChannel.presence.leaveClient(clientId);
+					callback();
+				}, 500);
+			});
+		};
+	}
+
+	/* Tests */
+
 	exports.setupchannel = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
@@ -336,7 +492,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	testOnAllTransports(_exports, 'attachWithChannelParamsBasicChannelsGet', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'attachWithChannelParamsBasicChannelsGet', function(realtimeOpts) { return function(test) {
 		test.expect(3);
 		var testName = 'attachWithChannelParamsBasicChannelsGet';
 		try {
@@ -356,7 +512,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
 					test.deepEqual(channel.params, params, 'Check result params');
 					test.deepEqual(channel.modes, ['subscribe'], 'Check result modes');
-					closeAndFinish(test, realtime);
+
+					var testRealtime = helper.AblyRealtime();
+					testRealtime.connection.on('connected', function() {
+						var testChannel = testRealtime.channels.get(testName);
+						async.series([
+							checkCanSubscribe(channel, testChannel),
+							checkCantPublish(channel),
+							checkCantEnterPresence(channel),
+							checkCantPresenceSubscribe(channel, testChannel)
+						], function(err) {
+							if(err)
+								test.ok(false, 'Mode check failed with error: ' + displayError(err));
+							testRealtime.close();
+							closeAndFinish(test, realtime);
+						});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -366,7 +537,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
-	testOnAllTransports(_exports, 'attachWithChannelParamsBasicSetOptions', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'attachWithChannelParamsBasicSetOptions', function(realtimeOpts) { return function(test) {
 		test.expect(3);
 		var testName = 'attachWithChannelParamsBasicSetOptions';
 		try {
@@ -387,7 +558,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
 					test.deepEqual(channel.params, params, 'Check result params');
 					test.deepEqual(channel.modes, ['subscribe'], 'Check result modes');
-					closeAndFinish(test, realtime);
+
+					var testRealtime = helper.AblyRealtime();
+					testRealtime.connection.on('connected', function() {
+						var testChannel = testRealtime.channels.get(testName);
+						async.series([
+							checkCanSubscribe(channel, testChannel),
+							checkCantPublish(channel),
+							checkCantEnterPresence(channel),
+							checkCantPresenceSubscribe(channel, testChannel)
+						], function(err) {
+							if(err)
+								test.ok(false, 'Mode check failed with error: ' + displayError(err));
+							testRealtime.close();
+							closeAndFinish(test, realtime);
+						});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -397,7 +583,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
-	testOnAllTransports(_exports, 'subscribeAfterSetOptions', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'subscribeAfterSetOptions', function(realtimeOpts) { return function(test) {
 		test.expect(1);
 		var testName = 'subscribeAfterSetOptions';
 		try {
@@ -423,7 +609,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
-	_exports.channelGetShouldThrowWhenWouldCauseReattach = function(test) {
+	exports.channelGetShouldThrowWhenWouldCauseReattach = function(test) {
 		test.expect(3);
 		var testName = 'channelGetShouldThrowWhenWouldCauseReattach';
 		try {
@@ -459,7 +645,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	testOnAllTransports(_exports, 'setOptionsCallbackBehaviour', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'setOptionsCallbackBehaviour', function(realtimeOpts) { return function(test) {
 		test.expect(6);
 		var testName = 'setOptionsCallbackBehaviour';
 		try {
@@ -544,7 +730,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	/* Verify modes is ignored when params.modes is present */
-	testOnAllTransports(_exports, 'attachWithChannelParamsModesAndChannelModes', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'attachWithChannelParamsModesAndChannelModes', function(realtimeOpts) { return function(test) {
 		test.expect(3);
 		var testName = 'attachWithChannelParamsModesAndChannelModes';
 		try {
@@ -565,7 +751,22 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
 					test.deepEqual(channel.params, params, 'Check result params');
 					test.deepEqual(channel.modes, paramsModes, 'Check result modes');
-					closeAndFinish(test, realtime);
+
+					var testRealtime = helper.AblyRealtime();
+					testRealtime.connection.on('connected', function() {
+						var testChannel = testRealtime.channels.get(testName);
+						async.series([
+							checkCanSubscribe(channel, testChannel),
+							checkCanEnterPresence(channel),
+							checkCantPublish(channel),
+							checkCantPresenceSubscribe(channel, testChannel)
+						], function(err) {
+							if(err)
+								test.ok(false, 'Mode check failed with error: ' + displayError(err));
+							testRealtime.close();
+							closeAndFinish(test, realtime);
+						});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -575,8 +776,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
-	testOnAllTransports(_exports, 'attachWithChannelModes', function(realtimeOpts) { return function(test) {
-		test.expect(3);
+	testOnAllTransports(exports, 'attachWithChannelModes', function(realtimeOpts) { return function(test) {
+		test.expect(2);
 		var testName = 'attachWithChannelModes';
 		try {
 			var realtime = helper.AblyRealtime(realtimeOpts);
@@ -590,9 +791,23 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					if(err)
 						test.ok(false, 'Attach failed with error: ' + displayError(err));
 					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
-					test.deepEqual(channel.params, { modes: modes.join(',') }, 'Check result params');
 					test.deepEqual(channel.modes, modes, 'Check result modes');
-					closeAndFinish(test, realtime);
+
+					var testRealtime = helper.AblyRealtime();
+					testRealtime.connection.on('connected', function() {
+						var testChannel = testRealtime.channels.get(testName);
+						async.series([
+							checkCanPublish(channel),
+							checkCanPresenceSubscribe(channel, testChannel),
+							checkCantSubscribe(channel, testChannel),
+							checkCantEnterPresence(channel)
+						], function(err) {
+							if(err)
+								test.ok(false, 'Mode check failed with error: ' + displayError(err));
+							testRealtime.close();
+							closeAndFinish(test, realtime);
+						});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
@@ -602,7 +817,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}});
 
-	testOnAllTransports(_exports, 'attachWithChannelParamsDeltaAndModes', function(realtimeOpts) { return function(test) {
+	testOnAllTransports(exports, 'attachWithChannelParamsDeltaAndModes', function(realtimeOpts) { return function(test) {
 		test.expect(3);
 		var testName = 'attachWithChannelParamsDeltaAndModes';
 		try {
@@ -618,9 +833,24 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					if(err)
 						test.ok(false, 'Attach failed with error: ' + displayError(err));
 					test.deepEqual(channel.channelOptions, channelOptions, 'Check requested channel options');
-					test.deepEqual(channel.params, { modes: modes.join(','), delta: 'vcdiff' }, 'Check result params');
+					test.deepEqual(channel.params, { delta: 'vcdiff' }, 'Check result params');
 					test.deepEqual(channel.modes, modes, 'Check result modes');
-					closeAndFinish(test, realtime);
+
+					var testRealtime = helper.AblyRealtime();
+					testRealtime.connection.on('connected', function() {
+						var testChannel = testRealtime.channels.get(testName);
+						async.series([
+							checkCanPublish(channel),
+							checkCanSubscribe(channel, testChannel),
+							checkCanPresenceSubscribe(channel, testChannel),
+							checkCantEnterPresence(channel)
+						], function(err) {
+							if(err)
+								test.ok(false, 'Mode check failed with error: ' + displayError(err));
+							testRealtime.close();
+							closeAndFinish(test, realtime);
+						});
+					});
 				});
 			});
 			monitorConnection(test, realtime);
