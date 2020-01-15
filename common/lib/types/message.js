@@ -140,7 +140,7 @@ var Message = (function() {
 
 	Message.decode = function(message, context) {
 		/* The second argument could be either EncodingDecodingContext that contains ChannelOptions or ChannelOptions */
-		if(!context.channelOptions) {
+		if(!context || !context.channelOptions) {
 			var channelOptions = context;
 			context = {
 				channelOptions: channelOptions,
