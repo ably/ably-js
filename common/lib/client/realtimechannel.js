@@ -75,6 +75,8 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		Channel.prototype.setOptions.call(this, options);
+		if (this._encodingDecodingContext)
+			this._encodingDecodingContext.channelOptions = this.channelOptions;
 		if(this._shouldReattachToSetOptions(options)) {
 			this._attach(true, callback);
 		} else {
