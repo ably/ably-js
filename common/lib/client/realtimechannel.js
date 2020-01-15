@@ -357,7 +357,8 @@ var RealtimeChannel = (function() {
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
 			this.params = message.params;
-			this.modes = Utils.allToLowerCase(message.decodeModesFromFlags());
+			var modesFromFlags = message.decodeModesFromFlags();
+			this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
 			if(this.state === 'attached') {
 				var resumed = message.hasFlag('RESUMED');
 				if(!resumed || this.channelOptions.updateOnAttached) {

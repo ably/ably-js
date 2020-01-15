@@ -9,12 +9,13 @@ var Stats = (function() {
 	}
 
 	function MessageCategory(values) {
+		var self = this;
 		MessageCount.call(this, values);
 		this.category = undefined;
 		if (values && values.category) {
 			this.category = { };
 			Utils.forInOwnNonNullProps(values.category, function(prop) {
-				this.category[prop] = new MessageCount(values.category[prop]);
+				self.category[prop] = new MessageCount(values.category[prop]);
 			});
 		}
 	}
@@ -87,11 +88,12 @@ var Stats = (function() {
 	}
 
 	function ProcessedMessages(values) {
+		var self = this;
 		this.delta = undefined;
 		if (values && values.delta) {
 			this.delta = { };
 			Utils.forInOwnNonNullProps(values.delta, function(prop) {
-				this.delta[prop] = new ProcessedCount(values.delta[prop]);
+				self.delta[prop] = new ProcessedCount(values.delta[prop]);
 			});
 		}
 	}
