@@ -29,6 +29,11 @@ var RealtimeChannel = (function() {
 			plugins: realtime.options.plugins || { },
 			baseEncodedPreviousPayload: undefined
 		};
+		this._lastPayload = {
+			messageId: null,
+			protocolMessageChannelSerial: null,
+			decodeFailureRecoveryInProgress: null
+		};
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -205,6 +210,14 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype._attach = function(forceReattach, callback) {
+		if(!callback) {
+			callback = function(err) {
+				if (err) {
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
+
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
@@ -243,6 +256,9 @@ var RealtimeChannel = (function() {
 		}
 		if(this._attachResume) {
 			attachMsg.setFlag('ATTACH_RESUME');
+		}
+		if(this._lastPayload.decodeFailureRecoveryInProgress) {
+			attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -426,9 +442,17 @@ var RealtimeChannel = (function() {
 
 		case actions.MESSAGE:
 			var messages = message.messages,
+				firstMessage = messages[0],
+				lastMessage = messages[messages.length - 1],
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
+
+			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available.');
+				this._startDecodeFailureRecovery();
+				break;
+			}
 
 			for(var i = 0; i < messages.length; i++) {
 				var msg = messages[i];
@@ -437,11 +461,18 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
+					if(e.code === 40018) {
+						Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message decode failed.');
+						this._startDecodeFailureRecovery();
+						return;
+					}
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
 				if(!msg.id) msg.id = id + ':' + i;
 			}
+			this._lastPayload.messageId = lastMessage.id;
+			this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
 			this.onEvent(messages);
 			break;
 
@@ -459,6 +490,17 @@ var RealtimeChannel = (function() {
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
+		}
+	};
+
+	RealtimeChannel.prototype._startDecodeFailureRecovery = function() {
+		var self = this;
+		if(!this._lastPayload.decodeFailureRecoveryInProgress) {
+			Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
+			this._lastPayload.decodeFailureRecoveryInProgress = true;
+			this._attach(true, function() {
+				self._lastPayload.decodeFailureRecoveryInProgress = false;
+			});
 		}
 	};
 
