@@ -192,11 +192,11 @@ var Message = (function() {
 										var deltaBase = context.baseEncodedPreviousPayload;
 										if(typeof deltaBase === 'string')
 											deltaBase = BufferUtils.utf8Encode(deltaBase);
-											
+
 										data = BufferUtils.toBuffer(context.plugins.vcdiffDecoder.decodeSync(data, deltaBase));
 										lastPayload = data;
 									} catch(e) {
-										throw new ErrorInfo('VCDIFF delta decode failed.', 40018, 400, e);;
+										throw new ErrorInfo('VCDIFF delta decode failed.', 40018, 400, e);
 									}
 									continue;
 								}
@@ -209,7 +209,7 @@ var Message = (function() {
 					break;
 				}
 			} catch(e) {
-				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', e.code || 40013, 400);
 			} finally {
 				message.encoding = (lastProcessedEncodingIndex <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
 				message.data = data;
