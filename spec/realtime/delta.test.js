@@ -49,7 +49,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 					'vcdiffDecoder': testVcdiffDecoder
 				}
 			});
-			var channel = realtime.channels.get('[?delta=vcdiff]' + testName);
+			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
 			channel.subscribe(function(message) {
 				var index = Number(message.name);
@@ -119,7 +119,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 					'vcdiffDecoder': testVcdiffDecoder
 				}
 			});
-			var channel = realtime.channels.get('[?delta=vcdiff]' + testName);
+			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 			channel.subscribe(function(message) {
 				var index = Number(message.name);
 				test.ok(equals(testData[index], message.data), 'Check message.data');
@@ -161,7 +161,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 					'vcdiffDecoder': failingTestVcdiffDecoder
 				}
 			});
-			var channel = realtime.channels.get('[?delta=vcdiff]' + testName);
+			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 			channel.subscribe(function(message) {
 				var index = Number(message.name);
 				test.ok(equals(testData[index], message.data), 'Check message.data');

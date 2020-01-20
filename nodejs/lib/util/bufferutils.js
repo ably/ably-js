@@ -43,9 +43,10 @@ this.BufferUtils = (function() {
 		return buffer.byteLength;
 	};
 
-	BufferUtils.toBuffer = function(typedArray) {
+	/* Returns ArrayBuffer on browser and Buffer on Node.js */
+	BufferUtils.typedArrayToBuffer = function(typedArray) {
 		return Buffer.from(typedArray.buffer);
 	};
-	
+
 	return BufferUtils;
 })();
