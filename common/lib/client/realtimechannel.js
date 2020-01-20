@@ -86,7 +86,7 @@ var RealtimeChannel = (function() {
 			}
 			for(var i = 0; i < options.modes.length; i++){
 				var currentMode = options.modes[i];
-				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(Utils.modes, String.prototype.toUpperCase.call(currentMode))){
+				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(ProtocolMessage.channelModes, String.prototype.toUpperCase.call(currentMode))){
 					return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
 				}
 			}
@@ -94,7 +94,6 @@ var RealtimeChannel = (function() {
 	}
 
 	RealtimeChannel.prototype._shouldReattachToSetOptions = function(options) {
-		// TODO: Check if the new options are different than the old ones
 		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
 	};
 
