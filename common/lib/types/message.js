@@ -193,7 +193,7 @@ var Message = (function() {
 										if(typeof deltaBase === 'string')
 											deltaBase = BufferUtils.utf8Encode(deltaBase);
 
-										data = BufferUtils.toBuffer(context.plugins.vcdiffDecoder.decodeSync(data, deltaBase));
+										data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiffDecoder.decodeSync(data, deltaBase));
 										lastPayload = data;
 									} catch(e) {
 										throw new ErrorInfo('VCDIFF delta decode failed.', 40018, 400, e);
