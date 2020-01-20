@@ -40,6 +40,8 @@ var ProtocolMessage = (function() {
 		'AUTH' : 17
 	};
 
+	ProtocolMessage.channelModes = [ 'PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE' ];
+
 	ProtocolMessage.ActionName = [];
 	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
 		ProtocolMessage.ActionName[actions[name]] = name;
@@ -82,7 +84,7 @@ var ProtocolMessage = (function() {
 	ProtocolMessage.prototype.decodeModesFromFlags = function() {
 		var modes = [],
 			self = this;
-		Utils.arrForEach(Utils.modes, function(mode) {
+		Utils.arrForEach(ProtocolMessage.channelModes, function(mode) {
 			if(self.hasFlag(mode)) {
 				modes.push(mode);
 			}
