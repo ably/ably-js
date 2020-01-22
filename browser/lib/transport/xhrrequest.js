@@ -80,8 +80,9 @@ var XHRRequest = (function() {
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			if(body)
+			if(!err && body) {
 				this.emit('data', body);
+			}
 			this.emit('complete', err, body, headers, unpacked, statusCode);
 			this.dispose();
 		}

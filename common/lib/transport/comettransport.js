@@ -216,18 +216,25 @@ var CometTransport = (function() {
 			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 
-			/* the results of the request usually get handled as protocol responses instead of send errors */
+			/* the result of the request, even if a nack, is usually a protocol response
+			 * contained in the data. An err is anomolous, and indicates some issue with the
+			 * network,transport, or connection */
+			if(err) {
+				if(err.code) {
+					/* A protocol error received from realtime. TODO: once realtime
+					 * consistendly sends errors wrapped in protocol messages, should be
+					 * able to remove this */
+					self.onData(protocolMessageFromRawError(err));
+				} else {
+					/* A network/xhr error. Don't bother wrapping in a protocol message,
+					 * just disconnect the transport */
+					self.disconnect(err);
+				}
+				return;
+			}
+
 			if(data) {
 				self.onData(data);
-			} else if(err && err.code) {
-				/* A protocol error received from realtime. TODO: once realtime
-				 * consistendly sends errors wrapped in protocol messages, should be
-				 * able to remove this */
-				self.onData(protocolMessageFromRawError(err));
-			} else {
-				/* A network/xhr error. Don't bother wrapping in a protocol message,
-				 * just disconnect the transport */
-				self.disconnect(err);
 			}
 
 			if(self.pendingItems) {
