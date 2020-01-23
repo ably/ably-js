@@ -96,6 +96,12 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80003, 400);
 				}
 				self.recvRequest = null;
+				/* Connect request may complete without a emitting 'data' event since that is not
+				 * emitted for e.g. a non-streamed error response. Still implies preconnect. */
+				if(!preconnected) {
+					preconnected = true;
+					self.emit('preconnect');
+				}
 				self.onActivity();
 				if(err) {
 					if(err.code) {
