@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.1.23
+ * Ably JavaScript Library v1.1.24
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4697,7 +4697,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.23';
+Defaults.version          = '1.1.24';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -8546,6 +8546,12 @@ var CometTransport = (function() {
 					err = err || new ErrorInfo('Request cancelled', 80003, 400);
 				}
 				self.recvRequest = null;
+				/* Connect request may complete without a emitting 'data' event since that is not
+				 * emitted for e.g. a non-streamed error response. Still implies preconnect. */
+				if(!preconnected) {
+					preconnected = true;
+					self.emit('preconnect');
+				}
 				self.onActivity();
 				if(err) {
 					if(err.code) {
@@ -8666,18 +8672,25 @@ var CometTransport = (function() {
 			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 
-			/* the results of the request usually get handled as protocol responses instead of send errors */
+			/* the result of the request, even if a nack, is usually a protocol response
+			 * contained in the data. An err is anomolous, and indicates some issue with the
+			 * network,transport, or connection */
+			if(err) {
+				if(err.code) {
+					/* A protocol error received from realtime. TODO: once realtime
+					 * consistendly sends errors wrapped in protocol messages, should be
+					 * able to remove this */
+					self.onData(protocolMessageFromRawError(err));
+				} else {
+					/* A network/xhr error. Don't bother wrapping in a protocol message,
+					 * just disconnect the transport */
+					self.disconnect(err);
+				}
+				return;
+			}
+
 			if(data) {
 				self.onData(data);
-			} else if(err && err.code) {
-				/* A protocol error received from realtime. TODO: once realtime
-				 * consistendly sends errors wrapped in protocol messages, should be
-				 * able to remove this */
-				self.onData(protocolMessageFromRawError(err));
-			} else {
-				/* A network/xhr error. Don't bother wrapping in a protocol message,
-				 * just disconnect the transport */
-				self.disconnect(err);
 			}
 
 			if(self.pendingItems) {
@@ -12080,8 +12093,9 @@ var XHRRequest = (function() {
 	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
-			if(body)
+			if(!err && body) {
 				this.emit('data', body);
+			}
 			this.emit('complete', err, body, headers, unpacked, statusCode);
 			this.dispose();
 		}

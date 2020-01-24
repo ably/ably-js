@@ -40,9 +40,9 @@ This library exposes two API variants. Firstly, the original (and presently the 
 
 For this library version, and for all future 1.x versions, the callback-based API will be the default, and the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. However, a move to the promises-based variant as the default is possible at the next major release. If you are not handling promises, and want a version of the library that will not start returning promises for calls where you don't pass a callback in future versions, you can explicitly require the callback variant.
 
-#### Version: 1.1.23
+#### Version: 1.1.24
 
-The latest stable version of the Ably JavaScript client library is version: 1.1.23 .
+The latest stable version of the Ably JavaScript client library is version: 1.1.24 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
