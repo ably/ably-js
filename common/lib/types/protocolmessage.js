@@ -53,6 +53,7 @@ var ProtocolMessage = (function() {
 		'HAS_BACKLOG':        1 << 1,
 		'RESUMED':            1 << 2,
 		'TRANSIENT':          1 << 4,
+		'ATTACH_RESUME':      1 << 5,
 		/* Channel mode flags */
 		'PRESENCE':           1 << 16,
 		'PUBLISH':            1 << 17,
