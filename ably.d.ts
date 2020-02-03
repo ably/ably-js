@@ -248,7 +248,8 @@ declare namespace Types {
 
 	type ChannelParams = { [key: string]: string };
 
-	type ChannelModes = Array<string>;
+	type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
+	type ChannelModes = Array<ChannelMode>;
 
 	interface ChannelOptions {
 		cipher: any;
