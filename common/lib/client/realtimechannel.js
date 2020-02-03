@@ -23,6 +23,7 @@ var RealtimeChannel = (function() {
 		this._mode = null;
 		/* Temporary; only used for the checkChannelsOnResume option */
 		this._attachedMsgIndicator = false;
+		this._attachResume = false;
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -232,6 +233,9 @@ var RealtimeChannel = (function() {
 			attachMsg.encodeModesToFlags(this._requestedFlags);
 		} else if(this.channelOptions.modes) {
 			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes));
+		}
+		if(this._attachResume) {
+			attachMsg.setFlag('ATTACH_RESUME');
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -484,6 +488,12 @@ var RealtimeChannel = (function() {
 		} else if(state === 'detached' || state === 'failed' || state === 'suspended') {
 			this.setInProgress(statechangeOp, false);
 			this.setInProgress(syncOp, false);
+		}
+
+		if(state === 'attached') {
+			this._attachResume = true;
+		} else if(state === 'detaching' || state === 'failed') {
+			this._attachResume = false;
 		}
 
 		this.state = state;
