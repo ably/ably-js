@@ -28,7 +28,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.24';
+Defaults.version          = '1.1.25-ew';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 

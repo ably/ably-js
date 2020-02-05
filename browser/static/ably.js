@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.1.24
+ * Ably JavaScript Library v1.1.25
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4712,7 +4712,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.24';
+Defaults.version          = '1.1.25';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
