@@ -3,21 +3,9 @@ var fs   = require('fs');
 var path = require('path');
 var vm   = require('vm');
 
-var context = vm.createContext({
-	require:require,
-	console:console,
-	process:process,
-	Buffer:Buffer,
-	setTimeout:setTimeout,
-	setInterval:setInterval,
-	clearTimeout:clearTimeout,
-	clearInterval:clearInterval,
-	global:global
-});
-
 var includeScript = function(name) {
 	var filename = path.resolve(__dirname, name);
-	return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+	return vm.runInThisContext(fs.readFileSync(filename, 'utf8'), filename);
 };
 
 /* include libraries */
@@ -45,12 +33,12 @@ includeScript('../common/lib/client/push.js');
 includeScript('../common/lib/client/channel.js');
 includeScript('../common/lib/client/rest.js');
 
-var Rest = module.exports = context.Rest;
-Rest.BufferUtils = context.BufferUtils;
-Rest.Crypto = context.Crypto;
-Rest.Defaults = context.Defaults;
-Rest.Http = context.Http;
-Rest.Resource = context.Resource;
-Rest.Utils = context.Utils;
-Rest.Message = context.Message;
-Rest.PresenceMessage = context.PresenceMessage;
+var Rest = module.exports = global.Rest;
+Rest.BufferUtils = global.BufferUtils;
+Rest.Crypto = global.Crypto;
+Rest.Defaults = global.Defaults;
+Rest.Http = global.Http;
+Rest.Resource = global.Resource;
+Rest.Utils = global.Utils;
+Rest.Message = global.Message;
+Rest.PresenceMessage = global.PresenceMessage;

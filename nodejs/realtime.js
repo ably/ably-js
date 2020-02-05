@@ -3,21 +3,9 @@ var fs   = require('fs');
 var path = require('path');
 var vm   = require('vm');
 
-var context = vm.createContext({
-	require:require,
-	console:console,
-	process:process,
-	Buffer:Buffer,
-	setTimeout:setTimeout,
-	setInterval:setInterval,
-	clearTimeout:clearTimeout,
-	clearInterval:clearInterval,
-	global:global
-});
-
 var includeScript = function(name) {
 	var filename = path.resolve(__dirname, name);
-	return vm.runInContext(fs.readFileSync(filename, 'utf8'), context, filename);
+	return vm.runInThisContext(fs.readFileSync(filename, 'utf8'), filename);
 };
 
 /* include libraries */
@@ -60,13 +48,13 @@ includeScript('../common/lib/client/rest.js');
 includeScript('../common/lib/client/realtime.js');
 includeScript('./lib/transport/nodecomettransport.js');
 
-var Realtime = module.exports = context.Realtime;
-Realtime.BufferUtils = context.BufferUtils;
-Realtime.Crypto = context.Crypto;
-Realtime.Defaults = context.Defaults;
-Realtime.Http = context.Http;
-Realtime.Utils = context.Utils;
-Realtime.Message = context.Message;
-Realtime.PresenceMessage = context.PresenceMessage;
-Realtime.ProtocolMessage = context.ProtocolMessage;
-Realtime.ConnectionManager = context.ConnectionManager;
+var Realtime = module.exports = global.Realtime;
+Realtime.BufferUtils = global.BufferUtils;
+Realtime.Crypto = global.Crypto;
+Realtime.Defaults = global.Defaults;
+Realtime.Http = global.Http;
+Realtime.Utils = global.Utils;
+Realtime.Message = global.Message;
+Realtime.PresenceMessage = global.PresenceMessage;
+Realtime.ProtocolMessage = global.ProtocolMessage;
+Realtime.ConnectionManager = global.ConnectionManager;
