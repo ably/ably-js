@@ -359,7 +359,7 @@ var RealtimeChannel = (function() {
 			this._attachedMsgIndicator = true;
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
-			this.params = message.params;
+			this.params = message.params || {};
 			var modesFromFlags = message.decodeModesFromFlags();
 			this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
 			if(this.state === 'attached') {
