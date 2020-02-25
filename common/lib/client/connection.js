@@ -30,7 +30,7 @@ var Connection = (function() {
 	Utils.inherits(Connection, EventEmitter);
 
 	Connection.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
 	}
 
 	Connection.prototype.connect = function() {

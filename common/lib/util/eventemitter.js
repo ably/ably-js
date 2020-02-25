@@ -207,7 +207,7 @@ var EventEmitter = (function() {
 		}
 		if(typeof listener !== 'function' && Platform.Promise) {
 			return new Platform.Promise(function(resolve) {
-				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs));
 			});
 		}
 		if(targetState === currentState) {

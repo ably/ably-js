@@ -566,7 +566,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
 	}
 
 	return RealtimeChannel;
