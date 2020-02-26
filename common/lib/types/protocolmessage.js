@@ -10,6 +10,7 @@ var ProtocolMessage = (function() {
 		this.connectionId = undefined;
 		this.connectionKey = undefined;
 		this.connectionSerial = undefined;
+		this.connectionTimeserial = undefined;
 		this.channel = undefined;
 		this.channelSerial = undefined;
 		this.msgSerial = undefined;
@@ -102,7 +103,7 @@ var ProtocolMessage = (function() {
 		return '[ ' + result.join(', ') + ' ]';
 	}
 
-	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial count msgSerial timestamp'.split(' ');
+	var simpleAttributes = 'id channel channelSerial connectionId connectionKey connectionSerial connectionTimeserial count msgSerial timestamp'.split(' ');
 
 	ProtocolMessage.stringify = function(msg) {
 		var result = '[ProtocolMessage';
