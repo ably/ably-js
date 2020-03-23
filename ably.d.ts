@@ -168,6 +168,7 @@ declare namespace Types {
 	}
 
 	type capabilityOp = "publish" | "subscribe" | "presence" | "history" | "stats" | "channel-metadata" | "push-subscribe" | "push-admin";
+	type CapabilityOp = capabilityOp;
 
 	interface TokenParams {
 		capability?: { [key: string]: capabilityOp[]; } | string;
