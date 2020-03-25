@@ -91,15 +91,31 @@ var PaginatedResource = (function() {
 
 		if(relParams) {
 			var self = this;
-			if('first' in relParams)
-				this.first = function(cb) { self.get(relParams.first, cb); };
-			if('current' in relParams)
-				this.current = function(cb) { self.get(relParams.current, cb); };
+			if('first' in relParams) {
+				this.first = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'first', []);
+					}
+					self.get(relParams.first, cb);
+				};
+			}
+			if('current' in relParams) {
+				this.current = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'current', []);
+					}
+					self.get(relParams.current, cb);
+				};
+			}
 			this.next = function(cb) {
-				if('next' in relParams)
+				if(!cb && self.resource.rest.options.promises) {
+					return Utils.promisify(self, 'next', []);
+				}
+				if('next' in relParams) {
 					self.get(relParams.next, cb);
-				else
+				} else {
 					cb(null, null);
+				}
 			};
 
 			this.hasNext = function() { return ('next' in relParams) };
