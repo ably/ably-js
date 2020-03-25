@@ -614,9 +614,12 @@ declare namespace Types {
 
 	class PaginatedResult<T> {
 		items: T[];
-		first: (results: paginatedResultCallback<T>) => void;
-		next: (results: paginatedResultCallback<T>) => void;
-		current: (results: paginatedResultCallback<T>) => void;
+		first(results: paginatedResultCallback<T>): void;
+		first(): Promise<PaginatedResult<T>>;
+		next(results: paginatedResultCallback<T>): void;
+		next(): Promise<PaginatedResult<T>>;
+		current(results: paginatedResultCallback<T>): void;
+		current(): Promise<PaginatedResult<T>>;
 		hasNext: () => boolean;
 		isLast: () => boolean;
 	}

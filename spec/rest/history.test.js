@@ -416,5 +416,37 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	});
 
+	exports.historyPromise = function(test) {
+		if(typeof Promise === 'undefined') {
+			test.done();
+			return;
+		}
+		test.expect(5);
+		var rest = helper.AblyRest({promises: true});
+		var testchannel = rest.channels.get('persisted:history_promise');
+
+		testchannel.publish('one', null).then(function() {
+			return testchannel.publish('two', null);
+		}).then(function() {
+			return testchannel.history({limit: 1, direction: 'forwards'});
+		}).then(function(resultPage) {
+			test.equal(resultPage.items.length, 1);
+			test.equal(resultPage.items[0].name, 'one');
+			return resultPage.first();
+		}).then(function(resultPage) {
+			test.equal(resultPage.items[0].name, 'one');
+			return resultPage.current();
+		}).then(function(resultPage) {
+			test.equal(resultPage.items[0].name, 'one');
+			return resultPage.next();
+		}).then(function(resultPage) {
+			test.equal(resultPage.items[0].name, 'two');
+		})['catch'](function(err) {
+			test.ok(false, 'Promise chain failed with error: ' + displayError(err));
+		}).finally(function() {
+			test.done();
+		});
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
