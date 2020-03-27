@@ -489,6 +489,55 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			connectionManager.disconnectAllTransports();
 		});
 	};
+	
+	exports.resume_rewind_1 = function(test) {
+		
+		test.expect(2);
+		
+		var testName = 'resume_rewind_1';
+		var testMessage = { foo: 'bar', count: 1, status: 'active' };
+		try {
+
+			var sender_realtime = helper.AblyRealtime();
+			var sender_channel = sender_realtime.channels.get(testName);
+			
+			sender_realtime.connection.on('connected', function() {
+				sender_channel.publish('0', testMessage);
+			});
+
+			var receiver_realtime = helper.AblyRealtime();
+			var receiver_channel = receiver_realtime.channels.get(testName, { params: { rewind: 1 } });
+
+			receiver_channel.subscribe(function(message) {
+				test.ok(JSON.stringify(testMessage) === JSON.stringify(message.data), 'Check rewound message.data');
+			});
+
+			var resumed_receiver_realtime = helper.AblyRealtime();
+			var connectionManager = resumed_receiver_realtime.connection.connectionManager;
+			
+			var resumed_receiver_channel = resumed_receiver_realtime.channels.get(testName, { params: { rewind: 1 } });
+			
+			var sendOrig = connectionManager.send;
+			connectionManager.send = function(msg, queueEvent, callback) {
+				msg.setFlag('ATTACH_RESUME');
+				sendOrig(msg, queueEvent, callback);
+			};
+			
+			resumed_receiver_channel.subscribe(function(message) {
+				clearTimeout(success);
+				test.ok(false, 'Rewound message arrived on attach resume');
+				closeAndFinish(test, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
+			});
+			
+			var success = setTimeout(() => {
+				test.ok(true);
+				closeAndFinish(test, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
+			}, 7000);
+		} catch(e) {
+			test.ok(false, testName + ' test failed with exception: ' + e.stack);
+			closeAndFinish(test, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
+		}
+	}
 
 	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
 });
