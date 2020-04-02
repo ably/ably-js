@@ -861,7 +861,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}});
 
 	exports.attachWithInvalidChannelParams = function(test) {
-		test.expect(17);
+		test.expect(18);
 		var testName = 'attachWithInvalidChannelParams';
 		var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe';
 		try {
@@ -903,7 +903,17 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						channel.setOptions(channelOptions, function(err) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
-							test.equal(channel.params, undefined, 'Check channel options params');
+							test.deepEqual(channel.params, {}, 'Check channel options params');
+							cb();
+						});
+					},
+					function(cb) {
+						/* not malformed, but not recognised so we should end up with an empty params object*/
+						var channelOptions = {
+							params: {'nonexistent': 'foo'}
+						};
+						channel.setOptions(channelOptions, function() {
+							test.deepEqual(channel.params, {}, 'Check channel params');
 							cb();
 						});
 					},
@@ -914,7 +924,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						channel.setOptions(channelOptions, function(err) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
-							test.equal(channel.params, undefined, 'Check channel options params result');
+							test.deepEqual(channel.params, {}, 'Check channel options params result');
 							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
 							cb();
 						});
@@ -926,7 +936,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						channel.setOptions(channelOptions, function(err) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
-							test.equal(channel.params, undefined, 'Check channel options params result');
+							test.deepEqual(channel.params, {}, 'Check channel options params result');
 							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
 							cb();
 						});
