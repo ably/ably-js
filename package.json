@@ -21,9 +21,9 @@
     "ws": "^5.1"
   },
   "devDependencies": {
-    "async": "git://github.com/ably-forks/async.git#requirejs",
+    "async": "ably-forks/async#requirejs",
     "cors": "~2.7",
-    "crypto-js": "git://github.com/ably-forks/crypto-js.git#typedarray-webkit",
+    "crypto-js": "ably-forks/crypto-js#typedarray-webkit",
     "ejs": "~2.5",
     "express": "~4.12",
     "glob": "~4.4",
@@ -35,7 +35,7 @@
     "grunt-contrib-concat": "~0.5",
     "grunt-shell": "~1.1",
     "hexy": "~0.2",
-    "karma": "git://github.com/ably-forks/karma.git#ably-js-custom",
+    "karma": "ably-forks/karma#ably-js-custom",
     "karma-browserstack-launcher": "1.3.0",
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
@@ -44,7 +44,7 @@
     "karma-nodeunit": "~0.2",
     "karma-requirejs": "~0.2",
     "karma-story-reporter": "~0.3",
-    "kexec": "git://github.com/ably-forks/node-kexec.git#update-for-node-12",
+    "kexec": "ably-forks/node-kexec#update-for-node-12",
     "nodeunit": "^0.11.3",
     "requirejs": "~2.1",
     "shelljs": "~0.3"
@@ -54,7 +54,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:ably/ably-js.git"
+    "url": "ably/ably-js"
   },
   "jspm": {
     "registry": "npm",
