@@ -546,15 +546,14 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 1. Fork it
 2. When pulling to local, make sure to also pull the `ably-common` repo (`git submodule init && git submodule update`)
-3. Make sure you have installed the right version of Node (see the `.nvmrc` file to find the version of Node required to develop this project)
-4. Create your feature branch (`git checkout -b my-new-feature`)
-5. Commit your changes (`git commit -am 'Add some feature'`)
+3. Create your feature branch (`git checkout -b my-new-feature`)
+4. Commit your changes (`git commit -am 'Add some feature'`)
    Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
-6. Ensure you have added suitable tests and the test suite is passing(`npm test`)
-7. Ensure the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have been updated if the public API has changed
-8. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
-9. Push to the branch (`git push origin my-new-feature`)
-10. Create a new Pull Request
+5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
+6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/master/ably.d.ts) have been updated if the public API has changed
+7. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
+8. Push the branch (`git push origin my-new-feature`)
+9. Create a new Pull Request
 
 ## Release Process
 
