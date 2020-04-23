@@ -444,7 +444,7 @@ var RealtimeChannel = (function() {
 
 			//RTL17
 			if(this.state !== 'attached') {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message skipped. Channel not in ATTACHED state.');
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message "' + message.id + '" skipped as this channel "' + this.name + '" state is not "attached" (state is "' + this.state + '").');
 				return;
 			}
 
@@ -456,7 +456,7 @@ var RealtimeChannel = (function() {
 				timestamp = message.timestamp;
 
 			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available.');
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available for message "' + message.id + '" on this channel "' + this.name + '".');
 				this._startDecodeFailureRecovery();
 				break;
 			}
@@ -467,9 +467,8 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, this._decodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
 					if(e.code === 40018) {
-						Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message decode failed.');
 						this._startDecodeFailureRecovery();
 						return;
 					}
