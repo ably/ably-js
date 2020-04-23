@@ -64,14 +64,14 @@
     "main": "ably"
   },
   "scripts": {
-    "grunt": "./node_modules/grunt-cli/bin/grunt",
-    "test": "./node_modules/grunt-cli/bin/grunt test",
-    "test:nodeunit": "./node_modules/grunt-cli/bin/grunt test:nodeunit",
-    "test:karma": "./node_modules/grunt-cli/bin/grunt test:karma",
-    "test:karma:run": "./node_modules/grunt-cli/bin/grunt test:karma:run",
-    "test:webserver": "./node_modules/grunt-cli/bin/grunt test:webserver",
-    "concat": "./node_modules/grunt-cli/bin/grunt concat",
-    "build": "./node_modules/grunt-cli/bin/grunt build",
-    "requirejs": "./node_modules/grunt-cli/bin/grunt requirejs"
+    "grunt": "grunt",
+    "test": "grunt test",
+    "test:nodeunit": "grunt test:nodeunit",
+    "test:karma": "grunt test:karma",
+    "test:karma:run": "grunt test:karma:run",
+    "test:webserver": "grunt test:webserver",
+    "concat": "grunt concat",
+    "build": "grunt build",
+    "requirejs": "grunt requirejs"
   }
 }
