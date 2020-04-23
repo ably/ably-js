@@ -381,6 +381,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}});
 
+	// RTL 17
 	exports.no_messages_if_not_attached = function(test) {
 		
 		var testName = 'no_messages_if_not_attached';
