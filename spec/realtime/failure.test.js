@@ -404,7 +404,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 
 				messageReceived = true;
-				test.ok(JSON.stringify(testMessage) === JSON.stringify(message.data), 'Check first message received');
+				test.deepEqual(testMessage, message.data, 'Check first message received');
 				
 				var connectionManager = sender_realtime.connection.connectionManager;
 
