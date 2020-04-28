@@ -15,6 +15,17 @@
   "browser": {
     "./nodejs/index.js": "./browser/static/ably-commonjs.js"
   },
+  "files": [
+    "ably.d.ts",
+    "browser/**",
+    "callbacks.d.ts",
+    "callbacks.js",
+    "common/**",
+    "nodejs/**",
+    "promises.d.ts",
+    "promises.js",
+    "resources/**"
+  ],
   "dependencies": {
     "@ably/msgpack-js": "^0.3.2-v5",
     "request": "^2.87.0",
