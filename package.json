@@ -52,10 +52,7 @@
   "engines": {
     "node": ">=4.5.x"
   },
-  "repository": {
-    "type": "git",
-    "url": "ably/ably-js"
-  },
+  "repository": "ably/ably-js",
   "jspm": {
     "registry": "npm",
     "directories": {
