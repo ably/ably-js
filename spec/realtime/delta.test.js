@@ -20,9 +20,9 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 	function getTestVcdiffDecoder() {
 		return {
 			numberOfCalls: 0,
-			decodeSync: function(delta, base) {
+			decode: function(delta, base) {
 				this.numberOfCalls++;
-				return vcdiffDecoder.decodeSync(delta, base);
+				return vcdiffDecoder.decode(delta, base);
 			}
 		};
 	}
@@ -46,7 +46,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiffDecoder': testVcdiffDecoder
+					vcdiff: testVcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
@@ -81,7 +81,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiffDecoder': testVcdiffDecoder
+					vcdiff: testVcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get(testName);
@@ -116,7 +116,7 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiffDecoder': testVcdiffDecoder
+					vcdiff: testVcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
@@ -151,14 +151,14 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 		var testName = 'deltaDecodeFailureRecovery';
 		try {
 			var failingTestVcdiffDecoder = {
-				decodeSync: function(delta, base) {
+				decode: function(delta, base) {
 					throw new Error('Failed to decode delta.');
 				}
 			};
 
 			var realtime = helper.AblyRealtime({
 				plugins: {
-					'vcdiffDecoder': failingTestVcdiffDecoder
+					vcdiff: failingTestVcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });

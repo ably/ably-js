@@ -187,20 +187,21 @@ var Message = (function() {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						case 'vcdiff':
-							if(context.plugins && context.plugins.vcdiffDecoder) {
+							if(context.plugins && context.plugins.vcdiff) {
 								try {
 									var deltaBase = context.baseEncodedPreviousPayload;
-									if(typeof deltaBase === 'string')
+									if(typeof deltaBase === 'string') {
 										deltaBase = BufferUtils.utf8Encode(deltaBase);
+									}
 
-									data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiffDecoder.decodeSync(data, deltaBase));
+									data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
 									lastPayload = data;
 								} catch(e) {
-									throw new ErrorInfo('VCDIFF delta decode failed.', 40018, 400, e);
+									throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
 								}
 								continue;
 							} else {
-								throw new Error('Missing vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)');
+								throw new Error('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)');
 							}
 						default:
 							throw new Error("Unknown encoding");
