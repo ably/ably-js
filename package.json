@@ -32,7 +32,7 @@
     "ws": "^5.1"
   },
   "devDependencies": {
-    "@ably/vcdiff-decoder": "git://github.com/ably-forks/vcdiff-decoder.git#feature-delta-plugins",
+    "@ably/vcdiff-decoder": "1.0.4",
     "async": "ably-forks/async#requirejs",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#typedarray-webkit",
