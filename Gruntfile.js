@@ -141,7 +141,6 @@ module.exports = function (grunt) {
 		'<%= dirs.common %>/lib/client/channelstatechange.js',
 		'<%= dirs.common %>/lib/client/connection.js',
 		'<%= dirs.common %>/lib/client/push.js',
-		'<%= dirs.common %>/lib/client/pushbase.js',
 		'<%= dirs.common %>/lib/client/pushchannel.js',
 		'<%= dirs.common %>/lib/client/channel.js',
 		'<%= dirs.common %>/lib/client/realtimechannel.js',
