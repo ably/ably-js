@@ -48,12 +48,12 @@ var Crypto = (function() {
 	/**
 	 * Internal: a block containing zeros
 	 */
-	var emptyBlock = new Buffer(DEFAULT_BLOCKLENGTH);
+	var emptyBlock = Buffer.alloc(DEFAULT_BLOCKLENGTH);
 
 	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
 	 */
-	function filledBuffer(length, value) { var result = new Buffer(length); result.fill(value); return result; }
+	function filledBuffer(length, value) { var result = Buffer.alloc(length); result.fill(value); return result; }
 	var pkcs5Padding = [ filledBuffer(16, 16) ];
 	for(var i = 1; i <= 16; i++) pkcs5Padding.push(filledBuffer(i, i));
 
@@ -63,7 +63,7 @@ var Crypto = (function() {
 	 * @returns {Buffer}
 	 */
 	function toBuffer(bufferOrString) {
-		return (typeof(bufferOrString) == 'string') ? new Buffer(bufferOrString, 'binary') : bufferOrString;
+		return (typeof(bufferOrString) == 'string') ? Buffer.from(bufferOrString, 'binary') : bufferOrString;
 	}
 
 	/**

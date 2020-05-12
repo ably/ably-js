@@ -22,7 +22,7 @@ var Auth = (function() {
 
 	var hmac, toBase64;
 	if(Platform.createHmac) {
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+		toBase64 = function(str) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 		hmac = function(text, key) {
 			var inst = Platform.createHmac('SHA256', key);
 			inst.update(text);
