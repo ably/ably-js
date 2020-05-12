@@ -56,7 +56,7 @@ function padPlaintext(plaintext) {
 	var unpaddedLength = plaintext.length,
 		paddedLength = getPaddedLength(unpaddedLength),
 		paddingLength = paddedLength - unpaddedLength,
-		padding = new Buffer(paddingLength);
+		padding = Buffer.alloc(paddingLength);
 
 	padding.fill(paddingLength);
 	return Buffer.concat([plaintext, padding]);
@@ -110,13 +110,13 @@ for(var i = 1; i < process.argv.length; i++) {
 			case 'key':
 				try {
 					var keyHex = optMatch[2].replace(/ /g, '');
-					key = new Buffer(keyHex, 'hex');
+					key = Buffer.from(keyHex, 'hex');
 				} catch(e) { usage(e.message); }
 				break;
 			case 'iv':
 				try {
 					var ivHex = optMatch[2].replace(/ /g, '');
-					iv = new Buffer(ivHex, 'hex');
+					iv = Buffer.from(ivHex, 'hex');
 				} catch(e) { usage(e.message); }
 				break;
 			case 'data':
@@ -132,7 +132,7 @@ for(var i = 1; i < process.argv.length; i++) {
 			case 'iv':
 				try {
 					var ivHex = optMatch[2].replace(/ /g, '');
-					iv = new Buffer(ivHex, 'hex');
+					iv = Buffer.from(ivHex, 'hex');
 				} catch(e) { usage(e.message); }
 				break;
 			case 'save':
@@ -167,12 +167,12 @@ if(!iv) {
 var items;
 if(data) {
 	if(encoding)
-		data = new Buffer(data, encoding);
+		data = Buffer.from(data, encoding);
 	items = [data];
 } else {
 	items = [
 		'The quick brown fox jumped over the lazy dog',
-		new Buffer('000102030405060708090a0b0c0d0e0f', 'hex'),
+		Buffer.from('000102030405060708090a0b0c0d0e0f', 'hex'),
 		{example: {json: 'Object'}},
 		['example', 'json', 'array']
 	];
@@ -253,7 +253,7 @@ function generate_test_data_for(data) {
 	verboseOutput('Plaintext before encryption (without padding):');
 	var plaintext = data;
 	if(isString) {
-		plaintext = new Buffer(plaintext);
+		plaintext = Buffer.from(plaintext);
 		encoding = (encoding ? (encoding + '/') : '') + 'utf-8';
 	}
 	hexdump(plaintext);
