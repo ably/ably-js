@@ -53,7 +53,7 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 		if (isBrowser) {
 			return base64.encode;
 		} else {
-			return function (str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+			return function (str) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 		}
 	}
 
