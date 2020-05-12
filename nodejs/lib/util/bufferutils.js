@@ -13,13 +13,13 @@ this.BufferUtils = (function() {
 
 	BufferUtils.base64Encode = function(buf) { return Buffer.from(buf).toString('base64'); };
 
-	BufferUtils.base64Decode = function(string) { return new Buffer(string, 'base64'); };
+	BufferUtils.base64Decode = function(string) { return Buffer.from(string, 'base64'); };
 
 	BufferUtils.hexEncode = function(buf) { return Buffer.from(buf).toString('hex'); };
 
-	BufferUtils.hexDecode = function(string) { return new Buffer(string, 'hex'); };
+	BufferUtils.hexDecode = function(string) { return Buffer.from(string, 'hex'); };
 
-	BufferUtils.utf8Encode = function(string) { return new Buffer(string, 'utf8'); };
+	BufferUtils.utf8Encode = function(string) { return Buffer.from(string, 'utf8'); };
 
 	/* For utf8 decoding we apply slightly stricter input validation than to
 	 * hexEncode/base64Encode/etc: in those we accept anything that Buffer.from

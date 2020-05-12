@@ -1,7 +1,7 @@
 var https = require('https');
 
 exports.deleteAccount = function (testVars, testAccount, console, callback) {
-	var auth = 'Basic ' + new Buffer(testAccount.appId + '.' + testAccount.key0Id + ':' + testAccount.key0Value).toString('base64');
+	var auth = 'Basic ' + Buffer.from(testAccount.appId + '.' + testAccount.key0Id + ':' + testAccount.key0Value).toString('base64');
 	var delOptions = {
 		host: testVars.realtimeHost,
 		port: testVars.realtimeTlsPort,

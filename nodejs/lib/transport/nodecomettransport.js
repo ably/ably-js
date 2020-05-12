@@ -111,7 +111,7 @@ var NodeCometTransport = (function() {
 			method = 'POST';
 			if(!Buffer.isBuffer(body)) {
 				if(typeof(body) == 'object') body = JSON.stringify(body);
-				body = new Buffer(body);
+				body = Buffer.from(body);
 			}
 			this.body = body;
 			headers['Content-Length'] = body.length;
