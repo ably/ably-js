@@ -62,7 +62,7 @@
     "shelljs": "~0.3"
   },
   "engines": {
-    "node": ">=4.5.x"
+    "node": ">=5.10.x"
   },
   "repository": "ably/ably-js",
   "jspm": {
