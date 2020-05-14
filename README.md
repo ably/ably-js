@@ -15,7 +15,7 @@ This SDK supports the following platforms:
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 5.10 or newer
+**Node.js:** version 5.10 or newer. (1.1.x versions work on node 4.5 or newer).
 
 **React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
 
