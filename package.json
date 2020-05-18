@@ -27,7 +27,7 @@
     "resources/**"
   ],
   "dependencies": {
-    "@ably/msgpack-js": "^0.3.2-v5",
+    "@ably/msgpack-js": "^0.3.3",
     "request": "^2.87.0",
     "ws": "^5.1"
   },
