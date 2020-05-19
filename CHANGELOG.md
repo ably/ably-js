@@ -2,6 +2,13 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.1.25](https://github.com/ably/ably-js/tree/1.1.25) (2020-05-19)
+- EventEmitter.whenState: fix for promises [\#630](https://github.com/ably/ably-js/pull/630)
+- Typings: re-export Types namespace in 'ably/promises' sub-package [\#634](https://github.com/ably/ably-js/pull/634)
+- Support promises with PaginatedResult#next() etc. [\#635](https://github.com/ably/ably-js/pull/635)
+- Reduced npm package size [\#646](https://github.com/ably/ably-js/pull/646)
+- Update msgpack dependency to version explicitly Apache-2.0 licensed [\#650](https://github.com/ably/ably-js/pull/650)
+
 ## [1.1.24](https://github.com/ably/ably-js/tree/1.1.24) (2020-01-24)
 - Minor bug fix to comet transport
 - Update ably-common submodule for errors.json parsing fix
