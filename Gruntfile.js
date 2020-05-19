@@ -431,7 +431,7 @@ module.exports = function (grunt) {
 				grunt.fatal('Infrastructure repo could not be found in any parent folders up to a folder depth of ' + maxTraverseDepth);
 			}
 			var version = grunt.file.readJSON('package.json').version,
-					cmd = 'BUNDLE_GEMFILE="' + infrastructurePath + '/Gemfile" bundle exec ' + infrastructurePath + '/bin/ably-env deploy javascript --version ' + version;
+					cmd = 'cd ' + infrastructurePath + '; bundle exec ./bin/ably-env deploy javascript --version ' + version;
 			console.log('Publishing version ' + version + ' of the library to the CDN');
 			execExternal(cmd).call(this);
 		}
