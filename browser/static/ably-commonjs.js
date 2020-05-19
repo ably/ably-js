@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.1.24
+ * Ably JavaScript Library v1.1.25
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4697,7 +4697,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.24';
+Defaults.version          = '1.1.25';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -5040,7 +5040,7 @@ var EventEmitter = (function() {
 		}
 		if(typeof listener !== 'function' && Platform.Promise) {
 			return new Platform.Promise(function(resolve) {
-				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs));
 			});
 		}
 		if(targetState === currentState) {
@@ -9102,15 +9102,31 @@ var PaginatedResource = (function() {
 
 		if(relParams) {
 			var self = this;
-			if('first' in relParams)
-				this.first = function(cb) { self.get(relParams.first, cb); };
-			if('current' in relParams)
-				this.current = function(cb) { self.get(relParams.current, cb); };
+			if('first' in relParams) {
+				this.first = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'first', []);
+					}
+					self.get(relParams.first, cb);
+				};
+			}
+			if('current' in relParams) {
+				this.current = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'current', []);
+					}
+					self.get(relParams.current, cb);
+				};
+			}
 			this.next = function(cb) {
-				if('next' in relParams)
+				if(!cb && self.resource.rest.options.promises) {
+					return Utils.promisify(self, 'next', []);
+				}
+				if('next' in relParams) {
 					self.get(relParams.next, cb);
-				else
+				} else {
 					cb(null, null);
+				}
 			};
 
 			this.hasNext = function() { return ('next' in relParams) };
@@ -10369,7 +10385,7 @@ var Connection = (function() {
 	Utils.inherits(Connection, EventEmitter);
 
 	Connection.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
 	}
 
 	Connection.prototype.connect = function() {
@@ -11386,7 +11402,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
 	}
 
 	return RealtimeChannel;

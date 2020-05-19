@@ -168,6 +168,7 @@ declare namespace Types {
 	}
 
 	type capabilityOp = "publish" | "subscribe" | "presence" | "history" | "stats" | "channel-metadata" | "push-subscribe" | "push-admin";
+	type CapabilityOp = capabilityOp;
 
 	interface TokenParams {
 		capability?: { [key: string]: capabilityOp[]; } | string;
@@ -613,9 +614,12 @@ declare namespace Types {
 
 	class PaginatedResult<T> {
 		items: T[];
-		first: (results: paginatedResultCallback<T>) => void;
-		next: (results: paginatedResultCallback<T>) => void;
-		current: (results: paginatedResultCallback<T>) => void;
+		first(results: paginatedResultCallback<T>): void;
+		first(): Promise<PaginatedResult<T>>;
+		next(results: paginatedResultCallback<T>): void;
+		next(): Promise<PaginatedResult<T>>;
+		current(results: paginatedResultCallback<T>): void;
+		current(): Promise<PaginatedResult<T>>;
 		hasNext: () => boolean;
 		isLast: () => boolean;
 	}
