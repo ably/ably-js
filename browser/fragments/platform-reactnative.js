@@ -69,8 +69,23 @@ var Platform = (function() {
 			});
 		},
 		push: {
+			_pushDetails: null,
+			// ^ Value set by configurePush() in ably-js-react-native
+
 			getPushDeviceDetails(machine) {
-				// TODO
+				const {_pushDetails} = _Platform.push
+				if (_pushDetails == null) {
+					throw new Error(`Unable to get device push details. Please call ably-js-react-native#configurePush() first`)
+				}
+				if (_pushDetails instanceof Error) {
+					machine.handleEvent(new machine.constructor.GettingPushDeviceDetailsFailed(_pushDetails));
+					return
+				}
+				var device = machine.getDevice();
+				device.push.recipient = _pushDetails;
+				device.persist();
+
+				machine.handleEvent(new GotPushDeviceDetails());
 			},
 			storage: {
 				get(name) {
