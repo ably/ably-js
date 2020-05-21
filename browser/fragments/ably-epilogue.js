@@ -13,6 +13,9 @@
 		Realtime.PresenceMessage = Rest.PresenceMessage = PresenceMessage;
 		Realtime.ProtocolMessage = Rest.ProtocolMessage = ProtocolMessage;
 	}
+	if (typeof Platform !== 'undefined') {
+		Ably.Platform = Platform;
+	}
 
 	/* CommonJS support */
 	if (typeof global.exports === "object") {
