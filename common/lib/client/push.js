@@ -5,7 +5,7 @@ var Push = (function() {
 	function Push(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
-		this.stateMachine = Platform.push ? new ActivationStateMachine(this) : null;
+		this.stateMachine = Platform.push ? new ActivationStateMachine(rest) : null;
 	}
 
 	function Admin(rest) {
