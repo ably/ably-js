@@ -1,5 +1,5 @@
 var Platform = (function() {
-	const storage = {}
+	let storage = {}
 	const STORAGE_KEY = '__ably_react_native'
 
 	const ReactNative = require('react-native');
