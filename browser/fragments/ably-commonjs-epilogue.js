@@ -1,9 +1,10 @@
 Ably.msgpack = msgpack;
 Ably.Rest = Rest;
 Ably.Realtime = Realtime;
+Ably.Platform = Platform;
 Realtime.ConnectionManager = ConnectionManager;
 Realtime.BufferUtils = Rest.BufferUtils = BufferUtils;
-if(typeof(Crypto) !== 'undefined') Realtime.Crypto = Rest.Crypto = Crypto;
+if (typeof Crypto !== "undefined") Realtime.Crypto = Rest.Crypto = Crypto;
 Realtime.Defaults = Rest.Defaults = Defaults;
 Realtime.Http = Rest.Http = Http;
 Realtime.Utils = Rest.Utils = Utils;
