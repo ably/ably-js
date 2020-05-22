@@ -85,7 +85,7 @@ var Platform = (function() {
 				device.push.recipient = _pushDetails;
 				device.persist();
 
-				machine.handleEvent(new GotPushDeviceDetails());
+				machine.handleEvent(new machine.constructor.GotPushDeviceDetails());
 			},
 			storage: {
 				get(name) {
