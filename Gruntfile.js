@@ -214,7 +214,7 @@ module.exports = function (grunt) {
 
 		/* domevent omitted; not supported in react native */
 		'<%= dirs.browser %>/lib/util/msgpack.js',
-		'<%= dirs.browser %>/lib/util/webstorage.js',
+		/* webstorage omitted; no sync APIs available in react native */
 
 		'<%= dirs.fragments %>/platform-reactnative.js',
 

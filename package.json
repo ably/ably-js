@@ -10,6 +10,7 @@
   "main": "./nodejs/index.js",
   "typings": "./browser/static/ably.d.ts",
   "react-native": {
+    "crypto": "./reactnative/crypto.js",
     "./nodejs/index.js": "./browser/static/ably-reactnative.js"
   },
   "browser": {

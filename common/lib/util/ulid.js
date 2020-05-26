@@ -136,7 +136,7 @@ var ulid = (function() {
 			try {
 				var nodeCrypto = require("crypto");
 				return function () {
-					return nodeCrypto.randomBytes(1).readUInt8() / 0xff;
+					return nodeCrypto.randomBytes(1).readUInt8(0) / 0xff;
 				};
 			} catch (e) {}
 		}
