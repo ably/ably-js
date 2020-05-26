@@ -65,7 +65,7 @@ export function randomBytes(length, cb) {
 		const size = length;
 		const wordCount = Math.ceil(size * 0.25);
 		const randomBytes = sjcl.random.randomWords(wordCount, 10);
-		const hexString = sjcl.codec.hex.fromBits(randomBytes);
+		let hexString = sjcl.codec.hex.fromBits(randomBytes);
 		hexString = hexString.substr(0, size * 2);
 		return new Buffer(hexString, "hex");
 	}
