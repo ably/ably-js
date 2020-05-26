@@ -28,6 +28,7 @@
 
 const sjcl = require("./sjcl");
 const RNRandomBytes = require("react-native").NativeModules.RNRandomBytes;
+const Buffer = require("buffer").Buffer;
 
 function noop() {}
 
