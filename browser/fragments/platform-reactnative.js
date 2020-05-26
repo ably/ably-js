@@ -61,23 +61,27 @@ var Platform = (function() {
 			});
 		},
 		push: {
-			_pushDetails: null,
-			// ^ Value set by configurePush() in ably-js-react-native
+			_pushObserver: null,
+			// ^ Value set by ably-js-react-native
 
 			getPushDeviceDetails(machine) {
-				const {_pushDetails} = _Platform.push
-				if (_pushDetails == null) {
-					throw new Error(`Unable to get device push details. Please call ably-js-react-native#configurePush() first`);
+				const {_pushObserver} = _Platform.push;
+				if (_pushObserver == null) {
+					throw new Error(`Unable to get device push details. Please make sure you've setup ably-js-react-native correctly`);
 				}
-				if (_pushDetails instanceof Error) {
-					machine.handleEvent(new machine.constructor.GettingPushDeviceDetailsFailed(_pushDetails));
-					return;
-				}
-				var device = machine.getDevice();
-				device.push.recipient = _pushDetails;
-				device.persist();
 
-				machine.handleEvent(new machine.constructor.GotPushDeviceDetails());
+				_pushObserver.subscribe({
+					next(pushDetails) {
+						var device = machine.getDevice();
+						device.push.recipient = pushDetails;
+						device.persist();
+
+						machine.handleEvent(new machine.constructor.GotPushDeviceDetails());
+					},
+					error(pushError) {
+						machine.handleEvent(new machine.constructor.GettingPushDeviceDetailsFailed(pushError));
+					},
+				});
 			},
 			storage: {
 				get(name) {
