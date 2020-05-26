@@ -3106,37 +3106,8 @@ var msgpack = (function() {
 })();
 
 var Platform = (function() {
-	let storage = {};
-	const STORAGE_KEY = '__ably_react_native';
-
 	const ReactNative = require('react-native');
 	const AsyncStorage = require('@react-native-community/async-storage').default;
-
-	// TODO: Replace with lodash.debounce
-	function debounce(callback, timeout) {
-		let timerId = null;
-		return function() {
-			clearTimeout(timerId);
-			timerId = setTimeout(callback, timeout);
-		};
-	}
-
-	function persistStorage() {
-		AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(storage)).catch(error => {
-			console.error('[ably] Error persisting state to Async Storage', err);
-		});
-	}
-
-	const debouncedPersistStorage = debounce(persistStorage, 250);
-
-	AsyncStorage.getItem(STORAGE_KEY).then(contents => {
-		storage = {
-			...JSON.parse(contents || '{}'),
-			storage,
-		};
-	}).catch(err => {
-		console.error('[ably] Error initializing Ably', err);
-	});
 
 	const _Platform = {
 		libver: 'js-rn',
@@ -3192,15 +3163,13 @@ var Platform = (function() {
 			},
 			storage: {
 				get(name) {
-					return storage[name];
+					return AsyncStorage.getItem(name);
 				},
 				set(name, value) {
-					storage[name] = value;
-					debouncedPersistStorage();
+					return AsyncStorage.setItem(name, value);
 				},
 				remove(name) {
-					storage[name] = undefined;
-					debouncedPersistStorage();
+					return AsyncStorage.removeItem(name);
 				},
 			},
 			platform: ReactNative.Platform.OS,
@@ -6249,33 +6218,46 @@ var LocalDevice = (function() {
 
 	LocalDevice.load = function(rest) {
 		var device = new LocalDevice(rest);
-		device.loadPersisted();
-		return device;
+
+		return device.loadPersisted().then(function() {
+			return device;
+		});
 	};
 
 	LocalDevice.prototype.loadPersisted = function() {
-		this.platform = Platform.push.platform;
-		this.clientId = this.rest.auth.clientId;
-		this.formFactor = Platform.push.formFactor;
-		this.id = Platform.push.storage.get(persistKeys.deviceId);
-		if(this.id) {
-			this.deviceSecret = Platform.push.storage.get(persistKeys.deviceSecret) || null;
-			this.deviceIdentityToken = JSON.parse(Platform.push.storage.get(persistKeys.deviceIdentityToken) || 'null');
-			this.push.recipient = JSON.parse(Platform.push.storage.get(persistKeys.pushRecipient) || 'null');
-		} else {
-			this.resetId();
-		}
+		return Promise.all([
+			Platform.push.storage.get(persistKeys.deviceId),
+			Platform.push.storage.get(persistKeys.deviceSecret),
+			Platform.push.storage.get(persistKeys.deviceIdentityToken),
+			Platform.push.storage.get(persistKeys.pushRecipient),
+		]).then(function(storage) {
+			this.platform = Platform.push.platform;
+			this.clientId = this.rest.auth.clientId;
+			this.formFactor = Platform.push.formFactor;
+			this.id = storage[0];
+
+			if(this.id) {
+				this.deviceSecret = storage[1] || null;
+				this.deviceIdentityToken = JSON.parse(storage[2] || 'null');
+				this.push.recipient = JSON.parse(storage[3] || 'null');
+			} else {
+				this.resetId();
+			}
+		}.bind(this));
 	};
 
 	LocalDevice.prototype.persist = function() {
-		Platform.push.storage.set(persistKeys.deviceId, this.id);
-		Platform.push.storage.set(persistKeys.deviceSecret, this.deviceSecret);
+		const promises = [];
+		promises.push(Platform.push.storage.set(persistKeys.deviceId, this.id));
+		promises.push(Platform.push.storage.set(persistKeys.deviceSecret, this.deviceSecret));
 		if(this.deviceIdentityToken) {
-			Platform.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken));
+			promises.push(Platform.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
 		}
 		if(this.push.recipient) {
-			Platform.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient));
+			promises.push(Platform.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
 		}
+
+		return Promise.all(promises);
 	};
 
 	LocalDevice.prototype.resetId = function() {
@@ -10667,7 +10649,7 @@ var Push = (function() {
 	function Push(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
-		this.stateMachine = Platform.push ? new ActivationStateMachine(rest) : null;
+		this.stateMachine = null;
 	}
 
 	function Admin(rest) {
@@ -10826,20 +10808,41 @@ var Push = (function() {
 		activationState: 'ably.push.activationState',
 	};
 
-	function ActivationStateMachine(rest) {
+	function ActivationStateMachine(rest, device, activationState) {
 		this.rest = rest;
+		this.device = device;
 		this.customRegisterer = null;
 		this.customDeregisterer = null;
-		this.current = ActivationStateMachine[Platform.push.storage.get(persistKeys.activationState) || 'NotActivated'];
+		this.current = ActivationStateMachine[activationState || 'NotActivated'];
 		this.pendingEvents = [];
 	}
+	ActivationStateMachine.load = function(rest) {
+		return Promise.all([
+			rest.device(),
+			Platform.push.storage.get(persistKeys.activationState)
+		]).then(results => {
+			const machine = new ActivationStateMachine(rest, results[0], results[1]);
+
+			return machine;
+		});
+	};
 
 	Push.prototype.activate = function(customRegisterer, callback) {
-		if(!this.stateMachine) {
-			throw new Error('this platform is not supported as a target of push notifications');
-		}
-		this.stateMachine.activatedCallback = callback || nop;
-		this.stateMachine.handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine, customRegisterer));
+		const handler = callback || nop;
+
+		return new Promise(function(resolve, reject) {
+			if (!Platform.push) {
+				reject(new Error('this platform is not supported as a target of push notifications'));
+				return
+			}
+			resolve(ActivationStateMachine.load(this.rest));
+		}.bind(this)).then(function(activationMachine) {
+			this.stateMachine = activationMachine;
+			this.stateMachine.activatedCallback = handler;
+			this.stateMachine.handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine, customRegisterer));
+		}.bind(this)).then(function() {
+			handler(null);
+		}, handler);
 	};
 
 	Push.prototype.deactivate = function(customDeregisterer, callback) {
@@ -10856,26 +10859,26 @@ var Push = (function() {
 		machine.customRegisterer = customRegisterer || false;
 		machine.persist();
 	};
-	ActivationStateMachine.CalledActivate = CalledActivate; 
+	ActivationStateMachine.CalledActivate = CalledActivate;
 
 	var CalledDeactivate = function(machine, customDeregisterer) {
 		machine.customDeregisterer = customDeregisterer || false;
 		machine.persist();
 	};
-	ActivationStateMachine.CalledDeactivate = CalledDeactivate; 
+	ActivationStateMachine.CalledDeactivate = CalledDeactivate;
 
 	var GotPushDeviceDetails = function() {};
-	ActivationStateMachine.GotPushDeviceDetails = GotPushDeviceDetails; 
+	ActivationStateMachine.GotPushDeviceDetails = GotPushDeviceDetails;
 
 	var GettingPushDeviceDetailsFailed = function(reason) {
 		this.reason = reason;
 	};
-	ActivationStateMachine.GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed; 
+	ActivationStateMachine.GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed;
 
 	var GotDeviceRegistration = function(deviceRegistration) {
 		this.deviceIdentityToken = deviceRegistration.deviceIdentityToken;
 	};
-	ActivationStateMachine.GotDeviceRegistration = GotDeviceRegistration; 
+	ActivationStateMachine.GotDeviceRegistration = GotDeviceRegistration;
 
 	var GettingDeviceRegistrationFailed = function(reason) {
 		this.reason = reason;
@@ -10883,12 +10886,12 @@ var Push = (function() {
 	ActivationStateMachine.GettingDeviceRegistrationFailed = GettingDeviceRegistrationFailed;
 
 	var RegistrationUpdated = function() {};
-	ActivationStateMachine.RegistrationUpdated = RegistrationUpdated; 
-	
+	ActivationStateMachine.RegistrationUpdated = RegistrationUpdated;
+
 	var UpdatingRegistrationFailed = function(reason) {
 		this.reason = reason;
 	};
-	ActivationStateMachine.UpdatingRegistrationFailed = UpdatingRegistrationFailed; 
+	ActivationStateMachine.UpdatingRegistrationFailed = UpdatingRegistrationFailed;
 
 	var Deregistered = function() {};
 	ActivationStateMachine.Deregistered = Deregistered;
@@ -10896,7 +10899,7 @@ var Push = (function() {
 	var DeregistrationFailed = function(reason) {
 		this.reason = reason;
 	};
-	ActivationStateMachine.DeregistrationFailed = DeregistrationFailed; 
+	ActivationStateMachine.DeregistrationFailed = DeregistrationFailed;
 
 	// States
 
@@ -11050,7 +11053,7 @@ var Push = (function() {
 	ActivationStateMachine.WaitingForDeregistration = WaitingForDeregistration;
 
 	ActivationStateMachine.prototype.getDevice = function() {
-		return this.rest.device();
+		return this.device;
 	};
 
 	function isPersistentState(state) {
@@ -11174,7 +11177,7 @@ var Push = (function() {
 				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'enqueing event: ' + event.constructor.name);
 				this.pendingEvents.push(event);
 				handling = false;
-				return;	
+				return;
 			}
 
 			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + event.constructor.name + ')-> ' + maybeNext.name);
