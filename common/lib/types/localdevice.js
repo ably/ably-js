@@ -21,33 +21,46 @@ var LocalDevice = (function() {
 
 	LocalDevice.load = function(rest) {
 		var device = new LocalDevice(rest);
-		device.loadPersisted();
-		return device;
+
+		return device.loadPersisted().then(function() {
+			return device;
+		});
 	};
 
 	LocalDevice.prototype.loadPersisted = function() {
-		this.platform = Platform.push.platform;
-		this.clientId = this.rest.auth.clientId;
-		this.formFactor = Platform.push.formFactor;
-		this.id = Platform.push.storage.get(persistKeys.deviceId);
-		if(this.id) {
-			this.deviceSecret = Platform.push.storage.get(persistKeys.deviceSecret) || null;
-			this.deviceIdentityToken = JSON.parse(Platform.push.storage.get(persistKeys.deviceIdentityToken) || 'null');
-			this.push.recipient = JSON.parse(Platform.push.storage.get(persistKeys.pushRecipient) || 'null');
-		} else {
-			this.resetId();
-		}
+		return Promise.all([
+			Platform.push.storage.get(persistKeys.deviceId),
+			Platform.push.storage.get(persistKeys.deviceSecret),
+			Platform.push.storage.get(persistKeys.deviceIdentityToken),
+			Platform.push.storage.get(persistKeys.pushRecipient),
+		]).then(function(storage) {
+			this.platform = Platform.push.platform;
+			this.clientId = this.rest.auth.clientId;
+			this.formFactor = Platform.push.formFactor;
+			this.id = storage[0];
+
+			if(this.id) {
+				this.deviceSecret = Platform.push.storage.get(storage[1]) || null;
+				this.deviceIdentityToken = JSON.parse(Platform.push.storage.get(storage[2]) || 'null');
+				this.push.recipient = JSON.parse(Platform.push.storage.get(storage[3]) || 'null');
+			} else {
+				this.resetId();
+			}
+		});
 	};
 
 	LocalDevice.prototype.persist = function() {
-		Platform.push.storage.set(persistKeys.deviceId, this.id);
-		Platform.push.storage.set(persistKeys.deviceSecret, this.deviceSecret);
+		const promises = [];
+		promises.push(Platform.push.storage.set(persistKeys.deviceId, this.id));
+		promises.push(Platform.push.storage.set(persistKeys.deviceSecret, this.deviceSecret));
 		if(this.deviceIdentityToken) {
-			Platform.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken));
+			promises.push(Platform.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
 		}
 		if(this.push.recipient) {
-			Platform.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient));
+			promises.push(Platform.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
 		}
+
+		return Promise.all(promises);
 	};
 
 	LocalDevice.prototype.resetId = function() {

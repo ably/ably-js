@@ -1,35 +1,6 @@
 var Platform = (function() {
-	let storage = {};
-	const STORAGE_KEY = '__ably_react_native';
-
 	const ReactNative = require('react-native');
 	const AsyncStorage = require('@react-native-community/async-storage').default;
-
-	// TODO: Replace with lodash.debounce
-	function debounce(callback, timeout) {
-		let timerId = null;
-		return function() {
-			clearTimeout(timerId);
-			timerId = setTimeout(callback, timeout);
-		};
-	}
-
-	function persistStorage() {
-		AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(storage)).catch(error => {
-			console.error('[ably] Error persisting state to Async Storage', err);
-		});
-	}
-
-	const debouncedPersistStorage = debounce(persistStorage, 250);
-
-	AsyncStorage.getItem(STORAGE_KEY).then(contents => {
-		storage = {
-			...JSON.parse(contents || '{}'),
-			storage,
-		};
-	}).catch(err => {
-		console.error('[ably] Error initializing Ably', err);
-	});
 
 	const _Platform = {
 		libver: 'js-rn',
@@ -85,15 +56,14 @@ var Platform = (function() {
 			},
 			storage: {
 				get(name) {
+					return AsyncStorage.getItem(name);
 					return storage[name];
 				},
 				set(name, value) {
-					storage[name] = value;
-					debouncedPersistStorage();
+					return AsyncStorage.setItem(name, value);
 				},
 				remove(name) {
-					storage[name] = undefined;
-					debouncedPersistStorage();
+					return AsyncStorage.removeItem(name);
 				},
 			},
 			platform: ReactNative.Platform.OS,
