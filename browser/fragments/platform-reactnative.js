@@ -57,7 +57,6 @@ var Platform = (function() {
 			storage: {
 				get(name) {
 					return AsyncStorage.getItem(name);
-					return storage[name];
 				},
 				set(name, value) {
 					return AsyncStorage.setItem(name, value);

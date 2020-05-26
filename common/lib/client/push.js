@@ -166,6 +166,7 @@ var Push = (function() {
 
 	function ActivationStateMachine(rest, device, activationState) {
 		this.rest = rest;
+		this.device = device;
 		this.customRegisterer = null;
 		this.customDeregisterer = null;
 		this.current = ActivationStateMachine[activationState || 'NotActivated'];
@@ -190,8 +191,8 @@ var Push = (function() {
 				reject(new Error('this platform is not supported as a target of push notifications'));
 				return
 			}
-			resolve(ActivationStateMachine.load());
-		}).then(function(activationMachine) {
+			resolve(ActivationStateMachine.load(this.rest));
+		}.bind(this)).then(function(activationMachine) {
 			this.stateMachine = activationMachine;
 			this.stateMachine.activatedCallback = handler;
 			this.stateMachine.handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine, customRegisterer));
@@ -408,7 +409,7 @@ var Push = (function() {
 	ActivationStateMachine.WaitingForDeregistration = WaitingForDeregistration;
 
 	ActivationStateMachine.prototype.getDevice = function() {
-		return this.rest.device();
+		return this.device;
 	};
 
 	function isPersistentState(state) {

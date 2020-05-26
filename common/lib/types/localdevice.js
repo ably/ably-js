@@ -40,13 +40,13 @@ var LocalDevice = (function() {
 			this.id = storage[0];
 
 			if(this.id) {
-				this.deviceSecret = Platform.push.storage.get(storage[1]) || null;
-				this.deviceIdentityToken = JSON.parse(Platform.push.storage.get(storage[2]) || 'null');
-				this.push.recipient = JSON.parse(Platform.push.storage.get(storage[3]) || 'null');
+				this.deviceSecret = storage[1] || null;
+				this.deviceIdentityToken = JSON.parse(storage[2] || 'null');
+				this.push.recipient = JSON.parse(storage[3] || 'null');
 			} else {
 				this.resetId();
 			}
-		});
+		}.bind(this));
 	};
 
 	LocalDevice.prototype.persist = function() {
