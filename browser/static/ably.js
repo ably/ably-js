@@ -3154,6 +3154,76 @@ var msgpack = (function() {
 	return exports;
 })();
 
+var WebStorage = (function() {
+	var sessionSupported,
+		localSupported,
+		test = 'ablyjs-storage-test';
+
+	/* Even just accessing the session/localStorage object can throw a
+	 * security exception in some circumstances with some browsers. In
+	 * others, calling setItem will throw. So have to check in this
+	 * somewhat roundabout way. (If unsupported or no global object,
+	 * will throw on accessing a property of undefined) */
+	try {
+		global.sessionStorage.setItem(test, test);
+		global.sessionStorage.removeItem(test);
+		sessionSupported = true;
+	} catch(e) {
+		sessionSupported = false;
+	}
+
+	try {
+		global.localStorage.setItem(test, test);
+		global.localStorage.removeItem(test);
+		localSupported = true;
+	} catch(e) {
+		localSupported = false;
+	}
+
+	function WebStorage() {}
+
+	function storageInterface(session) {
+		return session ? global.sessionStorage : global.localStorage;
+	}
+
+	function set(name, value, ttl, session) {
+		var wrappedValue = {value: value};
+		if(ttl) {
+			wrappedValue.expires = Utils.now() + ttl;
+		}
+		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
+	}
+
+	function get(name, session) {
+		var rawItem = storageInterface(session).getItem(name);
+		if(!rawItem) return null;
+		var wrappedValue = JSON.parse(rawItem);
+		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
+			storageInterface(session).removeItem(name);
+			return null;
+		}
+		return wrappedValue.value;
+	}
+
+	function remove(name, session) {
+		return storageInterface(session).removeItem(name);
+	}
+
+	if(localSupported) {
+		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
+		WebStorage.get    = function(name) { return get(name, false); };
+		WebStorage.remove = function(name) { return remove(name, false); };
+	}
+
+	if(sessionSupported) {
+		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
+		WebStorage.getSession    = function(name) { return get(name, true); };
+		WebStorage.removeSession = function(name) { return remove(name, true); };
+	}
+
+	return WebStorage;
+})();
+
 if(typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
 }
@@ -3213,8 +3283,104 @@ var Platform = {
 				callback(null);
 			}
 		};
-	})(global.crypto || global.msCrypto) // mscrypto for IE11
+	})(global.crypto || global.msCrypto), // mscrypto for IE11
+		getPushDeviceDetails: ('safari' in window) ? getSafariPushDeviceDetails : getW3CPushDeviceDetails,
+		pushPlatform: 'browser',
+		pushFormFactor: 'desktop' // TODO: actually detect this
 };
+
+function getW3CPushDeviceDetails(machine) {
+	var GettingPushDeviceDetailsFailed = machine.constructor.GettingPushDeviceDetailsFailed;
+	var GotPushDeviceDetails = machine.constructor.GotPushDeviceDetails;
+
+	function toBase64Url(arrayBuffer) {
+		var buffer = new Uint8Array(arrayBuffer.slice(0, arrayBuffer.byteLength));
+		return btoa(String.fromCharCode.apply(null, buffer));
+	}
+
+	function urlBase64ToUint8Array(base64String) {
+		var padding = '='.repeat((4 - base64String.length % 4) % 4);
+		var base64 = (base64String + padding)
+			.replace(/\-/g, '+')
+			.replace(/_/g, '/');
+		var rawData = window.atob(base64);
+		var rawDataChars = [];
+		for (var i = 0; i < rawData.length; i++) {
+			rawDataChars.push(rawData[i].charCodeAt(0));
+		}
+		return Uint8Array.from(rawDataChars);
+	}
+
+	var withPermissionCalled = false;
+
+	function withPermission(permission) {
+		if (withPermissionCalled) {
+			return;
+		}
+		withPermissionCalled = true;
+
+		if (permission !== 'granted') {
+			machine.handleEvent(new GettingPushDeviceDetailsFailed(new Error(`user denied permission to send notifications.`)));
+			return;
+		}
+
+		var swUrl = machine.rest.options.pushServiceWorkerUrl;
+		if (!swUrl) {
+			throw new Error('missing ClientOptions.pushServiceWorkerUrl');
+		}
+
+		navigator.serviceWorker.register(swUrl).then(function(worker) {
+			var subscribe = function() {
+				// TODO: appServerKey is Ably's public key, should be retrieved
+				// from the server.
+				var appServerKey = 'BCHetocdFiZiT8YwGRPcYeRB1fjoDxQOs73hnDO9Rni0mCh9sfZBa-gfT1P7irZyaiQfZPOdogytTdJUuOXwO9E=';
+
+				worker.pushManager.subscribe({
+					userVisibleOnly: true,
+					applicationServerKey: urlBase64ToUint8Array(appServerKey),
+				}).then(function(subscription) {
+					var endpoint = subscription.endpoint;
+					var p256dh = toBase64Url(subscription.getKey('p256dh'));
+					var auth = toBase64Url(subscription.getKey('auth'));
+					var key = [p256dh, auth].join(':');
+
+					var device = machine.getDevice();
+					device.push.recipient = {
+						transportType: 'web',
+						targetUrl: btoa(endpoint),
+						encryptionKey: key,
+					};
+					device.persist();
+
+					machine.handleEvent(new GotPushDeviceDetails());
+				}).catch(function(err) {
+					machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
+				});
+			}
+
+			worker.pushManager.getSubscription().then(function(subscription) {
+				if (subscription) {
+					subscription.unsubscribe().then(subscribe);
+				} else {
+					subscribe();
+				}
+			});
+		}).catch(function(err) {
+			machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
+		});
+	};
+
+	// requestPermission sometimes takes a callback and sometimes
+	// returns a Promise. And sometimes both!
+	var maybePermissionPromise = Notification.requestPermission(withPermission);
+	if (maybePermissionPromise) {
+		maybePermissionPromise.then(withPermission);
+	}
+}
+
+function getSafariPushDeviceDetails(machine) {
+	throw new Error('TODO');
+}
 
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
@@ -3525,76 +3691,6 @@ var Crypto = (function() {
 	};
 
 	return Crypto;
-})();
-
-var WebStorage = (function() {
-	var sessionSupported,
-		localSupported,
-		test = 'ablyjs-storage-test';
-
-	/* Even just accessing the session/localStorage object can throw a
-	 * security exception in some circumstances with some browsers. In
-	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no global object,
-	 * will throw on accessing a property of undefined) */
-	try {
-		global.sessionStorage.setItem(test, test);
-		global.sessionStorage.removeItem(test);
-		sessionSupported = true;
-	} catch(e) {
-		sessionSupported = false;
-	}
-
-	try {
-		global.localStorage.setItem(test, test);
-		global.localStorage.removeItem(test);
-		localSupported = true;
-	} catch(e) {
-		localSupported = false;
-	}
-
-	function WebStorage() {}
-
-	function storageInterface(session) {
-		return session ? global.sessionStorage : global.localStorage;
-	}
-
-	function set(name, value, ttl, session) {
-		var wrappedValue = {value: value};
-		if(ttl) {
-			wrappedValue.expires = Utils.now() + ttl;
-		}
-		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
-	}
-
-	function get(name, session) {
-		var rawItem = storageInterface(session).getItem(name);
-		if(!rawItem) return null;
-		var wrappedValue = JSON.parse(rawItem);
-		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
-			storageInterface(session).removeItem(name);
-			return null;
-		}
-		return wrappedValue.value;
-	}
-
-	function remove(name, session) {
-		return storageInterface(session).removeItem(name);
-	}
-
-	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
-	}
-
-	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
-	}
-
-	return WebStorage;
 })();
 
 var Defaults = {
@@ -5055,7 +5151,7 @@ var EventEmitter = (function() {
 		}
 		if(typeof listener !== 'function' && Platform.Promise) {
 			return new Platform.Promise(function(resolve) {
-				self.whenState.bind(self, targetState, currentState, resolve).apply(self, listenerArgs);
+				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs));
 			});
 		}
 		if(targetState === currentState) {
@@ -5220,6 +5316,192 @@ var ErrorReporter = (function() {
 	};
 
 	return ErrorReporter;
+})();
+
+var ulid = (function() {
+	// From https://github.com/ulid/javascript
+
+	// The MIT License (MIT)
+
+	// Copyright (c) 2017 Alizain Feerasta
+
+	// Permission is hereby granted, free of charge, to any person obtaining a copy
+	// of this software and associated documentation files (the "Software"), to deal
+	// in the Software without restriction, including without limitation the rights
+	// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	// copies of the Software, and to permit persons to whom the Software is
+	// furnished to do so, subject to the following conditions:
+
+	// The above copyright notice and this permission notice shall be included in all
+	// copies or substantial portions of the Software.
+
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	// SOFTWARE.
+
+	function createError(message) {
+		var err = new Error(message);
+		err.source = "ulid";
+		return err;
+	}
+	// These values should NEVER change. If
+	// they do, we're no longer making ulids!
+	var ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford's Base32
+	var ENCODING_LEN = ENCODING.length;
+	var TIME_MAX = Math.pow(2, 48) - 1;
+	var TIME_LEN = 10;
+	var RANDOM_LEN = 16;
+	function replaceCharAt(str, index, char) {
+		if (index > str.length - 1) {
+			return str;
+		}
+		return str.substr(0, index) + char + str.substr(index + 1);
+	}
+	function incrementBase32(str) {
+		var done = undefined;
+		var index = str.length;
+		var char = void 0;
+		var charIndex = void 0;
+		var maxCharIndex = ENCODING_LEN - 1;
+		while (!done && index-- >= 0) {
+			char = str[index];
+			charIndex = ENCODING.indexOf(char);
+			if (charIndex === -1) {
+				throw createError("incorrectly encoded string");
+			}
+			if (charIndex === maxCharIndex) {
+				str = replaceCharAt(str, index, ENCODING[0]);
+				continue;
+			}
+			done = replaceCharAt(str, index, ENCODING[charIndex + 1]);
+		}
+		if (typeof done === "string") {
+			return done;
+		}
+		throw createError("cannot increment this string");
+	}
+	function randomChar(prng) {
+		var rand = Math.floor(prng() * ENCODING_LEN);
+		if (rand === ENCODING_LEN) {
+			rand = ENCODING_LEN - 1;
+		}
+		return ENCODING.charAt(rand);
+	}
+	function encodeTime(now, len) {
+		if (isNaN(now)) {
+			throw new Error(now + " must be a number");
+		}
+		if (now > TIME_MAX) {
+			throw createError("cannot encode time greater than " + TIME_MAX);
+		}
+		if (now < 0) {
+			throw createError("time must be positive");
+		}
+		if (Number.isInteger(now) === false) {
+			throw createError("time must be an integer");
+		}
+		var mod = void 0;
+		var str = "";
+		for (; len > 0; len--) {
+			mod = now % ENCODING_LEN;
+			str = ENCODING.charAt(mod) + str;
+			now = (now - mod) / ENCODING_LEN;
+		}
+		return str;
+	}
+	function encodeRandom(len, prng) {
+		var str = "";
+		for (; len > 0; len--) {
+			str = randomChar(prng) + str;
+		}
+		return str;
+	}
+	function decodeTime(id) {
+		if (id.length !== TIME_LEN + RANDOM_LEN) {
+			throw createError("malformed ulid");
+		}
+		var time = id.substr(0, TIME_LEN).split("").reverse().reduce(function (carry, char, index) {
+			var encodingIndex = ENCODING.indexOf(char);
+			if (encodingIndex === -1) {
+				throw createError("invalid character found: " + char);
+			}
+			return carry += encodingIndex * Math.pow(ENCODING_LEN, index);
+		}, 0);
+		if (time > TIME_MAX) {
+			throw createError("malformed ulid, timestamp too large");
+		}
+		return time;
+	}
+	function detectPrng() {
+		var allowInsecure = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+		var root = arguments[1];
+
+		if (!root) {
+			root = typeof window !== "undefined" ? window : null;
+		}
+		var browserCrypto = root && (root.crypto || root.msCrypto);
+		if (browserCrypto) {
+			try {
+				return function () {
+					var buffer = new Uint8Array(1);
+					browserCrypto.getRandomValues(buffer);
+					return buffer[0] / 0xff;
+				};
+			} catch (e) {}
+		} else {
+			try {
+				var nodeCrypto = require("crypto");
+				return function () {
+					return nodeCrypto.randomBytes(1).readUInt8(0) / 0xff;
+				};
+			} catch (e) {}
+		}
+		if (allowInsecure) {
+			try {
+				console.error("secure crypto unusable, falling back to insecure Math.random()!");
+			} catch (e) {}
+			return function () {
+				return Math.random();
+			};
+		}
+		throw createError("secure crypto unusable, insecure Math.random not allowed");
+	}
+	function factory(currPrng) {
+		if (!currPrng) {
+			currPrng = detectPrng();
+		}
+		return function ulid(seedTime) {
+			if (isNaN(seedTime)) {
+				seedTime = Date.now();
+			}
+			return encodeTime(seedTime, TIME_LEN) + encodeRandom(RANDOM_LEN, currPrng);
+		};
+	}
+	function monotonicFactory(currPrng) {
+		if (!currPrng) {
+			currPrng = detectPrng();
+		}
+		var lastTime = 0;
+		var lastRandom = void 0;
+		return function ulid(seedTime) {
+			if (isNaN(seedTime)) {
+				seedTime = Date.now();
+			}
+			if (seedTime <= lastTime) {
+				var incrementedRandom = lastRandom = incrementBase32(lastRandom);
+				return encodeTime(lastTime, TIME_LEN) + incrementedRandom;
+			}
+			lastTime = seedTime;
+			var newRandom = lastRandom = encodeRandom(RANDOM_LEN, currPrng);
+			return encodeTime(seedTime, TIME_LEN) + newRandom;
+		};
+	}
+
+	return factory();
 })();
 
 var ErrorInfo = (function() {
@@ -6112,6 +6394,80 @@ var PushChannelSubscription = (function() {
 	};
 
 	return PushChannelSubscription;
+})();
+
+var LocalDevice = (function() {
+	var toBase64;
+	if(Platform.createHmac) {
+		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+	} else {
+		toBase64 = Base64.encode;
+	}
+
+	const persistKeys = {
+		deviceId: 'ably.push.deviceId',
+		deviceSecret: 'ably.push.deviceSecret',
+		deviceIdentityToken: 'ably.push.deviceIdentityToken',
+		pushRecipient: 'ably.push.pushRecipient'
+	};
+
+	function LocalDevice(rest) {
+		LocalDevice.super_.call(this);
+		this.rest = rest;
+	}
+	Utils.inherits(LocalDevice, DeviceDetails);
+
+	LocalDevice.load = function(rest) {
+		var device = new LocalDevice(rest);
+		device.loadPersisted();
+		return device;
+	};
+
+	LocalDevice.prototype.loadPersisted = function() {
+		this.platform = Platform.push.platform;
+		this.clientId = this.rest.auth.clientId;
+		this.formFactor = Platform.push.formFactor;
+		this.id = Platform.push.storage.get(persistKeys.deviceId);
+		if(this.id) {
+			this.deviceSecret = Platform.push.storage.get(persistKeys.deviceSecret) || null;
+			this.deviceIdentityToken = JSON.parse(Platform.push.storage.get(persistKeys.deviceIdentityToken) || 'null');
+			this.push.recipient = JSON.parse(Platform.push.storage.get(persistKeys.pushRecipient) || 'null');
+		} else {
+			this.resetId();
+		}
+	};
+
+	LocalDevice.prototype.persist = function() {
+		Platform.push.storage.set(persistKeys.deviceId, this.id);
+		Platform.push.storage.set(persistKeys.deviceSecret, this.deviceSecret);
+		if(this.deviceIdentityToken) {
+			Platform.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken));
+		}
+		if(this.push.recipient) {
+			Platform.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient));
+		}
+	};
+
+	LocalDevice.prototype.resetId = function() {
+		this.id = ulid();
+		this.deviceSecret = ulid();
+		this.persist();
+	};
+
+	LocalDevice.prototype.getAuthDetails = function(rest, headers, params, errCallback, opCallback) {
+		var token = this.deviceIdentityToken.token;
+		if(!token) {
+			errCallback(new ErrorInfo('Unable to update device registration; no deviceIdentityToken', 50000, 500));
+			return;
+		}
+		if (Http.supportsAuthHeaders) {
+			opCallback(Utils.mixin({authorization: 'Bearer ' + toBase64(token)}, headers), params);
+		} else {
+			opCallback(headers, Utils.mixin({access_token: token}, params));
+		}
+	};
+
+	return LocalDevice;
 })();
 
 var ConnectionError = {
@@ -8970,7 +9326,8 @@ var Resource = (function() {
 		};
 	});
 
-	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
+	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, authResolver, callback) {
+		authResolver = authResolver || withAuthDetails;
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			callback = logResponseHandler(callback, method, path, origparams);
 		}
@@ -9117,15 +9474,31 @@ var PaginatedResource = (function() {
 
 		if(relParams) {
 			var self = this;
-			if('first' in relParams)
-				this.first = function(cb) { self.get(relParams.first, cb); };
-			if('current' in relParams)
-				this.current = function(cb) { self.get(relParams.current, cb); };
+			if('first' in relParams) {
+				this.first = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'first', []);
+					}
+					self.get(relParams.first, cb);
+				};
+			}
+			if('current' in relParams) {
+				this.current = function(cb) {
+					if(!cb && self.resource.rest.options.promises) {
+						return Utils.promisify(self, 'current', []);
+					}
+					self.get(relParams.current, cb);
+				};
+			}
 			this.next = function(cb) {
-				if('next' in relParams)
+				if(!cb && self.resource.rest.options.promises) {
+					return Utils.promisify(self, 'next', []);
+				}
+				if('next' in relParams) {
 					self.get(relParams.next, cb);
-				else
+				} else {
 					cb(null, null);
+				}
 			};
 
 			this.hasNext = function() { return ('next' in relParams) };
@@ -9483,7 +9856,9 @@ var Auth = (function() {
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
-		var tokenRequestCallback, client = this.client;
+		var tokenRequestCallback, client = this.client,
+			deviceId = tokenParams.deviceId,
+			self = this;
 
 		if(authOptions.authCallback) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
@@ -9634,6 +10009,17 @@ var Auth = (function() {
 				return;
 			}
 			/* it's a token request, so make the request */
+			if(deviceId && !tokenRequestOrDetails.deviceId) {
+				/* augment the TokenRequest with device details */
+				var deviceAuthErr = self.updateTokenRequestForDevice(tokenRequestOrDetails, tokenParams);
+				if(deviceAuthErr) {
+					var msg = 'Unable to generate device authentication for token request';
+					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+					callback(new ErrorInfo(msg, 40170, 401));
+					return;
+				}
+			}
+
 			tokenRequest(tokenRequestOrDetails, function(err, tokenResponse, headers, unpacked) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
@@ -9762,8 +10148,31 @@ var Auth = (function() {
 			request.mac = request.mac || hmac(signText, keySecret);
 
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+
+			if(tokenParams.deviceId) {
+				var deviceAuthErr = self.updateTokenRequestForDevice(request, tokenParams);
+				if(deviceAuthErr) {
+					Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'failed to add deviceSignature; err = ' + err);
+					callback(deviceAuthErr);
+					return;
+				}
+			}
 			callback(null, request);
 		});
+	};
+
+	Auth.prototype.updateTokenRequestForDevice = function(baseTokenRequest, tokenParams) {
+		var deviceId = tokenParams.deviceId;
+		if(!deviceId) {
+			return new ErrorInfo('Unable to create device TokenRequest; no device id', 40000, 400);
+		}
+		var deviceSecret = tokenParams.deviceSecret;
+		if(!deviceSecret) {
+			return new ErrorInfo('Unable to create device TokenRequest; no device credentials', 40000, 400);
+		}
+		baseTokenRequest.deviceId = deviceId;
+		baseTokenRequest.deviceSignature = 'HS256:' + hmac(baseTokenRequest.mac, deviceSecret);
+		return null;
 	};
 
 	/**
@@ -10118,6 +10527,16 @@ var Rest = (function() {
 		Logger.setLog(logOptions.level, logOptions.handler);
 	};
 
+	Rest.prototype.device = (function() {
+		var device = null;
+		return function() {
+			if (!device) {
+				device = LocalDevice.load(this);
+			}
+			return device;
+		};
+	})();
+
 	function Channels(rest) {
 		this.rest = rest;
 		this.attached = {};
@@ -10384,7 +10803,7 @@ var Connection = (function() {
 	Utils.inherits(Connection, EventEmitter);
 
 	Connection.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
 	}
 
 	Connection.prototype.connect = function() {
@@ -10412,11 +10831,13 @@ var Connection = (function() {
 })();
 
 var Push = (function() {
-	var noop = function() {};
+	var msgpack = Platform.msgpack;
+	var nop = function() {};
 
 	function Push(rest) {
 		this.rest = rest;
 		this.admin = new Admin(rest);
+		this.stateMachine = Platform.push ? new ActivationStateMachine(rest) : null;
 	}
 
 	function Admin(rest) {
@@ -10432,21 +10853,14 @@ var Push = (function() {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'publish', arguments);
-			}
-			callback = noop;
-		}
-
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.post(rest, '/push/publish', requestBody, headers, params, false, function(err) { callback(err); });
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/publish', requestBody, headers, params, false, callback);
 	};
 
 	function DeviceRegistrations(rest) {
@@ -10460,90 +10874,37 @@ var Push = (function() {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'save', arguments);
-			}
-			callback = noop;
-		}
-
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, function(err, body, headers, unpacked) {
-			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
-		});
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, false, callback);
 	};
 
-	DeviceRegistrations.prototype.get = function(deviceIdOrDetails, callback) {
-		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.defaultGetHeaders(format),
-			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'get', arguments);
-			}
-			callback = noop;
-		}
-
-		if(typeof deviceId !== 'string' || !deviceId.length) {
-			callback(new ErrorInfo('First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails', 40000, 400));
-			return;
-		}
-
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
-
-		Resource.get(rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, {}, false, function(err, body, headers, unpacked) {
-			callback(err, !err && DeviceDetails.fromResponseBody(body, !unpacked && format));
-		});
-	};
-
-	DeviceRegistrations.prototype.list = function(params, callback) {
+	DeviceRegistrations.prototype.get = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.defaultGetHeaders(format);
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'list', arguments);
-			}
-			callback = noop;
-		}
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body, headers, unpacked) {
 			return DeviceDetails.fromResponseBody(body, !unpacked && format);
 		})).get(params, callback);
 	};
 
-	DeviceRegistrations.prototype.remove = function(deviceIdOrDetails, callback) {
+	DeviceRegistrations.prototype.remove = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.defaultGetHeaders(format),
-			params = {},
-			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'remove', arguments);
-			}
-			callback = noop;
-		}
-
-		if(typeof deviceId !== 'string' || !deviceId.length) {
-			callback(new ErrorInfo('First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails', 40000, 400));
-			return;
-		}
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -10551,28 +10912,7 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, false, function(err) { callback(err); });
-	};
-
-	DeviceRegistrations.prototype.removeWhere = function(params, callback) {
-		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.defaultGetHeaders(format);
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'removeWhere', arguments);
-			}
-			callback = noop;
-		}
-
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
-
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
-
-		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, function(err) { callback(err); });
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, false, callback);
 	};
 
 	function ChannelSubscriptions(rest) {
@@ -10586,57 +10926,37 @@ var Push = (function() {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'save', arguments);
-			}
-			callback = noop;
-		}
-
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		requestBody = Utils.encodeBody(requestBody, format);
-		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, function(err, body, headers, unpacked) {
-			callback(err, !err && PushChannelSubscription.fromResponseBody(body, !unpacked && format));
-		});
+		requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true): JSON.stringify(requestBody);
+		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, false, callback);
 	};
 
-	ChannelSubscriptions.prototype.list = function(params, callback) {
+	ChannelSubscriptions.prototype.get = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.defaultGetHeaders(format);
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'list', arguments);
-			}
-			callback = noop;
-		}
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
+
+		if(rest.options.pushFullWait)
+			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body, headers, unpacked) {
 			return PushChannelSubscription.fromResponseBody(body, !unpacked && format);
 		})).get(params, callback);
 	};
 
-	ChannelSubscriptions.prototype.removeWhere = function(params, callback) {
+	ChannelSubscriptions.prototype.remove = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
-			headers = Utils.defaultGetHeaders(format);
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'removeWhere', arguments);
-			}
-			callback = noop;
-		}
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -10644,24 +10964,14 @@ var Push = (function() {
 		if(rest.options.pushFullWait)
 			Utils.mixin(params, {fullWait: 'true'});
 
-		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, function(err) { callback(err); });
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, false, callback);
 	};
-
-	/* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
-	ChannelSubscriptions.prototype.remove = ChannelSubscriptions.prototype.removeWhere;
 
 	ChannelSubscriptions.prototype.listChannels = function(params, callback) {
 		var rest = this.rest,
 			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.defaultGetHeaders(format);
-
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'listChannels', arguments);
-			}
-			callback = noop;
-		}
+			headers = Utils.copy(Utils.defaultGetHeaders(format));
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
@@ -10672,9 +10982,8 @@ var Push = (function() {
 		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body, headers, unpacked) {
 			var f = !unpacked && format;
 
-			if(f) {
-				body = Utils.decodeBody(body, format);
-			}
+			if(f)
+				body = (f == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
 
 			for(var i = 0; i < body.length; i++) {
 				body[i] = String(body[i]);
@@ -10682,6 +10991,387 @@ var Push = (function() {
 			return body;
 		})).get(params, callback);
 	};
+
+	var persistKeys = {
+		activationState: 'ably.push.activationState',
+	};
+
+	function ActivationStateMachine(rest) {
+		this.rest = rest;
+		this.customRegisterer = null;
+		this.customDeregisterer = null;
+		this.current = ActivationStateMachine[Platform.push.storage.get(persistKeys.activationState) || 'NotActivated'];
+		this.pendingEvents = [];
+	}
+
+	Push.prototype.activate = function(customRegisterer, callback) {
+		if(!this.stateMachine) {
+			throw new Error('this platform is not supported as a target of push notifications');
+		}
+		this.stateMachine.activatedCallback = callback || nop;
+		this.stateMachine.handleEvent(new ActivationStateMachine.CalledActivate(this.stateMachine, customRegisterer));
+	};
+
+	Push.prototype.deactivate = function(customDeregisterer, callback) {
+		if(!this.stateMachine) {
+			throw new Error('this platform is not supported as a target of push notifications');
+		}
+		this.stateMachine.deactivatedCallback = callback || nop;
+		this.stateMachine.handleEvent(new ActivationStateMachine.CalledDeactivate(this.stateMachine, customDeregisterer));
+	};
+
+	// Events
+
+	var CalledActivate = function(machine, customRegisterer) {
+		machine.customRegisterer = customRegisterer || false;
+		machine.persist();
+	};
+	ActivationStateMachine.CalledActivate = CalledActivate; 
+
+	var CalledDeactivate = function(machine, customDeregisterer) {
+		machine.customDeregisterer = customDeregisterer || false;
+		machine.persist();
+	};
+	ActivationStateMachine.CalledDeactivate = CalledDeactivate; 
+
+	var GotPushDeviceDetails = function() {};
+	ActivationStateMachine.GotPushDeviceDetails = GotPushDeviceDetails; 
+
+	var GettingPushDeviceDetailsFailed = function(reason) {
+		this.reason = reason;
+	};
+	ActivationStateMachine.GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed; 
+
+	var GotDeviceRegistration = function(deviceRegistration) {
+		this.deviceIdentityToken = deviceRegistration.deviceIdentityToken;
+	};
+	ActivationStateMachine.GotDeviceRegistration = GotDeviceRegistration; 
+
+	var GettingDeviceRegistrationFailed = function(reason) {
+		this.reason = reason;
+	};
+	ActivationStateMachine.GettingDeviceRegistrationFailed = GettingDeviceRegistrationFailed;
+
+	var RegistrationUpdated = function() {};
+	ActivationStateMachine.RegistrationUpdated = RegistrationUpdated; 
+	
+	var UpdatingRegistrationFailed = function(reason) {
+		this.reason = reason;
+	};
+	ActivationStateMachine.UpdatingRegistrationFailed = UpdatingRegistrationFailed; 
+
+	var Deregistered = function() {};
+	ActivationStateMachine.Deregistered = Deregistered;
+
+	var DeregistrationFailed = function(reason) {
+		this.reason = reason;
+	};
+	ActivationStateMachine.DeregistrationFailed = DeregistrationFailed; 
+
+	// States
+
+	var NotActivated = function(machine, event) {
+		if (event instanceof CalledDeactivate) {
+			machine.deactivatedCallback(null);
+			return NotActivated;
+		} else if (event instanceof CalledActivate) {
+			var device = machine.getDevice();
+
+			if (device.deviceIdentityToken != null) {
+				// Already registered.
+				machine.pendingEvents.push(event);
+				return WaitingForNewPushDeviceDetails;
+			}
+
+			if (device.push.recipient) {
+				machine.pendingEvents.push(new GotPushDeviceDetails());
+			} else {
+				Platform.push.getPushDeviceDetails(machine);
+			}
+
+			return WaitingForPushDeviceDetails;
+		} else if (event instanceof GotPushDeviceDetails) {
+			return NotActivated;
+		}
+		return null;
+	};
+	ActivationStateMachine.NotActivated = NotActivated;
+
+	var WaitingForPushDeviceDetails = function(machine, event) {
+		if (event instanceof CalledActivate) {
+			return WaitingForPushDeviceDetails;
+		} else if (event instanceof CalledDeactivate) {
+			machine.deactivatedCallback(null);
+			return NotActivated;
+		} else if (event instanceof GotPushDeviceDetails) {
+			var device = machine.getDevice();
+
+			if (machine.customRegisterer) {
+				machine.callCustomRegisterer(device, true);
+			} else {
+				var rest = machine.rest;
+				var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+					requestBody = DeviceDetails.fromValues(device),
+					headers = Utils.defaultPostHeaders(format),
+					params = {};
+
+				if(rest.options.headers)
+					Utils.mixin(headers, rest.options.headers);
+
+				if(rest.options.pushFullWait)
+					Utils.mixin(params, {fullWait: 'true'});
+
+				requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
+				Resource.post(rest, '/push/deviceRegistrations', requestBody, headers, params, false, function(err, responseBody) {
+					if (err) {
+						machine.handleEvent(new GettingDeviceRegistrationFailed(err));
+					} else {
+						machine.handleEvent(new GotDeviceRegistration(responseBody));
+					}
+				});
+			}
+
+			return WaitingForDeviceRegistration;
+		} else if (event instanceof GettingPushDeviceDetailsFailed) {
+			machine.activatedCallback(event.reason);
+			return NotActivated;
+		}
+		return null;
+	};
+	ActivationStateMachine.WaitingForPushDeviceDetails = WaitingForPushDeviceDetails;
+
+	var WaitingForDeviceRegistration = function(machine, event) {
+		if (event instanceof CalledActivate) {
+			return WaitingForDeviceRegistration;
+		} else if (event instanceof GotDeviceRegistration) {
+			var device = machine.getDevice();
+			device.deviceIdentityToken = event.deviceIdentityToken;
+			device.persist();
+			machine.activatedCallback(null);
+			return WaitingForNewPushDeviceDetails;
+		} else if (event instanceof GettingDeviceRegistrationFailed) {
+			machine.activatedCallback(event.reason);
+			return NotActivated;
+		}
+		return null;
+	};
+	ActivationStateMachine.WaitingForDeviceRegistration = WaitingForDeviceRegistration;
+
+	var WaitingForNewPushDeviceDetails = function(machine, event) {
+		if (event instanceof CalledActivate) {
+			machine.activatedCallback(null);
+			return WaitingForNewPushDeviceDetails;
+		} else if (event instanceof CalledDeactivate) {
+			machine.deregister();
+			return WaitingForDeregistration(WaitingForNewPushDeviceDetails);
+		} else if (event instanceof GotPushDeviceDetails) {
+			machine.updateRegistration();
+			return WaitingForRegistrationUpdate;
+		}
+	};
+	ActivationStateMachine.WaitingForNewPushDeviceDetails = WaitingForNewPushDeviceDetails;
+
+	var WaitingForRegistrationUpdate = function(machine, event) {
+		if (event instanceof CalledActivate) {
+			machine.activatedCallback(null);
+			return WaitingForRegistrationUpdate;
+		} else if (event instanceof RegistrationUpdated) {
+			return WaitingForNewPushDeviceDetails;
+		} else if (event instanceof UpdatingRegistrationFailed) {
+			// TODO: Here we could try to recover ourselves if the error is e. g.
+			// a networking error. Just notify the user for now.
+			machine.callUpdateRegistrationFailedCallback(event.reason);
+			return AfterRegistrationUpdateFailed;
+		}
+		return null;
+	};
+	ActivationStateMachine.WaitingForRegistrationUpdate = WaitingForRegistrationUpdate;
+
+	var AfterRegistrationUpdateFailed = function(machine, event) {
+		if (event instanceof CalledActivate || event instanceof GotPushDeviceDetails) {
+			machine.updateRegistration();
+			return WaitingForRegistrationUpdate;
+		} else if (event instanceof CalledDeactivate) {
+			machine.deregister();
+			return WaitingForDeregistration(AfterRegistrationUpdateFailed);
+		}
+		return null;
+	};
+	ActivationStateMachine.AfterRegistrationUpdateFailed = AfterRegistrationUpdateFailed;
+
+	var WaitingForDeregistration = function(previousState) {
+		return function(machine, event) {
+			if (event instanceof CalledDeactivate) {
+				return WaitingForDeregistration(previousState);
+			} else if (event instanceof Deregistered) {
+				var device = machine.getDevice();
+				device.deviceIdentityToken = null;
+				device.resetId();
+				device.persist();
+				machine.deactivatedCallback(null);
+				return NotActivated;
+			} else if (event instanceof DeregistrationFailed) {
+				machine.deactivatedCallback(event.reason);
+				return previousState;
+			}
+			return null;
+		};
+	};
+	ActivationStateMachine.WaitingForDeregistration = WaitingForDeregistration;
+
+	ActivationStateMachine.prototype.getDevice = function() {
+		return this.rest.device();
+	};
+
+	function isPersistentState(state) {
+		return (
+			state.name == 'NotActivated' ||
+			state.name == 'WaitingForNewPushDeviceDetails'
+		);
+	}
+
+	ActivationStateMachine.prototype.persist = function() {
+		if (isPersistentState(this.current)) {
+			Platform.push.storage.set(persistKeys.activationState, this.current.name);
+		}
+	};
+
+	ActivationStateMachine.prototype.callUpdateRegistrationFailedCallback = function(reason) {
+		// TODO: Should this an event on an EventEmitter? If so, who's the EventEmitter?
+		// Rest.push?
+	};
+
+	ActivationStateMachine.prototype.callCustomRegisterer = function(device, isNew) {
+		this.customRegisterer(device, isNew, function(err, deviceRegistration) {
+			if (err) {
+				if (isNew) {
+					this.handleEvent(new GettingDeviceRegistrationFailed(error));
+				} else {
+					this.handleEvent(new UpdatingRegistrationFailed(error));
+				}
+				return;
+			}
+
+			if (isNew) {
+				this.handleEvent(new GotDeviceRegistration(deviceRegistration));
+			} else {
+				this.handleEvent(new RegistrationUpdated());
+			}
+		}.bind(this));
+	};
+
+	ActivationStateMachine.prototype.callCustomDeregisterer = function() {
+		this.customDeregisterer(device, function(err) {
+			if (err) {
+				this.handleEvent(new DeregistrationFailed(err));
+				return;
+			}
+			this.handleEvent(new Deregistered());
+		}.bind(this));
+	};
+
+	ActivationStateMachine.prototype.updateRegistration = function() {
+		var localDevice = this.getDevice();
+		if (this.customRegisterer) {
+			this.callCustomRegisterer(localDevice, false);
+		} else {
+			var rest = this.rest;
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+				requestBody = DeviceDetails.fromValues(localDevice),
+				headers = Utils.defaultPostHeaders(format),
+				params = {};
+
+			if(rest.options.headers) {
+				Utils.mixin(headers, rest.options.headers);
+			}
+
+			if(rest.options.pushFullWait) {
+				Utils.mixin(params, {fullWait: 'true'});
+			}
+
+			requestBody = (format == 'msgpack') ? msgpack.encode(requestBody, true) : JSON.stringify(requestBody);
+			var deviceTokenAuthResolver = localDevice.getAuthDetails.bind(localDevice);
+			Resource['do']('patch', rest, '/push/deviceRegistrations', requestBody, headers, params, false, deviceTokenAuthResolver, function(err, responseBody) {
+				if (err) {
+					this.handleEvent(new GettingDeviceRegistrationFailed(err));
+				} else {
+					this.handleEvent(new GotDeviceRegistration(responseBody));
+				}
+			}.bind(this));
+		}
+	};
+
+	ActivationStateMachine.prototype.deregister = function() {
+		if (this.customDeregisterer) {
+			this.callCustomDeregisterer(this.getDevice());
+		} else {
+			var rest = this.rest;
+			var format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+				headers = Utils.defaultPostHeaders(format),
+				params = {deviceId: rest.device().id};
+
+			if(rest.options.headers)
+				Utils.mixin(headers, rest.options.headers);
+
+			if(rest.options.pushFullWait)
+				Utils.mixin(params, {fullWait: 'true'});
+
+			Resource.delete(rest, '/push/deviceRegistrations', headers, params, false, function(err, responseBody) {
+				if (err) {
+					this.handleEvent(new DeregistrationFailed(err));
+				} else {
+					this.handleEvent(new Deregistered());
+				}
+			}.bind(this));
+		}
+	};
+
+	ActivationStateMachine.prototype.handleEvent = (function() {
+		var handling = false;
+		return function(event) {
+			if (handling) {
+				setTimeout(function() {
+					this.handleEvent(event);
+				}.bind(this), 0);
+				return;
+			}
+
+			handling = true;
+			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'handling event ' + event.constructor.name + ' from ' + this.current.name);
+
+			var maybeNext = this.current(this, event);
+			if (!maybeNext) {
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'enqueing event: ' + event.constructor.name);
+				this.pendingEvents.push(event);
+				handling = false;
+				return;	
+			}
+
+			Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + event.constructor.name + ')-> ' + maybeNext.name);
+			this.current = maybeNext;
+
+			while (true) {
+				var pending = this.pendingEvents.length > 0 ? this.pendingEvents[0] : null;
+				if (!pending) {
+					break;
+				}
+
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'attempting to consume pending event: ' + pending.constructor.name);
+
+				maybeNext = this.current(this, pending);
+				if (!maybeNext) {
+					break;
+				}
+				this.pendingEvents.splice(0, 1);
+
+				Logger.logAction(Logger.LOG_MAJOR, 'Push.ActivationStateMachine.handleEvent()', 'transition: ' + this.current.name + ' -(' + pending.constructor.name + ')-> ' + maybeNext.name);
+				this.current = maybeNext;
+			}
+
+			this.persist();
+			handling = false;
+		}
+	})();
 
 	return Push;
 })();
@@ -11401,7 +12091,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.whenState = function(state, listener) {
-		EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
 	}
 
 	return RealtimeChannel;
