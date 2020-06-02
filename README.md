@@ -134,7 +134,7 @@ var client = new Ably.Realtime(clientOptions);
 
 See also
 [Subscribing to a channel with deltas](#subscribing-to-a-channel-with-deltas),
-which describes how to request a delta stream when getting a channel.
+which describes how to enable delta compression when getting a channel.
 
 ## Using the Realtime API
 
@@ -206,6 +206,8 @@ channel.subscribe('myEvent', function(message) {
 ```
 
 ### Subscribing to a channel with deltas
+
+Subscribing to a channel in delta mode enables delta compression. This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Provide the library with Vcdiff decoding capability - see
 [Delta Plugin](#delta-plugin).
