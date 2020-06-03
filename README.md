@@ -207,7 +207,7 @@ channel.subscribe('myEvent', function(message) {
 
 ### Subscribing to a channel with deltas
 
-Subscribing to a channel in delta mode enables delta compression. This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Provide the library with Vcdiff decoding capability - see
 [Delta Plugin](#delta-plugin).
