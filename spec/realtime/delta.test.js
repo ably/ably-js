@@ -45,23 +45,33 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 		try {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
 			var realtime = helper.AblyRealtime({
+				log: {level: 4},
 				plugins: {
 					vcdiff: testVcdiffDecoder
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-			channel.subscribe(function(message) {
-				var index = Number(message.name);
-				test.ok(equals(testData[index], message.data), 'Check message.data');
-
-				if (index === testData.length - 1) {
-					test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 1, 'Check number of delta messages');
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 				}
-			});
 
-			realtime.connection.on('connected', function() {
+				channel.on('attaching', function(stateChange) {
+					test.ok(false, 'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason));
+				});
+
+				channel.subscribe(function(message) {
+					var index = Number(message.name);
+					test.ok(equals(testData[index], message.data), 'Check message.data');
+
+					if (index === testData.length - 1) {
+						test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 1, 'Check number of delta messages');
+						closeAndFinish(test, realtime);
+					}
+				});
+
 				for (var i = 0; i < testData.length; i++) {
 					channel.publish(i.toString(), testData[i]);
 				}
