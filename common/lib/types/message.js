@@ -187,26 +187,30 @@ var Message = (function() {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
 						case 'vcdiff':
-							if(context.plugins && context.plugins.vcdiff) {
-								try {
-									var deltaBase = context.baseEncodedPreviousPayload;
-									if(typeof deltaBase === 'string') {
-										deltaBase = BufferUtils.utf8Encode(deltaBase);
-									}
-
-									/* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers */
-									deltaBase = BufferUtils.toBuffer(deltaBase);
-									data = BufferUtils.toBuffer(data);
-
-									data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
-									lastPayload = data;
-								} catch(e) {
-									throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
-								}
-								continue;
-							} else {
-								throw new Error('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)');
+							if(!context.plugins || !context.plugins.vcdiff) {
+								throw new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
 							}
+							if(typeof Uint8Array === 'undefined') {
+								throw new ErrorInfo('Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)', 40020, 400);
+							}
+							try {
+								var deltaBase = context.baseEncodedPreviousPayload;
+								if(typeof deltaBase === 'string') {
+									deltaBase = BufferUtils.utf8Encode(deltaBase);
+								}
+
+								/* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
+								 * don't have a TextDecoder, deltaBase might be a WordArray here, so need
+								 * to process it into a buffer anyway) */
+								deltaBase = BufferUtils.toBuffer(deltaBase);
+								data = BufferUtils.toBuffer(data);
+
+								data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+								lastPayload = data;
+							} catch(e) {
+								throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
+							}
+							continue;
 						default:
 							throw new Error("Unknown encoding");
 					}
