@@ -124,7 +124,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 	};
 
 	exports.lastMessageNotFoundRecovery = function(test) {
-		test.expect(testData.length + 1);
+		test.expect(testData.length + 2);
 		var testName = 'lastMessageNotFoundRecovery';
 		try {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
@@ -147,6 +147,12 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 					if (index === 1) {
 						/* Simulate issue */
 						channel._lastPayload.messageId = null;
+						channel.once('attaching', function(stateChange) {
+							test.equal(stateChange.reason.code, 40018, 'Check error code passed through per RTL18c');
+							channel.on('attaching', function(stateChange) {
+								test.ok(false, 'Check no further decode failures; reason =' + displayError(stateChange.reason));
+							});
+						})
 					} else if (index === testData.length - 1) {
 						test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 2, 'Check number of delta messages');
 						closeAndFinish(test, realtime);
@@ -166,7 +172,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 	};
 
 	exports.deltaDecodeFailureRecovery = function(test) {
-		test.expect(testData.length);
+		test.expect(testData.length * 2 - 1);
 		var testName = 'deltaDecodeFailureRecovery';
 		try {
 			var failingTestVcdiffDecoder = {
@@ -187,6 +193,9 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 				}
+				channel.on('attaching', function(stateChange) {
+					test.equal(stateChange.reason.code, 40018, 'Check error code passed through per RTL18c');
+				});
 				channel.subscribe(function(message) {
 					var index = Number(message.name);
 					test.ok(equals(testData[index], message.data), 'Check message.data');
