@@ -194,6 +194,10 @@ var Message = (function() {
 										deltaBase = BufferUtils.utf8Encode(deltaBase);
 									}
 
+									/* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers */
+									deltaBase = BufferUtils.toBuffer(deltaBase);
+									data = BufferUtils.toBuffer(data);
+
 									data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
 									lastPayload = data;
 								} catch(e) {
