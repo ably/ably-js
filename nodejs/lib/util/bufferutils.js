@@ -7,15 +7,20 @@ this.BufferUtils = (function() {
 	 * for historical reasons; the browser equivalents return ArrayBuffers */
 	var isBuffer = BufferUtils.isBuffer = function(buf) { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
 
-	BufferUtils.toBuffer = function(buf) { return Buffer.from(buf); };
+	var toBuffer = BufferUtils.toBuffer = function(buf) {
+		if(Buffer.isBuffer(buf)) {
+			return buf;
+		}
+		return Buffer.from(buf);
+	};
 
-	BufferUtils.toArrayBuffer = function(buf) { return Buffer.from(buf).buffer; };
+	BufferUtils.toArrayBuffer = function(buf) { return toBuffer(buf).buffer; };
 
-	BufferUtils.base64Encode = function(buf) { return Buffer.from(buf).toString('base64'); };
+	BufferUtils.base64Encode = function(buf) { return toBuffer(buf).toString('base64'); };
 
 	BufferUtils.base64Decode = function(string) { return Buffer.from(string, 'base64'); };
 
-	BufferUtils.hexEncode = function(buf) { return Buffer.from(buf).toString('hex'); };
+	BufferUtils.hexEncode = function(buf) { return toBuffer(buf).toString('hex'); };
 
 	BufferUtils.hexDecode = function(string) { return Buffer.from(string, 'hex'); };
 
@@ -30,7 +35,7 @@ this.BufferUtils = (function() {
 		if(!isBuffer(buf)) {
 			throw new Error("Expected input of utf8Decode to be a buffer, arraybuffer, or view");
 		}
-		return Buffer.from(buf).toString('utf8');
+		return toBuffer(buf).toString('utf8');
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
@@ -45,7 +50,7 @@ this.BufferUtils = (function() {
 
 	/* Returns ArrayBuffer on browser and Buffer on Node.js */
 	BufferUtils.typedArrayToBuffer = function(typedArray) {
-		return Buffer.from(typedArray.buffer);
+		return toBuffer(typedArray.buffer);
 	};
 
 	return BufferUtils;
