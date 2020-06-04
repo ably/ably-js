@@ -217,5 +217,32 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 		}
 	};
 
+	/* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
+	exports.noPlugin = function(test) {
+		try {
+			var realtime = helper.AblyRealtime();
+			var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
+
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, displayError(err));
+					closeAndFinish(test, realtime);
+				}
+				channel.once('failed', function(stateChange) {
+					test.equal(stateChange.reason.code, 40019, 'Check error code');
+					closeAndFinish(test, realtime);
+				});
+				async.timesSeries(testData.length, function(i, cb) {
+					channel.publish(i.toString(), testData[i], cb);
+				});
+			});
+
+			monitorConnection(test, realtime);
+		} catch(e) {
+			test.ok(false, testName + ' test failed with exception: ' + e.stack);
+			closeAndFinish(test, realtime);
+		}
+	};
+
 	return module.exports = helper.withTimeout(exports);
 });
