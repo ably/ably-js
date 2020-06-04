@@ -1,7 +1,8 @@
 "use strict";
 
-define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
+define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDecoder, async) {
 	var exports = {},
+		_exports = {},
 		displayError = helper.displayError,
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection,
@@ -45,7 +46,6 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 		try {
 			var testVcdiffDecoder = getTestVcdiffDecoder();
 			var realtime = helper.AblyRealtime({
-				log: {level: 4},
 				plugins: {
 					vcdiff: testVcdiffDecoder
 				}
@@ -72,9 +72,9 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 					}
 				});
 
-				for (var i = 0; i < testData.length; i++) {
-					channel.publish(i.toString(), testData[i]);
-				}
+				async.timesSeries(testData.length, function(i, cb) {
+					channel.publish(i.toString(), testData[i], cb);
+				});
 			});
 
 			monitorConnection(test, realtime);
@@ -96,20 +96,24 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 			});
 			var channel = realtime.channels.get(testName);
 
-			channel.subscribe(function(message) {
-				var index = Number(message.name);
-				test.ok(equals(testData[index], message.data), 'Check message.data');
-
-				if (index === testData.length - 1) {
-					test.equal(testVcdiffDecoder.numberOfCalls, 0, 'Check number of delta messages');
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 				}
-			});
+				channel.subscribe(function(message) {
+					var index = Number(message.name);
+					test.ok(equals(testData[index], message.data), 'Check message.data');
 
-			realtime.connection.on('connected', function() {
-				for (var i = 0; i < testData.length; i++) {
-					channel.publish(i.toString(), testData[i]);
-				}
+					if (index === testData.length - 1) {
+						test.equal(testVcdiffDecoder.numberOfCalls, 0, 'Check number of delta messages');
+						closeAndFinish(test, realtime);
+					}
+				});
+
+				async.timesSeries(testData.length, function(i, cb) {
+					channel.publish(i.toString(), testData[i], cb);
+				});
 			});
 
 			monitorConnection(test, realtime);
@@ -130,23 +134,28 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
-			channel.subscribe(function(message) {
-				var index = Number(message.name);
-				test.ok(equals(testData[index], message.data), 'Check message.data');
 
-				if (index === 1) {
-					/* Simulate issue */
-					channel._lastPayload.messageId = null;
-				} else if (index === testData.length - 1) {
-					test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 2, 'Check number of delta messages');
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 				}
-			});
+				channel.subscribe(function(message) {
+					var index = Number(message.name);
+					test.ok(equals(testData[index], message.data), 'Check message.data');
 
-			realtime.connection.on('connected', function() {
-				for (var i = 0; i < testData.length; i++) {
-					channel.publish(i.toString(), testData[i]);
-				}
+					if (index === 1) {
+						/* Simulate issue */
+						channel._lastPayload.messageId = null;
+					} else if (index === testData.length - 1) {
+						test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 2, 'Check number of delta messages');
+						closeAndFinish(test, realtime);
+					}
+				});
+
+				async.timesSeries(testData.length, function(i, cb) {
+					channel.publish(i.toString(), testData[i], cb);
+				});
 			});
 
 			monitorConnection(test, realtime);
@@ -172,19 +181,24 @@ define(['shared_helper', 'vcdiff-decoder'], function(helper, vcdiffDecoder) {
 				}
 			});
 			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
-			channel.subscribe(function(message) {
-				var index = Number(message.name);
-				test.ok(equals(testData[index], message.data), 'Check message.data');
 
-				if (index === testData.length - 1) {
+			channel.attach(function(err) {
+				if(err) {
+					test.ok(false, displayError(err));
 					closeAndFinish(test, realtime);
 				}
-			});
+				channel.subscribe(function(message) {
+					var index = Number(message.name);
+					test.ok(equals(testData[index], message.data), 'Check message.data');
 
-			realtime.connection.on('connected', function() {
-				for (var i = 0; i < testData.length; i++) {
-					channel.publish(i.toString(), testData[i]);
-				}
+					if (index === testData.length - 1) {
+						closeAndFinish(test, realtime);
+					}
+				});
+
+				async.timesSeries(testData.length, function(i, cb) {
+					channel.publish(i.toString(), testData[i], cb);
+				});
 			});
 
 			monitorConnection(test, realtime);
