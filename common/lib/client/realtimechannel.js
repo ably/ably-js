@@ -83,7 +83,7 @@ var RealtimeChannel = (function() {
 		if (this._decodingContext)
 			this._decodingContext.channelOptions = this.channelOptions;
 		if(this._shouldReattachToSetOptions(options)) {
-			this._attach(true, callback);
+			this._attach(true, null, callback);
 		} else {
 			callback();
 		}
@@ -206,10 +206,10 @@ var RealtimeChannel = (function() {
 			return;
 		}
 
-		this._attach(false, callback);
+		this._attach(false, null, callback);
 	};
 
-	RealtimeChannel.prototype._attach = function(forceReattach, callback) {
+	RealtimeChannel.prototype._attach = function(forceReattach, attachReason, callback) {
 		if(!callback) {
 			callback = function(err) {
 				if (err) {
@@ -225,7 +225,7 @@ var RealtimeChannel = (function() {
 		}
 
 		if (this.state !== 'attaching' || forceReattach) {
-			this.requestState('attaching');
+			this.requestState('attaching', attachReason);
 		}
 
 		this.once(function(stateChange) {
@@ -456,8 +456,9 @@ var RealtimeChannel = (function() {
 				timestamp = message.timestamp;
 
 			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Delta message decode failure - previous message not available for message "' + message.id + '" on this channel "' + this.name + '".');
-				this._startDecodeFailureRecovery();
+				var msg = 'Delta message decode failure - previous message not available for message "' + message.id + '" on this channel "' + this.name + '".';
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+				this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
 				break;
 			}
 
@@ -469,7 +470,7 @@ var RealtimeChannel = (function() {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
 					if(e.code === 40018) {
-						this._startDecodeFailureRecovery();
+						this._startDecodeFailureRecovery(e);
 						return;
 					}
 				}
@@ -499,12 +500,12 @@ var RealtimeChannel = (function() {
 		}
 	};
 
-	RealtimeChannel.prototype._startDecodeFailureRecovery = function() {
+	RealtimeChannel.prototype._startDecodeFailureRecovery = function(reason) {
 		var self = this;
 		if(!this._lastPayload.decodeFailureRecoveryInProgress) {
 			Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
 			this._lastPayload.decodeFailureRecoveryInProgress = true;
-			this._attach(true, function() {
+			this._attach(true, reason, function() {
 				self._lastPayload.decodeFailureRecoveryInProgress = false;
 			});
 		}
