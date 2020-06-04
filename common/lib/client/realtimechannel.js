@@ -34,6 +34,9 @@ var RealtimeChannel = (function() {
 			protocolMessageChannelSerial: null,
 			decodeFailureRecoveryInProgress: null
 		};
+		/* Only differences between this and the public event emitter is that this emits an
+		 * update event for all ATTACHEDs, whether resumed or not */
+		this._allChannelChanges = new EventEmitter();
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -83,7 +86,24 @@ var RealtimeChannel = (function() {
 		if (this._decodingContext)
 			this._decodingContext.channelOptions = this.channelOptions;
 		if(this._shouldReattachToSetOptions(options)) {
-			this._attach(true, null, callback);
+			/* This does not just do _attach(true, null, callback) because that would put us
+			 * into the 'attaching' state until we receive the new attached, which is
+			 * conceptually incorrect: we are still attached, we just have a pending request to
+			 * change some channel params. Per RTL17 going into the attaching state would mean
+			 * rejecting messages until we have confirmation that the options have changed,
+			 * which would unnecessarily lose message continuity. */
+			this.attachImpl();
+			this._allChannelChanges.once(function(stateChange) {
+				switch(this.event) {
+					case 'update':
+					case 'attached':
+						callback(null);
+						return;
+					default:
+						callback(stateChange.reason);
+						return;
+				}
+			});
 		} else {
 			callback();
 		}
@@ -385,16 +405,23 @@ var RealtimeChannel = (function() {
 			this.params = message.params || {};
 			var modesFromFlags = message.decodeModesFromFlags();
 			this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
+			var resumed = message.hasFlag('RESUMED');
+			var hasPresence = message.hasFlag('HAS_PRESENCE');
 			if(this.state === 'attached') {
-				var resumed = message.hasFlag('RESUMED');
-				if(!resumed || this.channelOptions.updateOnAttached) {
+				/* attached operations to change options set the inprogress mutex, but leave
+				 * channel in the attached state */
+				this.setInProgress(statechangeOp, false);
+				if(!resumed) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
-					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
-					var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+					this.presence.onAttached(hasPresence);
+				}
+				var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+				this._allChannelChanges.emit('update', change);
+				if(!resumed || this.channelOptions.updateOnAttached) {
 					this.emit('update', change);
 				}
 			} else {
-				this.notifyState('attached', message.error, message.hasFlag('RESUMED'), message.hasFlag('HAS_PRESENCE'));
+				this.notifyState('attached', message.error, resumed, hasPresence);
 			}
 			break;
 
@@ -560,6 +587,7 @@ var RealtimeChannel = (function() {
 		}
 
 		this.state = state;
+		this._allChannelChanges.emit(state, change);
 		this.emit(state, change);
 	};
 

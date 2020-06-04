@@ -671,39 +671,43 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						setOptionsReturned = true;
 					},
 					function(cb) {
-						channel.attach(function(err) {
-							cb(err);
-						});
+						channel.attach(cb);
 					},
 					function(cb) {
-						var channelReattached = false;
-						channel.on('attaching', function() {
-							channelReattached = true;
+						var channelUpdated = false;
+						channel._allChannelChanges.on('update', function() {
+							channelUpdated = true;
 						});
 
 						var setOptionsReturned = false;
 						channel.setOptions({
 							params: params
 						}, function() {
-							test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
-							test.ok(channelReattached, 'Check reattach with params occurred');
-							cb();
+							/* Wait a tick so we don't depend on whether the update event runs the
+							 * channelUpdated listener or the setOptions listener first */
+							helper.Utils.nextTick(function() {
+								test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
+								test.ok(channelUpdated, 'Check channel went to the server to update the channel params');
+								cb();
+							});
 						});
 						setOptionsReturned = true;
 					},
 					function(cb) {
-						var channelReattached = false;
-						channel.on('attaching', function() {
-							channelReattached = true;
+						var channelUpdated = false;
+						channel._allChannelChanges.on('update', function() {
+							channelUpdated = true;
 						});
 
 						var setOptionsReturned = false;
 						channel.setOptions({
 							modes: modes
 						}, function() {
-							test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
-							test.ok(channelReattached, 'Check reattach with modes occurred');
-							cb();
+							helper.Utils.nextTick(function() {
+								test.ok(setOptionsReturned, 'setOptions should return immediately and call back after the reattach');
+								test.ok(channelUpdated, 'Check channel went to the server to update the channel mode');
+								cb();
+							});
 						});
 						setOptionsReturned = true;
 					},
