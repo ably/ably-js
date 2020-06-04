@@ -469,9 +469,17 @@ var RealtimeChannel = (function() {
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
-					if(e.code === 40018) {
-						this._startDecodeFailureRecovery(e);
-						return;
+					switch(e.code) {
+						case 40018:
+							/* decode failure */
+							this._startDecodeFailureRecovery(e);
+							return;
+						case 40019:
+							/* No vcdiff plugin passed in - no point recovering, give up */
+						case 40021:
+							/* Browser does not support deltas, similarly no point recovering */
+							this.notifyState('failed', e);
+							return;
 					}
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
