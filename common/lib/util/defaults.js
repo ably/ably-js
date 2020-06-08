@@ -151,7 +151,7 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(!('idempotentRestPublishing' in options)) {
-		options.idempotentRestPublishing = false;
+		options.idempotentRestPublishing = true;
 	}
 
 	if(options.promises && !Platform.Promise) {
