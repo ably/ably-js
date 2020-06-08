@@ -150,7 +150,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	/* Check ids are correctly sent */
 	// TODO enable when idempotent publishing works on sandbox
 	// until then, test with ABLY_ENV=idempotent-dev
-	_exports.idempotent_rest_publishing = function(test) {
+	exports.idempotent_rest_publishing = function(test) {
 		test.expect(2);
 		var rest = helper.AblyRest({idempotentRestPublishing: false, useBinaryProtocol: false}),
 			channel = rest.channels.get('idempotent_rest_publishing'),
