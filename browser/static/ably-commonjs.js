@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.1.25
+ * Ably JavaScript Library v1.2.0
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3807,6 +3807,11 @@ var BufferUtils = (function() {
 		}
 	};
 
+	/* Returns ArrayBuffer on browser and Buffer on Node.js */
+	BufferUtils.typedArrayToBuffer = function(typedArray) {
+		return typedArray.buffer;
+	};
+
 	return BufferUtils;
 })();
 
@@ -4065,6 +4070,14 @@ var Utils = (function() {
 		return result;
 	};
 
+	Utils.forInOwnNonNullProps = function(ob, fn) {
+		for (var prop in ob) {
+			if (Object.prototype.hasOwnProperty.call(ob, prop) && ob[prop]) {
+				fn(prop);
+			}
+		}
+	};
+
 	Utils.arrForEach = Array.prototype.forEach ?
 		function(arr, fn) {
 			arr.forEach(fn);
@@ -4301,6 +4314,18 @@ var Utils = (function() {
 
 	Utils.encodeBody = function(body, format) {
 		return (format == 'msgpack') ? msgpack.encode(body, true) : JSON.stringify(body);
+	};
+
+	Utils.allToLowerCase = function(arr) {
+		return Utils.arrMap(arr, function(element) {
+			return element && element.toLowerCase();
+		});
+	};
+
+	Utils.allToUpperCase = function(arr) {
+		return Utils.arrMap(arr, function(element) {
+			return element && element.toUpperCase();
+		});
 	};
 
 	return Utils;
@@ -4697,7 +4722,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.1.25';
+Defaults.version          = '1.2.0';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.1';
 
@@ -5383,21 +5408,35 @@ var Message = (function() {
 
 	Message.serialize = Utils.encodeBody;
 
-	Message.decode = function(message, options) {
+	Message.decode = function(message, context) {
+		/* The second argument could be either EncodingDecodingContext that contains ChannelOptions or ChannelOptions */
+		if(!context || !context.channelOptions) {
+			var channelOptions = context;
+			context = {
+				channelOptions: channelOptions,
+				plugins: { },
+				baseEncodedPreviousPayload: undefined
+			};
+		}
+
+		var lastPayload = message.data;
 		var encoding = message.encoding;
 		if(encoding) {
 			var xforms = encoding.split('/'),
-				i, j = xforms.length,
+				lastProcessedEncodingIndex, encodingsToProcess = xforms.length,
 				data = message.data;
 
 			try {
-				while((i = j) > 0) {
-					var match = xforms[--j].match(/([\-\w]+)(\+([\w\-]+))?/);
+				while((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
+					var match = xforms[--encodingsToProcess].match(/([\-\w]+)(\+([\w\-]+))?/);
 					if(!match) break;
 					var xform = match[1];
 					switch(xform) {
 						case 'base64':
 							data = BufferUtils.base64Decode(String(data));
+							if(lastProcessedEncodingIndex == xforms.length) {
+								lastPayload = data;
+							}
 							continue;
 						case 'utf-8':
 							data = BufferUtils.utf8Decode(data);
@@ -5406,8 +5445,8 @@ var Message = (function() {
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
-							if(options != null && options.cipher) {
-								var xformAlgorithm = match[3], cipher = options.channelCipher;
+							if(context.channelOptions != null && context.channelOptions.cipher) {
+								var xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -5417,18 +5456,44 @@ var Message = (function() {
 							} else {
 								throw new Error('Unable to decrypt message; not an encrypted channel');
 							}
+						case 'vcdiff':
+							if(!context.plugins || !context.plugins.vcdiff) {
+								throw new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
+							}
+							if(typeof Uint8Array === 'undefined') {
+								throw new ErrorInfo('Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)', 40020, 400);
+							}
+							try {
+								var deltaBase = context.baseEncodedPreviousPayload;
+								if(typeof deltaBase === 'string') {
+									deltaBase = BufferUtils.utf8Encode(deltaBase);
+								}
+
+								/* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
+								 * don't have a TextDecoder, deltaBase might be a WordArray here, so need
+								 * to process it into a buffer anyway) */
+								deltaBase = BufferUtils.toBuffer(deltaBase);
+								data = BufferUtils.toBuffer(data);
+
+								data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+								lastPayload = data;
+							} catch(e) {
+								throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
+							}
+							continue;
 						default:
 							throw new Error("Unknown encoding");
 					}
 					break;
 				}
 			} catch(e) {
-				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', 40013, 400);
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', e.code || 40013, 400);
 			} finally {
-				message.encoding = (i <= 0) ? null : xforms.slice(0, i).join('/');
+				message.encoding = (lastProcessedEncodingIndex <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
 				message.data = data;
 			}
 		}
+		context.baseEncodedPreviousPayload = lastPayload;
 	};
 
 	Message.fromResponseBody = function(body, options, format) {
@@ -5693,6 +5758,7 @@ var ProtocolMessage = (function() {
 		this.messages = undefined;
 		this.presence = undefined;
 		this.auth = undefined;
+		this.params = undefined;
 	}
 
 	var actions = ProtocolMessage.Action = {
@@ -5716,6 +5782,8 @@ var ProtocolMessage = (function() {
 		'AUTH' : 17
 	};
 
+	ProtocolMessage.channelModes = [ 'PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE' ];
+
 	ProtocolMessage.ActionName = [];
 	Utils.arrForEach(Utils.keysArray(ProtocolMessage.Action, true), function(name) {
 		ProtocolMessage.ActionName[actions[name]] = name;
@@ -5727,6 +5795,7 @@ var ProtocolMessage = (function() {
 		'HAS_BACKLOG':        1 << 1,
 		'RESUMED':            1 << 2,
 		'TRANSIENT':          1 << 4,
+		'ATTACH_RESUME':      1 << 5,
 		/* Channel mode flags */
 		'PRESENCE':           1 << 16,
 		'PUBLISH':            1 << 17,
@@ -5746,6 +5815,24 @@ var ProtocolMessage = (function() {
 
 	ProtocolMessage.prototype.getMode = function() {
 		return this.flags && (this.flags & flags.MODE_ALL);
+	};
+
+	ProtocolMessage.prototype.encodeModesToFlags = function(modes) {
+		var self = this;
+		Utils.arrForEach(modes, function(mode) {
+			self.setFlag(mode);
+		});
+	};
+
+	ProtocolMessage.prototype.decodeModesFromFlags = function() {
+		var modes = [],
+			self = this;
+		Utils.arrForEach(ProtocolMessage.channelModes, function(mode) {
+			if(self.hasFlag(mode)) {
+				modes.push(mode);
+			}
+		});
+		return modes.length > 0 ? modes : undefined;
 	};
 
 	ProtocolMessage.serialize = Utils.encodeBody;
@@ -5805,18 +5892,47 @@ var ProtocolMessage = (function() {
 			result += '; flags=' + Utils.arrFilter(flagNames, function(flag) {
 				return msg.hasFlag(flag);
 			}).join(',');
-
+		if(msg.params) {
+			var stringifiedParams = '';
+			Utils.forInOwnNonNullProps(msg.params, function(prop) {
+				if (stringifiedParams.length > 0) {
+					stringifiedParams += '; ';
+				}
+				stringifiedParams += prop + '=' + msg.params[prop];
+			});
+			if (stringifiedParams.length > 0) {
+				result += '; params=[' + stringifiedParams + ']';
+			}
+		}
 		result += ']';
 		return result;
 	};
 
 	/* Only valid for channel messages */
 	ProtocolMessage.isDuplicate = function(a, b) {
-		return a && b &&
-			(a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
-			(a.action === b.action) &&
-			(a.channel === b.channel) &&
-			(a.id === b.id);
+		if (a && b) {
+			if ((a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
+				(a.action === b.action) &&
+				(a.channel === b.channel) &&
+				(a.id === b.id)) {
+				if (a.action === actions.PRESENCE) {
+					return true;
+				} else if (a.messages.length === b.messages.length) {
+					for (var i = 0; i < a.messages.length; i++) {
+						var aMessage = a.messages[i];
+						var bMessage = b.messages[i];
+						if ((aMessage.extras && aMessage.extras.delta && aMessage.extras.delta.format) !==
+							(bMessage.extras && bMessage.extras.delta && bMessage.extras.delta.format)) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			}
+		}
+
+		return false;
 	};
 
 	return ProtocolMessage;
@@ -5833,16 +5949,14 @@ var Stats = (function() {
 	}
 
 	function MessageCategory(values) {
+		var self = this;
 		MessageCount.call(this, values);
 		this.category = undefined;
 		if (values && values.category) {
 			this.category = { };
-			for (var key in values.category) {
-				var value = values.category[key];
-				if (Object.prototype.hasOwnProperty.call(values.category, key) && value) {
-					this.category[key] = new MessageCount(value);
-				}
-			}
+			Utils.forInOwnNonNullProps(values.category, function(prop) {
+				self.category[prop] = new MessageCount(values.category[prop]);
+			});
 		}
 	}
 
@@ -5914,15 +6028,13 @@ var Stats = (function() {
 	}
 
 	function ProcessedMessages(values) {
+		var self = this;
 		this.delta = undefined;
 		if (values && values.delta) {
 			this.delta = { };
-			for (var key in values.delta) {
-				var value = values.delta[key];
-				if (Object.prototype.hasOwnProperty.call(values.delta, key) && value) {
-					this.delta[key] = new ProcessedCount(value);
-				}
-			}
+			Utils.forInOwnNonNullProps(values.delta, function(prop) {
+				self.delta[prop] = new ProcessedCount(values.delta[prop]);
+			});
 		}
 	}
 
@@ -9180,7 +9292,7 @@ var Auth = (function() {
 
 	var hmac, toBase64;
 	if(Platform.createHmac) {
-		toBase64 = function(str) { return (new Buffer(str, 'ascii')).toString('base64'); };
+		toBase64 = function(str) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 		hmac = function(text, key) {
 			var inst = Platform.createHmac('SHA256', key);
 			inst.update(text);
@@ -10277,6 +10389,9 @@ var Realtime = (function() {
 		if(!channel) {
 			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
 		} else if(channelOptions) {
+			if (channel._shouldReattachToSetOptions(channelOptions)) {
+				throw new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.", 40000, 400);
+			}
 			channel.setOptions(channelOptions);
 		}
 		return channel;
@@ -10859,6 +10974,20 @@ var RealtimeChannel = (function() {
 		this._mode = null;
 		/* Temporary; only used for the checkChannelsOnResume option */
 		this._attachedMsgIndicator = false;
+		this._attachResume = false;
+		this._decodingContext = {
+			channelOptions: this.channelOptions,
+			plugins: realtime.options.plugins || { },
+			baseEncodedPreviousPayload: undefined
+		};
+		this._lastPayload = {
+			messageId: null,
+			protocolMessageChannelSerial: null,
+			decodeFailureRecoveryInProgress: null
+		};
+		/* Only differences between this and the public event emitter is that this emits an
+		 * update event for all ATTACHEDs, whether resumed or not */
+		this._allChannelChanges = new EventEmitter();
 	}
 	Utils.inherits(RealtimeChannel, Channel);
 
@@ -10885,6 +11014,71 @@ var RealtimeChannel = (function() {
 			args.pop();
 		}
 		return args;
+	};
+
+	RealtimeChannel.prototype.setOptions = function(options, callback) {
+		if(!callback) {
+			if (this.rest.options.promises) {
+				return Utils.promisify(this, 'setOptions', arguments);
+			}
+
+			callback = function(err){
+				if(err) {
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
+				}
+			};
+		}
+		var err = validateChannelOptions(options);
+		if(err) {
+			callback(err);
+			return;
+		}
+		Channel.prototype.setOptions.call(this, options);
+		if (this._decodingContext)
+			this._decodingContext.channelOptions = this.channelOptions;
+		if(this._shouldReattachToSetOptions(options)) {
+			/* This does not just do _attach(true, null, callback) because that would put us
+			 * into the 'attaching' state until we receive the new attached, which is
+			 * conceptually incorrect: we are still attached, we just have a pending request to
+			 * change some channel params. Per RTL17 going into the attaching state would mean
+			 * rejecting messages until we have confirmation that the options have changed,
+			 * which would unnecessarily lose message continuity. */
+			this.attachImpl();
+			this._allChannelChanges.once(function(stateChange) {
+				switch(this.event) {
+					case 'update':
+					case 'attached':
+						callback(null);
+						return;
+					default:
+						callback(stateChange.reason);
+						return;
+				}
+			});
+		} else {
+			callback();
+		}
+	};
+
+	function validateChannelOptions(options) {
+		if(options && 'params' in options && !Utils.isObject(options.params)) {
+			return new ErrorInfo('options.params must be an object', 40000, 400);
+		}
+		if(options && 'modes' in options){
+			if(!Utils.isArray(options.modes)){
+				return new ErrorInfo('options.modes must be an array', 40000, 400);
+			}
+			for(var i = 0; i < options.modes.length; i++){
+				var currentMode = options.modes[i];
+				if(!currentMode || typeof currentMode !== 'string' || !Utils.arrIn(ProtocolMessage.channelModes, String.prototype.toUpperCase.call(currentMode))){
+					return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
+				}
+			}
+		}
+	}
+
+	RealtimeChannel.prototype._shouldReattachToSetOptions = function(options) {
+		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
 	};
 
 	RealtimeChannel.prototype.publish = function() {
@@ -10974,50 +11168,68 @@ var RealtimeChannel = (function() {
 			}
 		}
 		if(flags) {
+			Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
+			/* If flags requested, always do a re-attach. TODO only do this if
+			 * current mode differs from requested mode */
 			this._requestedFlags = flags;
+		} else if (this.state === 'attached') {
+			callback();
+			return;
 		}
+
+		this._attach(false, null, callback);
+	};
+
+	RealtimeChannel.prototype._attach = function(forceReattach, attachReason, callback) {
+		if(!callback) {
+			callback = function(err) {
+				if (err) {
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
+				}
+			}
+		}
+
 		var connectionManager = this.connectionManager;
 		if(!connectionManager.activeState()) {
 			callback(connectionManager.getError());
 			return;
 		}
-		switch(this.state) {
-			case 'attached':
-				/* If flags requested, always do a re-attach. TODO only do this if if
-				* current mode differs from requested mode */
-				if(!flags) {
+
+		if (this.state !== 'attaching' || forceReattach) {
+			this.requestState('attaching', attachReason);
+		}
+
+		this.once(function(stateChange) {
+			switch(this.event) {
+				case 'attached':
 					callback();
 					break;
-				} /* else fallthrough */
-			default:
-				this.requestState('attaching');
-			case 'attaching':
-				this.once(function(stateChange) {
-					switch(this.event) {
-						case 'attached':
-							callback();
-							break;
-						case 'detached':
-						case 'suspended':
-						case 'failed':
-							callback(stateChange.reason || connectionManager.getError());
-							break;
-						case 'detaching':
-							callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
-							break;
-					}
-				});
+				case 'detached':
+				case 'suspended':
+				case 'failed':
+					callback(stateChange.reason || connectionManager.getError());
+					break;
+				case 'detaching':
+					callback(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
+					break;
 			}
+		});
 	};
 
 	RealtimeChannel.prototype.attachImpl = function() {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.setInProgress(statechangeOp, true);
-		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name});
+		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name, params: this.channelOptions.params});
 		if(this._requestedFlags) {
-			Utils.arrForEach(this._requestedFlags, function(flag) {
-				attachMsg.setFlag(flag);
-			})
+			attachMsg.encodeModesToFlags(this._requestedFlags);
+		} else if(this.channelOptions.modes) {
+			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes));
+		}
+		if(this._attachResume) {
+			attachMsg.setFlag('ATTACH_RESUME');
+		}
+		if(this._lastPayload.decodeFailureRecoveryInProgress) {
+			attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
 		}
 		this.sendMessage(attachMsg, noop);
 	};
@@ -11141,16 +11353,26 @@ var RealtimeChannel = (function() {
 			this._attachedMsgIndicator = true;
 			this.properties.attachSerial = message.channelSerial;
 			this._mode = message.getMode();
+			this.params = message.params || {};
+			var modesFromFlags = message.decodeModesFromFlags();
+			this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
+			var resumed = message.hasFlag('RESUMED');
+			var hasPresence = message.hasFlag('HAS_PRESENCE');
 			if(this.state === 'attached') {
-				var resumed = message.hasFlag('RESUMED');
-				if(!resumed || this.channelOptions.updateOnAttached) {
+				/* attached operations to change options set the inprogress mutex, but leave
+				 * channel in the attached state */
+				this.setInProgress(statechangeOp, false);
+				if(!resumed) {
 					/* On a loss of continuity, the presence set needs to be re-synced */
-					this.presence.onAttached(message.hasFlag('HAS_PRESENCE'))
-					var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+					this.presence.onAttached(hasPresence);
+				}
+				var change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+				this._allChannelChanges.emit('update', change);
+				if(!resumed || this.channelOptions.updateOnAttached) {
 					this.emit('update', change);
 				}
 			} else {
-				this.notifyState('attached', message.error, message.hasFlag('RESUMED'), message.hasFlag('HAS_PRESENCE'));
+				this.notifyState('attached', message.error, resumed, hasPresence);
 			}
 			break;
 
@@ -11197,24 +11419,53 @@ var RealtimeChannel = (function() {
 			break;
 
 		case actions.MESSAGE:
+
+			//RTL17
+			if(this.state !== 'attached') {
+				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message "' + message.id + '" skipped as this channel "' + this.name + '" state is not "attached" (state is "' + this.state + '").');
+				return;
+			}
+
 			var messages = message.messages,
+				firstMessage = messages[0],
+				lastMessage = messages[messages.length - 1],
 				id = message.id,
 				connectionId = message.connectionId,
 				timestamp = message.timestamp;
 
-			var options = this.channelOptions;
+			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
+				var msg = 'Delta message decode failure - previous message not available for message "' + message.id + '" on this channel "' + this.name + '".';
+				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+				this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
+				break;
+			}
+
 			for(var i = 0; i < messages.length; i++) {
+				var msg = messages[i];
 				try {
-					var msg = messages[i];
-					Message.decode(msg, options);
+					Message.decode(msg, this._decodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onMessage()', e.toString());
+					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					switch(e.code) {
+						case 40018:
+							/* decode failure */
+							this._startDecodeFailureRecovery(e);
+							return;
+						case 40019:
+							/* No vcdiff plugin passed in - no point recovering, give up */
+						case 40021:
+							/* Browser does not support deltas, similarly no point recovering */
+							this.notifyState('failed', e);
+							return;
+					}
 				}
 				if(!msg.connectionId) msg.connectionId = connectionId;
 				if(!msg.timestamp) msg.timestamp = timestamp;
 				if(!msg.id) msg.id = id + ':' + i;
 			}
+			this._lastPayload.messageId = lastMessage.id;
+			this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
 			this.onEvent(messages);
 			break;
 
@@ -11232,6 +11483,17 @@ var RealtimeChannel = (function() {
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
+		}
+	};
+
+	RealtimeChannel.prototype._startDecodeFailureRecovery = function(reason) {
+		var self = this;
+		if(!this._lastPayload.decodeFailureRecoveryInProgress) {
+			Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
+			this._lastPayload.decodeFailureRecoveryInProgress = true;
+			this._attach(true, reason, function() {
+				self._lastPayload.decodeFailureRecoveryInProgress = false;
+			});
 		}
 	};
 
@@ -11269,7 +11531,14 @@ var RealtimeChannel = (function() {
 			this.setInProgress(syncOp, false);
 		}
 
+		if(state === 'attached') {
+			this._attachResume = true;
+		} else if(state === 'detaching' || state === 'failed') {
+			this._attachResume = false;
+		}
+
 		this.state = state;
+		this._allChannelChanges.emit(state, change);
 		this.emit(state, change);
 	};
 

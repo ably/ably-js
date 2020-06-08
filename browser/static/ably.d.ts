@@ -247,8 +247,15 @@ declare namespace Types {
 		ttl?: number;
 	}
 
+	type ChannelParams = { [key: string]: string };
+
+	type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
+	type ChannelModes = Array<ChannelMode>;
+
 	interface ChannelOptions {
 		cipher: any;
+		params: ChannelParams;
+		modes: ChannelModes;
 	}
 
 	interface RestHistoryParams {
@@ -509,7 +516,8 @@ declare namespace Types {
 		name: string;
 		errorReason: ErrorInfo;
 		state: ChannelState;
-		setOptions: (options: any) => void;
+		params: ChannelParams;
+		modes: ChannelModes;
 		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
 	}
 
@@ -518,6 +526,7 @@ declare namespace Types {
 		attach: (callback?: standardCallback) => void;
 		detach: (callback?: standardCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: standardCallback) => void;
 		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
@@ -528,6 +537,7 @@ declare namespace Types {
 		attach: () => Promise<void>;
 		detach: () => Promise<void>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
+		setOptions: (options: ChannelOptions) => Promise<void>;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
 		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
 		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
