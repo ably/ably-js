@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [**1.2**](https://github.com/ably/ably-js/tree/1.2.0) (2020-06-08)
+
+Adds the capability to subscribe to a channel in delta mode.
+
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+
+[Full Changelog](https://github.com/ably/ably-js/compare/1.1.25...1.2.0)
+
 ## [1.1.25](https://github.com/ably/ably-js/tree/1.1.25) (2020-05-19)
 - EventEmitter.whenState: fix for promises [\#630](https://github.com/ably/ably-js/pull/630)
 - Typings: re-export Types namespace in 'ably/promises' sub-package [\#634](https://github.com/ably/ably-js/pull/634)
