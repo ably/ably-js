@@ -2,13 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [**1.2**](https://github.com/ably/ably-js/tree/1.2.0) (2020-06-08)
+## [1.2](https://github.com/ably/ably-js/tree/1.2.0) (2020-06-08)
 
 Adds the capability to subscribe to a channel in delta mode.
 
 Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 [Full Changelog](https://github.com/ably/ably-js/compare/1.1.25...1.2.0)
+
+---
 
 ## [1.1.25](https://github.com/ably/ably-js/tree/1.1.25) (2020-05-19)
 - EventEmitter.whenState: fix for promises [\#630](https://github.com/ably/ably-js/pull/630)
@@ -103,10 +105,12 @@ event of a failed channel)
 - Rewrite typescript typings to satisfy `tsc --strict`
 - PNRG changes needed for newer versions of react-native
 
-## [**1.1**](https://github.com/ably/ably-js/tree/1.1.0) (2019-02-06)
+## [1.1](https://github.com/ably/ably-js/tree/1.1.0) (2019-02-06)
 - Promises support
 - Admin api for push notifications
 - Many minor bugfixes
+
+---
 
 ## [1.0.23](https://github.com/ably/ably-js/tree/1.0.23) (2019-01-21)
 - Only make a single token request at a time
@@ -244,9 +248,11 @@ event of a failed channel)
 
 - Fix issue with multiple attaches happening after a failed resume [\#386](https://github.com/ably/ably-js/pull/386)
 
-## [**1.0**](https://github.com/ably/ably-js/tree/1.0.0) (2017-03-08)
+## [1.0](https://github.com/ably/ably-js/tree/1.0.0) (2017-03-08)
 
 - Lots of changes; see https://github.com/ably/docs/issues/235 for the most important and/or breaking changes and upgrade notes, or the [full Changelog](https://github.com/ably/ably-js/compare/0.8.42...1.0.0)
+
+---
 
 ## [0.8.42](https://github.com/ably/ably-js/tree/0.8.42) (2017-02-27)
 
@@ -873,7 +879,7 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 - Allow data parameter to be optional for presence\#enter and channell\#subscribe \(2\) [\#50](https://github.com/ably/ably-js/pull/50) ([SimonWoolf](https://github.com/SimonWoolf))
 
-## [**0.8**](https://github.com/ably/ably-js/tree/0.8.0) (2015-04-29)
+## [0.8](https://github.com/ably/ably-js/tree/0.8.0) (2015-04-29)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.7.9...0.8.0)
 
@@ -896,6 +902,8 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 - Time function on Realtime blocks Node from exiting [\#9](https://github.com/ably/ably-js/issues/9)
 
 - iFrame loading [\#8](https://github.com/ably/ably-js/issues/8)
+
+---
 
 ## [0.7.9](https://github.com/ably/ably-js/tree/0.7.9) (2015-04-03)
 
@@ -957,9 +965,11 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.7.0...0.7.1)
 
-## [**0.7**](https://github.com/ably/ably-js/tree/0.7.0) (2015-01-12)
+## [0.7](https://github.com/ably/ably-js/tree/0.7.0) (2015-01-12)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.6.3...0.7.0)
+
+---
 
 ## [0.6.3](https://github.com/ably/ably-js/tree/0.6.3) (2014-12-09)
 
@@ -969,27 +979,33 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.6.0...0.6.1)
 
-## [**0.6**](https://github.com/ably/ably-js/tree/0.6.0) (2014-11-27)
+## [0.6](https://github.com/ably/ably-js/tree/0.6.0) (2014-11-27)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.5.0...0.6.0)
 
-## [**0.5**](https://github.com/ably/ably-js/tree/0.5.0) (2014-01-13)
+---
+
+## [0.5](https://github.com/ably/ably-js/tree/0.5.0) (2014-01-13)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.2.1...0.5.0)
+
+---
 
 ## [0.2.1](https://github.com/ably/ably-js/tree/0.2.1) (2013-04-29)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.2.0...0.2.1)
 
-## [**0.2**](https://github.com/ably/ably-js/tree/0.2.0) (2013-04-17)
+## [0.2](https://github.com/ably/ably-js/tree/0.2.0) (2013-04-17)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.1.1...0.2.0)
+
+---
 
 ## [0.1.1](https://github.com/ably/ably-js/tree/0.1.1) (2012-12-05)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/0.1.0...0.1.1)
 
-## [**0.1**](https://github.com/ably/ably-js/tree/0.1.0) (2012-12-04)
+## [0.1](https://github.com/ably/ably-js/tree/0.1.0) (2012-12-04)
 
 ---
 
