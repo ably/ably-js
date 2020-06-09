@@ -2,6 +2,17 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.1](https://github.com/ably/ably-js/tree/1.2.1) (2020-06-09)
+
+**Oops!** :blush: Fixes an oversight in our 1.2.0 release.
+
+We had
+[specified](https://docs.ably.io/client-lib-development-guide/features/#TO3n)
+that we would make `idempotentRestPublishing` default to `true` from version 1.2 (`ClientOptions`) but hadn't followed through with this.
+That is fixed in this release with
+[\#665](https://github.com/ably/ably-js/pull/665)
+([SimonWoolf](https://github.com/SimonWoolf)).
+
 ## [1.2](https://github.com/ably/ably-js/tree/1.2.0) (2020-06-08)
 
 Adds the capability to subscribe to a channel in delta mode.
