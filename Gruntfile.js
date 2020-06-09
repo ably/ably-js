@@ -399,11 +399,6 @@ module.exports = function (grunt) {
 		'Pushes to git', execExternal('git push origin master --follow-tags')
 	);
 
-	grunt.registerTask('release:npm-publish',
-		/* Workaround for npm bug, see https://github.com/ably/ably-js/issues/422 */
-		'Pushes to npm', execExternal('mv spec/common/ably-common/.git /tmp/ably-common-gitfile && npm publish . ; mv /tmp/ably-common-gitfile spec/common/ably-common/.git')
-	);
-
 	grunt.registerTask('release:ably-deploy',
 		'Deploys to ably CDN, assuming infrastructure repo is in same dir as ably-js',
 		function() {
@@ -438,11 +433,10 @@ module.exports = function (grunt) {
 	);
 
 	grunt.registerTask('release:deploy',
-		'Pushes a new release to github, deploys to npm, deploys to ably CDN',
+		'Pushes a new release to github and then deploys to the Ably CDN',
 		function() {
 			grunt.task.run([
 				'release:git-push',
-				'release:npm-publish',
 				'release:ably-deploy',
 			]);
 		}

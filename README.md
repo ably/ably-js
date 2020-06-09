@@ -601,12 +601,13 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Release Process
 
-- Make sure the tests are passing in CI for the branch you're building
-- Update the CHANGELOG.md with any customer-affecting changes since the last release
-- Run `npm run grunt -- release:patch` (or: "major", "minor", "patch", "prepatch")
-- Run `npm run grunt -- release:deploy` (requires specific directory structure outside of this repository - this will be documented in more detail but, for now, inspect [Gruntfile.js](Gruntfile.js) for details)
-- Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-- For nontrivial releases: update the ably-js submodule ref in the realtime repo
+1. Make sure the tests are passing in CI for the branch you're building
+2. Update the CHANGELOG.md with any customer-affecting changes since the last release
+3. Run `npm run grunt -- release:patch` (or: "major", "minor", "patch", "prepatch") - creates commit and local tag
+4. Run `npm run grunt -- release:deploy` (requires specific directory structure outside of this repository - this will be documented in more detail but, for now, inspect [Gruntfile.js](Gruntfile.js) for details) - pushes commit and tag, then publishes to the Ably CDN
+5. Run `npm publish .` (should require OTP) - publishes to NPM
+6. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
+7. For nontrivial releases: update the ably-js submodule ref in the realtime repo
 
 ## Credits
 
