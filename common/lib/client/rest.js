@@ -163,14 +163,14 @@ var Rest = (function() {
 
 	function Channels(rest) {
 		this.rest = rest;
-		this.attached = {};
+		this.all = {};
 	}
 
 	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
-		var channel = this.attached[name];
+		var channel = this.all[name];
 		if(!channel) {
-			this.attached[name] = channel = new Channel(this.rest, name, channelOptions);
+			this.all[name] = channel = new Channel(this.rest, name, channelOptions);
 		} else if(channelOptions) {
 			channel.setOptions(channelOptions);
 		}
@@ -181,7 +181,7 @@ var Rest = (function() {
 	/* Included to support certain niche use-cases; most users should ignore this.
 	 * Please do not use this unless you know what you're doing */
 	Channels.prototype.release = function(name) {
-		delete this.attached[String(name)];
+		delete this.all[String(name)];
 	};
 
 	return Rest;
