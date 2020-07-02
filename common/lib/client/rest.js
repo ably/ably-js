@@ -178,6 +178,8 @@ var Rest = (function() {
 		return channel;
 	};
 
+	/* Included to support certain niche use-cases; most users should ignore this.
+	 * Please do not use this unless you know what you're doing */
 	Channels.prototype.release = function(name) {
 		delete this.attached[String(name)];
 	};

@@ -723,5 +723,14 @@ var RealtimeChannel = (function() {
 		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
 	}
 
+	/* @returns null (if can safely be released) | ErrorInfo (if cannot) */
+	RealtimeChannel.prototype.getReleaseErr = function() {
+		var s = this.state;
+		if(s === 'initialized' || s === 'detached' || s === 'failed') {
+			return null;
+		}
+		return new ErrorInfo('Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' + s, 90001, 400);
+	}
+
 	return RealtimeChannel;
 })();
