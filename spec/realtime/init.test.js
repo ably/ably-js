@@ -21,12 +21,23 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	 * Base init case
 	 */
 	exports.initbase0 = function(test) {
-		test.expect(1);
 		var realtime;
 		try {
-			realtime = helper.AblyRealtime();
+			/* Restrict to websocket or xhr streaming for the v= test as if stream=false the
+			 * recvRequest may not be the connectRequest by the time we check it. All comet
+			 * transports share the same connect uri generation code so should be adequately
+			 * tested by testing xhr_streaming */
+			if(helper.bestTransport !== 'web_socket' && helper.bestTransport !== 'xhr_streaming') {
+				test.done();
+				return;
+			}
+			realtime = helper.AblyRealtime({transports: ['web_socket', 'xhr_streaming']});
 			realtime.connection.on('connected', function() {
 				test.ok(true, 'Verify init with key');
+				/* check api version */
+				var transport = realtime.connection.connectionManager.activeProtocol.transport;
+				var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.uri;
+				test.ok(connectUri.indexOf('v=1.2') > -1, 'Check uri includes v=1.2');
 				closeAndFinish(test, realtime);
 			});
 			monitorConnection(test, realtime);
