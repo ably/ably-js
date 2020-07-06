@@ -30,7 +30,7 @@ Defaults.errorReportingHeaders = {
 
 Defaults.version          = '1.2.1';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
-Defaults.apiVersion       = '1.1';
+Defaults.apiVersion       = '1.2';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
