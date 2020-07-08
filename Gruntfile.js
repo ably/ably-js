@@ -396,7 +396,7 @@ module.exports = function (grunt) {
 	);
 
 	grunt.registerTask('release:git-push',
-		'Pushes to git', execExternal('git push origin master --follow-tags')
+		'Pushes to git', execExternal('git push origin main --follow-tags')
 	);
 
 	grunt.registerTask('release:ably-deploy',
