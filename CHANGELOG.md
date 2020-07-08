@@ -684,7 +684,7 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 - No transport handle [\#40](https://github.com/ably/ably-js/issues/40)
 
-- Bug on current master when running `karma` [\#36](https://github.com/ably/ably-js/issues/36)
+- Bug when running `karma` [\#36](https://github.com/ably/ably-js/issues/36)
 
 - Travis CI builds failing consistenly [\#30](https://github.com/ably/ably-js/issues/30)
 
