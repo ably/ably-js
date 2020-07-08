@@ -15,7 +15,7 @@ notifications:
     on_failure: always
 branches:
   only:
-  - master
+  - main
   - /^.*-ci$/
 env:
   global:
