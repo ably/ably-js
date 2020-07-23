@@ -6,7 +6,7 @@ var JSONPTransport = (function() {
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
-	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 * https://github.com/expressjs/express/blob/5b4d4b4ab1324743534fbcd4709f4e75bb4b4e9d/lib/response.js#L305
 	 */
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
