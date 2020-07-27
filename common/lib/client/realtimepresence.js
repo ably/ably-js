@@ -122,7 +122,7 @@ var RealtimePresence = (function() {
 					});
 					break;
 				default:
-					err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err = new ErrorInfo('Unable to ' + action + ' presence channel while in ' + channel.state + ' state', 90001);
 					err.code = 90001;
 					callback(err);
 			}
