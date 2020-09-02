@@ -214,9 +214,16 @@ var Auth = (function() {
 
 		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
 			if(err) {
+				if(self.client.connection) {
+					/* We interpret RSA4d as including requests made by a client lib to
+					 * authenticate triggered by an explicit authorize() or an AUTH received from
+					 * ably, not just connect-sequence-triggered token fetches */
+					self.client.connection.connectionManager.actOnErrorFromAuthorize(err);
+				}
 				callback(err);
 				return;
 			}
+
 			/* RTC8
 			 * - When authorize called by an end user and have a realtime connection,
 			 * don't call back till new token has taken effect.
