@@ -34,11 +34,11 @@ this.Http = (function() {
 					case 'application/x-msgpack':
 						body = msgpack.decode(body);
 				}
-				var error = body.error || {
-					statusCode: statusCode,
-					code: headers['x-ably-errorcode'],
-					message: headers['x-ably-errormessage']
-				};
+				var error = body.error ? ErrorInfo.fromValues(body.error) : new ErrorInfo(
+					headers['x-ably-errormessage'] || 'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
+					headers['x-ably-errorcode'],
+					statusCode
+				);
 				callback(error, body, headers, true, statusCode);
 				return;
 			}
