@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.2.1
+ * Ably JavaScript Library v1.2.2
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3303,9 +3303,9 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.1';
+Defaults.version          = '1.2.2';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
-Defaults.apiVersion       = '1.1';
+Defaults.apiVersion       = '1.2';
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -8065,9 +8065,16 @@ var Auth = (function() {
 
 		this._forceNewToken(tokenParams, authOptions, function(err, tokenDetails) {
 			if(err) {
+				if(self.client.connection) {
+					/* We interpret RSA4d as including requests made by a client lib to
+					 * authenticate triggered by an explicit authorize() or an AUTH received from
+					 * ably, not just connect-sequence-triggered token fetches */
+					self.client.connection.connectionManager.actOnErrorFromAuthorize(err);
+				}
 				callback(err);
 				return;
 			}
+
 			/* RTC8
 			 * - When authorize called by an end user and have a realtime connection,
 			 * don't call back till new token has taken effect.
@@ -10382,7 +10389,7 @@ var RealtimePresence = (function() {
 					});
 					break;
 				default:
-					err = new ErrorInfo('Unable to ' + action + ' presence channel (incompatible state)', 90001);
+					err = new ErrorInfo('Unable to ' + action + ' presence channel while in ' + channel.state + ' state', 90001);
 					err.code = 90001;
 					callback(err);
 			}
@@ -11090,7 +11097,7 @@ var XHRRequest = (function() {
 				return;
 			}
 
-			var err = responseBody.error;
+			var err = responseBody.error && ErrorInfo.fromValues(responseBody.error);
 			if(!err) {
 				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}
@@ -11282,7 +11289,7 @@ var JSONPTransport = (function() {
 	/* express strips out parantheses from the callback!
 	 * Kludge to still alow its responses to work, while not keeping the
 	 * function form for normal use and not cluttering window.Ably
-	 * https://github.com/strongloop/express/blob/master/lib/response.js#L305
+	 * https://github.com/expressjs/express/blob/5b4d4b4ab1324743534fbcd4709f4e75bb4b4e9d/lib/response.js#L305
 	 */
 	_._ = function(id) { return _['_' + id] || noop; };
 	var idCounter = 1;
