@@ -518,6 +518,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	}, true); /* expectFailed: */
 
 	exports.authUrl_403_previously_active = function(test) {
+		if(helper.bestTransport === 'jsonp') {
+			/* auth endpoints don't envelope, so this won't work with jsonp */
+			test.done();
+			return;
+		}
 		var realtime, rest = helper.AblyRest();
 		rest.auth.requestToken(null, null, function(err, tokenDetails) {
 			if(err) {
@@ -537,11 +542,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				realtime.auth.authorize(null, {authUrl: echoServer + '/respondwith?status=403'}, function(err, tokenDetails) {
 					test.equal(err && err.statusCode, 403, 'Check err statusCode');
 					test.equal(err && err.code, 40300, 'Check err code');
-					/* auth endpoints don't envelope, so this won't work with jsonp */
-					if(helper.bestTransport !== 'jsonp') {
-						test.equal(realtime.connection.state, 'failed', 'Check connection goes to the failed state');
-						test.equal(realtime.connection.errorReason && realtime.connection.errorReason.statusCode, 403, 'Check correct cause error code');
-					}
+					test.equal(realtime.connection.state, 'failed', 'Check connection goes to the failed state');
+					test.equal(realtime.connection.errorReason && realtime.connection.errorReason.statusCode, 403, 'Check correct cause error code');
 					closeAndFinish(test, realtime);
 				});
 			});
