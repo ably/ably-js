@@ -49,6 +49,17 @@ Defaults.getHttpScheme = function(options) {
 	return options.tls ? 'https://' : 'http://';
 };
 
+// construct environment fallback hosts as per RSC15i
+Defaults.environmentFallbackHosts = function(environment) {
+	return [
+		environment + '-a-fallback.ably-realtime.com',
+		environment + '-b-fallback.ably-realtime.com',
+		environment + '-c-fallback.ably-realtime.com',
+		environment + '-d-fallback.ably-realtime.com',
+		environment + '-e-fallback.ably-realtime.com',
+	];
+};
+
 Defaults.getFallbackHosts = function(options) {
 	var fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
@@ -116,16 +127,22 @@ Defaults.normaliseOptions = function(options) {
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
-	var production = false;
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
+		options.fallbackHosts = options.fallbackHostsUseDefault && !options.port && !options.tlsPort ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-		production = !environment || (environment === 'production');
+		var production = !environment || (environment === 'production');
 		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
+		if(!options.fallbackHosts && !options.port && !options.tlsPort) {
+			if(production || options.fallbackHostsUseDefault) {
+				options.fallbackHosts = Defaults.FALLBACK_HOSTS;
+			} else {
+				options.fallbackHosts = Defaults.environmentFallbackHosts(environment);
+			}
+		}
 	}
-	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
 
 	options.port = options.port || Defaults.PORT;
