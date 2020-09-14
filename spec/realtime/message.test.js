@@ -784,7 +784,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	exports.extras_field = function(test) {
 		var realtime = helper.AblyRealtime(),
 			channel = realtime.channels.get('extras_field'),
-			extras = {some: 'metadata'};
+			extras = {headers: {some: 'metadata'}};
 
 		test.expect(3);
 
