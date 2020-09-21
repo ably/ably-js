@@ -48,17 +48,18 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* init with given environment */
 	exports.defaults_given_environment = function(test) {
-		test.expect(10);
+		test.expect(11);
 		var normalisedOptions = Defaults.normaliseOptions({environment: 'sandbox'});
 
 		test.equal(normalisedOptions.restHost, 'sandbox-rest.ably.io');
 		test.equal(normalisedOptions.realtimeHost, 'sandbox-realtime.ably.io');
 		test.equal(normalisedOptions.port, 80);
 		test.equal(normalisedOptions.tlsPort, 443);
-		test.equal(normalisedOptions.fallbackHosts, undefined);
+		test.deepEqual(normalisedOptions.fallbackHosts.sort(), Defaults.environmentFallbackHosts('sandbox').sort());
 		test.equal(normalisedOptions.tls, true);
 
-		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.restHost]);
+		test.deepEqual(Defaults.getHosts(normalisedOptions).length, 4);
+		test.deepEqual(Defaults.getHosts(normalisedOptions)[0], normalisedOptions.restHost);
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false), 'sandbox-rest.ably.io');
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true), 'sandbox-realtime.ably.io');
 
@@ -160,7 +161,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* init with no endpoint-related options and given default environment */
 	exports.defaults_set_default_environment = function(test) {
-		test.expect(10);
+		test.expect(11);
 		Defaults.ENVIRONMENT = 'sandbox';
 		var normalisedOptions = Defaults.normaliseOptions({});
 
@@ -168,10 +169,11 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.equal(normalisedOptions.realtimeHost, 'sandbox-realtime.ably.io');
 		test.equal(normalisedOptions.port, 80);
 		test.equal(normalisedOptions.tlsPort, 443);
-		test.equal(normalisedOptions.fallbackHosts, undefined);
+		test.deepEqual(normalisedOptions.fallbackHosts.sort(), Defaults.environmentFallbackHosts('sandbox').sort());
 		test.equal(normalisedOptions.tls, true);
 
-		test.deepEqual(Defaults.getHosts(normalisedOptions), [normalisedOptions.restHost]);
+		test.deepEqual(Defaults.getHosts(normalisedOptions).length, 4);
+		test.deepEqual(Defaults.getHosts(normalisedOptions)[0], normalisedOptions.restHost);
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false), 'sandbox-rest.ably.io');
 		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true), 'sandbox-realtime.ably.io');
 
