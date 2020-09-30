@@ -28,7 +28,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.2';
+Defaults.version          = '1.2.3';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
@@ -56,7 +56,7 @@ Defaults.environmentFallbackHosts = function(environment) {
 		environment + '-b-fallback.ably-realtime.com',
 		environment + '-c-fallback.ably-realtime.com',
 		environment + '-d-fallback.ably-realtime.com',
-		environment + '-e-fallback.ably-realtime.com',
+		environment + '-e-fallback.ably-realtime.com'
 	];
 };
 

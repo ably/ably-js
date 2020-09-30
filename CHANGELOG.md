@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.3](https://github.com/ably/ably-js/tree/1.2.3) (2020-09-30)
+- Use environment-specific fallback hosts by default unless overridden (https://github.com/ably/ably-js/pull/682)
+- Rest: use channels.all not channels.attached; "attached" made no sense for rest channels and was never documented
+- Add state check for channels.release() to prevent putting the lib into an inconsistent state
+
 ## [1.2.2](https://github.com/ably/ably-js/tree/1.2.2) (2020-09-03)
 - Auth: fail connection immediately if auth server returns a 403 as a result of an authorize() call or online reauth
 

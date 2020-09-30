@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.2.2
+ * Ably JavaScript Library v1.2.3
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -3303,7 +3303,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.2';
+Defaults.version          = '1.2.3';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
@@ -3322,6 +3322,17 @@ Defaults.getPort = function(options, tls) {
 
 Defaults.getHttpScheme = function(options) {
 	return options.tls ? 'https://' : 'http://';
+};
+
+// construct environment fallback hosts as per RSC15i
+Defaults.environmentFallbackHosts = function(environment) {
+	return [
+		environment + '-a-fallback.ably-realtime.com',
+		environment + '-b-fallback.ably-realtime.com',
+		environment + '-c-fallback.ably-realtime.com',
+		environment + '-d-fallback.ably-realtime.com',
+		environment + '-e-fallback.ably-realtime.com'
+	];
 };
 
 Defaults.getFallbackHosts = function(options) {
@@ -3391,16 +3402,22 @@ Defaults.normaliseOptions = function(options) {
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
-	var production = false;
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
+		options.fallbackHosts = options.fallbackHostsUseDefault && !options.port && !options.tlsPort ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-		production = !environment || (environment === 'production');
+		var production = !environment || (environment === 'production');
 		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
+		if(!options.fallbackHosts && !options.port && !options.tlsPort) {
+			if(production || options.fallbackHostsUseDefault) {
+				options.fallbackHosts = Defaults.FALLBACK_HOSTS;
+			} else {
+				options.fallbackHosts = Defaults.environmentFallbackHosts(environment);
+			}
+		}
 	}
-	options.fallbackHosts = (production || options.fallbackHostsUseDefault) ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
 
 	options.port = options.port || Defaults.PORT;
@@ -8821,14 +8838,14 @@ var Rest = (function() {
 
 	function Channels(rest) {
 		this.rest = rest;
-		this.attached = {};
+		this.all = {};
 	}
 
 	Channels.prototype.get = function(name, channelOptions) {
 		name = String(name);
-		var channel = this.attached[name];
+		var channel = this.all[name];
 		if(!channel) {
-			this.attached[name] = channel = new Channel(this.rest, name, channelOptions);
+			this.all[name] = channel = new Channel(this.rest, name, channelOptions);
 		} else if(channelOptions) {
 			channel.setOptions(channelOptions);
 		}
@@ -8836,8 +8853,10 @@ var Rest = (function() {
 		return channel;
 	};
 
+	/* Included to support certain niche use-cases; most users should ignore this.
+	 * Please do not use this unless you know what you're doing */
 	Channels.prototype.release = function(name) {
-		delete this.attached[String(name)];
+		delete this.all[String(name)];
 	};
 
 	return Rest;
@@ -8985,11 +9004,19 @@ var Realtime = (function() {
 		return channel;
 	};
 
+	/* Included to support certain niche use-cases; most users should ignore this.
+	 * Please do not use this unless you know what you're doing */
 	Channels.prototype.release = function(name) {
+		name = String(name);
 		var channel = this.all[name];
-		if(channel) {
-			delete this.all[name];
+		if(!channel) {
+			return;
 		}
+		var releaseErr = channel.getReleaseErr();
+		if(releaseErr) {
+			throw releaseErr;
+		}
+		delete this.all[name];
 	};
 
 	/* Records operations currently pending on a transport; used by connectionManager to decide when
@@ -10260,6 +10287,15 @@ var RealtimeChannel = (function() {
 
 	RealtimeChannel.prototype.whenState = function(state, listener) {
 		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+	}
+
+	/* @returns null (if can safely be released) | ErrorInfo (if cannot) */
+	RealtimeChannel.prototype.getReleaseErr = function() {
+		var s = this.state;
+		if(s === 'initialized' || s === 'detached' || s === 'failed') {
+			return null;
+		}
+		return new ErrorInfo('Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' + s, 90001, 400);
 	}
 
 	return RealtimeChannel;
