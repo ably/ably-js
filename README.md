@@ -511,22 +511,26 @@ const ablyRealtimePromiseExample = async () => {
   // Attaching to a channel
   await channel.attach();
 
-  client.connection.on('connected', async () => {
-    // Getting presence on a channel
-    const presenceMessage = await channel.presence.get();
+  // Getting presence on a channel
+  const presenceMessage = await channel.presence.get();
+  console.log(presenceMessage);
 
-    // Updating presence on a client
-    await channel.presence.enter();
-    await channel.presence.update('new status');
-    await channel.presence.leave();
+  // Updating presence on a client
+  await channel.presence.enter();
+  await channel.presence.update('new status');
+  await channel.presence.leave();
 
-    // Publishing a message
-    await channel.publish('greeting', 'Hello, World!');
+  // Publishing a message
+  await channel.publish('greeting', 'Hello, World!');
 
-    // Querying history
-    const history = await channel.history({ limit: 25 });
-  });
+  // Querying history
+  const history = await channel.history({ limit: 25 });
+  console.log(history);
+
+  client.close();
 };
+
+ablyRealtimePromiseExample();
 ```
 
 ### Rest Example
@@ -544,22 +548,30 @@ const ablyRestPromiseExample = async () => {
 
   // Getting presence on a channe
   const presenceMessage = await channel.presence.get();
+  console.log(presenceMessage);
 
   // Querying history
   const history = await channel.history({ limit: 25 });
+  console.log(await history.current());
 
   // Requesting a token
-  const token = await client.auth.requestToken();
+  const token = await client.auth.requestToken(tokenParams);
 
   // Creating a token request
-  const tokenRequest = await client.auth.createTokenRequest(tokenParams);
+  const tokenRequest = await client.auth.createTokenRequest();
 
   // Fetching your application's stats
   const stats = await client.stats();
+  console.log(stats);
 
   // Fetching the Ably service time
   const time = await client.time();
+  console.log(`Ably service time: ${time}`);
+
+  client.close();
 };
+
+ablyRestPromiseExample();
 ```
 
 ## Support, feedback and troubleshooting
