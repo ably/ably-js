@@ -546,7 +546,7 @@ const ablyRestPromiseExample = async () => {
   // Publishing a message
   await channel.publish('greeting', 'Hello, World!');
 
-  // Getting presence on a channe
+  // Getting presence on a channel
   const presenceMessage = await channel.presence.get();
   console.log(presenceMessage);
 
