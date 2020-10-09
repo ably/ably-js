@@ -99,7 +99,7 @@ If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.
 
 This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
 
-For this library version, and for all future 1.x versions, the callback-based API will be the default, and the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. However, a move to the promises-based variant as the default is possible at the next major release. If you are not handling promises, and want a version of the library that will not start returning promises for calls where you don't pass a callback in future versions, you can explicitly require the callback variant.
+For this library version, and for all future 1.x versions, the callback-based API will be the default. This means that the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. A move to the promises-based variant as the default is likely at the next major release (i.e. 2.x onwards).
 
 For usage, jump to [Using the async API style](#using-the-async-api-style).
 
@@ -533,7 +533,7 @@ const ablyRealtimePromiseExample = async () => {
 ablyRealtimePromiseExample();
 ```
 
-### Rest Example
+### REST Example
 
 ```ts
 import * as Ably from 'ably/promises';
