@@ -15,7 +15,7 @@ This SDK supports the following platforms:
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 5.10 or newer. (1.1.x versions work on node 4.5 or newer).
+**Node.js:** version 5.10 or newer. (1.1.x versions work on Node.js 4.5 or newer).
 
 **React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
 
@@ -38,7 +38,7 @@ For complete API documentation, see the [Ably documentation](https://www.ably.io
 
 ## Installation
 
-### NodeJS
+### Node.js
 
     npm install ably --save
 
@@ -70,7 +70,7 @@ For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using t
 
 #### Using WebPack
 
-(This applies to using webpack to compile for a browser; for node, see [Serverside usage with webpack](#serverside-usage-with-webpack))
+(This applies to using webpack to compile for a browser; for Node.js, see [Serverside usage with webpack](#serverside-usage-with-webpack))
 
 WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
 
@@ -97,7 +97,7 @@ If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.
 
 ## Async API style
 
-This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
+This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual Node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
 
 For this library version, and for all future 1.x versions, the callback-based API will be the default. This means that the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. A move to the promises-based variant as the default is likely at the next major release (i.e. 2.x onwards).
 
