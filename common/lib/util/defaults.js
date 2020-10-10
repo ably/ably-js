@@ -102,6 +102,32 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = options.queueEvents;
 	}
 
+	if(options.fallbackHostsUseDefault) {
+		/* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
+		if(options.fallbackHosts) {
+			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
+			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			throw new Error(msg);
+		}
+
+		/* default fallbacks can't be used with custom ports */
+		if(options.port || options.tlsPort) {
+			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
+			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			throw new Error(msg);
+		}
+
+		/* emit an appropriate deprecation warning */
+		if(options.environment) {
+			Logger.deprecatedWithMsg('fallbackHostsUseDefault', 'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.');
+		} else {
+			Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
+		}
+
+		/* use the default fallback hosts as requested */
+		options.fallbackHosts = Defaults.FALLBACK_HOSTS;
+	}
+
 	if(options.recover === true) {
 		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
 		options.recover = function(lastConnectionDetails, cb) { cb(true); };
@@ -129,14 +155,13 @@ Defaults.normaliseOptions = function(options) {
 
 	if(options.restHost) {
 		options.realtimeHost = options.realtimeHost || options.restHost;
-		options.fallbackHosts = options.fallbackHostsUseDefault && !options.port && !options.tlsPort ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
 	} else {
 		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
 		var production = !environment || (environment === 'production');
 		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
 		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 		if(!options.fallbackHosts && !options.port && !options.tlsPort) {
-			if(production || options.fallbackHostsUseDefault) {
+			if(production) {
 				options.fallbackHosts = Defaults.FALLBACK_HOSTS;
 			} else {
 				options.fallbackHosts = Defaults.environmentFallbackHosts(environment);
