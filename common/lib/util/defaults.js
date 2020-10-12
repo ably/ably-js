@@ -107,14 +107,14 @@ Defaults.normaliseOptions = function(options) {
 		if(options.fallbackHosts) {
 			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-			throw new Error(msg);
+			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* default fallbacks can't be used with custom ports */
 		if(options.port || options.tlsPort) {
 			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-			throw new Error(msg);
+			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* emit an appropriate deprecation warning */
