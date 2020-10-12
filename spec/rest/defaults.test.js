@@ -67,6 +67,28 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
+	/* init with given environment and default fallbacks */
+	/* will emit a deprecation warning */
+	exports.defaults_given_environment = function(test) {
+		test.expect(11);
+		var normalisedOptions = Defaults.normaliseOptions({environment: 'sandbox', fallbackHostsUseDefault: true});
+
+		test.equal(normalisedOptions.restHost, 'sandbox-rest.ably.io');
+		test.equal(normalisedOptions.realtimeHost, 'sandbox-realtime.ably.io');
+		test.equal(normalisedOptions.port, 80);
+		test.equal(normalisedOptions.tlsPort, 443);
+		test.deepEqual(normalisedOptions.fallbackHosts.sort(), Defaults.FALLBACK_HOSTS.sort());
+		test.equal(normalisedOptions.tls, true);
+
+		test.deepEqual(Defaults.getHosts(normalisedOptions).length, 4);
+		test.deepEqual(Defaults.getHosts(normalisedOptions)[0], normalisedOptions.restHost);
+		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false), 'sandbox-rest.ably.io');
+		test.deepEqual(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true), 'sandbox-realtime.ably.io');
+
+		test.equal(Defaults.getPort(normalisedOptions), 443);
+		test.done();
+	};
+
 	/* init with local environment and non-default ports */
 	exports.defaults_local_ports = function(test) {
 		test.expect(10);
@@ -135,6 +157,29 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.equal(normalisedOptions.restHost, 'test.org');
 		test.equal(normalisedOptions.realtimeHost, 'ws.test.org');
 		test.deepEqual(normalisedOptions.fallbackHosts.sort(), Defaults.FALLBACK_HOSTS.sort());
+		test.done();
+	};
+
+	/* init with both fallbackHosts and fallbackHostsUseDefault */
+	/* will throw an error */
+	exports.defaults_given_fallbackHosts_and_fallbackHostsUseDefault = function(test) {
+		test.expect(1);
+		test.throws(function() {
+			Defaults.normaliseOptions({fallbackHosts: ['a.example.com', 'b.example.com'], fallbackHostsUseDefault: true});
+		}, "Check fallbackHosts and fallbackHostsUseDefault can't both be set");
+		test.done();
+	};
+
+	/* init with fallbackHostsUseDefault and port or tlsPort set */
+	/* will throw an error */
+	exports.defaults_given_fallbackHostsUseDefault_and_port_or_tlsPort = function(test) {
+		test.expect(2);
+		test.throws(function() {
+			Defaults.normaliseOptions({fallbackHostsUseDefault: true, port: 8080});
+		}, "Check fallbackHostsUseDefault and port can't both be set");
+		test.throws(function() {
+			Defaults.normaliseOptions({fallbackHostsUseDefault: true, tlsPort: 8081});
+		}, "Check fallbackHostsUseDefault and tlsPort can't both be set");
 		test.done();
 	};
 

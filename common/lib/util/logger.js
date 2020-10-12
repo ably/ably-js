@@ -62,8 +62,12 @@ var Logger = (function() {
 	};
 
 	Logger.deprecated = function(original, replacement) {
+		Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
+	}
+
+	Logger.deprecatedWithMsg = function(funcName, msg) {
 		if (Logger.shouldLog(LOG_ERROR)) {
-			logErrorHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+			logErrorHandler("Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg);
 		}
 	}
 
