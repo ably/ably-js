@@ -15,14 +15,13 @@ This SDK supports the following platforms:
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 5.10 or newer. (1.1.x versions work on node 4.5 or newer).
+**Node.js:** version 5.10 or newer. (1.1.x versions work on Node.js 4.5 or newer).
 
 **React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
 
 **NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
 
 **TypeScript:** see [below](#typescript)
-
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
@@ -31,25 +30,15 @@ However, we aim to be compatible with a much wider set of platforms and browsers
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.
 Known browser incompatibilities will be documented as an issue in this repository using the ["compatibility" label](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
 
-## Known Limitations
-
-This library currently does not support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push)
-
-## Async API style
-
-This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
-
-For this library version, and for all future 1.x versions, the callback-based API will be the default, and the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. However, a move to the promises-based variant as the default is possible at the next major release. If you are not handling promises, and want a version of the library that will not start returning promises for calls where you don't pass a callback in future versions, you can explicitly require the callback variant.
-
 #### Version: 1.2.3
 
 The latest stable version of the Ably JavaScript client library is version: 1.2.3 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
 
-## For node.js
+## Installation
 
-### Installation from npm
+### Node.js
 
     npm install ably --save
 
@@ -61,13 +50,13 @@ var Ably = require('ably');
 
 For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. For the explicitly-callback-based variant use `require('ably/callbacks')`– see [Async API style](#async-api-style).
 
-For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
+For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
 #### Serverside usage with webpack
 
 Add 'ably' to `externals` in your webpack config to exclude it from webpack processing, and require and use it in as a external module using require('ably') as above.
 
-## For browsers
+### For browsers
 
 Include the Ably library in your HTML:
 
@@ -75,9 +64,17 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.io/lib/ably.min-1.js for all v1.* versions, or https://cdn.ably.io/lib/ably.min-1.0.js for all v1.0.* versions, or you can lock into a single release with https://cdn.ably.io/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.io/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.io/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.io/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.io/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.io/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
-For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api)
+For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
+
+#### Using WebPack
+
+(This applies to using webpack to compile for a browser; for Node.js, see [Serverside usage with webpack](#serverside-usage-with-webpack))
+
+WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
+
+If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/browser/static/ably-commonjs.js');` (or `import * as Ably from 'ably/browser/static/ably-commonjs.js'` for typescript / ES6 modules).
 
 ### TypeScript
 
@@ -85,7 +82,7 @@ The TypeScript typings are included in the package and so all you have to do is:
 
 ```typescript
 import * as Ably from 'ably';
-let options : Ably.Types.ClientOptions = { key: 'foo' };
+let options: Ably.Types.ClientOptions = { key: 'foo' };
 let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
 let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
@@ -98,13 +95,13 @@ Intellisense in IDEs with TypeScript support is supported:
 
 If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
 
-### Using WebPack
+## Async API style
 
-(This applies to using webpack to compile for a browser; for node, see [Serverside usage with webpack](#serverside-usage-with-webpack))
+This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual Node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
 
-WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
+For this library version, and for all future 1.x versions, the callback-based API will be the default. This means that the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. A move to the promises-based variant as the default is likely at the next major release (i.e. 2.x onwards).
 
-If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/browser/static/ably-commonjs.js');` (or `import * as Ably from 'ably/browser/static/ably-commonjs.js'` for typescript / ES6 modules)
+For usage, jump to [Using the async API style](#using-the-async-api-style).
 
 ## React Native
 
@@ -145,21 +142,21 @@ This readme gives some basic examples; for our full API documentation, please go
 
 All examples assume a client has been created as follows:
 
-```javascript
+```ts
 // basic auth with an API key
-var client = new Ably.Realtime(<key string>)
+var client = new Ably.Realtime(key: string);
 
 // using a Client Options object, see https://www.ably.io/documentation/rest/usage#options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
-var client = new Ably.Realtime(<options>)
+var client = new Ably.Realtime(options: ClientOptions);
 
 // For a version of the library where async methods return promises if
 // you don't pass a callback:
-var client = new Ably.Realtime.Promise(<options / key string>)
+var client = new Ably.Realtime.Promise(options: string | ClientOptions);
 
 // For the explicitly-callback-based variant (see 'Async API style' above):
-var client = new Ably.Rest.Callbacks(<options / key string>)
+var client = new Ably.Rest.Callbacks(options: string | ClientOptions);
 ```
 
 ### Connection
@@ -191,18 +188,18 @@ var channel = client.channels.get('test');
 Subscribe to all events:
 
 ```javascript
-channel.subscribe(function(message) {
-  message.name // 'greeting'
-  message.data // 'Hello World!'
+channel.subscribe(function (message) {
+  message.name; // 'greeting'
+  message.data; // 'Hello World!'
 });
 ```
 
 Only certain events:
 
 ```javascript
-channel.subscribe('myEvent', function(message) {
-  message.name // 'myEvent'
-  message.data // 'myData'
+channel.subscribe('myEvent', function (message) {
+  message.name; // 'myEvent'
+  message.data; // 'myData'
 });
 ```
 
@@ -269,25 +266,26 @@ channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err
 Getting presence:
 
 ```javascript
-channel.presence.get(function(err, presenceSet) {
-  presenceSet                                     // array of PresenceMessages
+channel.presence.get(function (err, presenceSet) {
+  presenceSet; // array of PresenceMessages
 });
 ```
+
 Note that presence#get on a realtime channel does not return a
 PaginatedResult, as the library maintains a local copy of the presence set.
 
 Entering (and leaving) the presence set:
 
 ```javascript
-channel.presence.enter('my status', function(err) {
+channel.presence.enter('my status', function (err) {
   // now I am entered
 });
 
-channel.presence.update('new status', function(err) {
+channel.presence.update('new status', function (err) {
   // my presence data is updated
 });
 
-channel.presence.leave(function(err) {
+channel.presence.leave(function (err) {
   // I've left the presence set
 });
 ```
@@ -302,7 +300,6 @@ can use
 channel.presence.enterClient('myClientId', 'status', function(err) { ... });
 // and similiarly, updateClient and leaveClient
 ```
-
 
 ### Querying the Presence History
 
@@ -327,19 +324,20 @@ When a 128 bit or 256 bit key is provided to the library, the `data` attributes 
 ```javascript
 // Generate a random 256-bit key for demonstration purposes (in
 // practice you need to create one and distribute it to clients yourselves)
-Ably.Realtime.Crypto.generateRandomKey(function(err, key) {
-	var channel = client.channels.get('channelName', { cipher: { key: key } })
+Ably.Realtime.Crypto.generateRandomKey(function (err, key) {
+  var channel = client.channels.get('channelName', { cipher: { key: key } });
 
-	channel.subscribe(function(message) {
-		message.name // 'name is not encrypted'
-		message.data // 'sensitive data is encrypted'
-	});
+  channel.subscribe(function (message) {
+    message.name; // 'name is not encrypted'
+    message.data; // 'sensitive data is encrypted'
+  });
 
-	channel.publish('name is not encrypted', 'sensitive data is encrypted');
-})
+  channel.publish('name is not encrypted', 'sensitive data is encrypted');
+});
 ```
 
 You can also change the key on an existing channel using setOptions (which takes a callback which is called after the new encryption settings have taken effect):
+
 ```javascript
 channel.setOptions({cipher: {key: <key>}}, function() {
 	// New encryption settings are in effect
@@ -354,21 +352,21 @@ This readme gives some basic examples. For our full API documentation, please go
 
 All examples assume a client and/or channel has been created as follows:
 
-```javascript
+```ts
 // basic auth with an API key
-var client = new Ably.Rest(<key string>)
+var client = new Ably.Rest(key: string);
 
 // using a Client Options object, see https://www.ably.io/documentation/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
-var client = new Ably.Rest(<options>)
+var client = new Ably.Rest(options: ClientOptions);
 
 // For a version of the library where async methods return promises if
 // you don't pass a callback:
-var client = new Ably.Rest.Promise(<options / key string>)
+var client = new Ably.Rest.Promise(options: string | ClientOptions);
 
 // For the explicitly-callback-based variant (see 'Async API style' above):
-var client = new Ably.Rest.Callbacks(<options / key string>)
+var client = new Ably.Rest.Callbacks(options: string | ClientOptions);
 ```
 
 Given:
@@ -448,6 +446,7 @@ See https://www.ably.io/documentation/general/authentication for an
 explanation of Ably's authentication mechanism.
 
 Requesting a token:
+
 ```javascript
 client.auth.requestToken(function(err, tokenDetails) {
   // tokenDetails is instance of TokenDetails
@@ -497,83 +496,83 @@ client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
 client.time(function(err, time) { ... }); // time is in ms since epoch
 ```
 
-## Test suite
+## Using the async API style
 
-To run both the NodeUnit & Karma Browser tests, simply run the following command:
+### Realtime Example
 
-    npm test
+```ts
+import * as Ably from 'ably/promises';
 
-## NodeUnit Tests
+const client = new Ably.Realtime.Promise(options);
 
-Run the NodeUnit test suite
+const ablyRealtimePromiseExample = async () => {
+  const channel = client.channels.get('myChannel');
 
-    npm run test:nodeunit
+  // Attaching to a channel
+  await channel.attach();
 
-Or run just one or more test files
+  // Getting presence on a channel
+  const presenceMessage = await channel.presence.get();
+  console.log(presenceMessage);
 
-    npm run test:nodeunit -- --test spec/realtime/auth.test.js
+  // Updating presence on a client
+  await channel.presence.enter();
+  await channel.presence.update('new status');
+  await channel.presence.leave();
 
-## Browser Tests
+  // Publishing a message
+  await channel.publish('greeting', 'Hello, World!');
 
-Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.12/index.html).
+  // Querying history
+  const history = await channel.history({ limit: 25 });
+  console.log(history);
 
-### To build & run the tests in a single step
+  client.close();
+};
 
-    npm run test:karma
+ablyRealtimePromiseExample();
+```
 
-### Debugging the tests in your browser with NodeUnit test runner
+### REST Example
 
-Simply open [spec/nodeunit.html](./spec/nodeunit.html) in your browser to run the test suite with a nice GUI.
+```ts
+import * as Ably from 'ably/promises';
 
-Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
+const client = new Ably.Rest.Promise(options);
 
-### Debugging the tests in a remote browser with NodeUnit test runner
+const ablyRestPromiseExample = async () => {
+  const channel = client.channels.get('myChannel');
 
-Run the following command to start a local Nodeunit test runner web server
+  // Publishing a message
+  await channel.publish('greeting', 'Hello, World!');
 
-    npm run test:webserver
+  // Getting presence on a channel
+  const presenceMessage = await channel.presence.get();
+  console.log(presenceMessage);
 
-Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Nodeunit runner web server.
+  // Querying history
+  const history = await channel.history({ limit: 25 });
+  console.log(await history.current());
 
-### Debugging the tests in your browser with Karma
+  // Requesting a token
+  const token = await client.auth.requestToken(tokenParams);
 
-If you would like to run the tests through Karma, then:
+  // Creating a token request
+  const tokenRequest = await client.auth.createTokenRequest();
 
-Start a Karma server
+  // Fetching your application's stats
+  const stats = await client.stats();
+  console.log(stats);
 
-    karma server
+  // Fetching the Ably service time
+  const time = await client.time();
+  console.log(`Ably service time: ${time}`);
 
-You can optionally connect your browser to the server, visit http://localhost:9876/
+  client.close();
+};
 
-Click on the Debug button in the top right, and open your browser's debugging console.
-
-Then run the tests against the Karma server.  The `test:karma:run` command will concatenate the Ably files beforehand so any changes made in the source will be reflected in the test run.
-
-    npm run test:karma:run
-
-### Testing environment variables for Node.js
-
-All tests are run against the sandbox environment by default.  However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
-
-* `ABLY_ENV` - defaults to sandbox, however this can be set to another known environment such as 'staging'
-* `ABLY_REALTIME_HOST` - explicitly tell the client library to use an alternate host for real-time websocket communication.
-* `ABLY_REST_HOST` - explicitly tell the client library to use an alternate host for REST communication.
-* `ABLY_PORT` - non-TLS port to use for the tests, defaults to 80
-* `ABLY_TLS_PORT` - TLS port to use for the tests, defaults to 443
-* `ABLY_USE_TLS` - true or false to enable/disable use of TLS respectively
-* `ABLY_LOG_LEVEL` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
-
-### Testing environment variables for browser tests
-
-When using the test webserver `npm run test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/nodeunit.html?log_level=4`.
-
-* `env` - defaults to sandbox, however this can be set to another known environment such as 'staging'
-* `realtime_host` - explicitly tell the client library to use an alternate host for real-time websocket communication.
-* `host` - explicitly tell the client library to use an alternate host for REST communication.
-* `port` - non-TLS port to use for the tests, defaults to 80
-* `tls_port` - TLS port to use for the tests, defaults to 443
-* `tls` - true or false to enable/disable use of TLS respectively
-* `log_level` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
+ablyRestPromiseExample();
+```
 
 ## Support, feedback and troubleshooting
 
@@ -583,32 +582,17 @@ You can also view the [community reported Github issues](https://github.com/ably
 
 To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
+## Known Limitations
+
+This library currently does not support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push).
+
 #### Browser-specific issues
 
-* ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.io/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers)
+- ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.io/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
 ## Contributing
 
-1. Fork it
-2. When pulling to local, make sure to also pull the `ably-common` repo (`git submodule init && git submodule update`)
-3. Create your feature branch (`git checkout -b my-new-feature`)
-4. Commit your changes (`git commit -am 'Add some feature'`)
-   Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
-5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
-6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/main/ably.d.ts) have been updated if the public API has changed
-7. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
-8. Push the branch (`git push origin my-new-feature`)
-9. Create a new Pull Request
-
-## Release Process
-
-1. Make sure the tests are passing in CI for the branch you're building
-2. Update the CHANGELOG.md with any customer-affecting changes since the last release
-3. Run `npm run grunt -- release:patch` (or: "major", "minor", "patch", "prepatch") - creates commit and local tag
-4. Run `npm run grunt -- release:deploy` (requires specific directory structure outside of this repository - this will be documented in more detail but, for now, inspect [Gruntfile.js](Gruntfile.js) for details) - pushes commit and tag, then publishes to the Ably CDN
-5. Run `npm publish .` (should require OTP) - publishes to NPM
-6. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-7. For nontrivial releases: update the ably-js submodule ref in the realtime repo
+For guidance on how to contribute to this project, see the [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
