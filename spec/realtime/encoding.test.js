@@ -9,7 +9,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		utils = helper.Utils,
 		closeAndFinish = helper.closeAndFinish;
 
-	exports.setupEncoding = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -140,8 +140,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								}
 								var msgs = helper.arrFilter(resultPage.items, function(m) {return m.name === name;});
 								test.equal(msgs.length, 2, 'Check expected number of results (one from json rt, one from binary rt)');
-								test.equal(msgs[0].encoding, encodingSpec.encoding, 'Check encodings match');
-								test.equal(msgs[1].encoding, encodingSpec.encoding, 'Check encodings match');
+								test.ok(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match');
+								test.ok(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match');
 								if(msgs[0].encoding === 'json') {
 									test.deepEqual(JSON.parse(encodingSpec.data), JSON.parse(msgs[0].data), 'Check data matches');
 									test.deepEqual(JSON.parse(encodingSpec.data), JSON.parse(msgs[1].data), 'Check data matches');
@@ -160,5 +160,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/encoding', exports);
 });

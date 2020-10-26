@@ -22,7 +22,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					data: {foo: 'bar'} }
 			];
 
-	exports.setup_history = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
 			rest = helper.AblyRest();
@@ -448,5 +448,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/history', exports);
 });

@@ -11,7 +11,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		createPM = Ably.Realtime.ProtocolMessage.fromDeserialized,
 		availableTransports = helper.availableTransports;
 
-	exports.setupFailure = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -34,8 +34,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					var realtime = helper.AblyRealtime({key: "this.is:wrong", transports: transports});
 					realtime.connection.on('failed', function(connectionStateChange) {
 						test.ok(true, 'connection state for ' + transports + ' was failed, as expected');
-						test.equal(realtime.connection.errorReason.code, '40400', 'wrong error reason code on connection.');
-						test.equal(connectionStateChange.reason.code, '40400', 'wrong error reason code on connectionStateChange');
+						test.equal(realtime.connection.errorReason.code, 40400, 'wrong error reason code on connection.');
+						test.equal(connectionStateChange.reason.code, 40400, 'wrong error reason code on connectionStateChange');
 						test.deepEqual(connectionStateChange.reason, realtime.connection.errorReason, 'error reason was not equally set on connection and connectionStateChange');
 						cb(null, realtime);
 					});
@@ -141,8 +141,14 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						'connecting', 'suspended'    // at 3.9s
 					];
 					setTimeout(function() {
-						test.deepEqual(connectionEvents, expectedConnectionEvents, 'connection state for ' + transports + ' was ' + connectionEvents + ', expected ' + expectedConnectionEvents);
-						cb(null, realtime);
+						try {
+							test.deepEqual(connectionEvents, expectedConnectionEvents, 'connection state for ' + transports + ' was ' + connectionEvents + ', expected ' + expectedConnectionEvents);
+							realtime.close();
+							cb(null, realtime);
+						} catch (err) {
+							realtime.close();
+							cb(err);
+						}
 					}, 4800);
 				};
 			};
@@ -150,8 +156,10 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				utils.arrMap(availableTransports, function(transport) {
 					return lifecycleTest([transport]);
 				}).concat(lifecycleTest(null)), // to test not specifying a transport (so will use upgrade mechanism)
-				function(err, realtimes) {
-					closeAndFinish(test, realtimes);
+				function(err) {
+						if (err) {
+							throw err
+						}
 				}
 			);
 		} catch(e) {
@@ -433,5 +441,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			closeAndFinish(test, sender_realtime); }
 	};
 	
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/failure', exports);
 });

@@ -56,6 +56,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/bufferutils', exports);
 });
-

@@ -7,7 +7,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		mixin = helper.Utils.mixin,
 		displayError = helper.displayError;
 
-	exports.setupreauth = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -232,5 +232,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		close()
 	]);
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/reauth', exports);
 });

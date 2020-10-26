@@ -8,7 +8,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		displayError = helper.displayError,
 		monitorConnection = helper.monitorConnection;
 
-	exports.setupConnection = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -233,5 +233,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection(test, realtime);
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/connection', exports);
 });

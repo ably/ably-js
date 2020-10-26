@@ -33,7 +33,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 		};
 
-	exports.setup_push = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
 			test.ok(true, 'Setup REST library');
@@ -502,7 +502,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	 * objects, x's array elements include y's array elements disregarding
 	 * order.
 	 *
-	 * includesUnordered(x, y) -> string | true
+	 * includesUnordered(x, y) -> string | true
 	 * includesUnordered(test, x, y) -> void
 	*/
 	function includesUnordered() {
@@ -574,5 +574,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.ok(eq === true, JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')');
 	}
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/push', exports);
 });

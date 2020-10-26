@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			return cipherParams;
 		}
 
-	exports.setup_presence = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
 			rest = helper.AblyRest();
@@ -137,5 +137,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/presence', exports);
 });

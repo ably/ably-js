@@ -165,7 +165,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 	/* Tests */
 
-	exports.setupchannel = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -885,7 +885,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						channel.setOptions(channelOptions, function(err) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
-							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							test.deepEqual(channel.modes, defaultChannelModes.split(','), 'Check channel options modes result');
 							cb();
 						});
 					},
@@ -896,7 +896,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						channel.setOptions(channelOptions, function(err) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
-							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							test.deepEqual(channel.modes, defaultChannelModes.split(','), 'Check channel options modes result');
 							cb();
 						});
 					},
@@ -929,7 +929,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
 							test.deepEqual(channel.params, {}, 'Check channel options params result');
-							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							test.deepEqual(channel.modes, defaultChannelModes.split(','), 'Check channel options modes result');
 							cb();
 						});
 					},
@@ -941,7 +941,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 							test.equal(err.code, 40000, 'Check channelOptions validation error code');
 							test.equal(err.statusCode, 400, 'Check channelOptions validation error statusCode');
 							test.deepEqual(channel.params, {}, 'Check channel options params result');
-							test.equal(channel.modes, defaultChannelModes, 'Check channel options modes result');
+							test.deepEqual(channel.modes, defaultChannelModes.split(','), 'Check channel options modes result');
 							cb();
 						});
 					}
@@ -1315,5 +1315,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/channel', exports);
 });

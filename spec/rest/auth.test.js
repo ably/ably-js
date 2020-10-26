@@ -13,7 +13,7 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 		});
 	};
 
-	exports.setupauth = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
 			rest = helper.AblyRest({queryTime: true});
@@ -610,8 +610,8 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 			}
 			var restClient = helper.AblyRest({token: tokenDetails.token});
 			restClient.stats(function(err, stats) {
-				test.strictEqual(err.code, 40400, 'Verify token is invalid because app id does not exist');
-				test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
+				test.equal(err.code, 40400, 'Verify token is invalid because app id does not exist');
+				test.equal(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
 				test.done();
 			});
 		});
@@ -645,7 +645,7 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 				test.done();
 				return;
 			}
-			test.strictEqual(err, null, 'Verify that the error is null');
+			test.equal(err, null, 'Verify that the error is null');
 			test.ok(true, 'Verify that stats request succeeded');
 			test.done();
 		});
@@ -673,8 +673,8 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 
 		var restClient = helper.AblyRest({ authCallback: authCallback });
 		restClient.stats(function(err, stats) {
-			test.strictEqual(err.code, 40400, 'Verify code is 40400');
-			test.strictEqual(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
+			test.equal(err.code, 40400, 'Verify code is 40400');
+			test.equal(err.statusCode, 404, 'Verify token is invalid because app id does not exist');
 			test.done();
 		});
 	};
@@ -729,5 +729,5 @@ define(['ably', 'shared_helper', 'async', 'globals'], function(Ably, helper, asy
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/auth', exports);
 });
