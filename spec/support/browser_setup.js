@@ -70,16 +70,10 @@ require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','
 		// dynamically load all test files
 		deps: allTestFiles,
 
-		// we have to kickoff nodeunit with Karma
+		// we have to kickoff mocha with Karma
 		callback: function() {
-			require(allTestFiles, function() {
-				var testModules = {};
-				for (var i = 0; i < allTestFiles.length; i++) {
-					testModules[allTestFiles[i]] = arguments[i];
-				}
-				nodeunit.run(testModules);
+				mocha.run();
 				if (window.__karma__.start) { window.__karma__.start(); }
-			});
 		}
 	});
 });
