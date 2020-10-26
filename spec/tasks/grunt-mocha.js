@@ -26,18 +26,18 @@ module.exports = function (grunt) {
 		});
 	}
 
-	grunt.registerTask('nodeunit:webserver',
-		'Run the Nodeunit web server',
+	grunt.registerTask('mocha:webserver',
+		'Run the Mocha web server',
 		function() {
 			kexec('spec/web_server');
 		}
-	);
+	); // TODO: replace with mocha
 
-	grunt.registerTask('nodeunit',
-		'Run the Nodeunit test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
+	grunt.registerTask('mocha',
+		'Run the Mocha test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
 		function() {
 			var runTests = getRelativePath(helpers).concat(['spec/realtime/*.test.js', 'spec/rest/*.test.js']).concat(getRelativePath(tearDown)).join(' ');
-			grunt.log.writeln("Running Nodeunit test suite against " + (test ? test : 'all tests'));
+			grunt.log.writeln("Running Mocha test suite against " + (test ? test : 'all tests'));
 
 			if (test) {
 				runTests = getRelativePath(helpers).concat(resolveTests(test)).concat(getRelativePath(tearDown)).join(' ');
@@ -52,12 +52,12 @@ module.exports = function (grunt) {
 				nodeExecutable = 'node-debug';
 			}
 
-			shell.exec(nodeExecutable + ' node_modules/nodeunit/bin/nodeunit ' + runTests, function(code) {
+			shell.exec(nodeExecutable + ' node_modules/.bin/mocha ' + runTests, function(code) {
 				if (code !== 0) {
-					grunt.log.error("Nodeunit tests failed!");
+					grunt.log.error("Mocha tests failed!");
 					shell.exit(1);
 				} else {
-					grunt.log.ok("Nodeunit tests passed");
+					grunt.log.ok("Mocha tests passed");
 				}
 				done();
 			});

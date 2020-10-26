@@ -341,7 +341,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test',
 		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
-		['build', 'nodeunit', 'karma:' + browsers]
+		['build', 'mocha', 'karma:' + browsers]
 	);
 
 	grunt.registerTask('test:karma',
@@ -354,9 +354,9 @@ module.exports = function (grunt) {
 		['concat', 'requirejs', 'karma:run']
 	);
 
-	grunt.registerTask('test:nodeunit',
-		'Concat files and then run the Nodeunit specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['concat', 'requirejs', 'nodeunit']
+	grunt.registerTask('test:mocha',
+		'Concat files and then run the Mocha specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js', // TODO: replace options
+		['concat', 'requirejs', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
