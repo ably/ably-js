@@ -25,19 +25,19 @@
 
 ## Test suite
 
-To run both the NodeUnit & Karma Browser tests, simply run the following command:
+To run both the Mocha & Karma Browser tests, simply run the following command:
 
     npm test
 
-## NodeUnit Tests
+## Mocha Tests
 
-Run the NodeUnit test suite
+Run the Mocha test suite
 
-    npm run test:nodeunit
+    npm run test:mocha
 
 Or run just one or more test files
 
-    npm run test:nodeunit -- --test spec/realtime/auth.test.js
+    npm run test:mocha -- --test spec/realtime/auth.test.js
 
 ## Browser Tests
 
@@ -47,19 +47,15 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
     npm run test:karma
 
-### Debugging the tests in your browser with NodeUnit test runner
+### Debugging the tests in a remote browser with Mocha test runner
 
-Simply open [spec/nodeunit.html](./spec/nodeunit.html) in your browser to run the test suite with a nice GUI.
-
-Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
-
-### Debugging the tests in a remote browser with NodeUnit test runner
-
-Run the following command to start a local Nodeunit test runner web server
+Run the following command to start a local Mocha test runner web server
 
     npm run test:webserver
 
-Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Nodeunit runner web server.
+Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
+
+Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
 
 ### Debugging the tests in your browser with Karma
 
@@ -91,7 +87,7 @@ All tests are run against the sandbox environment by default. However, the follo
 
 ### Testing environment variables for browser tests
 
-When using the test webserver `npm run test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/nodeunit.html?log_level=4`.
+When using the test webserver `npm run test:webserver` the following test variables can be configured by appending them as params in the URL such as `http://localhost:3000/mocha.html?log_level=4`.
 
 - `env` - defaults to sandbox, however this can be set to another known environment such as 'staging'
 - `realtime_host` - explicitly tell the client library to use an alternate host for real-time websocket communication.
