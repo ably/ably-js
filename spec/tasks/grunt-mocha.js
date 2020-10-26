@@ -31,7 +31,7 @@ module.exports = function (grunt) {
 		function() {
 			kexec('spec/web_server');
 		}
-	); // TODO: replace with mocha
+	);
 
 	grunt.registerTask('mocha',
 		'Run the Mocha test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',

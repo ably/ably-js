@@ -1,17 +1,17 @@
 "use strict";
 
 define(['shared_helper'], function(helper) {
-	return module.exports = {
-		teardownapp: function(test) {
+	helper.describeWithCounter('tearDown', function (expect) {
+		it('teardownapp', function(done) {
 			helper.tearDownApp(function(err) {
 				if (err) {
-					test.ok(false, helper.displayError(err));
-					test.done();
+					expect(false, helper.displayError(err));
+					done();
 					return;
 				}
-				test.ok(true, 'app torn down');
-				test.done();
+				expect(true, 'app torn down');
+				done();
 			});
-		}
-	};
+		})
+	});
 });

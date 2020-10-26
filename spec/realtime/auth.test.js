@@ -1,1186 +1,1219 @@
 "use strict";
 
 define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var currentTime, exampleTokenDetails, exports = {},
-		_exports = {},
-		utils = helper.Utils,
-		displayError = helper.displayError,
-		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection,
-		testOnAllTransports = helper.testOnAllTransports,
-		mixin = helper.Utils.mixin,
-		http = Ably.Rest.Http,
-		jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
-		echoServer = "https://echo.ably.io";
+	helper.describeWithCounter('realtime/auth', function (expect, counter) {
+		var currentTime, exampleTokenDetails, exports = {},
+			_exports = {},
+			utils = helper.Utils,
+			displayError = helper.displayError,
+			closeAndFinish = helper.closeAndFinish,
+			monitorConnection = helper.monitorConnection,
+			testOnAllTransports = helper.testOnAllTransports,
+			mixin = helper.Utils.mixin,
+			http = Ably.Rest.Http,
+			jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1),
+			echoServer = "https://echo.ably.io";
 
-	/*
-	 * Helper function to fetch JWT tokens from the echo server
-	 */
-	function getJWT(params, callback) {
-		var authUrl = echoServer + '/createJWT'
-		http.getUri(null, authUrl, null, params, function(err, body) {
-			if(err) {
-				callback(err, null);
-			}
-			callback(null, body.toString());
-		});
-	}
-
-	exports.setupauth = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-				test.done();
-				return;
-			}
-
-			var rest = helper.AblyRest({ queryTime: true });
-			rest.time(function(err, time) {
+		/*
+		* Helper function to fetch JWT tokens from the echo server
+		*/
+		function getJWT(params, callback) {
+			var authUrl = echoServer + '/createJWT'
+			http.getUri(null, authUrl, null, params, function(err, body) {
 				if(err) {
-					test.ok(false, helper.displayError(err));
-				} else {
-					currentTime = time;
-					rest.auth.requestToken({}, function(err, tokenDetails) {
-						test.ok(!err, err && displayError(err));
-						test.done();
-					});
+					callback(err, null);
 				}
+				callback(null, body.toString());
 			});
-		});
-	};
+		}
 
-	/*
-	 * Base token generation case
-	 */
-	exports.authbase0 = function(test) {
-		test.expect(1);
-		var realtime = helper.AblyRealtime();
-		realtime.auth.requestToken(function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-			test.expect(5);
-			test.ok((tokenDetails.token), 'Verify token value');
-			test.ok((tokenDetails.issued && tokenDetails.issued >= currentTime), 'Verify token issued');
-			test.ok((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued), 'Verify token expires');
-			test.equal(tokenDetails.expires, 60*60*1000 + tokenDetails.issued, 'Verify default expiry period');
-			test.deepEqual(JSON.parse(tokenDetails.capability), {'*':['*']}, 'Verify token capability');
-			closeAndFinish(test, realtime);
-		});
-	};
-
-	/*
-	 * Use authUrl for authentication with JSON TokenDetails response
-	 */
-	exports.auth_useAuthUrl_json = function(test) {
-		test.expect(1);
-
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(null, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-
-			var authPath = echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
-
-			realtime = helper.AblyRealtime({ authUrl: authPath });
-
-			realtime.connection.on('connected', function() {
-				test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-				closeAndFinish(test, realtime);
-				return;
-			});
-
-			monitorConnection(test, realtime);
-		});
-	};
-
-	/*
-	 * Use authUrl for authentication with JSON TokenDetails response, with authMethod=POST
-	 */
-	exports.auth_useAuthUrl_post_json = function(test) {
-		test.expect(1);
-
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(null, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-
-			var authUrl = echoServer + "/?type=json&";
-
-			realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: "POST", authParams: tokenDetails});
-
-			realtime.connection.on('connected', function() {
-				test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-				closeAndFinish(test, realtime);
-				return;
-			});
-
-			monitorConnection(test, realtime);
-		});
-	};
-
-	/*
-	 * Use authUrl for authentication with plain text token response
-	 */
-	exports.auth_useAuthUrl_plainText = function(test) {
-		test.expect(1);
-
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(null, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-
-			var authPath = echoServer + "/?type=text&body=" + tokenDetails['token'];
-
-			realtime = helper.AblyRealtime({ authUrl: authPath });
-
-			realtime.connection.on('connected', function() {
-				test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-				closeAndFinish(test, realtime);
-				return;
-			});
-
-			monitorConnection(test, realtime);
-		});
-	};
-
-	/*
-	 * Use authCallback for authentication with tokenRequest response
-	 */
-	exports.auth_useAuthCallback_tokenRequestResponse = function(test) {
-		test.expect(3);
-
-		var realtime, rest = helper.AblyRest();
-		var authCallback = function(tokenParams, callback) {
-			rest.auth.createTokenRequest(tokenParams, null, function(err, tokenRequest) {
+		it('setupauth', function(done) {
+			counter.expect(1);
+			helper.setupApp(function(err) {
 				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
+					expect(false, helper.displayError(err));
+					done();
 					return;
 				}
-				test.ok("nonce" in tokenRequest);
-				callback(null, tokenRequest);
-			});
-		};
 
-		realtime = helper.AblyRealtime({ authCallback: authCallback });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.method, 'token');
-			test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-			closeAndFinish(test, realtime);
-			return;
-		});
-
-		monitorConnection(test, realtime);
-	};
-
-	/*
-	 * Use authCallback for authentication with tokenDetails response,
-	 * also check that clientId lib is initialized with is passed through
-	 * to the auth callback
-	 */
-	exports.auth_useAuthCallback_tokenDetailsResponse = function(test) {
-		test.expect(4);
-
-		var realtime, rest = helper.AblyRest();
-		var clientId = "test clientid";
-		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				test.ok("token" in tokenDetails);
-				test.equal(tokenDetails.clientId, clientId);
-				callback(null, tokenDetails);
-			});
-		};
-
-		realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.method, 'token');
-			test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-			closeAndFinish(test, realtime);
-			return;
-		});
-
-		monitorConnection(test, realtime);
-	};
-
-	/*
-	 * Use authCallback for authentication with token string response
-	 */
-	exports.auth_useAuthCallback_tokenStringResponse = function(test) {
-		test.expect(3);
-
-		var realtime, rest = helper.AblyRest();
-		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				test.ok("token" in tokenDetails);
-				callback(null, tokenDetails.token);
-			});
-		};
-
-		realtime = helper.AblyRealtime({ authCallback: authCallback });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.method, 'token');
-			test.ok(true, 'Connected to Ably using authCallback returning a TokenRequest');
-			closeAndFinish(test, realtime);
-			return;
-		});
-
-		monitorConnection(test, realtime);
-	};
-
-	/*
-	 * RSA8c1c -- If the given authUrl includes any querystring params, they
-	 * should be preserved, and in the GET case, authParams/tokenParams should be
-	 * merged with them. If a name conflict occurs, authParams/tokenParams should
-	 * take precedence
-	 */
-	exports.auth_useAuthUrl_mixed_authParams_qsParams = function(test) {
-		test.expect(1);
-
-		var realtime, rest = helper.AblyRest();
-		rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-
-			/* Complete token request requires both parts to be combined, and
-			 * requires the keyName in the higherPrecence part to take precedence
-			 * over the wrong keyName */
-			var lowerPrecedenceTokenRequestParts = {
-				keyName: "WRONG",
-				timestamp: tokenRequest.timestamp,
-				nonce: tokenRequest.nonce
-			};
-			var higherPrecedenceTokenRequestParts = {
-				keyName: tokenRequest.keyName,
-				mac: tokenRequest.mac
-			};
-			var authPath = echoServer + "/qs_to_body" + utils.toQueryString(lowerPrecedenceTokenRequestParts);
-
-			realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
-
-			realtime.connection.on('connected', function() {
-				test.ok(true, 'Connected to Ably');
-				closeAndFinish(test, realtime);
-				return;
-			});
-		});
-	};
-
-	/*
-	 * Request a token using clientId, then initialize a connection without one,
-	 * and check that the connection inherits the clientId from the tokenDetails
-	 */
-	exports.auth_clientid_inheritance = function(test) {
-		test.expect(1);
-
-		var rest = helper.AblyRest(),
-		testClientId = 'testClientId';
-		var authCallback = function(tokenParams, callback) {
-			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
-					return;
-				}
-				callback(null, tokenDetails);
-			});
-		};
-
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.clientId, testClientId);
-			realtime.connection.close();
-			test.done();
-			return;
-		});
-
-		realtime.connection.on('failed', function(err) {
-			realtime.close();
-			test.ok(false, "Failed: " + displayError(err));
-			test.done();
-			return;
-		});
-	};
-
-	/*
-	 * Rest token generation with clientId, then connecting with a
-	 * different clientId, should fail with a library-generated message
-	 * (RSA15a, RSA15c)
-	 */
-	exports.auth_clientid_inheritance2 = function(test) {
-		test.expect(3);
-		var clientRealtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
-			clientRealtime.connection.once('failed', function(stateChange){
-				test.ok(true, 'Verify connection failed');
-				test.equal(stateChange.reason.code, 80019);
-				test.equal(stateChange.reason.cause.code, 40102);
-				clientRealtime.close();
-				test.done();
-			});
-		});
-	};
-
-	/*
-	 * Rest token generation with clientId '*', then connecting with just the
-	 * token string and a different clientId, should succeed (RSA15b)
-	 */
-	exports.auth_clientid_inheritance3 = function(test) {
-		test.expect(1);
-		var realtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
-			realtime.connection.on('connected', function() {
-				test.equal(realtime.auth.clientId, testClientId);
-				realtime.connection.close();
-				test.done();
-				return;
-			});
-			monitorConnection(test, realtime);
-		});
-	};
-
-	/*
-	 * Rest token generation with clientId '*', then connecting with
-	 * tokenDetails and a clientId, should succeed (RSA15b)
-	 */
-	exports.auth_clientid_inheritance4 = function(test) {
-		test.expect(1);
-		var realtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
-			realtime.connection.on('connected', function() {
-				test.equal(realtime.auth.clientId, testClientId);
-				realtime.connection.close();
-				test.done();
-				return;
-			});
-			monitorConnection(test, realtime);
-		});
-	};
-
-	/*
-	 * Request a token using clientId, then initialize a connection using just the token string,
-	 * and check that the connection inherits the clientId from the connectionDetails
-	 */
-	exports.auth_clientid_inheritance5 = function(test) {
-		test.expect(1);
-		var clientRealtime,
-			testClientId = 'test client id';
-		var rest = helper.AblyRest();
-		rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
-			clientRealtime.connection.on('connected', function() {
-				test.equal(clientRealtime.auth.clientId, testClientId);
-				closeAndFinish(test, clientRealtime)
-				return;
-			});
-			monitorConnection(test, clientRealtime);
-		});
-	};
-
-	/* RSA4c, RSA4e
-	 * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
-	 */
-	function authCallback_failures(realtimeOptions, expectFailure) {
-		return function(test) {
-			test.expect(3);
-
-			var realtime = helper.AblyRealtime(realtimeOptions);
-			realtime.connection.on(function(stateChange) {
-				if(stateChange.previous !== 'initialized') {
-					if (helper.bestTransport === 'jsonp') {
-						// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
-						test.equal(stateChange.current, 'disconnected', 'Check connection goes to the expected state');
-						// jsonp doesn't let you examine the statuscode
-						test.equal(stateChange.reason.statusCode, 401, 'Check correct cause error code');
+				var rest = helper.AblyRest({ queryTime: true });
+				rest.time(function(err, time) {
+					if(err) {
+						expect(false, helper.displayError(err));
 					} else {
-						test.equal(stateChange.current, expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
-						test.equal(stateChange.reason.statusCode, expectFailure ? 403 : 401, 'Check correct cause error code');
+						currentTime = time;
+						rest.auth.requestToken({}, function(err, tokenDetails) {
+							expect(!err, err && displayError(err));
+							counter.assert();
+							done();
+						});
 					}
-					test.equal(stateChange.reason.code, 80019, 'Check correct error code');
-					realtime.connection.off();
-					closeAndFinish(test, realtime);
-				}
+				});
 			});
-		};
-	}
+		});
 
-	exports.authCallback_error = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback(new Error("An error from client code that the authCallback might return"));
-	}});
+		/*
+		* Base token generation case
+		*/
+		it('authbase0', function(done) {
+			counter.expect(1);
+			var realtime = helper.AblyRealtime();
+			realtime.auth.requestToken(function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
+				counter.expect(5);
+				expect((tokenDetails.token), 'Verify token value');
+				expect((tokenDetails.issued && tokenDetails.issued >= currentTime), 'Verify token issued');
+				expect((tokenDetails.expires && tokenDetails.expires > tokenDetails.issued), 'Verify token expires');
+				expect(tokenDetails.expires).to.equal(60*60*1000 + tokenDetails.issued, 'Verify default expiry period');
+				expect(JSON.parse(tokenDetails.capability)).to.deep.equal({'*':['*']}, 'Verify token capability');
+				counter.assert();
+				closeAndFinish(done, realtime);
+			});
+		});
 
-	exports.authCallback_timeout = authCallback_failures({
-		authCallback: function() { /* (^._.^)ﾉ */ },
-		realtimeRequestTimeout: 100});
+		/*
+		* Use authUrl for authentication with JSON TokenDetails response
+		*/
+		it('auth_useAuthUrl_json', function(done) {
+			counter.expect(1);
 
-	exports.authCallback_nothing = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback();
-	}});
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(null, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
 
-	exports.authCallback_malformed = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback(null, { horse: 'ebooks' });
-	}});
+				var authPath = echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
 
-	exports.authCallback_too_long_string = authCallback_failures({authCallback: function(tokenParams, callback) {
-		var token = '';
-		for(var i=0; i<Math.pow(2,17) + 1; i++) {
-			token = token + 'a';
-		}
-		callback(null, token);
-	}});
+				realtime = helper.AblyRealtime({ authUrl: authPath });
 
-	exports.authCallback_empty_string = authCallback_failures({authCallback: function(tokenParams, callback) {
-		callback(null, '');
-	}});
+				realtime.connection.on('connected', function() {
+					expect(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+					counter.assert();
+					closeAndFinish(done, realtime);
+					return;
+				});
 
-	exports.authUrl_timeout = authCallback_failures({
-		authUrl: helper.unroutableAddress,
-		realtimeRequestTimeout: 100
-	});
+				monitorConnection(done, expect, realtime);
+			});
+		});
 
-	exports.authUrl_404 = authCallback_failures({
-		authUrl: 'http://example.com/404'
-	});
+		/*
+		* Use authUrl for authentication with JSON TokenDetails response, with authMethod=POST
+		*/
+		it('auth_useAuthUrl_post_json', function(done) {
+			counter.expect(1);
 
-	exports.authUrl_wrong_content_type = authCallback_failures({
-		authUrl: 'http://example.com/'
-	});
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(null, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
 
-	exports.authUrl_401 = authCallback_failures({
-		authUrl: echoServer + '/respondwith?status=401'
-	});
+				var authUrl = echoServer + "/?type=json&";
 
-	exports.authUrl_double_encoded = authCallback_failures({
-		authUrl: echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(JSON.stringify({keyName: "foo.bar"})))
-	});
+				realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: "POST", authParams: tokenDetails});
 
+				realtime.connection.on('connected', function() {
+					expect(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+					counter.assert();
+					closeAndFinish(done, realtime);
+					return;
+				});
 
-	/* 403 should cause the connection to go to failed, unlike the others */
-	exports.authUrl_403 = authCallback_failures({
-		authUrl: echoServer + '/respondwith?status=403'
-	}, true); /* expectFailed: */
+				monitorConnection(done, expect, realtime);
+			});
+		});
 
-	exports.authUrl_403_previously_active = function(test) {
-		if(helper.bestTransport === 'jsonp') {
-			/* auth endpoints don't envelope, so this won't work with jsonp */
-			test.done();
-			return;
-		}
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(null, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
+		/*
+		* Use authUrl for authentication with plain text token response
+		*/
+		it('auth_useAuthUrl_plainText', function(done) {
+			counter.expect(1);
 
-			var authPath = echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(null, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
 
-			realtime = helper.AblyRealtime({ authUrl: authPath });
+				var authPath = echoServer + "/?type=text&body=" + tokenDetails['token'];
+
+				realtime = helper.AblyRealtime({ authUrl: authPath });
+
+				realtime.connection.on('connected', function() {
+					expect(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+					counter.assert();
+					closeAndFinish(done, realtime);
+					return;
+				});
+
+				monitorConnection(done, expect, realtime);
+			});
+		});
+
+		/*
+		* Use authCallback for authentication with tokenRequest response
+		*/
+		it('auth_useAuthCallback_tokenRequestResponse', function(done) {
+			counter.expect(3);
+
+			var realtime, rest = helper.AblyRest();
+			var authCallback = function(tokenParams, callback) {
+				rest.auth.createTokenRequest(tokenParams, null, function(err, tokenRequest) {
+					if(err) {
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					expect("nonce" in tokenRequest);
+					callback(null, tokenRequest);
+				});
+			};
+
+			realtime = helper.AblyRealtime({ authCallback: authCallback });
 
 			realtime.connection.on('connected', function() {
-				test.ok(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
-
-				/* replace the authUrl and reauth */
-				realtime.auth.authorize(null, {authUrl: echoServer + '/respondwith?status=403'}, function(err, tokenDetails) {
-					test.equal(err && err.statusCode, 403, 'Check err statusCode');
-					test.equal(err && err.code, 40300, 'Check err code');
-					test.equal(realtime.connection.state, 'failed', 'Check connection goes to the failed state');
-					test.equal(realtime.connection.errorReason && realtime.connection.errorReason.statusCode, 403, 'Check correct cause error code');
-					closeAndFinish(test, realtime);
-				});
-			});
-		});
-	};
-
-	/*
-	 * Check state change reason is propogated during a disconnect
-	 * (when connecting with a token that expires while connected)
-	 */
-	testOnAllTransports(exports, 'auth_token_expires', function(realtimeOpts) { return function(test) {
-		test.expect(4);
-		var clientRealtime,
-			rest = helper.AblyRest();
-
-		rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
+				expect(realtime.auth.method).to.equal('token');
+				expect(true, 'Connected to Ably using authCallback returning a TokenRequest');
+				counter.assert();
+				closeAndFinish(done, realtime);
 				return;
-			}
-			clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
-
-			clientRealtime.connection.on('failed', function(){
-				test.ok(false, 'Failed to connect before token expired');
-				closeAndFinish(test, clientRealtime);
 			});
-			clientRealtime.connection.once('connected', function(){
-				clientRealtime.connection.off('failed');
-				test.ok(true, 'Verify connection connected');
-				clientRealtime.connection.once('disconnected', function(stateChange){
-					test.ok(true, 'Verify connection disconnected');
-					test.equal(stateChange.reason.statusCode, 401, 'Verify correct disconnect statusCode');
-					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-					closeAndFinish(test, clientRealtime);
-				});
-			});
-		});
-	}});
 
-	/*
-	 * Check that when the queryTime option is provided
-	 * that the time from the server is only requested once
-	 * and all subsequent requests use the time offset
-	 */
-	exports.auth_query_time_once = function(test) {
-		test.expect(12);
-
-		var rest = helper.AblyRest({ queryTime: true }),
-			timeRequestCount = 0,
-			offset = 1000,
-			originalTime = rest.time;
-
-		/* stub time */
-		rest.time = function(callback) {
-			timeRequestCount += 1;
-			originalTime.call(rest, callback);
-		}
-
-		test.ok(isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset, 'Server time offset is empty and falsey until a time request has been made');
-
-		var asyncFns = [];
-		for(var i = 0; i < 10; i++) {
-			asyncFns.push(function(callback) {
-				rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
-					if(err) { return callback(err); }
-					test.ok(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
-					callback();
-				});
-			});
-		}
-
-		async.series(asyncFns, function(err) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-
-			test.equals(1, timeRequestCount, 'Time function is only called once per instance');
-			test.done();
-		});
-	};
-
-
-	/*
-	 * If using authcallback when a token expires, should automatically request a
-	 * new token
-	 */
-	testOnAllTransports(exports, 'auth_tokenDetails_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
-		test.expect(4);
-
-		var realtime, rest = helper.AblyRest();
-		var clientId = "test clientid";
-		var authCallback = function(tokenParams, callback) {
-			tokenParams.ttl = 5000;
-			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				callback(null, tokenDetails);
-			});
-		};
-
-		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
-		monitorConnection(test, realtime);
-		realtime.connection.once('connected', function(){
-			test.ok(true, 'Verify connection connected');
-			realtime.connection.once('disconnected', function(stateChange){
-				test.ok(true, 'Verify connection disconnected');
-				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-				realtime.connection.once('connected', function(){
-					test.ok(true, 'Verify connection reconnected');
-					realtime.close();
-					test.done();
-				});
-			});
+			monitorConnection(done, expect, realtime);
 		});
 
-		monitorConnection(test, realtime);
-	}});
+		/*
+		* Use authCallback for authentication with tokenDetails response,
+		* also check that clientId lib is initialized with is passed through
+		* to the auth callback
+		*/
+		it('auth_useAuthCallback_tokenDetailsResponse', function(done) {
+			counter.expect(4);
 
-	/*
-	 * Same as previous but with just a token, so ably-js doesn't know that the
-	 * token's expired
-	 */
-	testOnAllTransports(exports, 'auth_token_string_expiry_with_authcallback', function(realtimeOpts) { return function(test) {
-		test.expect(4);
-
-		var realtime, rest = helper.AblyRest();
-		var clientId = "test clientid";
-		var authCallback = function(tokenParams, callback) {
-			tokenParams.ttl = 5000;
-			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				callback(null, tokenDetails.token);
-			});
-		};
-
-		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
-		monitorConnection(test, realtime);
-		realtime.connection.once('connected', function(){
-			test.ok(true, 'Verify connection connected');
-			realtime.connection.once('disconnected', function(stateChange){
-				test.ok(true, 'Verify connection disconnected');
-				test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-				realtime.connection.once('connected', function(){
-					test.ok(true, 'Verify connection reconnected');
-					realtime.close();
-					test.done();
-				});
-			});
-		});
-
-		monitorConnection(test, realtime);
-	}});
-
-	/*
-	 * Same as previous but with no way to generate a new token
-	 */
-	testOnAllTransports(exports, 'auth_token_string_expiry_with_token', function(realtimeOpts) { return function(test) {
-		test.expect(5);
-
-		var realtime, rest = helper.AblyRest();
-		var clientId = "test clientid";
-		rest.auth.requestToken({ttl: 5000, clientId: clientId}, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-			realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
-			realtime.connection.once('connected', function(){
-				test.ok(true, 'Verify connection connected');
-				realtime.connection.once('disconnected', function(stateChange){
-					test.ok(true, 'Verify connection disconnected');
-					test.equal(stateChange.reason.code, 40142, 'Verify correct disconnect code');
-					realtime.connection.once('failed', function(stateChange){
-						/* Library has no way to generate a new token, so should fail */
-						test.ok(true, 'Verify connection failed');
-						test.equal(stateChange.reason.code, 40171, 'Verify correct cause failure code');
-						realtime.close();
-						test.done();
-					});
-				});
-			});
-		});
-	}});
-
-	/*
-	 * Try to connect with an expired token string
-	 */
-	testOnAllTransports(exports, 'auth_expired_token_string', function(realtimeOpts) { return function(test) {
-		test.expect(2);
-
-		var realtime, rest = helper.AblyRest();
-		var clientId = "test clientid";
-		rest.auth.requestToken({ttl: 1, clientId: clientId}, null, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				closeAndFinish(test, realtime);
-				return;
-			}
-			setTimeout(function() {
-				realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
-				realtime.connection.once('failed', function(stateChange){
-					test.ok(true, 'Verify connection failed');
-					test.equal(stateChange.reason.code, 40171, 'Verify correct failure code');
-					realtime.close();
-					test.done();
-				});
-				/* Note: ws transport indicates viability when websocket is
-				* established, before realtime sends error response. So token error
-				* goes through the same path as a connected transport, so goes to
-				* disconnected first */
-				utils.arrForEach(['connected', 'suspended'], function(state) {
-					realtime.connection.on(state, function () {
-						test.ok(false, 'State changed to ' + state + ', should have gone to failed');
-						test.done();
-						realtime.close();
-					});
-				});
-			}, 100)
-		});
-	}});
-
-	/*
-	 * use authorize() to force a reauth using an existing authCallback
-	 */
-	testOnAllTransports(exports, 'reauth_authCallback', function(realtimeOpts) { return function(test) {
-		test.expect(5);
-		var realtime, rest = helper.AblyRest();
-		var firstTime = true;
-		var authCallback = function(tokenParams, callback) {
-			tokenParams.clientId = '*';
-			tokenParams.capability = firstTime ? {'wrong': ['*']} : {'right': ['*']};
-			firstTime = false;
-			rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-					return;
-				}
-				callback(null, tokenDetails);
-			});
-		};
-
-		realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback }));
-		realtime.connection.once('connected', function(){
-			test.ok(true, 'Verify connection connected');
-			var channel = realtime.channels.get('right');
-			channel.attach(function(err) {
-				test.ok(err, 'Check using first token, without channel attach capability');
-				test.equal(err.code, 40160, 'Check expected error code');
-
-				/* soon after connected, reauth */
-				realtime.auth.authorize(null, null, function(err) {
-					test.ok(!err, err && displayError(err));
-					channel.attach(function(err) {
-						test.ok(!err, 'Check using second token, with channel attach capability');
-						closeAndFinish(test, realtime);
-					});
-				});
-			});
-		});
-		monitorConnection(test, realtime);
-	}});
-
-	/* RSA10j */
-	exports.authorize_updates_stored_details = function(test) {
-		test.expect(8);
-		var realtime = helper.AblyRealtime({autoConnect: false, defaultTokenParams: {version: 1}, token: '1', authUrl: '1'});
-
-		test.equal(realtime.auth.tokenParams.version, 1, 'Check initial defaultTokenParams stored');
-		test.equal(realtime.auth.tokenDetails.token, '1', 'Check initial token stored');
-		test.equal(realtime.auth.authOptions.authUrl, '1', 'Check initial authUrl stored');
-		realtime.auth.authorize({version: 2}, {authUrl: '2', token: '2'});
-		test.equal(realtime.auth.tokenParams.version, 2, 'Check authorize updated the stored tokenParams');
-		test.equal(realtime.auth.tokenDetails.token, '2', 'Check authorize updated the stored tokenDetails');
-		test.equal(realtime.auth.authOptions.authUrl, '2', 'Check authorize updated the stored authOptions');
-		realtime.auth.authorize(null, {token: '3'});
-		test.equal(realtime.auth.authOptions.authUrl, undefined, 'Check authorize completely replaces stored authOptions with passed in ones');
-
-		/* TODO remove for lib version 1.0 */
-		realtime.auth.authorize(null, {authUrl: 'http://invalid'});
-		realtime.auth.authorize(null, {force: true});
-		test.equal(realtime.auth.authOptions.authUrl, 'http://invalid', 'Check authorize does *not* replace stored authOptions when the only option is "force" in 0.9, for compatibility with 0.8');
-
-		closeAndFinish(test, realtime);
-	};
-
-	/* RTN22
-	 * Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
-	 */
-	exports.mocked_reauth = function(test) {
-		test.expect(4);
-		var rest = helper.AblyRest(),
-			authCallback = function(tokenParams, callback) {
-				test.ok(true, 'Requested a token (should happen twice)');
+			var realtime, rest = helper.AblyRest();
+			var clientId = "test clientid";
+			var authCallback = function(tokenParams, callback) {
 				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
 					if(err) {
-						test.ok(false, displayError(err));
-						closeAndFinish(test, realtime);
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					expect("token" in tokenDetails);
+					expect(tokenDetails.clientId).to.equal(clientId);
+					callback(null, tokenDetails);
+				});
+			};
+
+			realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+
+			realtime.connection.on('connected', function() {
+				expect(realtime.auth.method).to.equal('token');
+				expect(true, 'Connected to Ably using authCallback returning a TokenRequest');
+				counter.assert();
+				closeAndFinish(done, realtime);
+				return;
+			});
+
+			monitorConnection(done, expect, realtime);
+		});
+
+		/*
+		* Use authCallback for authentication with token string response
+		*/
+		it('auth_useAuthCallback_tokenStringResponse', function(done) {
+			counter.expect(3);
+
+			var realtime, rest = helper.AblyRest();
+			var authCallback = function(tokenParams, callback) {
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					expect("token" in tokenDetails);
+					callback(null, tokenDetails.token);
+				});
+			};
+
+			realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+			realtime.connection.on('connected', function() {
+				expect(realtime.auth.method).to.equal('token');
+				expect(true, 'Connected to Ably using authCallback returning a TokenRequest');
+				counter.assert();
+				closeAndFinish(done, realtime);
+				return;
+			});
+
+			monitorConnection(done, expect, realtime);
+		});
+
+		/*
+		* RSA8c1c -- If the given authUrl includes any querystring params, they
+		* should be preserved, and in the GET case, authParams/tokenParams should be
+		* merged with them. If a name conflict occurs, authParams/tokenParams should
+		* take precedence
+		*/
+		it('auth_useAuthUrl_mixed_authParams_qsParams', function(done) {
+			counter.expect(1);
+
+			var realtime, rest = helper.AblyRest();
+			rest.auth.createTokenRequest(null, null, function(err, tokenRequest) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
+
+				/* Complete token request requires both parts to be combined, and
+				* requires the keyName in the higherPrecence part to take precedence
+				* over the wrong keyName */
+				var lowerPrecedenceTokenRequestParts = {
+					keyName: "WRONG",
+					timestamp: tokenRequest.timestamp,
+					nonce: tokenRequest.nonce
+				};
+				var higherPrecedenceTokenRequestParts = {
+					keyName: tokenRequest.keyName,
+					mac: tokenRequest.mac
+				};
+				var authPath = echoServer + "/qs_to_body" + utils.toQueryString(lowerPrecedenceTokenRequestParts);
+
+				realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
+
+				realtime.connection.on('connected', function() {
+					expect(true, 'Connected to Ably');
+					counter.assert();
+					closeAndFinish(done, realtime);
+					return;
+				});
+			});
+		});
+
+		/*
+		* Request a token using clientId, then initialize a connection without one,
+		* and check that the connection inherits the clientId from the tokenDetails
+		*/
+		it('auth_clientid_inheritance', function(done) {
+			counter.expect(1);
+
+			var rest = helper.AblyRest(),
+			testClientId = 'testClientId';
+			var authCallback = function(tokenParams, callback) {
+				rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+					if(err) {
+						expect(false, displayError(err));
+						done();
 						return;
 					}
 					callback(null, tokenDetails);
 				});
-			},
-			realtime = helper.AblyRealtime({authCallback: authCallback, transports: [helper.bestTransport]});
-
-		realtime.connection.once('connected', function(){
-			test.ok(true, 'Verify connection connected');
-			var transport = realtime.connection.connectionManager.activeProtocol.transport,
-				originalSend = transport.send;
-			/* Spy on transport.send to detect the outgoing AUTH */
-			transport.send = function(message) {
-				if(message.action === 17) {
-					test.ok(message.auth.accessToken, 'Check AUTH message structure is as expected');
-					closeAndFinish(test, realtime);
-				} else {
-					originalSend.call(this, message);
-				}
 			};
-			/* Inject a fake AUTH from realtime */
-			transport.onProtocolMessage({action: 17});
-		});
-	};
 
-	/*
-	 * Request a token specifying a clientId and verify that the returned token
-	 * has the requested clientId.
-	 */
-	exports.auth_jwt_with_clientid = function(test) {
-		test.expect(1);
-		var currentKey = helper.getTestApp().keys[0];
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var clientId = 'testJWTClientId';
-		var params = mixin(keys, {clientId: clientId});
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
 
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.clientId, clientId);
-			realtime.connection.close();
-			test.done();
-			return;
-		});
-
-		realtime.connection.on('failed', function(err) {
-			realtime.close();
-			test.ok(false, "Failed: " + displayError(err));
-			test.done();
-			return;
-		});
-	};
-
-	/*
-	 * Request a token specifying a clientId and verify that the returned token
-	 * has the requested clientId. Token will be returned with content-type application/jwt.
-	 */
-	exports.auth_jwt_with_clientid_application_jwt = function(test) {
-		test.expect(1);
-		var currentKey = helper.getTestApp().keys[0];
-		var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, returnType: 'jwt'};
-		var clientId = 'testJWTClientId';
-		var params = mixin(keys, {clientId: clientId});
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
-
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-
-		realtime.connection.on('connected', function() {
-			test.equal(realtime.auth.clientId, clientId);
-			realtime.connection.close();
-			test.done();
-			return;
-		});
-
-		realtime.connection.on('failed', function(err) {
-			realtime.close();
-			test.ok(false, "Failed: " + displayError(err));
-			test.done();
-			return;
-		});
-	};
-
-	/*
-	 * Request a token specifying subscribe-only capabilities and verify that posting
-	 * to a channel fails.
-	 */
-	exports.auth_jwt_with_subscribe_only_capability = function(test) {
-		test.expect(2);
-		var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
-		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
-
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-		realtime.connection.once('connected', function() {
-			var channel = realtime.channels.get(jwtTestChannelName);
-			channel.publish('greeting', 'Hello World!', function(err) {
-				test.strictEqual(err.code, 40160, 'Verify publish denied code');
-				test.strictEqual(err.statusCode, 401, 'Verify publish denied status code');
-				realtime.connection.close();
-				test.done();
-			})
-		});
-	};
-
-	/* RSA8c
-	 * Request a token with publish capabilities and verify that posting
-	 * to a channel succeeds.
-	 */
-	exports.auth_jwt_with_publish_capability = function(test) {
-		test.expect(1);
-		var currentKey = helper.getTestApp().keys[0];
-		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
-
-		var publishEvent = 'publishEvent',
-		  messageData = 'Hello World!';
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-		realtime.connection.once('connected', function() {
-			var channel = realtime.channels.get(jwtTestChannelName);
-			channel.subscribe(publishEvent, function(msg) {
-				test.strictEqual(msg.data, messageData, 'Verify message data matches');
-				realtime.connection.close();
-				test.done();
-			});
-			channel.publish(publishEvent, messageData)
-		});
-	};
-
-	/*
-	 * Request a JWT token that is about to expire, check that the client disconnects
-	 * and receives the expected reason in the state change.
-	 */
-	exports.auth_jwt_with_token_that_expires = function(test) {
-		test.expect(1);
-		var currentKey = helper.getTestApp().keys[0];
-		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
-
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-		realtime.connection.once('connected', function() {
-			realtime.connection.once('disconnected', function(stateChange) {
-				test.strictEqual(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
-				realtime.connection.close();
-				test.done();
-			});
-		});
-	};
-
-	/* RTC8a4
-	 * Request a JWT token that is about to be renewed, check that the client reauths
-	 * without going through a disconnected state.
-	 */
-	exports.auth_jwt_with_token_that_renews = function(test) {
-		test.expect(1);
-		var currentKey = helper.getTestApp().keys[0];
-		// Sandbox sends an auth protocol message 30 seconds before a token expires.
-		// We create a token that lasts 35 so there's room to receive the update event message.
-		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
-		var authCallback = function(tokenParams, callback) {
-			getJWT(params, callback);
-		};
-
-		var realtime = helper.AblyRealtime({ authCallback: authCallback });
-		realtime.connection.once('connected', function() {
-			var originalToken = realtime.auth.tokenDetails.token;
-			realtime.connection.once('update', function() {
-				test.notStrictEqual(originalToken, realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
-				realtime.connection.close();
-				test.done();
-			});
-		});
-	};
-
-	/* RSC1
-	 * Request a JWT token, initialize a realtime client with it and
-	 * verify it can make authenticated calls.
-	 */
-	exports.init_client_with_simple_jwt_tokem = function(test) {
-		var currentKey = helper.getTestApp().keys[0];
-		var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
-		getJWT(params, function(err, token) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			var realtime = helper.AblyRealtime({ token: token });
-			realtime.connection.once('connected', function() {
-				test.strictEqual(token, realtime.auth.tokenDetails.token, 'Verify that token is the same');
-				realtime.connection.close();
-				test.done();
-			});
-		});
-	};
-
-	/* RTN14b */
-	exports.reauth_consistently_expired_token = function(test) {
-		test.expect(2);
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken({ttl: 1}, function(err, token) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			var authCallbackCallCount = 0;
-			var authCallback = function(_, callback) {
-				authCallbackCallCount++;
-				callback(null, token.token);
-			};
-			/* Wait a few ms to ensure token is expired */
-			setTimeout(function() {
-				realtime = helper.AblyRealtime({authCallback: authCallback, disconnectedRetryTimeout: 15000});
-				/* Wait 5s, expect to have seen two attempts to get a token -- so the
-				 * authCallback called twice -- and the connection to now be sitting in
-				 * the disconnected state */
-				setTimeout(function() {
-					test.equal(authCallbackCallCount, 2);
-					test.equal(realtime.connection.state, 'disconnected');
-					closeAndFinish(test, realtime);
-				}, 3000);
-			}, 100);
-		});
-	};
-
-	/* RSA4b1 - only autoremove expired tokens if have a server time offset set */
-	exports.expired_token_no_autoremove_when_dont_have_servertime = function(test) {
-		test.expect(1);
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(function(err, token) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			/* Fake an expired token */
-			token.expires = Date.now() - 5000;
-			var authCallbackCallCount = 0;
-			var authCallback = function(_, callback) {
-				authCallbackCallCount++;
-				callback(null, token);
-			};
-			realtime = helper.AblyRealtime({authCallback: authCallback});
 			realtime.connection.on('connected', function() {
-				test.equal(authCallbackCallCount, 1, 'Check we did not autoremove an expired token ourselves');
-				closeAndFinish(test, realtime);
+				expect(realtime.auth.clientId).to.equal(testClientId);
+				realtime.connection.close();
+				counter.assert();
+				done();
+				return;
+			});
+
+			realtime.connection.on('failed', function(err) {
+				realtime.close();
+				expect(false, "Failed: " + displayError(err));
+				done();
+				return;
 			});
 		});
-	};
 
-	/* RSA4b1 second case */
-	exports.expired_token_autoremove_when_have_servertime = function(test) {
-		test.expect(1);
-		var realtime, rest = helper.AblyRest();
-		rest.auth.requestToken(function(err, token) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
+		/*
+		* Rest token generation with clientId, then connecting with a
+		* different clientId, should fail with a library-generated message
+		* (RSA15a, RSA15c)
+		*/
+		it('auth_clientid_inheritance2', function(done) {
+			counter.expect(3);
+			var clientRealtime,
+				testClientId = 'test client id';
+			var rest = helper.AblyRest();
+			rest.auth.requestToken({clientId:testClientId}, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				clientRealtime = helper.AblyRealtime({token: tokenDetails, clientId: 'WRONG'});
+				clientRealtime.connection.once('failed', function(stateChange){
+					expect(true, 'Verify connection failed');
+					expect(stateChange.reason.code).to.equal(80019);
+					expect(stateChange.reason.cause.code).to.equal(40102);
+					clientRealtime.close();
+					counter.assert();
+					done();
+				});
+			});
+		});
+
+		/*
+		* Rest token generation with clientId '*', then connecting with just the
+		* token string and a different clientId, should succeed (RSA15b)
+		*/
+		it('auth_clientid_inheritance3', function(done) {
+			counter.expect(1);
+			var realtime,
+				testClientId = 'test client id';
+			var rest = helper.AblyRest();
+			rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				realtime = helper.AblyRealtime({token: tokenDetails.token, clientId: 'test client id'});
+				realtime.connection.on('connected', function() {
+					expect(realtime.auth.clientId).to.equal(testClientId);
+					realtime.connection.close();
+					counter.assert();
+					done();
+					return;
+				});
+				monitorConnection(done, expect, realtime);
+			});
+		});
+
+		/*
+		* Rest token generation with clientId '*', then connecting with
+		* tokenDetails and a clientId, should succeed (RSA15b)
+		*/
+		it('auth_clientid_inheritance4', function(done) {
+			counter.expect(1);
+			var realtime,
+				testClientId = 'test client id';
+			var rest = helper.AblyRest();
+			rest.auth.requestToken({clientId: '*'}, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				realtime = helper.AblyRealtime({token: tokenDetails, clientId: 'test client id'});
+				realtime.connection.on('connected', function() {
+					expect(realtime.auth.clientId).to.equal(testClientId);
+					realtime.connection.close();
+					counter.assert();
+					done();
+					return;
+				});
+				monitorConnection(done, expect, realtime);
+			});
+		});
+
+		/*
+		* Request a token using clientId, then initialize a connection using just the token string,
+		* and check that the connection inherits the clientId from the connectionDetails
+		*/
+		it('auth_clientid_inheritance5', function(done) {
+			counter.expect(1);
+			var clientRealtime,
+				testClientId = 'test client id';
+			var rest = helper.AblyRest();
+			rest.auth.requestToken({clientId: testClientId}, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				clientRealtime = helper.AblyRealtime({token: tokenDetails.token});
+				clientRealtime.connection.on('connected', function() {
+					expect(clientRealtime.auth.clientId).to.equal(testClientId);
+					counter.assert();
+					closeAndFinish(done, clientRealtime)
+					return;
+				});
+				monitorConnection(done, expect, clientRealtime);
+			});
+		});
+
+		/* RSA4c, RSA4e
+		* Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
+		*/
+		function authCallback_failures(realtimeOptions, expectFailure) {
+			return function(done) {
+				counter.expect(3);
+
+				var realtime = helper.AblyRealtime(realtimeOptions);
+				realtime.connection.on(function(stateChange) {
+					if(stateChange.previous !== 'initialized') {
+						if (helper.bestTransport === 'jsonp') {
+							// auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
+							expect(stateChange.current).to.equal('disconnected', 'Check connection goes to the expected state');
+							// jsonp doesn't let you examine the statuscode
+							expect(stateChange.reason.statusCode).to.equal(401, 'Check correct cause error code');
+						} else {
+							expect(stateChange.current).to.equal(expectFailure ? 'failed' : 'disconnected', 'Check connection goes to the expected state');
+							expect(stateChange.reason.statusCode).to.equal(expectFailure ? 403 : 401, 'Check correct cause error code');
+						}
+						expect(stateChange.reason.code).to.equal(80019, 'Check correct error code');
+						realtime.connection.off();
+						counter.assert();
+						closeAndFinish(done, realtime);
+					}
+				});
+			};
+		}
+
+		it('authCallback_error', authCallback_failures({authCallback: function(tokenParams, callback) {
+			callback(new Error("An error from client code that the authCallback might return"));
+		}}));
+
+		it('authCallback_timeout', authCallback_failures({
+			authCallback: function() { /* (^._.^)ﾉ */ },
+			realtimeRequestTimeout: 100}));
+
+		it('authCallback_nothing', authCallback_failures({authCallback: function(tokenParams, callback) {
+			callback();
+		}}));
+
+		it('authCallback_malformed', authCallback_failures({authCallback: function(tokenParams, callback) {
+			callback(null, { horse: 'ebooks' });
+		}}));
+
+		it('authCallback_too_long_string', authCallback_failures({authCallback: function(tokenParams, callback) {
+			var token = '';
+			for(var i=0; i<Math.pow(2,17) + 1; i++) {
+				token = token + 'a';
+			}
+			callback(null, token);
+		}}));
+
+		it('authCallback_empty_string', authCallback_failures({authCallback: function(tokenParams, callback) {
+			callback(null, '');
+		}}));
+
+		it('authUrl_timeout', authCallback_failures({
+			authUrl: helper.unroutableAddress,
+			realtimeRequestTimeout: 100
+		}));
+
+		it('authUrl_404', authCallback_failures({
+			authUrl: 'http://example.com/404'
+		}));
+
+		it('authUrl_wrong_content_type', authCallback_failures({
+			authUrl: 'http://example.com/'
+		}));
+
+		it('authUrl_401', authCallback_failures({
+			authUrl: echoServer + '/respondwith?status=401'
+		}));
+
+		it('authUrl_double_encoded', authCallback_failures({
+			authUrl: echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(JSON.stringify({keyName: "foo.bar"})))
+		}));
+
+
+		/* 403 should cause the connection to go to failed, unlike the others */
+		it('authUrl_403', authCallback_failures({
+			authUrl: echoServer + '/respondwith?status=403'
+		}, true)); /* expectFailed: */
+
+		it('authUrl_403_previously_active', function(done) {
+			if(helper.bestTransport === 'jsonp') {
+				/* auth endpoints don't envelope, so this won't work with jsonp */
+				done();
 				return;
 			}
-			/* Fake an expired token */
-			token.expires = Date.now() - 5000;
-			var authCallbackCallCount = 0;
-			var authCallback = function(_, callback) {
-				authCallbackCallCount++;
-				callback(null, token);
-			};
-			realtime = helper.AblyRealtime({authCallback: authCallback, autoConnect: false});
-			/* Set the server time offset */
-			realtime.time(function() {
-				realtime.connect();
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(null, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
+
+				var authPath = echoServer + "/?type=json&body=" + encodeURIComponent(JSON.stringify(tokenDetails));
+
+				realtime = helper.AblyRealtime({ authUrl: authPath });
+
 				realtime.connection.on('connected', function() {
-					test.equal(authCallbackCallCount, 2, 'Check we did autoremove the expired token ourselves, so authCallback is called a second time');
-					closeAndFinish(test, realtime);
+					expect(true, 'Connected to Ably using authUrl with TokenDetails JSON payload');
+
+					/* replace the authUrl and reauth */
+					realtime.auth.authorize(null, {authUrl: echoServer + '/respondwith?status=403'}, function(err, tokenDetails) {
+						expect(err && err.statusCode).to.equal(403, 'Check err statusCode');
+						expect(err && err.code).to.equal(40300, 'Check err code');
+						expect(realtime.connection.state).to.equal('failed', 'Check connection goes to the failed state');
+						expect(realtime.connection.errorReason && realtime.connection.errorReason.statusCode).to.equal(403, 'Check correct cause error code');
+						closeAndFinish(done, realtime);
+					});
 				});
 			});
 		});
-	};
 
-	/* Check that only the last authorize matters */
-	exports.multiple_concurrent_authorize = function(test) {
-		test.expect(4);
-		var realtime = helper.AblyRealtime({log: {level: 4}, useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
-		realtime.connection.once('connected', function() {
-			realtime.auth.authorize({ capability: {'stillWrong': ['*']} }, function(err) {
-				test.ok(!err, 'Check first authorize cb was called');
+		/*
+		* Check state change reason is propogated during a disconnect
+		* (when connecting with a token that expires while connected)
+		*/
+		testOnAllTransports('auth_token_expires', function(realtimeOpts) { return function(done) {
+			counter.expect(4);
+			var clientRealtime,
+				rest = helper.AblyRest();
+
+			rest.auth.requestToken({ ttl: 5000 }, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
+
+				clientRealtime.connection.on('failed', function(){
+					expect(false, 'Failed to connect before token expired');
+					closeAndFinish(done, clientRealtime);
+				});
+				clientRealtime.connection.once('connected', function(){
+					clientRealtime.connection.off('failed');
+					expect(true, 'Verify connection connected');
+					clientRealtime.connection.once('disconnected', function(stateChange){
+						expect(true, 'Verify connection disconnected');
+						expect(stateChange.reason.statusCode).to.equal(401, 'Verify correct disconnect statusCode');
+						expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
+						counter.assert();
+						closeAndFinish(done, clientRealtime);
+					});
+				});
 			});
-			realtime.auth.authorize({ capability: {'alsoNope': ['*']} }, function(err) {
-				test.ok(!err, 'Check second authorize cb was called');
+		}});
+
+		/*
+		* Check that when the queryTime option is provided
+		* that the time from the server is only requested once
+		* and all subsequent requests use the time offset
+		*/
+		it('auth_query_time_once', function(done) {
+			counter.expect(12);
+
+			var rest = helper.AblyRest({ queryTime: true }),
+				timeRequestCount = 0,
+				offset = 1000,
+				originalTime = rest.time;
+
+			/* stub time */
+			rest.time = function(callback) {
+				timeRequestCount += 1;
+				originalTime.call(rest, callback);
+			}
+
+			expect(isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset, 'Server time offset is empty and falsey until a time request has been made');
+
+			var asyncFns = [];
+			for(var i = 0; i < 10; i++) {
+				asyncFns.push(function(callback) {
+					rest.auth.createTokenRequest({}, null, function(err, tokenDetails) {
+						if(err) { return callback(err); }
+						expect(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested');
+						callback();
+					});
+				});
+			}
+
+			async.series(asyncFns, function(err) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+
+				expect(1).to.equal(timeRequestCount, 'Time function is only called once per instance');
+				counter.assert();
+				done();
 			});
-			realtime.auth.authorize({ capability: {'wtfAreYouThinking': ['*']} }, function(err) {
-				test.ok(!err, 'Check third authorize one cb was called');
+		});
+
+
+		/*
+		* If using authcallback when a token expires, should automatically request a
+		* new token
+		*/
+		testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function(realtimeOpts) { return function(done) {
+			counter.expect(4);
+
+			var realtime, rest = helper.AblyRest();
+			var clientId = "test clientid";
+			var authCallback = function(tokenParams, callback) {
+				tokenParams.ttl = 5000;
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					callback(null, tokenDetails);
+				});
+			};
+
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+			monitorConnection(done, expect, realtime);
+			realtime.connection.once('connected', function(){
+				expect(true, 'Verify connection connected');
+				realtime.connection.once('disconnected', function(stateChange){
+					expect(true, 'Verify connection disconnected');
+					expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
+					realtime.connection.once('connected', function(){
+						expect(true, 'Verify connection reconnected');
+						realtime.close();
+						counter.assert();
+						done();
+					});
+				});
 			});
-			realtime.auth.authorize({ capability: {'right': ['*']} }, function(err) {
+
+			monitorConnection(done, expect, realtime);
+		}});
+
+		/*
+		* Same as previous but with just a token, so ably-js doesn't know that the
+		* token's expired
+		*/
+		testOnAllTransports('auth_token_string_expiry_with_authcallback', function(realtimeOpts) { return function(done) {
+			counter.expect(4);
+
+			var realtime, rest = helper.AblyRest();
+			var clientId = "test clientid";
+			var authCallback = function(tokenParams, callback) {
+				tokenParams.ttl = 5000;
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					callback(null, tokenDetails.token);
+				});
+			};
+
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+			monitorConnection(done, expect, realtime);
+			realtime.connection.once('connected', function(){
+				expect(true, 'Verify connection connected');
+				realtime.connection.once('disconnected', function(stateChange){
+					expect(true, 'Verify connection disconnected');
+					expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
+					realtime.connection.once('connected', function(){
+						expect(true, 'Verify connection reconnected');
+						realtime.close();
+						counter.assert();
+						done();
+					});
+				});
+			});
+
+			monitorConnection(done, expect, realtime);
+		}});
+
+		/*
+		* Same as previous but with no way to generate a new token
+		*/
+		testOnAllTransports('auth_token_string_expiry_with_token', function(realtimeOpts) { return function(done) {
+			counter.expect(5);
+
+			var realtime, rest = helper.AblyRest();
+			var clientId = "test clientid";
+			rest.auth.requestToken({ttl: 5000, clientId: clientId}, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
+				realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
+				realtime.connection.once('connected', function(){
+					expect(true, 'Verify connection connected');
+					realtime.connection.once('disconnected', function(stateChange){
+						expect(true, 'Verify connection disconnected');
+						expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
+						realtime.connection.once('failed', function(stateChange){
+							/* Library has no way to generate a new token, so should fail */
+							expect(true, 'Verify connection failed');
+							expect(stateChange.reason.code).to.equal(40171, 'Verify correct cause failure code');
+							realtime.close();
+							done();
+						});
+					});
+				});
+			});
+		}});
+
+		/*
+		* Try to connect with an expired token string
+		*/
+		testOnAllTransports('auth_expired_token_string', function(realtimeOpts) { return function(done) {
+			counter.expect(2);
+
+			var realtime, rest = helper.AblyRest();
+			var clientId = "test clientid";
+			rest.auth.requestToken({ttl: 1, clientId: clientId}, null, function(err, tokenDetails) {
+				if(err) {
+					expect(false, displayError(err));
+					closeAndFinish(done, realtime);
+					return;
+				}
+				setTimeout(function() {
+					realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
+					realtime.connection.once('failed', function(stateChange){
+						expect(true, 'Verify connection failed');
+						expect(stateChange.reason.code).to.equal(40171, 'Verify correct failure code');
+						realtime.close();
+						counter.assert();
+						done();
+					});
+					/* Note: ws transport indicates viability when websocket is
+					* established, before realtime sends error response. So token error
+					* goes through the same path as a connected transport, so goes to
+					* disconnected first */
+					utils.arrForEach(['connected', 'suspended'], function(state) {
+						realtime.connection.on(state, function () {
+							expect(false, 'State changed to ' + state + ', should have gone to failed');
+							done();
+							realtime.close();
+						});
+					});
+				}, 100)
+			});
+		}});
+
+		/*
+		* use authorize() to force a reauth using an existing authCallback
+		*/
+		testOnAllTransports('reauth_authCallback', function(realtimeOpts) { return function(done) {
+			counter.expect(5);
+			var realtime, rest = helper.AblyRest();
+			var firstTime = true;
+			var authCallback = function(tokenParams, callback) {
+				tokenParams.clientId = '*';
+				tokenParams.capability = firstTime ? {'wrong': ['*']} : {'right': ['*']};
+				firstTime = false;
+				rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+					if(err) {
+						expect(false, displayError(err));
+						closeAndFinish(done, realtime);
+						return;
+					}
+					callback(null, tokenDetails);
+				});
+			};
+
+			realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback }));
+			realtime.connection.once('connected', function(){
+				expect(true, 'Verify connection connected');
+				var channel = realtime.channels.get('right');
+				channel.attach(function(err) {
+					expect(err, 'Check using first token, without channel attach capability');
+					expect(err.code).to.equal(40160, 'Check expected error code');
+
+					/* soon after connected, reauth */
+					realtime.auth.authorize(null, null, function(err) {
+						expect(!err, err && displayError(err));
+						channel.attach(function(err) {
+							expect(!err, 'Check using second token, with channel attach capability');
+							counter.assert();
+							closeAndFinish(done, realtime);
+						});
+					});
+				});
+			});
+			monitorConnection(done, expect, realtime);
+		}});
+
+		/* RSA10j */
+		it('authorize_updates_stored_details', function(done) {
+			counter.expect(8);
+			var realtime = helper.AblyRealtime({autoConnect: false, defaultTokenParams: {version: 1}, token: '1', authUrl: '1'});
+
+			expect(realtime.auth.tokenParams.version).to.equal(1, 'Check initial defaultTokenParams stored');
+			expect(realtime.auth.tokenDetails.token).to.equal('1', 'Check initial token stored');
+			expect(realtime.auth.authOptions.authUrl).to.equal('1', 'Check initial authUrl stored');
+			realtime.auth.authorize({version: 2}, {authUrl: '2', token: '2'});
+			expect(realtime.auth.tokenParams.version).to.equal(2, 'Check authorize updated the stored tokenParams');
+			expect(realtime.auth.tokenDetails.token).to.equal('2', 'Check authorize updated the stored tokenDetails');
+			expect(realtime.auth.authOptions.authUrl).to.equal('2', 'Check authorize updated the stored authOptions');
+			realtime.auth.authorize(null, {token: '3'});
+			expect(realtime.auth.authOptions.authUrl).to.equal(undefined, 'Check authorize completely replaces stored authOptions with passed in ones');
+
+			/* TODO remove for lib version 1.0 */
+			realtime.auth.authorize(null, {authUrl: 'http://invalid'});
+			realtime.auth.authorize(null, {force: true});
+			expect(realtime.auth.authOptions.authUrl).to.equal('http://invalid', 'Check authorize does *not* replace stored authOptions when the only option is "force" in 0.9, for compatibility with 0.8');
+
+			counter.assert();
+			closeAndFinish(done, realtime);
+		});
+
+		/* RTN22
+		* Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
+		*/
+		it('mocked_reauth', function(done) {
+			counter.expect(4);
+			var rest = helper.AblyRest(),
+				authCallback = function(tokenParams, callback) {
+					expect(true, 'Requested a token (should happen twice)');
+					rest.auth.requestToken(tokenParams, null, function(err, tokenDetails) {
+						if(err) {
+							expect(false, displayError(err));
+							closeAndFinish(done, realtime);
+							return;
+						}
+						callback(null, tokenDetails);
+					});
+				},
+				realtime = helper.AblyRealtime({authCallback: authCallback, transports: [helper.bestTransport]});
+
+			realtime.connection.once('connected', function(){
+				expect(true, 'Verify connection connected');
+				var transport = realtime.connection.connectionManager.activeProtocol.transport,
+					originalSend = transport.send;
+				/* Spy on transport.send to detect the outgoing AUTH */
+				transport.send = function(message) {
+					if(message.action === 17) {
+						expect(message.auth.accessToken, 'Check AUTH message structure is as expected');
+						counter.assert();
+						closeAndFinish(done, realtime);
+					} else {
+						originalSend.call(this, message);
+					}
+				};
+				/* Inject a fake AUTH from realtime */
+				transport.onProtocolMessage({action: 17});
+			});
+		});
+
+		/*
+		* Request a token specifying a clientId and verify that the returned token
+		* has the requested clientId.
+		*/
+		it('auth_jwt_with_clientid', function(done) {
+			counter.expect(1);
+			var currentKey = helper.getTestApp().keys[0];
+			var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+			var clientId = 'testJWTClientId';
+			var params = mixin(keys, {clientId: clientId});
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+			realtime.connection.on('connected', function() {
+				expect(realtime.auth.clientId).to.equal(clientId);
+				realtime.connection.close();
+				counter.assert();
+				done();
+				return;
+			});
+
+			realtime.connection.on('failed', function(err) {
+				realtime.close();
+				expect(false, "Failed: " + displayError(err));
+				done();
+				return;
+			});
+		});
+
+		/*
+		* Request a token specifying a clientId and verify that the returned token
+		* has the requested clientId. Token will be returned with content-type application/jwt.
+		*/
+		it('auth_jwt_with_clientid_application_jwt', function(done) {
+			counter.expect(1);
+			var currentKey = helper.getTestApp().keys[0];
+			var keys = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, returnType: 'jwt'};
+			var clientId = 'testJWTClientId';
+			var params = mixin(keys, {clientId: clientId});
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+			realtime.connection.on('connected', function() {
+				expect(realtime.auth.clientId).to.equal(clientId);
+				realtime.connection.close();
+				counter.assert();
+				done();
+				return;
+			});
+
+			realtime.connection.on('failed', function(err) {
+				realtime.close();
+				expect(false, "Failed: " + displayError(err));
+				done();
+				return;
+			});
+		});
+
+		/*
+		* Request a token specifying subscribe-only capabilities and verify that posting
+		* to a channel fails.
+		*/
+		it('auth_jwt_with_subscribe_only_capability', function(done) {
+			counter.expect(2);
+			var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
+			var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			realtime.connection.once('connected', function() {
+				var channel = realtime.channels.get(jwtTestChannelName);
+				channel.publish('greeting', 'Hello World!', function(err) {
+					expect(err.code).to.equal(40160, 'Verify publish denied code');
+					expect(err.statusCode).to.equal(401, 'Verify publish denied status code');
+					realtime.connection.close();
+					done();
+				})
+			});
+		});
+
+		/* RSA8c
+		* Request a token with publish capabilities and verify that posting
+		* to a channel succeeds.
+		*/
+		it('auth_jwt_with_publish_capability', function(done) {
+			counter.expect(1);
+			var currentKey = helper.getTestApp().keys[0];
+			var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var publishEvent = 'publishEvent',
+				messageData = 'Hello World!';
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			realtime.connection.once('connected', function() {
+				var channel = realtime.channels.get(jwtTestChannelName);
+				channel.subscribe(publishEvent, function(msg) {
+					expect(msg.data).to.equal(messageData, 'Verify message data matches');
+					realtime.connection.close();
+					counter.assert();
+					done();
+				});
+				channel.publish(publishEvent, messageData)
+			});
+		});
+
+		/*
+		* Request a JWT token that is about to expire, check that the client disconnects
+		* and receives the expected reason in the state change.
+		*/
+		it('auth_jwt_with_token_that_expires', function(done) {
+			counter.expect(1);
+			var currentKey = helper.getTestApp().keys[0];
+			var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5};
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			realtime.connection.once('connected', function() {
+				realtime.connection.once('disconnected', function(stateChange) {
+					expect(stateChange.reason.code).to.equal(40142, 'Verify disconnected reason change code');
+					realtime.connection.close();
+					counter.assert();
+					done();
+				});
+			});
+		});
+
+		/* RTC8a4
+		* Request a JWT token that is about to be renewed, check that the client reauths
+		* without going through a disconnected state.
+		*/
+		it('auth_jwt_with_token_that_renews', function(done) {
+			counter.expect(1);
+			var currentKey = helper.getTestApp().keys[0];
+			// Sandbox sends an auth protocol message 30 seconds before a token expires.
+			// We create a token that lasts 35 so there's room to receive the update event message.
+			var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35};
+			var authCallback = function(tokenParams, callback) {
+				getJWT(params, callback);
+			};
+
+			var realtime = helper.AblyRealtime({ authCallback: authCallback });
+			realtime.connection.once('connected', function() {
+				var originalToken = realtime.auth.tokenDetails.token;
+				realtime.connection.once('update', function() {
+					expect(originalToken).to.not.equal(realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
+					realtime.connection.close();
+					counter.assert();
+					done();
+				});
+			});
+		});
+
+		/* RSC1
+		* Request a JWT token, initialize a realtime client with it and
+		* verify it can make authenticated calls.
+		*/
+		it('init_client_with_simple_jwt_tokem', function(done) {
+			var currentKey = helper.getTestApp().keys[0];
+			var params = {keyName: currentKey.keyName, keySecret: currentKey.keySecret};
+			getJWT(params, function(err, token) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				var realtime = helper.AblyRealtime({ token: token });
+				realtime.connection.once('connected', function() {
+					expect(token).to.equal(realtime.auth.tokenDetails.token, 'Verify that token is the same');
+					realtime.connection.close();
+					done();
+				});
+			});
+		});
+
+		/* RTN14b */
+		it('reauth_consistently_expired_token', function(done) {
+			counter.expect(2);
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken({ttl: 1}, function(err, token) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				var authCallbackCallCount = 0;
+				var authCallback = function(_, callback) {
+					authCallbackCallCount++;
+					callback(null, token.token);
+				};
+				/* Wait a few ms to ensure token is expired */
+				setTimeout(function() {
+					realtime = helper.AblyRealtime({authCallback: authCallback, disconnectedRetryTimeout: 15000});
+					/* Wait 5s, expect to have seen two attempts to get a token -- so the
+					* authCallback called twice -- and the connection to now be sitting in
+					* the disconnected state */
+					setTimeout(function() {
+						expect(authCallbackCallCount).to.equal(2);
+						expect(realtime.connection.state).to.equal('disconnected');
+						counter.assert();
+						closeAndFinish(done, realtime);
+					}, 3000);
+				}, 100);
+			});
+		});
+
+		/* RSA4b1 - only autoremove expired tokens if have a server time offset set */
+		it('expired_token_no_autoremove_when_dont_have_servertime', function(done) {
+			counter.expect(1);
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(function(err, token) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				/* Fake an expired token */
+				token.expires = Date.now() - 5000;
+				var authCallbackCallCount = 0;
+				var authCallback = function(_, callback) {
+					authCallbackCallCount++;
+					callback(null, token);
+				};
+				realtime = helper.AblyRealtime({authCallback: authCallback});
+				realtime.connection.on('connected', function() {
+					expect(authCallbackCallCount).to.equal(1, 'Check we did not autoremove an expired token ourselves');
+					counter.assert();
+					closeAndFinish(done, realtime);
+				});
+			});
+		});
+
+		/* RSA4b1 second case */
+		it('expired_token_autoremove_when_have_servertime', function(done) {
+			counter.expect(1);
+			var realtime, rest = helper.AblyRest();
+			rest.auth.requestToken(function(err, token) {
+				if(err) {
+					expect(false, displayError(err));
+					done();
+					return;
+				}
+				/* Fake an expired token */
+				token.expires = Date.now() - 5000;
+				var authCallbackCallCount = 0;
+				var authCallback = function(_, callback) {
+					authCallbackCallCount++;
+					callback(null, token);
+				};
+				realtime = helper.AblyRealtime({authCallback: authCallback, autoConnect: false});
+				/* Set the server time offset */
+				realtime.time(function() {
+					realtime.connect();
+					realtime.connection.on('connected', function() {
+						expect(authCallbackCallCount).to.equal(2, 'Check we did autoremove the expired token ourselves, so authCallback is called a second time');
+						counter.assert();
+						closeAndFinish(done, realtime);
+					});
+				});
+			});
+		});
+
+		/* Check that only the last authorize matters */
+		it('multiple_concurrent_authorize', function(done) {
+			counter.expect(4);
+			var realtime = helper.AblyRealtime({log: {level: 4}, useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
+			realtime.connection.once('connected', function() {
+				realtime.auth.authorize({ capability: {'stillWrong': ['*']} }, function(err) {
+					expect(!err, 'Check first authorize cb was called');
+				});
+				realtime.auth.authorize({ capability: {'alsoNope': ['*']} }, function(err) {
+					expect(!err, 'Check second authorize cb was called');
+				});
+				realtime.auth.authorize({ capability: {'wtfAreYouThinking': ['*']} }, function(err) {
+					expect(!err, 'Check third authorize one cb was called');
+				});
+				realtime.auth.authorize({ capability: {'right': ['*']} }, function(err) {
+					realtime.channels.get('right').attach(function(err) {
+						expect(!err, err && displayError(err) || 'Successfully attached');
+						counter.assert();
+						closeAndFinish(done, realtime);
+					});
+				});
+			});
+		});
+
+		testOnAllTransports('authorize_immediately_after_init', function(realtimeOpts) { return function(done) {
+			counter.expect(1);
+			var realtime = helper.AblyRealtime({useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
+			realtime.auth.authorize({ capability: {'right': ['*']} })
+			realtime.connection.once('disconnected', function() {
+				expect(false, 'Connection should not have become disconnected');
+				closeAndFinish(done, realtime);
+			});
+			realtime.connection.once('connected', function() {
 				realtime.channels.get('right').attach(function(err) {
-					test.ok(!err, err && displayError(err) || 'Successfully attached');
-					closeAndFinish(test, realtime);
+					expect(!err, err && displayError(err) || 'Successfully attached');
+					counter.assert();
+					closeAndFinish(done, realtime);
 				});
 			});
-		});
-	};
-
-	testOnAllTransports(exports, 'authorize_immediately_after_init', function(realtimeOpts) { return function(test) {
-		test.expect(1);
-		var realtime = helper.AblyRealtime({useTokenAuth: true, defaultTokenParams: { capability: {'wrong': ['*']} }});
-		realtime.auth.authorize({ capability: {'right': ['*']} })
-		realtime.connection.once('disconnected', function() {
-			test.ok(false, 'Connection should not have become disconnected');
-			closeAndFinish(test, realtime);
-		});
-		realtime.connection.once('connected', function() {
-			realtime.channels.get('right').attach(function(err) {
-				test.ok(!err, err && displayError(err) || 'Successfully attached');
-				closeAndFinish(test, realtime);
-			});
-		});
-	}});
-
-	return module.exports = helper.withTimeout(exports);
+		}});
+	});
 });
