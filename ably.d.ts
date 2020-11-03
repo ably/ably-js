@@ -360,16 +360,16 @@ declare namespace Types {
 	}
 
 	// Common Listeners
-	type paginatedResultCallback<T> = (error: ErrorInfo, results: PaginatedResult<T>) => void;
-	type standardCallback = (error: ErrorInfo, results: any) => void;
+	type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
+	type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
 	type messageCallback<T> = (message: T) => void;
-	type errorCallback = (error: ErrorInfo) => void;
+	type errorCallback = (error?: ErrorInfo) => void;
 	type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
 	type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
-	type timeCallback = (error: ErrorInfo, time: number) => void;
-	type realtimePresenceGetCallback = (error: ErrorInfo, messages: PresenceMessage[]) => void;
-	type tokenDetailsCallback = (error: ErrorInfo, Results: TokenDetails) => void;
-	type tokenRequestCallback = (error: ErrorInfo, Results: TokenRequest) => void;
+	type timeCallback = StandardCallback<number>;
+	type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
+	type tokenDetailsCallback = StandardCallback<TokenDetails>;
+	type tokenRequestCallback = StandardCallback<TokenRequest>;
 	type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
 	type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
@@ -401,7 +401,7 @@ declare namespace Types {
 		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.ChannelCallbacks>;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse>) => void;
 		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
@@ -430,7 +430,7 @@ declare namespace Types {
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.RealtimeChannelCallbacks>;
 		connection: Types.ConnectionCallbacks;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: (error: Types.ErrorInfo, response: Types.HttpPaginatedResponse) => void) => void;
+		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse>) => void;
 		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
@@ -480,7 +480,7 @@ declare namespace Types {
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
 		get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: standardCallback) => void;
+		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback) => void;
 		enter: (data?: errorCallback | any, callback?: errorCallback) => void;
 		update: (data?: errorCallback | any, callback?: errorCallback) => void;
 		leave: (data?: errorCallback | any, callback?: errorCallback) => void;
@@ -528,11 +528,11 @@ declare namespace Types {
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
 		presence: RealtimePresenceCallbacks;
-		attach: (callback?: standardCallback) => void;
-		detach: (callback?: standardCallback) => void;
+		attach: (callback?: errorCallback) => void;
+		detach: (callback?: errorCallback) => void;
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
 		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
-		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: standardCallback) => void;
+		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
 		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
 	}
@@ -602,8 +602,8 @@ declare namespace Types {
 	}
 
 	interface Crypto {
-		generateRandomKey: (callback: (error: ErrorInfo, key: CipherKey) => void) => void;
-		getDefaultParams: (params: CipherParamOptions, callback: (error?: ErrorInfo, params?: CipherParams) => void) => void;
+		generateRandomKey: (callback: Types.StandardCallback<CipherKey>) => void;
+		getDefaultParams: (params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>) => void;
 	}
 
 	class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
@@ -618,7 +618,7 @@ declare namespace Types {
 	}
 
 	class ConnectionCallbacks extends ConnectionBase {
-		ping: (callback?: (error: ErrorInfo, responseTime: number) => void) => void;
+		ping: (callback?: Types.StandardCallback<number>) => void;
 		whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
 	}
 
@@ -681,8 +681,8 @@ declare namespace Types {
 	}
 
 	class PushDeviceRegistrationsCallbacks {
-		save: (deviceDetails: DeviceDetails, callback?: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
-		get: (deviceIdOrDetails: DeviceDetails | string, callback: (error: ErrorInfo, deviceDetails: DeviceDetails) => void) => void;
+		save: (deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>) => void;
+		get: (deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>) => void;
 		list: (params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>) => void;
 		remove: (deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback) => void;
 		removeWhere: (params: DeviceRegistrationParams, callback?: errorCallback) => void;
@@ -697,7 +697,7 @@ declare namespace Types {
 	}
 
 	class PushChannelSubscriptionsCallbacks {
-		save: (subscription: PushChannelSubscription, callback?: (error: ErrorInfo, subscription: PushChannelSubscription) => void) => void;
+		save: (subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>) => void;
 		list: (params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>) => void;
 		listChannels: (params: PushChannelsParams, callback: paginatedResultCallback<string>) => void;
 		remove: (subscription: PushChannelSubscription, callback?: errorCallback) => void;
