@@ -253,9 +253,9 @@ declare namespace Types {
 	type ChannelModes = Array<ChannelMode>;
 
 	interface ChannelOptions {
-		cipher: any;
-		params: ChannelParams;
-		modes: ChannelModes;
+		cipher?: {key: ArrayBuffer | Uint8Array | string} | CipherParams;
+		params?: ChannelParams;
+		modes?: ChannelModes;
 	}
 
 	interface RestHistoryParams {
