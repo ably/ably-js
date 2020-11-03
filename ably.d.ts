@@ -117,7 +117,12 @@ declare namespace Types {
 		 * Can be used to explicitly recover a connection.
 		 * See https://www.ably.io/documentation/realtime/connection#connection-state-recovery
 		 */
-		recover?: standardCallback | string;
+		recover?: string | ((lastConnectionDetails: {
+			recoveryKey: string;
+			disconnectedAt: number;
+			location: string;
+			clientId: string | null;
+		}, callback: (shouldRecover: boolean) => void) => void);
 
 		/**
 		 * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
