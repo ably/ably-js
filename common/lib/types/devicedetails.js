@@ -77,6 +77,7 @@ var DeviceDetails = (function() {
 	};
 
 	DeviceDetails.fromValues = function(values) {
+		values.error = values.error && ErrorInfo.fromValues(values.error); 
 		return Utils.mixin(new DeviceDetails(), values);
 	};
 
