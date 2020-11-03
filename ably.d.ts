@@ -180,7 +180,7 @@ declare namespace Types {
 
 	interface CipherParams {
 		algorithm: string;
-		key: any;
+		key: CipherKey;
 		keyLength: number;
 		mode: string;
 	}
@@ -253,7 +253,7 @@ declare namespace Types {
 	type ChannelModes = Array<ChannelMode>;
 
 	interface ChannelOptions {
-		cipher?: {key: ArrayBuffer | Uint8Array | string} | CipherParams;
+		cipher?: CipherParamOptions | CipherParams;
 		params?: ChannelParams;
 		modes?: ChannelModes;
 	}
@@ -585,8 +585,20 @@ declare namespace Types {
 		fromEncodedArray: fromEncodedArray<PresenceMessage>;
 	}
 
+	type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
+	type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
+	// user should not be interacting with it - output of getDefaultParams should be used opaquely
+
+	type CipherParamOptions = {
+		key: CipherKeyParam;
+		algorithm?: 'aes';
+		keyLength?: number;
+		mode?: 'cbc';
+	}
+
 	interface Crypto {
-		generateRandomKey: (callback: (error: ErrorInfo, key: string) => void) => void;
+		generateRandomKey: (callback: (error: ErrorInfo, key: CipherKey) => void) => void;
+		getDefaultParams: (params: CipherParamOptions, callback: (error?: ErrorInfo, params?: CipherParams) => void) => void;
 	}
 
 	class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
