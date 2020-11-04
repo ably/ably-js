@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.4](https://github.com/ably/ably-js/tree/1.2.4) (2020-11-04)
+- Typings: all ChannelOptions are now optional and other minor improvements [\#695](https://github.com/ably/ably-js/pull/695/files)
+
 ## [1.2.3](https://github.com/ably/ably-js/tree/1.2.3) (2020-09-30)
 - Use environment-specific fallback hosts by default unless overridden (https://github.com/ably/ably-js/pull/682)
 - Rest: use channels.all not channels.attached; "attached" made no sense for rest channels and was never documented
