@@ -232,14 +232,13 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 					clearTransportPreference();
 				})
 
-				for (var test in exports) {
-					var myfunc = function(testName){
-					if (testName === 'before') {} else {
-					it(testName, function (done) {
-						exports[testName](getTestApi(done));
-					})
-				}};
-				myfunc(test);
+				for (var testName in exports) {
+					(function(testName){
+						if (testName !== 'before') {
+							it(testName, function (done) {
+								exports[testName](getTestApi(done));
+							})
+					}})(testName);
 				}
 			})
 		}
