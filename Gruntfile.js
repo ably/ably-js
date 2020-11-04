@@ -379,6 +379,7 @@ module.exports = function (grunt) {
 				gruntConfig.dirs.common + '/lib/util/defaults.js',
 				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',
+				'package-lock.json',
 				'bower.json',
 				'README.md',
 				'spec/support/browser_file_list.js'
