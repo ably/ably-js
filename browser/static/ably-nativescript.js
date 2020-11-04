@@ -1,7 +1,7 @@
 /**
  * @license Copyright 2020, Ably
  *
- * Ably JavaScript Library v1.2.3
+ * Ably JavaScript Library v1.2.4
  * https://github.com/ably/ably-js
  *
  * Ably Realtime Messaging
@@ -4649,7 +4649,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.3';
+Defaults.version          = '1.2.4';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
@@ -4723,6 +4723,32 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = options.queueEvents;
 	}
 
+	if(options.fallbackHostsUseDefault) {
+		/* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
+		if(options.fallbackHosts) {
+			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
+			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			throw new ErrorInfo(msg, 40000, 400);
+		}
+
+		/* default fallbacks can't be used with custom ports */
+		if(options.port || options.tlsPort) {
+			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
+			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			throw new ErrorInfo(msg, 40000, 400);
+		}
+
+		/* emit an appropriate deprecation warning */
+		if(options.environment) {
+			Logger.deprecatedWithMsg('fallbackHostsUseDefault', 'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.');
+		} else {
+			Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
+		}
+
+		/* use the default fallback hosts as requested */
+		options.fallbackHosts = Defaults.FALLBACK_HOSTS;
+	}
+
 	if(options.recover === true) {
 		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
 		options.recover = function(lastConnectionDetails, cb) { cb(true); };
@@ -4748,22 +4774,29 @@ Defaults.normaliseOptions = function(options) {
 	if(!('queueMessages' in options))
 		options.queueMessages = true;
 
-	if(options.restHost) {
-		options.realtimeHost = options.realtimeHost || options.restHost;
-		options.fallbackHosts = options.fallbackHostsUseDefault && !options.port && !options.tlsPort ? Defaults.FALLBACK_HOSTS : options.fallbackHosts;
-	} else {
-		var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-		var production = !environment || (environment === 'production');
-		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
-		options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
-		if(!options.fallbackHosts && !options.port && !options.tlsPort) {
-			if(production || options.fallbackHostsUseDefault) {
-				options.fallbackHosts = Defaults.FALLBACK_HOSTS;
-			} else {
-				options.fallbackHosts = Defaults.environmentFallbackHosts(environment);
-			}
+	/* infer hosts and fallbacks based on the configured environment */
+	var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
+	var production = !environment || (environment === 'production');
+
+	if(!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
+		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : Defaults.environmentFallbackHosts(environment);
+	}
+
+	if(!options.realtimeHost) {
+		/* prefer setting realtimeHost to restHost as a custom restHost typically indicates
+		 * a development environment is being used that can't be inferred by the library */
+		if(options.restHost) {
+			Logger.logAction(Logger.LOG_WARN, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
+			options.realtimeHost = options.restHost
+		} else {
+			options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 		}
 	}
+
+	if(!options.restHost) {
+		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
+	}
+
 	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
 
 	options.port = options.port || Defaults.PORT;
@@ -5086,8 +5119,12 @@ var Logger = (function() {
 	};
 
 	Logger.deprecated = function(original, replacement) {
+		Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
+	}
+
+	Logger.deprecatedWithMsg = function(funcName, msg) {
 		if (Logger.shouldLog(LOG_ERROR)) {
-			logErrorHandler("Ably: Deprecation warning - '" + original + "' is deprecated and will be removed from a future version. Please use '" + replacement + "' instead.");
+			logErrorHandler("Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg);
 		}
 	}
 
