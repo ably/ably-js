@@ -127,7 +127,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
-		function restTestOnJsonMsgpack(name, testFn) {
+		function restTestOnJsonMsgpack(exports, name, testFn) {
 			exports[name + '_binary'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary'); };
 			exports[name + '_text'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text'); };
 		}

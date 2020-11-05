@@ -160,6 +160,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						if (err) {
 							throw err
 						}
+						test.done();
 				}
 			);
 		} catch(e) {
