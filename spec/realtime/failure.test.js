@@ -159,8 +159,9 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				function(err) {
 						if (err) {
 							throw err
+						} else {
+							test.done();
 						}
-						test.done();
 				}
 			);
 		} catch(e) {
