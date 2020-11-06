@@ -103,7 +103,6 @@ module.exports = function(config) {
 
       // following files are loaded by RequireJS
       { pattern: 'browser/static/*.js', included: false },
-      { pattern: 'browser/static/*.html', included: false },
       { pattern: 'browser/lib/util/base64.js', included: false },
 
       { pattern: 'node_modules/async/lib/async.js', included: false },

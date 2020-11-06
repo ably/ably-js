@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: npm run test:karma
+      - run: xvfb-run -a npm run test:karma
   
   test-karma-all:
     runs-on: ubuntu-latest
@@ -45,5 +45,5 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
-      - run: npm run test:karma -- --browsers bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
+      - run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
+      - run: xvfb-run -a npm run test:karma -- --browsers bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
