@@ -72,8 +72,11 @@ require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','
 
 		// we have to kickoff mocha with Karma
 		callback: function() {
-				mocha.run();
-				if (window.__karma__.start) { window.__karma__.start(); }
+				if (window.__karma__.start) { 
+					window.__karma__.start();
+				} else {
+					mocha.run();
+				}
 		}
 	});
 });
