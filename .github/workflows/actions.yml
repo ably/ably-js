@@ -21,27 +21,29 @@ jobs:
         env:
           CI: true
 
-  test-firefox:
+  test-karma-firefox:
     runs-on: ubuntu-latest
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'recursive'
-    - name: Use Node.js 14.x
-      uses: actions/setup-node@v1
-      with:
-        node-version: 14.x
-    - run: npm ci
-    - run: npm run test:karma
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - run: npm run test:karma
   
-  test-all:
+  test-karma-all:
     runs-on: ubuntu-latest
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'recursive'
-    - name: Use Node.js 14.x
-      uses: actions/setup-node@v1
-      with:
-        node-version: 14.x
-    - run: npm ci
-    - run: npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
-    - run: npm run test:karma -- --browsers bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - run: npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
+      - run: npm run test:karma -- --browsers bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
