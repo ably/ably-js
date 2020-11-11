@@ -288,7 +288,8 @@ var ConnectionManager = (function() {
 				/* Comet transport onconnect token errors can be dealt with here.
 				* Websocket ones only happen after the transport claims to be viable,
 				* so are dealt with as non-onconnect token errors */
-				if(Auth.isTokenErr(wrappedErr.error)) {
+				if(Auth.isTokenErr(wrappedErr.error) && !self.errorReason) {
+					self.errorReason = wrappedErr.error
 					/* re-get a token and try again */
 					self.realtime.auth._forceNewToken(null, null, function(err) {
 						if(err) {
@@ -304,6 +305,7 @@ var ConnectionManager = (function() {
 				} else if(wrappedErr.event === 'disconnected') {
 					/* Error with that transport only */
 					callback(false);
+					self.errorReason = null;
 				}
 				return;
 			}
