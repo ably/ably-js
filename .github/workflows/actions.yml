@@ -37,9 +37,6 @@ jobs:
   test-karma-all:
     runs-on: ubuntu-latest
     steps:
-      - env:
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESSKEY: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
@@ -48,4 +45,7 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra
+      - env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESSKEY: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
+        run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra
