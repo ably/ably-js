@@ -48,4 +48,4 @@ jobs:
       - env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESSKEY: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
-        run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra
+        run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
