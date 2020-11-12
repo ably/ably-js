@@ -3,36 +3,36 @@ name: ably-js CI
 on: [push]
 
 jobs:
-  test-mocha:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [10.x, 12.x, 14.x]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm run test:mocha
-        env:
-          CI: true
+  # test-mocha:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [10.x, 12.x, 14.x]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         submodules: 'recursive'
+  #     - name: Use Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #     - run: npm ci
+  #     - run: npm run test:mocha
+  #       env:
+  #         CI: true
 
-  test-karma-firefox:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.x
-      - run: npm ci
-      - run: xvfb-run -a npm run test:karma
+  # test-karma-firefox:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         submodules: 'recursive'
+  #     - name: Use Node.js 14.x
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14.x
+  #     - run: npm ci
+  #     - run: xvfb-run -a npm run test:karma
   
   test-karma-all:
     runs-on: ubuntu-latest
@@ -45,5 +45,4 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7
-      - run: xvfb-run -a npm run test:karma -- --browsers bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
+      - run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra
