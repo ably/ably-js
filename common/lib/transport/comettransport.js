@@ -98,7 +98,7 @@ var CometTransport = (function() {
 				self.recvRequest = null;
 				/* Connect request may complete without a emitting 'data' event since that is not
 				 * emitted for e.g. a non-streamed error response. Still implies preconnect. */
-				if(!preconnected) {
+				if(!preconnected && !err) {
 					preconnected = true;
 					self.emit('preconnect');
 				}
