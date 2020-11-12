@@ -54,6 +54,7 @@
     "karma-chrome-launcher": "~0.1",
     "karma-cli": "~0.0",
     "karma-env-preprocessor": "~0.1",
+    "karma-failed-reporter": "0.0.3",
     "karma-firefox-launcher": "~0.1",
     "karma-mocha": "^2.0.1",
     "karma-requirejs": "~0.2",
