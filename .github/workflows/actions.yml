@@ -34,8 +34,11 @@ jobs:
   #     - run: npm ci
   #     - run: xvfb-run -a npm run test:karma
   
-  test-karma-all:
+  test-karma-browserstack:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [bs_firefox_sierra, bs_chrome_sierra, bs_ie11_win10, bs_ie10_win81, bs_ie9_win7, bs_ie8_win7, bs_ie16_win10, bs_safari_11_iOS, bs_safari_high_sierra, bs_android_6]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -48,4 +51,4 @@ jobs:
       - env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESSKEY: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
-        run: xvfb-run -a npm run test:karma -- --browsers bs_firefox_sierra,bs_chrome_sierra,bs_ie11_win10,bs_ie10_win81,bs_ie9_win7,bs_ie8_win7,bs_ie16_win10,bs_safari_11_iOS,bs_safari_high_sierra,bs_android_6
+        run: xvfb-run -a npm run test:karma -- --browsers ${{ matrix.browser }}
