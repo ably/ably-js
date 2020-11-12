@@ -37,6 +37,7 @@ jobs:
   test-karma-browserstack:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 3
       matrix:
         browser: [bs_firefox_sierra, bs_chrome_sierra, bs_ie11_win10, bs_ie10_win81, bs_ie9_win7, bs_ie8_win7, bs_ie16_win10, bs_safari_11_iOS, bs_safari_high_sierra, bs_android_6]
     steps:
