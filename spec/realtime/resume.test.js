@@ -525,7 +525,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 						closeAndFinish(test, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
 					});
 
-					var success = setTimeout(() => {
+					var success = setTimeout(function () {
 						test.ok(true);
 						closeAndFinish(test, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
 					}, 7000);

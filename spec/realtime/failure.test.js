@@ -428,7 +428,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				
 				sender_channel.publish('1', testMessage2);
 
-				var success = setTimeout(() => {
+				var success = setTimeout(function () {
 					test.ok(true);
 					closeAndFinish(test, sender_realtime);
 				}, 7000);
