@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.push_publish_promise = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}
@@ -311,7 +311,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.push_deviceRegistrations_promise = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}
@@ -465,7 +465,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	};
 
 	exports.push_channelSubscriptions_promise = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}

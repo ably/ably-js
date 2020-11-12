@@ -34,7 +34,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	};
 
 	exports.timePromise = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}

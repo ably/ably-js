@@ -17,7 +17,8 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			bestTransport = availableTransports[0],
 			/* IANA reserved; requests to it will hang forever */
 			unroutableHost = '10.255.255.1',
-			unroutableAddress = 'http://' + unroutableHost + '/';
+			unroutableAddress = 'http://' + unroutableHost + '/',
+			promiseSupport = typeof Promise !== 'undefined' && typeof new Promise(function () {}).finally !== 'undefined';
 
 		function displayError(err) {
 			if(typeof(err) == 'string' || err == null)
@@ -266,6 +267,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			restTestOnJsonMsgpack:     restTestOnJsonMsgpack,
 			availableTransports:       availableTransports,
 			bestTransport:             bestTransport,
+			promiseSupport:            promiseSupport,
 			clearTransportPreference:  clearTransportPreference,
 			isComet:                   isComet,
 			isWebsocket:               isWebsocket,

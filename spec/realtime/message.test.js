@@ -921,7 +921,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 
 
 	exports.publishpromise = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}

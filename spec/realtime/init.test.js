@@ -349,7 +349,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	}
 
 	exports.init_callbacks_promises = function(test) {
-		if(typeof Promise === 'undefined') {
+		if(!helper.promiseSupport) {
 			test.done();
 			return;
 		}
