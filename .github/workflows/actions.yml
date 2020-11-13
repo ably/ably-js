@@ -40,7 +40,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        browser: [bs_firefox_sierra, bs_chrome_sierra, bs_ie11_win10, bs_ie10_win81, bs_ie9_win7, bs_ie8_win7, bs_ie16_win10, bs_safari_11_iOS, bs_safari_high_sierra, bs_android_6]
+        browser: [bs_firefox_catalina, bs_chrome_catalina, bs_ie11_win10, bs_safari_catalina, bs_android_10]
     steps:
       - uses: actions/checkout@v2
         with:
