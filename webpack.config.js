@@ -48,7 +48,7 @@ const browserConfig = {
   resolve: {
       extensions: ['.js'],
       alias: {
-        platform: path.resolve(nodePath, 'platform'),
+        platform: path.resolve(browserPath, 'fragments', 'platform-browser'),
         'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
         'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
         'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
@@ -63,13 +63,12 @@ const browserConfig = {
       filename: 'ably.js',
       path: path.resolve(__dirname, 'browser/static'),
       library: 'Ably',
-      libraryTarget: 'umd',
+      libraryTarget: 'var',
   },
-  target: 'node',
+  target: 'web',
   externals: {
       request: 'request',
       ws: 'ws',
-      'crypto-js': 'crypto-js',
   },
   devtool: 'source-map',
   optimization: {

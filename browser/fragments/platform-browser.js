@@ -1,4 +1,4 @@
-import msgpack from './lib/util/msgpack';
+import msgpack from '../lib/util/msgpack';
 
 if(typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");

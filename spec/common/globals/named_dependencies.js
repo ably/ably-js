@@ -4,7 +4,7 @@ define(function() {
 		// Ably modules
 		'ably':              { browser: 'browser/static/ably',                node: 'nodejs/index' },
 		'ably.noencryption': { browser: 'browser/static/ably.noencryption' },
-		'browser-base64':    { browser: 'browser/lib/util/base64',            node: 'skip' },
+		'browser-base64':    { browser: 'browser/lib/util/base64_var',            node: 'skip' },
 		'vcdiff-decoder':    { browser: 'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder',  node:'node_modules/@ably/vcdiff-decoder'},
 		
 		// test modules

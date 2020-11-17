@@ -1,5 +1,3 @@
-import Utils from '../../../common/lib/util/utils';
-
 var msgpack = (function() {
 	"use strict";
 
@@ -476,7 +474,12 @@ var msgpack = (function() {
 	}
 
 	function encodeableKeys(value, sparse) {
-		return Utils.keysArray(value, true).filter(function (e) {
+		var keys = []; // TODO: use Object.keys when we are able to transpile to ES3
+		for (var key in value) {
+			if (!value.hasOwnProperty(key)) continue;
+			keys.push(key);
+		}
+		return keys.filter(function (e) {
 			var val = value[e], type = typeof(val);
 			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!val.toJSON);
 		})

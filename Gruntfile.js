@@ -366,7 +366,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['concat', 'requirejs', 'mocha:webserver']
+		['build', 'requirejs', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',

@@ -40,7 +40,6 @@ var Auth = (function() {
 			return inst.digest('base64');
 		};
 	} else {
-		console.log(Base64);
 		toBase64 = Base64.encode;
 		hmac = function(text, key) {
 			return HmacSHA256(text, key).toString(CryptoJSBase64);
