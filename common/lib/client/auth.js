@@ -1,3 +1,14 @@
+import Logger from '../util/logger';
+import Platform from 'platform';
+import Utils from '../util/utils';
+import Http from 'platform-http';
+import Multicaster from '../util/multicaster';
+import BufferUtils from 'platform-bufferutils';
+import ErrorInfo from '../types/errorinfo';
+import Base64 from 'platform-base64';
+import HmacSHA256 from 'crypto-js/hmac-sha256';
+import CryptoJSBase64 from 'crypto-js/enc-base64';
+
 var Auth = (function() {
 	var MAX_TOKEN_LENGTH = Math.pow(2, 17);
 	function noop() {}
@@ -29,9 +40,10 @@ var Auth = (function() {
 			return inst.digest('base64');
 		};
 	} else {
+		console.log(Base64);
 		toBase64 = Base64.encode;
 		hmac = function(text, key) {
-			return CryptoJS.HmacSHA256(text, key).toString(CryptoJS.enc.Base64);
+			return HmacSHA256(text, key).toString(CryptoJSBase64);
 		};
 	}
 
@@ -804,3 +816,5 @@ var Auth = (function() {
 
 	return Auth;
 })();
+
+export default Auth;

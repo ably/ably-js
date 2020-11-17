@@ -1,3 +1,15 @@
+import Platform from 'platform';
+import Utils from '../util/utils';
+import Logger from '../util/logger';
+import Defaults from '../util/defaults';
+import Auth from './auth';
+import Push from './push';
+import Http from 'platform-http';
+import PaginatedResource from './paginatedresource';
+import Channel from './channel';
+import ErrorInfo from '../types/errorinfo';
+import Stats from '../types/stats';
+
 var Rest = (function() {
 	var noop = function() {};
 	var msgpack = Platform.msgpack;
@@ -194,3 +206,5 @@ Rest.Promise = function(options) {
 };
 
 Rest.Callbacks = Rest;
+
+export default Rest;

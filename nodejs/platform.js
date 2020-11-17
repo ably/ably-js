@@ -1,4 +1,4 @@
-this.Platform = {
+var Platform = {
 	libver: 'js-node',
 	logTimestamps: true,
 	userAgent: null,
@@ -23,3 +23,5 @@ this.Platform = {
 	},
 	Promise: global && global.Promise,
 };
+
+export default Platform;
