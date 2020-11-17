@@ -1,5 +1,5 @@
 import Utils from '../../../lib/util/utils';
-import Defaults from 'platform-defaults';
+import Defaults from '../../../common/lib/util/defaults';
 
 var Http = (function() {
 	var noop = function() {};

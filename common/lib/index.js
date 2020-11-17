@@ -3,7 +3,7 @@ import Realtime from './client/realtime';
 import Utils from './util/utils';
 import BufferUtils from 'platform-bufferutils';
 import Crypto from 'platform-crypto';
-import Defaults from 'platform-defaults';
+import Defaults from '../lib/util/defaults';
 import Http from 'platform-http';
 import Message from './types/message';
 import PresenceMessage from './types/presencemessage';

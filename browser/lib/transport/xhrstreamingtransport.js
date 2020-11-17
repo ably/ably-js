@@ -1,11 +1,11 @@
 import Utils from '../../../lib/util/utils';
 import CometTransport from '../../../lib/transport/comettransport';
 import Logger from '../../../lib/util/logger';
-import Platform from 'lib-platform';
+import Platform from 'platform';
 import XHRRequest from './xhrrequest';
 import ConnectionManager from '../../../common/lib/transport/connectionmanager';
 
-var XHRStreamingTransport = (function() {
+var XHRStreamingTransport = function(connectionManager) {
 	var shortName = 'xhr_streaming';
 
 	/* public constructor */
@@ -39,11 +39,11 @@ var XHRStreamingTransport = (function() {
 		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
 	};
 
-	if(typeof(ConnectionManager) !== 'undefined' && XHRStreamingTransport.isAvailable()) {
-		ConnectionManager.supportedTransports[shortName] = XHRStreamingTransport;
+	if(typeof(connectionManager) !== 'undefined' && XHRStreamingTransport.isAvailable()) {
+		connectionManager.supportedTransports[shortName] = XHRStreamingTransport;
 	}
 
 	return XHRStreamingTransport;
-})();
+};
 
 export default XHRStreamingTransport;

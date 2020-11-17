@@ -18,6 +18,7 @@ module.exports = {
         'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
         'platform-webstorage': false,
         'platform-msgpack': false,
+        'platform-transports': path.resolve(nodePath, 'lib', 'transport'),
       }
   },
   output: {
@@ -33,4 +34,7 @@ module.exports = {
       'crypto-js': 'crypto-js',
   },
   devtool: 'source-map',
+  optimization: {
+    minimize: false,
+  }
 };

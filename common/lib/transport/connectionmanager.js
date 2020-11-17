@@ -15,6 +15,8 @@ import Message from '../types/message';
 import Multicaster from '../util/multicaster';
 import ErrorReporter from '../util/errorreporter';
 import WebStorage from 'platform-webstorage';
+import PlatformTransports from 'platform-transports';
+import WebSocketTransport from './websockettransport';
 
 var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
@@ -223,6 +225,11 @@ var ConnectionManager = (function() {
 	 *********************/
 
 	ConnectionManager.supportedTransports = {};
+
+	WebSocketTransport(ConnectionManager);
+	Utils.arrForEach(PlatformTransports, function (initFn) {
+		initFn(ConnectionManager);
+	});
 
 	ConnectionManager.prototype.createTransportParams = function(host, mode) {
 		var params = new TransportParams(this.options, host, mode, this.connectionKey);

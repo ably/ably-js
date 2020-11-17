@@ -1,6 +1,6 @@
 import Utils from './utils';
 import Platform from 'platform';
-import Defaults from 'platform-defaults';
+import Defaults from '../util/defaults';
 import Logger from './logger';
 import Http from 'platform-http';
 

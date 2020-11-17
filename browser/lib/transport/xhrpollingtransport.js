@@ -1,11 +1,10 @@
 import Utils from '../../../lib/util/utils';
 import Logger from '../../../lib/util/logger';
-import Platform from 'lib-platform';
+import Platform from 'platform';
 import CometTransport from '../../../lib/transport/comettransport';
 import XHRRequest from './xhrrequest';
-import ConnectionManager from '../../../common/lib/transport/connectionmanager';
 
-var XHRPollingTransport = (function() {
+var XHRPollingTransport = function(connectionManager) {
 	var shortName = 'xhr_polling';
 
 	function XHRPollingTransport(connectionManager, auth, params) {
@@ -39,11 +38,11 @@ var XHRPollingTransport = (function() {
 		return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
 	};
 
-	if(typeof(ConnectionManager) !== 'undefined' && XHRPollingTransport.isAvailable()) {
-		ConnectionManager.supportedTransports[shortName] = XHRPollingTransport;
+	if(typeof(connectionManager) !== 'undefined' && XHRPollingTransport.isAvailable()) {
+		connectionManager.supportedTransports[shortName] = XHRPollingTransport;
 	}
 
 	return XHRPollingTransport;
-})();
+};
 
 export default XHRPollingTransport;

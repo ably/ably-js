@@ -1,13 +1,12 @@
-import Platform from 'lib-platform';
+import Platform from 'platform';
 import Utils from '../util/utils';
 import Transport from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 import ProtocolMessage from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
-import ConnectionManager from './connectionmanager';
 
-var WebSocketTransport = (function() {
+var WebSocketTransport = function(connectionManager) {
 	var WebSocket = Platform.WebSocket;
 	var shortName = 'web_socket';
 
@@ -26,7 +25,7 @@ var WebSocketTransport = (function() {
 	};
 
 	if(WebSocketTransport.isAvailable())
-		ConnectionManager.supportedTransports[shortName] = WebSocketTransport;
+		connectionManager.supportedTransports[shortName] = WebSocketTransport;
 
 	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new WebSocketTransport(connectionManager, auth, params);
@@ -178,6 +177,6 @@ var WebSocketTransport = (function() {
 	};
 
 	return WebSocketTransport;
-})();
+};
 
 export default WebSocketTransport;
