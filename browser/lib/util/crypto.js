@@ -1,3 +1,8 @@
+import CryptoJS from 'crypto-js';
+import Platform from 'platform';
+import Logger from '../../../lib/util/logger';
+import BufferUtils from 'platform-bufferutils';
+
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 256; // bits
@@ -308,3 +313,5 @@ var Crypto = (function() {
 
 	return Crypto;
 })();
+
+export default Crypto;

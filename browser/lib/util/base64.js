@@ -218,3 +218,5 @@ var Base64 = (function() {
 
 	return Base64;
 })();
+
+export default Base64;

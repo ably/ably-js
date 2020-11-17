@@ -31,3 +31,5 @@ var DomEvent = (function() {
 
 	return DomEvent;
 })();
+
+export default DomEvent;

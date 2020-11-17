@@ -1,3 +1,6 @@
+import CryptoJS from 'crypto-js';
+import Platform from 'platform';
+
 var BufferUtils = (function() {
 	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
@@ -207,3 +210,5 @@ var BufferUtils = (function() {
 
 	return BufferUtils;
 })();
+
+export default BufferUtils;

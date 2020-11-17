@@ -1,3 +1,5 @@
+import Utils from '../../../common/lib/util/utils';
+
 var msgpack = (function() {
 	"use strict";
 
@@ -829,3 +831,5 @@ var msgpack = (function() {
 
 	return exports;
 })();
+
+export default msgpack;

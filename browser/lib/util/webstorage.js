@@ -1,3 +1,5 @@
+import Utils from '../../../lib/util/utils';
+
 var WebStorage = (function() {
 	var sessionSupported,
 		localSupported,
@@ -67,3 +69,5 @@ var WebStorage = (function() {
 
 	return WebStorage;
 })();
+
+export default WebStorage;

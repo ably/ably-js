@@ -16,6 +16,8 @@ module.exports = {
         'platform-base64': false,
         'platform-defaults': path.resolve(nodePath, 'lib', 'util', 'defaults'),
         'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
+        'platform-webstorage': false,
+        'platform-msgpack': false,
       }
   },
   output: {
