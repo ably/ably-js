@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var rest, exports = {},
 		Defaults = Ably.Rest.Defaults;
 
-	exports.setupHttp = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function() {
 			rest = helper.AblyRest();
@@ -62,5 +62,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		test.done();
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/http', exports);
 });

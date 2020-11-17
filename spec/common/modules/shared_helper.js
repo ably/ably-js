@@ -3,8 +3,8 @@
 /* Shared test helper for the Jasmine test suite that simplifies
 	 the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
-	function(testAppModule, clientModule, testAppManager, async) {
+define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async', 'node_modules/chai/chai'],
+	function(testAppModule, clientModule, testAppManager, async, chai) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
 			/* Don't include jsonp in availableTransports if xhr works. Why? Because
@@ -37,7 +37,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		function monitorConnection(test, realtime) {
 			utils.arrForEach(['failed', 'suspended'], function(state) {
 				realtime.connection.on(state, function () {
-					test.ok(false, 'Connection monitoring: state changed to ' + state + ', aborting test');
+					test.expect(false, 'Connection monitoring: state changed to ' + state + ', aborting test');
 					test.done();
 					realtime.close();
 				});
@@ -78,7 +78,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 		function callbackOnClose(realtime, callback) {
 			if(!realtime.connection.connectionManager.activeProtocol) {
-				console.log("No transport established; closing connection and calling test.done()")
+				console.log("No transport established; closing connection and calling done()");
 				utils.nextTick(function() {
 					realtime.close();
 					callback();
@@ -86,7 +86,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				return;
 			}
 			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
-				console.log("Transport disposed; calling test.done()")
+				console.log("Transport disposed; calling done()")
 				callback();
 			});
 			/* wait a tick before closing in order to avoid the final close
@@ -111,7 +111,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		 )
 		}
 
-		/* testFn is assumed to be a function of realtimeOptions that returns a nodeunit test */
+		/* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
 		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
 			utils.arrForEach(availableTransports, function(transport) {
 				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
@@ -130,37 +130,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 		function restTestOnJsonMsgpack(exports, name, testFn) {
 			exports[name + '_binary'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary'); };
 			exports[name + '_text'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text'); };
-		}
-
-		/* Wraps all tests with a timeout so that they don't run indefinitely */
-		/* Also clears transport preferences, so each test starts fresh */
-		function withTimeout(exports, defaultTimeout) {
-			var timeout = defaultTimeout || 60 * 1000;
-
-			for (var needle in exports) {
-				if (exports.hasOwnProperty(needle) && needle !== 'setUp') {
-					(function(originalFn) {
-						exports[needle] = function(test) {
-							var originalDone = test.done;
-							test.done = function() {
-								clearTimeout(timer);
-								originalDone.apply(test, arguments);
-								test.done = function() {
-									console.log("Test DONE called TWICE! -- there is a bug in the test, or the timeout was triggered!", originalFn.name);
-								};
-							};
-							var timer = setTimeout(function() {
-								test.ok(false, "Test timed out after " + (timeout / 1000) + "s");
-								test.done();
-							}, timeout);
-							clearTransportPreference();
-							originalFn(test);
-						};
-					})(exports[needle]);
-				}
-			}
-
-			return exports;
 		}
 
 		function clearTransportPreference() {
@@ -205,6 +174,75 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			};
 
 
+		function withMocha(title, exports, defaultTimeout) {
+			describe(title, function () {
+				this.timeout(defaultTimeout || 60 * 1000);
+
+				var counter = {
+					value: 0,
+					expected: -1,
+				};
+
+				function getTestApi (done) {
+					return {
+						done: function () {
+							if (counter.expected !== -1) {
+								chai.expect(counter.value).to.equal(counter.expected);
+							}
+							done();
+						},
+						ok: function (expression, message) {
+							counter.value += 1;
+							chai.expect(expression, message).to.be.ok;
+						},
+						expect: function (expected) {
+							counter.expected = expected;
+						},
+						equal: function (val1, val2, message) {
+							counter.value += 1;
+							chai.expect(val1).to.equal(val2, message);
+						},
+						deepEqual: function (val1, val2, message) {
+							counter.value += 1;
+							chai.expect(val1).to.deep.equal(val2, message);
+						},
+						notEqual: function (val1, val2, message) {
+							counter.value += 1;
+							chai.expect(val1).to.not.equal(val2, message);
+						},
+						throws: function (fn) {
+							counter.value += 1;
+							chai.expect(fn).to.throw();
+						}
+					}
+				};
+
+				before(function (done) {
+					if (typeof exports['before'] === 'function') {
+						exports['before'](getTestApi(done));
+					} else {
+						done();
+					}
+				});
+
+				beforeEach(function () {
+					counter.value = 0;
+					counter.expected = -1;
+
+					clearTransportPreference();
+				})
+
+				for (var testName in exports) {
+					(function(testName){
+						if (testName !== 'before') {
+							it(testName, function (done) {
+								exports[testName](getTestApi(done));
+							})
+					}})(testName);
+				}
+			})
+		}
+
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -224,7 +262,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			closeAndFinish:            closeAndFinish,
 			simulateDroppedConnection: simulateDroppedConnection,
 			becomeSuspended:           becomeSuspended,
-			withTimeout:               withTimeout,
 			testOnAllTransports:       testOnAllTransports,
 			restTestOnJsonMsgpack:     restTestOnJsonMsgpack,
 			availableTransports:       availableTransports,
@@ -235,6 +272,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			unroutableHost:            unroutableHost,
 			unroutableAddress:         unroutableAddress,
 			arrFind:                   arrFind,
-			arrFilter:                 arrFilter
+			arrFilter:                 arrFilter,
+			withMocha: withMocha
 		};
 	});

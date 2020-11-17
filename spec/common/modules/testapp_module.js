@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-	Test App creation helper used within NodeUnit tests.
+	Test App creation helper used within Mocha tests.
 */
 
 define(['spec/common/modules/testapp_manager', 'globals'], function(testAppManager, ablyGlobals) {

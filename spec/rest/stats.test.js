@@ -51,7 +51,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	}
 
-	exports.setup_stats = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		// force a new app to be created with first argument true so that stats are not effected by other tests
 		helper.setupApp(true, function() {
@@ -551,5 +551,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/stats', exports);
 });

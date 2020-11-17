@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper'], function(Ably, helper) {
 	var exports = {};
 
-	exports.setupInit = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -117,5 +117,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/init', exports);
 });

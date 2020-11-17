@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 		};
 
-	exports.setupMessage = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -314,11 +314,11 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 								break;
 							case 'nameAndEmptyStringData':
 							case 'objectWithNameAndEmptyStringData':
-								test.strictEqual(msg.data, '', 'Msg data received was a ' + typeof(msg.data) + ' when should have been an empty string');
+								test.equal(msg.data, '', 'Msg data received was a ' + typeof(msg.data) + ' when should have been an empty string');
 								break;
 							case 'objectWithNameAndFalseData':
 							case 'nameAndFalseData':
-								test.strictEqual(msg.data, false, 'Msg data received was a ' + typeof(msg.data) + ' when should have been a bool false');
+								test.equal(msg.data, false, 'Msg data received was a ' + typeof(msg.data) + ' when should have been a bool false');
 								break;
 							case 'nameAndData':
 							case 'nameAndDataAndCallback':
@@ -961,5 +961,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/message', exports);
 });

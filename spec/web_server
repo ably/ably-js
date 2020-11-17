@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /*
-  Runs a simple web server that runs the nodeunit.html tests
-  This is useful if you need to run the nodeunit tests visually
+  Runs a simple web server that runs the mocha.html tests
+  This is useful if you need to run the mocha tests visually
   via a tunnel to your localhost server
 */
 
@@ -22,7 +22,7 @@ server.use(function(req, res, next) {
 server.use(cors());
 
 server.get('/', function(req, res) {
-  res.redirect('/nodeunit.html');
+  res.redirect('/mocha.html');
 });
 
 server.get('/support/browser_file_list.js', function(req, res) {
@@ -40,4 +40,4 @@ server.use(express.static(__dirname));
 var port = process.env.PORT || 3000;
 server.listen(port);
 
-console.log("Nodeunit test server listening on http://localhost:3000/");
+console.log("Mocha test server listening on http://localhost:3000/");

@@ -278,6 +278,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish(test, realtime);
 	}
 
-	return module.exports = supportedBrowser() ? helper.withTimeout(exports) : {};
-
+	if (supportedBrowser()) {
+		helper.withMocha('browser/connection', exports);
+	}
 });

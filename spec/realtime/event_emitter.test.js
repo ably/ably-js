@@ -7,7 +7,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 	closeAndFinish = helper.closeAndFinish,
 	monitorConnection = helper.monitorConnection;
 
-	exports.setupauth = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -115,8 +115,8 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.emit('custom');
 		eventEmitter.emit('custom');
 
-		test.equals(onCallbackCalled, 3, 'On callback called every time');
-		test.equals(onceCallbackCalled, 1, 'Once callback called once');
+		test.equal(onCallbackCalled, 3, 'On callback called every time');
+		test.equal(onceCallbackCalled, 1, 'Once callback called once');
 
 		closeAndFinish(test, realtime);
 	}
@@ -135,7 +135,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.emit('custom');
 		eventEmitter.emit('custom');
 
-		test.equals(callbackCalled, 4, 'On callback called both times but once callbacks only called once');
+		test.equal(callbackCalled, 4, 'On callback called both times but once callbacks only called once');
 
 		closeAndFinish(test, realtime);
 	}
@@ -152,12 +152,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.on('custom', callback);
 
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+		test.equal(callbackCalled, 3, 'The same callback should have been called for every registration');
 
 		callbackCalled = 0;
 		eventEmitter.off(callback);
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+		test.equal(callbackCalled, 0, 'All callbacks should have been removed');
 
 		closeAndFinish(test, realtime);
 	}
@@ -174,12 +174,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.on('custom', callback);
 
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+		test.equal(callbackCalled, 3, 'The same callback should have been called for every registration');
 
 		callbackCalled = 0;
 		eventEmitter.off();
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+		test.equal(callbackCalled, 0, 'All callbacks should have been removed');
 
 		closeAndFinish(test, realtime);
 	}
@@ -196,12 +196,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.on('custom', callback);
 
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+		test.equal(callbackCalled, 3, 'The same callback should have been called for every registration');
 
 		callbackCalled = 0;
 		eventEmitter.off('custom', callback);
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+		test.equal(callbackCalled, 0, 'All callbacks should have been removed');
 
 		closeAndFinish(test, realtime);
 	}
@@ -218,12 +218,12 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.on('custom', callback);
 
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 3, 'The same callback should have been called for every registration');
+		test.equal(callbackCalled, 3, 'The same callback should have been called for every registration');
 
 		callbackCalled = 0;
 		eventEmitter.off('custom');
 		eventEmitter.emit('custom');
-		test.equals(callbackCalled, 0, 'All callbacks should have been removed');
+		test.equal(callbackCalled, 0, 'All callbacks should have been removed');
 
 		closeAndFinish(test, realtime);
 	}
@@ -270,22 +270,22 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		eventEmitter.emit('a');
 		eventEmitter.emit('b');
 		eventEmitter.emit('c');
-		test.equals(callbackCalled, 3, 'listener listens to all events in array');
+		test.equal(callbackCalled, 3, 'listener listens to all events in array');
 
 		eventEmitter.off(['a', 'b', 'c'], callback);
 		eventEmitter.emit('a');
 		eventEmitter.emit('b');
 		eventEmitter.emit('c');
-		test.equals(callbackCalled, 3, 'All callbacks should have been removed');
+		test.equal(callbackCalled, 3, 'All callbacks should have been removed');
 
 		callbackCalled = 0;
 		eventEmitter.on(['a', 'b', 'c'], callback);
 		eventEmitter.off('a', callback);
 		eventEmitter.emit('a');
-		test.equals(callbackCalled, 0, 'callback ‘a’ should have been removed');
+		test.equal(callbackCalled, 0, 'callback ‘a’ should have been removed');
 		eventEmitter.emit('b');
 		eventEmitter.emit('c');
-		test.equals(callbackCalled, 2, 'callbacks b and c should not have been removed');
+		test.equal(callbackCalled, 2, 'callbacks b and c should not have been removed');
 
 		closeAndFinish(test, realtime);
 	}
@@ -352,5 +352,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish(test, realtime);
 	}
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/event_emitter', exports);
 });

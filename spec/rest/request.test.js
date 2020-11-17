@@ -8,7 +8,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		echoServerHost = 'echo.ably.io',
 		restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
-	exports.setuptime = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -190,5 +190,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		};
 	})
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/request', exports);
 });

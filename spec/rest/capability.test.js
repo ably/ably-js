@@ -15,7 +15,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			channel0:[]
 		};
 
-	exports.setupcapability = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -273,5 +273,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		});
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/capability', exports);
 });

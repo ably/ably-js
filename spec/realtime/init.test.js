@@ -5,7 +5,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		closeAndFinish = helper.closeAndFinish,
 		monitorConnection = helper.monitorConnection;
 
-	exports.setupInit = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -101,10 +101,10 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true});
 			test.equal(realtime.options.key, keyStr);
 			test.equal(realtime.auth.method, 'token');
-			test.equal(realtime.auth.clientId, null);
+			test.equal(realtime.auth.clientId, undefined);
 			/* Check that useTokenAuth by default results in an anonymous (and not wildcard) token */
 			realtime.connection.on('connected', function() {
-				test.equal(realtime.auth.tokenDetails.clientId, null);
+				test.equal(realtime.auth.tokenDetails.clientId, undefined);
 				closeAndFinish(test, realtime);
 			});
 		} catch(e) {
@@ -121,7 +121,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var keyStr = helper.getTestApp().keys[0].keyStr;
 			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true, defaultTokenParams: {clientId: '*', ttl: 12345}});
-			test.equal(realtime.auth.clientId, null);
+			test.equal(realtime.auth.clientId, undefined);
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.auth.tokenDetails.clientId, '*');
 				/* auth.clientId now does inherit the value '*' -- RSA7b4 */
@@ -142,7 +142,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		try {
 			var keyStr = helper.getTestApp().keys[0].keyStr;
 			realtime = helper.AblyRealtime({key: keyStr, useTokenAuth: true, defaultTokenParams: {clientId: 'test'}});
-			test.equal(realtime.auth.clientId, null);
+			test.equal(realtime.auth.clientId, undefined);
 			realtime.connection.on('connected', function() {
 				test.equal(realtime.auth.tokenDetails.clientId, 'test');
 				test.equal(realtime.auth.clientId, 'test');
@@ -374,5 +374,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/init', exports);
 });

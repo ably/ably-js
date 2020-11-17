@@ -1,7 +1,7 @@
 "use strict";
 
 define(['shared_helper'], function(helper) {
-	return module.exports = {
+	helper.withMocha('tear_down', {
 		teardownapp: function(test) {
 			helper.tearDownApp(function(err) {
 				if (err) {
@@ -13,5 +13,5 @@ define(['shared_helper'], function(helper) {
 				test.done();
 			});
 		}
-	};
+	});
 });

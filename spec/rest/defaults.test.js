@@ -69,7 +69,7 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 
 	/* init with given environment and default fallbacks */
 	/* will emit a deprecation warning */
-	exports.defaults_given_environment = function(test) {
+	exports.defaults_given_environment_and_fallbackHostsUseDefault = function(test) {
 		test.expect(11);
 		var normalisedOptions = Defaults.normaliseOptions({environment: 'sandbox', fallbackHostsUseDefault: true});
 
@@ -254,5 +254,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		test.done();
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/defaults', exports);
 });

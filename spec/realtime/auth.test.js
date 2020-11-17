@@ -26,7 +26,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}
 
-	exports.setupauth = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -623,7 +623,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				return;
 			}
 
-			test.equals(1, timeRequestCount, 'Time function is only called once per instance');
+			test.equal(1, timeRequestCount, 'Time function is only called once per instance');
 			test.done();
 		});
 	};
@@ -956,8 +956,8 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		realtime.connection.once('connected', function() {
 			var channel = realtime.channels.get(jwtTestChannelName);
 			channel.publish('greeting', 'Hello World!', function(err) {
-				test.strictEqual(err.code, 40160, 'Verify publish denied code');
-				test.strictEqual(err.statusCode, 401, 'Verify publish denied status code');
+				test.equal(err.code, 40160, 'Verify publish denied code');
+				test.equal(err.statusCode, 401, 'Verify publish denied status code');
 				realtime.connection.close();
 				test.done();
 			})
@@ -982,7 +982,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		realtime.connection.once('connected', function() {
 			var channel = realtime.channels.get(jwtTestChannelName);
 			channel.subscribe(publishEvent, function(msg) {
-				test.strictEqual(msg.data, messageData, 'Verify message data matches');
+				test.equal(msg.data, messageData, 'Verify message data matches');
 				realtime.connection.close();
 				test.done();
 			});
@@ -1005,7 +1005,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var realtime = helper.AblyRealtime({ authCallback: authCallback });
 		realtime.connection.once('connected', function() {
 			realtime.connection.once('disconnected', function(stateChange) {
-				test.strictEqual(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
+				test.equal(stateChange.reason.code, 40142, 'Verify disconnected reason change code');
 				realtime.connection.close();
 				test.done();
 			});
@@ -1030,7 +1030,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		realtime.connection.once('connected', function() {
 			var originalToken = realtime.auth.tokenDetails.token;
 			realtime.connection.once('update', function() {
-				test.notStrictEqual(originalToken, realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
+				test.notEqual(originalToken, realtime.auth.tokenDetails.token, 'Verify a new token has been issued');
 				realtime.connection.close();
 				test.done();
 			});
@@ -1052,7 +1052,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			}
 			var realtime = helper.AblyRealtime({ token: token });
 			realtime.connection.once('connected', function() {
-				test.strictEqual(token, realtime.auth.tokenDetails.token, 'Verify that token is the same');
+				test.equal(token, realtime.auth.tokenDetails.token, 'Verify that token is the same');
 				realtime.connection.close();
 				test.done();
 			});
@@ -1182,5 +1182,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	}});
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/auth', exports);
 });

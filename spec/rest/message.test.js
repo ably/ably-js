@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 	var displayError = helper.displayError;
 	var noop = function() {};
 
-	exports.setupInit = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -288,5 +288,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		channel.publish([{name: 'foo', data: 'bar'}], {testParam: 'testParamValue'}, noop);
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('rest/message', exports);
 });

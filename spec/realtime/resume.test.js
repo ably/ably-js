@@ -10,7 +10,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		testOnAllTransports = helper.testOnAllTransports,
 		bestTransport = helper.bestTransport;
 
-	exports.setupResume = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -543,5 +543,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	}
 
-	return module.exports = helper.withTimeout(exports, 120000); // allow 2 minutes for some of the longer phased tests
+	helper.withMocha('realtime/resume', exports, 120 * 1000); // allow 2 minutes for some of the longer phased tests
 });

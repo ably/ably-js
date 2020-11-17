@@ -89,7 +89,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		}
 	};
 
-	exports.setupPresence = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -373,7 +373,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var clientChannel = clientRealtime.channels.get(channelName);
 		var presence = clientChannel.presence;
 		presence.subscribe(function(presenceMessage) {
-			test.equals(presenceMessage.action, 'enter', 'Action should contain string "enter"');
+			test.equal(presenceMessage.action, 'enter', 'Action should contain string "enter"');
 			closeAndFinish(test, clientRealtime);
 		});
 		clientChannel.presence.enter();
@@ -1226,7 +1226,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 				}
 				var realtime = helper.AblyRealtime({ token: tokenDetails.token, autoConnect: false });
 				var channel = realtime.channels.get(channelName);
-				test.equal(realtime.auth.clientId, null, 'no clientId when entering');
+				test.equal(realtime.auth.clientId, undefined, 'no clientId when entering');
 				channel.presence.enter("test data", function(err) {
 					test.equal(realtime.auth.clientId, testClientId, 'clientId has been set by the time we entered');
 					cb(err, realtime);
@@ -1793,5 +1793,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		})
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/presence', exports);
 });

@@ -21,7 +21,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		bestTransport = helper.bestTransport;
 
-	exports.setupUpgrade = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -702,5 +702,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
-	return module.exports = (bestTransport === 'web_socket') ? helper.withTimeout(exports) : {};
+	if (bestTransport === 'web_socket') {
+		helper.withMocha('realtime/upgrade', exports);
+	}
 });

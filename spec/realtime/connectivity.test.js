@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		monitorConnection = helper.monitorConnection,
 		utils = helper.Utils;
 
-	exports.setupConnectivity = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -29,5 +29,5 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		})
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/connectivity', exports);
 });

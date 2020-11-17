@@ -257,5 +257,5 @@ define(['ably', 'shared_helper'], function(Ably, helper) {
 		heartbeatWithTransport(test);
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('browser/simple', exports);
 });

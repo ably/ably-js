@@ -28,7 +28,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 		};
 	}
 
-	exports.setupMessage = function(test) {
+	exports.before = function(test) {
 		test.expect(1);
 		helper.setupApp(function(err) {
 			if(err) {
@@ -219,6 +219,8 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 
 	/* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
 	exports.noPlugin = function(test) {
+		var testName = 'noPlugin';
+
 		try {
 			var realtime = helper.AblyRealtime();
 			var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
@@ -244,5 +246,5 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 		}
 	};
 
-	return module.exports = helper.withTimeout(exports);
+	helper.withMocha('realtime/delta', exports);
 });
