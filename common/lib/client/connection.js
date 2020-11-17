@@ -1,3 +1,9 @@
+import Utils from '../util/utils';
+import EventEmitter from '../util/eventemitter';
+import ConnectionManager from '../transport/connectionmanager';
+import Logger from '../util/logger';
+import ConnectionStateChange from './connectionstatechange';
+
 var Connection = (function() {
 	function noop() {}
 
@@ -56,3 +62,5 @@ var Connection = (function() {
 
 	return Connection;
 })();
+
+export default Connection;

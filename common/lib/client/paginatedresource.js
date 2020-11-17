@@ -1,3 +1,8 @@
+import Utils from '../util/utils';
+import Logger from '../util/logger';
+import Resource from './resource';
+import Http from 'platform-http';
+
 var PaginatedResource = (function() {
 
 	function getRelParams(linkUrl) {
@@ -144,3 +149,5 @@ var PaginatedResource = (function() {
 
 	return PaginatedResource;
 })();
+
+export default PaginatedResource;

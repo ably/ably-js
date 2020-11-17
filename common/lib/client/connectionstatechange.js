@@ -10,3 +10,5 @@ var ConnectionStateChange = (function() {
 
 	return ConnectionStateChange;
 })();
+
+export default ConnectionStateChange;

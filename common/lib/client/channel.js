@@ -1,3 +1,14 @@
+import Utils from '../util/utils';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+import Presence from './presence';
+import Crypto from 'platform-crypto';
+import Message from '../types/message';
+import ErrorInfo from '../types/errorinfo';
+import PaginatedResource from './paginatedresource';
+import Http from 'platform-http';
+import Resource from './resource';
+
 var Channel = (function() {
 	function noop() {}
 	var MSG_ID_ENTROPY_BYTES = 9;
@@ -144,3 +155,5 @@ var Channel = (function() {
 
 	return Channel;
 })();
+
+export default Channel;

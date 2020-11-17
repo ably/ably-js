@@ -1,3 +1,13 @@
+import Utils from '../util/utils';
+import Rest from './rest';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+import Connection from './connection';
+import RealtimeChannel from './realtimechannel';
+import Defaults from '../util/defaults';
+import ErrorReporter from '../util/errorreporter';
+import ErrorInfo from '../types/errorinfo';
+
 var Realtime = (function() {
 
 	function Realtime(options) {
@@ -184,3 +194,5 @@ Realtime.Promise = function(options) {
 };
 
 Realtime.Callbacks = Realtime;
+
+export default Realtime;

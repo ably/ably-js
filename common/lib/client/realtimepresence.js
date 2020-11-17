@@ -1,3 +1,14 @@
+import Utils from '../util/utils';
+import Presence from './presence';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+import PresenceMessage from '../types/presencemessage';
+import ErrorInfo from '../types/errorinfo';
+import RealtimeChannel from './realtimechannel';
+import ConnectionError from '../transport/connectionerror';
+import Multicaster from '../util/multicaster';
+import ChannelStateChange from './channelstatechange';
+
 var RealtimePresence = (function() {
 	var noop = function() {};
 
@@ -616,3 +627,5 @@ var RealtimePresence = (function() {
 
 	return RealtimePresence;
 })();
+
+export default RealtimePresence;
