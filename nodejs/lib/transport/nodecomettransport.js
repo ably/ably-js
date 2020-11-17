@@ -1,4 +1,11 @@
 "use strict";
+import CometTransport from '../../../lib/transport/comettransport';
+import Logger from '../../../lib/util/logger';
+import Utils from '../../../lib/util/utils';
+import ErrorInfo from '../../../lib/types/errorinfo';
+import EventEmitter from '../../../lib/util/eventemitter';
+import ConnectionManager from '../../../common/lib/transport/connectionmanager';
+
 var NodeCometTransport = (function() {
 	var http = require('http');
 	var https = require('https');
@@ -302,3 +309,5 @@ var NodeCometTransport = (function() {
 
 	return NodeCometTransport;
 })();
+
+export default NodeCometTransport;
