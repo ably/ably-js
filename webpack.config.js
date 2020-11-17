@@ -15,6 +15,7 @@ module.exports = {
         'platform-bufferutils': path.resolve(nodePath, 'lib', 'util', 'bufferutils'),
         'platform-base64': false,
         'platform-defaults': path.resolve(nodePath, 'lib', 'util', 'defaults'),
+        'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
       }
   },
   output: {
