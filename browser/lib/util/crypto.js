@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js';
 import Platform from 'platform';
-import Logger from '../../../lib/util/logger';
+import Logger from '../../../common/lib/util/logger';
 import BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function() {

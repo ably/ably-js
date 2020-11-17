@@ -1,11 +1,11 @@
-import Utils from '../../../lib/util/utils';
-import CometTransport from '../../../lib/transport/comettransport';
+import Utils from '../../../common/lib/util/utils';
+import CometTransport from '../../../common/lib/transport/comettransport';
 import Platform from 'platform';
-import EventEmitter from '../../../lib/util/eventemitter';
+import EventEmitter from '../../../common/lib/util/eventemitter';
 import Http from 'platform-http';
-import ErrorInfo from '../../../lib/types/errorinfo';
+import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Defaults from '../../../common/lib/util/defaults';
-import Logger from '../../../lib/util/logger';
+import Logger from '../../../common/lib/util/logger';
 
 var JSONPTransport = function(connectionManager) {
 	var noop = function() {};

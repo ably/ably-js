@@ -1,7 +1,7 @@
-import Utils from '../../../lib/util/utils';
-import Logger from '../../../lib/util/logger';
+import Utils from '../../../common/lib/util/utils';
+import Logger from '../../../common/lib/util/logger';
 import Platform from 'platform';
-import CometTransport from '../../../lib/transport/comettransport';
+import CometTransport from '../../../common/lib/transport/comettransport';
 import XHRRequest from './xhrrequest';
 
 var XHRPollingTransport = function(connectionManager) {

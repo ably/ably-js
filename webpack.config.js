@@ -1,8 +1,9 @@
 const path = require('path');
 
 const nodePath = path.resolve(__dirname, 'nodejs');
+const browserPath = path.resolve(__dirname, 'browser');
 
-module.exports = {
+const nodeConfig = {
   mode: 'production',
   entry: {
       index: path.resolve(__dirname, 'common', 'lib', 'index.js')
@@ -38,3 +39,45 @@ module.exports = {
     minimize: false,
   }
 };
+
+const browserConfig = {
+  mode: 'production',
+  entry: {
+      index: path.resolve(__dirname, 'common', 'lib', 'index.js')
+  },
+  resolve: {
+      extensions: ['.js'],
+      alias: {
+        platform: path.resolve(nodePath, 'platform'),
+        'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
+        'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
+        'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
+        'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
+        'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
+        'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
+        'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
+        'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
+      }
+  },
+  output: {
+      filename: 'ably.js',
+      path: path.resolve(__dirname, 'browser/static'),
+      library: 'Ably',
+      libraryTarget: 'umd',
+  },
+  target: 'node',
+  externals: {
+      request: 'request',
+      ws: 'ws',
+      'crypto-js': 'crypto-js',
+  },
+  devtool: 'source-map',
+  optimization: {
+    minimize: false,
+  }
+};
+
+module.exports = [
+  nodeConfig,
+  browserConfig,
+];

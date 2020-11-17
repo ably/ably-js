@@ -1,4 +1,4 @@
-import Utils from '../../../lib/util/utils';
+import Utils from '../../../common/lib/util/utils';
 import Defaults from '../../../common/lib/util/defaults';
 
 var Http = (function() {

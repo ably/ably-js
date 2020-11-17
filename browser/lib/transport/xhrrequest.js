@@ -1,10 +1,10 @@
-import Utils from '../../../lib/util/utils';
-import EventEmitter from '../../../lib/util/eventemitter';
+import Utils from '../../../common/lib/util/utils';
+import EventEmitter from '../../../common/lib/util/eventemitter';
 import Platform from 'platform';
-import ErrorInfo from '../../../lib/types/errorinfo';
+import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Http from 'platform-http';
-import Logger from '../../../lib/util/logger';
-import Defaults from '../../../lib/util/defaults';
+import Logger from '../../../common/lib/util/logger';
+import Defaults from '../../../common/lib/util/defaults';
 import BufferUtils from 'platform-bufferutils';
 import DomEvent from '../util/domevent';
 
