@@ -1,3 +1,10 @@
+import Utils from '../../../lib/util/utils';
+import Logger from '../../../lib/util/logger';
+import Platform from 'lib-platform';
+import CometTransport from '../../../lib/transport/comettransport';
+import XHRRequest from './xhrrequest';
+import ConnectionManager from '../../../common/lib/transport/connectionmanager';
+
 var XHRPollingTransport = (function() {
 	var shortName = 'xhr_polling';
 
@@ -38,3 +45,5 @@ var XHRPollingTransport = (function() {
 
 	return XHRPollingTransport;
 })();
+
+export default XHRPollingTransport;

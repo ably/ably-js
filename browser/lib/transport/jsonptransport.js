@@ -1,3 +1,13 @@
+import Utils from '../../../lib/util/utils';
+import CometTransport from '../../../lib/transport/comettransport';
+import Platform from 'lib-platform';
+import EventEmitter from '../../../lib/util/eventemitter';
+import Http from 'lib-http';
+import ErrorInfo from '../../../lib/types/errorinfo';
+import Defaults from 'lib-defaults';
+import Logger from '../../../lib/util/logger';
+import ConnectionManager from '../../../common/lib/transport/connectionmanager';
+
 var JSONPTransport = (function() {
 	var noop = function() {};
 	/* Can't just use window.Ably, as that won't exist if using the commonjs version. */
@@ -211,3 +221,5 @@ var JSONPTransport = (function() {
 
 	return JSONPTransport;
 })();
+
+export default JSONPTransport;

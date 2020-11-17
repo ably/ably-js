@@ -1,3 +1,10 @@
+import Utils from '../../../lib/util/utils';
+import CometTransport from '../../../lib/transport/comettransport';
+import Logger from '../../../lib/util/logger';
+import Platform from 'lib-platform';
+import XHRRequest from './xhrrequest';
+import ConnectionManager from '../../../common/lib/transport/connectionmanager';
+
 var XHRStreamingTransport = (function() {
 	var shortName = 'xhr_streaming';
 
@@ -38,3 +45,5 @@ var XHRStreamingTransport = (function() {
 
 	return XHRStreamingTransport;
 })();
+
+export default XHRStreamingTransport;

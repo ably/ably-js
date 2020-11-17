@@ -1,3 +1,13 @@
+import Utils from '../../../lib/util/utils';
+import EventEmitter from '../../../lib/util/eventemitter';
+import Platform from 'lib-platform';
+import ErrorInfo from '../../../lib/types/errorinfo';
+import Http from 'lib-http';
+import Logger from '../../../lib/util/logger';
+import Defaults from '../../../lib/util/defaults';
+import BufferUtils from 'lib-bufferutils';
+import DomEvent from '../util/domevent';
+
 var XHRRequest = (function() {
 	var noop = function() {};
 	var idCounter = 0;
@@ -312,3 +322,5 @@ var XHRRequest = (function() {
 
 	return XHRRequest;
 })();
+
+export default XHRRequest;
