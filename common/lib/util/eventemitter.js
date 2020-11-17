@@ -1,3 +1,7 @@
+import Utils from './utils';
+import Logger from './logger';
+import Platform from 'platform';
+
 var EventEmitter = (function() {
 
 	/* public constructor */
@@ -219,3 +223,5 @@ var EventEmitter = (function() {
 
 	return EventEmitter;
 })();
+
+export default EventEmitter;

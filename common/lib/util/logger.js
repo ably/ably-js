@@ -1,3 +1,5 @@
+import Platform from 'platform';
+
 var Logger = (function() {
 	var consoleLogger, errorLogger;
 
@@ -84,3 +86,5 @@ var Logger = (function() {
 
 	return Logger;
 })();
+
+export default Logger;

@@ -14,6 +14,7 @@ module.exports = {
         'platform-http': path.resolve(nodePath, 'lib', 'util', 'http'),
         'platform-bufferutils': path.resolve(nodePath, 'lib', 'util', 'bufferutils'),
         'platform-base64': false,
+        'platform-defaults': path.resolve(nodePath, 'lib', 'util', 'defaults'),
       }
   },
   output: {

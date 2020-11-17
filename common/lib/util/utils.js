@@ -1,3 +1,7 @@
+import Platform from 'platform';
+import Defaults from './defaults';
+import BufferUtils from 'platform-bufferutils';
+
 var Utils = (function() {
 	var msgpack = Platform.msgpack;
 
@@ -513,3 +517,5 @@ var Utils = (function() {
 
 	return Utils;
 })();
+
+export default Utils;

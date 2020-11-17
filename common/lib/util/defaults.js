@@ -1,3 +1,10 @@
+import Defaults from 'platform-defaults';
+import Platform from 'platform';
+import Utils from './utils';
+import BufferUtils from 'platform-bufferutils';
+import Logger from './logger';
+import ErrorInfo from '../types/errorinfo';
+
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
 Defaults.REALTIME_HOST            = 'realtime.ably.io';
@@ -211,3 +218,5 @@ Defaults.normaliseOptions = function(options) {
 
 	return options;
 };
+
+export default Defaults;
