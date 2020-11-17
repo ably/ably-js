@@ -1,5 +1,2 @@
 "use strict";
-module.exports = {
-	Rest: require('./rest'),
-	Realtime: require('./realtime')
-};
+module.exports = require('../browser/static/ably-commonjs').Ably;

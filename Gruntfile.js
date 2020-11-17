@@ -361,7 +361,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test:mocha',
 		'Concat files and then run the Mocha specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['concat', 'requirejs', 'mocha']
+		['build', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
