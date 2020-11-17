@@ -1,0 +1,13 @@
+{
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": true
+  },
+  "rules": {
+    "no-undef": "error"
+  },
+  "parserOptions": {
+    "sourceType": "module"
+  }
+}
