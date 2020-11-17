@@ -1,3 +1,12 @@
+import Platform from 'lib-platform';
+import Utils from '../util/utils';
+import Transport from './transport';
+import Defaults from '../util/defaults';
+import Logger from '../util/logger';
+import ProtocolMessage from '../types/protocolmessage';
+import ErrorInfo from '../types/errorinfo';
+import ConnectionManager from './connectionmanager';
+
 var WebSocketTransport = (function() {
 	var WebSocket = Platform.WebSocket;
 	var shortName = 'web_socket';
@@ -170,3 +179,5 @@ var WebSocketTransport = (function() {
 
 	return WebSocketTransport;
 })();
+
+export default WebSocketTransport;

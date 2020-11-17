@@ -1,3 +1,10 @@
+import ProtocolMessage from '../types/protocolmessage';
+import Utils from '../util/utils';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+import ConnectionError from '../transport/connectionerror';
+import ErrorInfo from '../types/errorinfo';
+
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;
 	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
@@ -219,3 +226,5 @@ var Transport = (function() {
 
 	return Transport;
 })();
+
+export default Transport;

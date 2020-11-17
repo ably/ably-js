@@ -1,3 +1,7 @@
+import Utils from '../util/utils';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+
 var MessageQueue = (function() {
 	function MessageQueue() {
 		EventEmitter.call(this);
@@ -64,3 +68,5 @@ var MessageQueue = (function() {
 
 	return MessageQueue;
 })();
+
+export default MessageQueue;
