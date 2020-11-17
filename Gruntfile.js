@@ -1,12 +1,14 @@
 "use strict";
 
 var fs = require('fs');
+var webpackConfig = require('./webpack.config');
 
 module.exports = function (grunt) {
 
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-closure-tools');
 	grunt.loadNpmTasks('grunt-bump');
+	grunt.loadNpmTasks('grunt-webpack');
 
 	var dirs = {
 		common: 'common',
@@ -43,7 +45,10 @@ module.exports = function (grunt) {
 
 	var gruntConfig = {
 		dirs: dirs,
-		pkgVersion: grunt.file.readJSON('package.json').version
+		pkgVersion: grunt.file.readJSON('package.json').version,
+		webpack: {
+			config: webpackConfig,
+		}
 	};
 
 	gruntConfig.concat = {
@@ -309,7 +314,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'set-library-version',
-		'concat'
+		'webpack'
 	]);
 
 	grunt.registerTask('minify', [
