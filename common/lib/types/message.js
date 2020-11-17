@@ -1,3 +1,9 @@
+import BufferUtils from 'platform-bufferutils';
+import Utils from '../util/utils';
+import Logger from '../util/logger';
+import Crypto from 'platform-crypto';
+import ErrorInfo from './errorinfo';
+
 var Message = (function() {
 
 	function Message() {
@@ -311,3 +317,5 @@ var Message = (function() {
 
 	return Message;
 })();
+
+export default Message;

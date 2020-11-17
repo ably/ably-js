@@ -1,3 +1,8 @@
+import Utils from '../util/utils';
+import ErrorInfo from './errorinfo';
+import Message from './message';
+import PresenceMessage from './presencemessage';
+
 var ProtocolMessage = (function() {
 
 	function ProtocolMessage() {
@@ -195,3 +200,5 @@ var ProtocolMessage = (function() {
 
 	return ProtocolMessage;
 })();
+
+export default ProtocolMessage;

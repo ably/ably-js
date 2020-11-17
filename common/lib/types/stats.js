@@ -1,3 +1,5 @@
+import Utils from '../util/utils';
+
 var Stats = (function() {
 
 	function MessageCount(values) {
@@ -120,3 +122,5 @@ var Stats = (function() {
 
 	return Stats;
 })();
+
+export default Stats;

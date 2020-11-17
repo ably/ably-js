@@ -1,3 +1,5 @@
+import Utils from '../util/utils';
+
 var PushChannelSubscription = (function() {
 
 	function PushChannelSubscription() {
@@ -56,3 +58,5 @@ var PushChannelSubscription = (function() {
 
 	return PushChannelSubscription;
 })();
+
+export default PushChannelSubscription;
