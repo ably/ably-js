@@ -1,2 +1,2 @@
 "use strict";
-module.exports = require('../browser/static/ably-commonjs').Ably;
+module.exports = require('../browser/static/ably-commonjs');

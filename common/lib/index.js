@@ -31,7 +31,7 @@ Realtime.PresenceMessage = PresenceMessage;
 Realtime.ProtocolMessage = ProtocolMessage;
 Realtime.ConnectionManager = ConnectionManager;
 
-export {
+export default {
   Rest,
   Realtime,
   msgpack,

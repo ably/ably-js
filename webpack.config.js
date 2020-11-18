@@ -23,10 +23,11 @@ const nodeConfig = {
       }
   },
   output: {
-      filename: 'ably-commonjs.js',
+      filename: 'ably-node.js',
       path: path.resolve(__dirname, 'browser/static'),
       library: 'Ably',
-      libraryTarget: 'commonjs2',
+      libraryTarget: 'umd',
+      libraryExport: 'default',
   },
   target: 'node',
   externals: {
@@ -63,7 +64,8 @@ const browserConfig = {
       filename: 'ably.js',
       path: path.resolve(__dirname, 'browser/static'),
       library: 'Ably',
-      libraryTarget: 'var',
+      libraryTarget: 'umd',
+      libraryExport: 'default',
   },
   target: 'web',
   externals: {
