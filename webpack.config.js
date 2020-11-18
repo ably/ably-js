@@ -20,7 +20,7 @@ const nodeConfig = {
         'platform-webstorage': false,
         'platform-msgpack': false,
         'platform-transports': path.resolve(nodePath, 'lib', 'transport'),
-      }
+      },
   },
   output: {
       filename: 'ably-node.js',
@@ -36,9 +36,6 @@ const nodeConfig = {
       'crypto-js': 'crypto-js',
   },
   devtool: 'source-map',
-  optimization: {
-    minimize: false,
-  }
 };
 
 const browserConfig = {
@@ -58,7 +55,10 @@ const browserConfig = {
         'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
         'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
         'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
-      }
+      },
+      fallback: {
+        'crypto': false,
+      },
   },
   output: {
       filename: 'ably.js',
@@ -73,9 +73,6 @@ const browserConfig = {
       ws: 'ws',
   },
   devtool: 'source-map',
-  optimization: {
-    minimize: false,
-  }
 };
 
 module.exports = [
