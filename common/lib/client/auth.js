@@ -6,8 +6,8 @@ import Multicaster from '../util/multicaster';
 import BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
 import Base64 from 'platform-base64';
-import HmacSHA256 from 'crypto-js/hmac-sha256';
-import { stringify as stringifyBase64 } from 'crypto-js/enc-base64';
+import HmacSHA256 from 'crypto-js/build/hmac-sha256';
+import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 
 var Auth = (function() {
 	var MAX_TOKEN_LENGTH = Math.pow(2, 17);

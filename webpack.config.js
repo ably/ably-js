@@ -28,12 +28,22 @@ const nodeConfig = {
       library: 'Ably',
       libraryTarget: 'umd',
       libraryExport: 'default',
+      iife: true,
+      environment: {
+        arrowFunction: false,
+        const: false,
+        destructuring: false,
+        forOf: false,
+      },
   },
   target: 'node',
   externals: {
-      request: 'request',
-      ws: 'ws',
-      'crypto-js': 'crypto-js',
+      request: true,
+      ws: true,
+      'crypto-js': false,
+  },
+  optimization: {
+    minimize: false,
   },
   devtool: 'source-map',
 };
@@ -66,13 +76,23 @@ const browserConfig = {
       library: 'Ably',
       libraryTarget: 'umd',
       libraryExport: 'default',
+      iife: true,
+      environment: {
+        arrowFunction: false,
+        const: false,
+        destructuring: false,
+        forOf: false,
+      },
   },
   target: 'web',
   externals: {
-      request: 'request',
-      ws: 'ws',
+      request: false,
+      ws: false,
   },
   devtool: 'source-map',
+  optimization: {
+    minimize: true,
+  },
 };
 
 module.exports = [

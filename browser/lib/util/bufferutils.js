@@ -1,7 +1,7 @@
-import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/enc-hex';
-import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/enc-utf8';
-import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/enc-base64';
-import WordArray from 'crypto-js/lib-typedarrays';
+import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/enc-hex';
+import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
+import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'platform';
 
 var BufferUtils = (function() {

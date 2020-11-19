@@ -1,6 +1,6 @@
-import WordArray from 'crypto-js/lib-typedarrays';
-import { parse as parseBase64 } from 'crypto-js/enc-base64';
-import { algo } from 'crypto-js/core';
+import WordArray from 'crypto-js/build/lib-typedarrays';
+import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
+import CryptoJS from 'crypto-js/build';
 import Platform from 'platform';
 import Logger from '../../../common/lib/util/logger';
 import BufferUtils from 'platform-bufferutils';
@@ -249,7 +249,7 @@ var Crypto = (function() {
 
 		if (!this.encryptCipher) {
 			if(this.iv) {
-				this.encryptCipher = algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: this.iv });
+				this.encryptCipher = CryptoJS.algo[this.cjsAlgorithm].createEncryptor(this.key, { iv: this.iv });
 				then();
 			} else {
 				generateRandom(DEFAULT_BLOCKLENGTH, function(err, iv) {
@@ -257,7 +257,7 @@ var Crypto = (function() {
 						callback(err);
 						return;
 					}
-					self.encryptCipher = algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv });
+					self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv });
 					self.iv = iv;
 					then();
 				});
@@ -275,7 +275,7 @@ var Crypto = (function() {
 			iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
 			ciphertextBody = WordArray.create(ciphertextWords.slice(blockLengthWords));
 
-		var decryptCipher = algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
+		var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
 		var plaintext = decryptCipher.process(ciphertextBody);
 		var epilogue = decryptCipher.finalize();
 		decryptCipher.reset();
