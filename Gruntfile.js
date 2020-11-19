@@ -47,7 +47,7 @@ module.exports = function (grunt) {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version,
 		webpack: {
-			config: webpackConfig,
+			config: webpackConfig
 		}
 	};
 
@@ -92,13 +92,8 @@ module.exports = function (grunt) {
 				 * both in and out to es3 to avoid transpilation */
 				language_in: 'ECMASCRIPT3',
 				language_out: 'ECMASCRIPT3',
-				/* The compiler strips all 'use strict' directives. Can have it add it
-				 * by targeting ECMASCRIPT5_STRICT, but that means targeting es5; no
-				 * way to target es3 and include 'use strict'. So add it manually */
-				output_wrapper_file: dirs.fragments + '/minifieroutputwrapper',
 				strict_mode_input: true,
-				/* Let it know that we wrap everything in an IIFE, to enable additional optimizations */
-				assume_function_wrapper: true,
+				checks_only: true
 			}
 		},
 		'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
@@ -150,7 +145,7 @@ module.exports = function (grunt) {
 
 		'<%= dirs.browser %>/lib/transport/xhrrequest.js',
 		'<%= dirs.browser %>/lib/transport/xhrstreamingtransport.js',
-		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js',
+		'<%= dirs.browser %>/lib/transport/xhrpollingtransport.js'
 	];
 
 	gruntConfig.concat['ably'].src = [].concat(
@@ -317,12 +312,12 @@ module.exports = function (grunt) {
 		'webpack'
 	]);
 
-	grunt.registerTask('minify', [
+	grunt.registerTask('check-closure-compiler', [
 		'closureCompiler:ably.js',
 		'closureCompiler:ably.noencryption.js'
 	]);
 
-	grunt.registerTask('all', ['build', 'minify', 'requirejs']);
+	grunt.registerTask('all', ['build', 'check-closure-compiler', 'requirejs']);
 
 	grunt.loadTasks('spec/tasks');
 
@@ -443,7 +438,7 @@ module.exports = function (grunt) {
 		function() {
 			grunt.task.run([
 				'release:git-push',
-				'release:ably-deploy',
+				'release:ably-deploy'
 			]);
 		}
 	);
