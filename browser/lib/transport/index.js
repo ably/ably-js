@@ -5,5 +5,5 @@ import XHRStreamingTransport from './xhrstreamingtransport';
 export default [
   JSONPTransport,
   XHRPollingTransport,
-  XHRStreamingTransport,
+  XHRStreamingTransport
 ];

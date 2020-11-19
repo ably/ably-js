@@ -4,3 +4,4 @@ spec
 resources
 test
 tools
+webpack.config.js

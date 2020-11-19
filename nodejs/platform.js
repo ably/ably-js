@@ -21,7 +21,7 @@ var Platform = {
 			callback(null);
 		}
 	},
-	Promise: global && global.Promise,
+	Promise: global && global.Promise
 };
 
 export default Platform;

@@ -88,6 +88,6 @@
     "concat": "grunt concat",
     "build": "grunt build",
     "requirejs": "grunt requirejs",
-    "lint": "eslint"
+    "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js"
   }
 }

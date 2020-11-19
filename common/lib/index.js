@@ -34,5 +34,5 @@ Realtime.ConnectionManager = ConnectionManager;
 export default {
   Rest,
   Realtime,
-  msgpack,
+  msgpack
 }

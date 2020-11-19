@@ -5,7 +5,8 @@
     "browser": true
   },
   "rules": {
-    "no-undef": "error"
+    "no-undef": "error",
+    "comma-dangle": ["error", "never"]
   },
   "parserOptions": {
     "sourceType": "module"
