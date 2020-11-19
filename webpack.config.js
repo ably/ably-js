@@ -93,6 +93,10 @@ const browserConfig = {
   optimization: {
     minimize: false,
   },
+  performance: {
+    maxEntrypointSize: 500 * 1000,
+    maxAssetSize: 500 * 1000,
+  }
 };
 
 const nativeScriptConfig = {
@@ -126,6 +130,10 @@ const nativeScriptConfig = {
   optimization: {
     minimize: false,
   },
+  performance: {
+    maxEntrypointSize: 500 * 1000,
+    maxAssetSize: 500 * 1000,
+  }
 };
 
 const reactNativeConfig = {
@@ -159,6 +167,10 @@ const reactNativeConfig = {
   optimization: {
     minimize: false,
   },
+  performance: {
+    maxEntrypointSize: 500 * 1000,
+    maxAssetSize: 500 * 1000,
+  }
 };
 
 const browserMinConfig = {
