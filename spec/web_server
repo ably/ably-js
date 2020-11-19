@@ -32,6 +32,14 @@ server.get('/support/browser_file_list.js', function(req, res) {
   res.send(body);
 });
 
+/**
+ * This is a rather hacky workaround since crypto-js base64 depends on node_modules/crypto-js/build/core but will request the file from the root level of the server.
+ * I'm leaving this here for now in lieu of a more elegant solution as the 'real' solution is to improve the way we use dependencies in these tests.
+ */
+server.get('/core.js', function (req, res) {
+  res.redirect('/node_modules/crypto-js/build/core.js');
+});
+
 server.use('/node_modules', express.static(__dirname + '/../node_modules'));
 server.use('/spec', express.static(__dirname));
 server.use('/browser', express.static(__dirname + '/../browser'));

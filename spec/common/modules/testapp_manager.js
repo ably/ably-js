@@ -2,7 +2,7 @@
 /* global define, isNativescript, fetch */
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably) {
+define(['globals', 'base64', 'ably'], function(ablyGlobals, Base64, ably) {
 	var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
 			tlsPort  = ablyGlobals.tlsPort;
 
@@ -46,12 +46,12 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 	}
 
 	function NSbase64Function(d) {
-		return base64.encode(d);
+		return Base64.stringify(d);
 	}
 
 	function base64Function() {
 		if (isBrowser) {
-			return base64.encode;
+			return Base64.parse;
 		} else {
 			return function (str) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 		}
