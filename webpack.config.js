@@ -1,4 +1,6 @@
 const path = require('path');
+const { BannerPlugin } = require('webpack');
+const banner = require('./browser/fragments/license');
 
 const nodePath = path.resolve(__dirname, 'nodejs');
 const browserPath = path.resolve(__dirname, 'browser');
@@ -29,6 +31,9 @@ const baseConfig = {
       request: false,
       ws: false,
   },
+  plugins: [
+    new BannerPlugin({ banner }),
+  ],
   devtool: 'source-map',
 };
 
