@@ -62,7 +62,8 @@ module.exports = function (grunt) {
 				language_in: 'ECMASCRIPT3',
 				language_out: 'ECMASCRIPT3',
 				strict_mode_input: true,
-				checks_only: true
+				checks_only: true,
+				warning_level: 'QUIET'
 			}
 		},
 		'ably.js': compilerSpec('<%= dirs.static %>/ably.js')

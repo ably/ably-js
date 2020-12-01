@@ -121,6 +121,14 @@ const nativeScriptConfig = {
       'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
 		},
 	},
+	module: {
+		rules: [
+			{
+				test: /(jsonptransport\.js|domevent\.js)/,
+				use: 'null-loader',
+			},
+		],
+	},
 	node: {
 		crypto: 'empty',
 		Buffer: false,
@@ -157,6 +165,14 @@ const reactNativeConfig = {
       'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
       'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
 		},
+	},
+	module: {
+		rules: [
+			{
+				test: /jsonptransport\.js/,
+				use: 'null-loader',
+			},
+		],
 	},
 	node: {
 		crypto: 'empty',
