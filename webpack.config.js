@@ -221,6 +221,23 @@ const noEncryptionMinConfig = {
 	},
 };
 
+// We are using UMD in ably.js now so there is no need to build separately for CommonJS. These files are still being distributed to avoid breaking changes but should no longer be used.
+const commonJsConfig = {
+	...browserConfig,
+	output: {
+		...baseConfig.output,
+		filename: 'ably-commonjs.js',
+	},
+};
+
+const commonJsNoEncryptionConfig = {
+	...noEncryptionConfig,
+	output: {
+		...baseConfig.output,
+		filename: 'ably-commonjs.noencryption.js',
+	},
+};
+
 module.exports = [
 	nodeConfig,
 	browserConfig,
@@ -229,4 +246,6 @@ module.exports = [
   reactNativeConfig,
   noEncryptionConfig,
   noEncryptionMinConfig,
+  commonJsConfig,
+  commonJsNoEncryptionConfig,
 ];
