@@ -189,10 +189,44 @@ const browserMinConfig = {
 	},
 };
 
+const noEncryptionConfig = {
+	...browserConfig,
+	output: {
+		...baseConfig.output,
+		filename: 'ably.noencryption.js',
+	},
+	module: {
+		rules: [
+			{
+				test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
+				use: 'null-loader',
+			},
+		],
+	},
+};
+
+const noEncryptionMinConfig = {
+	...browserMinConfig,
+	output: {
+		...baseConfig.output,
+		filename: 'ably.noencryption.min.js',
+	},
+	module: {
+		rules: [
+			{
+				test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
+				use: 'null-loader',
+			},
+		],
+	},
+};
+
 module.exports = [
 	nodeConfig,
 	browserConfig,
 	browserMinConfig,
 	nativeScriptConfig,
-	reactNativeConfig,
-]
+  reactNativeConfig,
+  noEncryptionConfig,
+  noEncryptionMinConfig,
+];
