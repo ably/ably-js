@@ -90,6 +90,7 @@
     "build": "grunt build",
     "requirejs": "grunt requirejs",
     "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
+    "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "check-closure-compiler": "grunt check-closure-compiler"
   }
 }
