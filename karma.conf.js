@@ -108,6 +108,9 @@ module.exports = function(config) {
 
       { pattern: 'node_modules/async/lib/async.js', included: false },
       { pattern: 'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder.js', included: false },
+      { pattern: 'node_modules/crypto-js/build/enc-base64.js', included: false },
+      { pattern: 'node_modules/crypto-js/build/enc-utf8.js', included: false },
+      { pattern: 'node_modules/crypto-js/build/core.js', included: false },
       
       // shared test set up files
       { pattern: 'spec/common/**/*.js', included: false },
@@ -120,6 +123,10 @@ module.exports = function(config) {
       { pattern: 'spec/rest/*.test.js', included: false },
       { pattern: 'spec/browser/*.test.js', included: false }
     ],
+
+    proxies: {
+      "/base/core.js": "/base/node_modules/crypto-js/build/core.js"
+    },
 
     // list of files to exclude
     exclude: [
