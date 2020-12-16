@@ -1,3 +1,4 @@
+import msgpack from '../lib/util/msgpack';
 require('nativescript-websockets');
 
 var randomBytes;
@@ -59,3 +60,4 @@ var Platform = {
 	}
 };
 
+export default Platform;
