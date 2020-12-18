@@ -11,7 +11,7 @@ var DeviceDetails = (function() {
 		this.push = {
 			recipient: undefined,
 			state: undefined,
-			errorReason: undefined
+			error: undefined
 		};
 	}
 
@@ -31,7 +31,7 @@ var DeviceDetails = (function() {
 			push: {
 				recipient: this.push.recipient,
 				state: this.push.state,
-				errorReason: this.push.errorReason
+				error: this.push.error
 			}
 		};
 	};
@@ -54,8 +54,8 @@ var DeviceDetails = (function() {
 			result += '; push.recipient=' + JSON.stringify(this.push.recipient);
 		if(this.push.state)
 			result += '; push.state=' + this.push.state;
-		if(this.push.errorReason)
-			result += '; push.errorReason=' + this.push.errorReason;
+		if(this.push.error)
+			result += '; push.error=' + JSON.stringify(this.push.error);
 		if(this.push.metadata)
 			result += '; push.metadata=' + this.push.metadata;
 		result += ']';
@@ -77,6 +77,7 @@ var DeviceDetails = (function() {
 	};
 
 	DeviceDetails.fromValues = function(values) {
+		values.error = values.error && ErrorInfo.fromValues(values.error); 
 		return Utils.mixin(new DeviceDetails(), values);
 	};
 
