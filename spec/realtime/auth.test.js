@@ -544,6 +544,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 					test.equal(err && err.code, 40300, 'Check err code');
 					test.equal(realtime.connection.state, 'failed', 'Check connection goes to the failed state');
 					test.equal(realtime.connection.errorReason && realtime.connection.errorReason.statusCode, 403, 'Check correct cause error code');
+					test.equal(realtime.connection.errorReason.code, 80019, 'Check correct connection error code');
 					closeAndFinish(test, realtime);
 				});
 			});
