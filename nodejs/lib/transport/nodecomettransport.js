@@ -137,6 +137,7 @@ var NodeCometTransport = (function() {
 			req = this.req = this.client.request(this.requestOptions);
 
 		req.on('error', this.onReqError = function(err) {
+			err = new ErrorInfo('Request error: ' + err.message, null, 400);
 			clearTimeout(timer);
 			self.timer = null;
 			self.complete(err);
@@ -155,6 +156,7 @@ var NodeCometTransport = (function() {
 			}
 
 			res.on('error', self.onResError = function(err) {
+				err = new ErrorInfo('Response error: ' + err.message, null, 400);
 				self.complete(err);
 			});
 
@@ -255,7 +257,7 @@ var NodeCometTransport = (function() {
 					return;
 				}
 
-				var err = body.error;
+				var err = body.error && ErrorInfo.fromValues(body.error);
 				if(!err) {
 					err = new ErrorInfo('Error response received from server: ' + statusCode + ', body was: ' + Utils.inspect(body), null, statusCode);
 				}
