@@ -145,6 +145,7 @@ var Realtime = (function() {
 			throw releaseErr;
 		}
 		delete this.all[name];
+		delete this.inProgress[name];
 	};
 
 	/* Records operations currently pending on a transport; used by connectionManager to decide when
