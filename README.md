@@ -54,7 +54,7 @@ For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using t
 
 #### Serverside usage with webpack
 
-Add 'ably' to `externals` in your webpack config to exclude it from webpack processing, and require and use it in as a external module using require('ably') as above.
+If you are using a version older than 1.2.5 you will need to add 'ably' to `externals` in your webpack config to exclude it from webpack processing, and require and use it in as a external module using require('ably') as above.
 
 ### For browsers
 
