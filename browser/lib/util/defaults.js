@@ -1,3 +1,5 @@
+import Platform from 'platform';
+
 var Defaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	jsonpInternetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up-0-9.js',
@@ -20,3 +22,4 @@ if(Platform.noUpgrade) {
 	Defaults.upgradeTransports = [];
 }
 
+export default Defaults;

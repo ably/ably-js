@@ -1,3 +1,10 @@
+import Platform from 'platform';
+import Http from 'platform-http';
+import Utils from '../util/utils';
+import Logger from '../util/logger';
+import Auth from './auth';
+import BufferUtils from 'platform-bufferutils';
+
 var Resource = (function() {
 	var msgpack = Platform.msgpack;
 
@@ -153,3 +160,5 @@ var Resource = (function() {
 
 	return Resource;
 })();
+
+export default Resource;

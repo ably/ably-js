@@ -1,3 +1,5 @@
+import ErrorInfo from '../types/errorinfo';
+
 var ConnectionError = {
 	disconnected: ErrorInfo.fromValues({
 		statusCode: 400,
@@ -35,3 +37,5 @@ var ConnectionError = {
 		message: 'Internal channel error'
 	})
 };
+
+export default ConnectionError;

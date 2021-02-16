@@ -1,3 +1,6 @@
+import Utils from '../../../common/lib/util/utils';
+import Defaults from '../../../common/lib/util/defaults';
+
 var Http = (function() {
 	var noop = function() {};
 
@@ -137,3 +140,5 @@ var Http = (function() {
 	Http.supportsLinkHeaders = false;
 	return Http;
 })();
+
+export default Http;

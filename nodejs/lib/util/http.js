@@ -1,5 +1,10 @@
 "use strict";
-this.Http = (function() {
+import Platform from 'platform';
+import Utils from '../../../common/lib/util/utils';
+import Defaults from '../../../common/lib/util/defaults';
+import ErrorInfo from '../../../common/lib/types/errorinfo';
+
+var Http = (function() {
 	var request = require('request');
 	var msgpack = Platform.msgpack;
 	var noop = function() {};
@@ -199,3 +204,5 @@ this.Http = (function() {
 
 	return Http;
 })();
+
+export default Http;

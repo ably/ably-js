@@ -1,4 +1,13 @@
-var JSONPTransport = (function() {
+import Utils from '../../../common/lib/util/utils';
+import CometTransport from '../../../common/lib/transport/comettransport';
+import Platform from 'platform';
+import EventEmitter from '../../../common/lib/util/eventemitter';
+import Http from 'platform-http';
+import ErrorInfo from '../../../common/lib/types/errorinfo';
+import Defaults from '../../../common/lib/util/defaults';
+import Logger from '../../../common/lib/util/logger';
+
+var JSONPTransport = function(connectionManager) {
 	var noop = function() {};
 	/* Can't just use window.Ably, as that won't exist if using the commonjs version. */
 	var _ = global._ablyjs_jsonp = {};
@@ -25,7 +34,7 @@ var JSONPTransport = (function() {
 		return Platform.jsonpSupported && Platform.allowComet;
 	};
 	if(JSONPTransport.isAvailable()) {
-		ConnectionManager.supportedTransports[shortName] = JSONPTransport;
+		connectionManager.supportedTransports[shortName] = JSONPTransport;
 	}
 	if(Platform.jsonpSupported) {
 		head = document.getElementsByTagName('head')[0];
@@ -210,4 +219,6 @@ var JSONPTransport = (function() {
 	}
 
 	return JSONPTransport;
-})();
+};
+
+export default JSONPTransport;

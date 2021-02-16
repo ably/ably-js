@@ -1,3 +1,15 @@
+import ProtocolMessage from '../types/protocolmessage';
+import EventEmitter from '../util/eventemitter';
+import Utils from '../util/utils';
+import Channel from './channel';
+import Logger from '../util/logger';
+import RealtimePresence from './realtimepresence';
+import Message from '../types/message';
+import ChannelStateChange from './channelstatechange';
+import ErrorInfo from '../types/errorinfo';
+import PresenceMessage from '../types/presencemessage';
+import ConnectionError from '../transport/connectionerror';
+
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
 	var noop = function() {};
@@ -734,3 +746,5 @@ var RealtimeChannel = (function() {
 
 	return RealtimeChannel;
 })();
+
+export default RealtimeChannel;

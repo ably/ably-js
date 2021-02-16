@@ -1,5 +1,10 @@
+import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/enc-hex';
+import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
+import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import WordArray from 'crypto-js/build/lib-typedarrays';
+import Platform from 'platform';
+
 var BufferUtils = (function() {
-	var WordArray = CryptoJS.lib.WordArray;
 	var ArrayBuffer = Platform.ArrayBuffer;
 	var atob = Platform.atob;
 	var TextEncoder = Platform.TextEncoder;
@@ -130,7 +135,7 @@ var BufferUtils = (function() {
 
 	BufferUtils.base64Encode = function(buf) {
 		if(isWordArray(buf)) {
-			return CryptoJS.enc.Base64.stringify(buf);
+			return stringifyBase64(buf);
 		}
 		return uint8ViewToBase64(toBuffer(buf));
 	};
@@ -139,16 +144,16 @@ var BufferUtils = (function() {
 		if(ArrayBuffer && atob) {
 			return base64ToArrayBuffer(str);
 		}
-		return CryptoJS.enc.Base64.parse(str);
+		return parseBase64(str);
 	};
 
 	BufferUtils.hexEncode = function(buf) {
 		buf = BufferUtils.toWordArray(buf);
-		return CryptoJS.enc.Hex.stringify(buf);
+		return stringifyHex(buf);
 	};
 
 	BufferUtils.hexDecode = function(string) {
-		var wordArray = CryptoJS.enc.Hex.parse(string);
+		var wordArray = parseHex(string);
 		return ArrayBuffer ? BufferUtils.toArrayBuffer(wordArray) : wordArray;
 	};
 
@@ -156,7 +161,7 @@ var BufferUtils = (function() {
 		if(TextEncoder) {
 			return (new TextEncoder()).encode(string).buffer;
 		}
-		return CryptoJS.enc.Utf8.parse(string);
+		return parseUtf8(string);
 	};
 
 	/* For utf8 decoding we apply slightly stricter input validation than to
@@ -172,7 +177,7 @@ var BufferUtils = (function() {
 			return (new TextDecoder()).decode(buf);
 		}
 		buf = BufferUtils.toWordArray(buf);
-		return CryptoJS.enc.Utf8.stringify(buf);
+		return stringifyUtf8(buf);
 	};
 
 	BufferUtils.bufferCompare = function(buf1, buf2) {
@@ -207,3 +212,5 @@ var BufferUtils = (function() {
 
 	return BufferUtils;
 })();
+
+export default BufferUtils;

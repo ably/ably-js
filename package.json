@@ -28,6 +28,7 @@
   ],
   "dependencies": {
     "@ably/msgpack-js": "^0.3.3",
+    "null-loader": "^4.0.1",
     "request": "^2.87.0",
     "ws": "^5.1"
   },
@@ -36,8 +37,9 @@
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
     "cors": "~2.7",
-    "crypto-js": "ably-forks/crypto-js#typedarray-webkit",
+    "crypto-js": "ably-forks/crypto-js#crypto-lite",
     "ejs": "~2.5",
+    "eslint": "^7.13.0",
     "express": "~4.12",
     "glob": "~4.4",
     "google-closure-compiler": "^20180610.0.1",
@@ -47,6 +49,7 @@
     "grunt-closure-tools": "^1.0.0",
     "grunt-contrib-concat": "~0.5",
     "grunt-shell": "~1.1",
+    "grunt-webpack": "^4.0.2",
     "hexy": "~0.2",
     "karma": "ably-forks/karma#ably-js-custom",
     "karma-browserstack-launcher": "^1.5.2",
@@ -61,7 +64,9 @@
     "kexec": "ably-forks/node-kexec#update-for-node-12",
     "mocha": "^8.1.3",
     "requirejs": "~2.1",
-    "shelljs": "~0.3"
+    "shelljs": "~0.3",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^4.2.0"
   },
   "engines": {
     "node": ">=5.10.x"
@@ -83,6 +88,9 @@
     "test:webserver": "grunt test:webserver",
     "concat": "grunt concat",
     "build": "grunt build",
-    "requirejs": "grunt requirejs"
+    "requirejs": "grunt requirejs",
+    "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
+    "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
+    "check-closure-compiler": "grunt check-closure-compiler"
   }
 }

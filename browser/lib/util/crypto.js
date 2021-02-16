@@ -1,3 +1,10 @@
+import WordArray from 'crypto-js/build/lib-typedarrays';
+import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
+import CryptoJS from 'crypto-js/build';
+import Platform from 'platform';
+import Logger from '../../../common/lib/util/logger';
+import BufferUtils from 'platform-bufferutils';
+
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 256; // bits
@@ -6,7 +13,6 @@ var Crypto = (function() {
 	var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
 	var UINT32_SUP = 0x100000000;
 	var INT32_SUP = 0x80000000;
-	var WordArray = CryptoJS.lib.WordArray;
 
 	/**
 	 * Internal: generate an array of secure random words corresponding to the given length of bytes
@@ -166,7 +172,7 @@ var Crypto = (function() {
 		}
 
 		if (typeof(params.key) === 'string') {
-			key = CryptoJS.enc.Base64.parse(normaliseBase64(params.key));
+			key = parseBase64(normaliseBase64(params.key));
 		} else {
 			key = BufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
 		}
@@ -225,8 +231,6 @@ var Crypto = (function() {
 	CBCCipher.prototype.encrypt = function(plaintext, callback) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		plaintext = BufferUtils.toWordArray(plaintext);
-		//console.log('encrypt: plaintext:');
-		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		var plaintextLength = plaintext.sigBytes,
 			paddedLength = getPaddedLength(plaintextLength),
 			self = this;
@@ -239,8 +243,6 @@ var Crypto = (function() {
 				}
 				var cipherOut = self.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
 				var ciphertext = iv.concat(cipherOut);
-				//console.log('encrypt: ciphertext:');
-				//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 				callback(null, ciphertext);
 			});
 		};
@@ -268,8 +270,6 @@ var Crypto = (function() {
 	CBCCipher.prototype.decrypt = function(ciphertext) {
 		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
 		ciphertext = BufferUtils.toWordArray(ciphertext);
-		//console.log('decrypt: ciphertext:');
-		//console.log(CryptoJS.enc.Hex.stringify(ciphertext));
 		var blockLengthWords = this.blockLengthWords,
 			ciphertextWords = ciphertext.words,
 			iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
@@ -280,8 +280,6 @@ var Crypto = (function() {
 		var epilogue = decryptCipher.finalize();
 		decryptCipher.reset();
 		if(epilogue && epilogue.sigBytes) plaintext.concat(epilogue);
-		//console.log('decrypt: plaintext:');
-		//console.log(CryptoJS.enc.Hex.stringify(plaintext));
 		return plaintext;
 	};
 
@@ -308,3 +306,5 @@ var Crypto = (function() {
 
 	return Crypto;
 })();
+
+export default Crypto;

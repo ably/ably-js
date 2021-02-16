@@ -1,3 +1,9 @@
+import Utils from './utils';
+import Platform from 'platform';
+import Defaults from '../util/defaults';
+import Logger from './logger';
+import Http from 'platform-http';
+
 var ErrorReporter = (function() {
 	function ErrorReporter() {}
 
@@ -41,3 +47,5 @@ var ErrorReporter = (function() {
 
 	return ErrorReporter;
 })();
+
+export default ErrorReporter;

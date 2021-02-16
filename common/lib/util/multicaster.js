@@ -1,3 +1,5 @@
+import Logger from './logger';
+
 var Multicaster = (function() {
 
 	function Multicaster(members) {
@@ -24,3 +26,5 @@ var Multicaster = (function() {
 
 	return Multicaster;
 })();
+
+export default Multicaster;

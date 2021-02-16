@@ -1,6 +1,8 @@
-name: ably-js CI
-
-on: [push]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   test-node:
@@ -20,16 +22,3 @@ jobs:
       - run: npm run test:mocha
         env:
           CI: true
-
-  test-karma-firefox:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.x
-      - run: npm ci
-      - run: xvfb-run -a npm run test:karma

@@ -1,4 +1,4 @@
-this.BufferUtils = (function() {
+var BufferUtils = (function() {
 	function BufferUtils() {}
 
 	function isArrayBuffer(ob) { return ob !== null && ob !== undefined && ob.constructor === ArrayBuffer; }
@@ -55,3 +55,5 @@ this.BufferUtils = (function() {
 
 	return BufferUtils;
 })();
+
+export default BufferUtils;

@@ -1,3 +1,10 @@
+import Utils from '../util/utils';
+import EventEmitter from '../util/eventemitter';
+import Logger from '../util/logger';
+import Http from 'platform-http';
+import PaginatedResource from './paginatedresource';
+import PresenceMessage from '../types/presencemessage';
+
 var Presence = (function() {
 	function noop() {}
 	function Presence(channel) {
@@ -69,3 +76,5 @@ var Presence = (function() {
 
 	return Presence;
 })();
+
+export default Presence;

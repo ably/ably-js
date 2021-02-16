@@ -10,3 +10,5 @@ var ChannelStateChange = (function() {
 
 	return ChannelStateChange;
 })();
+
+export default ChannelStateChange;

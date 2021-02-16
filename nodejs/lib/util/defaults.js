@@ -1,5 +1,5 @@
 "use strict";
-this.Defaults = {
+var Defaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	/* Note: order matters here: the base transport is the leftmost one in the
 	* intersection of baseTransportOrder and the transports clientOption that's supported.
@@ -11,3 +11,5 @@ this.Defaults = {
 	upgradeTransports: ['web_socket'],
 	restAgentOptions: {maxSockets: 40, keepAlive: true}
 };
+
+export default Defaults;

@@ -1,3 +1,11 @@
+import Utils from '../util/utils';
+import DeviceDetails from '../types/devicedetails';
+import Resource from './resource';
+import PaginatedResource from './paginatedresource';
+import ErrorInfo from '../types/errorinfo';
+import Http from 'platform-http';
+import PushChannelSubscription from '../types/pushchannelsubscription';
+
 var Push = (function() {
 	var noop = function() {};
 
@@ -272,3 +280,5 @@ var Push = (function() {
 
 	return Push;
 })();
+
+export default Push;

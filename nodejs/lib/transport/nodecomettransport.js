@@ -1,5 +1,11 @@
 "use strict";
-var NodeCometTransport = (function() {
+import CometTransport from '../../../common/lib/transport/comettransport';
+import Logger from '../../../common/lib/util/logger';
+import Utils from '../../../common/lib/util/utils';
+import ErrorInfo from '../../../common/lib/types/errorinfo';
+import EventEmitter from '../../../common/lib/util/eventemitter';
+
+var NodeCometTransport = function(connectionManager) {
 	var http = require('http');
 	var https = require('https');
 	var url = require('url');
@@ -21,7 +27,7 @@ var NodeCometTransport = (function() {
 	util.inherits(NodeCometTransport, CometTransport);
 
 	NodeCometTransport.isAvailable = function() { return true; };
-	ConnectionManager.supportedTransports[shortName] = NodeCometTransport;
+	connectionManager.supportedTransports[shortName] = NodeCometTransport;
 
 	NodeCometTransport.tryConnect = function(connectionManager, auth, params, callback) {
 		var transport = new NodeCometTransport(connectionManager, auth, params);
@@ -303,4 +309,6 @@ var NodeCometTransport = (function() {
 	};
 
 	return NodeCometTransport;
-})();
+};
+
+export default NodeCometTransport;

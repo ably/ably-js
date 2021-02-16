@@ -1,3 +1,23 @@
+import ProtocolMessage from '../types/protocolmessage';
+import Utils from '../util/utils';
+import Protocol from './protocol';
+import Defaults from '../util/defaults';
+import Platform from 'platform';
+import EventEmitter from '../util/eventemitter';
+import MessageQueue from './messagequeue';
+import Logger from '../util/logger';
+import ConnectionStateChange from '../client/connectionstatechange';
+import ConnectionError from '../transport/connectionerror';
+import ErrorInfo from '../types/errorinfo';
+import Auth from '../client/auth';
+import Http from 'platform-http';
+import Message from '../types/message';
+import Multicaster from '../util/multicaster';
+import ErrorReporter from '../util/errorreporter';
+import WebStorage from 'platform-webstorage';
+import PlatformTransports from 'platform-transports';
+import WebSocketTransport from './websockettransport';
+
 var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
 	var haveSessionStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.getSession);
@@ -205,6 +225,11 @@ var ConnectionManager = (function() {
 	 *********************/
 
 	ConnectionManager.supportedTransports = {};
+
+	WebSocketTransport(ConnectionManager);
+	Utils.arrForEach(PlatformTransports, function (initFn) {
+		initFn(ConnectionManager);
+	});
 
 	ConnectionManager.prototype.createTransportParams = function(host, mode) {
 		var params = new TransportParams(this.options, host, mode, this.connectionKey);
@@ -1769,3 +1794,5 @@ var ConnectionManager = (function() {
 
 	return ConnectionManager;
 })();
+
+export default ConnectionManager;

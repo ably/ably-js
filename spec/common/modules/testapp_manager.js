@@ -2,7 +2,7 @@
 /* global define, isNativescript, fetch */
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably) {
+define(['globals', 'base64', 'utf8', 'ably'], function(ablyGlobals, Base64, UTF8, ably) {
 	var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
 			tlsPort  = ablyGlobals.tlsPort;
 
@@ -46,12 +46,12 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 	}
 
 	function NSbase64Function(d) {
-		return base64.encode(d);
+		return Base64.stringify(d);
 	}
 
 	function base64Function() {
 		if (isBrowser) {
-			return base64.encode;
+			return function (str) { return Base64.stringify(UTF8.parse(str)) };
 		} else {
 			return function (str) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 		}
@@ -197,8 +197,8 @@ define(['globals', 'browser-base64', 'ably'], function(ablyGlobals, base64, ably
 	function createStatsFixtureData(app, statsData, callback) {
 		var postData = JSON.stringify(statsData);
 
-		var authKey = app.keys[0].keyStr,
-				authHeader = toBase64(authKey);
+		var authKey = app.keys[0].keyStr;
+		var authHeader = toBase64(authKey);
 
 		var postOptions = {
 			host: restHost, port: tlsPort, path: '/stats', method: 'POST', scheme: 'https',

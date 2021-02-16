@@ -1,4 +1,7 @@
 "use strict";
+import Logger from '../../../common/lib/util/logger';
+import BufferUtils from 'platform-bufferutils';
+
 var Crypto = (function() {
 	var crypto = require('crypto');
 	var util = require('util');
@@ -234,3 +237,5 @@ var Crypto = (function() {
 
 	return Crypto;
 })();
+
+export default Crypto;

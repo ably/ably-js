@@ -1,3 +1,6 @@
+import msgpack from '../lib/util/msgpack';
+import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
+
 var Platform = {
 	libver: 'js-rn',
 	logTimestamps: true,
@@ -33,8 +36,10 @@ var Platform = {
 	getRandomWordArray: (function(RNRandomBytes) {
 		return function(byteLength, callback) {
 			RNRandomBytes.randomBytes(byteLength, function(err, base64String) {
-				callback(err, !err && CryptoJS.enc.Base64.parse(base64String));
+				callback(err, !err && parseBase64(base64String));
 			});
 		};
 	})(require('react-native').NativeModules.RNRandomBytes)
 };
+
+export default Platform;

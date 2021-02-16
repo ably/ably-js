@@ -1,3 +1,5 @@
+import Utils from '../util/utils';
+
 var DeviceDetails = (function() {
 
 	function DeviceDetails() {
@@ -89,3 +91,5 @@ var DeviceDetails = (function() {
 
 	return DeviceDetails;
 })();
+
+export default DeviceDetails;

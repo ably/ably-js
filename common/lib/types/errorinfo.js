@@ -1,3 +1,5 @@
+import Utils from '../util/utils';
+
 var ErrorInfo = (function() {
 
 	function ErrorInfo(message, code, statusCode, cause) {
@@ -33,3 +35,5 @@ var ErrorInfo = (function() {
 
 	return ErrorInfo;
 })();
+
+export default ErrorInfo;
