@@ -11,11 +11,11 @@ This library currently targets the [Ably client library features spec](https://w
 
 This SDK supports the following platforms:
 
-**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 8 or newer), Safari on iOS and macOS, Opera, and Android browsers. We also support running `ably-js` inside a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context.
+**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers. We also support running `ably-js` inside a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context.
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 5.10 or newer. (1.1.x versions work on Node.js 4.5 or newer).
+**Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer).
 
 **React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
 
