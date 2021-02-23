@@ -432,6 +432,9 @@ var RealtimeChannel = (function() {
 				if(!resumed || this.channelOptions.updateOnAttached) {
 					this.emit('update', change);
 				}
+			} else if(this.state === 'detaching') {
+				/* RTL5i: re-send DETACH and remain in the 'detaching' state */
+				this.checkPendingState();
 			} else {
 				this.notifyState('attached', message.error, resumed, hasPresence);
 			}
