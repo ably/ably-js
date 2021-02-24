@@ -1314,6 +1314,45 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		});
 	};
 
+	/* RTL5i */
+	exports.attached_while_detaching = function(test) {
+		var realtime = helper.AblyRealtime({transports: [helper.bestTransport]}),
+			channelName = 'server_sent_detached',
+			channel = realtime.channels.get(channelName);
+
+		test.expect(4);
+		async.series([
+			function(cb) {
+				realtime.connection.once('connected', function() { cb(); });
+			},
+			function(cb) {
+				channel.attach(cb);
+			},
+			function(cb) {
+				/* Sabotage the detach attempt, detach, then simulate a server-sent attached while
+				 * the detach is ongoing. Expect to see the library reassert the detach */
+				let detachCount = 0;
+				channel.sendMessage = function(msg) {
+					test.equal(msg.action, 12, 'Check we only see a detach. No attaches!');
+					test.equal(channel.state, 'detaching', 'Check still in detaching state after both detaches');
+					detachCount++;
+					if(detachCount === 2) {
+						/* we got our second detach! */
+						cb();
+					}
+				};
+				/* */
+				channel.detach();
+				setTimeout(function() {
+					var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+					transport.onProtocolMessage(createPM({action: 11, channel: channelName}));
+				}, 0);
+			},
+		], function(err) {
+			if(err) test.ok(false, helper.displayError(err));
+			closeAndFinish(test, realtime);
+		});
+	};
 
 	helper.withMocha('realtime/channel', exports);
 });
