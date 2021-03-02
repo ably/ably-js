@@ -9,6 +9,7 @@ module.exports = function (grunt) {
 	var test = grunt.option('test'),
 			debug = grunt.option('debug'),
 			inspector = grunt.option('inspector'),
+			fgrep = grunt.option('fgrep'),
 			helpers = ['spec/support/modules_helper.js', 'spec/support/test_helper.js'],
 			tearDown = ['spec/support/tear_down.js'];
 
@@ -41,6 +42,10 @@ module.exports = function (grunt) {
 
 			if (test) {
 				runTests = getRelativePath(helpers).concat(resolveTests(test)).concat(getRelativePath(tearDown)).join(' ');
+			}
+
+			if (fgrep) {
+				runTests += ' --fgrep ' + fgrep;
 			}
 
 			var done = this.async(),
