@@ -59,6 +59,7 @@
     "karma-env-preprocessor": "~0.1",
     "karma-firefox-launcher": "~0.1",
     "karma-mocha": "^2.0.1",
+    "karma-mocha-reporter": "^2.2.5",
     "karma-requirejs": "~0.2",
     "karma-story-reporter": "~0.3",
     "kexec": "ably-forks/node-kexec#update-for-node-12",
