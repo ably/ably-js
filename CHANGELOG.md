@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.6](https://github.com/ably/ably-js/tree/1.2.6) (2021-03-04)
+- Move null-loader to dev dependencies (please note: this change will only affect NPM users so will not be available on cdn.ably.io) [\#718](https://github.com/ably/ably-js/pull/718/files)
+
 ## [1.2.5](https://github.com/ably/ably-js/tree/1.2.5) (2020-11-04)
 - Convert library to ES6 modules [\#704](https://github.com/ably/ably-js/pull/704/files)
 

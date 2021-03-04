@@ -2519,7 +2519,7 @@ defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-defaults.version          = '1.2.5';
+defaults.version          = '1.2.6';
 defaults.libstring        = platform.libver + '-' + defaults.version;
 defaults.apiVersion       = '1.2';
 
@@ -11262,7 +11262,7 @@ var realtimechannel_RealtimeChannel = (function() {
 				case 'detached':
 				case 'suspended':
 				case 'failed':
-					callback(stateChange.reason || connectionManager.getError());
+					callback(stateChange.reason || connectionManager.getError() || new errorinfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500));
 					break;
 				case 'detaching':
 					callback(new errorinfo('Attach request superseded by a subsequent detach request', 90000, 409));
@@ -11317,7 +11317,7 @@ var realtimechannel_RealtimeChannel = (function() {
 						case 'attached':
 						case 'suspended':
 						case 'failed':
-							callback(stateChange.reason || connectionManager.getError());
+							callback(stateChange.reason || connectionManager.getError() || new errorinfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500));
 							break;
 						case 'attaching':
 							callback(new errorinfo('Detach request superseded by a subsequent attach request', 90000, 409));
@@ -11426,6 +11426,9 @@ var realtimechannel_RealtimeChannel = (function() {
 				if(!resumed || this.channelOptions.updateOnAttached) {
 					this.emit('update', change);
 				}
+			} else if(this.state === 'detaching') {
+				/* RTL5i: re-send DETACH and remain in the 'detaching' state */
+				this.checkPendingState();
 			} else {
 				this.notifyState('attached', message.error, resumed, hasPresence);
 			}
