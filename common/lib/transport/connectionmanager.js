@@ -330,7 +330,7 @@ var ConnectionManager = (function() {
 				} else if(wrappedErr.event === 'disconnected') {
 					if(wrappedErr.error.code && wrappedErr.error.statusCode < 500) {
 						/* Error received from the server that does not call for trying a fallback host, eg a rate limit */
-						self.notifyState({state: 'disconnected', error: wrappedErr.error});
+						self.notifyState({state: self.states.connecting.failState, error: wrappedErr.error});
 						callback(true);
 					} else {
 						/* Error with that transport only; continue trying other fallback hosts */
