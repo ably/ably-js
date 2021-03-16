@@ -139,7 +139,7 @@ var WebSocketTransport = function(connectionManager) {
 			this.finish('disconnected', err);
 		} else {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
-				err = new ErrorInfo(msg, 80003, 500);
+				err = new ErrorInfo(msg, 80003, 400);
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
 			this.finish('disconnected', err);
 		}
