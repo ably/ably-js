@@ -1,0 +1,23 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-karma-browserstack:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      max-parallel: 1
+      matrix:
+        browser: [bs_firefox_big_sur, bs_chrome_big_sur, bs_ie11_win10]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - run: npm ci
+      - env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESSKEY: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
+        run: npm run test:karma -- --browsers ${{ matrix.browser }}
