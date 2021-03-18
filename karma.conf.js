@@ -5,24 +5,31 @@ module.exports = function(config) {
   var customLaunchers = {
     // BrowserStack launchers. List here: https://www.browserstack.com/list-of-browsers-and-platforms?product=automate
     // To get actual values run `curl -u "BROWSERSTACK_USERNAME:BROWSERSTACK_ACCESSKEY" https://api.browserstack.com/automate/browsers.json | json_pp`
-    bs_firefox_sierra: {
+    bs_firefox_big_sur: {
       base: 'BrowserStack',
       browser: 'firefox',
-      browser_version: '60.0',
+      browser_version: 'latest',
       os: 'OS X',
-      os_version: 'Sierra'
+      os_version: 'Big Sur'
     },
-    bs_chrome_sierra: {
+    bs_chrome_big_sur: {
       base: 'BrowserStack',
       browser: 'chrome',
-      browser_version: '66.0',
+      browser_version: 'latest',
       os: 'OS X',
-      os_version: 'Sierra'
+      os_version: 'Big Sur'
+    },
+    bs_safari_big_sur: {
+      base: 'BrowserStack',
+      browser: 'safari',
+      browser_version: 'latest',
+      os: 'OS X',
+      os_version: 'Big Sur'
     },
     bs_ie11_win10: {
       base: 'BrowserStack',
       browser: 'ie',
-      browser_version: '11.0',
+      browser_version: 'latest',
       os: 'Windows',
       os_version: '10'
     },
@@ -60,13 +67,6 @@ module.exports = function(config) {
       os: 'ios',
       os_version: '11.0',
       real_devices: ['iPhone SE']
-    },
-    bs_safari_high_sierra: {
-      base: 'BrowserStack',
-      browser: 'Safari',
-      browser_version: '11.1',
-      os: 'OS X',
-      os_version: 'High Sierra'
     },
     bs_android_6: {
       base: 'BrowserStack',
