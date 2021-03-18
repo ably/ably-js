@@ -11,6 +11,7 @@ define(function() {
 		// test modules
 		'globals':           { browser: 'spec/common/globals/environment',    node: 'spec/common/globals/environment' },
 		'shared_helper':     { browser: 'spec/common/modules/shared_helper',  node: 'spec/common/modules/shared_helper' },
-		'async':             { browser: 'node_modules/async/lib/async' }
+		'async':             { browser: 'node_modules/async/lib/async' },
+		'chai':              { browser: 'node_modules/chai/chai',             node: 'node_modules/chai/chai' }
 	};
 });

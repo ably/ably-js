@@ -1,78 +1,89 @@
-"use strict";
+'use strict';
 
-define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var exports = {},
-		utils = helper.Utils,
-		goodHost;
+define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+	var expect = chai.expect;
+	var utils = helper.Utils;
+	var goodHost;
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-				test.done();
-				return;
-			}
-
-			goodHost = helper.AblyRest().options.restHost;
-			test.ok(true, 'app set up');
-			test.done();
+	describe('rest/fallbacks', function () {
+		this.timeout(60 * 1000);
+		
+		before(function (done) {
+			helper.setupApp(function (err) {
+				if (err) {
+					done(err);
+					return;
+				}
+				goodHost = helper.AblyRest().options.restHost;
+				done();
+			});
 		});
-	};
 
-	/* RSC15f */
-	exports.store_working_fallback = function(test) {
-		test.expect(9);
-		var rest = helper.AblyRest({
-			restHost: helper.unroutableHost,
-			fallbackHosts: [goodHost],
-			httpRequestTimeout: 3000,
-			log: {level: 4}
+		/* RSC15f */
+		it('Store working fallback', function (done) {
+			var rest = helper.AblyRest({
+				restHost: helper.unroutableHost,
+				fallbackHosts: [goodHost],
+				httpRequestTimeout: 3000,
+				log: { level: 4 }
+			});
+			var validUntil;
+			async.series(
+				[
+					function (cb) {
+						rest.time(function (err, serverTime) {
+							if (err) {
+								return cb(err);
+							}
+							expect(serverTime, 'Check serverTime returned').to.be.ok;
+							var currentFallback = rest._currentFallback;
+							expect(currentFallback, 'Check current fallback stored').to.be.ok;
+							expect(currentFallback && currentFallback.host).to.equal(goodHost, 'Check good host set');
+							validUntil = currentFallback.validUntil;
+							cb();
+						});
+					},
+					/* now try again, check that this time it uses the remembered good endpoint straight away */
+					function (cb) {
+						rest.time(function (err, serverTime) {
+							if (err) {
+								return cb(err);
+							}
+							expect(serverTime, 'Check serverTime returned').to.be.ok;
+							var currentFallback = rest._currentFallback;
+							expect(
+								currentFallback.validUntil).to.equal(
+								validUntil,
+								'Check validUntil is the same (implying currentFallback has not been re-set)'
+							);
+							cb();
+						});
+					},
+					/* set the validUntil to the past and check that the stored fallback is forgotten */
+					function (cb) {
+						var now = utils.now();
+						rest._currentFallback.validUntil = now - 1000;
+						rest.time(function (err, serverTime) {
+							if (err) {
+								return cb(err);
+							}
+							expect(serverTime, 'Check serverTime returned').to.be.ok;
+							var currentFallback = rest._currentFallback;
+							expect(currentFallback, 'Check current fallback re-stored').to.be.ok;
+							expect(currentFallback && currentFallback.host).to.equal(goodHost, 'Check good host set again');
+							expect(currentFallback.validUntil > now, 'Check validUntil has been re-set').to.be.ok;
+							cb();
+						});
+					}
+				],
+				function (err) {
+					if (err) {
+						done(err);
+						return;
+					}
+					done();
+				}
+			);
 		});
-		var validUntil;
-		async.series([
-			function(cb) {
-				rest.time(function(err, serverTime) {
-					if(err) { return cb(err); }
-					test.ok(serverTime, 'Check serverTime returned');
-					var currentFallback = rest._currentFallback;
-					test.ok(currentFallback, 'Check current fallback stored');
-					test.equal(currentFallback && currentFallback.host, goodHost, 'Check good host set');
-					validUntil = currentFallback.validUntil;
-					cb();
-				});
-			},
-			/* now try again, check that this time it uses the remembered good endpoint straight away */
-			function(cb) {
-				rest.time(function(err, serverTime) {
-					if(err) { return cb(err); }
-					test.ok(serverTime, 'Check serverTime returned');
-					var currentFallback = rest._currentFallback;
-					test.equal(currentFallback.validUntil, validUntil, 'Check validUntil is the same (implying currentFallback has not been re-set)');
-					cb();
-				});
-			},
-			/* set the validUntil to the past and check that the stored fallback is forgotten */
-			function(cb) {
-				var now = utils.now();
-				rest._currentFallback.validUntil = now - 1000;
-				rest.time(function(err, serverTime) {
-					if(err) { return cb(err); }
-					test.ok(serverTime, 'Check serverTime returned');
-					var currentFallback = rest._currentFallback;
-					test.ok(currentFallback, 'Check current fallback re-stored');
-					test.equal(currentFallback && currentFallback.host, goodHost, 'Check good host set again');
-					test.ok(currentFallback.validUntil > now, 'Check validUntil has been re-set');
-					cb();
-				});
-			},
-		], function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-			}
-			test.done();
-		})
-	};
-
-	helper.withMocha('rest/fallbacks', exports);
+	});
 });
