@@ -1,53 +1,53 @@
-"use strict";
+'use strict';
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
-	var rest, exports = {},
-		utils = helper.Utils;
+define(['shared_helper', 'chai'], function (helper, chai) {
+	var rest;
+	var utils = helper.Utils;
+	var expect = chai.expect;
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-				test.done();
-				return;
-			}
-
-			rest = helper.AblyRest();
-			test.ok(true, 'app set up');
-			test.done();
+	describe('rest/time', function () {
+		before(function (done) {
+			helper.setupApp(function (err) {
+				if (err) {
+					done(err);
+					return;
+				}
+				rest = helper.AblyRest();
+				done();
+			});
 		});
-	};
 
-	exports.time0 = function(test) {
-		test.expect(1);
-		rest.time(function(err, serverTime) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-				test.done();
-				return;
-			}
-			var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
-			test.ok(serverTime > localFiveMinutesAgo, 'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks');
-			test.done();
+		it('time0', function (done) {
+			rest.time(function (err, serverTime) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
+					expect(
+						serverTime > localFiveMinutesAgo,
+						'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks'
+					).to.be.ok;
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
 
-	exports.timePromise = function(test) {
-		if(typeof Promise === 'undefined') {
-			test.done();
-			return;
+		if (typeof Promise !== 'undefined') {
+			it('timePromise', function (done) {
+				var rest = helper.AblyRest({ promises: true });
+				rest
+					.time()
+					.then(function () {
+						done();
+					})
+					['catch'](function (err) {
+						done(err);
+					});
+			});
 		}
-		test.expect(1);
-		var rest = helper.AblyRest({promises: true});
-		rest.time().then(function() {
-			test.ok(true, 'time succeeded');
-			test.done();
-		})['catch'](function(err) {
-			test.ok(false, 'time call failed with error: ' + displayError(err));
-			test.done();
-		});
-	};
-
-	helper.withMocha('rest/time', exports);
+	});
 });
