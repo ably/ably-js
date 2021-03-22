@@ -14,5 +14,5 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: npm run lint
+      - run: npm run build
       - run: npm run check-closure-compiler
