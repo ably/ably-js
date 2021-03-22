@@ -42,12 +42,13 @@ ConnectionError.isRetriable = function(err) {
 	if (!err.statusCode || !err.code || err.statusCode >= 500) {
 		return true;
 	}
-	for (const [{code}] of ConnectionError.values()) {
-		if (code == err.code) {
-			return true;
+	var retriable = false;
+	Utils.valuesArray(ConnectionError).forEach(function(connErr) {
+		if (connErr.code && connErr.code == err.code) {
+			retriable = true;
 		}
-	}
-	return false;
+	});
+	return retriable;
 };
 
 export default ConnectionError;
