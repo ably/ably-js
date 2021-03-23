@@ -59,8 +59,8 @@ module.exports = function (grunt) {
 				/* By default, the compiler assumes you're using es6 and transpiles to
 				 * es3, adding various (unnecessary and undesired) polyfills. Specify
 				 * both in and out to es3 to avoid transpilation */
-				language_in: 'ECMASCRIPT3',
-				language_out: 'ECMASCRIPT3',
+				language_in: 'ECMASCRIPT5',
+				language_out: 'ECMASCRIPT5',
 				strict_mode_input: true,
 				checks_only: true,
 				warning_level: 'QUIET'
@@ -92,6 +92,7 @@ module.exports = function (grunt) {
 	]);
 
 	grunt.registerTask('check-closure-compiler', [
+		'build',
 		'closureCompiler:ably.js'
 	]);
 

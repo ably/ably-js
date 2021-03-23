@@ -38,4 +38,17 @@ var ConnectionError = {
 	})
 };
 
+ConnectionError.isRetriable = function(err) {
+	if (!err.statusCode || !err.code || err.statusCode >= 500) {
+		return true;
+	}
+	var retriable = false;
+	Utils.valuesArray(ConnectionError).forEach(function(connErr) {
+		if (connErr.code && connErr.code == err.code) {
+			retriable = true;
+		}
+	});
+	return retriable;
+};
+
 export default ConnectionError;
