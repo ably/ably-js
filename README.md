@@ -50,6 +50,8 @@ var Ably = require('ably');
 
 For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. For the explicitly-callback-based variant use `require('ably/callbacks')`– see [Async API style](#async-api-style).
 
+Please note that if you install directly from the GitHub URL through NPM you will need to run the NPM build task (`npm run build`) before you can use the library.
+
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
 #### Serverside usage with webpack
