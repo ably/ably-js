@@ -7,21 +7,19 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.io"
   },
-  "main": "./nodejs/index.js",
+  "main": "./browser/static/ably-node.js",
   "typings": "./browser/static/ably.d.ts",
   "react-native": {
-    "./nodejs/index.js": "./browser/static/ably-reactnative.js"
+    "./browser/static/ably-node.js": "./browser/static/ably-reactnative.js"
   },
   "browser": {
-    "./nodejs/index.js": "./browser/static/ably-commonjs.js"
+    "./browser/static/ably-node.js": "./browser/static/ably-commonjs.js"
   },
   "files": [
     "ably.d.ts",
-    "browser/**",
+    "browser/static/**",
     "callbacks.d.ts",
     "callbacks.js",
-    "common/**",
-    "nodejs/**",
     "promises.d.ts",
     "promises.js",
     "resources/**"
@@ -91,6 +89,7 @@
     "requirejs": "grunt requirejs",
     "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
-    "check-closure-compiler": "grunt check-closure-compiler"
+    "check-closure-compiler": "grunt check-closure-compiler",
+    "prepare": "npm run build"
   }
 }
