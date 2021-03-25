@@ -154,7 +154,6 @@ module.exports = function (grunt) {
 		'Adds generated files to the git staging area', function() {
 			var done = this.async();
 			var generatedFiles = [
-				gruntConfig.dirs.static,
 				gruntConfig.dirs.common + '/lib/util/defaults.js',
 				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',

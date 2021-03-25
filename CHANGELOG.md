@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.7](https://github.com/ably/ably-js/tree/1.2.7) (2021-03-25)
+- Fix faulty import of JSONP transport to React Native and NativeScript [\#726](https://github.com/ably/ably-js/pull/726)
+- Comet: Raise preconnect event if the server responds with a protocol message [\#719](https://github.com/ably/ably-js/pull/719)
+
 ## [1.2.6](https://github.com/ably/ably-js/tree/1.2.6) (2021-03-04)
 - Move null-loader to dev dependencies (note: this release will only affect NPM users so will not be available on cdn.ably.io) [\#718](https://github.com/ably/ably-js/pull/718)
 
