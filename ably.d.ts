@@ -652,7 +652,6 @@ declare namespace Types {
 	}
 
 	class HttpPaginatedResponse extends PaginatedResult<any> {
-		items: string[];
 		statusCode: number;
 		success: boolean;
 		errorCode: number;
