@@ -401,7 +401,7 @@ declare namespace Types {
 		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.ChannelCallbacks>;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse>) => void;
+		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
 		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
@@ -412,7 +412,7 @@ declare namespace Types {
 		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.ChannelPromise>;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
+		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse<T>>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
 		push: Types.PushPromise;
@@ -430,7 +430,7 @@ declare namespace Types {
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.RealtimeChannelCallbacks>;
 		connection: Types.ConnectionCallbacks;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse>) => void;
+		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
 		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
@@ -440,7 +440,7 @@ declare namespace Types {
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.RealtimeChannelPromise>;
 		connection: Types.ConnectionPromise;
-		request: (method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse>;
+		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse<T>>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
 		push: Types.PushPromise;
@@ -651,8 +651,7 @@ declare namespace Types {
 		isLast: () => boolean;
 	}
 
-	class HttpPaginatedResponse extends PaginatedResult<any> {
-		items: string[];
+	class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
 		statusCode: number;
 		success: boolean;
 		errorCode: number;
