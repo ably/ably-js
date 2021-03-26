@@ -7,7 +7,7 @@ function promisifyOptions(options) {
   return options;
 }
 
-var Ably = require('./nodejs/index');
+var Ably = require('./browser/static/ably-node');
 
 var RestPromise = function(options) {
   return new Ably.Rest(promisifyOptions(options));
