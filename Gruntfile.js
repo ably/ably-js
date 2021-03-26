@@ -71,7 +71,7 @@ module.exports = function (grunt) {
 
 	gruntConfig.bump = {
 		options: {
-			files: ['package.json', 'bower.json', 'README.md'],
+			files: ['package.json', 'README.md'],
 			globalReplace: true,
 			commit: true,
 			commitMessage: 'Regenerate and release version %VERSION%',
@@ -158,7 +158,6 @@ module.exports = function (grunt) {
 				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',
 				'package-lock.json',
-				'bower.json',
 				'README.md',
 				'spec/support/browser_file_list.js'
 			];
