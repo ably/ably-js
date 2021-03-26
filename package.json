@@ -8,7 +8,7 @@
     "email": "support@ably.io"
   },
   "main": "./browser/static/ably-node.js",
-  "typings": "./browser/static/ably.d.ts",
+  "typings": "./ably.d.ts",
   "react-native": {
     "./browser/static/ably-node.js": "./browser/static/ably-reactnative.js"
   },
