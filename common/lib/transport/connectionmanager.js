@@ -328,8 +328,14 @@ var ConnectionManager = (function() {
 					self.notifyState({state: 'failed', error: wrappedErr.error});
 					callback(true);
 				} else if(wrappedErr.event === 'disconnected') {
-					/* Error with that transport only */
-					callback(false);
+					if(!ConnectionError.isRetriable(wrappedErr)) {
+						/* Error received from the server that does not call for trying a fallback host, eg a rate limit */
+						self.notifyState({state: self.states.connecting.failState, error: wrappedErr.error});
+						callback(true);
+					} else {
+						/* Error with that transport only; continue trying other fallback hosts */
+						callback(false);
+					}
 				}
 				return;
 			}

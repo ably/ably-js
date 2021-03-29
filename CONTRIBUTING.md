@@ -16,12 +16,14 @@
 ## Release Process
 
 1. Make sure the tests are passing in CI for the branch you're building
-2. Update the CHANGELOG.md with any customer-affecting changes since the last release
+2. Update the CHANGELOG.md with any customer-affecting changes since the last release and add this to the git index
 3. Run `npm run grunt -- release:patch` (or: "major", "minor", "patch", "prepatch") - creates commit and local tag
-4. Run `npm run grunt -- release:deploy` (requires specific directory structure outside of this repository - this will be documented in more detail but, for now, inspect [Gruntfile.js](Gruntfile.js) for details) - pushes commit and tag, then publishes to the Ably CDN
-5. Run `npm publish .` (should require OTP) - publishes to NPM
-6. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-7. For nontrivial releases: update the ably-js submodule ref in the realtime repo
+4. Ensure that the infrastructure repository is in the same directory as `ably-js` and is up to date with the remote main branch
+5. Run `npm run grunt -- release:deploy` (requires the SDKDeveloper AWS role) - pushes commit and tag, then publishes to the Ably CDN
+6. Run `npm publish .` (should require OTP) - publishes to NPM
+7. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
+8. For nontrivial releases: update the ably-js submodule ref in the realtime repo
+9. Update the Ably changelog with these changes (again, you can just copy the notes you added to the CHANGELOG)
 
 ## Test suite
 

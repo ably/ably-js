@@ -59,8 +59,8 @@ module.exports = function (grunt) {
 				/* By default, the compiler assumes you're using es6 and transpiles to
 				 * es3, adding various (unnecessary and undesired) polyfills. Specify
 				 * both in and out to es3 to avoid transpilation */
-				language_in: 'ECMASCRIPT3',
-				language_out: 'ECMASCRIPT3',
+				language_in: 'ECMASCRIPT5',
+				language_out: 'ECMASCRIPT5',
 				strict_mode_input: true,
 				checks_only: true,
 				warning_level: 'QUIET'
@@ -71,7 +71,7 @@ module.exports = function (grunt) {
 
 	gruntConfig.bump = {
 		options: {
-			files: ['package.json', 'bower.json', 'README.md'],
+			files: ['package.json', 'README.md'],
 			globalReplace: true,
 			commit: true,
 			commitMessage: 'Regenerate and release version %VERSION%',
@@ -92,6 +92,7 @@ module.exports = function (grunt) {
 	]);
 
 	grunt.registerTask('check-closure-compiler', [
+		'build',
 		'closureCompiler:ably.js'
 	]);
 
@@ -153,12 +154,10 @@ module.exports = function (grunt) {
 		'Adds generated files to the git staging area', function() {
 			var done = this.async();
 			var generatedFiles = [
-				gruntConfig.dirs.static,
 				gruntConfig.dirs.common + '/lib/util/defaults.js',
 				gruntConfig.dirs.fragments + '/license.js',
 				'package.json',
 				'package-lock.json',
-				'bower.json',
 				'README.md',
 				'spec/support/browser_file_list.js'
 			];
