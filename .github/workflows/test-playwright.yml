@@ -1,0 +1,21 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-playwright:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+        matrix:
+            browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - run: npm ci
+      - env:
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+        run: npm run test:playwright
