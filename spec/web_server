@@ -15,14 +15,18 @@ var express = require('express'),
 var server = express();
 
 server.use(function(req, res, next) {
-  console.log('%s %s %s', req.method, req.url, req.path);
+  if (!process.env.PLAYWRIGHT_TEST) console.log('%s %s %s', req.method, req.url, req.path);
   next();
 });
 
 server.use(cors());
 
 server.get('/', function(req, res) {
-  res.redirect('/mocha.html');
+	if (process.env.PLAYWRIGHT_TEST) {
+	  res.redirect('/playwright.html');
+	} else {
+	  res.redirect('/mocha.html');
+	}
 });
 
 server.get('/support/browser_file_list.js', function(req, res) {
