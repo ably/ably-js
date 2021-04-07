@@ -101,6 +101,7 @@ var ConnectionManager = (function() {
 		}
 		params.v = Defaults.apiVersion;
 		params.lib = Defaults.libstring;
+		params.agent = Defaults.agent;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}
