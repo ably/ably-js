@@ -39,6 +39,13 @@ Defaults.version          = '1.2.8';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
+var agent = 'ably-js/' + Defaults.version;
+if (Defaults.agent) {
+	Defaults.agent += ' ' + agent;
+} else {
+	Defaults.agent = agent;
+}
+
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
 		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;

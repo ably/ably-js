@@ -9,7 +9,8 @@ var Defaults = {
 	baseTransportOrder: ['comet', 'web_socket'],
 	transportPreferenceOrder: ['comet', 'web_socket'],
 	upgradeTransports: ['web_socket'],
-	restAgentOptions: {maxSockets: 40, keepAlive: true}
+	restAgentOptions: {maxSockets: 40, keepAlive: true},
+	agent: 'nodejs/' + process.version
 };
 
 export default Defaults;
