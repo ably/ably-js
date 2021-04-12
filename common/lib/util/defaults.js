@@ -39,7 +39,7 @@ Defaults.version          = '1.2.8';
 Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
-var agent = 'ably-js/' + Defaults.version;
+var agent = Platform.libver + '/' + Defaults.version;
 if (Defaults.agent) {
 	Defaults.agent += ' ' + agent;
 } else {
