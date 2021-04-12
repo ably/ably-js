@@ -35,7 +35,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.8';
+Defaults.version          = '1.2.9';
 Defaults.apiVersion       = '1.2';
 
 var agent = Platform.libver + '/' + Defaults.version;

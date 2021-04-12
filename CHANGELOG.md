@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.9](https://github.com/ably/ably-js/tree/1.2.9) (2021-04-12)
+- Fix bugs in disconnection error filtering [\#734](https://github.com/ably/ably-js/pull/734)
+- Replace fury badges with shields.io [\#716](https://github.com/ably/ably-js/pull/716)
+
 ## [1.2.8](https://github.com/ably/ably-js/tree/1.2.8) (2021-03-26)
 - Fix imports for callbacks.js, promises.js, typings. [\#730](https://github.com/ably/ably-js/pull/730)
 - Fix request typings [\#731](https://github.com/ably/ably-js/pull/731)
