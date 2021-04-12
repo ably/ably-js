@@ -36,7 +36,6 @@ Defaults.errorReportingHeaders = {
 };
 
 Defaults.version          = '1.2.8';
-Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
 
 var agent = Platform.libver + '/' + Defaults.version;

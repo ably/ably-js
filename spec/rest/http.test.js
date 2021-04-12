@@ -23,32 +23,29 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 		var get_inner = Ably.Rest.Http.get;
 		Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
-			test.ok(('X-Ably-Lib' in headers), 'Verify lib header exists');
 			test.ok(('Ably-Agent' in headers), 'Verify agent header exists');
 			
 			// This test should not directly validate version against Defaults.version, as
 			// ultimately the version header has been derived from that value.
 			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
 
-			test.ok(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring');
+			test.ok(headers['Ably-Agent'].indexOf(Defaults.version) > -1, 'Verify agent');
 		};
 
 		var post_inner = Ably.Rest.Http.post;
 		Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
 			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
-			test.ok(('X-Ably-Lib' in headers), 'Verify lib header exists');
 			test.ok(('Ably-Agent' in headers), 'Verify agent header exists');
 
 			// This test should not directly validate version against Defaults.version, as
 			// ultimately the version header has been derived from that value.
 			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
 			
-			test.ok(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring');
-			test.ok(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent');
+			test.ok(headers['Ably-Agent'].indexOf(Defaults.version) > -1, 'Verify agent');
 		};
 
 		//Call all methods that use rest http calls
-		test.expect(27);
+		test.expect(20);
 
 		rest.auth.requestToken();
 		rest.time();
