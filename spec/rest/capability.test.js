@@ -1,277 +1,284 @@
-"use strict";
+'use strict';
 
-define(['ably', 'shared_helper'], function(Ably, helper) {
-	var currentTime, rest, testApp, exports = {};
-
+define(['shared_helper', 'chai'], function (helper, chai) {
+	var currentTime;
+	var rest;
+	var testApp;
+	var expect = chai.expect;
 	var invalid0 = {
-			channel0:['publish_']
-		};
-
+		channel0: ['publish_']
+	};
 	var invalid1 = {
-			channel0:['*', 'publish']
-		};
-
+		channel0: ['*', 'publish']
+	};
 	var invalid2 = {
-			channel0:[]
-		};
+		channel0: []
+	};
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-				test.done();
-				return;
-			}
+	describe('rest/capability', function () {
+		this.timeout(60 * 1000);
 
-			rest = helper.AblyRest();
-			testApp = helper.getTestApp();
-			rest.time(function(err, time) {
-				if(err) {
-					test.ok(false, displayError(err));
-					test.done();
+		before(function (done) {
+			helper.setupApp(function (err) {
+				if (err) {
+					done(err);
 					return;
 				}
-				currentTime = time;
-				test.ok(true, 'Obtained time');
-				test.done();
+
+				rest = helper.AblyRest();
+				testApp = helper.getTestApp();
+				rest.time(function (err, time) {
+					if (err) {
+						done(err);
+						return;
+					}
+					currentTime = time;
+					done();
+				});
 			});
 		});
-	};
 
-	/*
-	 * Blanket intersection with specified key
-	 */
-	exports.authcapability0 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[1].keyStr};
-		var testCapability = JSON.parse(testApp.keys[1].capability);
-		rest.auth.requestToken(null, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
-			test.done();
+		it('Blanket intersection with specified key', function (done) {
+			var testKeyOpts = { key: testApp.keys[1].keyStr };
+			var testCapability = JSON.parse(testApp.keys[1].capability);
+			rest.auth.requestToken(null, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
+					done();
+				} catch (e) {
+					done(e);
+				}
+			});
 		});
-	};
 
-	/*
-	 * Equal intersection with specified key
-	 */
-	exports.authcapability1 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[1].keyStr};
-	var testCapability = JSON.parse(testApp.keys[1].capability);
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), testCapability, 'Verify token capability');
-			test.done();
+		it('Equal intersection with specified key', function (done) {
+			var testKeyOpts = { key: testApp.keys[1].keyStr };
+			var testCapability = JSON.parse(testApp.keys[1].capability);
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
 
-	/*
-	 * Empty ops intersection
-	 */
-	exports.authcapability2 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[1].keyStr};
-		var testCapability = {"canpublish:test":['subscribe']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Invalid capability, expected rejection');
-			test.done();
+		it('Empty ops intersection', function (done) {
+			var testKeyOpts = { key: testApp.keys[1].keyStr };
+			var testCapability = { 'canpublish:test': ['subscribe'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					try {
+						expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
+						done();
+					} catch (err) {
+						done(err);
+					}
+					return;
+				}
+				done(new Error('Invalid capability, expected rejection'));
+			});
 		});
-	};
 
-	/*
-	 * Empty paths intersection
-	 */
-	exports.authcapability3 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[2].keyStr};
-		var testCapability = {channelx:['publish']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.equal(err.statusCode, 401, 'Verify request rejected with insufficient capability');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Invalid capability, expected rejection');
-			test.done();
+		it('Empty paths intersection', function (done) {
+			var testKeyOpts = { key: testApp.keys[2].keyStr };
+			var testCapability = { channelx: ['publish'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					try {
+						expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
+						done();
+					} catch (err) {
+						done(err);
+					}
+					return;
+				}
+				done('Invalid capability, expected rejection');
+			});
 		});
-	};
 
-	/*
-	 * Ops intersection non-empty
-	 */
-	exports.authcapability4 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[2].keyStr};
-		var testCapability = {channel2:['presence', 'subscribe']};
-		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
+		it('Ops intersection non-empty', function (done) {
+			var testKeyOpts = { key: testApp.keys[2].keyStr };
+			var testCapability = { channel2: ['presence', 'subscribe'] };
+			var expectedIntersection = { channel2: ['subscribe'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
 
-	/*
-	 * Paths intersection non-empty
-	 */
-	exports.authcapability5 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[2].keyStr};
-		var testCapability = {
-			channel2:['presence', 'subscribe'],
-			channelx:['presence', 'subscribe']
-		};
-		var expectedIntersection = {channel2:['subscribe']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
+		it('Paths intersection non-empty', function (done) {
+			var testKeyOpts = { key: testApp.keys[2].keyStr };
+			var testCapability = {
+				channel2: ['presence', 'subscribe'],
+				channelx: ['presence', 'subscribe']
+			};
+			var expectedIntersection = { channel2: ['subscribe'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
 
-	/*
-	 * Ops wildcard matching
-	 */
-	exports.authcapability6 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[2].keyStr};
-		var testCapability = {channel2:['*']};
-		var expectedIntersection = {channel2:['publish', 'subscribe']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
+		it('Wildcard token with publish and subscribe key', function (done) {
+			var testKeyOpts = { key: testApp.keys[2].keyStr };
+			var testCapability = { channel2: ['*'] };
+			var expectedIntersection = { channel2: ['publish', 'subscribe'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
-	exports.authcapability7 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[2].keyStr};
-		var testCapability = {channel6:['publish', 'subscribe']};
-		var expectedIntersection = {channel6:['publish', 'subscribe']};
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
-		});
-	};
 
-	/*
-	 * Resources wildcard matching
-	 */
-	exports.authcapability8 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[3].keyStr};
-		var testCapability = {cansubscribe:['subscribe']};
-		var expectedIntersection = testCapability;
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
+		it('Publish and subscribe token with wildcard key', function (done) {
+			var testKeyOpts = { key: testApp.keys[2].keyStr };
+			var testCapability = { channel6: ['publish', 'subscribe'] };
+			var expectedIntersection = { channel6: ['publish', 'subscribe'] };
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
-	exports.authcapability9 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[1].keyStr};
-		var testCapability = {'canpublish:check':['publish']};
-		var expectedIntersection = testCapability;
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
-		});
-	};
-	exports.authcapability10 = function(test) {
-		test.expect(1);
-	var testKeyOpts = {key: testApp.keys[3].keyStr};
-		var testCapability = {'cansubscribe:*':['subscribe']};
-		var expectedIntersection = testCapability;
-		rest.auth.requestToken({capability: testCapability}, testKeyOpts, function(err, tokenDetails) {
-			if(err) {
-				test.ok(false, displayError(err));
-				test.done();
-				return;
-			}
-			test.deepEqual(JSON.parse(tokenDetails.capability), expectedIntersection, 'Verify token capability');
-			test.done();
-		});
-	};
 
-	/* Invalid capabilities */
-	exports.invalid0 = function(test) {
-		test.expect(1);
-		rest.auth.requestToken({capability: invalid0}, function(err, tokenDetails) {
-			if(err) {
-				test.equal(err.statusCode, 400, 'Verify request rejected with bad capability');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Invalid capability, expected rejection');
-			test.done();
+		it('Resources wildcard matching 1', function (done) {
+			var testKeyOpts = { key: testApp.keys[3].keyStr };
+			var testCapability = { cansubscribe: ['subscribe'] };
+			var expectedIntersection = testCapability;
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
 		});
-	};
-	exports.invalid1 = function(test) {
-		test.expect(1);
-		rest.auth.requestToken({capability: invalid1}, function(err, tokenDetails) {
-			if(err) {
-				test.equal(err.statusCode, 400, 'Verify request rejected with bad capability');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Invalid capability, expected rejection');
-			test.done();
-		});
-	};
-	exports.invalid2 = function(test) {
-		test.expect(1);
-		rest.auth.requestToken({capability: invalid2}, function(err, tokenDetails) {
-			if(err) {
-				test.equal(err.statusCode, 400, 'Verify request rejected with bad capability');
-				test.done();
-				return;
-			}
-			test.ok(false, 'Invalid capability, expected rejection');
-			test.done();
-		});
-	};
 
-	helper.withMocha('rest/capability', exports);
+		it('Resources wildcard matching 2', function (done) {
+			var testKeyOpts = { key: testApp.keys[1].keyStr };
+			var testCapability = { 'canpublish:check': ['publish'] };
+			var expectedIntersection = testCapability;
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
+		});
+
+		it('Resources wildcard matching 3', function (done) {
+			var testKeyOpts = { key: testApp.keys[3].keyStr };
+			var testCapability = { 'cansubscribe:*': ['subscribe'] };
+			var expectedIntersection = testCapability;
+			rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
+				if (err) {
+					done(err);
+					return;
+				}
+				try {
+					expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
+		});
+
+		/* Invalid capabilities */
+		it('Invalid capabilities 1', function (done) {
+			rest.auth.requestToken({ capability: invalid0 }, function (err, tokenDetails) {
+				if (err) {
+					try {
+						expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+						done();
+					} catch (err) {
+						done(err);
+					}
+					return;
+				}
+				done(new Error('Invalid capability, expected rejection'));
+			});
+		});
+
+		it('Invalid capabilities 2', function (done) {
+			rest.auth.requestToken({ capability: invalid1 }, function (err, tokenDetails) {
+				if (err) {
+					try {
+						expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+						done();
+					} catch (err) {
+						done(err);
+					}
+					return;
+				}
+				done(new Error('Invalid capability, expected rejection'));
+			});
+		});
+
+		it('Invalid capabilities 3', function (done) {
+			rest.auth.requestToken({ capability: invalid2 }, function (err, tokenDetails) {
+				if (err) {
+					try {
+						expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+						done();
+					} catch (err) {
+						done(err);
+					}
+					return;
+				}
+				done(new Error('Invalid capability, expected rejection'));
+			});
+		});
+	});
 });
