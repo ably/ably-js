@@ -21,10 +21,12 @@ const runTests = async (browserType) => {
     console.log(`\nrunning tests in ${browserType.name()}`);
 
     await new Promise((resolve) => {
+        // Expose a function inside the playwright browser to log to the NodeJS process stdout
         page.exposeFunction('onTestLog', ({ detail }) => {
             console.log(detail);
         });
 
+        // Expose a function inside the playwright browser to exit with the right status code when tests pass/fail
         page.exposeFunction('onTestResult', ({ detail }) => {
             console.log(`${browserType.name()} tests complete: ${detail.passes}/${detail.total} passed`);
             if (detail.pass) {
@@ -36,6 +38,8 @@ const runTests = async (browserType) => {
             }
         });
 
+        // Use page.evaluate to add these functions as event listeners to the 'testLog' and 'testResult' Custom Events.
+        // These events are fired by the custom mocha reporter in playwrightSetup.js
         page.evaluate(() => {
             window.addEventListener('testLog', ({ type, detail }) => {
                 onTestLog({ type, detail });
