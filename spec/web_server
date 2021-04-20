@@ -14,15 +14,22 @@ var express = require('express'),
 
 var server = express();
 
+/*
+ * This environment varuable is used to let this script know that tests are
+ * running in a playwright context. When truthy, a different html document is
+ * returned on 'GET /' and console logging is skipped.
+ */
+const playwrightTest = !!process.env.PLAYWRIGHT_TEST;
+
 server.use(function(req, res, next) {
-  if (!process.env.PLAYWRIGHT_TEST) console.log('%s %s %s', req.method, req.url, req.path);
+  if (!playwrightTest) console.log('%s %s %s', req.method, req.url, req.path);
   next();
 });
 
 server.use(cors());
 
 server.get('/', function(req, res) {
-	if (process.env.PLAYWRIGHT_TEST) {
+	if (playwrightTest) {
 	  res.redirect('/playwright.html');
 	} else {
 	  res.redirect('/mocha.html');
