@@ -1,18 +1,22 @@
-"use strict";
+'use strict';
 
-define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDecoder, async) {
-	var exports = {},
-		_exports = {},
-		displayError = helper.displayError,
-		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection,
-		testData = [
-			{ foo: 'bar', count: 1, status: 'active' },
-			{ foo: 'bar', count: 2, status: 'active' },
-			{ foo: 'bar', count: 2, status: 'inactive' },
-			{ foo: 'bar', count: 3, status: 'inactive' },
-			{ foo: 'bar', count: 3, status: 'active' }
-		];
+define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (
+	helper,
+	vcdiffDecoder,
+	async,
+	chai
+) {
+	var expect = chai.expect;
+	var displayError = helper.displayError;
+	var closeAndFinish = helper.closeAndFinish;
+	var monitorConnection = helper.monitorConnection;
+	var testData = [
+		{ foo: 'bar', count: 1, status: 'active' },
+		{ foo: 'bar', count: 2, status: 'active' },
+		{ foo: 'bar', count: 2, status: 'inactive' },
+		{ foo: 'bar', count: 3, status: 'inactive' },
+		{ foo: 'bar', count: 3, status: 'active' }
+	];
 
 	function equals(a, b) {
 		return JSON.stringify(a) === JSON.stringify(b);
@@ -21,230 +25,257 @@ define(['shared_helper', 'vcdiff-decoder', 'async'], function(helper, vcdiffDeco
 	function getTestVcdiffDecoder() {
 		return {
 			numberOfCalls: 0,
-			decode: function(delta, base) {
+			decode: function (delta, base) {
 				this.numberOfCalls++;
 				return vcdiffDecoder.decode(delta, base);
 			}
 		};
 	}
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, displayError(err));
-			} else {
-				test.ok(true, 'setup app');
-			}
-			test.done();
+	describe('realtime/delta', function () {
+		this.timeout(60 * 1000);
+
+		before(function (done) {
+			helper.setupApp(function (err) {
+				if (err) {
+					done(err);
+				}
+				done();
+			});
 		});
-	};
 
-	exports.deltaPlugin = function(test) {
-		test.expect(testData.length + 1);
-		var testName = 'deltaPlugin';
-		try {
-			var testVcdiffDecoder = getTestVcdiffDecoder();
-			var realtime = helper.AblyRealtime({
-				plugins: {
-					vcdiff: testVcdiffDecoder
-				}
-			});
-			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
-
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-				}
-
-				channel.on('attaching', function(stateChange) {
-					test.ok(false, 'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason));
-				});
-
-				channel.subscribe(function(message) {
-					var index = Number(message.name);
-					test.ok(equals(testData[index], message.data), 'Check message.data');
-
-					if (index === testData.length - 1) {
-						test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 1, 'Check number of delta messages');
-						closeAndFinish(test, realtime);
+		it('deltaPlugin', function (done) {
+			var testName = 'deltaPlugin';
+			try {
+				var testVcdiffDecoder = getTestVcdiffDecoder();
+				var realtime = helper.AblyRealtime({
+					plugins: {
+						vcdiff: testVcdiffDecoder
 					}
 				});
+				var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-				async.timesSeries(testData.length, function(i, cb) {
-					channel.publish(i.toString(), testData[i], cb);
+				channel.attach(function (err) {
+					if (err) {
+						closeAndFinish(done, realtime, err);
+					}
+
+					channel.on('attaching', function (stateChange) {
+						done(
+							new Error(
+								'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason)
+							)
+						);
+					});
+
+					channel.subscribe(function (message) {
+						try {
+							var index = Number(message.name);
+							expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
+
+							if (index === testData.length - 1) {
+								expect(testVcdiffDecoder.numberOfCalls).to.equal(testData.length - 1, 'Check number of delta messages');
+								closeAndFinish(done, realtime);
+							}
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+						}
+					});
+
+					async.timesSeries(testData.length, function (i, cb) {
+						channel.publish(i.toString(), testData[i], cb);
+					});
 				});
-			});
 
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, testName + ' test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
+				monitorConnection(done, realtime);
+			} catch (err) {
+				closeAndFinish(done, realtime, err);
+			}
+		});
 
-	exports.unusedPlugin = function(test) {
-		test.expect(testData.length + 1);
-		var testName = 'unusedPlugin';
-		try {
-			var testVcdiffDecoder = getTestVcdiffDecoder();
-			var realtime = helper.AblyRealtime({
-				plugins: {
-					vcdiff: testVcdiffDecoder
-				}
-			});
-			var channel = realtime.channels.get(testName);
-
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-				}
-				channel.subscribe(function(message) {
-					var index = Number(message.name);
-					test.ok(equals(testData[index], message.data), 'Check message.data');
-
-					if (index === testData.length - 1) {
-						test.equal(testVcdiffDecoder.numberOfCalls, 0, 'Check number of delta messages');
-						closeAndFinish(test, realtime);
+		it('unusedPlugin', function (done) {
+			var testName = 'unusedPlugin';
+			try {
+				var testVcdiffDecoder = getTestVcdiffDecoder();
+				var realtime = helper.AblyRealtime({
+					plugins: {
+						vcdiff: testVcdiffDecoder
 					}
 				});
+				var channel = realtime.channels.get(testName);
 
-				async.timesSeries(testData.length, function(i, cb) {
-					channel.publish(i.toString(), testData[i], cb);
+				channel.attach(function (err) {
+					if (err) {
+						closeAndFinish(doner, realtime, err);
+					}
+					channel.subscribe(function (message) {
+						try {
+							var index = Number(message.name);
+							expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
+
+							if (index === testData.length - 1) {
+								expect(testVcdiffDecoder.numberOfCalls).to.equal(0, 'Check number of delta messages');
+								closeAndFinish(done, realtime);
+							}
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+						}
+					});
+
+					async.timesSeries(testData.length, function (i, cb) {
+						channel.publish(i.toString(), testData[i], cb);
+					});
 				});
-			});
 
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, testName + ' test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
+				monitorConnection(done, realtime);
+			} catch (err) {
+				closeAndFinish(done, realtime, err);
+			}
+		});
 
-	exports.lastMessageNotFoundRecovery = function(test) {
-		test.expect(testData.length + 2);
-		var testName = 'lastMessageNotFoundRecovery';
-		try {
-			var testVcdiffDecoder = getTestVcdiffDecoder();
-			var realtime = helper.AblyRealtime({
-				plugins: {
-					vcdiff: testVcdiffDecoder
-				}
-			});
-			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
+		it('lastMessageNotFoundRecovery', function (done) {
+			var testName = 'lastMessageNotFoundRecovery';
+			try {
+				var testVcdiffDecoder = getTestVcdiffDecoder();
+				var realtime = helper.AblyRealtime({
+					plugins: {
+						vcdiff: testVcdiffDecoder
+					}
+				});
+				var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-				}
-				channel.subscribe(function(message) {
-					var index = Number(message.name);
-					test.ok(equals(testData[index], message.data), 'Check message.data');
+				channel.attach(function (err) {
+					if (err) {
+						closeAndFinish(done, realtime, err);
+					}
+					channel.subscribe(function (message) {
+						var index = Number(message.name);
+						try {
+							expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+						}
 
-					if (index === 1) {
-						/* Simulate issue */
-						channel._lastPayload.messageId = null;
-						channel.once('attaching', function(stateChange) {
-							test.equal(stateChange.reason.code, 40018, 'Check error code passed through per RTL18c');
-							channel.on('attaching', function(stateChange) {
-								test.ok(false, 'Check no further decode failures; reason =' + displayError(stateChange.reason));
+						if (index === 1) {
+							/* Simulate issue */
+							channel._lastPayload.messageId = null;
+							channel.once('attaching', function (stateChange) {
+								try {
+									expect(stateChange.reason.code).to.equal(40018, 'Check error code passed through per RTL18c');
+								} catch (err) {
+									closeAndFinish(done, realtime, err);
+									return;
+								}
+								channel.on('attaching', function (stateChange) {
+									closeAndFinish(
+										done,
+										realtime,
+										new Error('Check no further decode failures; reason =' + displayError(stateChange.reason))
+									);
+								});
 							});
-						})
-					} else if (index === testData.length - 1) {
-						test.equal(testVcdiffDecoder.numberOfCalls, testData.length - 2, 'Check number of delta messages');
-						closeAndFinish(test, realtime);
+						} else if (index === testData.length - 1) {
+							try {
+								expect(testVcdiffDecoder.numberOfCalls).to.equal(testData.length - 2, 'Check number of delta messages');
+							} catch (err) {
+								closeAndFinish(done, realtime, err);
+								return;
+							}
+							closeAndFinish(done, realtime);
+						}
+					});
+
+					async.timesSeries(testData.length, function (i, cb) {
+						channel.publish(i.toString(), testData[i], cb);
+					});
+				});
+
+				monitorConnection(done, realtime);
+			} catch (err) {
+				closeAndFinish(done, realtime, err);
+			}
+		});
+
+		it('deltaDecodeFailureRecovery', function (done) {
+			var testName = 'deltaDecodeFailureRecovery';
+			try {
+				var failingTestVcdiffDecoder = {
+					decode: function (delta, base) {
+						throw new Error('Failed to decode delta.');
+					}
+				};
+
+				var realtime = helper.AblyRealtime({
+					plugins: {
+						vcdiff: failingTestVcdiffDecoder
 					}
 				});
+				var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-				async.timesSeries(testData.length, function(i, cb) {
-					channel.publish(i.toString(), testData[i], cb);
-				});
-			});
-
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, testName + ' test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
-
-	exports.deltaDecodeFailureRecovery = function(test) {
-		test.expect(testData.length * 2 - 1);
-		var testName = 'deltaDecodeFailureRecovery';
-		try {
-			var failingTestVcdiffDecoder = {
-				decode: function(delta, base) {
-					throw new Error('Failed to decode delta.');
-				}
-			};
-
-			var realtime = helper.AblyRealtime({
-				plugins: {
-					vcdiff: failingTestVcdiffDecoder
-				}
-			});
-			var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
-
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-				}
-				channel.on('attaching', function(stateChange) {
-					test.equal(stateChange.reason.code, 40018, 'Check error code passed through per RTL18c');
-				});
-				channel.subscribe(function(message) {
-					var index = Number(message.name);
-					test.ok(equals(testData[index], message.data), 'Check message.data');
-
-					if (index === testData.length - 1) {
-						closeAndFinish(test, realtime);
+				channel.attach(function (err) {
+					if (err) {
+						closeAndFinish(done, realtime, err);
 					}
+					channel.on('attaching', function (stateChange) {
+						try {
+							expect(stateChange.reason.code).to.equal(40018, 'Check error code passed through per RTL18c');
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+						}
+					});
+					channel.subscribe(function (message) {
+						var index = Number(message.name);
+						try {
+							expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+						}
+
+						if (index === testData.length - 1) {
+							closeAndFinish(done, realtime);
+						}
+					});
+
+					async.timesSeries(testData.length, function (i, cb) {
+						channel.publish(i.toString(), testData[i], cb);
+					});
 				});
 
-				async.timesSeries(testData.length, function(i, cb) {
-					channel.publish(i.toString(), testData[i], cb);
+				monitorConnection(done, realtime);
+			} catch (err) {
+				closeAndFinish(done, realtime, err);
+			}
+		});
+
+		/* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
+		it('noPlugin', function (done) {
+			try {
+				var realtime = helper.AblyRealtime();
+				var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
+
+				channel.attach(function (err) {
+					if (err) {
+						closeAndFinish(done, realtime, err);
+					}
+					channel.once('failed', function (stateChange) {
+						try {
+							expect(stateChange.reason.code).to.equal(40019, 'Check error code');
+						} catch (err) {
+							closeAndFinish(done, realtime, err);
+							return;
+						}
+						closeAndFinish(done, realtime);
+					});
+					async.timesSeries(testData.length, function (i, cb) {
+						channel.publish(i.toString(), testData[i], cb);
+					});
 				});
-			});
 
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, testName + ' test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
-
-	/* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
-	exports.noPlugin = function(test) {
-		var testName = 'noPlugin';
-
-		try {
-			var realtime = helper.AblyRealtime();
-			var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
-
-			channel.attach(function(err) {
-				if(err) {
-					test.ok(false, displayError(err));
-					closeAndFinish(test, realtime);
-				}
-				channel.once('failed', function(stateChange) {
-					test.equal(stateChange.reason.code, 40019, 'Check error code');
-					closeAndFinish(test, realtime);
-				});
-				async.timesSeries(testData.length, function(i, cb) {
-					channel.publish(i.toString(), testData[i], cb);
-				});
-			});
-
-			monitorConnection(test, realtime);
-		} catch(e) {
-			test.ok(false, testName + ' test failed with exception: ' + e.stack);
-			closeAndFinish(test, realtime);
-		}
-	};
-
-	helper.withMocha('realtime/delta', exports);
+				monitorConnection(done, realtime);
+			} catch (err) {
+				closeAndFinish(done, realtime, err);
+			}
+		});
+	});
 });
+

@@ -3,8 +3,8 @@
 /* Shared test helper for the Jasmine test suite that simplifies
 	 the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async', 'node_modules/chai/chai'],
-	function(testAppModule, clientModule, testAppManager, async, chai) {
+define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
+	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
 			/* Don't include jsonp in availableTransports if xhr works. Why? Because
@@ -34,28 +34,27 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			return result;
 		}
 
-		function monitorConnection(test, realtime) {
+		function monitorConnection(done, realtime) {
 			utils.arrForEach(['failed', 'suspended'], function(state) {
 				realtime.connection.on(state, function () {
-					test.expect(false, 'Connection monitoring: state changed to ' + state + ', aborting test');
-					test.done();
+					done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
 					realtime.close();
 				});
 			});
 		}
 
-		function closeAndFinish(test, realtime) {
+		function closeAndFinish(done, realtime, err) {
 			if(typeof realtime === 'undefined') {
 				// Likely called in a catch block for an exception
 				// that occured before realtime was initialized
-				test.done();
+				done(err);
 				return;
 			}
 			if(Object.prototype.toString.call(realtime) == '[object Array]') {
-				closeAndFinishSeveral(test, realtime);
+				closeAndFinishSeveral(done, realtime, err);
 				return;
 			}
-			callbackOnClose(realtime, function(){ test.done(); })
+			callbackOnClose(realtime, function(){ done(err); })
 		}
 
 		function simulateDroppedConnection(realtime) {
@@ -78,7 +77,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 
 		function callbackOnClose(realtime, callback) {
 			if(!realtime.connection.connectionManager.activeProtocol) {
-				console.log("No transport established; closing connection and calling done()");
 				utils.nextTick(function() {
 					realtime.close();
 					callback();
@@ -86,7 +84,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				return;
 			}
 			realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function() {
-				console.log("Transport disposed; calling done()")
 				callback();
 			});
 			/* wait a tick before closing in order to avoid the final close
@@ -97,7 +94,7 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			});
 		}
 
-		function closeAndFinishSeveral(test, realtimeArray) {
+		function closeAndFinishSeveral(done, realtimeArray, e) {
 			async.map(realtimeArray, function(realtime, mapCb){
 				var parallelItem = function(parallelCb) {
 					callbackOnClose(realtime, function(){ parallelCb(); })
@@ -105,31 +102,39 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				mapCb(null, parallelItem)
 			}, function(err, parallelItems) {
 				async.parallel(parallelItems, function() {
-					test.done();
+					if (err) {
+						done(err);
+						return;
+					}
+					done(e);
 				});
 			}
 		 )
 		}
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-		function testOnAllTransports(exports, name, testFn, excludeUpgrade) {
+		function testOnAllTransports(name, testFn, excludeUpgrade) {
 			utils.arrForEach(availableTransports, function(transport) {
-				exports[name + '_with_' + transport + '_binary_transport'] = testFn({transports: [transport], useBinaryProtocol: true});
-				exports[name + '_with_' + transport + '_text_transport'] = testFn({transports: [transport], useBinaryProtocol: false});
+				it(name + '_with_' + transport + '_binary_transport', testFn({transports: [transport], useBinaryProtocol: true}));
+				it(name + '_with_' + transport + '_text_transport', testFn({transports: [transport], useBinaryProtocol: false}));
 			});
 			/* Plus one for no transport specified (ie use upgrade mechanism if
 			 * present).  (we explicitly specify all transports since node only does
 			 * nodecomet+upgrade if comet is explicitly requested
 			 * */
 			if(!excludeUpgrade) {
-				exports[name + '_with_binary_transport'] = testFn({transports: availableTransports, useBinaryProtocol: true});
-				exports[name + '_with_text_transport'] = testFn({transports: availableTransports, useBinaryProtocol: false});
+				it(name + '_with_binary_transport', testFn({transports: availableTransports, useBinaryProtocol: true}));
+				it(name + '_with_text_transport', testFn({transports: availableTransports, useBinaryProtocol: false}));
 			}
 		}
 
-		function restTestOnJsonMsgpack(exports, name, testFn) {
-			exports[name + '_binary'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary'); };
-			exports[name + '_text'] = function(test) { testFn(test, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text'); };
+		function restTestOnJsonMsgpack(name, testFn) {
+			it(name + ' with binary protocol', function (done) {
+				testFn(done, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary');
+			});
+			it(name + ' with text protocol', function (done) {
+				testFn(done, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text');
+			});
 		}
 
 		function clearTransportPreference() {
@@ -173,76 +178,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 				return res;
 			};
 
-
-		function withMocha(title, exports, defaultTimeout) {
-			describe(title, function () {
-				this.timeout(defaultTimeout || 60 * 1000);
-
-				var counter = {
-					value: 0,
-					expected: -1,
-				};
-
-				function getTestApi (done) {
-					return {
-						done: function () {
-							if (counter.expected !== -1) {
-								chai.expect(counter.value).to.equal(counter.expected);
-							}
-							done();
-						},
-						ok: function (expression, message) {
-							counter.value += 1;
-							chai.expect(expression, message).to.be.ok;
-						},
-						expect: function (expected) {
-							counter.expected = expected;
-						},
-						equal: function (val1, val2, message) {
-							counter.value += 1;
-							chai.expect(val1).to.equal(val2, message);
-						},
-						deepEqual: function (val1, val2, message) {
-							counter.value += 1;
-							chai.expect(val1).to.deep.equal(val2, message);
-						},
-						notEqual: function (val1, val2, message) {
-							counter.value += 1;
-							chai.expect(val1).to.not.equal(val2, message);
-						},
-						throws: function (fn) {
-							counter.value += 1;
-							chai.expect(fn).to.throw();
-						}
-					}
-				};
-
-				before(function (done) {
-					if (typeof exports['before'] === 'function') {
-						exports['before'](getTestApi(done));
-					} else {
-						done();
-					}
-				});
-
-				beforeEach(function () {
-					counter.value = 0;
-					counter.expected = -1;
-
-					clearTransportPreference();
-				})
-
-				for (var testName in exports) {
-					(function(testName){
-						if (testName !== 'before') {
-							it(testName, function (done) {
-								exports[testName](getTestApi(done));
-							})
-					}})(testName);
-				}
-			})
-		}
-
 		return module.exports = {
 			setupApp:     testAppModule.setup,
 			tearDownApp:  testAppModule.tearDown,
@@ -272,7 +207,6 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			unroutableHost:            unroutableHost,
 			unroutableAddress:         unroutableAddress,
 			arrFind:                   arrFind,
-			arrFilter:                 arrFilter,
-			withMocha: withMocha
+			arrFilter:                 arrFilter
 		};
 	});

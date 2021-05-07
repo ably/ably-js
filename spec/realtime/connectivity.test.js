@@ -1,33 +1,37 @@
-"use strict";
+'use strict';
 
-define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var exports = {},
-		closeAndFinish = helper.closeAndFinish,
-		monitorConnection = helper.monitorConnection,
-		utils = helper.Utils;
+define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+	var expect = chai.expect;
+	var closeAndFinish = helper.closeAndFinish;
+	var monitorConnection = helper.monitorConnection;
+	var utils = helper.Utils;
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function(err) {
-			if(err) {
-				test.ok(false, helper.displayError(err));
-			} else {
-				test.ok(true, 'app set up');
-			}
-			test.done();
+	describe('realtime/connectivity', function () {
+		this.timeout(60 * 1000);
+
+		before(function (done) {
+			helper.setupApp(function (err) {
+				if (err) {
+					done(err);
+				}
+				done();
+			});
 		});
-	};
 
-	/*
-	 * Connect with available http transports; internet connectivity check should work
-	 */
-	exports.http_connectivity_check = function(test) {
-		test.expect(1);
-		Ably.Realtime.Http.checkConnectivity(function(err, res) {
-			test.ok(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err)));
-			test.done();
-		})
-	};
-
-	helper.withMocha('realtime/connectivity', exports);
+		/*
+		 * Connect with available http transports; internet connectivity check should work
+		 */
+		it('http_connectivity_check', function (done) {
+			Ably.Realtime.Http.checkConnectivity(function (err, res) {
+				try {
+					expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+				} catch (err) {
+					done(err);
+					return;
+				}
+				done();
+			});
+		});
+	});
 });
+

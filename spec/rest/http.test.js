@@ -1,66 +1,67 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
-	var rest, exports = {},
-		Defaults = Ably.Rest.Defaults;
+define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+	var rest;
+	var expect = chai.expect;
+	var Defaults = Ably.Rest.Defaults;
 
-	exports.before = function(test) {
-		test.expect(1);
-		helper.setupApp(function() {
-			rest = helper.AblyRest();
-			test.ok(true, 'App created');
-			test.done();
+	describe('rest/http', function () {
+		this.timeout(60 * 1000);
+		before(function (done) {
+			helper.setupApp(function () {
+				rest = helper.AblyRest();
+				done();
+			});
 		});
-	}
 
-	/**
-	 * Check presence of X-Ably-Version headers in get&post requests
-	 * @spec : (RSC7a)
-	 */
-	exports.apiVersionHeader = function(test) {
+		/**
+		 * RSC7a
+		 */
+		it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', function (done) {
+			//Intercept get&post methods with test
+			var get_inner = Ably.Rest.Http.get;
+			Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
+				try {
+				expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
+				expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
 
-		//Intercept get&post methods with test
-		var get_inner = Ably.Rest.Http.get;
-		Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
-			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
-			test.ok(('Ably-Agent' in headers), 'Verify agent header exists');
-			
-			// This test should not directly validate version against Defaults.version, as
-			// ultimately the version header has been derived from that value.
-			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
+				// This test should not directly validate version against Defaults.version, as
+				// ultimately the version header has been derived from that value.
+				expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
+				expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
+				} catch (err) {
+					done(err);
+				}
+			};
 
-			test.ok(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent');
-		};
+			var post_inner = Ably.Rest.Http.post;
+			Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
+				try {
+				expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
+				expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
 
-		var post_inner = Ably.Rest.Http.post;
-		Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
-			test.ok(('X-Ably-Version' in headers), 'Verify version header exists');
-			test.ok(('Ably-Agent' in headers), 'Verify agent header exists');
+				// This test should not directly validate version against Defaults.version, as
+				// ultimately the version header has been derived from that value.
+				expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
+				expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
+				} catch (err) {
+					done(err);
+				}
+			};
 
-			// This test should not directly validate version against Defaults.version, as
-			// ultimately the version header has been derived from that value.
-			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
-			
-			test.ok(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent');
-		};
+			// Call all methods that use rest http calls
+			rest.auth.requestToken();
+			rest.time();
+			rest.stats();
+			var channel = rest.channels.get('http_test_channel');
+			channel.publish('test', 'Testing http headers');
+			channel.presence.get();
 
-		//Call all methods that use rest http calls
-		test.expect(20);
+			// Clean interceptors from get&post methods
+			Ably.Rest.Http.get = get_inner;
+			Ably.Rest.Http.post = post_inner;
 
-		rest.auth.requestToken();
-		rest.time();
-		rest.stats();
-
-		var channel = rest.channels.get('http_test_channel');
-		channel.publish('test', 'Testing http headers');
-		channel.presence.get();
-
-		//Clean interceptors from get&post methods
-		Ably.Rest.Http.get = get_inner;
-		Ably.Rest.Http.post = post_inner;
-
-		test.done();
-	};
-
-	helper.withMocha('rest/http', exports);
+			done();
+		});
+	});
 });
