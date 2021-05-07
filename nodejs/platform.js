@@ -1,5 +1,5 @@
 var Platform = {
-	libver: 'js-node',
+	agent: 'nodejs/' + process.versions.node,
 	logTimestamps: true,
 	userAgent: null,
 	binaryType: 'nodebuffer',

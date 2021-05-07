@@ -29,7 +29,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			// ultimately the version header has been derived from that value.
 			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
 
-			test.ok(headers['Ably-Agent'].indexOf(Defaults.version) > -1, 'Verify agent');
+			test.ok(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent');
 		};
 
 		var post_inner = Ably.Rest.Http.post;
@@ -41,7 +41,7 @@ define(['ably', 'shared_helper', 'async'], function(Ably, helper, async) {
 			// ultimately the version header has been derived from that value.
 			test.equal(headers['X-Ably-Version'], '1.2', 'Verify current version number');
 			
-			test.ok(headers['Ably-Agent'].indexOf(Defaults.version) > -1, 'Verify agent');
+			test.ok(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent');
 		};
 
 		//Call all methods that use rest http calls
