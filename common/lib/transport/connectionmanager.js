@@ -100,7 +100,7 @@ var ConnectionManager = (function() {
 			params.heartbeats = this.heartbeats;
 		}
 		params.v = Defaults.apiVersion;
-		params.lib = Defaults.libstring;
+		params.agent = Defaults.agent;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}

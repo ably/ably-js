@@ -36,8 +36,13 @@ Defaults.errorReportingHeaders = {
 };
 
 Defaults.version          = '1.2.9';
-Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
+
+var agent = 'ably-js/' + Defaults.version;
+if (Platform.agent) {
+	agent += ' ' + Platform.agent;
+} 
+Defaults.agent = agent;
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)

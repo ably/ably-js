@@ -80,7 +80,7 @@ var JSONPTransport = function(connectionManager) {
 		if(headers) {
 			/* JSONP doesn't allow headers. Cherry-pick a couple to turn into qs params */
 			if(headers['X-Ably-Version']) this.params.v = headers['X-Ably-Version'];
-			if(headers['X-Ably-Lib']) this.params.lib = headers['X-Ably-Lib'];
+			if(headers['Ably-Agent']) this.params.agent = headers['Ably-Agent'];
 		}
 		this.body = body;
 		this.method = method;
