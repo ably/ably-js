@@ -158,7 +158,7 @@ const reactNativeConfig = {
         filename: 'ably-reactnative.js',
     },
     resolve: {
-        extensions: ['.js'],
+        extensions: ['.js', '.ts'],
         alias: {
             platform: path.resolve(browserPath, 'fragments', 'platform-reactnative'),
             'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),

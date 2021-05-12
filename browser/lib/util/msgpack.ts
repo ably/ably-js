@@ -1,10 +1,8 @@
 var msgpack = (function() {
-	"use strict";
-
-	var exports = {};
+	var exports: { [key: string]: unknown } = {};
 
 	exports.inspect = inspect;
-	function inspect(buffer) {
+	function inspect(buffer: undefined | ArrayBuffer | DataView) {
 		if (buffer === undefined)
 			return "undefined";
 		var view;
@@ -34,8 +32,7 @@ var msgpack = (function() {
 
 	// Encode string as utf8 into dataview at offset
 	exports.utf8Write = utf8Write;
-	function utf8Write(view, offset, string) {
-		var byteLength = view.byteLength;
+	function utf8Write(view: DataView, offset: number, string: string) {
 		for (var i = 0, l = string.length; i < l; i++) {
 			var codePoint = string.charCodeAt(i);
 
@@ -74,7 +71,7 @@ var msgpack = (function() {
 
 
 	exports.utf8Read = utf8Read;
-	function utf8Read(view, offset, length) {
+	function utf8Read(view: DataView, offset: number, length: number) {
 		var string = "";
 		for (var i = offset, end = offset + length; i < end; i++) {
 			var byte_ = view.getUint8(i);
@@ -105,7 +102,7 @@ var msgpack = (function() {
 
 
 	exports.utf8ByteCount = utf8ByteCount;
-	function utf8ByteCount(string) {
+	function utf8ByteCount(string: string) {
 		var count = 0;
 		for (var i = 0, l = string.length; i < l; i++) {
 			var codePoint = string.charCodeAt(i);
@@ -131,7 +128,7 @@ var msgpack = (function() {
 	}
 
 
-	exports.encode = function(value, sparse) {
+	exports.encode = function(value: unknown, sparse: boolean) {
 		var size = sizeof(value, sparse);
 		if(size == 0)
 			return undefined;
@@ -144,17 +141,17 @@ var msgpack = (function() {
 	exports.decode = decode;
 
 	var SH_L_32 = (1 << 16) * (1 << 16), SH_R_32 = 1 / SH_L_32;
-	function getInt64(view, offset) {
+	function getInt64(view: DataView, offset: number) {
 		offset = offset || 0;
 		return view.getInt32(offset) * SH_L_32 + view.getUint32(offset + 4);
 	}
 
-	function getUint64(view, offset) {
+	function getUint64(view: DataView, offset: number) {
 		offset = offset || 0;
 		return view.getUint32(offset) * SH_L_32 + view.getUint32(offset + 4);
 	}
 
-	function setInt64(view, offset, val) {
+	function setInt64(view: DataView, offset: number, val: number) {
 		if (val < 0x8000000000000000) {
 			view.setInt32(offset, Math.floor(val * SH_R_32));
 			view.setInt32(offset + 4, val & -1);
@@ -164,7 +161,7 @@ var msgpack = (function() {
 		}
 	}
 
-	function setUint64(view, offset, val) {
+	function setUint64(view: DataView, offset: number, val: number) {
 		if (val < 0x10000000000000000) {
 			view.setUint32(offset, Math.floor(val * SH_R_32));
 			view.setInt32(offset + 4, val & -1);
@@ -186,35 +183,41 @@ var msgpack = (function() {
 //             ^ indicates undefined value
 //
 
-	function Decoder(view, offset) {
+class Decoder {
+    offset: number;
+    view: DataView;
+
+    constructor(view: DataView, offset?: number) {
 		this.offset = offset || 0;
 		this.view = view;
 	}
 
 
-	Decoder.prototype.map = function(length) {
-		var value = {};
+	map = (length: number) => {
+		var value: { [key: string]: ArrayBuffer } = {};
 		for (var i = 0; i < length; i++) {
 			var key = this.parse();
-			value[key] = this.parse();
+			value[key as string] = this.parse() as ArrayBuffer;
 		}
 		return value;
 	};
 
-	Decoder.prototype.bin = Decoder.prototype.buf = function(length) {
+	bin = (length: number) => {
 		var value = new ArrayBuffer(length);
 		(new Uint8Array(value)).set(new Uint8Array(this.view.buffer, this.offset, length), 0);
 		this.offset += length;
 		return value;
 	};
+    
+    buf = this.bin;
 
-	Decoder.prototype.str = function(length) {
+	str = (length: number) => {
 		var value = utf8Read(this.view, this.offset, length);
 		this.offset += length;
 		return value;
 	};
 
-	Decoder.prototype.array = function(length) {
+	array = (length: number) => {
 		var value = new Array(length);
 		for (var i = 0; i < length; i++) {
 			value[i] = this.parse();
@@ -222,18 +225,15 @@ var msgpack = (function() {
 		return value;
 	};
 
-	Decoder.prototype.ext = function(length) {
-		var value = {};
-		// Get the type byte
-		value['type'] = this.view.getInt8(this.offset);
-		this.offset++;
-		// Get the data array (length)
-		value['data'] = this.buf(length);
+	ext = (length: number) => {
 		this.offset += length;
-		return value;
+        return {
+            type: this.view.getInt8(this.offset),
+            data: this.buf(length),
+        }
 	};
 
-	Decoder.prototype.parse = function() {
+	parse = (): unknown => {
 		var type = this.view.getUint8(this.offset);
 		var value, length;
 
@@ -463,8 +463,9 @@ var msgpack = (function() {
 		}
 		throw new Error("Unknown type 0x" + type.toString(16));
 	};
+}
 
-	function decode(buffer) {
+	function decode(buffer: ArrayBuffer) {
 		var view = new DataView(buffer);
 		var decoder = new Decoder(view);
 		var value = decoder.parse();
@@ -473,24 +474,27 @@ var msgpack = (function() {
 		return value;
 	}
 
-	function encodeableKeys(value, sparse) {
-		var keys = []; // TODO: use Object.keys when we are able to transpile to ES3
-		for (var key in value) {
-			if (!value.hasOwnProperty(key)) continue;
-			keys.push(key);
-		}
-		return keys.filter(function (e) {
+	function encodeableKeys(value: { [key: string]: unknown }, sparse?: boolean) {
+		return Object.keys(value).filter(function (e) {
 			var val = value[e], type = typeof(val);
-			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!val.toJSON);
+			return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!(val as Date).toJSON);
 		})
 	}
 
-	function encode(value, view, offset, sparse) {
+	function encode(value: unknown, view: DataView, offset: number, sparse?: boolean): number {
 		var type = typeof value;
+
+        switch (typeof value)  {
+            case 'string':
+                console.log(value.length);
+                break;
+            case 'number':
+                console.log(Math.sqrt(value));
+        }
 
 		// Strings Bytes
 		// There are four string types: fixstr/str8/str16/str32
-		if (type === "string") {
+		if (typeof value === 'string') {
 			var length = utf8ByteCount(value);
 
 			// fixstr
@@ -558,7 +562,7 @@ var msgpack = (function() {
 			}
 		}
 
-		if (type === "number") {
+		if (typeof value === 'number') {
 
 			// Floating Point
 			// NOTE: We're always using float64
@@ -656,22 +660,23 @@ var msgpack = (function() {
 			return 1;
 		}
 
-		if('function' === typeof value.toJSON)
-			return encode(value.toJSON(), view, offset, sparse);
+		if('function' === typeof (value as Date).toJSON)
+			return encode((value as Date).toJSON(), view, offset, sparse);
 
 		// Container Types
 		if (type === "object") {
-			var length, size = 0;
+			var length: number, size = 0;
+            let keys: string[] | undefined;
 			var isArray = Array.isArray(value);
 
 			if (isArray) {
-				length = value.length;
+				length = (value as unknown[]).length;
 			} else {
-				var keys = encodeableKeys(value, sparse);
+				keys = encodeableKeys(value as { [key: string]: unknown }, sparse);
 				length = keys.length;
 			}
 
-			var size;
+			var size: number;
 			if (length < 0x10) {
 				view.setUint8(offset, length | ( isArray ? 0x90 : 0x80));
 				size = 1;
@@ -687,13 +692,13 @@ var msgpack = (function() {
 
 			if (isArray) {
 				for (var i = 0; i < length; i++) {
-					size += encode(value[i], view, offset + size, sparse);
+					size += encode((value as unknown[])[i], view, offset + size, sparse);
 				}
-			} else {
+			} else if (keys) {
 				for (var i = 0; i < length; i++) {
 					var key = keys[i];
 					size += encode(key, view, offset + size);
-					size += encode(value[key], view, offset + size, sparse);
+					size += encode((value as { [key: string]: unknown })[key], view, offset + size, sparse);
 				}
 			}
 
@@ -705,12 +710,12 @@ var msgpack = (function() {
 		throw new Error("Unknown type " + type);
 	}
 
-	function sizeof(value, sparse) {
+	function sizeof(value: unknown, sparse?: boolean): number {
 		var type = typeof value;
 
 		// fixstr or str8 or str16 or str32
 		if (type === "string") {
-			var length = utf8ByteCount(value);
+			var length = utf8ByteCount(value as string);
 			if (length < 0x20) {
 				return 1 + length;
 			}
@@ -744,7 +749,7 @@ var msgpack = (function() {
 			}
 		}
 
-		if (type === "number") {
+		if (typeof value === 'number') {
 			// Floating Point (32 bits)
 			// double
 			if (Math.floor(value) !== value)
@@ -796,23 +801,23 @@ var msgpack = (function() {
 		if (value === null) return sparse ? 0 : 1;
 		if (value === undefined) return sparse ? 0 : 3;
 
-		if('function' === typeof value.toJSON)
-			return sizeof(value.toJSON(), sparse);
+		if('function' === typeof (value as Date).toJSON)
+			return sizeof((value as Date).toJSON(), sparse);
 
 		// Container Types
 		if (type === "object") {
-			var length, size = 0;
+			var length: number, size = 0;
 			if (Array.isArray(value)) {
 				length = value.length;
 				for (var i = 0; i < length; i++) {
 					size += sizeof(value[i], sparse);
 				}
 			} else {
-				var keys = encodeableKeys(value, sparse)
+				var keys = encodeableKeys(value as { [key: string]: unknown }, sparse)
 				length = keys.length;
 				for (var i = 0; i < length; i++) {
 					var key = keys[i];
-					size += sizeof(key) + sizeof(value[key], sparse);
+					size += sizeof(key) + sizeof((value as { [key: string]: unknown })[key], sparse);
 				}
 			}
 			if (length < 0x10) {
