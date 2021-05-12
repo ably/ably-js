@@ -1,8 +1,8 @@
 function inspect(buffer: undefined | ArrayBuffer | DataView) {
     if (buffer === undefined)
         return "undefined";
-    var view;
-    var type;
+    let view;
+    let type;
     if ( buffer instanceof ArrayBuffer) {
         type = "ArrayBuffer";
         view = new DataView(buffer);
@@ -12,13 +12,13 @@ function inspect(buffer: undefined | ArrayBuffer | DataView) {
     }
     if (!view)
         return JSON.stringify(buffer);
-    var bytes = [];
-    for (var i = 0; i < buffer.byteLength; i++) {
+    const bytes = [];
+    for (let i = 0; i < buffer.byteLength; i++) {
         if (i > 20) {
             bytes.push("...");
             break;
         }
-        var byte_ = view.getUint8(i).toString(16);
+        let byte_ = view.getUint8(i).toString(16);
         if (byte_.length === 1)
             byte_ = "0" + byte_;
         bytes.push(byte_);
@@ -28,8 +28,8 @@ function inspect(buffer: undefined | ArrayBuffer | DataView) {
 
 // Encode string as utf8 into dataview at offset
 function utf8Write(view: DataView, offset: number, string: string) {
-    for (var i = 0, l = string.length; i < l; i++) {
-        var codePoint = string.charCodeAt(i);
+    for (let i = 0, l = string.length; i < l; i++) {
+        const codePoint = string.charCodeAt(i);
 
         // One byte of UTF-8
         if (codePoint < 0x80) {
@@ -66,9 +66,9 @@ function utf8Write(view: DataView, offset: number, string: string) {
 
 
 function utf8Read(view: DataView, offset: number, length: number) {
-    var string = "";
-    for (var i = offset, end = offset + length; i < end; i++) {
-        var byte_ = view.getUint8(i);
+    let string = "";
+    for (let i = offset, end = offset + length; i < end; i++) {
+        const byte_ = view.getUint8(i);
         // One byte character
         if ((byte_ & 0x80) === 0x00) {
             string += String.fromCharCode(byte_);
@@ -96,9 +96,9 @@ function utf8Read(view: DataView, offset: number, length: number) {
 
 
 function utf8ByteCount(string: string) {
-    var count = 0;
-    for (var i = 0, l = string.length; i < l; i++) {
-        var codePoint = string.charCodeAt(i);
+    let count = 0;
+    for (let i = 0, l = string.length; i < l; i++) {
+        const codePoint = string.charCodeAt(i);
         if (codePoint < 0x80) {
             count += 1;
             continue;
@@ -122,16 +122,16 @@ function utf8ByteCount(string: string) {
 
 
 function encode(value: unknown, sparse?: boolean) {
-    var size = sizeof(value, sparse);
-    if(size == 0)
+    const size = sizeof(value, sparse);
+    if(size === 0)
         return undefined;
-    var buffer = new ArrayBuffer(size);
-    var view = new DataView(buffer);
+    const buffer = new ArrayBuffer(size);
+    const view = new DataView(buffer);
     _encode(value, view, 0, sparse);
     return buffer;
 };
 
-var SH_L_32 = (1 << 16) * (1 << 16), SH_R_32 = 1 / SH_L_32;
+const SH_L_32 = (1 << 16) * (1 << 16), SH_R_32 = 1 / SH_L_32;
 function getInt64(view: DataView, offset: number) {
     offset = offset || 0;
     return view.getInt32(offset) * SH_L_32 + view.getUint32(offset + 4);
@@ -185,16 +185,16 @@ class Decoder {
 
 
     map = (length: number) => {
-        var value: { [key: string]: ArrayBuffer } = {};
-        for (var i = 0; i < length; i++) {
-            var key = this.parse();
+        const value: { [key: string]: ArrayBuffer } = {};
+        for (let i = 0; i < length; i++) {
+            const key = this.parse();
             value[key as string] = this.parse() as ArrayBuffer;
         }
         return value;
     };
 
     bin = (length: number) => {
-        var value = new ArrayBuffer(length);
+        const value = new ArrayBuffer(length);
         (new Uint8Array(value)).set(new Uint8Array(this.view.buffer, this.offset, length), 0);
         this.offset += length;
         return value;
@@ -203,14 +203,14 @@ class Decoder {
     buf = this.bin;
 
     str = (length: number) => {
-        var value = utf8Read(this.view, this.offset, length);
+        const value = utf8Read(this.view, this.offset, length);
         this.offset += length;
         return value;
     };
 
     array = (length: number) => {
-        var value = new Array(length);
-        for (var i = 0; i < length; i++) {
+        const value = new Array(length);
+        for (let i = 0; i < length; i++) {
             value[i] = this.parse();
         }
         return value;
@@ -225,8 +225,8 @@ class Decoder {
     };
 
     parse = (): unknown => {
-        var type = this.view.getUint8(this.offset);
-        var value, length;
+        const type = this.view.getUint8(this.offset);
+        let value, length;
 
         // Positive FixInt - 0xxxxxxx
         if ((type & 0x80) === 0x00) {
@@ -457,9 +457,9 @@ class Decoder {
 }
 
 function decode(buffer: ArrayBuffer) {
-    var view = new DataView(buffer);
-    var decoder = new Decoder(view);
-    var value = decoder.parse();
+    const view = new DataView(buffer);
+    const decoder = new Decoder(view);
+    const value = decoder.parse();
     if (decoder.offset !== buffer.byteLength)
         throw new Error((buffer.byteLength - decoder.offset) + " trailing bytes");
     return value;
@@ -467,13 +467,13 @@ function decode(buffer: ArrayBuffer) {
 
 function encodeableKeys(value: { [key: string]: unknown }, sparse?: boolean) {
     return Object.keys(value).filter(function (e) {
-        var val = value[e], type = typeof(val);
+        const val = value[e], type = typeof(val);
         return (!sparse || (val !== undefined && val !== null)) && ('function' !== type || !!(val as Date).toJSON);
     })
 }
 
 function _encode(value: unknown, view: DataView, offset: number, sparse?: boolean): number {
-    var type = typeof value;
+    const type = typeof value;
 
     switch (typeof value)  {
         case 'string':
@@ -486,7 +486,7 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
     // Strings Bytes
     // There are four string types: fixstr/str8/str16/str32
     if (typeof value === 'string') {
-        var length = utf8ByteCount(value);
+        const length = utf8ByteCount(value);
 
         // fixstr
         if (length < 0x20) {
@@ -526,7 +526,7 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
 
     // There are three bin types: bin8/bin16/bin32
     if (value instanceof ArrayBuffer) {
-        var length = value.byteLength;
+        const length = value.byteLength;
 
         // bin8
         if (length < 0x100) {
@@ -656,9 +656,9 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
 
     // Container Types
     if (type === "object") {
-        var length: number, size = 0;
+        let length: number, size = 0;
         let keys: string[] | undefined;
-        var isArray = Array.isArray(value);
+        const isArray = Array.isArray(value);
 
         if (isArray) {
             length = (value as unknown[]).length;
@@ -667,7 +667,6 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
             length = keys.length;
         }
 
-        var size: number;
         if (length < 0x10) {
             view.setUint8(offset, length | ( isArray ? 0x90 : 0x80));
             size = 1;
@@ -682,12 +681,12 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
         }
 
         if (isArray) {
-            for (var i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
                 size += _encode((value as unknown[])[i], view, offset + size, sparse);
             }
         } else if (keys) {
-            for (var i = 0; i < length; i++) {
-                var key = keys[i];
+            for (let i = 0; i < length; i++) {
+                const key = keys[i];
                 size += _encode(key, view, offset + size);
                 size += _encode((value as { [key: string]: unknown })[key], view, offset + size, sparse);
             }
@@ -702,11 +701,11 @@ function _encode(value: unknown, view: DataView, offset: number, sparse?: boolea
 }
 
 function sizeof(value: unknown, sparse?: boolean): number {
-    var type = typeof value;
+    const type = typeof value;
 
     // fixstr or str8 or str16 or str32
     if (type === "string") {
-        var length = utf8ByteCount(value as string);
+        const length = utf8ByteCount(value as string);
         if (length < 0x20) {
             return 1 + length;
         }
@@ -728,7 +727,7 @@ function sizeof(value: unknown, sparse?: boolean): number {
 
     // bin8 or bin16 or bin32
     if (value instanceof ArrayBuffer) {
-        var length = value.byteLength;
+        const length = value.byteLength;
         if (length < 0x100) {
             return 2 + length;
         }
@@ -797,17 +796,17 @@ function sizeof(value: unknown, sparse?: boolean): number {
 
     // Container Types
     if (type === "object") {
-        var length: number, size = 0;
+        let length: number, size = 0;
         if (Array.isArray(value)) {
             length = value.length;
-            for (var i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
                 size += sizeof(value[i], sparse);
             }
         } else {
-            var keys = encodeableKeys(value as { [key: string]: unknown }, sparse)
+            const keys = encodeableKeys(value as { [key: string]: unknown }, sparse)
             length = keys.length;
-            for (var i = 0; i < length; i++) {
-                var key = keys[i];
+            for (let i = 0; i < length; i++) {
+                const key = keys[i];
                 size += sizeof(key) + sizeof((value as { [key: string]: unknown })[key], sparse);
             }
         }
