@@ -1,4 +1,8 @@
 import msgpack from '../lib/util/msgpack';
+import IPlatform, { TypedArray } from '../../common/types/IPlatform';
+
+declare var MozWebSocket: typeof WebSocket; // For Chrome 14 and Firefox 7
+declare var msCrypto: typeof crypto; // for IE11
 
 if(typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log("Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm");
@@ -8,21 +12,21 @@ function allowComet() {
 	/* xhr requests from local files are unreliable in some browsers, such as Chrome 65 and higher -- see eg
 	 * https://stackoverflow.com/questions/49256429/chrome-65-unable-to-make-post-requests-from-local-files-to-flask
 	 * So if websockets are supported, then just forget about comet transports and use that */
-	var loc = global.location;
+	const loc = global.location;
 	return (!global.WebSocket || !loc || !loc.origin || loc.origin.indexOf("http") > -1);
 }
 
-var userAgent = global.navigator && global.navigator.userAgent.toString();
-var currentUrl = global.location && global.location.href;
+const userAgent = global.navigator && global.navigator.userAgent.toString();
+const currentUrl = global.location && global.location.href;
 
-var Platform = {
+const Platform: IPlatform = {
 	libver: 'js-web',
 	logTimestamps: true,
 	userAgent: userAgent,
 	currentUrl: currentUrl,
-	noUpgrade: userAgent && userAgent.match(/MSIE\s8\.0/),
+	noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
 	binaryType: 'arraybuffer',
-	WebSocket: global.WebSocket || global.MozWebSocket,
+	WebSocket: global.WebSocket || MozWebSocket,
 	xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
 	jsonpSupported: typeof(document) !== 'undefined',
 	allowComet: allowComet(),
@@ -34,10 +38,10 @@ var Platform = {
 	preferBinary: false,
 	ArrayBuffer: global.ArrayBuffer,
 	atob: global.atob,
-	nextTick: function(f) { setTimeout(f, 0); },
-	addEventListener: global.addEventListener,
+	nextTick: function(f: Function) { setTimeout(f, 0); },
+	addEventListener: global.addEventListener as unknown as null, // This is not ideal but TypeScript doesn't seem to allow anything else here
 	inspect: JSON.stringify,
-	stringByteSize: function(str) {
+	stringByteSize: function(str: string) {
 		/* str.length will be an underestimate for non-ascii strings. But if we're
 		 * in a browser too old to support TextDecoder, not much we can do. Better
 		 * to underestimate, so if we do go over-size, the server will reject the
@@ -53,13 +57,13 @@ var Platform = {
 		if (crypto === undefined) {
 			return undefined;
 		}
-		return function(arr, callback) {
+		return function(arr: TypedArray, callback: (error: Error | null) => void) {
 			crypto.getRandomValues(arr);
 			if(callback) {
 				callback(null);
 			}
 		};
-	})(global.crypto || global.msCrypto) // mscrypto for IE11
+	})(global.crypto || msCrypto) 
 };
 
 export default Platform;
