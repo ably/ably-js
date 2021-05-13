@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
+    "@types/crypto-js": "^4.0.1",
     "@types/node": "^15.0.0",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
