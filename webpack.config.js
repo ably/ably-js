@@ -200,6 +200,7 @@ const browserMinConfig = {
     performance: {
         hints: 'warning',
     },
+    devtool: 'source-map',
 };
 
 const noEncryptionConfig = {
@@ -234,6 +235,7 @@ const noEncryptionMinConfig = {
             },
         ],
     },
+    devtool: 'source-map',
 };
 
 // We are using UMD in ably.js now so there is no need to build separately for CommonJS. These files are still being distributed to avoid breaking changes but should no longer be used.
