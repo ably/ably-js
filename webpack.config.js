@@ -192,6 +192,22 @@ const browserMinConfig = {
 	},
 };
 
+const webworkerConfig = {
+    target: 'webworker',
+	...browserConfig,
+	output: {
+		...baseConfig.output,
+		filename: 'ably-webworker.min.js',
+        globalObject: 'this',
+  },
+  optimization: {
+    minimize: true,
+  },
+	performance: {
+		hints: 'warning',
+	},
+};
+
 const noEncryptionConfig = {
 	...browserConfig,
 	output: {
@@ -245,6 +261,7 @@ module.exports = [
 	nodeConfig,
 	browserConfig,
 	browserMinConfig,
+    webworkerConfig,
 	nativeScriptConfig,
   reactNativeConfig,
   noEncryptionConfig,
