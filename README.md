@@ -10,7 +10,7 @@ This library currently targets the [Ably client library features spec](https://w
 
 This SDK supports the following platforms:
 
-**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers. We also support running `ably-js` inside a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context.
+**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers.
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
@@ -21,6 +21,11 @@ This SDK supports the following platforms:
 **NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
 
 **TypeScript:** see [below](#typescript)
+
+**WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
+```js
+import Ably from 'ably/browser/static/ably-webworker.min';
+```
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
