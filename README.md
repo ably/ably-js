@@ -16,7 +16,7 @@ This SDK supports the following platforms:
 
 **Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer).
 
-**React Native:** see [ably-js-react-native](https://github.com/ably/ably-js-react-native)
+**React Native:** We aim to support all platforms supported by React Native. If you find any issues please raise an issue or [contact us](https://www.ably.com/contact).
 
 **NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
 
@@ -106,10 +106,6 @@ This library exposes two API variants. Firstly, the original (and presently the 
 For this library version, and for all future 1.x versions, the callback-based API will be the default. This means that the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. A move to the promises-based variant as the default is likely at the next major release (i.e. 2.x onwards).
 
 For usage, jump to [Using the async API style](#using-the-async-api-style).
-
-## React Native
-
-See the [ably-js-react-native repo](https://github.com/ably/ably-js-react-native) for React Native usage details.
 
 ## NativeScript
 
