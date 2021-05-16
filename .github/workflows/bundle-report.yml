@@ -1,0 +1,28 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  bundle-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - name: Build bundle reports
+        run: |
+            mkdir bundle-reports
+            npm run sourcemap -- --html bundle-reports/index.html
+            npm run sourcemap:noencryption -- --html bundle-reports/noencryption.html
+      - uses: ably/sdk-upload-action@v1
+        with:
+          s3AccessKeyId: ${{ secrets.SDK_S3_ACCESS_KEY_ID }}
+          s3AccessKey: ${{ secrets.SDK_S3_ACCESS_KEY }}
+          sourcePath: bundle-reports
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: bundle-report
