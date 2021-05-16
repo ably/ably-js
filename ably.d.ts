@@ -1,5 +1,5 @@
-// Type definitions for Ably Realtime and Rest client library 1.0
-// Project: https://www.ably.io/
+// Type definitions for Ably Realtime and Rest client library 1.2
+// Project: https://www.ably.com/
 // Definitions by: Ably <https://github.com/ably/>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
@@ -115,7 +115,7 @@ declare namespace Types {
 
 		/**
 		 * Can be used to explicitly recover a connection.
-		 * See https://www.ably.io/documentation/realtime/connection#connection-state-recovery
+		 * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
 		 */
 		recover?: string | ((lastConnectionDetails: {
 			recoveryKey: string;
