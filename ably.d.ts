@@ -113,6 +113,11 @@ declare namespace Types {
 		fallbackHosts?: string[];
 		fallbackHostsUseDefault?: boolean;
 
+        restAgentOptions?: {
+            maxSockets?: number,
+            keepAlive?: boolean,
+        }
+
 		/**
 		 * Can be used to explicitly recover a connection.
 		 * See https://www.ably.io/documentation/realtime/connection#connection-state-recovery
