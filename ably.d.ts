@@ -531,6 +531,10 @@ declare namespace Types {
 		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
 	}
 
+    type PublishOptions = {
+        quickAck?: boolean;
+    }
+
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
 		presence: RealtimePresenceCallbacks;
 		attach: (callback?: errorCallback) => void;
@@ -538,7 +542,9 @@ declare namespace Types {
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
 		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
-		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
+		publish(messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
 	}
 
@@ -549,7 +555,8 @@ declare namespace Types {
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
 		setOptions: (options: ChannelOptions) => Promise<void>;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
-		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+		publish(messages: any, options?: PublishOptions): Promise<void>;
+		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
 	}
 
