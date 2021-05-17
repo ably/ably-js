@@ -1,6 +1,7 @@
 import Platform from 'platform';
+import IDefaults from '../../../common/types/IDefaults';
 
-var Defaults = {
+const Defaults: IDefaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	jsonpInternetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up-0-9.js',
 	/* Order matters here: the base transport is the leftmost one in the

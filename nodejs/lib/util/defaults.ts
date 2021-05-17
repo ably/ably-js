@@ -1,4 +1,6 @@
-const Defaults = {
+import IDefaults from '../../../common/types/IDefaults';
+
+const Defaults: IDefaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	/* Note: order matters here: the base transport is the leftmost one in the
 	* intersection of baseTransportOrder and the transports clientOption that's supported.
