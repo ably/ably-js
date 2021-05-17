@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-        "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"]
+        "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"],
+        "platform-bufferutils": ["./nodejs/lib/util/bufferutils", "./browser/lib/util/bufferutils"]
     }
   }
 }
