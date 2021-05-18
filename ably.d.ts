@@ -142,6 +142,12 @@ declare namespace Types {
 		idempotentRestPublishing?: boolean;
 		transportParams?: {[k: string]: string};
 		transports?: Transport[];
+
+        httpMaxRetryCount?: number;
+        httpMaxRetryDuration?: number;
+        httpOpenTimeout?: number;
+        httpRequestTimeout?: number;
+
 	}
 
 	interface AuthOptions {
