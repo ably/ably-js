@@ -2,10 +2,14 @@
   "compilerOptions": {
     "target": "es3",
     "module": "commonjs",
-    "lib": ["ES5"],
+    "lib": ["ES5", "DOM", "webworker"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+        "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"],
+        "platform-bufferutils": ["./nodejs/lib/util/bufferutils", "./browser/lib/util/bufferutils"]
+    }
   }
 }

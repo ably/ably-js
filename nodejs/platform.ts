@@ -1,4 +1,6 @@
-var Platform = {
+import IPlatform, { TypedArray } from '../common/types/IPlatform';
+
+const Platform: IPlatform = {
 	libver: 'js-node',
 	logTimestamps: true,
 	userAgent: null,
@@ -14,7 +16,7 @@ var Platform = {
 	stringByteSize: Buffer.byteLength,
 	inherits: require('util').inherits,
 	addEventListener: null,
-	getRandomValues: function(arr, callback) {
+	getRandomValues: function(arr: TypedArray, callback: Function) {
 		var bytes = require('crypto').randomBytes(arr.length);
 		arr.set(bytes);
 		if(callback) {

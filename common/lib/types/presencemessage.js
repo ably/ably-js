@@ -1,12 +1,9 @@
-import Platform from 'platform';
 import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
 import Message from './message';
 import Utils from '../util/utils';
 
 var PresenceMessage = (function() {
-	var msgpack = Platform.msgpack;
-
 	function toActionValue(actionString) {
 		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
 	}
