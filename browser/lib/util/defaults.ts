@@ -1,5 +1,6 @@
 import Platform from 'platform';
 import IDefaults from '../../../common/types/IDefaults';
+import TransportNames from '../../../common/constants/TransportNames';
 
 const Defaults: IDefaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
@@ -9,10 +10,10 @@ const Defaults: IDefaults = {
 	 * supported.  This is not quite the same as the preference order -- e.g.
 	 * xhr_polling is preferred to jsonp, but for browsers that support it we want
 	 * the base transport to be xhr_polling, not jsonp */
-	defaultTransports: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
-	baseTransportOrder: ['xhr_polling', 'xhr_streaming', 'jsonp', 'web_socket'],
-	transportPreferenceOrder: ['jsonp', 'xhr_polling', 'xhr_streaming', 'web_socket'],
-	upgradeTransports: ['xhr_streaming', 'web_socket']
+	defaultTransports: [TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.JsonP, TransportNames.WebSocket],
+	baseTransportOrder: [TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.JsonP, TransportNames.WebSocket],
+	transportPreferenceOrder: [TransportNames.JsonP, TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.WebSocket],
+	upgradeTransports: [TransportNames.XhrStreaming, TransportNames.WebSocket]
 };
 
 /* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -
