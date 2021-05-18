@@ -1,13 +1,16 @@
-const Defaults = {
+import IDefaults from '../../../common/types/IDefaults';
+import TransportNames from '../../../common/constants/TransportNames';
+
+const Defaults: IDefaults = {
 	internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
 	/* Note: order matters here: the base transport is the leftmost one in the
 	* intersection of baseTransportOrder and the transports clientOption that's supported.
 	* (For node this is the same as the transportPreferenceOrder, but for
 	* browsers it's different*/
-	defaultTransports: ['web_socket'],
-	baseTransportOrder: ['comet', 'web_socket'],
-	transportPreferenceOrder: ['comet', 'web_socket'],
-	upgradeTransports: ['web_socket'],
+	defaultTransports: [TransportNames.WebSocket],
+	baseTransportOrder: [TransportNames.Comet, TransportNames.WebSocket],
+	transportPreferenceOrder: [TransportNames.Comet, TransportNames.WebSocket],
+	upgradeTransports: [TransportNames.WebSocket],
 	restAgentOptions: {maxSockets: 40, keepAlive: true}
 };
 
