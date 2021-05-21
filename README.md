@@ -1,10 +1,10 @@
-# [Ably](https://www.ably.io)
+# [Ably](https://www.ably.com)
 
 [![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
 
-A JavaScript client library for [Ably Realtime](https://www.ably.io), a realtime data delivery platform.
+A JavaScript client library for [Ably Realtime](https://www.ably.com), a realtime data delivery platform.
 
-This library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
+This library currently targets the [Ably client library features spec](https://www.ably.com/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -29,7 +29,7 @@ import Ably from 'ably/browser/static/ably-webworker.min';
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
-However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.io) for advice.
+However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.com) for advice.
 
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.
 Known browser incompatibilities will be documented as an issue in this repository using the ["compatibility" label](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
@@ -38,7 +38,7 @@ Known browser incompatibilities will be documented as an issue in this repositor
 
 The latest stable version of the Ably JavaScript client library is version: 1.2.9 .
 
-For complete API documentation, see the [Ably documentation](https://www.ably.io/documentation).
+For complete API documentation, see the [Ably documentation](https://www.ably.com/documentation).
 
 ## Installation
 
@@ -65,10 +65,10 @@ If you are using a version older than 1.2.5 you will need to add 'ably' to `exte
 Include the Ably library in your HTML:
 
 ```html
-<script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.io/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.io/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.io/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.io/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.com/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.com/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.com/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.com/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
@@ -136,7 +136,7 @@ which describes how to enable delta compression when getting a channel.
 
 ## Using the Realtime API
 
-This readme gives some basic examples; for our full API documentation, please go to https://www.ably.io/documentation .
+This readme gives some basic examples; for our full API documentation, please go to https://www.ably.com/documentation .
 
 ### Introduction
 
@@ -146,7 +146,7 @@ All examples assume a client has been created as follows:
 // basic auth with an API key
 var client = new Ably.Realtime(key: string);
 
-// using a Client Options object, see https://www.ably.io/documentation/rest/usage#options
+// using a Client Options object, see https://www.ably.com/documentation/rest/usage#options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(options: ClientOptions);
@@ -205,7 +205,7 @@ channel.subscribe('myEvent', function (message) {
 
 ### Subscribing to a channel with deltas
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Provide the library with Vcdiff decoding capability - see
 [Delta Plugin](#delta-plugin).
@@ -257,7 +257,7 @@ channel.history(function(err, messagesPage) {
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
@@ -293,7 +293,7 @@ channel.presence.leave(function (err) {
 If you are using a client which is allowed to use any clientId --
 that is, if you didn't specify a clientId when initializing the
 client, and are using basic auth or a token witha wildcard clientId (see
-https://www.ably.io/documentation/general/authentication for more information), you
+https://www.ably.com/documentation/general/authentication for more information), you
 can use
 
 ```javascript
@@ -313,13 +313,13 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
 channel.presence.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Symmetrical end-to-end encrypted payloads on a channel
 
-When a 128 bit or 256 bit key is provided to the library, the `data` attributes of all messages are encrypted and decrypted automatically using that key. The secret key is never transmitted to Ably. See https://www.ably.io/documentation/realtime/encryption
+When a 128 bit or 256 bit key is provided to the library, the `data` attributes of all messages are encrypted and decrypted automatically using that key. The secret key is never transmitted to Ably. See https://www.ably.com/documentation/realtime/encryption
 
 ```javascript
 // Generate a random 256-bit key for demonstration purposes (in
@@ -346,7 +346,7 @@ channel.setOptions({cipher: {key: <key>}}, function() {
 
 ## Using the REST API
 
-This readme gives some basic examples. For our full API documentation, please go to https://www.ably.io/documentation .
+This readme gives some basic examples. For our full API documentation, please go to https://www.ably.com/documentation .
 
 ### Introduction
 
@@ -356,7 +356,7 @@ All examples assume a client and/or channel has been created as follows:
 // basic auth with an API key
 var client = new Ably.Rest(key: string);
 
-// using a Client Options object, see https://www.ably.io/documentation/realtime/usage#client-options
+// using a Client Options object, see https://www.ably.com/documentation/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Rest(options: ClientOptions);
@@ -407,7 +407,7 @@ channel.history(function(err, messagesPage) {
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
@@ -436,13 +436,13 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.io/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Generate Token and Token Request
 
-See https://www.ably.io/documentation/general/authentication for an
+See https://www.ably.com/documentation/general/authentication for an
 explanation of Ably's authentication mechanism.
 
 Requesting a token:
@@ -450,15 +450,15 @@ Requesting a token:
 ```javascript
 client.auth.requestToken(function(err, tokenDetails) {
   // tokenDetails is instance of TokenDetails
-  // see https://www.ably.io/documentation/rest/authentication/#token-details for its properties
+  // see https://www.ably.com/documentation/rest/authentication/#token-details for its properties
 
   // Now we have the token, we can send it to someone who can instantiate a client with it:
   var clientUsingToken = new Ably.Realtime(tokenDetails.token);
 });
 
 // requestToken can take two optional params
-// tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
-// authOptions: https://www.ably.io/documentation/rest/authentication/#auth-options
+// tokenParams: https://www.ably.com/documentation/rest/authentication/#token-params
+// authOptions: https://www.ably.com/documentation/rest/authentication/#auth-options
 client.auth.requestToken(tokenParams, authOptions, function(err, tokenDetails) { ... });
 ```
 
@@ -472,8 +472,8 @@ client.auth.createTokenRequest(function(err, tokenRequest) {
 });
 
 // createTokenRequest can take two optional params
-// tokenParams: https://www.ably.io/documentation/rest/authentication/#token-params
-// authOptions: https://www.ably.io/documentation/rest/authentication/#auth-options
+// tokenParams: https://www.ably.com/documentation/rest/authentication/#token-params
+// authOptions: https://www.ably.com/documentation/rest/authentication/#auth-options
 client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequest) { ... });
 ```
 
@@ -576,7 +576,7 @@ ablyRestPromiseExample();
 
 ## Support, feedback and troubleshooting
 
-Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
+Please visit http://support.ably.com/ for access to our knowledgebase and to ask for any assistance.
 
 You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
 
@@ -584,11 +584,11 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Known Limitations
 
-This library currently does not support being the [target of a push notification](https://www.ably.io/documentation/general/push#activate) (i.e. web push).
+This library currently does not support being the [target of a push notification](https://www.ably.com/documentation/general/push#activate) (i.e. web push).
 
 #### Browser-specific issues
 
-- ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.io/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
+- ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
 ## Contributing
 
