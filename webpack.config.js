@@ -4,6 +4,7 @@
 const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./browser/fragments/license');
+const CopyPlugin = require('copy-webpack-plugin');
 
 const nodePath = path.resolve(__dirname, 'nodejs');
 const browserPath = path.resolve(__dirname, 'browser');
@@ -204,18 +205,28 @@ const browserMinConfig = {
 
 const webworkerConfig = {
     target: 'webworker',
-	...browserConfig,
-	output: {
-		...baseConfig.output,
-		filename: 'ably-webworker.min.js',
+    ...browserConfig,
+    output: {
+        ...baseConfig.output,
+        filename: 'ably-webworker.min.js',
         globalObject: 'this',
-  },
-  optimization: {
-    minimize: true,
-  },
-	performance: {
-		hints: 'warning',
-	},
+    },
+    optimization: {
+        minimize: true,
+    },
+    performance: {
+        hints: 'warning',
+    },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: path.resolve(browserPath, 'fragments', 'ably.d.ts'),
+                    to: path.resolve(browserPath, 'static', 'ably-webworker.min.d.ts'),
+                }
+            ],
+        }),
+    ],
 };
 
 const noEncryptionConfig = {

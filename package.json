@@ -34,6 +34,7 @@
     "@types/node": "^15.0.0",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
+    "copy-webpack-plugin": "^6.4.1",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
     "ejs": "~2.5",
