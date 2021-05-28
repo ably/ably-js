@@ -34,7 +34,7 @@ var Platform = {
 	preferBinary: false,
 	ArrayBuffer: global.ArrayBuffer,
 	atob: global.atob,
-	nextTick: function(f) { setTimeout(f, 0); },
+	nextTick: typeof setImmediate !== 'undefined' ? setImmediate : function(f) { setTimeout(f, 0); },
 	addEventListener: global.addEventListener,
 	inspect: JSON.stringify,
 	stringByteSize: function(str) {
