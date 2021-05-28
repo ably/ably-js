@@ -27,7 +27,7 @@
   "dependencies": {
     "@ably/msgpack-js": "^0.3.3",
     "request": "^2.87.0",
-    "ws": "^5.1"
+    "ws": "^7.4"
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
