@@ -34,9 +34,9 @@ However, we aim to be compatible with a much wider set of platforms and browsers
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.
 Known browser incompatibilities will be documented as an issue in this repository using the ["compatibility" label](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
 
-#### Version: 1.2.9
+#### Version: 1.2.10
 
-The latest stable version of the Ably JavaScript client library is version: 1.2.9 .
+The latest stable version of the Ably JavaScript client library is version: 1.2.10 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.com/documentation).
 
