@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.11](https://github.com/ably/ably-js/tree/1.2.11) (2021-07-20)
+- Bind setImmediate to global object in browsers [\#774](https://github.com/ably/ably-js/pull/774)
+
 ## [1.2.10](https://github.com/ably/ably-js/tree/1.2.10) (2021-05-28)
 - Add Playwright tests [\#738](https://github.com/ably/ably-js/pull/738)
 - Improve Mocha tests [\#739](https://github.com/ably/ably-js/pull/739)
