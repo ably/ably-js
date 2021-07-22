@@ -9,7 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
         "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"],
-        "platform-bufferutils": ["./nodejs/lib/util/bufferutils", "./browser/lib/util/bufferutils"]
+        "platform-bufferutils": ["./nodejs/lib/util/bufferutils", "./browser/lib/util/bufferutils"],
+        "platform-defaults": ["./nodejs/lib/util/defaults", "./browser/lib/util/defaults"]
     }
   }
 }
