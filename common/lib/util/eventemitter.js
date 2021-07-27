@@ -2,6 +2,8 @@ import Utils from './utils';
 import Logger from './logger';
 import Platform from 'platform';
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 var EventEmitter = (function() {
 
 	/* public constructor */
@@ -46,7 +48,7 @@ var EventEmitter = (function() {
 			} else if (Utils.isObject(listeners)) {
 				/* events */
 				for (eventName in listeners) {
-					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+					if (hasOwnProperty.call(listeners, eventName) && Utils.isArray(listeners[eventName])) {
 						removeListener([listeners], listener, eventName);
 					}
 				}
