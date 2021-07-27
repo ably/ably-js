@@ -7,9 +7,9 @@ var EventEmitter = (function() {
 	/* public constructor */
 	function EventEmitter() {
 		this.any = [];
-		this.events = {};
+		this.events = Object.create(null);
 		this.anyOnce = [];
-		this.eventsOnce = {};
+		this.eventsOnce = Object.create(null);
 	}
 
 	/* Call the listener, catch any exceptions and log, but continue operation*/
@@ -87,9 +87,9 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.off = function(event, listener) {
 		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
-			this.events = {};
+			this.events = Object.create(null);
 			this.anyOnce = [];
-			this.eventsOnce = {};
+			this.eventsOnce = Object.create(null);
 			return;
 		}
 		if(arguments.length == 1) {
