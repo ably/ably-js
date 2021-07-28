@@ -13,7 +13,7 @@
             },
             "cwd": "${workspaceFolder}",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["--inspect-brk=9229", "node_modules/.bin/grunt", "test"],
+            "runtimeArgs": ["--inspect-brk=9229", "node_modules/.bin/grunt", "test:mocha", "--test=${relativeFile}"],
             "port": 9229
         }
     ]
