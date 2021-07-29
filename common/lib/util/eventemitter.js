@@ -186,7 +186,16 @@ var EventEmitter = (function() {
 		} else if(Utils.isEmptyArg(event)) {
 			this.anyOnce.push(listener);
 		} else if(Utils.isArray(event)){
-			throw("Arrays of events can only be used with on(), not once()");
+			var listenerWrapper = function() {
+				var args = Array.prototype.slice.call(arguments);
+				Utils.arrForEach(event, function(ev) {
+					self.off(ev, listenerWrapper);
+				});
+				listener.apply(this, args);
+			};
+			Utils.arrForEach(event, function(ev) {
+				self.on(ev, listenerWrapper);
+			});
 		} else {
 			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);
