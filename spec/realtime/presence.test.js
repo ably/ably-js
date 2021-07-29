@@ -357,8 +357,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 					return;
 				}
 				closeAndFinish(done, clientRealtime);
+			}, function onPresenceSubscribe(err) {
+				if (err) {
+					closeAndFinish(done, clientRealtime, err);
+					return;
+				}
+				clientChannel.presence.enter();
 			});
-			clientChannel.presence.enter();
 			monitorConnection(done, clientRealtime);
 		});
 
