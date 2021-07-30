@@ -2,14 +2,16 @@ import Utils from './utils';
 import Logger from './logger';
 import Platform from 'platform';
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 var EventEmitter = (function() {
 
 	/* public constructor */
 	function EventEmitter() {
 		this.any = [];
-		this.events = {};
+		this.events = Object.create(null);
 		this.anyOnce = [];
-		this.eventsOnce = {};
+		this.eventsOnce = Object.create(null);
 	}
 
 	/* Call the listener, catch any exceptions and log, but continue operation*/
@@ -46,7 +48,7 @@ var EventEmitter = (function() {
 			} else if (Utils.isObject(listeners)) {
 				/* events */
 				for (eventName in listeners) {
-					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+					if (hasOwnProperty.call(listeners, eventName) && Utils.isArray(listeners[eventName])) {
 						removeListener([listeners], listener, eventName);
 					}
 				}
@@ -87,9 +89,9 @@ var EventEmitter = (function() {
 	EventEmitter.prototype.off = function(event, listener) {
 		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
-			this.events = {};
+			this.events = Object.create(null);
 			this.anyOnce = [];
-			this.eventsOnce = {};
+			this.eventsOnce = Object.create(null);
 			return;
 		}
 		if(arguments.length == 1) {

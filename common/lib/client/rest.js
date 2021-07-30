@@ -175,7 +175,7 @@ var Rest = (function() {
 
 	function Channels(rest) {
 		this.rest = rest;
-		this.all = {};
+		this.all = Object.create(null);
 	}
 
 	Channels.prototype.get = function(name, channelOptions) {
