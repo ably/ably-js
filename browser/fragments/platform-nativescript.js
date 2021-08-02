@@ -18,7 +18,7 @@ if (global.android) {
 }
 
 var Platform = {
-    agent: 'nativescript',
+        agent: 'nativescript',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',

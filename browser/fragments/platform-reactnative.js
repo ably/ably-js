@@ -2,7 +2,7 @@ import msgpack from '../lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 
 var Platform = {
-    agent: 'reactnative',
+        agent: 'reactnative',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
