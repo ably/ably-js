@@ -2,6 +2,21 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.11](https://github.com/ably/ably-js/tree/1.2.11) (2021-07-20)
+- Bind setImmediate to global object in browsers [\#774](https://github.com/ably/ably-js/pull/774)
+
+## [1.2.10](https://github.com/ably/ably-js/tree/1.2.10) (2021-05-28)
+- Add Playwright tests [\#738](https://github.com/ably/ably-js/pull/738)
+- Improve Mocha tests [\#739](https://github.com/ably/ably-js/pull/739)
+- Bump grunt from 0.4.5 to 1.3.0 [\#744](https://github.com/ably/ably-js/pull/744)
+- Add initial typescript toolchain [\#745](https://github.com/ably/ably-js/pull/745)
+- Update react native usage instructions in README [\#746](https://github.com/ably/ably-js/pull/746)
+- Webworker support [\#756](https://github.com/ably/ably-js/pull/756)
+- Use setImmediate if available in browser [\#757](https://github.com/ably/ably-js/pull/757)
+- Add sourcemap stuff [\#758](https://github.com/ably/ably-js/pull/758)
+- ably.io -> ably.com [\#759](https://github.com/ably/ably-js/pull/759)
+- Improve api typings [\#761](https://github.com/ably/ably-js/pull/761)
+
 ## [1.2.9](https://github.com/ably/ably-js/tree/1.2.9) (2021-04-12)
 - Fix bugs in disconnection error filtering [\#734](https://github.com/ably/ably-js/pull/734)
 - Replace fury badges with shields.io [\#716](https://github.com/ably/ably-js/pull/716)
@@ -47,7 +62,7 @@ That is fixed in this release with
 
 Adds the capability to subscribe to a channel in delta mode.
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 [Full Changelog](https://github.com/ably/ably-js/compare/1.1.25...1.2.0)
 

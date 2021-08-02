@@ -1,11 +1,11 @@
 {
   "name": "ably",
-  "description": "Realtime client library for Ably.io, the realtime messaging service",
-  "version": "1.2.9",
+  "description": "Realtime client library for Ably, the realtime messaging service",
+  "version": "1.2.11",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/ably/ably-js/issues",
-    "email": "support@ably.io"
+    "email": "support@ably.com"
   },
   "main": "./browser/static/ably-node.js",
   "typings": "./ably.d.ts",
@@ -31,8 +31,10 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
+    "@types/node": "^15.0.0",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
+    "copy-webpack-plugin": "^6.4.1",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
     "ejs": "~2.5",
@@ -40,7 +42,7 @@
     "express": "~4.12",
     "glob": "~4.4",
     "google-closure-compiler": "^20180610.0.1",
-    "grunt": "~0.4",
+    "grunt": "~1.3",
     "grunt-bump": "^0.3.1",
     "grunt-cli": "~1.2.0",
     "grunt-closure-tools": "^1.0.0",
@@ -65,6 +67,9 @@
     "playwright": "^1.10.0",
     "requirejs": "~2.1",
     "shelljs": "~0.3",
+    "source-map-explorer": "^2.5.2",
+    "ts-loader": "^8.2.0",
+    "typescript": "^4.2.4",
     "webpack": "^4.44.2",
     "webpack-cli": "^4.2.0"
   },
@@ -93,6 +98,8 @@
     "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "check-closure-compiler": "grunt check-closure-compiler",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "sourcemap": "source-map-explorer browser/static/ably.min.js",
+    "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
   }
 }
