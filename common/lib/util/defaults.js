@@ -221,6 +221,12 @@ Defaults.normaliseOptions = function(options) {
 		options.promises = false;
 	}
 
+        if(options.agents) {
+          for(key in options.agents) {
+            Defaults.agent += ' ' + key + '/' + options.agents[key];
+          }
+        }
+
 	return options;
 };
 
