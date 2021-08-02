@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.12](https://github.com/ably/ably-js/tree/1.2.12) (2021-08-02)
+- Fix channel names as object prototype keys [\#777](https://github.com/ably/ably-js/pull/777)
+- Add .once method to EventEmitter [\#779](https://github.com/ably/ably-js/pull/779)
+- Bump ws from 5.2.2 to 5.2.3 [\#781](https://github.com/ably/ably-js/pull/781)
+- Implement Ably-Agent connection param for ably-js and NodeJS versions [\#740](https://github.com/ably/ably-js/pull/740)
+
 ## [1.2.11](https://github.com/ably/ably-js/tree/1.2.11) (2021-07-20)
 - Bind setImmediate to global object in browsers [\#774](https://github.com/ably/ably-js/pull/774)
 
