@@ -1,6 +1,6 @@
 module.exports = `@license Copyright 2021, Ably
 
-Ably JavaScript Library v1.2.11
+Ably JavaScript Library v1.2.12
 https://github.com/ably/ably-js
 
 Ably Realtime Messaging

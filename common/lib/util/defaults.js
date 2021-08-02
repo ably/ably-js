@@ -35,7 +35,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.11';
+Defaults.version          = '1.2.12';
 Defaults.apiVersion       = '1.2';
 
 var agent = 'ably-js/' + Defaults.version;
