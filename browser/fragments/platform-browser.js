@@ -16,7 +16,7 @@ var userAgent = global.navigator && global.navigator.userAgent.toString();
 var currentUrl = global.location && global.location.href;
 
 var Platform = {
-	libver: 'js-web',
+        agent: 'browser',
 	logTimestamps: true,
 	userAgent: userAgent,
 	currentUrl: currentUrl,

@@ -348,7 +348,7 @@ var Utils = (function() {
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 
@@ -360,7 +360,7 @@ var Utils = (function() {
 			accept: accept,
 			'content-type': contentType,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 

@@ -36,8 +36,13 @@ Defaults.errorReportingHeaders = {
 };
 
 Defaults.version          = '1.2.11';
-Defaults.libstring        = Platform.libver + '-' + Defaults.version;
 Defaults.apiVersion       = '1.2';
+
+var agent = 'ably-js/' + Defaults.version;
+if (Platform.agent) {
+	agent += ' ' + Platform.agent;
+} 
+Defaults.agent = agent;
 
 Defaults.getHost = function(options, host, ws) {
 	if(ws)
@@ -215,6 +220,12 @@ Defaults.normaliseOptions = function(options) {
 		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
 		options.promises = false;
 	}
+
+        if(options.agents) {
+          for(var key in options.agents) {
+            Defaults.agent += ' ' + key + '/' + options.agents[key];
+          }
+        }
 
 	return options;
 };
