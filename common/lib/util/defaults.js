@@ -222,7 +222,7 @@ Defaults.normaliseOptions = function(options) {
 	}
 
         if(options.agents) {
-          for(let key in options.agents) {
+          for(var key in options.agents) {
             Defaults.agent += ' ' + key + '/' + options.agents[key];
           }
         }
