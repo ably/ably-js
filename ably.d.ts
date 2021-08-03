@@ -529,9 +529,9 @@ declare namespace Types {
 	}
 
 	class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
-		name: string;
+		readonly name: string;
 		errorReason: ErrorInfo;
-		state: ChannelState;
+		readonly state: ChannelState;
 		params: ChannelParams;
 		modes: ChannelModes;
 		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
@@ -630,7 +630,7 @@ declare namespace Types {
 		key: string;
 		recoveryKey: string;
 		serial: number;
-		state: ConnectionState;
+		readonly state: ConnectionState;
 		close: () => void;
 		connect: () => void;
 	}

@@ -308,9 +308,15 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		switch(this.state) {
+                        case 'suspended':
+                                this.notifyState('detached');
+                                callback();
+                                break;
 			case 'detached':
-			case 'failed':
 				callback();
+				break;
+			case 'failed':
+				callback(new ErrorInfo('Unable to detach; channel state = failed', 90001, 400));
 				break;
 			default:
 				this.requestState('detaching');
