@@ -519,13 +519,16 @@ declare namespace Types {
 	class ChannelCallbacks extends ChannelBase {
 		presence: PresenceCallbacks;
 		history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
-		publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
+                publish(messages: any, callback?: errorCallback): void;
+                publish(name: string, messages: any, callback?: errorCallback): void;
+                publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 	}
 
 	class ChannelPromise extends ChannelBase {
 		presence: PresencePromise;
 		history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
-		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+		publish(messages: any, options?: PublishOptions): Promise<void>;
+		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 	}
 
 	class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
