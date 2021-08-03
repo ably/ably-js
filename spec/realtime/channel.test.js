@@ -1519,5 +1519,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         done();
                     });
                 });
+
+                // RTL5b
+                it('detaching from failed channel results in error', function (done) {
+                    var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+                    var channelName = 'detach_from_failed';
+                    var channel = realtime.channels.get(channelName);
+
+                    channel.state = 'failed';
+
+                    channel.detach(function(err) {
+                      if (!err) {
+                        done(new Error("expected detach to return error response"));
+                        return;
+                      }
+                      done();
+                    });
+                });
 	});
 });
