@@ -309,7 +309,7 @@ var RealtimeChannel = (function() {
 		}
 		switch(this.state) {
                         case 'suspended':
-                                this.requestState('detached');
+                                this.notifyState('detached');
                                 callback();
                                 break;
 			case 'detached':
