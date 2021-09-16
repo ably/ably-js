@@ -1,48 +1,102 @@
 import BufferUtils from 'platform-bufferutils';
-import Utils from '../util/utils';
 import Logger from '../util/logger';
 import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';
+import { decodeBody, encodeBody, Format } from '../util/encoding';
+import { ChannelOptions } from '../../types/channel';
+import isArray from '../util/isArray';
+import isObject from '../util/isObject';
+import dataSizeBytes from '../util/dataSizeBytes';
+import PresenceMessage from './presencemessage';
 
-var Message = (function() {
-
-	function Message() {
-		this.name = undefined;
-		this.id = undefined;
-		this.timestamp = undefined;
-		this.clientId = undefined;
-		this.connectionId = undefined;
-		this.connectionKey = undefined;
-		this.data = undefined;
-		this.encoding = undefined;
-		this.extras = undefined;
-		this.size = undefined;
+export type CipherOptions = {
+	channelCipher: {
+		encrypt: Function;
+		algorithm: 'aes';
+	},
+	cipher?: {
+		channelCipher: {
+			encrypt: Function;
+			algorithm: 'aes';
+		}
 	}
+};
+
+type EncodingDecodingContext = {
+	channelOptions: ChannelOptions;
+	plugins: { vcdiff?: {
+		encrypt: Function;
+		decode: Function;
+	} };
+	baseEncodedPreviousPayload?: Buffer;
+}
+
+function normaliseContext(context: CipherOptions | EncodingDecodingContext | ChannelOptions): EncodingDecodingContext {
+	if(!context || !(context as EncodingDecodingContext).channelOptions) {
+		return {
+			channelOptions: context as ChannelOptions,
+			plugins: { },
+			baseEncodedPreviousPayload: undefined
+		};
+	}
+	return context as EncodingDecodingContext;
+}
+
+function normalizeCipherOptions(options: CipherOptions): CipherOptions {
+	if(options && options.cipher && !options.cipher.channelCipher) {
+		if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+		const cipher = Crypto.getCipher(options.cipher);
+		return {
+			cipher: cipher.cipherParams,
+			channelCipher: cipher.cipher,
+		}
+	}
+	return options;
+}
+
+function getMessageSize(msg: Message) {
+	let size = 0;
+	if(msg.name) {
+		size += msg.name.length;
+	}
+	if(msg.clientId) {
+		size += msg.clientId.length;
+	}
+	if(msg.extras) {
+		size += JSON.stringify(msg.extras).length;
+	}
+	if(msg.data) {
+		size += dataSizeBytes(msg.data);
+	}
+	return size;
+};
+
+class Message {
+	name?: string;
+	id?: string;
+	timestamp?: number;
+	clientId?: string;
+	connectionId?: string;
+	connectionKey?: string;
+	data?: any;
+	encoding?: string | null;
+	extras?: any;
+	size?: number;
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
-	Message.prototype.toJSON = function() {
-		var result = {
-			name: this.name,
-			id: this.id,
-			clientId: this.clientId,
-			connectionId: this.connectionId,
-			connectionKey: this.connectionKey,
-			encoding: this.encoding,
-			extras: this.extras
-		};
-
+	toJSON() {
 		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
-		var data = this.data;
+		let encoding = this.encoding;
+		let data = this.data;
 		if(data && BufferUtils.isBuffer(data)) {
 			if(arguments.length > 0) {
 				/* stringify call */
-				var encoding = this.encoding;
-				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
 				/* Called by msgpack. toBuffer returns a datatype understandable by
@@ -51,12 +105,20 @@ var Message = (function() {
 				data = BufferUtils.toBuffer(data);
 			}
 		}
-		result.data = data;
-		return result;
-	};
+		return {
+			name: this.name,
+			id: this.id,
+			clientId: this.clientId,
+			connectionId: this.connectionId,
+			connectionKey: this.connectionKey,
+			extras: this.extras,
+			encoding,
+			data,
+		};
+	}
 
-	Message.prototype.toString = function() {
-		var result = '[Message';
+	toString() {
+		let result = '[Message';
 		if(this.name)
 			result += '; name=' + this.name;
 		if(this.id)
@@ -83,10 +145,10 @@ var Message = (function() {
 			result += '; extras=' + JSON.stringify(this.extras);
 		result += ']';
 		return result;
-	};
+	}
 
-	Message.encrypt = function(msg, options, callback) {
-		var data = msg.data,
+	static encrypt(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
+		let data = msg.data,
 			encoding = msg.encoding,
 			cipher = options.channelCipher;
 
@@ -95,7 +157,7 @@ var Message = (function() {
 			data = BufferUtils.utf8Encode(String(data));
 			encoding = encoding + 'utf-8/';
 		}
-		cipher.encrypt(data, function(err, data) {
+		cipher.encrypt(data, function(err: Error, data: unknown) {
 			if (err) {
 				callback(err);
 				return;
@@ -104,14 +166,15 @@ var Message = (function() {
 			msg.encoding = encoding + 'cipher+' + cipher.algorithm;
 			callback(null, msg);
 		});
-	};
+	}
 
-	Message.encode = function(msg, options, callback) {
-		var data = msg.data, encoding,
-			nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
+	static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
+		let data = msg.data;
+		let encoding;
+		let nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
 		if (!nativeDataType) {
-			if (Utils.isObject(data) || Utils.isArray(data)) {
+			if (isObject(data) || isArray(data)) {
 				msg.data = JSON.stringify(data);
 				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 			} else {
@@ -124,12 +187,12 @@ var Message = (function() {
 		} else {
 			callback(null, msg);
 		}
-	};
+	}
 
-	Message.encodeArray = function(messages, options, callback) {
-		var processed = 0;
-		for (var i = 0; i < messages.length; i++) {
-			Message.encode(messages[i], options, function(err, msg) {
+	static encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function) {
+		let processed = 0;
+		for (let i = 0; i < messages.length; i++) {
+			Message.encode(messages[i], options, function(err: Error, msg: Message) {
 				if (err) {
 					callback(err);
 					return;
@@ -140,33 +203,26 @@ var Message = (function() {
 				}
 			});
 		}
-	};
+	}
 
-	Message.serialize = Utils.encodeBody;
+	static serialize = encodeBody;
 
-	Message.decode = function(message, context) {
-		/* The second argument could be either EncodingDecodingContext that contains ChannelOptions or ChannelOptions */
-		if(!context || !context.channelOptions) {
-			var channelOptions = context;
-			context = {
-				channelOptions: channelOptions,
-				plugins: { },
-				baseEncodedPreviousPayload: undefined
-			};
-		}
+	static decode(message: Message | PresenceMessage, inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions) {
+		const context = normaliseContext(inputContext);
 
-		var lastPayload = message.data;
-		var encoding = message.encoding;
+		let lastPayload = message.data;
+		const encoding = message.encoding;
 		if(encoding) {
-			var xforms = encoding.split('/'),
+			let xforms = encoding.split('/'),
 				lastProcessedEncodingIndex, encodingsToProcess = xforms.length,
 				data = message.data;
 
+			let xform = '';
 			try {
 				while((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
-					var match = xforms[--encodingsToProcess].match(/([\-\w]+)(\+([\w\-]+))?/);
+					let match = xforms[--encodingsToProcess].match(/([\-\w]+)(\+([\w\-]+))?/);
 					if(!match) break;
-					var xform = match[1];
+					xform = match[1];
 					switch(xform) {
 						case 'base64':
 							data = BufferUtils.base64Decode(String(data));
@@ -181,8 +237,8 @@ var Message = (function() {
 							data = JSON.parse(data);
 							continue;
 						case 'cipher':
-							if(context.channelOptions != null && context.channelOptions.cipher) {
-								var xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
+							if(context.channelOptions != null && context.channelOptions.cipher && context.channelOptions.channelCipher) {
+								let xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -200,7 +256,7 @@ var Message = (function() {
 								throw new ErrorInfo('Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)', 40020, 400);
 							}
 							try {
-								var deltaBase = context.baseEncodedPreviousPayload;
+								let deltaBase = context.baseEncodedPreviousPayload;
 								if(typeof deltaBase === 'string') {
 									deltaBase = BufferUtils.utf8Encode(deltaBase);
 								}
@@ -208,7 +264,7 @@ var Message = (function() {
 								/* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
 								 * don't have a TextDecoder, deltaBase might be a WordArray here, so need
 								 * to process it into a buffer anyway) */
-								deltaBase = BufferUtils.toBuffer(deltaBase);
+								deltaBase = BufferUtils.toBuffer(deltaBase as Buffer);
 								data = BufferUtils.toBuffer(data);
 
 								data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
@@ -223,99 +279,73 @@ var Message = (function() {
 					break;
 				}
 			} catch(e) {
-				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + e.message + '’', e.code || 40013, 400);
+				let err = e as ErrorInfo;
+				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’', err.code || 40013, 400);
 			} finally {
-				message.encoding = (lastProcessedEncodingIndex <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
+				message.encoding = (lastProcessedEncodingIndex as number <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
 				message.data = data;
 			}
 		}
 		context.baseEncodedPreviousPayload = lastPayload;
-	};
+	}
 
-	Message.fromResponseBody = function(body, options, format) {
+	static fromResponseBody(body: Array<Message>, options: ChannelOptions | EncodingDecodingContext, format: Format): Message[] {
 		if(format) {
-			body = Utils.decodeBody(body, format);
+			body = decodeBody(body, format);
 		}
 
-		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = Message.fromValues(body[i]);
+		for(let i = 0; i < body.length; i++) {
+			const msg = body[i] = Message.fromValues(body[i]);
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
-				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
+				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
 			}
 		}
 		return body;
-	};
+	}
 
-	Message.fromValues = function(values) {
-		return Utils.mixin(new Message(), values);
-	};
+	static fromValues(values: unknown): Message {
+		return Object.assign(new Message(), values);
+	}
 
-	Message.fromValuesArray = function(values) {
-		var count = values.length, result = new Array(count);
-		for(var i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
+	static fromValuesArray (values: unknown[]) {
+		const count = values.length, result = new Array(count);
+		for(let i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
 		return result;
 	};
 
-	function normalizeCipherOptions(options) {
-		if(options && options.cipher && !options.cipher.channelCipher) {
-			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			var cipher = Crypto.getCipher(options.cipher);
-			options.cipher = cipher.cipherParams;
-			options.channelCipher = cipher.cipher;
-		}
-	}
-
-	Message.fromEncoded = function(encoded, options) {
-		var msg = Message.fromValues(encoded);
-		normalizeCipherOptions(options);
+	static fromEncoded (encoded: unknown, inputOptions: CipherOptions) {
+		const msg = Message.fromValues(encoded);
+		const options = normalizeCipherOptions(inputOptions);
 		/* if decoding fails at any point, catch and return the message decoded to
 		 * the fullest extent possible */
 		try {
 			Message.decode(msg, options);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
 		}
 		return msg;
 	};
 
-	Message.fromEncodedArray = function(encodedArray, options) {
+	static fromEncodedArray (encodedArray: Array<unknown>, options: CipherOptions) {
 		normalizeCipherOptions(options);
-		return Utils.arrMap(encodedArray, function(encoded) {
+		return encodedArray.map(function(encoded) {
 			return Message.fromEncoded(encoded, options);
-		});
-	};
-
-	function getMessageSize(msg) {
-		var size = 0;
-		if(msg.name) {
-			size += msg.name.length;
-		}
-		if(msg.clientId) {
-			size += msg.clientId.length;
-		}
-		if(msg.extras) {
-			size += JSON.stringify(msg.extras).length;
-		}
-		if(msg.data) {
-			size += Utils.dataSizeBytes(msg.data);
-		}
-		return size;
+		})
 	};
 
 	/* This should be called on encode()d (and encrypt()d) Messages (as it
 	 * assumes the data is a string or buffer) */
-	Message.getMessagesSize = function(messages) {
-		var msg, total = 0;
-		for(var i=0; i<messages.length; i++) {
+	static getMessagesSize (messages: Message[]) {
+		let msg, total = 0;
+		for(let i=0; i<messages.length; i++) {
 			msg = messages[i];
 			total += (msg.size || (msg.size = getMessageSize(msg)))
 		}
 		return total;
 	};
 
-	return Message;
-})();
+}
 
 export default Message;

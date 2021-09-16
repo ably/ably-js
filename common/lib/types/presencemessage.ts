@@ -1,25 +1,23 @@
 import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
-import Message from './message';
-import Utils from '../util/utils';
+import Message, { CipherOptions } from './message';
+import { decodeBody, Format } from '../util/encoding';
 
-var PresenceMessage = (function() {
-	function toActionValue(actionString) {
-		return Utils.arrIndexOf(PresenceMessage.Actions, actionString)
-	}
+function toActionValue(actionString: string) {
+	return PresenceMessage.Actions.indexOf(actionString);
+}
 
-	function PresenceMessage() {
-		this.action = undefined;
-		this.id = undefined;
-		this.timestamp = undefined;
-		this.clientId = undefined;
-		this.connectionId = undefined;
-		this.data = undefined;
-		this.encoding = undefined;
-		this.size = undefined;
-	}
+class PresenceMessage {
+	action?: string | number;
+	id?: string;
+	timestamp?: number;
+	clientId?: string;
+	connectionId?: string;
+	data?: string | Buffer;
+	encoding?: string;
+	size?: number;
 
-	PresenceMessage.Actions = [
+	static Actions = [
 		'absent',
 		'present',
 		'enter',
@@ -32,13 +30,15 @@ var PresenceMessage = (function() {
 	 * disconnection). This is useful because synthesized messages cannot be
 	 * compared for newness by id lexicographically - RTP2b1
 	 */
-	PresenceMessage.prototype.isSynthesized = function() {
+	isSynthesized() {
+		if (!this.id || !this.connectionId) { return true }
 		return this.id.substring(this.connectionId.length, 0) !== this.connectionId;
 	};
 
 	/* RTP2b2 */
-	PresenceMessage.prototype.parseId = function() {
-		var parts = this.id.split(':');
+	parseId() {
+		if (!this.id) throw new Error('parseId(): Presence message does not contain an id');
+		const parts = this.id.split(':');
 		return {
 			connectionId: parts[0],
 			msgSerial: parseInt(parts[1], 10),
@@ -50,23 +50,16 @@ var PresenceMessage = (function() {
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
-	PresenceMessage.prototype.toJSON = function() {
-		var result = {
-			clientId: this.clientId,
-			/* Convert presence action back to an int for sending to Ably */
-			action: toActionValue(this.action),
-			encoding: this.encoding
-		};
-
+	toJSON() {
 		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
-		var data = this.data;
+		let data = this.data as string | Buffer;
+		let encoding = this.encoding;
 		if(data && BufferUtils.isBuffer(data)) {
 			if(arguments.length > 0) {
 				/* stringify call */
-				var encoding = this.encoding;
-				result.encoding = encoding ? (encoding + '/base64') : 'base64';
+				encoding = encoding ? (encoding + '/base64') : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
 				/* Called by msgpack. toBuffer returns a datatype understandable by
@@ -75,12 +68,17 @@ var PresenceMessage = (function() {
 				data = BufferUtils.toBuffer(data);
 			}
 		}
-		result.data = data;
-		return result;
+		return {
+			clientId: this.clientId,
+			/* Convert presence action back to an int for sending to Ably */
+			action: toActionValue(this.action as string),
+			data: data,
+			encoding: encoding,
+		}
 	};
 
-	PresenceMessage.prototype.toString = function() {
-		var result = '[PresenceMessage';
+	toString() {
+		let result = '[PresenceMessage';
 		result += '; action=' + this.action;
 		if(this.id)
 			result += '; id=' + this.id;
@@ -103,60 +101,58 @@ var PresenceMessage = (function() {
 		result += ']';
 		return result;
 	};
-	PresenceMessage.encode = Message.encode;
-	PresenceMessage.decode = Message.decode;
 
-	PresenceMessage.fromResponseBody = function(body, options, format) {
+	static encode = Message.encode;
+	static decode = Message.decode;
+
+	static fromResponseBody(body: unknown[], options: CipherOptions, format: Format) {
 		if(format) {
-			body = Utils.decodeBody(body, format);
+			body = decodeBody(body, format);
 		}
 
-		for(var i = 0; i < body.length; i++) {
-			var msg = body[i] = PresenceMessage.fromValues(body[i], true);
+		for(let i = 0; i < body.length; i++) {
+			let msg = body[i] = PresenceMessage.fromValues(body[i], true);
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
-				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
+				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
 			}
 		}
 		return body;
 	};
-
-	/* Creates a PresenceMessage from specified values, with a string presence action */
-	PresenceMessage.fromValues = function(values, stringifyAction) {
+	
+	static fromValues(values: any, stringifyAction?: boolean): PresenceMessage {
 		if(stringifyAction) {
 			values.action = PresenceMessage.Actions[values.action]
 		}
-		return Utils.mixin(new PresenceMessage(), values);
+		return Object.assign(new PresenceMessage(), values);
 	};
-
-	PresenceMessage.fromValuesArray = function(values) {
-		var count = values.length, result = new Array(count);
-		for(var i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
+	
+	static fromValuesArray(values: unknown[]) {
+		const count = values.length, result = new Array(count);
+		for(let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
 		return result;
 	};
 
-	PresenceMessage.fromEncoded = function(encoded, options) {
-		var msg = PresenceMessage.fromValues(encoded, true);
+	static fromEncoded(encoded: unknown, options: CipherOptions) {
+		let msg = PresenceMessage.fromValues(encoded, true);
 		/* if decoding fails at any point, catch and return the message decoded to
 		 * the fullest extent possible */
 		try {
 			PresenceMessage.decode(msg, options);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
+			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
 		}
 		return msg;
 	};
 
-	PresenceMessage.fromEncodedArray = function(encodedArray, options) {
-		return Utils.arrMap(encodedArray, function(encoded) {
+	static fromEncodedArray(encodedArray: unknown[], options: CipherOptions) {
+		return encodedArray.map(function(encoded) {
 			return PresenceMessage.fromEncoded(encoded, options);
 		});
 	};
 
-	PresenceMessage.getMessagesSize = Message.getMessagesSize;
-
-	return PresenceMessage;
-})();
+	static getMessagesSize = Message.getMessagesSize;
+}
 
 export default PresenceMessage;

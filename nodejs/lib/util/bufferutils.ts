@@ -5,7 +5,7 @@ module BufferUtils {
 
 	/* In node, BufferUtils methods that return binary objects return a Buffer
 	 * for historical reasons; the browser equivalents return ArrayBuffers */
-	export const isBuffer = function(buf: Buffer) { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
+	export const isBuffer = function(buf: Buffer | string): buf is Buffer { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
 
     export const toBuffer = function(buf: Buffer) {
 		if(Buffer.isBuffer(buf)) {
