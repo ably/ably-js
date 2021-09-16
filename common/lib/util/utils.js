@@ -1,6 +1,12 @@
 import Platform from 'platform';
 import Defaults from './defaults';
 import BufferUtils from 'platform-bufferutils';
+import inspectError from './inspectError';
+import forInOwnNonNullProps from './forInOwnNonNullProps';
+import isArray from './isArray';
+import isObject from './isObject';
+import { decodeBody, encodeBody } from './encoding';
+import dataSizeBytes from './dataSizeBytes';
 
 var Utils = (function() {
 	var msgpack = Platform.msgpack;
@@ -41,13 +47,7 @@ var Utils = (function() {
 		return Utils.mixin({}, src);
 	};
 
-	/*
-	 * Determine whether or not a given object is
-	 * an array.
-	 */
-	Utils.isArray = Array.isArray || function(ob) {
-		return Object.prototype.toString.call(ob) == '[object Array]';
-	};
+	Utils.isArray = isArray;
 
 	/*
 	 * Ensures that an Array object is always returned
@@ -64,10 +64,7 @@ var Utils = (function() {
 		return [obj];
 	}
 
-	/* ...Or an Object (in the narrow sense) */
-	Utils.isObject = function(ob) {
-		return Object.prototype.toString.call(ob) == '[object Object]';
-	};
+	Utils.isObject = isObject;
 
 	/*
 	 * Determine whether or not an object contains
@@ -257,13 +254,7 @@ var Utils = (function() {
 		return result;
 	};
 
-	Utils.forInOwnNonNullProps = function(ob, fn) {
-		for (var prop in ob) {
-			if (Object.prototype.hasOwnProperty.call(ob, prop) && ob[prop]) {
-				fn(prop);
-			}
-		}
-	};
+	Utils.forInOwnNonNullProps = forInOwnNonNullProps;
 
 	Utils.arrForEach = Array.prototype.forEach ?
 		function(arr, fn) {
@@ -398,15 +389,7 @@ var Utils = (function() {
 		return err.constructor.name == 'ErrorInfo'
 	};
 
-	Utils.inspectError = function(x) {
-		/* redundant, but node vmcontext issue makes instanceof unreliable, and
-		 * can't use just constructor test as could be a TypeError constructor etc. */
-		return (x && (Utils.isErrorInfo(x) ||
-			x.constructor.name == 'Error' ||
-			x instanceof Error)) ?
-			x.toString() :
-			Utils.inspect(x);
-	};
+	Utils.inspectError = inspectError;
 
 	Utils.inspectBody = function(body) {
 		if(BufferUtils.isBuffer(body)) {
@@ -418,16 +401,7 @@ var Utils = (function() {
 		}
 	};
 
-	/* Data is assumed to be either a string or a buffer. */
-	Utils.dataSizeBytes = function(data) {
-		if(BufferUtils.isBuffer(data)) {
-			return BufferUtils.byteLength(data);
-		}
-		if(typeof data === 'string') {
-			return Platform.stringByteSize(data);
-		}
-		throw new Error("Expected input of Utils.dataSizeBytes to be a buffer or string, but was: " + (typeof data));
-	};
+	Utils.dataSizeBytes = dataSizeBytes;
 
 	Utils.cheapRandStr = function() {
 		return String(Math.random()).substr(2);
@@ -495,13 +469,9 @@ var Utils = (function() {
 		});
 	};
 
-	Utils.decodeBody = function(body, format) {
-		return (format == 'msgpack') ? msgpack.decode(body) : JSON.parse(String(body));
-	};
+	Utils.decodeBody = decodeBody;
 
-	Utils.encodeBody = function(body, format) {
-		return (format == 'msgpack') ? msgpack.encode(body, true) : JSON.stringify(body);
-	};
+	Utils.encodeBody = encodeBody;
 
 	Utils.allToLowerCase = function(arr) {
 		return Utils.arrMap(arr, function(element) {
