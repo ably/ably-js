@@ -32,9 +32,9 @@ class Multicaster {
 	static create(members?: Array<Function>) {
 		const instance = new Multicaster(members);
 		return Object.assign(
-      (...args: unknown[]) => instance.call(args),
+      instance.call,
       {
-        push: (fn: Function) => instance.push(fn)
+        push: instance.push
       }
 		);
 	}
