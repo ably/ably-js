@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.14](https://github.com/ably/ably-js/tree/1.2.14) (2021-09-22)
+- Add TypeScript support for REST publish parameters [\#785]
+- Fix a bug with parsing of authUrl responses [\#793]
+
 ## [1.2.13](https://github.com/ably/ably-js/tree/1.2.13) (2021-08-03)
 - Implement RTL5b and RTL5j cases for detaching from channels in suspended/failed states [\#784](https://github.com/ably/ably-js/pull/784)
 
