@@ -607,7 +607,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 			'authUrl_403_custom_error',
 			authCallback_failures(
 				{
-					authUrl: echoServer + '/respondwith?status=403&type=json&body={"error"={"some_custom": "error"}}'
+					authUrl: echoServer + '/?status=403&type=json&body=' + encodeURIComponent(JSON.stringify({error: {some_custom: "error"}}))
 				},
 				true
 			)
