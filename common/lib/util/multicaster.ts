@@ -9,8 +9,7 @@ class Multicaster {
 	}
 
 	call(...args: unknown[]): void {
-		for (let i = 0; i < this.members.length; i++) {
-			let member = this.members[i];
+		for (const member of this.members) {
 			if (member) {
 				try {
           member(...args);
