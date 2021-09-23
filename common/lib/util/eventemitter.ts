@@ -2,56 +2,61 @@ import Utils from './utils';
 import Logger from './logger';
 import Platform from 'platform';
 
-var EventEmitter = (function() {
+/* Call the listener, catch any exceptions and log, but continue operation*/
+function callListener(eventThis: { event: string }, listener: Function, args: unknown[]) {
+	try {
+		listener.apply(eventThis, args);
+	} catch(e) {
+		Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack));
+	}
+}
 
-	/* public constructor */
-	function EventEmitter() {
+/**
+ * Remove listeners that match listener
+ * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
+ * @param listener the listener callback to remove
+ * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
+ */
+function removeListener(targetListeners: any, listener: Function, eventFilter?: string) {
+	let listeners: Record<string, unknown>;
+	let idx;
+	let eventName;
+
+	for (let targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
+		listeners = targetListeners[targetListenersIndex];
+		if (eventFilter) { listeners = listeners[eventFilter] as Record<string, unknown>; }
+
+		if (Utils.isArray(listeners)) {
+			while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
+				listeners.splice(idx, 1);
+			}
+			/* If events object has an event name key with no listeners then
+					remove the key to stop the list growing indefinitely */
+			if (eventFilter && (listeners.length === 0)) {
+				delete targetListeners[targetListenersIndex][eventFilter];
+			}
+		} else if (Utils.isObject(listeners)) {
+			/* events */
+			for (eventName in listeners) {
+				if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+					removeListener([listeners], listener, eventName);
+				}
+			}
+		}
+	}
+}
+
+class EventEmitter {
+	any: Array<unknown>;
+	events: Record<string, Array<unknown>>;
+	anyOnce: Array<unknown>;
+	eventsOnce: Record<string, Array<unknown>>;
+
+	constructor() {
 		this.any = [];
 		this.events = {};
 		this.anyOnce = [];
 		this.eventsOnce = {};
-	}
-
-	/* Call the listener, catch any exceptions and log, but continue operation*/
-	function callListener(eventThis, listener, args) {
-		try {
-			listener.apply(eventThis, args);
-		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && e.stack));
-		}
-	}
-
-	/**
-	 * Remove listeners that match listener
-	 * @param targetListeners is an array of listener arrays or event objects with arrays of listeners
-	 * @param listener the listener callback to remove
-	 * @param eventFilter (optional) event name instructing the function to only remove listeners for the specified event
-	 */
-	function removeListener(targetListeners, listener, eventFilter) {
-		var listeners, idx, eventName, targetListenersIndex;
-
-		for (targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
-			listeners = targetListeners[targetListenersIndex];
-			if (eventFilter) { listeners = listeners[eventFilter]; }
-
-			if (Utils.isArray(listeners)) {
-				while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
-					listeners.splice(idx, 1);
-				}
-				/* If events object has an event name key with no listeners then
-				   remove the key to stop the list growing indefinitely */
-				if (eventFilter && (listeners.length === 0)) {
-					delete targetListeners[targetListenersIndex][eventFilter];
-				}
-			} else if (Utils.isObject(listeners)) {
-				/* events */
-				for (eventName in listeners) {
-					if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
-						removeListener([listeners], listener, eventName);
-					}
-				}
-			}
-		}
 	}
 
 	/**
@@ -60,21 +65,23 @@ var EventEmitter = (function() {
 	 *        if not supplied, all events trigger a call to the listener
 	 * @param listener the listener to be called
 	 */
-	EventEmitter.prototype.on = function(event, listener) {
+	on (event: string, listener: Function) {
 		if(arguments.length == 1 && typeof(event) == 'function') {
 			this.any.push(event);
 		} else if(Utils.isEmptyArg(event)) {
 			this.any.push(listener);
 		} else if(Utils.isArray(event)) {
-			var self = this;
-			Utils.arrForEach(event, function(ev) {
-				self.on(ev, listener);
+			event.forEach((ev) => {
+				this.on(ev, listener);
+			})
+			event.forEach((ev) => {
+				this.on(ev, listener);
 			});
 		} else {
-			var listeners = (this.events[event] || (this.events[event] = []));
+			const listeners = (this.events[event] || (this.events[event] = []));
 			listeners.push(listener);
 		}
-	};
+};
 
 	/**
 	 * Remove one or more event listeners
@@ -84,7 +91,7 @@ var EventEmitter = (function() {
 	 * @param listener (optional) the listener to remove. If not
 	 *        supplied, all listeners are removed.
 	 */
-	EventEmitter.prototype.off = function(event, listener) {
+	off (event: string | null, listener: Function) {
 		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
 			this.events = {};
@@ -107,18 +114,17 @@ var EventEmitter = (function() {
 		}
 
 		if(Utils.isArray(event)) {
-			var self = this;
-			Utils.arrForEach(event, function(ev) {
-				self.off(ev, listener);
+			event.forEach((ev) => {
+				this.off(ev, listener);
 			});
 		}
 
 		/* "normal" case where event is an actual event */
 		if(listener) {
-			removeListener([this.events, this.eventsOnce], listener, event);
+			removeListener([this.events, this.eventsOnce], listener, event as string);
 		} else {
-			delete this.events[event];
-			delete this.eventsOnce[event];
+			delete this.events[event as string];
+			delete this.eventsOnce[event as string];
 		}
 	};
 
@@ -127,9 +133,9 @@ var EventEmitter = (function() {
 	 * @param event (optional) the name of the event, or none for 'any'
 	 * @return array of events, or null if none
 	 */
-	EventEmitter.prototype.listeners = function(event) {
+	listeners(event: string) {
 		if(event) {
-			var listeners = (this.events[event] || []);
+			const listeners = (this.events[event] || []);
 			if(this.eventsOnce[event])
 				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
 			return listeners.length ? listeners : null;
@@ -142,10 +148,9 @@ var EventEmitter = (function() {
 	 * @param event the event name
 	 * @param args the arguments to pass to the listener
 	 */
-	EventEmitter.prototype.emit = function(event  /* , args... */) {
-		var args = Array.prototype.slice.call(arguments, 1);
-		var eventThis = {event:event};
-		var listeners = [];
+	emit (event: string, ...args: unknown[]  /* , args... */) {
+		const eventThis = { event };
+		const listeners: Function[] = [];
 
 		if(this.anyOnce.length) {
 			Array.prototype.push.apply(listeners, this.anyOnce);
@@ -154,12 +159,12 @@ var EventEmitter = (function() {
 		if(this.any.length) {
 			Array.prototype.push.apply(listeners, this.any);
 		}
-		var eventsOnceListeners = this.eventsOnce[event];
+		const eventsOnceListeners = this.eventsOnce[event];
 		if(eventsOnceListeners) {
 			Array.prototype.push.apply(listeners, eventsOnceListeners);
 			delete this.eventsOnce[event];
 		}
-		var eventsListeners = this.events[event];
+		const eventsListeners = this.events[event];
 		if(eventsListeners) {
 			Array.prototype.push.apply(listeners, eventsListeners);
 		}
@@ -174,11 +179,11 @@ var EventEmitter = (function() {
 	 * @param event the name of the event to listen to
 	 * @param listener the listener to be called
 	 */
-	EventEmitter.prototype.once = function(event, listener) {
-		var argCount = arguments.length, self = this;
+	once(event: string, listener: Function) {
+		const argCount = arguments.length;
 		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
-			return new Platform.Promise(function(resolve) {
-				self.once(event, resolve);
+			return new Platform.Promise((resolve) => {
+				this.once(event, resolve);
 			});
 		}
 		if(arguments.length == 1 && typeof(event) == 'function') {
@@ -188,7 +193,7 @@ var EventEmitter = (function() {
 		} else if(Utils.isArray(event)){
 			throw("Arrays of events can only be used with on(), not once()");
 		} else {
-			var listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
+			const listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);
 		}
 	};
@@ -201,17 +206,15 @@ var EventEmitter = (function() {
 	 * @param currentState the name of the current state of this object
 	 * @param listener the listener to be called
 	 */
-	EventEmitter.prototype.whenState = function(targetState, currentState, listener /* ...listenerArgs */) {
-		var eventThis = {event:targetState},
-			self = this,
-			listenerArgs = Array.prototype.slice.call(arguments, 3);
+	private whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[] /* ...listenerArgs */) {
+		const eventThis = { event: targetState };
 
 		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
 			throw("whenState requires a valid event String argument");
 		}
 		if(typeof listener !== 'function' && Platform.Promise) {
 			return new Platform.Promise(function(resolve) {
-				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs));
+				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs as any[]) as any);
 			});
 		}
 		if(targetState === currentState) {
@@ -220,8 +223,6 @@ var EventEmitter = (function() {
 			this.once(targetState, listener);
 		}
 	}
-
-	return EventEmitter;
-})();
+}
 
 export default EventEmitter;
