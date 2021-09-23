@@ -47,7 +47,10 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 }
 
 class EventEmitter {
+	any: Array<Function>;
+	events: Record<string, Array<Function>>;
 	anyOnce: Array<Function>;
+	eventsOnce: Record<string, Array<Function>>;
 
 	constructor() {
 		this.any = [];
@@ -71,9 +74,6 @@ class EventEmitter {
 			event.forEach((ev) => {
 				this.on(ev, listener);
 			})
-			event.forEach((ev) => {
-				this.on(ev, listener);
-			});
 		} else {
 			const listeners = (this.events[event] || (this.events[event] = []));
 			listeners.push(listener);
