@@ -1,5 +1,4 @@
-import { decodeBody, encodeBody, Format } from '../util/encoding';
-import forInOwnNonNullProps from '../util/forInOwnNonNullProps';
+import Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';
 import PresenceMessage from './presencemessage';
@@ -107,10 +106,10 @@ class ProtocolMessage {
 		return modes.length > 0 ? modes : undefined;
 	};
 
-	static serialize = encodeBody;
+	static serialize = Utils.encodeBody;
 
-	static deserialize = function(serialized: unknown, format: Format) {
-		const deserialized = decodeBody(serialized, format);
+	static deserialize = function(serialized: unknown, format: Utils.Format) {
+		const deserialized = Utils.decodeBody(serialized, format);
 		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
@@ -152,7 +151,7 @@ class ProtocolMessage {
 			result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
 		if(msg.params) {
 			let stringifiedParams = '';
-			forInOwnNonNullProps(msg.params, function(prop: string) {
+			Utils.forInOwnNonNullProps(msg.params, function(prop: string) {
 				if (stringifiedParams.length > 0) {
 					stringifiedParams += '; ';
 				}

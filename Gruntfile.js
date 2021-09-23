@@ -106,7 +106,7 @@ module.exports = function (grunt) {
 	grunt.registerTask('set-library-version',
 		'Set the library version string used for loading dependencies',
 		function() {
-			var defaultsFile = gruntConfig.dirs.common + '/lib/util/defaults.js';
+			var defaultsFile = gruntConfig.dirs.common + '/lib/util/defaults.ts';
 			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.\-]+)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
 			grunt.file.write(defaultsFile, defaultsText);
 

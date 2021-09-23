@@ -1,4 +1,4 @@
-import inspectError from '../util/inspectError';
+import Utils from "../util/utils";
 
 export default class ErrorInfo {
 	message?: string;
@@ -19,7 +19,7 @@ export default class ErrorInfo {
 		if(this.message) result += ': ' + this.message;
 		if(this.statusCode) result += '; statusCode=' + this.statusCode;
 		if(this.code) result += '; code=' + this.code;
-		if(this.cause) result += '; cause=' + inspectError(this.cause);
+		if(this.cause) result += '; cause=' + Utils.inspectError(this.cause);
 		if(this.href && !(this.message && this.message.indexOf('help.ably.io') > -1)) result += '; see ' + this.href + ' ';
 		result += ']';
 		return result;
