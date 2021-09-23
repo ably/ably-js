@@ -47,10 +47,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 }
 
 class EventEmitter {
-	any: Array<unknown>;
-	events: Record<string, Array<unknown>>;
-	anyOnce: Array<unknown>;
-	eventsOnce: Record<string, Array<unknown>>;
+	anyOnce: Array<Function>;
 
 	constructor() {
 		this.any = [];
