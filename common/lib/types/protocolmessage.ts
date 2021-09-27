@@ -1,5 +1,5 @@
 import { decodeBody, encodeBody, Format } from '../util/encoding';
-import forInOwnNonNullProps from '../util/forInOwnNonNullProps';
+import forInOwnNonNullProperties from '../util/forInOwnNonNullProperties';
 import ErrorInfo from './errorinfo';
 import Message from './message';
 import PresenceMessage from './presencemessage';
@@ -152,7 +152,7 @@ class ProtocolMessage {
 			result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
 		if(msg.params) {
 			let stringifiedParams = '';
-			forInOwnNonNullProps(msg.params, function(prop: string) {
+			forInOwnNonNullProperties(msg.params, function(prop: string) {
 				if (stringifiedParams.length > 0) {
 					stringifiedParams += '; ';
 				}

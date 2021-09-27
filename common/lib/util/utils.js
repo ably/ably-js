@@ -2,7 +2,7 @@ import Platform from 'platform';
 import Defaults from './defaults';
 import BufferUtils from 'platform-bufferutils';
 import inspectError from './inspectError';
-import forInOwnNonNullProps from './forInOwnNonNullProps';
+import forInOwnNonNullProperties from './forInOwnNonNullProperties';
 import isArray from './isArray';
 import isObject from './isObject';
 import { decodeBody, encodeBody } from './encoding';
@@ -254,7 +254,7 @@ var Utils = (function() {
 		return result;
 	};
 
-	Utils.forInOwnNonNullProps = forInOwnNonNullProps;
+	Utils.forInOwnNonNullProperties = forInOwnNonNullProperties;
 
 	Utils.arrForEach = Array.prototype.forEach ?
 		function(arr, fn) {
