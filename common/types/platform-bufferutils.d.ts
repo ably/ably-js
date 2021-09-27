@@ -1,7 +1,7 @@
 declare module 'platform-bufferutils' {
   export const base64CharSet: string;
   export const hexCharSet: string;
-  export const isBuffer: (buffer: unknown) => buf is Buffer | ArrayBuffer | DataView;
+  export const isBuffer: (buffer: unknown) => buffer is Buffer | ArrayBuffer | DataView;
   export const toBuffer: (buffer: Buffer | TypedArray) => Buffer;
   export const toArrayBuffer: (buffer: Buffer) => ArrayBuffer;
   export const base64Encode: (buffer: Buffer | TypedArray) => string;
