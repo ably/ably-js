@@ -1564,7 +1564,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
 		/* RTP17e
 		 * Test failed presence auto-re-entering */
-		it('presence_failed_auto_reenter', function (done) {
+		it.skip('presence_failed_auto_reenter', function (done) {
 			var channelName = 'presence_failed_auto_reenter',
 				realtime,
 				channel,
