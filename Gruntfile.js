@@ -87,7 +87,6 @@ module.exports = function (grunt) {
 	grunt.initConfig(gruntConfig);
 
 	grunt.registerTask('build', [
-		'set-library-version',
 		'webpack'
 	]);
 
@@ -102,21 +101,6 @@ module.exports = function (grunt) {
 
 	var browsers = grunt.option('browsers') || 'default';
 	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
-
-	grunt.registerTask('set-library-version',
-		'Set the library version string used for loading dependencies',
-		function() {
-			var defaultsFile = gruntConfig.dirs.common + '/lib/util/defaults.js';
-			var defaultsText = grunt.file.read(defaultsFile).replace(/(version\s*=\s*)'([\w\.\-]+)'/, '$1\'' + gruntConfig.pkgVersion + '\'');
-			grunt.file.write(defaultsFile, defaultsText);
-
-			var licenseFile = gruntConfig.dirs.fragments + '/license.js';
-			var licenseText = grunt.file.read(licenseFile).
-													replace(/(Ably JavaScript Library v)([\w\.\-]+)/i, '$1' + gruntConfig.pkgVersion).
-													replace(/(Copyright )(\d{4,})/i, '$1' + new Date().getFullYear())
-			grunt.file.write(licenseFile, licenseText);
-		}
-	);
 
 	grunt.registerTask('test',
 		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
