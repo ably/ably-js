@@ -22,8 +22,8 @@ type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
 type DevicePushDetails = {
 	error?: ErrorInfo;
-	recipient: object;
-	state: DevicePushState;
+	recipient?: string;
+	state?: DevicePushState;
 	metadata?: string;
 }
 
@@ -34,10 +34,10 @@ class DeviceDetails {
 	formFactor?: DeviceFormFactor;
 	platform?: DevicePlatform;
 	push?: DevicePushDetails;
-	metadata?: object;
+	metadata?: string;
 	deviceIdentityToken?: string;
 
-	toJSON() {
+	toJSON(): DeviceDetails {
 		return {
 			id: this.id,
 			deviceSecret: this.deviceSecret,
@@ -51,10 +51,10 @@ class DeviceDetails {
 				state: this.push?.state,
 				error: this.push?.error
 			}
-		};
+		} as DeviceDetails;
 	}
 
-	toString() {
+	toString(): string {
 		let result = '[DeviceDetails';
 		if(this.id)
 			result += '; id=' + this.id;
@@ -82,7 +82,7 @@ class DeviceDetails {
 
 	static toRequestBody = Utils.encodeBody;
 
-	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format: Utils.Format) {
+	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Utils.Format): DeviceDetails | DeviceDetails[] {
 		if(format) {
 			body = Utils.decodeBody(body, format);
 		}
@@ -94,12 +94,12 @@ class DeviceDetails {
 		}
 	}
 
-	static fromValues(values: Record<string, unknown>) {
+	static fromValues(values: Record<string, unknown>): DeviceDetails {
 		values.error = values.error && ErrorInfo.fromValues(values.error as Error); 
 		return Object.assign(new DeviceDetails(), values);
 	}
 	
-	static fromValuesArray(values: Array<Record<string, unknown>>) {
+	static fromValuesArray(values: Array<Record<string, unknown>>): DeviceDetails[] {
 		const count = values.length, result = new Array(count);
 		for(let i = 0; i < count; i++) result[i] = DeviceDetails.fromValues(values[i]);
 		return result

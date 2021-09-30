@@ -1,5 +1,11 @@
 import Utils from "../util/utils";
 
+type PushChannelSubscriptionObject = {
+	channel?: string,
+	deviceId?: string,
+	clientId?: string,
+}
+
 class PushChannelSubscription {
 	channel?: string;
 	deviceId?: string;
@@ -9,7 +15,7 @@ class PushChannelSubscription {
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
-	toJSON() {
+	toJSON(): PushChannelSubscriptionObject {
 		return {
 			channel: this.channel,
 			deviceId: this.deviceId,
@@ -17,7 +23,7 @@ class PushChannelSubscription {
 		};
 	}
 
-	toString() {
+	toString(): string {
 		let result = '[PushChannelSubscription';
 		if(this.channel)
 			result += '; channel=' + this.channel;
@@ -31,9 +37,9 @@ class PushChannelSubscription {
 
 	static toRequestBody = Utils.encodeBody;
 
-	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format: Utils.Format) {
+	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Utils.Format): PushChannelSubscription | PushChannelSubscription[] {
 		if(format) {
-			body = Utils.decodeBody(body, format);
+			body = Utils.decodeBody(body, format) as Record<string, unknown>;
 		}
 
 		if(Utils.isArray(body)) {
@@ -43,11 +49,11 @@ class PushChannelSubscription {
 		}
 	}
 
-	static fromValues(values: Record<string, unknown>) {
+	static fromValues(values: Record<string, unknown>): PushChannelSubscription {
 		return Object.assign(new PushChannelSubscription(), values);
 	}
 
-	static fromValuesArray(values: Array<Record<string, unknown>>) {
+	static fromValuesArray(values: Array<Record<string, unknown>>): PushChannelSubscription[] {
 		const count = values.length, result = new Array(count);
 		for(let i = 0; i < count; i++) result[i] = PushChannelSubscription.fromValues(values[i]);
 		return result;

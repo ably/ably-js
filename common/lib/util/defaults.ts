@@ -7,7 +7,12 @@ import ErrorInfo from '../types/errorinfo';
 
 type ClientOptions = any;
 
-const version = '1.2.9';
+const version = '1.2.14';
+
+var agent = 'ably-js/' + version;
+if (Platform.agent) {
+	agent += ' ' + Platform.agent;
+}
 
 const Defaults = {
 	...PlatformDefaults,
@@ -42,8 +47,8 @@ const Defaults = {
 	},
 
 	version,
-	libstring        : Platform.libver + '-' + version,
 	apiVersion       : '1.2',
+	agent,
 	getHost,
 	getPort,
 	getHttpScheme,
@@ -231,6 +236,12 @@ export function normaliseOptions(options: ClientOptions) {
 		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
 		options.promises = false;
 	}
+
+        if(options.agents) {
+          for(var key in options.agents) {
+            Defaults.agent += ' ' + key + '/' + options.agents[key];
+          }
+        }
 
 	return options;
 };

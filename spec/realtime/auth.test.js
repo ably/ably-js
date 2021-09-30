@@ -602,6 +602,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 			)
 		); /* expectFailed: */
 
+		/* 403 should cause connection to fail even with an external error response */
+		it(
+			'authUrl_403_custom_error',
+			authCallback_failures(
+				{
+					authUrl: echoServer + '/?status=403&type=json&body=' + encodeURIComponent(JSON.stringify({error: {some_custom: "error"}}))
+				},
+				true
+			)
+		);
+
 		/* auth endpoints don't envelope, so this won't work with jsonp */
 		if (helper.bestTransport !== 'jsonp') {
 			it('authUrl_403_previously_active', function (done) {

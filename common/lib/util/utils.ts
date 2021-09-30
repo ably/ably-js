@@ -14,13 +14,13 @@ module Utils {
 	 *         added, by reference only
 	 */
 	export function mixin(target: any, ...args: Array<unknown>) {
-		for (var i = 1; i < arguments.length; i++) {
-			var source = arguments[i];
+		for (let i = 1; i < arguments.length; i++) {
+			const source = arguments[i];
 			if (!source) {
 				break;
 			}
-			var hasOwnProperty = source.hasOwnProperty;
-			for (var key in source) {
+			const hasOwnProperty = Object.prototype.hasOwnProperty;
+			for (const key in source) {
 				if (!hasOwnProperty || hasOwnProperty.call(source, key)) {
 					target[key] = source[key];
 				}
@@ -74,12 +74,12 @@ module Utils {
 	 * ob: the object
 	 */
 	export function isEmpty(ob: any) {
-		for (var prop in ob) return false;
+		for (const prop in ob) return false;
 		return true;
 	};
 
 	export function isOnlyPropIn(ob: object, property: string) {
-		for (var prop in ob) {
+		for (const prop in ob) {
 			if (prop !== property) {
 				return false;
 			}
@@ -162,9 +162,9 @@ module Utils {
 	};
 
 	export function arrIntersect(arr1: Array<unknown>, arr2: Array<unknown>) {
-		var result = [];
-		for (var i = 0; i < arr1.length; i++) {
-			var member = arr1[i];
+		const result = [];
+		for (let i = 0; i < arr1.length; i++) {
+			const member = arr1[i];
 			if (arrIndexOf(arr2, member) != -1) result.push(member);
 		}
 		return result;
@@ -180,9 +180,9 @@ module Utils {
 	};
 
 	export function arrSubtract(arr1: Array<unknown>, arr2: Array<unknown>) {
-		var result = [];
-		for (var i = 0; i < arr1.length; i++) {
-			var element = arr1[i];
+		const result = [];
+		for (let i = 0; i < arr1.length; i++) {
+			const element = arr1[i];
 			if (arrIndexOf(arr2, element) == -1) result.push(element);
 		}
 		return result;
@@ -230,7 +230,7 @@ module Utils {
 	export function keysArray(ob: object, ownOnly?: boolean) {
 		const result = [];
 		for (let prop in ob) {
-			if (ownOnly && !ob.hasOwnProperty(prop)) continue;
+			if (ownOnly && !Object.prototype.hasOwnProperty.call(ob, prop)) continue;
 			result.push(prop);
 		}
 		return result;
@@ -252,7 +252,7 @@ module Utils {
 		return result;
 	};
 
-	export function forInOwnNonNullProps(ob: Record<string, unknown>, fn: Function) {
+	export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: Function) {
 		for (let prop in ob) {
 			if (Object.prototype.hasOwnProperty.call(ob, prop) && ob[prop]) {
 				fn(prop);
@@ -343,19 +343,19 @@ module Utils {
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 
 	export function defaultPostHeaders(format: Format) {
-		var accept, contentType;
+		let accept, contentType;
 		accept = contentType = contentTypes[format || Format.json];
 
 		return {
 			accept: accept,
 			'content-type': contentType,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 
@@ -470,7 +470,7 @@ module Utils {
 		const numItems = Math.min(n, arr.length),
 			mutableArr = arr.slice(),
 			result: Array<T> = [];
-		for (var i = 0; i < numItems; i++) {
+		for (let i = 0; i < numItems; i++) {
 			result.push(arrPopRandomElement(mutableArr));
 		}
 		return result;
@@ -500,9 +500,9 @@ module Utils {
 		json = 'json',
 	}
 
-	export function decodeBody (body: unknown, format: Format) {
-		return (format == 'msgpack') ? Platform.msgpack.decode(body) : JSON.parse(String(body));
-	};
+	export function decodeBody<T>(body: unknown, format?: Format | null): T {
+		return (format == 'msgpack') ? Platform.msgpack.decode(body as Buffer) : JSON.parse(String(body));
+	}
 
 	export function encodeBody(body: unknown, format: Format) {
 		return (format == 'msgpack') ? Platform.msgpack.encode(body, true) : JSON.stringify(body);

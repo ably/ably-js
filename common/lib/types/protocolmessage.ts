@@ -1,3 +1,4 @@
+import { ChannelMode } from '../../types/channel';
 import Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';
@@ -45,7 +46,7 @@ const flags: {[key: string] : number} = {
 const flagNames = Object.keys(flags);
 flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
 
-function toStringArray(array?: any[]) {
+function toStringArray(array?: any[]): string {
 	const result = [];
 	if (array) {
 		for (let i = 0; i < array.length; i++) {
@@ -66,13 +67,15 @@ class ProtocolMessage {
 	error?: ErrorInfo;
 	connectionId?: string;
 	connectionKey?: string;
-	connectionSerial?: string;
+	connectionSerial?: number;
 	channel?: string;
-	channelSerial?: number;
+	channelSerial?: number | null;
 	msgSerial?: number;
 	messages?: Message[];
 	presence?: PresenceMessage[];
 	auth?: unknown;	
+	connectionDetails?: Record<string, unknown>;
+	timeSerial?: number;
 
 	static Action = actions;
 
@@ -80,54 +83,54 @@ class ProtocolMessage {
 
 	static ActionName = ActionName;
 
-	hasFlag = (flag: string) => {
+	hasFlag = (flag: string): boolean => {
 		return (((this.flags as number) & flags[flag]) > 0);
 	};
 
-	setFlag (flag: number) {
+	setFlag(flag: ChannelMode): number {
 		return this.flags = (this.flags as number) | flags[flag];
-	};
+	}
 
-	getMode () {
+	getMode(): number | undefined {
 		return this.flags && (this.flags & flags.MODE_ALL);
-	};
+	}
 
-	encodeModesToFlags (modes: number[]) {
+	encodeModesToFlags(modes: ChannelMode[]): void {
 		modes.forEach(mode => this.setFlag(mode));
-	};
+	}
 
-	decodeModesFromFlags () {
+	decodeModesFromFlags(): string[] | undefined {
 		const modes: string[] = [];
 		ProtocolMessage.channelModes.forEach(mode => {
 			if (this.hasFlag(mode)) {
 				modes.push(mode);
-			};
+			}
 		});
 		return modes.length > 0 ? modes : undefined;
-	};
+	}
 
 	static serialize = Utils.encodeBody;
 
-	static deserialize = function(serialized: unknown, format: Utils.Format) {
-		const deserialized = Utils.decodeBody(serialized, format);
+	static deserialize = function(serialized: unknown, format?: Utils.Format): ProtocolMessage {
+		const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, format);
 		return ProtocolMessage.fromDeserialized(deserialized);
 	};
 
-	static fromDeserialized = function(deserialized: any) {
+	static fromDeserialized = function(deserialized: Record<string, unknown>): ProtocolMessage {
 		const error = deserialized.error;
-		if(error) deserialized.error = ErrorInfo.fromValues(error);
-		const messages = deserialized.messages;
+		if(error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
+		const messages = deserialized.messages as Message[];
 		if(messages) for(let i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
-		const presence = deserialized.presence;
+		const presence = deserialized.presence as PresenceMessage[];
 		if(presence) for(let i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
 		return Object.assign(new ProtocolMessage(), deserialized);
 	};
 
-	static fromValues (values: unknown) {
+	static fromValues (values: unknown): ProtocolMessage {
 		return Object.assign(new ProtocolMessage(), values);
-	};
+	}
 
-	static stringify = function(msg: any) {
+	static stringify = function(msg: any): string {
 		let result = '[ProtocolMessage';
 		if(msg.action !== undefined)
 			result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
@@ -166,7 +169,7 @@ class ProtocolMessage {
 	};
 
 	/* Only valid for channel messages */
-	static isDuplicate = function(a: any, b: any) {
+	static isDuplicate = function(a: any, b: any): boolean {
 		if (a && b) {
 			if ((a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
 				(a.action === b.action) &&

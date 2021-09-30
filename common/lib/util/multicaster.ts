@@ -1,11 +1,18 @@
 import Logger from './logger';
 
+type AnyFunction = (...args: any[]) => unknown;
+
+export interface MulticasterInstance extends Function {
+	(...args: unknown[]): void;
+	push: (fn: AnyFunction) => void;
+}
+
 class Multicaster {
-	members: Array<Function>;
+	members: Array<AnyFunction>;
 
   // Private constructor; use static Multicaster.create instead
-	private constructor(members?: Array<Function>) {
-		this.members = members || [];
+	private constructor(members?: Array<AnyFunction | undefined>) {
+		this.members = members as Array<AnyFunction> || [];
 	}
 
 	call(...args: unknown[]): void {
@@ -24,16 +31,16 @@ class Multicaster {
 		}
 	}
 
-	push(...args: Array<Function>): void {
+	push(...args: Array<AnyFunction>): void {
 		this.members.push(...args);
 	}
 
-	static create(members?: Array<Function>) {
+	static create(members?: Array<AnyFunction | undefined>): MulticasterInstance {
 		const instance = new Multicaster(members);
 		return Object.assign(
       (...args: unknown[]) => instance.call(...args),
       {
-        push: (fn: Function) => instance.push(fn)
+        push: (fn: AnyFunction) => instance.push(fn)
       }
 		);
 	}
