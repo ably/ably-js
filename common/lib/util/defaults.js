@@ -4,6 +4,7 @@ import Utils from './utils';
 import BufferUtils from 'platform-bufferutils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
+import { version } from '../../../package.json';
 
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
@@ -35,7 +36,7 @@ Defaults.errorReportingHeaders = {
 	"Content-Type": "application/json"
 };
 
-Defaults.version          = '1.2.14';
+Defaults.version          = version;
 Defaults.apiVersion       = '1.2';
 
 var agent = 'ably-js/' + Defaults.version;
