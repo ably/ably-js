@@ -9,7 +9,7 @@ type ClientOptions = any;
 
 const version = '1.2.14';
 
-var agent = 'ably-js/' + version;
+let agent = 'ably-js/' + version;
 if (Platform.agent) {
 	agent += ' ' + Platform.agent;
 }
@@ -60,25 +60,25 @@ const Defaults = {
 	normaliseOptions,
 }
 
-export function getHost(options: ClientOptions, host: string, ws: boolean) {
+export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
 	if(ws)
 		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
 	else
 		host = host || options.restHost;
 
-	return host;
-};
+	return host as string;
+}
 
-export function getPort(options: ClientOptions, tls: boolean) {
+export function getPort(options: ClientOptions, tls?: boolean): number | undefined {
 	return (tls || options.tls) ? options.tlsPort : options.port;
-};
+}
 
-export function getHttpScheme (options: ClientOptions) {
+export function getHttpScheme (options: ClientOptions): string {
 	return options.tls ? 'https://' : 'http://';
-};
+}
 
 // construct environment fallback hosts as per RSC15i
-export function environmentFallbackHosts (environment: string) {
+export function environmentFallbackHosts (environment: string): string[] {
 	return [
 		environment + '-a-fallback.ably-realtime.com',
 		environment + '-b-fallback.ably-realtime.com',
@@ -86,36 +86,36 @@ export function environmentFallbackHosts (environment: string) {
 		environment + '-d-fallback.ably-realtime.com',
 		environment + '-e-fallback.ably-realtime.com'
 	];
-};
+}
 
-export function getFallbackHosts (options: ClientOptions) {
-	var fallbackHosts = options.fallbackHosts,
+export function getFallbackHosts (options: ClientOptions): string[] {
+	const fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
 	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
-};
-
-export function getHosts (options: ClientOptions) {
-	return [options.restHost].concat(getFallbackHosts(options));
-};
-
-function checkHost(host: string) {
-	if(typeof host !== 'string') {
-		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
-	};
-	if(!host.length) {
-		throw new ErrorInfo('host must not be zero-length', 40000, 400);
-	};
 }
 
-export function objectifyOptions(options: ClientOptions) {
+export function getHosts (options: ClientOptions): string[] {
+	return [options.restHost].concat(getFallbackHosts(options));
+}
+
+function checkHost(host: string): void {
+	if(typeof host !== 'string') {
+		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+	}
+	if(!host.length) {
+		throw new ErrorInfo('host must not be zero-length', 40000, 400);
+	}
+}
+
+export function objectifyOptions(options: ClientOptions | string): ClientOptions {
 	if(typeof options == 'string') {
 		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
 	}
 	return options;
-};
+}
 
-export function normaliseOptions(options: ClientOptions) {
+export function normaliseOptions(options: ClientOptions): ClientOptions {
 	/* Deprecated options */
 	if(options.host) {
 		Logger.deprecated('host', 'restHost');
@@ -133,14 +133,14 @@ export function normaliseOptions(options: ClientOptions) {
 	if(options.fallbackHostsUseDefault) {
 		/* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
 		if(options.fallbackHosts) {
-			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
+			const msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* default fallbacks can't be used with custom ports */
 		if(options.port || options.tlsPort) {
-			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
+			const msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
@@ -158,7 +158,7 @@ export function normaliseOptions(options: ClientOptions) {
 
 	if(options.recover === true) {
 		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
-		options.recover = function(lastConnectionDetails: unknown, cb: Function) { cb(true); };
+		options.recover = function(lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) { cb(true); };
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
@@ -182,8 +182,8 @@ export function normaliseOptions(options: ClientOptions) {
 		options.queueMessages = true;
 
 	/* infer hosts and fallbacks based on the configured environment */
-	var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-	var production = !environment || (environment === 'production');
+	const environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
+	const production = !environment || (environment === 'production');
 
 	if(!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
 		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : environmentFallbackHosts(environment);
@@ -224,7 +224,7 @@ export function normaliseOptions(options: ClientOptions) {
 	}
 
 	if(options.clientId) {
-		var headers = options.headers = options.headers || {};
+		const headers = options.headers = options.headers || {};
 		headers['X-Ably-ClientId'] = BufferUtils.base64Encode(BufferUtils.utf8Encode(options.clientId));
 	}
 
@@ -237,11 +237,11 @@ export function normaliseOptions(options: ClientOptions) {
 		options.promises = false;
 	}
 
-        if(options.agents) {
-          for(var key in options.agents) {
-            Defaults.agent += ' ' + key + '/' + options.agents[key];
-          }
-        }
+	if(options.agents) {
+		for(var key in options.agents) {
+			Defaults.agent += ' ' + key + '/' + options.agents[key];
+		}
+	}
 
 	return options;
 };
