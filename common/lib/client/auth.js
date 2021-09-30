@@ -53,7 +53,7 @@ var Auth = (function() {
 		if(typeof(capability) == 'string')
 			capability = JSON.parse(capability);
 
-		var c14nCapability = {};
+		var c14nCapability = Object.create(null);
 		var keys = Utils.keysArray(capability, true);
 		if(!keys)
 			return '';

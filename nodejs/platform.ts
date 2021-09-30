@@ -1,7 +1,7 @@
 import IPlatform, { TypedArray } from '../common/types/IPlatform';
 
 const Platform: IPlatform = {
-	libver: 'js-node',
+	agent: 'nodejs/' + process.versions.node,
 	logTimestamps: true,
 	userAgent: null,
 	binaryType: 'nodebuffer',

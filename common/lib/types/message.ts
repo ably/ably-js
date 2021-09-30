@@ -2,12 +2,12 @@ import BufferUtils from 'platform-bufferutils';
 import Logger from '../util/logger';
 import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';
-import { decodeBody, encodeBody, Format } from '../util/encoding';
 import { ChannelOptions } from '../../types/channel';
-import isArray from '../util/isArray';
-import isObject from '../util/isObject';
-import dataSizeBytes from '../util/dataSizeBytes';
 import PresenceMessage from './presencemessage';
+import dataSizeBytes from '../util/dataSizeBytes';
+import isObject from '../util/isObject';
+import isArray from '../util/isArray';
+import { decodeBody, encodeBody, Format } from '../util/encoding';
 
 export type CipherOptions = {
 	channelCipher: {
@@ -48,7 +48,7 @@ function normalizeCipherOptions(options: CipherOptions): CipherOptions {
 		const cipher = Crypto.getCipher(options.cipher);
 		return {
 			cipher: cipher.cipherParams,
-			channelCipher: cipher.cipher,
+			channelCipher: cipher.cipher
 		}
 	}
 	return options;
@@ -69,7 +69,7 @@ function getMessageSize(msg: Message) {
 		size += dataSizeBytes(msg.data);
 	}
 	return size;
-};
+}
 
 class Message {
 	name?: string;
@@ -113,11 +113,11 @@ class Message {
 			connectionKey: this.connectionKey,
 			extras: this.extras,
 			encoding,
-			data,
+			data
 		};
 	}
 
-	toString() {
+	toString(): string {
 		let result = '[Message';
 		if(this.name)
 			result += '; name=' + this.name;
@@ -168,10 +168,10 @@ class Message {
 		});
 	}
 
-	static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
-		let data = msg.data;
+	static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
+		const data = msg.data;
 		let encoding;
-		let nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
+		const nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
 		if (!nativeDataType) {
 			if (isObject(data) || isArray(data)) {
@@ -189,10 +189,10 @@ class Message {
 		}
 	}
 
-	static encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function) {
+	static encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function): void {
 		let processed = 0;
 		for (let i = 0; i < messages.length; i++) {
-			Message.encode(messages[i], options, function(err: Error, msg: Message) {
+			Message.encode(messages[i], options, function(err: Error) {
 				if (err) {
 					callback(err);
 					return;
@@ -207,20 +207,20 @@ class Message {
 
 	static serialize = encodeBody;
 
-	static decode(message: Message | PresenceMessage, inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions) {
+	static decode(message: Message | PresenceMessage, inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions): void {
 		const context = normaliseContext(inputContext);
 
 		let lastPayload = message.data;
 		const encoding = message.encoding;
 		if(encoding) {
-			let xforms = encoding.split('/'),
-				lastProcessedEncodingIndex, encodingsToProcess = xforms.length,
+			const xforms = encoding.split('/');
+			let lastProcessedEncodingIndex, encodingsToProcess = xforms.length,
 				data = message.data;
 
 			let xform = '';
 			try {
 				while((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
-					let match = xforms[--encodingsToProcess].match(/([\-\w]+)(\+([\w\-]+))?/);
+					const match = xforms[--encodingsToProcess].match(/([-\w]+)(\+([\w-]+))?/);
 					if(!match) break;
 					xform = match[1];
 					switch(xform) {
@@ -238,7 +238,7 @@ class Message {
 							continue;
 						case 'cipher':
 							if(context.channelOptions != null && context.channelOptions.cipher && context.channelOptions.channelCipher) {
-								let xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
+								const xformAlgorithm = match[3], cipher = context.channelOptions.channelCipher;
 								/* don't attempt to decrypt unless the cipher params are compatible */
 								if(xformAlgorithm != cipher.algorithm) {
 									throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
@@ -279,7 +279,7 @@ class Message {
 					break;
 				}
 			} catch(e) {
-				let err = e as ErrorInfo;
+				const err = e as ErrorInfo;
 				throw new ErrorInfo('Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’', err.code || 40013, 400);
 			} finally {
 				message.encoding = (lastProcessedEncodingIndex as number <= 0) ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
@@ -289,7 +289,7 @@ class Message {
 		context.baseEncodedPreviousPayload = lastPayload;
 	}
 
-	static fromResponseBody(body: Array<Message>, options: ChannelOptions | EncodingDecodingContext, format: Format): Message[] {
+	static fromResponseBody(body: Array<Message>, options: ChannelOptions | EncodingDecodingContext, format?: Format): Message[] {
 		if(format) {
 			body = decodeBody(body, format);
 		}
@@ -309,13 +309,13 @@ class Message {
 		return Object.assign(new Message(), values);
 	}
 
-	static fromValuesArray (values: unknown[]) {
+	static fromValuesArray (values: unknown[]): Message[] {
 		const count = values.length, result = new Array(count);
 		for(let i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
 		return result;
-	};
+	}
 
-	static fromEncoded (encoded: unknown, inputOptions: CipherOptions) {
+	static fromEncoded (encoded: unknown, inputOptions: CipherOptions): Message {
 		const msg = Message.fromValues(encoded);
 		const options = normalizeCipherOptions(inputOptions);
 		/* if decoding fails at any point, catch and return the message decoded to
@@ -326,25 +326,25 @@ class Message {
 			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
 		}
 		return msg;
-	};
+	}
 
-	static fromEncodedArray (encodedArray: Array<unknown>, options: CipherOptions) {
+	static fromEncodedArray (encodedArray: Array<unknown>, options: CipherOptions): Message[] {
 		normalizeCipherOptions(options);
 		return encodedArray.map(function(encoded) {
 			return Message.fromEncoded(encoded, options);
 		})
-	};
+	}
 
 	/* This should be called on encode()d (and encrypt()d) Messages (as it
 	 * assumes the data is a string or buffer) */
-	static getMessagesSize (messages: Message[]) {
+	static getMessagesSize (messages: Message[]): number {
 		let msg, total = 0;
 		for(let i=0; i<messages.length; i++) {
 			msg = messages[i];
 			total += (msg.size || (msg.size = getMessageSize(msg)))
 		}
 		return total;
-	};
+	}
 
 }
 

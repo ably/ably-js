@@ -8,8 +8,8 @@ enum LogLevels {
     Micro = 4,
 }
 
-function pad(str: unknown, three?: number) {
-    return ('000' + str).slice(-2-(three || 0));
+function pad(timeSegment: number, three?: number) {
+    return `${timeSegment}`.padStart(three ? 3 : 2, '0');
 }
 
 function getHandler(logger: Function): Function {

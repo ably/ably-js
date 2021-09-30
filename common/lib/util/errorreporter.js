@@ -22,7 +22,7 @@ var ErrorReporter = (function() {
 		var event = {
 			event_id: eventId,
 			tags: Utils.mixin({
-				lib: Platform.libver
+				ablyAgent: Defaults.agent
 			}, tags),
 			platform: 'javascript',
 			level: level,

@@ -2,6 +2,34 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.14](https://github.com/ably/ably-js/tree/1.2.14) (2021-09-22)
+- Add TypeScript support for REST publish parameters [\#785](https://github.com/ably/ably-js/pull/785)
+- Fix a bug with parsing of authUrl responses [\#793](https://github.com/ably/ably-js/pull/793)
+
+## [1.2.13](https://github.com/ably/ably-js/tree/1.2.13) (2021-08-03)
+- Implement RTL5b and RTL5j cases for detaching from channels in suspended/failed states [\#784](https://github.com/ably/ably-js/pull/784)
+
+## [1.2.12](https://github.com/ably/ably-js/tree/1.2.12) (2021-08-02)
+- Fix channel names as object prototype keys [\#777](https://github.com/ably/ably-js/pull/777)
+- Add .once method to EventEmitter [\#779](https://github.com/ably/ably-js/pull/779)
+- Bump ws from 5.2.2 to 5.2.3 [\#781](https://github.com/ably/ably-js/pull/781)
+- Implement Ably-Agent connection param for ably-js and NodeJS versions [\#740](https://github.com/ably/ably-js/pull/740)
+
+## [1.2.11](https://github.com/ably/ably-js/tree/1.2.11) (2021-07-20)
+- Bind setImmediate to global object in browsers [\#774](https://github.com/ably/ably-js/pull/774)
+
+## [1.2.10](https://github.com/ably/ably-js/tree/1.2.10) (2021-05-28)
+- Add Playwright tests [\#738](https://github.com/ably/ably-js/pull/738)
+- Improve Mocha tests [\#739](https://github.com/ably/ably-js/pull/739)
+- Bump grunt from 0.4.5 to 1.3.0 [\#744](https://github.com/ably/ably-js/pull/744)
+- Add initial typescript toolchain [\#745](https://github.com/ably/ably-js/pull/745)
+- Update react native usage instructions in README [\#746](https://github.com/ably/ably-js/pull/746)
+- Webworker support [\#756](https://github.com/ably/ably-js/pull/756)
+- Use setImmediate if available in browser [\#757](https://github.com/ably/ably-js/pull/757)
+- Add sourcemap stuff [\#758](https://github.com/ably/ably-js/pull/758)
+- ably.io -> ably.com [\#759](https://github.com/ably/ably-js/pull/759)
+- Improve api typings [\#761](https://github.com/ably/ably-js/pull/761)
+
 ## [1.2.9](https://github.com/ably/ably-js/tree/1.2.9) (2021-04-12)
 - Fix bugs in disconnection error filtering [\#734](https://github.com/ably/ably-js/pull/734)
 - Replace fury badges with shields.io [\#716](https://github.com/ably/ably-js/pull/716)

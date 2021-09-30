@@ -1,5 +1,5 @@
 type ChannelParams = { [key: string]: string };
-type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
+export type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
 type ChannelModes = Array<ChannelMode>;
 
 export interface ChannelOptions {

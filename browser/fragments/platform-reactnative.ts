@@ -3,7 +3,7 @@ import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import IPlatform from '../../common/types/IPlatform';
 
 const Platform: IPlatform = {
-	libver: 'js-rn',
+	agent: 'reactnative',
 	logTimestamps: true,
 	noUpgrade: false,
 	binaryType: 'arraybuffer',
