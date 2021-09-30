@@ -49,6 +49,20 @@ Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.
 
     npm run test:karma
 
+### Debugging the mocha tests locally with a debugger
+
+Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
+
+    node --inspect-brk=9229 node_modules/.bin/grunt test:mocha
+
+Alternatively you can also run the tests for single file
+
+    node --inspect-brk=9229 node_modules/.bin/grunt test:mocha --test=test/spec/presence.test.js
+
+The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
+file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
+browser/static directory, not the raw source files, and breakpoints in files under spec/test should work directly.
+
 ### Debugging the tests in a browser with Mocha test runner
 
 Run the following command to start a local Mocha test runner web server

@@ -2,6 +2,8 @@ import Platform from 'platform';
 import Defaults from './defaults';
 import BufferUtils from 'platform-bufferutils';
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 var Utils = (function() {
 	var msgpack = Platform.msgpack;
 
@@ -21,9 +23,8 @@ var Utils = (function() {
 		for(var i = 1; i < arguments.length; i++) {
 			var source = arguments[i];
 			if(!source) { break; }
-			var hasOwnProperty = source.hasOwnProperty;
 			for(var key in source) {
-				if(!hasOwnProperty || hasOwnProperty.call(source, key)) {
+				if(hasOwnProperty.call(source, key)) {
 					target[key] = source[key];
 				}
 			}
@@ -235,7 +236,7 @@ var Utils = (function() {
 	Utils.keysArray = function(ob, ownOnly) {
 		var result = [];
 		for(var prop in ob) {
-			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			if(ownOnly && !hasOwnProperty.call(ob, prop)) continue;
 			result.push(prop);
 		}
 		return result;
@@ -251,7 +252,7 @@ var Utils = (function() {
 	Utils.valuesArray = function(ob, ownOnly) {
 		var result = [];
 		for(var prop in ob) {
-			if(ownOnly && !ob.hasOwnProperty(prop)) continue;
+			if(ownOnly && !hasOwnProperty.call(ob, prop)) continue;
 			result.push(ob[prop]);
 		}
 		return result;
@@ -259,7 +260,7 @@ var Utils = (function() {
 
 	Utils.forInOwnNonNullProps = function(ob, fn) {
 		for (var prop in ob) {
-			if (Object.prototype.hasOwnProperty.call(ob, prop) && ob[prop]) {
+			if (hasOwnProperty.call(ob, prop) && ob[prop]) {
 				fn(prop);
 			}
 		}
@@ -347,7 +348,7 @@ var Utils = (function() {
 		return {
 			accept: accept,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 
@@ -359,7 +360,7 @@ var Utils = (function() {
 			accept: accept,
 			'content-type': contentType,
 			'X-Ably-Version': Defaults.apiVersion,
-			'X-Ably-Lib': Defaults.libstring
+			'Ably-Agent': Defaults.agent
 		};
 	};
 
