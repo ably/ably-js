@@ -357,8 +357,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 					return;
 				}
 				closeAndFinish(done, clientRealtime);
+			}, function onPresenceSubscribe(err) {
+				if (err) {
+					closeAndFinish(done, clientRealtime, err);
+					return;
+				}
+				clientChannel.presence.enter();
 			});
-			clientChannel.presence.enter();
 			monitorConnection(done, clientRealtime);
 		});
 
@@ -1471,7 +1476,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 						channel.attach(cb);
 					},
 					function (cb) {
-						channel.presence.members.waitSync(cb);
+						if (!channel.presence.syncComplete) {
+							channel.presence.members.waitSync(cb);
+						} else {
+							cb();
+						}
 					},
 					function (cb) {
 						channel.presence.enterClient('one', 'onedata');
@@ -1553,9 +1562,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 			);
 		});
 
-		/* RTP5c3
+		/* RTP17e
 		 * Test failed presence auto-re-entering */
-		it('presence_failed_auto_reenter', function (done) {
+		it.skip('presence_failed_auto_reenter', function (done) {
 			var channelName = 'presence_failed_auto_reenter',
 				realtime,
 				channel,
@@ -1581,6 +1590,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 					},
 					function (cb) {
 						channel.attach(cb);
+					},
+					function (cb) {
+						if (!channel.presence.syncComplete) {
+							channel.presence.members.waitSync(cb);
+						} else {
+							cb();
+						}
 					},
 					function (cb) {
 						channel.presence.get(function (err, members) {

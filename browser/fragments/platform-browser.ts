@@ -20,7 +20,7 @@ const userAgent = global.navigator && global.navigator.userAgent.toString();
 const currentUrl = global.location && global.location.href;
 
 const Platform: IPlatform = {
-	libver: 'js-web',
+	agent: 'browser',
 	logTimestamps: true,
 	userAgent: userAgent,
 	currentUrl: currentUrl,
@@ -38,7 +38,7 @@ const Platform: IPlatform = {
 	preferBinary: false,
 	ArrayBuffer: global.ArrayBuffer,
 	atob: global.atob,
-	nextTick: function(f: Function) { setTimeout(f, 0); },
+	nextTick: typeof setImmediate !== 'undefined' ? global.setImmediate.bind(global) : function(f: () => void) { setTimeout(f, 0); },
 	addEventListener: global.addEventListener as unknown as null, // This is not ideal but TypeScript doesn't seem to allow anything else here
 	inspect: JSON.stringify,
 	stringByteSize: function(str: string) {

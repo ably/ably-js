@@ -465,7 +465,7 @@ var RealtimePresence = (function() {
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;
-		this.map = {};
+		this.map = Object.create(null);
 		this.syncInProgress = false;
 		this.residualMembers = null;
 	}

@@ -1,8 +1,10 @@
 # [Ably](https://www.ably.com)
 
+_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
+
 [![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
 
-A JavaScript client library for [Ably Realtime](https://www.ably.com), a realtime data delivery platform.
+This is a JavaScript client library for Ably Realtime.
 
 This library currently targets the [Ably client library features spec](https://www.ably.com/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
 
@@ -10,7 +12,7 @@ This library currently targets the [Ably client library features spec](https://w
 
 This SDK supports the following platforms:
 
-**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers. We also support running `ably-js` inside a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context.
+**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers.
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
@@ -22,6 +24,11 @@ This SDK supports the following platforms:
 
 **TypeScript:** see [below](#typescript)
 
+**WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
+```js
+import Ably from 'ably/browser/static/ably-webworker.min';
+```
+
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
 However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.com) for advice.
@@ -29,9 +36,9 @@ However, we aim to be compatible with a much wider set of platforms and browsers
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.
 Known browser incompatibilities will be documented as an issue in this repository using the ["compatibility" label](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
 
-#### Version: 1.2.9
+#### Version: 1.2.14
 
-The latest stable version of the Ably JavaScript client library is version: 1.2.9 .
+The latest stable version of the Ably JavaScript client library is version: 1.2.14 .
 
 For complete API documentation, see the [Ably documentation](https://www.ably.com/documentation).
 
