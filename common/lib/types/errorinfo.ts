@@ -1,13 +1,13 @@
-import Utils from "../util/utils";
+import * as Utils from "../util/utils";
 
 export default class ErrorInfo {
 	message?: string;
-	code?: number;
+	code?: number | null;
 	statusCode?: number;
-	cause?: string | Error;
+	cause?: string | Error | ErrorInfo;
 	href?: string;
 
-	constructor(message?: string, code?: number, statusCode?: number, cause?: string | Error) {
+	constructor(message?: string, code?: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
 		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;

@@ -1,6 +1,6 @@
 import Logger from '../util/logger';
 import Platform from 'platform';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Http from 'platform-http';
 import Multicaster from '../util/multicaster';
 import BufferUtils from 'platform-bufferutils';
@@ -53,7 +53,7 @@ var Auth = (function() {
 		if(typeof(capability) == 'string')
 			capability = JSON.parse(capability);
 
-		var c14nCapability = {};
+		var c14nCapability = Object.create(null);
 		var keys = Utils.keysArray(capability, true);
 		if(!keys)
 			return '';

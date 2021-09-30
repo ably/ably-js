@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Rest from './rest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -37,8 +37,8 @@ var Realtime = (function() {
 	function Channels(realtime) {
 		EventEmitter.call(this);
 		this.realtime = realtime;
-		this.all = {};
-		this.inProgress = {};
+		this.all = Object.create(null);
+		this.inProgress = Object.create(null);
 		var self = this;
 		realtime.connection.connectionManager.on('transport.active', function() {
 			self.onTransportActive();

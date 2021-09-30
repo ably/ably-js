@@ -9,7 +9,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 		this.timeout(60 * 1000);
 		before(function (done) {
 			helper.setupApp(function () {
-				rest = helper.AblyRest();
+				rest = helper.AblyRest({
+                                  agents: {
+                                    'custom-agent': '0.1.2'
+                                  }
+                                });
 				done();
 			});
 		});
@@ -17,39 +21,42 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 		/**
 		 * RSC7a
 		 */
-		it('Should send X-Ably-Version and X-Ably-Lib headers in get/post requests', function (done) {
+		it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', function (done) {
 			//Intercept get&post methods with test
-			var get_inner = Ably.Rest.Http.get;
-			Ably.Rest.Http.get = function (rest, path, headers, params, callback) {
+			function testRequestHandler(_, __, headers) {
 				try {
-				expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
-				expect('X-Ably-Lib' in headers, 'Verify lib header exists').to.be.ok;
+					expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
+					expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
 
-				// This test should not directly validate version against Defaults.version, as
-				// ultimately the version header has been derived from that value.
-				expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
-				expect(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring').to.be.ok;
+					// This test should not directly validate version against Defaults.version, as
+					// ultimately the version header has been derived from that value.
+					expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
+					expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
+					expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
+
+					// We don't test on NativeScript so a check for that platform is excluded here
+					if (typeof document !== 'undefined') {
+						// browser
+						expect(headers['Ably-Agent'].indexOf('browser') > -1, 'Verify agent').to.be.ok;
+					} else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+						// reactnative
+						expect(headers['Ably-Agent'].indexOf('reactnative') > -1, 'Verify agent').to.be.ok;
+					} else {
+						// node
+						expect(headers['Ably-Agent'].indexOf('nodejs') > -1, 'Verify agent').to.be.ok;
+					}
 				} catch (err) {
 					done(err);
 				}
-			};
+			}
+
+			var get_inner = Ably.Rest.Http.get;
+			Ably.Rest.Http.get = testRequestHandler;
 
 			var post_inner = Ably.Rest.Http.post;
-			Ably.Rest.Http.post = function (rest, path, headers, body, params, callback) {
-				try {
-				expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
-				expect('X-Ably-Lib' in headers, 'Verify lib header exists').to.be.ok;
+			Ably.Rest.Http.post = testRequestHandler;
 
-				// This test should not directly validate version against Defaults.version, as
-				// ultimately the version header has been derived from that value.
-				expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
-				expect(headers['X-Ably-Lib'].indexOf(Defaults.version) > -1, 'Verify libstring').to.be.ok;
-				} catch (err) {
-					done(err);
-				}
-			};
-
-			//Call all methods that use rest http calls
+			// Call all methods that use rest http calls
 			rest.auth.requestToken();
 			rest.time();
 			rest.stats();
@@ -57,7 +64,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 			channel.publish('test', 'Testing http headers');
 			channel.presence.get();
 
-			//Clean interceptors from get&post methods
+			// Clean interceptors from get&post methods
 			Ably.Rest.Http.get = get_inner;
 			Ably.Rest.Http.post = post_inner;
 

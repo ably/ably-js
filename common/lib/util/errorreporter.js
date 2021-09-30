@@ -1,4 +1,4 @@
-import Utils from './utils';
+import * as Utils from './utils';
 import Platform from 'platform';
 import Defaults from '../util/defaults';
 import Logger from './logger';
@@ -22,7 +22,7 @@ var ErrorReporter = (function() {
 		var event = {
 			event_id: eventId,
 			tags: Utils.mixin({
-				lib: Platform.libver
+				ablyAgent: Defaults.agent
 			}, tags),
 			platform: 'javascript',
 			level: level,

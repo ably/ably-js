@@ -113,6 +113,11 @@ declare namespace Types {
 		fallbackHosts?: string[];
 		fallbackHostsUseDefault?: boolean;
 
+        restAgentOptions?: {
+            maxSockets?: number,
+            keepAlive?: boolean,
+        }
+
 		/**
 		 * Can be used to explicitly recover a connection.
 		 * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
@@ -142,6 +147,12 @@ declare namespace Types {
 		idempotentRestPublishing?: boolean;
 		transportParams?: {[k: string]: string};
 		transports?: Transport[];
+
+		httpMaxRetryCount?: number;
+		httpMaxRetryDuration?: number;
+		httpOpenTimeout?: number;
+		httpRequestTimeout?: number;
+
 	}
 
 	interface AuthOptions {
@@ -508,23 +519,30 @@ declare namespace Types {
 	class ChannelCallbacks extends ChannelBase {
 		presence: PresenceCallbacks;
 		history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
-		publish: (messagesOrName: any, messagedataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
+                publish(messages: any, callback?: errorCallback): void;
+                publish(name: string, messages: any, callback?: errorCallback): void;
+                publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 	}
 
 	class ChannelPromise extends ChannelBase {
 		presence: PresencePromise;
 		history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
-		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+		publish(messages: any, options?: PublishOptions): Promise<void>;
+		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 	}
 
 	class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
-		name: string;
+		readonly name: string;
 		errorReason: ErrorInfo;
-		state: ChannelState;
+		readonly state: ChannelState;
 		params: ChannelParams;
 		modes: ChannelModes;
 		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
 	}
+
+    type PublishOptions = {
+        quickAck?: boolean;
+    }
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
 		presence: RealtimePresenceCallbacks;
@@ -533,7 +551,9 @@ declare namespace Types {
 		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
 		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
-		publish: (messagesOrName: any, messageDataOrCallback?: errorCallback | any, callback?: errorCallback) => void;
+		publish(messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
 	}
 
@@ -544,7 +564,8 @@ declare namespace Types {
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
 		setOptions: (options: ChannelOptions) => Promise<void>;
 		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
-		publish: (messagesOrName: any, messageData?: any) => Promise<void>;
+		publish(messages: any, options?: PublishOptions): Promise<void>;
+		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
 	}
 
@@ -612,7 +633,7 @@ declare namespace Types {
 		key: string;
 		recoveryKey: string;
 		serial: number;
-		state: ConnectionState;
+		readonly state: ConnectionState;
 		close: () => void;
 		connect: () => void;
 	}
