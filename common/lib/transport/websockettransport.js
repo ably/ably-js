@@ -1,5 +1,5 @@
 import Platform from 'platform';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Transport from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
@@ -40,13 +40,8 @@ var WebSocketTransport = function(connectionManager) {
 	};
 
 	WebSocketTransport.prototype.createWebSocket = function(uri, connectParams) {
-		var paramCount = 0;
-		if(connectParams) {
-			for(var key in connectParams)
-				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
-		}
-		this.uri = uri;
-		return new WebSocket(uri);
+		this.uri = uri + Utils.toQueryString(connectParams)
+		return new WebSocket(this.uri);
 	};
 
 	WebSocketTransport.prototype.toString = function() {

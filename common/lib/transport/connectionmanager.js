@@ -1,5 +1,5 @@
 import ProtocolMessage from '../types/protocolmessage';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Protocol from './protocol';
 import Defaults from '../util/defaults';
 import Platform from 'platform';
@@ -100,7 +100,7 @@ var ConnectionManager = (function() {
 			params.heartbeats = this.heartbeats;
 		}
 		params.v = Defaults.apiVersion;
-		params.lib = Defaults.libstring;
+		params.agent = Defaults.agent;
 		if(options.transportParams !== undefined) {
 			Utils.mixin(params, options.transportParams);
 		}

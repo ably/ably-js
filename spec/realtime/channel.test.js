@@ -1506,5 +1506,35 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 				}
 			);
 		});
+
+                // RTL5j
+                it('detaching from suspended channel transitions channel to detached state', function (done) {
+                    var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+                    var channelName = 'detach_from_suspended';
+                    var channel = realtime.channels.get(channelName);
+
+                    channel.state = 'suspended';
+                    channel.detach(function () {
+                        expect(channel.state).to.equal('detached', 'Check that detach on suspended channel results in detached channel');
+                        done();
+                    });
+                });
+
+                // RTL5b
+                it('detaching from failed channel results in error', function (done) {
+                    var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+                    var channelName = 'detach_from_failed';
+                    var channel = realtime.channels.get(channelName);
+
+                    channel.state = 'failed';
+
+                    channel.detach(function(err) {
+                      if (!err) {
+                        done(new Error("expected detach to return error response"));
+                        return;
+                      }
+                      done();
+                    });
+                });
 	});
 });

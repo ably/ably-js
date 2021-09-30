@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Presence from './presence';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -465,7 +465,7 @@ var RealtimePresence = (function() {
 	function PresenceMap(presence) {
 		EventEmitter.call(this);
 		this.presence = presence;
-		this.map = {};
+		this.map = Object.create(null);
 		this.syncInProgress = false;
 		this.residualMembers = null;
 	}

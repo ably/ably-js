@@ -1,6 +1,6 @@
 import Platform from 'platform';
 import Http from 'platform-http';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Auth from './auth';
 import BufferUtils from 'platform-bufferutils';

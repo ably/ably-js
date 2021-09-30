@@ -1,4 +1,4 @@
-import Utils from '../../../common/lib/util/utils';
+import * as Utils from '../../../common/lib/util/utils';
 import EventEmitter from '../../../common/lib/util/eventemitter';
 import Platform from 'platform';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
@@ -221,7 +221,7 @@ var XHRRequest = (function() {
 				return;
 			}
 
-			var err = responseBody.error && ErrorInfo.fromValues(responseBody.error);
+			var err = headers['x-ably-errorcode'] && responseBody.error && ErrorInfo.fromValues(responseBody.error);
 			if(!err) {
 				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}

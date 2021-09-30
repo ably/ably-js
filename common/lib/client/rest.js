@@ -1,5 +1,5 @@
 import Platform from 'platform';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
 import Auth from './auth';
@@ -175,7 +175,7 @@ var Rest = (function() {
 
 	function Channels(rest) {
 		this.rest = rest;
-		this.all = {};
+		this.all = Object.create(null);
 	}
 
 	Channels.prototype.get = function(name, channelOptions) {

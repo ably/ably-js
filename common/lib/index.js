@@ -1,6 +1,6 @@
 import Rest from './client/rest';
 import Realtime from './client/realtime';
-import Utils from './util/utils';
+import * as Utils from './util/utils';
 import BufferUtils from 'platform-bufferutils';
 import Crypto from 'platform-crypto';
 import Defaults from '../lib/util/defaults';

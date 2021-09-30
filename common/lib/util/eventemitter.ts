@@ -1,4 +1,4 @@
-import Utils from './utils';
+import * as Utils from './utils';
 import Logger from './logger';
 import Platform from 'platform';
 
@@ -38,7 +38,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 		} else if (Utils.isObject(listeners)) {
 			/* events */
 			for (eventName in listeners) {
-				if (listeners.hasOwnProperty(eventName) && Utils.isArray(listeners[eventName])) {
+				if (Object.prototype.hasOwnProperty.call(listeners, eventName) && Utils.isArray(listeners[eventName])) {
 					removeListener([listeners], listener, eventName);
 				}
 			}
@@ -54,9 +54,9 @@ class EventEmitter {
 
 	constructor() {
 		this.any = [];
-		this.events = {};
+		this.events = Object.create(null);
 		this.anyOnce = [];
-		this.eventsOnce = {};
+		this.eventsOnce = Object.create(null);
 	}
 
 	/**
@@ -88,12 +88,12 @@ class EventEmitter {
 	 * @param listener (optional) the listener to remove. If not
 	 *        supplied, all listeners are removed.
 	 */
-	off (event: string | null, listener: Function) {
+	off(event: string | null, listener: Function) {
 		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
 			this.any = [];
-			this.events = {};
+			this.events = Object.create(null);
 			this.anyOnce = [];
-			this.eventsOnce = {};
+			this.eventsOnce = Object.create(null);
 			return;
 		}
 		if(arguments.length == 1) {
@@ -178,6 +178,8 @@ class EventEmitter {
 	 */
 	once(event: string, listener: Function) {
 		const argCount = arguments.length;
+		const self = this;
+
 		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
 			return new Platform.Promise((resolve) => {
 				this.once(event, resolve);
@@ -188,7 +190,16 @@ class EventEmitter {
 		} else if(Utils.isEmptyArg(event)) {
 			this.anyOnce.push(listener);
 		} else if(Utils.isArray(event)){
-			throw("Arrays of events can only be used with on(), not once()");
+			var listenerWrapper = function(this: any) {
+				var args = Array.prototype.slice.call(arguments);
+				Utils.arrForEach(event, function(ev) {
+					self.off(ev, listenerWrapper);
+				});
+				listener.apply(this, args);
+			};
+			Utils.arrForEach(event, function(ev) {
+				self.on(ev, listenerWrapper);
+			});
 		} else {
 			const listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
 			listeners.push(listener);

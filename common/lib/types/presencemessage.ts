@@ -1,7 +1,7 @@
 import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
 import Message, { CipherOptions } from './message';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 
 function toActionValue(actionString: string) {
 	return PresenceMessage.Actions.indexOf(actionString);
@@ -30,13 +30,13 @@ class PresenceMessage {
 	 * disconnection). This is useful because synthesized messages cannot be
 	 * compared for newness by id lexicographically - RTP2b1
 	 */
-	isSynthesized() {
+	isSynthesized(): boolean {
 		if (!this.id || !this.connectionId) { return true }
 		return this.id.substring(this.connectionId.length, 0) !== this.connectionId;
-	};
+	}
 
 	/* RTP2b2 */
-	parseId() {
+	parseId(): { connectionId: string, msgSerial: number, index: number } {
 		if (!this.id) throw new Error('parseId(): Presence message does not contain an id');
 		const parts = this.id.split(':');
 		return {
@@ -44,13 +44,18 @@ class PresenceMessage {
 			msgSerial: parseInt(parts[1], 10),
 			index: parseInt(parts[2], 10)
 		};
-	};
+	}
 
 	/**
 	 * Overload toJSON() to intercept JSON.stringify()
 	 * @return {*}
 	 */
-	toJSON() {
+	toJSON(): {
+		clientId?: string,
+		action: number,
+		data: string | Buffer,
+		encoding?: string,
+	} {
 		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
@@ -73,11 +78,11 @@ class PresenceMessage {
 			/* Convert presence action back to an int for sending to Ably */
 			action: toActionValue(this.action as string),
 			data: data,
-			encoding: encoding,
+			encoding: encoding
 		}
-	};
+	}
 
-	toString() {
+	toString(): string {
 		let result = '[PresenceMessage';
 		result += '; action=' + this.action;
 		if(this.id)
@@ -100,42 +105,43 @@ class PresenceMessage {
 		}
 		result += ']';
 		return result;
-	};
+	}
 
 	static encode = Message.encode;
 	static decode = Message.decode;
 
-	static fromResponseBody(body: unknown[], options: CipherOptions, format: Utils.Format) {
+	static fromResponseBody(body: Record<string, unknown>[], options: CipherOptions, format?: Utils.Format): PresenceMessage[] {
+		const messages: PresenceMessage[] = [];
 		if(format) {
 			body = Utils.decodeBody(body, format);
 		}
 
 		for(let i = 0; i < body.length; i++) {
-			let msg = body[i] = PresenceMessage.fromValues(body[i], true);
+			const msg = messages[i] = PresenceMessage.fromValues(body[i], true);
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
 				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
 			}
 		}
-		return body;
-	};
+		return messages;
+	}
 	
-	static fromValues(values: any, stringifyAction?: boolean): PresenceMessage {
+	static fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage {
 		if(stringifyAction) {
-			values.action = PresenceMessage.Actions[values.action]
+			values.action = PresenceMessage.Actions[values.action as number]
 		}
 		return Object.assign(new PresenceMessage(), values);
-	};
+	}
 	
-	static fromValuesArray(values: unknown[]) {
+	static fromValuesArray(values: unknown[]): PresenceMessage[] {
 		const count = values.length, result = new Array(count);
-		for(let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i]);
+		for(let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i] as Record<string, unknown>);
 		return result;
-	};
+	}
 
-	static fromEncoded(encoded: unknown, options: CipherOptions) {
-		let msg = PresenceMessage.fromValues(encoded, true);
+	static fromEncoded(encoded: Record<string, unknown>, options: CipherOptions): PresenceMessage {
+		const msg = PresenceMessage.fromValues(encoded, true);
 		/* if decoding fails at any point, catch and return the message decoded to
 		 * the fullest extent possible */
 		try {
@@ -144,13 +150,13 @@ class PresenceMessage {
 			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
 		}
 		return msg;
-	};
+	}
 
-	static fromEncodedArray(encodedArray: unknown[], options: CipherOptions) {
+	static fromEncodedArray(encodedArray: Record<string, unknown>[], options: CipherOptions): PresenceMessage[] {
 		return encodedArray.map(function(encoded) {
 			return PresenceMessage.fromEncoded(encoded, options);
 		});
-	};
+	}
 
 	static getMessagesSize = Message.getMessagesSize;
 }

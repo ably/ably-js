@@ -1,6 +1,6 @@
 import ProtocolMessage from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Channel from './channel';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
@@ -308,9 +308,15 @@ var RealtimeChannel = (function() {
 			return;
 		}
 		switch(this.state) {
+                        case 'suspended':
+                                this.notifyState('detached');
+                                callback();
+                                break;
 			case 'detached':
-			case 'failed':
 				callback();
+				break;
+			case 'failed':
+				callback(new ErrorInfo('Unable to detach; channel state = failed', 90001, 400));
 				break;
 			default:
 				this.requestState('detaching');
