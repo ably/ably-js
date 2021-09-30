@@ -154,7 +154,7 @@ class ProtocolMessage {
 			result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
 		if(msg.params) {
 			let stringifiedParams = '';
-			Utils.forInOwnNonNullProps(msg.params, function(prop: string) {
+			Utils.forInOwnNonNullProperties(msg.params, function(prop: string) {
 				if (stringifiedParams.length > 0) {
 					stringifiedParams += '; ';
 				}
