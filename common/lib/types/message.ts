@@ -4,7 +4,7 @@ import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 
 export type CipherOptions = {
 	channelCipher: {

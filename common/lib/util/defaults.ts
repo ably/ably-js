@@ -1,7 +1,7 @@
 import PlatformDefaults from 'platform-defaults';
 import Platform from 'platform';
 import BufferUtils from 'platform-bufferutils';
-import Utils from './utils';
+import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
 

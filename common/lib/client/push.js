@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import DeviceDetails from '../types/devicedetails';
 import Resource from './resource';
 import PaginatedResource from './paginatedresource';

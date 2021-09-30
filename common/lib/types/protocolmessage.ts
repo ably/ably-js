@@ -1,5 +1,5 @@
 import { ChannelMode } from '../../types/channel';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';
 import PresenceMessage from './presencemessage';

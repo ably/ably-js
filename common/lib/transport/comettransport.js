@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import ProtocolMessage from '../types/protocolmessage';
 import Transport from '../transport/transport';
 import Logger from '../util/logger';

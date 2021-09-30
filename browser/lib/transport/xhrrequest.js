@@ -1,4 +1,4 @@
-import Utils from '../../../common/lib/util/utils';
+import * as Utils from '../../../common/lib/util/utils';
 import EventEmitter from '../../../common/lib/util/eventemitter';
 import Platform from 'platform';
 import ErrorInfo from '../../../common/lib/types/errorinfo';

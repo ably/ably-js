@@ -1,5 +1,5 @@
 import ProtocolMessage from '../types/protocolmessage';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Protocol from './protocol';
 import Defaults from '../util/defaults';
 import Platform from 'platform';

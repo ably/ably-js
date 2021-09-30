@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
 import Http from 'platform-http';

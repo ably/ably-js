@@ -1,6 +1,6 @@
 import ProtocolMessage from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Channel from './channel';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';

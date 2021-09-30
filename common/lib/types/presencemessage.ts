@@ -1,7 +1,7 @@
 import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
 import Message, { CipherOptions } from './message';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 
 function toActionValue(actionString: string) {
 	return PresenceMessage.Actions.indexOf(actionString);

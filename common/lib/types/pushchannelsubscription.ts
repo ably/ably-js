@@ -1,4 +1,4 @@
-import Utils from "../util/utils";
+import * as Utils from "../util/utils";
 
 type PushChannelSubscriptionObject = {
 	channel?: string,

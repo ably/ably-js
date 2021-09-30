@@ -1,6 +1,6 @@
 import Logger from '../util/logger';
 import Platform from 'platform';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Http from 'platform-http';
 import Multicaster from '../util/multicaster';
 import BufferUtils from 'platform-bufferutils';
