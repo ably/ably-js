@@ -233,7 +233,7 @@ class PushStats {
 
 	constructor(values?: PushValues) {
 		this.messages = (values && values.messages) || 0;
-		let notifications = values && values.notifications;
+		const notifications = values && values.notifications;
 		this.notifications = {
 			invalid: notifications && notifications.invalid || 0,
 			attempted: notifications && notifications.attempted || 0,
@@ -300,7 +300,7 @@ class Stats extends MessageDirections {
 		this.intervalId    = (values && values.intervalId) || undefined;
 	}
 
-	static fromValues(values: StatsValues) {
+	static fromValues(values: StatsValues): Stats {
 		return new Stats(values);
 	}
 }
