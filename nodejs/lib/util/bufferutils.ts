@@ -5,22 +5,22 @@ module BufferUtils {
 
 	/* In node, BufferUtils methods that return binary objects return a Buffer
 	 * for historical reasons; the browser equivalents return ArrayBuffers */
-	export const isBuffer = function(buf: Buffer) { return Buffer.isBuffer(buf) || isArrayBuffer(buf) || ArrayBuffer.isView(buf); };
+	export const isBuffer = function(buffer: Buffer | string): buffer is Buffer { return Buffer.isBuffer(buffer) || isArrayBuffer(buffer) || ArrayBuffer.isView(buffer); };
 
-    export const toBuffer = function(buf: Buffer) {
-		if(Buffer.isBuffer(buf)) {
-			return buf;
+    export const toBuffer = function(buffer: Buffer) {
+		if(Buffer.isBuffer(buffer)) {
+			return buffer;
 		}
-		return Buffer.from(buf);
+		return Buffer.from(buffer);
 	};
 
-	export const toArrayBuffer = function(buf: Buffer) { return toBuffer(buf).buffer; };
+	export const toArrayBuffer = function(buffer: Buffer) { return toBuffer(buffer).buffer; };
 
-	export const base64Encode = function(buf: Buffer) { return toBuffer(buf).toString('base64'); };
+	export const base64Encode = function(buffer: Buffer) { return toBuffer(buffer).toString('base64'); };
 
 	export const base64Decode = function(string: string) { return Buffer.from(string, 'base64'); };
 
-	export const hexEncode = function(buf: Buffer) { return toBuffer(buf).toString('hex'); };
+	export const hexEncode = function(buffer: Buffer) { return toBuffer(buffer).toString('hex'); };
 
 	export const hexDecode = function(string: string) { return Buffer.from(string, 'hex'); };
 
@@ -31,17 +31,17 @@ module BufferUtils {
 	 * can take (in particular allowing strings, which are just interpreted as
 	 * binary); here we ensure that the input is actually a buffer since trying
 	 * to utf8-decode a string to another string is almost certainly a mistake */
-	export const utf8Decode = function(buf: Buffer) {
-		if(!isBuffer(buf)) {
+	export const utf8Decode = function(buffer: Buffer) {
+		if(!isBuffer(buffer)) {
 			throw new Error("Expected input of utf8Decode to be a buffer, arraybuffer, or view");
 		}
-		return toBuffer(buf).toString('utf8');
+		return toBuffer(buffer).toString('utf8');
 	};
 
-	export const bufferCompare = function(buf1: Buffer, buf2: Buffer) {
-		if(!buf1) return -1;
-		if(!buf2) return 1;
-		return buf1.compare(buf2);
+	export const bufferCompare = function(buffer1: Buffer, buffer2: Buffer) {
+		if(!buffer1) return -1;
+		if(!buffer2) return 1;
+		return buffer1.compare(buffer2);
 	};
 
 	export const byteLength = function(buffer: Buffer) {
