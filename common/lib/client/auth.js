@@ -748,7 +748,7 @@ var Auth = (function() {
 			this.tokenDetails = null;
 		}
 
-		(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster())).push(callback);
+		(this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster.create())).push(callback);
 		if(this.currentTokenRequestId !== null && !forceSupersede) {
 			return;
 		}

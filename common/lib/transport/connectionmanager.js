@@ -1600,7 +1600,7 @@ var ConnectionManager = (function() {
 		 * the dup, they'll be lost */
 		if(lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
 			if(!lastQueued.merged) {
-				lastQueued.callback = Multicaster([lastQueued.callback]);
+				lastQueued.callback = Multicaster.create([lastQueued.callback]);
 				lastQueued.merged = true;
 			}
 			lastQueued.callback.push(callback);

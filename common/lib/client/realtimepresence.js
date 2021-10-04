@@ -340,7 +340,7 @@ var RealtimePresence = (function() {
 		if(pendingPresCount) {
 			this.pendingPresence = [];
 			var presenceArray = [];
-			var multicaster = Multicaster();
+			var multicaster = Multicaster.create();
 			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
 			for(var i = 0; i < pendingPresCount; i++) {
 				var event = pendingPresence[i];
