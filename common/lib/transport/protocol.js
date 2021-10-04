@@ -1,5 +1,5 @@
 import ProtocolMessage from '../types/protocolmessage';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import MessageQueue from './messagequeue';

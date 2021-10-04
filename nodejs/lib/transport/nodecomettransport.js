@@ -1,7 +1,7 @@
 "use strict";
 import CometTransport from '../../../common/lib/transport/comettransport';
 import Logger from '../../../common/lib/util/logger';
-import Utils from '../../../common/lib/util/utils';
+import * as Utils from '../../../common/lib/util/utils';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import EventEmitter from '../../../common/lib/util/eventemitter';
 

@@ -1,68 +1,84 @@
-import Defaults from 'platform-defaults';
+import PlatformDefaults from 'platform-defaults';
 import Platform from 'platform';
-import Utils from './utils';
 import BufferUtils from 'platform-bufferutils';
+import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
 
-Defaults.ENVIRONMENT              = '';
-Defaults.REST_HOST                = 'rest.ably.io';
-Defaults.REALTIME_HOST            = 'realtime.ably.io';
-Defaults.FALLBACK_HOSTS           = ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'];
-Defaults.PORT                     = 80;
-Defaults.TLS_PORT                 = 443;
-Defaults.TIMEOUTS = {
-	/* Documented as options params: */
-	disconnectedRetryTimeout   : 15000,
-	suspendedRetryTimeout      : 30000,
-	/* Undocumented, but part of the api and can be used by customers: */
-	httpRequestTimeout         : 15000,
-	channelRetryTimeout        : 15000,
-	fallbackRetryTimeout       : 600000,
-	/* For internal / test use only: */
-	connectionStateTtl         : 120000,
-	realtimeRequestTimeout     : 10000,
-	recvTimeout                : 90000,
-	preferenceConnectTimeout   : 6000,
-	parallelUpgradeDelay       : 6000
-};
-Defaults.httpMaxRetryCount = 3;
-Defaults.maxMessageSize    = 65536;
+type ClientOptions = any;
 
-Defaults.errorReportingUrl = 'https://errors.ably.io/api/15/store/';
-Defaults.errorReportingHeaders = {
-	"X-Sentry-Auth": "Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1",
-	"Content-Type": "application/json"
-};
+const version = '1.2.14';
 
-Defaults.version          = '1.2.14';
-Defaults.apiVersion       = '1.2';
-
-var agent = 'ably-js/' + Defaults.version;
+let agent = 'ably-js/' + version;
 if (Platform.agent) {
 	agent += ' ' + Platform.agent;
-} 
-Defaults.agent = agent;
+}
 
-Defaults.getHost = function(options, host, ws) {
+const Defaults = {
+	...PlatformDefaults,
+	ENVIRONMENT              : '',
+	REST_HOST                : 'rest.ably.io',
+	REALTIME_HOST            : 'realtime.ably.io',
+	FALLBACK_HOSTS           : ['A.ably-realtime.com', 'B.ably-realtime.com', 'C.ably-realtime.com', 'D.ably-realtime.com', 'E.ably-realtime.com'],
+	PORT                     : 80,
+	TLS_PORT                 : 443,
+	TIMEOUTS : {
+		/* Documented as options params: */
+		disconnectedRetryTimeout   : 15000,
+		suspendedRetryTimeout      : 30000,
+		/* Undocumented, but part of the api and can be used by customers: */
+		httpRequestTimeout         : 15000,
+		channelRetryTimeout        : 15000,
+		fallbackRetryTimeout       : 600000,
+		/* For internal / test use only: */
+		connectionStateTtl         : 120000,
+		realtimeRequestTimeout     : 10000,
+		recvTimeout                : 90000,
+		preferenceConnectTimeout   : 6000,
+		parallelUpgradeDelay       : 6000
+	},
+	httpMaxRetryCount : 3,
+	maxMessageSize    : 65536,
+
+	errorReportingUrl : 'https://errors.ably.io/api/15/store/',
+	errorReportingHeaders : {
+		"X-Sentry-Auth": "Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1",
+		"Content-Type": "application/json"
+	},
+
+	version,
+	apiVersion       : '1.2',
+	agent,
+	getHost,
+	getPort,
+	getHttpScheme,
+	environmentFallbackHosts,
+	getFallbackHosts,
+	getHosts,
+	checkHost,
+	objectifyOptions,
+	normaliseOptions,
+}
+
+export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
 	if(ws)
 		host = ((host == options.restHost) && options.realtimeHost) || host || options.realtimeHost;
 	else
 		host = host || options.restHost;
 
-	return host;
-};
+	return host as string;
+}
 
-Defaults.getPort = function(options, tls) {
+export function getPort(options: ClientOptions, tls?: boolean): number | undefined {
 	return (tls || options.tls) ? options.tlsPort : options.port;
-};
+}
 
-Defaults.getHttpScheme = function(options) {
+export function getHttpScheme (options: ClientOptions): string {
 	return options.tls ? 'https://' : 'http://';
-};
+}
 
 // construct environment fallback hosts as per RSC15i
-Defaults.environmentFallbackHosts = function(environment) {
+export function environmentFallbackHosts (environment: string): string[] {
 	return [
 		environment + '-a-fallback.ably-realtime.com',
 		environment + '-b-fallback.ably-realtime.com',
@@ -70,36 +86,36 @@ Defaults.environmentFallbackHosts = function(environment) {
 		environment + '-d-fallback.ably-realtime.com',
 		environment + '-e-fallback.ably-realtime.com'
 	];
-};
+}
 
-Defaults.getFallbackHosts = function(options) {
-	var fallbackHosts = options.fallbackHosts,
+export function getFallbackHosts (options: ClientOptions): string[] {
+	const fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
 	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
-};
-
-Defaults.getHosts = function(options) {
-	return [options.restHost].concat(Defaults.getFallbackHosts(options));
-};
-
-function checkHost(host) {
-	if(typeof host !== 'string') {
-		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
-	};
-	if(!host.length) {
-		throw new ErrorInfo('host must not be zero-length', 40000, 400);
-	};
 }
 
-Defaults.objectifyOptions = function(options) {
+export function getHosts (options: ClientOptions): string[] {
+	return [options.restHost].concat(getFallbackHosts(options));
+}
+
+function checkHost(host: string): void {
+	if(typeof host !== 'string') {
+		throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+	}
+	if(!host.length) {
+		throw new ErrorInfo('host must not be zero-length', 40000, 400);
+	}
+}
+
+export function objectifyOptions(options: ClientOptions | string): ClientOptions {
 	if(typeof options == 'string') {
 		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
 	}
 	return options;
-};
+}
 
-Defaults.normaliseOptions = function(options) {
+export function normaliseOptions(options: ClientOptions): ClientOptions {
 	/* Deprecated options */
 	if(options.host) {
 		Logger.deprecated('host', 'restHost');
@@ -117,14 +133,14 @@ Defaults.normaliseOptions = function(options) {
 	if(options.fallbackHostsUseDefault) {
 		/* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
 		if(options.fallbackHosts) {
-			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
+			const msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* default fallbacks can't be used with custom ports */
 		if(options.port || options.tlsPort) {
-			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
+			const msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
 			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
@@ -142,7 +158,7 @@ Defaults.normaliseOptions = function(options) {
 
 	if(options.recover === true) {
 		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
-		options.recover = function(lastConnectionDetails, cb) { cb(true); };
+		options.recover = function(lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) { cb(true); };
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
@@ -166,18 +182,18 @@ Defaults.normaliseOptions = function(options) {
 		options.queueMessages = true;
 
 	/* infer hosts and fallbacks based on the configured environment */
-	var environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-	var production = !environment || (environment === 'production');
+	const environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
+	const production = !environment || (environment === 'production');
 
 	if(!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
-		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : Defaults.environmentFallbackHosts(environment);
+		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : environmentFallbackHosts(environment);
 	}
 
 	if(!options.realtimeHost) {
 		/* prefer setting realtimeHost to restHost as a custom restHost typically indicates
 		 * a development environment is being used that can't be inferred by the library */
 		if(options.restHost) {
-			Logger.logAction(Logger.LOG_WARN, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
+			Logger.logAction(Logger.LOG_MINOR, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
 			options.realtimeHost = options.restHost
 		} else {
 			options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
@@ -198,7 +214,7 @@ Defaults.normaliseOptions = function(options) {
 	/* Allow values passed in options to override default timeouts */
 	options.timeouts = {};
 	for(var prop in Defaults.TIMEOUTS) {
-		options.timeouts[prop] = options[prop] || Defaults.TIMEOUTS[prop];
+		options.timeouts[prop] = options[prop] || (Defaults.TIMEOUTS as Record<string, any>)[prop];
 	};
 
 	if('useBinaryProtocol' in options) {
@@ -208,7 +224,7 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(options.clientId) {
-		var headers = options.headers = options.headers || {};
+		const headers = options.headers = options.headers || {};
 		headers['X-Ably-ClientId'] = BufferUtils.base64Encode(BufferUtils.utf8Encode(options.clientId));
 	}
 
@@ -221,11 +237,11 @@ Defaults.normaliseOptions = function(options) {
 		options.promises = false;
 	}
 
-        if(options.agents) {
-          for(var key in options.agents) {
-            Defaults.agent += ' ' + key + '/' + options.agents[key];
-          }
-        }
+	if(options.agents) {
+		for(var key in options.agents) {
+			Defaults.agent += ' ' + key + '/' + options.agents[key];
+		}
+	}
 
 	return options;
 };

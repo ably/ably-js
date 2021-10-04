@@ -4,10 +4,7 @@ import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
-import dataSizeBytes from '../util/dataSizeBytes';
-import isObject from '../util/isObject';
-import isArray from '../util/isArray';
-import { decodeBody, encodeBody, Format } from '../util/encoding';
+import * as Utils from '../util/utils';
 
 export type CipherOptions = {
 	channelCipher: {
@@ -66,7 +63,7 @@ function getMessageSize(msg: Message) {
 		size += JSON.stringify(msg.extras).length;
 	}
 	if(msg.data) {
-		size += dataSizeBytes(msg.data);
+		size += Utils.dataSizeBytes(msg.data);
 	}
 	return size;
 }
@@ -174,7 +171,7 @@ class Message {
 		const nativeDataType = typeof(data) == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
 
 		if (!nativeDataType) {
-			if (isObject(data) || isArray(data)) {
+			if (Utils.isObject(data) || Utils.isArray(data)) {
 				msg.data = JSON.stringify(data);
 				msg.encoding = (encoding = msg.encoding) ? (encoding + '/json') : 'json';
 			} else {
@@ -205,7 +202,7 @@ class Message {
 		}
 	}
 
-	static serialize = encodeBody;
+	static serialize = Utils.encodeBody;
 
 	static decode(message: Message | PresenceMessage, inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions): void {
 		const context = normaliseContext(inputContext);
@@ -289,9 +286,9 @@ class Message {
 		context.baseEncodedPreviousPayload = lastPayload;
 	}
 
-	static fromResponseBody(body: Array<Message>, options: ChannelOptions | EncodingDecodingContext, format?: Format): Message[] {
+	static fromResponseBody(body: Array<Message>, options: ChannelOptions | EncodingDecodingContext, format?: Utils.Format): Message[] {
 		if(format) {
-			body = decodeBody(body, format);
+			body = Utils.decodeBody(body, format);
 		}
 
 		for(let i = 0; i < body.length; i++) {

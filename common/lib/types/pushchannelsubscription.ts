@@ -1,5 +1,4 @@
-import { decodeBody, encodeBody, Format } from "../util/encoding";
-import isArray from "../util/isArray";
+import * as Utils from "../util/utils";
 
 type PushChannelSubscriptionObject = {
 	channel?: string,
@@ -36,14 +35,14 @@ class PushChannelSubscription {
 		return result;
 	}
 
-	static toRequestBody = encodeBody;
+	static toRequestBody = Utils.encodeBody;
 
-	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Format): PushChannelSubscription | PushChannelSubscription[] {
+	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Utils.Format): PushChannelSubscription | PushChannelSubscription[] {
 		if(format) {
-			body = decodeBody(body, format) as Record<string, unknown>;
+			body = Utils.decodeBody(body, format) as Record<string, unknown>;
 		}
 
-		if(isArray(body)) {
+		if(Utils.isArray(body)) {
 			return PushChannelSubscription.fromValuesArray(body);
 		} else {
 			return PushChannelSubscription.fromValues(body);

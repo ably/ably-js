@@ -1,4 +1,4 @@
-import forInOwnNonNullProperties from '../util/forInOwnNonNullProperties';
+import * as Utils from "../util/utils"
 
 type MessageValues = {
 	count?: number;
@@ -121,7 +121,7 @@ class MessageCategory extends MessageCount {
 		super(values);
 		if (values && values.category) {
 			this.category = {};
-			forInOwnNonNullProperties(values.category, (prop: string) => {
+			Utils.forInOwnNonNullProperties(values.category, (prop: string) => {
 				(this.category as Record<string, MessageCount>)[prop] = new MessageCount((values.category as Record<string, MessageCount>)[prop]);
 			});
 		}
@@ -263,7 +263,7 @@ class ProcessedMessages {
 		this.delta = undefined;
 		if (values && values.delta) {
 			this.delta = { };
-			forInOwnNonNullProperties(values.delta, (prop: string) => {
+			Utils.forInOwnNonNullProperties(values.delta, (prop: string) => {
 				(this.delta as Record<string, ProcessedCount>)[prop] = new ProcessedCount((values.delta as Record<string, ProcessedCountValues>)[prop]);
 			});
 		}

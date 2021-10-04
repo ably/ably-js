@@ -1,5 +1,4 @@
-import { decodeBody, encodeBody, Format } from '../util/encoding';
-import isArray from '../util/isArray';
+import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 
 enum DeviceFormFactor {
@@ -81,14 +80,14 @@ class DeviceDetails {
 		return result;
 	}
 
-	static toRequestBody = encodeBody;
+	static toRequestBody = Utils.encodeBody;
 
-	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Format): DeviceDetails | DeviceDetails[] {
+	static fromResponseBody(body: Array<Record<string, unknown>> | Record<string, unknown>, format?: Utils.Format): DeviceDetails | DeviceDetails[] {
 		if(format) {
-			body = decodeBody(body, format);
+			body = Utils.decodeBody(body, format);
 		}
 
-		if(isArray(body)) {
+		if(Utils.isArray(body)) {
 			return DeviceDetails.fromValuesArray(body);
 		} else {
 			return DeviceDetails.fromValues(body);

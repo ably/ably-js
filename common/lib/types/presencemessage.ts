@@ -1,7 +1,7 @@
 import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
 import Message, { CipherOptions } from './message';
-import { decodeBody, Format } from '../util/encoding';
+import * as Utils from '../util/utils';
 
 function toActionValue(actionString: string) {
 	return PresenceMessage.Actions.indexOf(actionString);
@@ -110,10 +110,10 @@ class PresenceMessage {
 	static encode = Message.encode;
 	static decode = Message.decode;
 
-	static fromResponseBody(body: Record<string, unknown>[], options: CipherOptions, format?: Format): PresenceMessage[] {
+	static fromResponseBody(body: Record<string, unknown>[], options: CipherOptions, format?: Utils.Format): PresenceMessage[] {
 		const messages: PresenceMessage[] = [];
 		if(format) {
-			body = decodeBody(body, format);
+			body = Utils.decodeBody(body, format);
 		}
 
 		for(let i = 0; i < body.length; i++) {

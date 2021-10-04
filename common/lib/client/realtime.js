@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 import Rest from './rest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';

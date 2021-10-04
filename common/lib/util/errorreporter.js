@@ -1,4 +1,4 @@
-import Utils from './utils';
+import * as Utils from './utils';
 import Platform from 'platform';
 import Defaults from '../util/defaults';
 import Logger from './logger';

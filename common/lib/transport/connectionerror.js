@@ -1,5 +1,5 @@
 import ErrorInfo from '../types/errorinfo';
-import Utils from '../util/utils';
+import * as Utils from '../util/utils';
 
 var ConnectionError = {
 	disconnected: ErrorInfo.fromValues({
