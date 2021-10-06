@@ -19,7 +19,7 @@ function callListener(eventThis: { event: string }, listener: Function, args: un
  */
 function removeListener(targetListeners: any, listener: Function, eventFilter?: string) {
 	let listeners: Record<string, unknown>;
-	let idx;
+	let index;
 	let eventName;
 
 	for (let targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
@@ -27,8 +27,8 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 		if (eventFilter) { listeners = listeners[eventFilter] as Record<string, unknown>; }
 
 		if (Utils.isArray(listeners)) {
-			while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
-				listeners.splice(idx, 1);
+			while ((index = Utils.arrIndexOf(listeners, listener)) !== -1) {
+				listeners.splice(index, 1);
 			}
 			/* If events object has an event name key with no listeners then
 					remove the key to stop the list growing indefinitely */
