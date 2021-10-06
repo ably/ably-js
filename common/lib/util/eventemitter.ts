@@ -71,8 +71,8 @@ class EventEmitter {
 		} else if(Utils.isEmptyArg(event)) {
 			this.any.push(listener);
 		} else if(Utils.isArray(event)) {
-			event.forEach((ev) => {
-				this.on(ev, listener);
+			event.forEach((eventName) => {
+				this.on(eventName, listener);
 			})
 		} else {
 			const listeners = (this.events[event] || (this.events[event] = []));
@@ -111,8 +111,8 @@ class EventEmitter {
 		}
 
 		if(Utils.isArray(event)) {
-			event.forEach((ev) => {
-				this.off(ev, listener);
+			event.forEach((eventName) => {
+				this.off(eventName, listener);
 			});
 		}
 
@@ -192,13 +192,13 @@ class EventEmitter {
 		} else if(Utils.isArray(event)){
 			var listenerWrapper = function(this: any) {
 				var args = Array.prototype.slice.call(arguments);
-				Utils.arrForEach(event, function(ev) {
-					self.off(ev, listenerWrapper);
+				Utils.arrForEach(event, function(eventName) {
+					self.off(eventName, listenerWrapper);
 				});
 				listener.apply(this, args);
 			};
-			Utils.arrForEach(event, function(ev) {
-				self.on(ev, listenerWrapper);
+			Utils.arrForEach(event, function(eventName) {
+				self.on(eventName, listenerWrapper);
 			});
 		} else {
 			const listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
