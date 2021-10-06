@@ -88,7 +88,7 @@ const Http: typeof IHttp = class {
 
 	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
 	static do(method: HttpMethods, rest: Rest, path: PathParameter, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		const uriFromHost = (typeof(path) == 'function') ? path : function(host: string) { return rest.baseUri(host) + path; };
+		const uriFromHost = (typeof(path) === 'function') ? path : function(host: string) { return rest.baseUri(host) + path; };
 	
 		const currentFallback = rest._currentFallback;
 		if(currentFallback) {
