@@ -6,6 +6,7 @@ import request, { Options as RequestOptions, RequestResponse } from 'request';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../common/types/http';
 import HttpMethods from '../../../common/constants/HttpMethods';
 
+// TODO: replace these with the real types once these classes are in TypeScript
 type Rest = any;
 type Realtime = any;
 

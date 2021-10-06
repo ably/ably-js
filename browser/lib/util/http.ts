@@ -4,6 +4,7 @@ import ErrorInfo from '../../../common/lib/types/errorinfo';
 import { IHttp, RequestCallback, RequestParams } from '../../../common/types/http';
 import HttpMethods from '../../../common/constants/HttpMethods';
 
+// TODO: replace these with the real types once these classes are in TypeScript
 type Rest = any;
 type Realtime = any;
 
