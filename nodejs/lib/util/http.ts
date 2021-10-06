@@ -15,7 +15,7 @@ const noop = function() {};
 
 /***************************************************
  *
- * These Http ops are used for REST operations
+ * These Http operations are used for REST operations
  * and assume that the system is stateless - ie
  * there is no connection state that tells us
  * anything about the state of the network or the
