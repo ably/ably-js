@@ -9,7 +9,7 @@ import BufferUtils from 'platform-bufferutils';
 import DomEvent from '../util/domevent';
 
 function getAblyError(responseBody, headers) {
-	if (headers['x-ably-errorcode'] | headers['X-Ably-ErrorCode']) {
+	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {
 		return responseBody.error && ErrorInfo.fromValues(responseBody.error);
 	}
 	// Partial errors don't have an X-Ably-ErrorCode header so check if the response has that specific error code
