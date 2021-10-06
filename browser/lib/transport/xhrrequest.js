@@ -12,8 +12,6 @@ function getAblyError(responseBody, headers) {
 	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {
 		return responseBody.error && ErrorInfo.fromValues(responseBody.error);
 	}
-	// Partial errors don't have an X-Ably-ErrorCode header so check if the response has that specific error code
-	return responseBody.error && responseBody.error.code === 40020 && ErrorInfo.fromValues(responseBody.error);
 }
 
 var XHRRequest = (function() {
