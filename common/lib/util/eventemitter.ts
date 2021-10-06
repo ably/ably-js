@@ -130,16 +130,22 @@ class EventEmitter {
 			this.eventsOnce = Object.create(null);
 			return;
 		}
+		const [firstArg, secondArg] = args;
 		let listener: Function | null = null;
 		let event: unknown = null;
 		if(args.length == 1) {
-			if (typeof args[0] === 'function') {
+			if (typeof firstArg === 'function') {
 				/* we take this to be the listener and treat the event as "any" .. */
-				listener = args[0];
+				listener = firstArg;
 			} else {
-				event = args[0];
+				event = firstArg;
 			}
 			/* ... or we take event to be the actual event name and listener to be all */
+		} else {
+			if (typeof secondArg !== 'function') {
+				throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
+			}
+			[event, listener] = [firstArg, secondArg];
 		}
 
 		if(listener && Utils.isEmptyArg(event)) {
@@ -151,6 +157,7 @@ class EventEmitter {
 			event.forEach((eventName) => {
 				this.off(eventName, listener);
 			});
+			return;
 		}
 
 		/* "normal" case where event is an actual event */
