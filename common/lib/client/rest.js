@@ -9,6 +9,7 @@ import PaginatedResource from './paginatedresource';
 import Channel from './channel';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 var Rest = (function() {
 	var noop = function() {};
@@ -118,7 +119,7 @@ var Rest = (function() {
 			var time = res[0];
 			if(!time) {
 				err = new Error('Internal error (unexpected result type from GET /time)');
-				err.statusCode = 500;
+				err.statusCode = HttpStatusCodes.InternalServerError;
 				callback(err);
 				return;
 			}

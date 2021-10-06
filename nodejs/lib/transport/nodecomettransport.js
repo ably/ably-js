@@ -4,6 +4,7 @@ import Logger from '../../../common/lib/util/logger';
 import * as Utils from '../../../common/lib/util/utils';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import EventEmitter from '../../../common/lib/util/eventemitter';
+import HttpStatusCodes from '../../../common/constants/HttpStatusCodes';
 
 var NodeCometTransport = function(connectionManager) {
 	var http = require('http');
@@ -154,7 +155,7 @@ var NodeCometTransport = function(connectionManager) {
 			self.timer = null;
 
 			var statusCode = res.statusCode;
-			if(statusCode == 204) {
+			if(statusCode == HttpStatusCodes.NoContent) {
 				/* cause the stream to flow, and thus end */
 				res.resume();
 				self.complete();

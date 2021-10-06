@@ -8,6 +8,7 @@ import ErrorInfo from '../types/errorinfo';
 import Base64 from 'platform-base64';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 var Auth = (function() {
 	var MAX_TOKEN_LENGTH = Math.pow(2, 17);
@@ -20,12 +21,12 @@ var Auth = (function() {
 		}
 		/* network errors will not have an inherent error code */
 		if(!err.code) {
-			if(err.statusCode === 403) {
+			if(err.statusCode === HttpStatusCodes.Forbidden) {
 				err.code = 40300;
 			} else {
 				err.code = 40170;
 				/* normalise statusCode to 401 per RSA4e */
-				err.statusCode = 401;
+				err.statusCode = HttpStatusCodes.Unauthorized;
 			}
 		}
 		return err;

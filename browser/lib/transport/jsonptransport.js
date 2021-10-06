@@ -6,6 +6,7 @@ import Http from 'platform-http';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Defaults from '../../../common/lib/util/defaults';
 import Logger from '../../../common/lib/util/logger';
+import HttpStatusCodes from '../../../common/constants/HttpStatusCodes';
 
 var JSONPTransport = function(connectionManager) {
 	var noop = function() {};
@@ -128,7 +129,7 @@ var JSONPTransport = function(connectionManager) {
 			if(message.statusCode) {
 				/* Handle as enveloped jsonp, as all jsonp transport uses should be */
 				var response = message.response;
-				if(message.statusCode == 204) {
+				if(message.statusCode == HttpStatusCodes.NoContent) {
 					self.complete(null, null, null, message.statusCode);
 				} else if(!response) {
 					self.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));

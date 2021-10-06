@@ -4,6 +4,7 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Auth from './auth';
 import BufferUtils from 'platform-bufferutils';
+import { isSuccessCode } from '../../constants/HttpStatusCodes';
 
 var Resource = (function() {
 	var msgpack = Platform.msgpack;
@@ -54,7 +55,7 @@ var Resource = (function() {
 				response = body.response,
 				wrappedHeaders = body.headers;
 
-			if(wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
+			if(!isSuccessCode(wrappedStatusCode)) {
 				/* handle wrapped errors */
 				var wrappedErr = (response && response.error) || err;
 				if(!wrappedErr) {

@@ -7,6 +7,7 @@ import Logger from '../../../common/lib/util/logger';
 import Defaults from '../../../common/lib/util/defaults';
 import BufferUtils from 'platform-bufferutils';
 import DomEvent from '../util/domevent';
+import HttpStatusCodes, { isSuccessCode } from '../../../common/constants/HttpStatusCodes';
 
 var XHRRequest = (function() {
 	var noop = function() {};
@@ -167,8 +168,8 @@ var XHRRequest = (function() {
 
 		function onResponse() {
 			clearTimeout(timer);
-			successResponse = (statusCode < 400);
-			if(statusCode == 204) {
+			successResponse = (isSuccessCode(statusCode));
+			if(statusCode === HttpStatusCodes.NoContent) {
 				self.complete(null, null, null, null, statusCode);
 				return;
 			}
@@ -201,7 +202,7 @@ var XHRRequest = (function() {
 				if(responseBody.response !== undefined) {
 					/* unwrap JSON envelope */
 					statusCode = responseBody.statusCode;
-					successResponse = (statusCode < 400);
+					successResponse = (isSuccessCode(statusCode));
 					headers = responseBody.headers;
 					responseBody = responseBody.response;
 				} else {
