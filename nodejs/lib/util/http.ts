@@ -214,7 +214,7 @@ const Http: typeof IHttp = class {
 		Http.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
 	}
 
-	static checkConnectivity = function (callback: (err: ErrorInfo | null, connected?: boolean) => void): void {
+	static checkConnectivity = function (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void {
 		Http.getUri(null, Defaults.internetUpUrl, null, null, function(err?: ErrorInfo | null, responseText?: unknown) {
 			if (!(typeof responseText === 'string')) {
 				callback(new ErrorInfo('Recieved non text response from internetUpUrl', null, 500));

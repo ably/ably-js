@@ -8,13 +8,13 @@ import HttpMethods from '../../../common/constants/HttpMethods';
 type Rest = any;
 type Realtime = any;
 
-function shouldFallback(err: ErrorInfo) {
-	const statusCode = err.statusCode as number;
+function shouldFallback(errorInfo: ErrorInfo) {
+	const statusCode = errorInfo.statusCode as number;
 	/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
 		* detail to know whether it's fallback-fixable, but it may be (eg if a
 		* network issue), so try just in case */
-	return (statusCode === 408 && !err.code) ||
-		(statusCode === 400 && !err.code)      ||
+	return (statusCode === 408 && !errorInfo.code) ||
+		(statusCode === 400 && !errorInfo.code)      ||
 		(statusCode >= 500 && statusCode <= 504);
 }
 
