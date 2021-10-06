@@ -68,7 +68,7 @@ const Http: typeof IHttp = class {
 		const hosts = getHosts(rest);
 
 		/* if there is only one host do it */
-		if(hosts.length == 1) {
+		if(hosts.length === 1) {
 			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
 			return;
 		}
