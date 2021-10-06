@@ -3,7 +3,7 @@ import Rest from '../lib/client/rest';
 import ErrorInfo from '../lib/types/errorinfo';
 
 export type PathParameter = string | ((host: string) => string);
-export type RequestCallback = (error?: ErrorInfo | null, body?: unknown, headers?: IncomingHttpHeaders, packed?: boolean, statusCode?: number) => void;
+export type RequestCallback = (error?: ErrnoException | ErrorInfo | null, body?: unknown, headers?: IncomingHttpHeaders, packed?: boolean, statusCode?: number) => void;
 export type RequestParams = Record<string, string> | null;
 
 export declare class IHttp {

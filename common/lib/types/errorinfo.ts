@@ -1,14 +1,13 @@
 import * as Utils from "../util/utils";
 
-export default class ErrorInfo {
-	message?: string;
-	code?: number | null;
-	statusCode?: number;
+export default class ErrorInfo extends Error {
+	code: number | null;
+	statusCode: number;
 	cause?: string | Error | ErrorInfo;
 	href?: string;
 
-	constructor(message?: string, code?: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
-		this.message = message;
+	constructor(message: string, code: number | null, statusCode: number, cause?: string | Error | ErrorInfo) {
+		super(message);
 		this.code = code;
 		this.statusCode = statusCode;
 		this.cause = cause;
@@ -25,12 +24,12 @@ export default class ErrorInfo {
 		return result;
 	}
 
-	static fromValues(values: Error | ErrorInfo): ErrorInfo {
-		const result = Object.assign(new ErrorInfo(), values);
-		if (values instanceof Error) {
-			/* Error.message is not enumerable, so mixin loses the message */
-			result.message = values.message;
+	static fromValues(values: Record<string, unknown> | ErrorInfo | Error): ErrorInfo {
+		const { message, code, statusCode } = values as ErrorInfo;
+		if ((typeof message !== 'string') || (typeof code !== 'number') || (typeof statusCode !== 'number')) {
+			throw new Error('ErrorInfo.fromValues(): invalid values: ' + Utils.inspect(values));
 		}
+		const result = Object.assign(new ErrorInfo(message, code, statusCode), values);
 		if(result.code && !result.href) {
 			result.href = 'https://help.ably.io/error/' + result.code;
 		}

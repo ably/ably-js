@@ -1,7 +1,7 @@
 import * as Utils from '../../../common/lib/util/utils';
 import Defaults from '../../../common/lib/util/defaults';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
-import { IHttp, RequestCallback, RequestParams } from '../../../common/types/http';
+import { ErrnoException, IHttp, RequestCallback, RequestParams } from '../../../common/types/http';
 import HttpMethods from '../../../common/constants/HttpMethods';
 
 // TODO: replace these with the real types once these classes are in TypeScript
@@ -46,11 +46,12 @@ const Http: typeof IHttp = class {
 			if(currentFallback.validUntil > Utils.now()) {
 				/* Use stored fallback */
 				if (!Http.Request) {
-					callback?.(new ErrorInfo('Request invoked before assigned to', undefined, 500));
+					callback?.(new ErrorInfo('Request invoked before assigned to', null, 500));
 					return;
 				}
-				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrorInfo | null) {
-					if(err && shouldFallback(err)) {
+				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrnoException | ErrorInfo | null) {
+					// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+					if(err && shouldFallback(err as ErrorInfo)) {
 						/* unstore the fallback and start from the top with the default sequence */
 						rest._currentFallback = null;
 						Http.do(method, rest, path, headers, body, params, callback);
@@ -76,8 +77,9 @@ const Http: typeof IHttp = class {
 		/* hosts is an array with preferred host plus at least one fallback */
 		const tryAHost = function(candidateHosts: Array<string>, persistOnSuccess?: boolean) {
 			const host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrorInfo | null) {
-				if(err && shouldFallback(err) && candidateHosts.length) {
+			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null) {
+				// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+				if(err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
 					tryAHost(candidateHosts, true);
 					return;
 				}
@@ -96,7 +98,7 @@ const Http: typeof IHttp = class {
 
 	static doUri(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
 		if (!Http.Request) {
-			callback(new ErrorInfo('Request invoked before assigned to', undefined, 500));
+			callback(new ErrorInfo('Request invoked before assigned to', null, 500));
 			return;
 		}
 		Http.Request(method, rest, uri, headers, params, body, callback);
@@ -163,7 +165,7 @@ const Http: typeof IHttp = class {
 
 	static Request?: (method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) => void;
 
-	static checkConnectivity?: (callback: (err: Error | null, connectivity: boolean) => void) => void = undefined;
+	static checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity: boolean) => void) => void = undefined;
 
 	static supportsAuthHeaders = false;
 	static supportsLinkHeaders = false;

@@ -27,7 +27,7 @@ const msgpack = Platform.msgpack;
  ***************************************************/
 
 const handler = function(uri: string, params: unknown, callback?: RequestCallback) {
-	return function(err: Error, response: RequestResponse, body: unknown) {
+	return function(err: ErrnoException, response: RequestResponse, body: unknown) {
 		if(err) {
 			callback?.(err);
 			return;
@@ -94,7 +94,7 @@ const Http: typeof IHttp = class {
 		if(currentFallback) {
 			if(currentFallback.validUntil > Date.now()) {
 				/* Use stored fallback */
-				Http.doUri(method, rest, uriFromHost(currentFallback.host), headers, body, params, (err?: ErrorInfo | null) => {
+				Http.doUri(method, rest, uriFromHost(currentFallback.host), headers, body, params, (err?: ErrnoException | ErrorInfo | null) => {
 					if(err && shouldFallback(err as ErrnoException)) {
 						/* unstore the fallback and start from the top with the default sequence */
 						rest._currentFallback = null;
@@ -120,7 +120,7 @@ const Http: typeof IHttp = class {
 	
 		const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
 			const host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrorInfo | null) {
+			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null) {
 				if(err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
 					tryAHost(candidateHosts, true);
 					return;
@@ -215,7 +215,7 @@ const Http: typeof IHttp = class {
 	}
 
 	static checkConnectivity = function (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void {
-		Http.getUri(null, Defaults.internetUpUrl, null, null, function(err?: ErrorInfo | null, responseText?: unknown) {
+		Http.getUri(null, Defaults.internetUpUrl, null, null, function(err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
 			if (!(typeof responseText === 'string')) {
 				callback(new ErrorInfo('Recieved non text response from internetUpUrl', null, 500));
 				return;
