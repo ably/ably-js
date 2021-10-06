@@ -10,8 +10,8 @@ export declare class IHttp {
 	static methods: Array<HttpMethods>;
 	static methodsWithBody: Array<HttpMethods>;
 	static methodsWithoutBody: Array<HttpMethods>;
-	static do(method: HttpMethods, rest: Rest | null, path: PathParameter, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void;
-	static doUri(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void;
+	static do(method: HttpMethods, rest: Rest | null, path: PathParameter, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback?: RequestCallback): void;
+	static doUri(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback?: RequestCallback): void;
 	static get(rest: Rest | null, path: PathParameter, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void;
 	static getUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void;
 	static delete(rest: Rest | null, path: PathParameter, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void;

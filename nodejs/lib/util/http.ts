@@ -11,7 +11,6 @@ type Rest = any;
 type Realtime = any;
 
 const msgpack = Platform.msgpack;
-const noop = function() {};
 
 /***************************************************
  *
@@ -27,11 +26,10 @@ const noop = function() {};
  *
  ***************************************************/
 
-const handler = function(uri: string, params: unknown, callback: RequestCallback) {
-	callback = callback || noop;
+const handler = function(uri: string, params: unknown, callback?: RequestCallback) {
 	return function(err: Error, response: RequestResponse, body: unknown) {
 		if(err) {
-			callback(err);
+			callback?.(err);
 			return;
 		}
 		const statusCode = response.statusCode, headers = response.headers;
@@ -48,10 +46,10 @@ const handler = function(uri: string, params: unknown, callback: RequestCallback
 				Number(headers['x-ably-errorcode']),
 				statusCode
 			);
-			callback(error, body, headers, true, statusCode);
+			callback?.(error, body, headers, true, statusCode);
 			return;
 		}
-		callback(null, body, headers, false, statusCode);
+		callback?.(null, body, headers, false, statusCode);
 	};
 };
 

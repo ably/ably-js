@@ -8,8 +8,6 @@ import HttpMethods from '../../../common/constants/HttpMethods';
 type Rest = any;
 type Realtime = any;
 
-const noop = function() {};
-
 function shouldFallback(err: ErrorInfo) {
 	const statusCode = err.statusCode as number;
 	/* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
@@ -40,8 +38,7 @@ const Http: typeof IHttp = class {
 	static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
 
 	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
-	static do(method: HttpMethods, rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		callback = callback || noop;
+	static do(method: HttpMethods, rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback?: RequestCallback): void {
 		const uriFromHost = (typeof(path) == 'function') ? path : function(host: string) { return rest.baseUri(host) + path; };
 
 		const currentFallback = rest._currentFallback;
@@ -49,7 +46,7 @@ const Http: typeof IHttp = class {
 			if(currentFallback.validUntil > Utils.now()) {
 				/* Use stored fallback */
 				if (!Http.Request) {
-					callback(new ErrorInfo('Request invoked before assigned to', undefined, 500));
+					callback?.(new ErrorInfo('Request invoked before assigned to', undefined, 500));
 					return;
 				}
 				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrorInfo | null) {
@@ -59,7 +56,7 @@ const Http: typeof IHttp = class {
 						Http.do(method, rest, path, headers, body, params, callback);
 						return;
 					}
-					callback(err);
+					callback?.(err);
 				});
 				return;
 			} else {
@@ -91,7 +88,7 @@ const Http: typeof IHttp = class {
 						validUntil: Utils.now() + rest.options.timeouts.fallbackRetryTimeout
 					};
 				}
-				callback(err);
+				callback?.(err);
 			});
 		};
 		tryAHost(hosts);
