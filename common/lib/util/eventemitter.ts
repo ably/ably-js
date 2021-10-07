@@ -19,7 +19,7 @@ function callListener(eventThis: { event: string }, listener: Function, args: un
  */
 function removeListener(targetListeners: any, listener: Function, eventFilter?: string) {
 	let listeners: Record<string, unknown>;
-	let idx;
+	let index;
 	let eventName;
 
 	for (let targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
@@ -27,8 +27,8 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 		if (eventFilter) { listeners = listeners[eventFilter] as Record<string, unknown>; }
 
 		if (Utils.isArray(listeners)) {
-			while ((idx = Utils.arrIndexOf(listeners, listener)) !== -1) {
-				listeners.splice(idx, 1);
+			while ((index = Utils.arrIndexOf(listeners, listener)) !== -1) {
+				listeners.splice(index, 1);
 			}
 			/* If events object has an event name key with no listeners then
 					remove the key to stop the list growing indefinitely */
@@ -61,24 +61,46 @@ class EventEmitter {
 
 	/**
 	 * Add an event listener
-	 * @param event (optional) the name of the event to listen to
-	 *        if not supplied, all events trigger a call to the listener
 	 * @param listener the listener to be called
 	 */
-	on (event: string, listener: Function) {
-		if(arguments.length == 1 && typeof(event) == 'function') {
-			this.any.push(event);
-		} else if(Utils.isEmptyArg(event)) {
-			this.any.push(listener);
-		} else if(Utils.isArray(event)) {
-			event.forEach((ev) => {
-				this.on(ev, listener);
-			})
-		} else {
-			const listeners = (this.events[event] || (this.events[event] = []));
-			listeners.push(listener);
+	on(listener: Function): void;
+
+	/**
+	 * Add an event listener
+	 * @param event (optional) the name of the event to listen to
+	 * @param listener the listener to be called
+	 */
+	on(event: null | string | string[], listener: Function): void;
+
+	on (...args: unknown[]) {
+		if (args.length === 1) {
+			const listener = args[0]
+			if (typeof listener === 'function') {
+				this.any.push(listener);
+			} else {
+				throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+			}
 		}
-};
+		if (args.length === 2) {
+			const [event, listener] = args;
+			if (typeof listener !== 'function') {
+				throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+			}
+			if (Utils.isEmptyArg(event)) {
+				this.any.push(listener);
+			} else if (Utils.isArray(event)) {
+				event.forEach(eventName => {
+					this.on(eventName, listener);
+				});
+			} else {
+				if (typeof event !== 'string') {
+					throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+				}
+				const listeners = (this.events[event] || (this.events[event] = []));
+				listeners.push(listener);
+			}
+		}
+	};
 
 	/**
 	 * Remove one or more event listeners
@@ -88,21 +110,42 @@ class EventEmitter {
 	 * @param listener (optional) the listener to remove. If not
 	 *        supplied, all listeners are removed.
 	 */
-	off(event: string | null, listener: Function) {
-		if(arguments.length == 0 || (Utils.isEmptyArg(event) && Utils.isEmptyArg(listener))) {
+	off(listener: Function): void;
+
+	/**
+	 * Remove one or more event listeners
+	 * @param event (optional) the name of the event whose listener
+	 *        is to be removed. If not supplied, the listener is
+	 *        treated as an 'any' listener
+	 * @param listener (optional) the listener to remove. If not
+	 *        supplied, all listeners are removed.
+	 */
+	off(event: string | string[] | null, listener?: Function | null): void;
+
+	off(...args: unknown[]) {
+		if(args.length == 0 || (Utils.isEmptyArg(args[0]) && Utils.isEmptyArg(args[1]))) {
 			this.any = [];
 			this.events = Object.create(null);
 			this.anyOnce = [];
 			this.eventsOnce = Object.create(null);
 			return;
 		}
-		if(arguments.length == 1) {
-			if(typeof(event) == 'function') {
+		const [firstArg, secondArg] = args;
+		let listener: Function | null = null;
+		let event: unknown = null;
+		if(args.length === 1 || !secondArg) {
+			if (typeof firstArg === 'function') {
 				/* we take this to be the listener and treat the event as "any" .. */
-				listener = event;
-				event = null;
+				listener = firstArg;
+			} else {
+				event = firstArg;
 			}
 			/* ... or we take event to be the actual event name and listener to be all */
+		} else {
+			if (typeof secondArg !== 'function') {
+				throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
+			}
+			[event, listener] = [firstArg, secondArg];
 		}
 
 		if(listener && Utils.isEmptyArg(event)) {
@@ -111,17 +154,21 @@ class EventEmitter {
 		}
 
 		if(Utils.isArray(event)) {
-			event.forEach((ev) => {
-				this.off(ev, listener);
+			event.forEach((eventName) => {
+				this.off(eventName, listener);
 			});
+			return;
 		}
 
 		/* "normal" case where event is an actual event */
+		if (typeof event !== 'string') {
+			throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
+		}
 		if(listener) {
-			removeListener([this.events, this.eventsOnce], listener, event as string);
+			removeListener([this.events, this.eventsOnce], listener, event);
 		} else {
-			delete this.events[event as string];
-			delete this.eventsOnce[event as string];
+			delete this.events[event];
+			delete this.eventsOnce[event];
 		}
 	};
 
@@ -174,35 +221,68 @@ class EventEmitter {
 	/**
 	 * Listen for a single occurrence of an event
 	 * @param event the name of the event to listen to
+	 */
+	once(event: string): Promise<void>;
+
+	/**
+	 * Listen for a single occurrence of any event
 	 * @param listener the listener to be called
 	 */
-	once(event: string, listener: Function) {
-		const argCount = arguments.length;
-		const self = this;
+	once(listener: Function): void;
 
-		if((argCount === 0 || (argCount === 1 && typeof event !== 'function')) && Platform.Promise) {
+	/**
+	 * Listen for a single occurrence of an event
+	 * @param event the name of the event to listen to
+	 * @param listener the listener to be called
+	 */
+	once(event?: string | string[] | null, listener?: Function): void;
+
+	once(...args: unknown[]): void | Promise<void> {
+		const argCount = args.length;
+		if((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Promise) {
+			const event = args[0];
+			if (typeof event !== 'string') {
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+			}
 			return new Platform.Promise((resolve) => {
 				this.once(event, resolve);
 			});
 		}
-		if(arguments.length == 1 && typeof(event) == 'function') {
-			this.anyOnce.push(event);
-		} else if(Utils.isEmptyArg(event)) {
-			this.anyOnce.push(listener);
-		} else if(Utils.isArray(event)){
-			var listenerWrapper = function(this: any) {
-				var args = Array.prototype.slice.call(arguments);
-				Utils.arrForEach(event, function(ev) {
-					self.off(ev, listenerWrapper);
+
+		const [firstArg, secondArg] = args;
+		if(args.length === 1 && typeof(firstArg) === 'function') {
+			this.anyOnce.push(firstArg);
+		} else if(Utils.isEmptyArg(firstArg)) {
+			if (typeof secondArg !== 'function') {
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+			}
+			this.anyOnce.push(secondArg);
+		} else if(Utils.isArray(firstArg)){
+			const self = this;
+			const listenerWrapper = function(this: any) {
+				const innerArgs = Array.prototype.slice.call(arguments);
+				Utils.arrForEach(firstArg, function(eventName) {
+					self.off(eventName, listenerWrapper);
 				});
-				listener.apply(this, args);
+				if (typeof secondArg !== 'function') {
+					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+				}
+				secondArg.apply(this, innerArgs);
 			};
-			Utils.arrForEach(event, function(ev) {
-				self.on(ev, listenerWrapper);
+			Utils.arrForEach(firstArg, function(eventName) {
+				self.on(eventName, listenerWrapper);
 			});
 		} else {
-			const listeners = (this.eventsOnce[event] || (this.eventsOnce[event] = []));
-			listeners.push(listener);
+			if (typeof firstArg !== 'string') {
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+			}
+			const listeners = (this.eventsOnce[firstArg] || (this.eventsOnce[firstArg] = []));
+			if (secondArg) {
+				if (typeof secondArg !== 'function') {
+					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+				}
+				listeners.push(secondArg);
+			}
 		}
 	};
 
@@ -214,7 +294,7 @@ class EventEmitter {
 	 * @param currentState the name of the current state of this object
 	 * @param listener the listener to be called
 	 */
-	private whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[] /* ...listenerArgs */) {
+	private whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
 		const eventThis = { event: targetState };
 
 		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
