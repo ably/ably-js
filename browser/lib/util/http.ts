@@ -49,7 +49,7 @@ const Http: typeof IHttp = class {
 					callback?.(new ErrorInfo('Request invoked before assigned to', null, 500));
 					return;
 				}
-				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrnoException | ErrorInfo | null) {
+				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
 					// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
 					if(err && shouldFallback(err as ErrorInfo)) {
 						/* unstore the fallback and start from the top with the default sequence */
@@ -57,7 +57,7 @@ const Http: typeof IHttp = class {
 						Http.do(method, rest, path, headers, body, params, callback);
 						return;
 					}
-					callback?.(err);
+					callback?.(err, ...args);
 				});
 				return;
 			} else {
@@ -77,7 +77,7 @@ const Http: typeof IHttp = class {
 		/* hosts is an array with preferred host plus at least one fallback */
 		const tryAHost = function(candidateHosts: Array<string>, persistOnSuccess?: boolean) {
 			const host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null) {
+			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
 				// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
 				if(err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
 					tryAHost(candidateHosts, true);
@@ -90,7 +90,7 @@ const Http: typeof IHttp = class {
 						validUntil: Utils.now() + rest.options.timeouts.fallbackRetryTimeout
 					};
 				}
-				callback?.(err);
+				callback?.(err, ...args);
 			});
 		};
 		tryAHost(hosts);
