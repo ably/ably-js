@@ -70,7 +70,7 @@ abstract class Transport extends EventEmitter {
 		this.finish('closed', ConnectionError.closed);
 	}
 
-	disconnect(err?: ErrorInfo): void {
+	disconnect(err?: Error | ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
 			* being disconnected, but should not affect the connection */
 		if(this.isConnected) {
@@ -87,7 +87,7 @@ abstract class Transport extends EventEmitter {
 		this.finish('failed', err || ConnectionError.failed);
 	}
 
-	finish(event: string, err?: ErrorInfo): void {
+	finish(event: string, err?: Error | ErrorInfo): void {
 		if(this.isFinished) {
 			return;
 		}
