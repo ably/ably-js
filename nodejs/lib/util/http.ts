@@ -216,11 +216,7 @@ const Http: typeof IHttp = class {
 
 	static checkConnectivity = function (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void {
 		Http.getUri(null, Defaults.internetUpUrl, null, null, function(err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
-			if (!(typeof responseText === 'string')) {
-				callback(new ErrorInfo('Recieved non text response from internetUpUrl', null, 500));
-				return;
-			}
-			callback(null, !err && (responseText as string)?.toString().trim() === 'yes');
+			callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
 		});
 	}
 
