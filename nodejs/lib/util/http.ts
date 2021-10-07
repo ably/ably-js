@@ -94,14 +94,14 @@ const Http: typeof IHttp = class {
 		if(currentFallback) {
 			if(currentFallback.validUntil > Date.now()) {
 				/* Use stored fallback */
-				Http.doUri(method, rest, uriFromHost(currentFallback.host), headers, body, params, (err?: ErrnoException | ErrorInfo | null) => {
+				Http.doUri(method, rest, uriFromHost(currentFallback.host), headers, body, params, (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
 					if(err && shouldFallback(err as ErrnoException)) {
 						/* unstore the fallback and start from the top with the default sequence */
 						rest._currentFallback = null;
 						Http.do(method, rest, path, headers, body, params, callback);
 						return;
 					}
-					callback(err);
+					callback(err, ...args);
 				});
 				return;
 			} else {
@@ -120,7 +120,7 @@ const Http: typeof IHttp = class {
 	
 		const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
 			const host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null) {
+			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
 				if(err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
 					tryAHost(candidateHosts, true);
 					return;
@@ -132,7 +132,7 @@ const Http: typeof IHttp = class {
 						validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout
 					};
 				}
-				callback(err)
+				callback(err, ...args);
 			});
 		};
 		tryAHost(hosts);
