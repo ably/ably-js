@@ -1,6 +1,6 @@
 import msgpack from '../lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
-import IPlatform from '../../common/types/IPlatform';
+import { IPlatform } from '../../common/types/IPlatform';
 
 const Platform: IPlatform = {
 	agent: 'reactnative',
@@ -14,7 +14,8 @@ const Platform: IPlatform = {
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
-	msgpack: msgpack,
+	// TODO: type this properly
+	msgpack: msgpack as unknown as typeof import('@ably/msgpack-js'),
 	supportsBinary: ((typeof TextDecoder !== 'undefined') && TextDecoder) ? true : false,
 	preferBinary: false,
 	ArrayBuffer: (typeof ArrayBuffer !== 'undefined') && ArrayBuffer,

@@ -1,5 +1,5 @@
 import msgpack from '../lib/util/msgpack';
-import IPlatform, { TypedArray } from '../../common/types/IPlatform';
+import { TypedArray, IPlatform } from '../../common/types/IPlatform';
 
 declare var MozWebSocket: typeof WebSocket; // For Chrome 14 and Firefox 7
 declare var msCrypto: typeof crypto; // for IE11
@@ -33,7 +33,8 @@ const Platform: IPlatform = {
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
-	msgpack: msgpack,
+	// TODO: type this properly
+	msgpack: msgpack as unknown as typeof import('@ably/msgpack-js'),
 	supportsBinary: !!global.TextDecoder,
 	preferBinary: false,
 	ArrayBuffer: global.ArrayBuffer,
@@ -57,7 +58,7 @@ const Platform: IPlatform = {
 		if (crypto === undefined) {
 			return undefined;
 		}
-		return function(arr: TypedArray, callback: (error: Error | null) => void) {
+		return function(arr: TypedArray, callback?: (error: Error | null) => void) {
 			crypto.getRandomValues(arr);
 			if(callback) {
 				callback(null);
