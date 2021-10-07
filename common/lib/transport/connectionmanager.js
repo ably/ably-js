@@ -17,6 +17,7 @@ import ErrorReporter from '../util/errorreporter';
 import WebStorage from 'platform-webstorage';
 import PlatformTransports from 'platform-transports';
 import WebSocketTransport from './websockettransport';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
@@ -1761,7 +1762,7 @@ var ConnectionManager = (function() {
 		if(err.code === 40171) {
 			/* No way to reauth */
 			this.notifyState({state: 'failed', error: err});
-		} else if(err.statusCode === 403) {
+		} else if(err.statusCode === HttpStatusCodes.Forbidden) {
 			var msg = 'Client configured authentication provider returned 403; failing the connection';
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
 			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});

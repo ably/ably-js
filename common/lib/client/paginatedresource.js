@@ -2,6 +2,7 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
 import Http from 'platform-http';
+import { isSuccessCode } from '../../constants/HttpStatusCodes';
 
 var PaginatedResource = (function() {
 
@@ -140,7 +141,7 @@ var PaginatedResource = (function() {
 	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams, err) {
 		PaginatedResult.call(this, resource, items, relParams);
 		this.statusCode = statusCode;
-		this.success = statusCode < 300 && statusCode >= 200;
+		this.success = isSuccessCode(statusCode);
 		this.headers = headers;
 		this.errorCode = err && err.code;
 		this.errorMessage = err && err.message;
