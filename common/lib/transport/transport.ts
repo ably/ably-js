@@ -2,7 +2,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import ConnectionError from '../transport/connectionerror';
+import ConnectionError from './connectionerror';
 import ErrorInfo from '../types/errorinfo';
 
 var Transport = (function() {
