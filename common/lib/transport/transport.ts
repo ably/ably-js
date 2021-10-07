@@ -9,7 +9,6 @@ import ErrorInfo from '../types/errorinfo';
 type ConnectionManager = any;
 type Auth = any;
 type TransportParams = any;
-type TokenDetails = any;
 
 export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
 
@@ -248,7 +247,6 @@ abstract class Transport extends EventEmitter {
 		}
 	}
 
-	onAuthUpdated: (tokenDetails: TokenDetails) => void = () => {};
 	static tryConnect?: (connectionManager: ConnectionManager, auth: Auth, transportParams: TransportParams, callback: TryConnectCallback) => void;
 }
 
