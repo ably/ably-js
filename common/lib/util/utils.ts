@@ -96,7 +96,7 @@ export function isOnlyPropIn(ob: Record<string, unknown>, property: string): boo
 *   Utils.isEmptyArg(event)
 */
 
-export function isEmptyArg(arg: unknown): boolean {
+export function isEmptyArg(arg: unknown): arg is (null | undefined) {
 	return arg === null || arg === undefined;
 }
 
