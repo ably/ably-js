@@ -133,7 +133,7 @@ class EventEmitter {
 		const [firstArg, secondArg] = args;
 		let listener: Function | null = null;
 		let event: unknown = null;
-		if(args.length == 1) {
+		if(args.length === 1 || !secondArg) {
 			if (typeof firstArg === 'function') {
 				/* we take this to be the listener and treat the event as "any" .. */
 				listener = firstArg;
