@@ -34,6 +34,7 @@
     "@types/crypto-js": "^4.0.1",
     "@types/node": "^15.0.0",
     "@types/request": "^2.48.7",
+    "@types/ws": "^8.2.0",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
