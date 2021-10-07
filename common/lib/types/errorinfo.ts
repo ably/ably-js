@@ -1,13 +1,14 @@
 import * as Utils from "../util/utils";
 
-export default class ErrorInfo extends Error {
+export default class ErrorInfo {
+	message: string;
 	code: number | null;
 	statusCode: number;
 	cause?: string | Error | ErrorInfo;
 	href?: string;
 
 	constructor(message: string, code: number | null, statusCode: number, cause?: string | Error | ErrorInfo) {
-		super(message);
+		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;
 		this.cause = cause;
