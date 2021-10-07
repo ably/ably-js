@@ -9,6 +9,12 @@ import BufferUtils from 'platform-bufferutils';
 import DomEvent from '../util/domevent';
 import HttpStatusCodes, { isSuccessCode } from '../../../common/constants/HttpStatusCodes';
 
+function getAblyError(responseBody, headers) {
+	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {
+		return responseBody.error && ErrorInfo.fromValues(responseBody.error);
+	}
+}
+
 var XHRRequest = (function() {
 	var noop = function() {};
 	var idCounter = 0;
@@ -222,7 +228,7 @@ var XHRRequest = (function() {
 				return;
 			}
 
-			var err = headers['x-ably-errorcode'] && responseBody.error && ErrorInfo.fromValues(responseBody.error);
+			var err = getAblyError(responseBody, headers);
 			if(!err) {
 				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
 			}

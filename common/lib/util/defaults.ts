@@ -4,10 +4,9 @@ import BufferUtils from 'platform-bufferutils';
 import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
+import { version } from '../../../package.json';
 
 type ClientOptions = any;
-
-const version = '1.2.14';
 
 let agent = 'ably-js/' + version;
 if (Platform.agent) {
