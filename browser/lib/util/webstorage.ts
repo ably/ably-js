@@ -1,73 +1,76 @@
 import * as Utils from '../../../common/lib/util/utils';
 
-var WebStorage = (function() {
-	var sessionSupported,
-		localSupported,
-		test = 'ablyjs-storage-test';
+let sessionSupported: boolean;
+let localSupported: boolean;
+const test = 'ablyjs-storage-test';
 
-	/* Even just accessing the session/localStorage object can throw a
-	 * security exception in some circumstances with some browsers. In
-	 * others, calling setItem will throw. So have to check in this
-	 * somewhat roundabout way. (If unsupported or no global object,
-	 * will throw on accessing a property of undefined) */
-	try {
-		global.sessionStorage.setItem(test, test);
-		global.sessionStorage.removeItem(test);
-		sessionSupported = true;
-	} catch(e) {
-		sessionSupported = false;
+/* Even just accessing the session/localStorage object can throw a
+	* security exception in some circumstances with some browsers. In
+	* others, calling setItem will throw. So have to check in this
+	* somewhat roundabout way. (If unsupported or no global object,
+	* will throw on accessing a property of undefined) */
+try {
+	global.sessionStorage.setItem(test, test);
+	global.sessionStorage.removeItem(test);
+	sessionSupported = true;
+} catch(e) {
+	sessionSupported = false;
+}
+
+try {
+	global.localStorage.setItem(test, test);
+	global.localStorage.removeItem(test);
+	localSupported = true;
+} catch(e) {
+	localSupported = false;
+}
+
+function storageInterface(session: any) {
+	return session ? global.sessionStorage : global.localStorage;
+}
+
+function set(name: string, value: string, ttl: number | undefined, session: any) {
+	const wrappedValue: Record<string, any> = {value: value};
+	if(ttl) {
+		wrappedValue.expires = Utils.now() + ttl;
 	}
+	return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
+}
 
-	try {
-		global.localStorage.setItem(test, test);
-		global.localStorage.removeItem(test);
-		localSupported = true;
-	} catch(e) {
-		localSupported = false;
+function get(name: string, session: any) {
+	const rawItem = storageInterface(session).getItem(name);
+	if(!rawItem) return null;
+	const wrappedValue = JSON.parse(rawItem);
+	if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
+		storageInterface(session).removeItem(name);
+		return null;
 	}
+	return wrappedValue.value;
+}
 
-	function WebStorage() {}
+function remove(name: string, session: any) {
+	return storageInterface(session).removeItem(name);
+}
 
-	function storageInterface(session) {
-		return session ? global.sessionStorage : global.localStorage;
-	}
+class WebStorage {
+	static set?: (name: string, value: string, ttl?: number) => void;
+	static get?: (name: string) => any;
+	static remove?: (name: string) => void;
+	static setSession?: (name: string, value: string, ttl?: number) => void;
+	static getSession?: (name: string) => any;
+	static removeSession?: (name: string) => void;
+}
 
-	function set(name, value, ttl, session) {
-		var wrappedValue = {value: value};
-		if(ttl) {
-			wrappedValue.expires = Utils.now() + ttl;
-		}
-		return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
-	}
+if(localSupported) {
+	WebStorage.set    = function(name: string, value: string, ttl?: number) { return set(name, value, ttl, false); };
+	WebStorage.get    = function(name) { return get(name, false); };
+	WebStorage.remove = function(name: string) { return remove(name, false); };
+}
 
-	function get(name, session) {
-		var rawItem = storageInterface(session).getItem(name);
-		if(!rawItem) return null;
-		var wrappedValue = JSON.parse(rawItem);
-		if(wrappedValue.expires && (wrappedValue.expires < Utils.now())) {
-			storageInterface(session).removeItem(name);
-			return null;
-		}
-		return wrappedValue.value;
-	}
-
-	function remove(name, session) {
-		return storageInterface(session).removeItem(name);
-	}
-
-	if(localSupported) {
-		WebStorage.set    = function(name, value, ttl) { return set(name, value, ttl, false); };
-		WebStorage.get    = function(name) { return get(name, false); };
-		WebStorage.remove = function(name) { return remove(name, false); };
-	}
-
-	if(sessionSupported) {
-		WebStorage.setSession    = function(name, value, ttl) { return set(name, value, ttl, true); };
-		WebStorage.getSession    = function(name) { return get(name, true); };
-		WebStorage.removeSession = function(name) { return remove(name, true); };
-	}
-
-	return WebStorage;
-})();
+if(sessionSupported) {
+	WebStorage.setSession    = function(name: string, value: string, ttl?: number) { return set(name, value, ttl, true); };
+	WebStorage.getSession    = function(name: string) { return get(name, true); };
+	WebStorage.removeSession = function(name: string) { return remove(name, true); };
+}
 
 export default WebStorage;
