@@ -553,7 +553,7 @@ class Auth {
 				} else if((tokenRequestOrDetails[0] === '{') && !(contentType && contentType.indexOf('application/jwt') > -1)) {
 					_callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
-					_callback(null, {token: tokenRequestOrDetails});
+					_callback(null, {token: tokenRequestOrDetails} as TokenDetails);
 				}
 				return;
 			}
