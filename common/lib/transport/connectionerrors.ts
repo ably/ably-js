@@ -1,6 +1,6 @@
 import ErrorInfo from '../types/errorinfo';
 
-const ConnectionError = {
+const ConnectionErrors = {
 	disconnected: ErrorInfo.fromValues({
 		statusCode: 400,
 		code: 80003,
@@ -43,7 +43,7 @@ function isRetriable(err: ErrorInfo) {
 		return true;
 	}
 	let retriable = false;
-	Object.values(ConnectionError).forEach(function(connErr) {
+	Object.values(ConnectionErrors).forEach(function(connErr) {
 		if (connErr.code && connErr.code == err.code) {
 			retriable = true;
 		}
@@ -51,4 +51,4 @@ function isRetriable(err: ErrorInfo) {
 	return retriable;
 }
 
-export default { ...ConnectionError, isRetriable };
+export default { ...ConnectionErrors, isRetriable };

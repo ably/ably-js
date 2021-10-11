@@ -8,7 +8,7 @@ import Message from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
-import ConnectionError from '../transport/connectionerror';
+import ConnectionErrors from '../transport/connectionerrors';
 
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;
@@ -552,7 +552,7 @@ var RealtimeChannel = (function() {
 
 		default:
 			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
-			this.connectionManager.abort(ConnectionError.unknownChannelErr);
+			this.connectionManager.abort(ConnectionErrors.unknownChannelErr);
 		}
 	};
 
