@@ -71,7 +71,7 @@ abstract class Transport extends EventEmitter {
 
 	disconnect(err?: ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
-			* being disconnected, but should not affect the connection */
+			* being disconnected, but should not transition the connection to 'failed' */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
