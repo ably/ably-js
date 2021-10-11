@@ -307,7 +307,7 @@ class Auth {
 		})
 	}
 
-	authorise(tokenParams: Record<string, any> | null, authOptions: AuthOptions, callback: Function): void {
+	authorise(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function): void {
 		Logger.deprecated('Auth.authorise', 'Auth.authorize');
 		this.authorize(tokenParams, authOptions, callback);
 	}
@@ -667,7 +667,7 @@ class Auth {
 			tokenParams.capability = c14n(tokenParams.capability);
 		}
 
-		const request = Utils.mixin({ keyName: keyName }, tokenParams as Record<string, unknown>),
+		const request = Utils.mixin({ keyName: keyName }, tokenParams),
 			clientId = tokenParams.clientId || '',
 			ttl = tokenParams.ttl || '',
 			capability = tokenParams.capability || '';
