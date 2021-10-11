@@ -242,9 +242,7 @@ var Auth = (function() {
 			 * - Use self.client.connection as a proxy for (self.client instanceof Realtime),
 			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
 			if(self.client.connection) {
-				if (self.client.connection.connectionManager.onAuthUpdated) {
-					self.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback);
-				}
+				self.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback);
 			} else {
 				callback(null, tokenDetails);
 			}
