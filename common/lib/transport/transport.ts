@@ -17,7 +17,7 @@ const closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
 const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
 
 /*
-	* EventEmitter, generates the following events:
+	* Transport instances inherit from EventEmitter and emit the following events:
 	*
 	* event name       data
 	* closed           error
@@ -27,7 +27,6 @@ const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT
 	* sync             connectionSerial, connectionId
 	* event            channel message object
 	*/
-
 
 abstract class Transport extends EventEmitter {
 	connectionManager: ConnectionManager;
