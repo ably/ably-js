@@ -412,7 +412,6 @@ class Auth {
 
 	requestToken(tokenParams: TokenParams | StandardCallback<TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<TokenDetails>, callback?: StandardCallback<TokenDetails>): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
-		let _callback = callback || noop;
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
 			authOptions = tokenParams = null;
@@ -424,6 +423,7 @@ class Auth {
 		if(!callback && this.client.options.promises) {
 			return Utils.promisify(this, 'requestToken', [tokenParams, authOptions, callback]);
 		}
+		const _callback = callback || noop;
 
 		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
 		authOptions = authOptions || this.authOptions;
