@@ -38,7 +38,7 @@ includeScript('../common/lib/types/protocolmessage.js');
 includeScript('../common/lib/types/stats.js');
 includeScript('../common/lib/types/devicedetails.js');
 includeScript('../common/lib/types/pushchannelsubscription.js');
-includeScript('../common/lib/transport/connectionerror.js');
+includeScript('../common/lib/transport/connectionerrors.js');
 includeScript('../common/lib/transport/messagequeue.js');
 includeScript('../common/lib/transport/protocol.js');
 includeScript('../common/lib/transport/connectionmanager.js');

@@ -2,7 +2,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import ConnectionError from './connectionerror';
+import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
 
@@ -17,7 +17,7 @@ const closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
 const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
 
 /*
-	* EventEmitter, generates the following events:
+	* Transport instances inherit from EventEmitter and emit the following events:
 	*
 	* event name       data
 	* closed           error
@@ -27,7 +27,6 @@ const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT
 	* sync             connectionSerial, connectionId
 	* event            channel message object
 	*/
-
 
 abstract class Transport extends EventEmitter {
 	connectionManager: ConnectionManager;
@@ -67,25 +66,25 @@ abstract class Transport extends EventEmitter {
 		if(this.isConnected) {
 			this.requestClose();
 		}
-		this.finish('closed', ConnectionError.closed);
-	}
+		this.finish('closed', ConnectionErrors.closed);
+	};
 
 	disconnect(err?: ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
-			* being disconnected, but should not affect the connection */
+			* being disconnected, but should not transition the connection to 'failed' */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('disconnected', err || ConnectionError.disconnected);
-	}
+		this.finish('disconnected', err || ConnectionErrors.disconnected);
+	};
 
 	fail(err: ErrorInfo): void {
 		/* Used for client-side-detected fatal connection issues */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('failed', err || ConnectionError.failed);
-	}
+		this.finish('failed', err || ConnectionErrors.failed);
+	};
 
 	finish(event: string, err?: ErrorInfo): void {
 		if(this.isFinished) {

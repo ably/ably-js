@@ -29,7 +29,7 @@ function storageInterface(session: any) {
 	return session ? global.sessionStorage : global.localStorage;
 }
 
-function set(name: string, value: string, ttl: number | undefined, session: any) {
+function _set(name: string, value: string, ttl: number | undefined, session: any) {
 	const wrappedValue: Record<string, any> = {value: value};
 	if(ttl) {
 		wrappedValue.expires = Utils.now() + ttl;
@@ -37,7 +37,7 @@ function set(name: string, value: string, ttl: number | undefined, session: any)
 	return storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
 }
 
-function get(name: string, session: any) {
+function _get(name: string, session: any) {
 	const rawItem = storageInterface(session).getItem(name);
 	if(!rawItem) return null;
 	const wrappedValue = JSON.parse(rawItem);
@@ -48,29 +48,34 @@ function get(name: string, session: any) {
 	return wrappedValue.value;
 }
 
-function remove(name: string, session: any) {
+function _remove(name: string, session: any) {
 	return storageInterface(session).removeItem(name);
 }
 
-class WebStorage {
-	static set?: (name: string, value: string, ttl?: number) => void;
-	static get?: (name: string) => any;
-	static remove?: (name: string) => void;
-	static setSession?: (name: string, value: string, ttl?: number) => void;
-	static getSession?: (name: string) => any;
-	static removeSession?: (name: string) => void;
-}
+let set: (name: string, value: string, ttl?: number) => void;
+let get: (name: string) => any;
+let remove: (name: string) => void;
+let setSession: (name: string, value: string, ttl?: number) => void;
+let getSession: (name: string) => any;
+let removeSession: (name: string) => void;
 
 if(localSupported) {
-	WebStorage.set    = function(name: string, value: string, ttl?: number) { return set(name, value, ttl, false); };
-	WebStorage.get    = function(name) { return get(name, false); };
-	WebStorage.remove = function(name: string) { return remove(name, false); };
+	set = function(name: string, value: string, ttl?: number) { return _set(name, value, ttl, false); };
+	get = function(name) { return _get(name, false); };
+	remove = function(name: string) { return _remove(name, false); };
 }
 
 if(sessionSupported) {
-	WebStorage.setSession    = function(name: string, value: string, ttl?: number) { return set(name, value, ttl, true); };
-	WebStorage.getSession    = function(name: string) { return get(name, true); };
-	WebStorage.removeSession = function(name: string) { return remove(name, true); };
+	setSession = function(name: string, value: string, ttl?: number) { return _set(name, value, ttl, true); };
+	getSession = function(name: string) { return _get(name, true); };
+	removeSession = function(name: string) { return _remove(name, true); };
 }
 
-export default WebStorage;
+export {
+	set,
+	get,
+	remove,
+	setSession,
+	getSession,
+	removeSession,
+};
