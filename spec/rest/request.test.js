@@ -244,7 +244,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			rest.request('get', '/?body=thisIsMalformedJSON&status=400&type=json', null, null, null, function (err) {
 				if (err) {
 					expect(err.message, 'wrong header').to.be.equal(
-						'Error parsing server response: 200 with body: thisIsMalformedJSON'
+						'Error parsing server response: 400 with body: thisIsMalformedJSON'
 					);
 					return done();
 				}
