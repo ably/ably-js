@@ -240,8 +240,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
 		it('fails as expected when trying to parse malformed json response', function (done){
 			// this test uses test echo server mentioned in https://github.com/ably/ably-js/pull/817#issuecomment-941054596
-			rest = helper.AblyRest({ restHost: 'http://echo.ably.io/' });
-			rest.request('get', '/?body=thisIsMalformedJSON&status=400&type=json', null, null, null, function (err) {
+			// to receive response with malformed JSON body
+			// related to https://github.com/ably/ably-js/issues/676
+			helper
+				.AblyRest({ restHost: 'http://echo.ably.io/' })
+				.request('get', '/?body=thisIsMalformedJSON&status=400&type=json', null, null, null, function (err) {
 				if (err) {
 					expect(err.message, 'wrong header').to.be.equal(
 						'Error parsing server response: 400 with body: thisIsMalformedJSON'
