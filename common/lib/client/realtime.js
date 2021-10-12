@@ -14,7 +14,6 @@ var Realtime = (function() {
 		if(!(this instanceof Realtime)){
 			return new Realtime(options);
 		}
-
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
@@ -25,18 +24,19 @@ var Realtime = (function() {
 	Utils.inherits(Realtime, Rest);
 
 	Realtime.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
+		this.logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
 		this.connection.connect();
 	};
 
 	Realtime.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
+		this.logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
 		this.connection.close();
 	};
 
 	function Channels(realtime) {
 		EventEmitter.call(this);
 		this.realtime = realtime;
+		this.logger = realtime.logger;
 		this.all = Object.create(null);
 		this.inProgress = Object.create(null);
 		var self = this;
@@ -49,12 +49,12 @@ var Realtime = (function() {
 	Channels.prototype.onChannelMessage = function(msg) {
 		var channelName = msg.channel;
 		if(channelName === undefined) {
-			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
+			this.logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
 		var channel = this.all[channelName];
 		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
+			this.logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
 			return;
 		}
 		channel.onMessage(msg);
@@ -100,7 +100,7 @@ var Realtime = (function() {
 			var channel = this.all[channelId];
 			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
 				var msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
-				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
+				this.logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
 				ErrorReporter.report('error', msg, 'channel-no-attached-after-resume');
 				channel.requestState('attaching');
 			};
