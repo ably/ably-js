@@ -179,7 +179,10 @@ class WebSocketTransport extends Transport {
 			 * giving some implementations the opportunity to send any outstanding close message */
 			Utils.nextTick(function() {
 				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
-				(wsConnection as WebSocket).close();
+				if (!wsConnection) {
+					throw new Error('WebSocketTransport.dispose(): wsConnection is not defined');
+				}
+				wsConnection.close();
 			});
 		}
 	}
