@@ -2,30 +2,47 @@ import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import ConnectionErrors from '../transport/connectionerrors';
+import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 
-var Transport = (function() {
-	var actions = ProtocolMessage.Action;
-	var closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
-	var disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
-	var noop = function() {};
+// TODO: replace these with the real types once these classes are in TypeScript
+type ConnectionManager = any;
+type Auth = any;
+type TransportParams = any;
 
-	/*
-	 * EventEmitter, generates the following events:
-	 *
-	 * event name       data
-	 * closed           error
-	 * failed           error
-	 * disposed
-	 * connected        null error, connectionSerial, connectionId, connectionDetails
-	 * sync             connectionSerial, connectionId
-	 * event            channel message object
-	 */
+export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
 
-	/* public constructor */
-	function Transport(connectionManager, auth, params) {
-		EventEmitter.call(this);
+const actions = ProtocolMessage.Action;
+const closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
+const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
+
+/*
+	* Transport instances inherit from EventEmitter and emit the following events:
+	*
+	* event name       data
+	* closed           error
+	* failed           error
+	* disposed
+	* connected        null error, connectionSerial, connectionId, connectionDetails
+	* sync             connectionSerial, connectionId
+	* event            channel message object
+	*/
+
+abstract class Transport extends EventEmitter {
+	connectionManager: ConnectionManager;
+	auth: Auth;
+	params: TransportParams;
+	timeouts: Record<string, number>;
+	format?: Utils.Format;
+	isConnected: boolean;
+	isFinished: boolean;
+	isDisposed: boolean;
+	maxIdleInterval: number | null;
+	idleTimer: NodeJS.Timeout | number | null;
+	lastActivity: number | null;
+
+	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
+		super();
 		this.connectionManager = connectionManager;
 		connectionManager.registerProposedTransport(this);
 		this.auth = auth;
@@ -39,27 +56,29 @@ var Transport = (function() {
 		this.idleTimer = null;
 		this.lastActivity = null;
 	}
-	Utils.inherits(Transport, EventEmitter);
 
-	Transport.prototype.connect = function() {};
+	abstract shortName: string;
+	abstract send(message: ProtocolMessage): void; 
 
-	Transport.prototype.close = function() {
+	connect(): void {}
+
+	close(): void {
 		if(this.isConnected) {
 			this.requestClose();
 		}
 		this.finish('closed', ConnectionErrors.closed);
 	};
 
-	Transport.prototype.disconnect = function(err) {
+	disconnect(err?: ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
-		 * being disconnected, but should not affect the connection */
+			* being disconnected, but should not transition the connection to 'failed' */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
 		this.finish('disconnected', err || ConnectionErrors.disconnected);
 	};
 
-	Transport.prototype.fail = function(err) {
+	fail(err: ErrorInfo): void {
 		/* Used for client-side-detected fatal connection issues */
 		if(this.isConnected) {
 			this.requestDisconnect();
@@ -67,7 +86,7 @@ var Transport = (function() {
 		this.finish('failed', err || ConnectionErrors.failed);
 	};
 
-	Transport.prototype.finish = function(event, err) {
+	finish(event: string, err?: ErrorInfo): void {
 		if(this.isFinished) {
 			return;
 		}
@@ -75,13 +94,13 @@ var Transport = (function() {
 		this.isFinished = true;
 		this.isConnected = false;
 		this.maxIdleInterval = null;
-		clearTimeout(this.idleTimer);
+		clearTimeout(this.idleTimer ?? undefined);
 		this.idleTimer = null;
 		this.emit(event, err);
 		this.dispose();
-	};
+	}
 
-	Transport.prototype.onProtocolMessage = function(message) {
+	onProtocolMessage(message: ProtocolMessage): void {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
 			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message) + '; connectionId = ' + this.connectionManager.connectionId);
 		}
@@ -118,7 +137,7 @@ var Transport = (function() {
 			this.connectionManager.onChannelMessage(message, this);
 			break;
 		case actions.AUTH:
-			this.auth.authorize(function(err) {
+			this.auth.authorize(function(err: ErrorInfo) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
 				}
@@ -137,94 +156,97 @@ var Transport = (function() {
 			/* all other actions are channel-specific */
 			this.connectionManager.onChannelMessage(message, this);
 		}
-	};
+	}
 
-	Transport.prototype.onConnect = function(message) {
+	onConnect(message: ProtocolMessage): void {
 		this.isConnected = true;
-		var maxPromisedIdle = message.connectionDetails.maxIdleInterval;
+		if (!message.connectionDetails) {
+			throw new Error('Transport.onConnect(): Connect message recieved without connectionDetails');
+		}
+		const maxPromisedIdle = message.connectionDetails.maxIdleInterval as number;
 		if(maxPromisedIdle) {
 			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
 			this.onActivity();
 		}
 		/* else Realtime declines to guarantee any maximum idle interval - CD2h */
-	};
+	}
 
-	Transport.prototype.onDisconnect = function(message) {
+	onDisconnect(message: ProtocolMessage): void {
 		/* Used for when the server has disconnected the client (usually with a
-		 * DISCONNECTED action) */
-		var err = message && message.error;
+			* DISCONNECTED action) */
+		const err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.finish('disconnected', err);
-	};
+	}
 
-	Transport.prototype.onFatalError = function(message) {
+	onFatalError(message: ProtocolMessage): void {
 		/* On receipt of a fatal connection error, we can assume that the server
-		 * will close the connection and the transport, and do not need to request
-		 * a disconnection - RTN15i */
-		var err = message && message.error;
+			* will close the connection and the transport, and do not need to request
+			* a disconnection - RTN15i */
+		const err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
 		this.finish('failed', err);
-	};
+	}
 
-	Transport.prototype.onClose = function(message) {
-		var err = message && message.error;
+	onClose(message: ProtocolMessage): void {
+		const err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
 		this.finish('closed', err);
-	};
+	}
 
-	Transport.prototype.requestClose = function() {
+	requestClose(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
 		this.send(closeMessage);
-	};
+	}
 
-	Transport.prototype.requestDisconnect = function() {
+	requestDisconnect(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
 		this.send(disconnectMessage);
-	};
+	}
 
-	Transport.prototype.ping = function(id) {
-		var msg = {action: ProtocolMessage.Action.HEARTBEAT};
+	ping(id: string): void {
+		const msg: Record<string, number | string> = {action: ProtocolMessage.Action.HEARTBEAT};
 		if(id) msg.id = id;
 		this.send(ProtocolMessage.fromValues(msg));
-	};
+	}
 
-	Transport.prototype.dispose = function() {
+	dispose(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.isDisposed = true;
 		this.off();
-	};
+	}
 
-	Transport.prototype.onActivity = function() {
+	onActivity(): void {
 		if(!this.maxIdleInterval) { return; }
 		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
 		this.setIdleTimer(this.maxIdleInterval + 100);
-	};
+	}
 
-	Transport.prototype.setIdleTimer = function(timeout) {
-		var self = this;
+	setIdleTimer(timeout: number): void {
 		if(!this.idleTimer) {
-			this.idleTimer = setTimeout(function() {
-				self.onIdleTimerExpire();
+			this.idleTimer = setTimeout(() => {
+				this.onIdleTimerExpire();
 			}, timeout);
 		}
-	};
+	}
 
-	Transport.prototype.onIdleTimerExpire = function() {
+	onIdleTimerExpire(): void {
+		if (!this.lastActivity || !this.maxIdleInterval) {
+			throw new Error('Transport.onIdleTimerExpire(): lastActivity/maxIdleInterval not set');
+		}
 		this.idleTimer = null;
-		var sinceLast = Utils.now() - this.lastActivity,
-			timeRemaining = this.maxIdleInterval - sinceLast;
+		const sinceLast = Utils.now() - this.lastActivity;
+		const timeRemaining = this.maxIdleInterval - sinceLast;
 		if(timeRemaining <= 0) {
-			var msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
+			const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
 			this.setIdleTimer(timeRemaining + 100);
 		}
-	};
+	}
 
-	Transport.prototype.onAuthUpdated = function() {};
-
-	return Transport;
-})();
+	static tryConnect?: (connectionManager: ConnectionManager, auth: Auth, transportParams: TransportParams, callback: TryConnectCallback) => void;
+}
 
 export default Transport;

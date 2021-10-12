@@ -110,7 +110,7 @@ class EventEmitter {
 	 * @param listener (optional) the listener to remove. If not
 	 *        supplied, all listeners are removed.
 	 */
-	off(listener: Function): void;
+	off(listener?: Function): void;
 
 	/**
 	 * Remove one or more event listeners
