@@ -47,13 +47,13 @@ var Logger = (function() {
 	function Logger(args) {}
 
 	/* public constants */
-	Logger.LOG_NONE    = LOG_NONE,
-	Logger.LOG_ERROR   = LOG_ERROR,
-	Logger.LOG_MAJOR   = LOG_MAJOR,
-	Logger.LOG_MINOR   = LOG_MINOR,
+	Logger.LOG_NONE    = LOG_NONE;
+	Logger.LOG_ERROR   = LOG_ERROR;
+	Logger.LOG_MAJOR   = LOG_MAJOR;
+	Logger.LOG_MINOR   = LOG_MINOR;
 	Logger.LOG_MICRO   = LOG_MICRO;
 
-	Logger.LOG_DEFAULT = LOG_DEFAULT,
+	Logger.LOG_DEFAULT = LOG_DEFAULT;
 	Logger.LOG_DEBUG   = LOG_DEBUG;
 
 	/* public static functions */
@@ -65,13 +65,13 @@ var Logger = (function() {
 
 	Logger.deprecated = function(original, replacement) {
 		Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
-	}
+	};
 
 	Logger.deprecatedWithMsg = function(funcName, msg) {
 		if (Logger.shouldLog(LOG_ERROR)) {
 			logErrorHandler("Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg);
 		}
-	}
+	};
 
 	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */

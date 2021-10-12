@@ -18,6 +18,7 @@ var Rest = (function() {
 		if(!(this instanceof Rest)){
 			return new Rest(options);
 		}
+		var r = this;
 
 		/* normalise options */
 		if(!options) {
@@ -27,10 +28,16 @@ var Rest = (function() {
 		}
 		options = Defaults.objectifyOptions(options);
 
+		// logger options provided, we initialize custom logging system for this particular client
 		if(options.log) {
-			Logger.setLog(options.log.level, options.log.handler);
+			r.logger = Logger;
+			r.logger.setLog(options.log.level, options.log.handler);
+			r.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+		} else {
+			// we use global logger
+			r.logger = Logger;
+			r.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		}
-		Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 
 		this.options = Defaults.normaliseOptions(options);
 
@@ -39,7 +46,7 @@ var Rest = (function() {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
 			if(!keyMatch) {
 				var msg = 'invalid key parameter';
-				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
+				r.logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
 			options.keyName = keyMatch[1];
@@ -53,7 +60,7 @@ var Rest = (function() {
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
+		r.logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 		this._currentFallback = null;
@@ -108,7 +115,7 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
-		var timeUri = function(host) { return self.authority(host) + '/time' };
+		var timeUri = function(host) { return self.authority(host) + '/time'; };
 		Http.get(this, timeUri, headers, params, function(err, res, headers, unpacked) {
 			if(err) {
 				callback(err);
@@ -170,7 +177,7 @@ var Rest = (function() {
 	};
 
 	Rest.prototype.setLog = function(logOptions) {
-		Logger.setLog(logOptions.level, logOptions.handler);
+		this.logger.setLog(logOptions.level, logOptions.handler);
 	};
 
 	function Channels(rest) {
