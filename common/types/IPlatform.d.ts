@@ -1,28 +1,23 @@
-import { createHmac, Hmac } from 'crypto';
-import ws from 'ws';
-import msgpack from '@ably/msgpack';
-import { inspect } from 'util';
-
 export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array;
 
-export default interface IPlatform {
+export interface IPlatform {
     agent: string;
     logTimestamps: boolean;
-    binaryType: string;
-    WebSocket: unknown;
+    binaryType: BinaryType;
+    WebSocket: typeof WebSocket | typeof import('ws');
     useProtocolHeartbeats: boolean;
-    createHmac: typeof createHmac | null;
-    msgpack: typeof msgpack;
+    createHmac: ((algorithm: string, key: import('crypto').BinaryLike | import('crypto').KeyObject) => import('crypto').Hmac) | null;
+    msgpack: typeof import('@ably/msgpack-js');
     supportsBinary: boolean;
     preferBinary: boolean;
     nextTick: process.nextTick;
     inspect: (value: unknown) => string;
     stringByteSize: Buffer.byteLength;
-    addEventListener: null;
+    addEventListener: typeof global.addEventListener | null;
     Promise: typeof Promise;
-    getRandomValues?: ((arr: TypedArray, callback?: (error: Error | null) => void) => void) | unknown;
+    getRandomValues?: ((arr: TypedArray, callback?: (error?: Error | null) => void) => void);
     userAgent?: string | null;
-    inherits?: typeof inspect;
+    inherits?: typeof import('util').inherits;
     addEventListener?: typeof window.addEventListener;
     currentUrl?: string;
     noUpgrade?: boolean | string;
@@ -34,5 +29,5 @@ export default interface IPlatform {
     atob?: typeof atob | null;
     TextEncoder?: typeof TextEncoder;
     TextDecoder?: typeof TextDecoder;
-    getRandomWordArray?: (byteLength: number, callback: Function) => void;
+    getRandomWordArray?: (byteLength: number, callback: (err: Error, result: boolean | CryptoJS.lib.WordArray) => void) => void;
 }
