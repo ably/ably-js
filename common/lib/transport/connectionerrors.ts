@@ -1,7 +1,6 @@
 import ErrorInfo from '../types/errorinfo';
-import * as Utils from '../util/utils';
 
-var ConnectionError = {
+const ConnectionErrors = {
 	disconnected: ErrorInfo.fromValues({
 		statusCode: 400,
 		code: 80003,
@@ -39,17 +38,17 @@ var ConnectionError = {
 	})
 };
 
-ConnectionError.isRetriable = function(err) {
+function isRetriable(err: ErrorInfo) {
 	if (!err.statusCode || !err.code || err.statusCode >= 500) {
 		return true;
 	}
-	var retriable = false;
-	Utils.valuesArray(ConnectionError).forEach(function(connErr) {
+	let retriable = false;
+	Object.values(ConnectionErrors).forEach(function(connErr) {
 		if (connErr.code && connErr.code == err.code) {
 			retriable = true;
 		}
-	});
+	})
 	return retriable;
-};
+}
 
-export default ConnectionError;
+export default { ...ConnectionErrors, isRetriable };

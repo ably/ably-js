@@ -5,7 +5,7 @@ import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
 import ErrorInfo from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
-import ConnectionError from '../transport/connectionerror';
+import ConnectionErrors from '../transport/connectionerrors';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 
@@ -193,7 +193,7 @@ var RealtimePresence = (function() {
 			default:
 				/* there is no connection; therefore we let
 				 * any entered status timeout by itself */
-				callback(ConnectionError.failed);
+				callback(ConnectionErrors.failed);
 		}
 	};
 

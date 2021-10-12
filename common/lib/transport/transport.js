@@ -2,7 +2,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import ConnectionError from '../transport/connectionerror';
+import ConnectionErrors from '../transport/connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 
 var Transport = (function() {
@@ -47,7 +47,7 @@ var Transport = (function() {
 		if(this.isConnected) {
 			this.requestClose();
 		}
-		this.finish('closed', ConnectionError.closed);
+		this.finish('closed', ConnectionErrors.closed);
 	};
 
 	Transport.prototype.disconnect = function(err) {
@@ -56,7 +56,7 @@ var Transport = (function() {
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('disconnected', err || ConnectionError.disconnected);
+		this.finish('disconnected', err || ConnectionErrors.disconnected);
 	};
 
 	Transport.prototype.fail = function(err) {
@@ -64,7 +64,7 @@ var Transport = (function() {
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('failed', err || ConnectionError.failed);
+		this.finish('failed', err || ConnectionErrors.failed);
 	};
 
 	Transport.prototype.finish = function(event, err) {
