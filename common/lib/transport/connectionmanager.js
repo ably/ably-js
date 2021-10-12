@@ -7,7 +7,7 @@ import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
 import ConnectionStateChange from '../client/connectionstatechange';
-import ConnectionError from '../transport/connectionerror';
+import ConnectionErrors from '../transport/connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
 import Http from 'platform-http';
@@ -329,7 +329,7 @@ var ConnectionManager = (function() {
 					self.notifyState({state: 'failed', error: wrappedErr.error});
 					callback(true);
 				} else if(wrappedErr.event === 'disconnected') {
-					if(!ConnectionError.isRetriable(wrappedErr.error)) {
+					if(!ConnectionErrors.isRetriable(wrappedErr.error)) {
 						/* Error received from the server that does not call for trying a fallback host, eg a rate limit */
 						self.notifyState({state: self.states.connecting.failState, error: wrappedErr.error});
 						callback(true);
@@ -924,7 +924,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.getStateError = function() {
-		return ConnectionError[this.state.state];
+		return ConnectionErrors[this.state.state];
 	};
 
 	ConnectionManager.prototype.activeState = function() {
@@ -1061,7 +1061,7 @@ var ConnectionManager = (function() {
 
 		/* process new state */
 		var newState = this.states[indicated.state],
-			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionError[newState.state]));
+			change = new ConnectionStateChange(this.state.state, newState.state, newState.retryDelay, (indicated.error || ConnectionErrors[newState.state]));
 
 		if(retryImmediately) {
 			var autoReconnect = function() {
@@ -1124,7 +1124,7 @@ var ConnectionManager = (function() {
 		if(state == 'closing' && this.state.state == 'closed') return;
 
 		var newState = this.states[state],
-			change = new ConnectionStateChange(this.state.state, newState.state, null, (request.error || ConnectionError[newState.state]));
+			change = new ConnectionStateChange(this.state.state, newState.state, null, (request.error || ConnectionErrors[newState.state]));
 
 		this.enactStateChange(change);
 

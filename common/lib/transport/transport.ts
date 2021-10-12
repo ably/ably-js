@@ -2,7 +2,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import ConnectionError from './connectionerror';
+import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 
 // TODO: replace these with the real types once these classes are in TypeScript
@@ -66,8 +66,8 @@ abstract class Transport extends EventEmitter {
 		if(this.isConnected) {
 			this.requestClose();
 		}
-		this.finish('closed', ConnectionError.closed);
-	}
+		this.finish('closed', ConnectionErrors.closed);
+	};
 
 	disconnect(err?: ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
@@ -75,16 +75,16 @@ abstract class Transport extends EventEmitter {
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('disconnected', err || ConnectionError.disconnected);
-	}
+		this.finish('disconnected', err || ConnectionErrors.disconnected);
+	};
 
 	fail(err: ErrorInfo): void {
 		/* Used for client-side-detected fatal connection issues */
 		if(this.isConnected) {
 			this.requestDisconnect();
 		}
-		this.finish('failed', err || ConnectionError.failed);
-	}
+		this.finish('failed', err || ConnectionErrors.failed);
+	};
 
 	finish(event: string, err?: ErrorInfo): void {
 		if(this.isFinished) {

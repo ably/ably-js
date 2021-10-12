@@ -3,7 +3,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import Transport from '../transport/transport';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
-import ConnectionError from './connectionerror';
+import ConnectionErrors from './connectionerrors';
 import Auth from '../client/auth';
 import ErrorInfo from '../types/errorinfo';
 
@@ -170,7 +170,7 @@ var CometTransport = (function() {
 			}
 			/* In almost all cases the transport will be finished before it's
 			 * disposed. Finish here just to make sure. */
-			this.finish('disconnected', ConnectionError.disconnected);
+			this.finish('disconnected', ConnectionErrors.disconnected);
 			var self = this;
 			Utils.nextTick(function() {
 				self.emit('disposed');
