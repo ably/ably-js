@@ -186,7 +186,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			});
 		});
 
-		restTestOnJsonMsgpack('request_batch_api_partial_success', function (done, rest, name) {
+		restTestOnJsonMsgpack.skip('request_batch_api_partial_success', function (done, rest, name) {
 			var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
 			rest.request('POST', '/messages', {}, body, {}, function (err, res) {
@@ -218,7 +218,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 					done(err);
 				}
 			});
-		}, true);
+		});
 
 		utils.arrForEach(['put', 'patch', 'delete'], function (method) {
 			it('check' + method, function (done) {
