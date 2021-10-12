@@ -187,6 +187,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 		});
 
 		// TODO remove this function wrapper when Realtime #3737 is fixed
+		it.skip('request_batch_api_partial_success');
 		var skippedTest = function() {
 			restTestOnJsonMsgpack('request_batch_api_partial_success', function (done, rest, name) {
 				var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
