@@ -32,18 +32,35 @@ var Http = (function() {
 			}
 			var statusCode = response.statusCode, headers = response.headers;
 			if(statusCode >= 300) {
-				switch(headers['content-type']) {
-					case 'application/json':
-						body = JSON.parse(body);
-						break;
-					case 'application/x-msgpack':
-						body = msgpack.decode(body);
+				// Related to https://github.com/ably/ably-js/issues/676
+				// if body length is not zero, we try to parse it
+				var error;
+				try {
+					if(body.length>0) {
+						switch(headers['content-type']) {
+							case 'application/json':
+								body = JSON.parse(body);
+								break;
+							case 'application/x-msgpack':
+								body = msgpack.decode(body);
+						}
+					}
+					// we managed to parse the body, even if it looks like erroneous one
+					error = body.error ? ErrorInfo.fromValues(body.error) : new ErrorInfo(
+						headers['x-ably-errormessage'] || 'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
+						headers['x-ably-errorcode'],
+						statusCode
+					);
+				} catch (bodyParsingError) {
+					// server response cannot be parsed both by JSON or msgpack.decode, looks like it
+					// its something like nginx/cloudflare placeholder page
+					// TODO - what if Utils.inspect cannot deal with long HTML code string?
+					error = new ErrorInfo(
+						headers['x-ably-errormessage'] || 'Error parsing server response: ' + statusCode + ' with body: ' + Utils.inspect(body),
+						headers['x-ably-errorcode'],
+						statusCode
+					);
 				}
-				var error = body.error ? ErrorInfo.fromValues(body.error) : new ErrorInfo(
-					headers['x-ably-errormessage'] || 'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
-					headers['x-ably-errorcode'],
-					statusCode
-				);
 				callback(error, body, headers, true, statusCode);
 				return;
 			}
