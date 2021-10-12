@@ -54,7 +54,6 @@ var Http = (function() {
 				} catch (bodyParsingError) {
 					// server response cannot be parsed both by JSON or msgpack.decode, looks like it
 					// its something like nginx/cloudflare placeholder page
-					// TODO - what if Utils.inspect cannot deal with long HTML code string?
 					error = new ErrorInfo(
 						headers['x-ably-errormessage'] || 'Error parsing server response: ' + statusCode + ' with body: ' + Utils.inspect(body),
 						headers['x-ably-errorcode'],
