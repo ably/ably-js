@@ -128,11 +128,12 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
-		function restTestOnJsonMsgpack(name, testFn) {
-			it(name + ' with binary protocol', function (done) {
+		function restTestOnJsonMsgpack(name, testFn, skip) {
+			var testFn = skip ? it.skip : it;
+			testFn(name + ' with binary protocol', function (done) {
 				testFn(done, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary');
 			});
-			it(name + ' with text protocol', function (done) {
+			testFn(name + ' with text protocol', function (done) {
 				testFn(done, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text');
 			});
 		}

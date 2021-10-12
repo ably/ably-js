@@ -186,43 +186,39 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			});
 		});
 
-		// TODO remove this function wrapper when Realtime #3737 is fixed
-		it.skip('request_batch_api_partial_success');
-		var skippedTest = function() {
-			restTestOnJsonMsgpack('request_batch_api_partial_success', function (done, rest, name) {
-				var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
+		restTestOnJsonMsgpack('request_batch_api_partial_success', function (done, rest, name) {
+			var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
-				rest.request('POST', '/messages', {}, body, {}, function (err, res) {
-					try {
-						expect(err).to.equal(null, 'Check that we do not get an error response for a partial success');
-						expect(res.success).to.equal(false, 'Check res.success is false for a partial failure');
-						expect(res.statusCode).to.equal(400, 'Check HPR.statusCode is 400 for a partial failure');
-						expect(res.errorCode).to.equal(40020, 'Check HPR.errorCode is 40020 for a partial failure');
-						expect(res.errorMessage, 'Check have an HPR.errorMessage').to.be.ok;
+			rest.request('POST', '/messages', {}, body, {}, function (err, res) {
+				try {
+					expect(err).to.equal(null, 'Check that we do not get an error response for a partial success');
+					expect(res.success).to.equal(false, 'Check res.success is false for a partial failure');
+					expect(res.statusCode).to.equal(400, 'Check HPR.statusCode is 400 for a partial failure');
+					expect(res.errorCode).to.equal(40020, 'Check HPR.errorCode is 40020 for a partial failure');
+					expect(res.errorMessage, 'Check have an HPR.errorMessage').to.be.ok;
 
-						var response = res.items[0];
-						expect(response.error.code).to.equal(40020, 'Verify response has an errorCode');
-						expect(response.batchResponse.length).to.equal(
-							3,
-							'Verify batched response includes response for each channel'
-						);
-						expect(response.batchResponse[0].channel).to.equal(name, 'Verify channel1 response includes correct channel');
-						expect(!response.batchResponse[0].error, 'Verify first channel response is not an error').to.be.ok;
-						expect(response.batchResponse[1].error.code).to.equal(
-							40010,
-							'Verify [invalid response includes an error with the right code'
-						);
-						expect(response.batchResponse[2].error.code).to.equal(
-							40010,
-							'Verify empty channel response includes an error with the right code'
-						);
-						done();
-					} catch (err) {
-						done(err);
-					}
-				});
-			})
-		};
+					var response = res.items[0];
+					expect(response.error.code).to.equal(40020, 'Verify response has an errorCode');
+					expect(response.batchResponse.length).to.equal(
+						3,
+						'Verify batched response includes response for each channel'
+					);
+					expect(response.batchResponse[0].channel).to.equal(name, 'Verify channel1 response includes correct channel');
+					expect(!response.batchResponse[0].error, 'Verify first channel response is not an error').to.be.ok;
+					expect(response.batchResponse[1].error.code).to.equal(
+						40010,
+						'Verify [invalid response includes an error with the right code'
+					);
+					expect(response.batchResponse[2].error.code).to.equal(
+						40010,
+						'Verify empty channel response includes an error with the right code'
+					);
+					done();
+				} catch (err) {
+					done(err);
+				}
+			});
+		}, true);
 
 		utils.arrForEach(['put', 'patch', 'delete'], function (method) {
 			it('check' + method, function (done) {
