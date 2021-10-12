@@ -1,6 +1,7 @@
 "use strict";
 
 var fs = require('fs');
+var path = require('path');
 var webpackConfig = require('./webpack.config');
 
 module.exports = function (grunt) {
@@ -102,6 +103,27 @@ module.exports = function (grunt) {
 	var browsers = grunt.option('browsers') || 'default';
 	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
 
+	grunt.registerTask('checkGitSubmodules',
+		'Check, if git submodules are properly installed', function (){
+				var done = this.async();
+				var pathToSubmodule = path.join(__dirname, 'spec', 'common', 'ably-common');
+				fs.stat(pathToSubmodule, function (error, stats){
+					if(error) {
+						grunt.log.writeln('%s : while checking submodule path!', error.message);
+						grunt.log.writeln('Probably, git submodule at %s are not initialized?', pathToSubmodule);
+						grunt.log.writeln('Please, initialize it with `git submodule init & git submodule update`!');
+						return done(false);
+					}
+					if(stats.isDirectory()) {
+						grunt.log.writeln('Git submodule at %s is found!', pathToSubmodule);
+						return done();
+					}
+					grunt.log.writeln('Git submodule at %s is not initialized!', pathToSubmodule);
+					grunt.log.writeln('Please, initialize it with `git submodule init & git submodule update`!');
+					return done(false);
+				});
+		});
+
 	grunt.registerTask('test',
 		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
 		['build', 'mocha', 'karma:' + browsers]
@@ -124,7 +146,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'requirejs', 'mocha:webserver']
+		['build', 'checkGitSubmodules', 'requirejs', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',
