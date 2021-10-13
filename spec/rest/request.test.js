@@ -244,15 +244,30 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			// related to https://github.com/ably/ably-js/issues/676
 			helper
 				.AblyRest({ restHost: echoServerHost, tls: true })
-				.request('get', '/?body=thisIsMalformedJSON&status=400&type=json', null, null, null, function (err) {
+				.request('get', '/?body=%7B%22something%22%3A%22malformed%22&status=400&type=json', null, null, null, function (err, resp) {
 				if (err) {
-					expect(err.message, 'wrong message thrown').to.be.equal(
-						'Error parsing server response: 400 with body: thisIsMalformedJSON'
-					);
-					return done();
+					return done(err);
 				}
-				done(new Error('error is not thrown'));
+				expect(
+					resp.errorMessage.startsWith('Error response received from server: 400 body was:')
+				).to.be.ok;
+				done();
 			});
+		});
+
+		it('fails as expected when trying to parse empty json response', function (done){
+			// related to https://github.com/ably/ably-js/issues/676
+			helper
+				.AblyRest({ restHost: echoServerHost, tls: true })
+				.request('get', '/respondWith?status=200', null, null, null, function (err, resp) {
+					if (err) {
+						expect(err.message, 'wrong message thrown').to.be.equal(
+						 	'malformed messagepack (referenced offset is outside buffer)'
+						);
+						return done();
+					}
+					done(new Error('no body parsing error thrown properly'));
+				});
 		});
 	});
 });
