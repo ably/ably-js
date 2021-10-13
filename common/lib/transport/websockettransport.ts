@@ -1,35 +1,44 @@
 import Platform from 'platform';
 import * as Utils from '../util/utils';
-import Transport from './transport';
+import Transport, { TryConnectCallback } from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 import ProtocolMessage from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
+import NodeWebSocket from 'ws';
 
-var WebSocketTransport = function(connectionManager) {
-	var WebSocket = Platform.WebSocket;
-	var shortName = 'web_socket';
+// TODO: replace these with the real types once these classes are in TypeScript
+type ConnectionManager = any;
+type Auth = any;
+type TransportParams = any;
 
-	/* public constructor */
-	function WebSocketTransport(connectionManager, auth, params) {
-		this.shortName = shortName;
+const WebSocket = Platform.WebSocket;
+const shortName = 'web_socket';
+
+function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
+	return !!((ws as NodeWebSocket).on);
+}
+
+class WebSocketTransport extends Transport {
+	shortName = shortName;
+	wsHost: string;
+	uri?: string;
+	wsConnection?: WebSocket | NodeWebSocket;
+
+	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
+		super(connectionManager, auth, params);
 		/* If is a browser, can't detect pings, so request protocol heartbeats */
 		params.heartbeats = Platform.useProtocolHeartbeats;
-		Transport.call(this, connectionManager, auth, params);
 		this.wsHost = Defaults.getHost(params.options, params.host, true);
 	}
-	Utils.inherits(WebSocketTransport, Transport);
 
-	WebSocketTransport.isAvailable = function() {
+	static isAvailable() {
 		return !!WebSocket;
-	};
+	}
 
-	if(WebSocketTransport.isAvailable())
-		connectionManager.supportedTransports[shortName] = WebSocketTransport;
-
-	WebSocketTransport.tryConnect = function(connectionManager, auth, params, callback) {
-		var transport = new WebSocketTransport(connectionManager, auth, params);
-		var errorCb = function(err) { callback({event: this.event, error: err}); };
+	static tryConnect(connectionManager: ConnectionManager, auth: Auth, params: TransportParams, callback: TryConnectCallback) {
+		const transport = new WebSocketTransport(connectionManager, auth, params);
+		const errorCb = function(this: { event: string }, err: ErrorInfo) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('wsopen', function() {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
@@ -37,56 +46,61 @@ var WebSocketTransport = function(connectionManager) {
 			callback(null, transport);
 		});
 		transport.connect();
-	};
+	}
 
-	WebSocketTransport.prototype.createWebSocket = function(uri, connectParams) {
-		this.uri = uri + Utils.toQueryString(connectParams)
-		return new WebSocket(this.uri);
-	};
+	createWebSocket(uri: string, connectParams: Record<string, string>) {
+		let paramCount = 0;
+		if(connectParams) {
+			for(const key in connectParams)
+				uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
+		}
+		this.uri = uri;
+		return new WebSocket(uri);
+	}
 
-	WebSocketTransport.prototype.toString = function() {
+	toString() {
 		return 'WebSocketTransport; uri=' + this.uri;
-	};
+	}
 
-	WebSocketTransport.prototype.connect = function() {
+	connect() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
-		var self = this, params = this.params, options = params.options;
-		var wsScheme = options.tls ? 'wss://' : 'ws://';
-		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
+		const self = this, params = this.params, options = params.options;
+		const wsScheme = options.tls ? 'wss://' : 'ws://';
+		const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-		this.auth.getAuthParams(function(err, authParams) {
+		this.auth.getAuthParams(function(err: ErrorInfo, authParams: Record<string, string>) {
 			if(self.isDisposed) {
 				return;
 			}
-			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
+			let paramStr = ''; for(const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
 				self.disconnect(err);
 				return;
 			}
-			var connectParams = params.getConnectParams(authParams);
+			const connectParams = params.getConnectParams(authParams);
 			try {
-				var wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
+				const wsConnection = self.wsConnection = self.createWebSocket(wsUri, connectParams);
 				wsConnection.binaryType = Platform.binaryType;
 				wsConnection.onopen = function() { self.onWsOpen(); };
-				wsConnection.onclose = function(ev) { self.onWsClose(ev); };
-				wsConnection.onmessage = function(ev) { self.onWsData(ev.data); };
-				wsConnection.onerror = function(ev) { self.onWsError(ev); };
-				if(wsConnection.on) {
+				wsConnection.onclose = function(ev: CloseEvent) { self.onWsClose(ev); };
+				wsConnection.onmessage = function(ev: MessageEvent) { self.onWsData(ev.data); };
+				wsConnection.onerror = function(ev: Event) { self.onWsError(ev as ErrorEvent); };
+				if(isNodeWebSocket(wsConnection)) {
 					/* node; browsers currently don't have a general eventemitter and can't detect
 					 * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
 					wsConnection.on('ping', function() { self.onActivity(); });
 				}
 			} catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
-				self.disconnect(e);
+				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message));
+				self.disconnect(e as Error);
 			}
 		});
-	};
+	}
 
-	WebSocketTransport.prototype.send = function(message) {
-		var wsConnection = this.wsConnection;
+	send(message: ProtocolMessage) {
+		const wsConnection = this.wsConnection;
 		if(!wsConnection) {
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
@@ -94,30 +108,30 @@ var WebSocketTransport = function(connectionManager) {
 		try {
 			wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
 		} catch (e) {
-			var msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
+			const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
 			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
 			/* Don't try to request a disconnect, that'll just involve sending data
 			 * down the websocket again. Just finish the transport. */
 			this.finish('disconnected', new ErrorInfo(msg, 50000, 500));
 		}
-	};
+	}
 
-	WebSocketTransport.prototype.onWsData = function(data) {
+	onWsData(data: string) {
 		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
 			this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
+			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + (e as Error).stack);
 		}
-	};
+	}
 
-	WebSocketTransport.prototype.onWsOpen = function() {
+	onWsOpen() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
 		this.emit('wsopen');
-	};
+	}
 
-	WebSocketTransport.prototype.onWsClose = function(ev) {
-		var wasClean, code, reason;
+	onWsClose(ev: number | CloseEvent) {
+		let wasClean, code;
 		if(typeof(ev) == 'object') {
 			/* W3C spec-compatible */
 			wasClean = ev.wasClean;
@@ -130,32 +144,31 @@ var WebSocketTransport = function(connectionManager) {
 		delete this.wsConnection;
 		if(wasClean) {
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
-			var err = new ErrorInfo('Websocket closed', 80003, 400);
+			const err = new ErrorInfo('Websocket closed', 80003, 400);
 			this.finish('disconnected', err);
 		} else {
-			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
+			const msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
 			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
 			this.finish('disconnected', err);
 		}
 		this.emit('disposed');
-	};
+	}
 
-	WebSocketTransport.prototype.onWsError = function(err) {
+	onWsError(err: ErrorEvent) {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
 		/* Wait a tick before aborting: if the websocket was connected, this event
 		 * will be immediately followed by an onclose event with a close code. Allow
 		 * that to close it (so we see the close code) rather than anticipating it */
-		var self = this;
-		Utils.nextTick(function() {
-			self.disconnect(err);
+		Utils.nextTick(() => {
+			this.disconnect(Error(err.message));
 		});
-	};
+	}
 
-	WebSocketTransport.prototype.dispose = function() {
+	dispose() {
 		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
 		this.isDisposed = true;
-		var wsConnection = this.wsConnection;
+		const wsConnection = this.wsConnection;
 		if(wsConnection) {
 			/* Ignore any messages that come through after dispose() is called but before
 			 * websocket is actually closed. (mostly would be harmless, but if it's a
@@ -166,12 +179,20 @@ var WebSocketTransport = function(connectionManager) {
 			 * giving some implementations the opportunity to send any outstanding close message */
 			Utils.nextTick(function() {
 				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
+				if (!wsConnection) {
+					throw new Error('WebSocketTransport.dispose(): wsConnection is not defined');
+				}
 				wsConnection.close();
 			});
 		}
-	};
+	}
+}
+
+function initialiseTransport(connectionManager: any): typeof WebSocketTransport {
+	if(WebSocketTransport.isAvailable())
+		connectionManager.supportedTransports[shortName] = WebSocketTransport;
 
 	return WebSocketTransport;
-};
+}
 
-export default WebSocketTransport;
+export default initialiseTransport;
