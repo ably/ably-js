@@ -374,7 +374,7 @@ declare namespace Types {
 	type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
 	type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
 	type messageCallback<T> = (message: T) => void;
-	type errorCallback = (error?: ErrorInfo) => void;
+	type errorCallback = (error?: ErrorInfo | null) => void;
 	type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
 	type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
 	type timeCallback = StandardCallback<number>;
