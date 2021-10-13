@@ -48,7 +48,7 @@ var Http = (function() {
 					// we managed to parse the body, even if it looks like erroneous one
 					error = body.error ? ErrorInfo.fromValues(body.error) : new ErrorInfo(
 						headers['x-ably-errormessage'] || 'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
-						headers['x-ably-errorcode'] || statusCode,
+						headers['x-ably-errorcode'],
 						statusCode
 					);
 				} catch (bodyParsingError) {
