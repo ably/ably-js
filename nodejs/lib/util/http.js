@@ -48,15 +48,15 @@ var Http = (function() {
 					// we managed to parse the body, even if it looks like erroneous one
 					error = body.error ? ErrorInfo.fromValues(body.error) : new ErrorInfo(
 						headers['x-ably-errormessage'] || 'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
-						headers['x-ably-errorcode'],
+						headers['x-ably-errorcode'] || statusCode,
 						statusCode
 					);
 				} catch (bodyParsingError) {
 					// server response cannot be parsed both by JSON or msgpack.decode, looks like it
 					// its something like nginx/cloudflare placeholder page
 					error = new ErrorInfo(
-						headers['x-ably-errormessage'] || 'Error parsing server response: ' + statusCode + ' with body: ' + Utils.inspect(body),
-						headers['x-ably-errorcode'],
+						headers['x-ably-errormessage'] || 'Error parsing server response: ' + bodyParsingError + ' with body: ' + body.toString(),
+						headers['x-ably-errorcode'] || statusCode,
 						statusCode
 					);
 				}
