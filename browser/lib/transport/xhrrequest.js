@@ -151,7 +151,7 @@ var XHRRequest = (function() {
 		};
 		xhr.onerror = function(errorEvent) {
 			errorHandler(errorEvent, 'XHR error occurred', null, 400);
-		}
+		};
 		xhr.onabort = function(errorEvent) {
 			if(self.timedOut) {
 				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 408);
@@ -196,8 +196,14 @@ var XHRRequest = (function() {
 					 * we set the responseType expecting msgpack, the response will be
 					 * an ArrayBuffer containing json */
 					responseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
-					if(responseBody.length) {
+					if(responseBody.length > 0) {
 						responseBody = JSON.parse(responseBody);
+						// throws
+						// Uncaught SyntaxError: Unexpected end of JSON input
+						// Uncaught SyntaxError: Unexpected token s in JSON at position 0
+						// and so on
+					} else {
+						throw new Error('empty json');
 					}
 					unpacked = true;
 				} else {
