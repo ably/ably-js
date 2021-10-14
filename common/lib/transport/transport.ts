@@ -4,10 +4,10 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
+import Auth from '../client/auth';
 
 // TODO: replace these with the real types once these classes are in TypeScript
 type ConnectionManager = any;
-type Auth = any;
 type TransportParams = any;
 
 export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;

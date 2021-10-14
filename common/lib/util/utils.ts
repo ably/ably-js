@@ -13,7 +13,7 @@ function randomPosn(arrOrStr: Array<unknown> | string) {
 * props:  an object whose enumerable properties are
 *         added, by reference only
 */
-export function mixin(target: Record<string, unknown>, ...args: Array<Record<string, unknown> | undefined | null>): Record<string, unknown> {
+export function mixin(target: Record<string, unknown>, ...args: Array<object | undefined | null>): Record<string, unknown> {
 	for (let i = 0; i < args.length; i++) {
 		const source = args[i];
 		if (!source) {
@@ -22,7 +22,7 @@ export function mixin(target: Record<string, unknown>, ...args: Array<Record<str
 		const hasOwnProperty = Object.prototype.hasOwnProperty;
 		for (const key in source) {
 			if (!hasOwnProperty || hasOwnProperty.call(source, key)) {
-				target[key] = source[key];
+				target[key] = (source as Record<string, unknown>)[key];
 			}
 		}
 	}
@@ -484,9 +484,9 @@ export const trim = (String.prototype.trim as unknown)
 			return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
 		};
 
-export function promisify<T>(ob: Record<string, any>, fnName: string, args: unknown[]): Promise<T> {
+export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArguments | unknown[]): Promise<T> {
 	return new Promise(function (resolve, reject) {
-		ob[fnName](...args, function(err: Error, res: unknown) {
+		ob[fnName](...(args as unknown[]), function(err: Error, res: unknown) {
 			err ? reject(err) : resolve(res as T);
 		});
 	});
