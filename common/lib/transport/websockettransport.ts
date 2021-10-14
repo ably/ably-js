@@ -6,11 +6,8 @@ import Logger from '../util/logger';
 import ProtocolMessage from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
-
-// TODO: replace these with the real types once these classes are in TypeScript
-type ConnectionManager = any;
-type Auth = any;
-type TransportParams = any;
+import ConnectionManager, { TransportParams } from './connectionmanager';
+import Auth from '../client/auth';
 
 const WebSocket = Platform.WebSocket;
 const shortName = 'web_socket';

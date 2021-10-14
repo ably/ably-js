@@ -8,9 +8,7 @@ import Auth from '../client/auth';
 import ErrorInfo from '../types/errorinfo';
 import IXHRRequest from '../../types/IXHRRequest';
 import TokenDetails from '../../types/TokenDetails';
-
-type ConnectionManager = any;
-type TransportParams = any;
+import ConnectionManager, { TransportParams } from './connectionmanager';
 
 const REQ_SEND = 0,
 	REQ_RECV = 1,

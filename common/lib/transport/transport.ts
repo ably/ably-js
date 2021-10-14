@@ -6,10 +6,7 @@ import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
 import TokenDetails from '../../types/TokenDetails';
-
-// TODO: replace these with the real types once these classes are in TypeScript
-type ConnectionManager = any;
-type TransportParams = any;
+import ConnectionManager, { TransportParams } from './connectionmanager';
 
 export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
 
