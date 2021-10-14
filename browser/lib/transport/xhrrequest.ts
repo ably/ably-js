@@ -5,71 +5,91 @@ import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Http from 'platform-http';
 import Logger from '../../../common/lib/util/logger';
 import Defaults from '../../../common/lib/util/defaults';
-import BufferUtils from 'platform-bufferutils';
-import DomEvent from '../util/domevent';
-import HttpStatusCodes, { isSuccessCode } from '../../../common/constants/HttpStatusCodes';
+import * as BufferUtils from 'platform-bufferutils';
+import HttpMethods from '../../../common/constants/HttpMethods';
+import IXHRRequest from '../../../common/types/IXHRRequest';
+import { ErrnoException, RequestCallback, RequestParams } from '../../../common/types/http';
 
-function getAblyError(responseBody, headers) {
-	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {
+// TODO replace this with the real type when Rest is in TypeScript
+type Rest = any;
+
+function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
+	return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');
+}
+
+function getAblyError(responseBody: unknown, headers: Record<string, string>) {
+	if (isAblyError(responseBody, headers)) {
 		return responseBody.error && ErrorInfo.fromValues(responseBody.error);
 	}
 }
 
-var XHRRequest = (function() {
-	var noop = function() {};
-	var idCounter = 0;
-	var pendingRequests = {};
+declare const global: {
+	XDomainRequest: unknown;
+}
 
-	var REQ_SEND = 0,
-		REQ_RECV = 1,
-		REQ_RECV_POLL = 2,
-		REQ_RECV_STREAM = 3;
+const noop = function() {};
+let idCounter = 0;
+const pendingRequests: Record<string, XHRRequest> = {};
 
-	function clearPendingRequests() {
-		for(var id in pendingRequests)
-			pendingRequests[id].dispose();
+const REQ_SEND = 0,
+	REQ_RECV = 1,
+	REQ_RECV_POLL = 2,
+	REQ_RECV_STREAM = 3;
+
+const isIE = typeof global !== 'undefined' && global.XDomainRequest;
+
+function ieVersion() {
+	const match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
+	return match && Number(match[1]);
+}
+
+function needJsonEnvelope() {
+	/* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
+	let version;
+	return isIE && (version = ieVersion()) && version === 10;
+}
+
+function getHeader(xhr: XMLHttpRequest, header: string) {
+	return xhr.getResponseHeader && xhr.getResponseHeader(header);
+}
+
+/* Safari mysteriously returns 'Identity' for transfer-encoding when in fact
+	* it is 'chunked'. So instead, decide that it is chunked when
+	* transfer-encoding is present or content-length is absent.  ('or' because
+	* when using http2 streaming, there's no transfer-encoding header, but can
+	* still deduce streaming from lack of content-length) */
+function isEncodingChunked(xhr: XMLHttpRequest) {
+	return xhr.getResponseHeader
+		&& (xhr.getResponseHeader('transfer-encoding')
+		|| !xhr.getResponseHeader('content-length'));
+}
+
+function getHeadersAsObject(xhr: XMLHttpRequest) {
+	const headerPairs = Utils.trim(xhr.getAllResponseHeaders()).split('\r\n');
+	const headers: Record<string, string> = {};
+	for (let i = 0; i < headerPairs.length; i++) {
+		const parts = (headerPairs[i].split(':')).map(Utils.trim);
+		headers[parts[0].toLowerCase()] = parts[1];
 	}
+	return headers;
+}
 
-	var isIE = typeof global !== 'undefined' && global.XDomainRequest;
+class XHRRequest extends EventEmitter implements IXHRRequest {
+	uri: string;
+	headers: Record<string, string>;
+	body: unknown;
+	method: string;
+	requestMode: number;
+	timeouts: Record<string, number>;
+	timedOut: boolean;
+	requestComplete: boolean;
+	id: string;
+	streamComplete?: boolean;
+	xhr?: XMLHttpRequest | null;
+	timer?: NodeJS.Timeout | number | null;
 
-	function ieVersion() {
-		var match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
-		return match && Number(match[1]);
-	}
-
-	function needJsonEnvelope() {
-		/* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
-		var version;
-		return isIE && (version = ieVersion()) && version === 10;
-	}
-
-	function getHeader(xhr, header) {
-		return xhr.getResponseHeader && xhr.getResponseHeader(header);
-	}
-
-	/* Safari mysteriously returns 'Identity' for transfer-encoding when in fact
-	 * it is 'chunked'. So instead, decide that it is chunked when
-	 * transfer-encoding is present or content-length is absent.  ('or' because
-	 * when using http2 streaming, there's no transfer-encoding header, but can
-	 * still deduce streaming from lack of content-length) */
-	function isEncodingChunked(xhr) {
-		return xhr.getResponseHeader
-			&& (xhr.getResponseHeader('transfer-encoding')
-			|| !xhr.getResponseHeader('content-length'));
-	}
-
-	function getHeadersAsObject(xhr) {
-		var headerPairs = Utils.trim(xhr.getAllResponseHeaders()).split('\r\n'),
-			headers = {};
-		for (var i = 0; i < headerPairs.length; i++) {
-			var parts = Utils.arrMap(headerPairs[i].split(':'), Utils.trim);
-			headers[parts[0].toLowerCase()] = parts[1];
-		}
-		return headers;
-	}
-
-	function XHRRequest(uri, headers, params, body, requestMode, timeouts, method) {
-		EventEmitter.call(this);
+	constructor(uri: string, headers: Record<string, string> | null, params: Record<string, string>, body: unknown, requestMode: number, timeouts: Record<string, number>, method?: HttpMethods) {
+		super();
 		params = params || {};
 		params.rnd = Utils.cheapRandStr();
 		if(needJsonEnvelope() && !params.envelope)
@@ -82,19 +102,19 @@ var XHRRequest = (function() {
 		this.timeouts = timeouts;
 		this.timedOut = false;
 		this.requestComplete = false;
-		pendingRequests[this.id = String(++idCounter)] = this;
+		this.id = String(++idCounter);
+		pendingRequests[this.id] = this;
 	}
-	Utils.inherits(XHRRequest, EventEmitter);
 
-	var createRequest = XHRRequest.createRequest = function(uri, headers, params, body, requestMode, timeouts, method) {
+	static createRequest (uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, requestMode: number, timeouts: Record<string, number> | null, method?: HttpMethods): XHRRequest {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
 		timeouts = timeouts || Defaults.TIMEOUTS;
-		return new XHRRequest(uri, headers, Utils.copy(params), body, requestMode, timeouts, method);
-	};
+		return new XHRRequest(uri, headers, Utils.copy(params) as Record<string, string>, body, requestMode, timeouts, method);
+	}
 
-	XHRRequest.prototype.complete = function(err, body, headers, unpacked, statusCode) {
+	complete(err?: ErrorInfo | null, body?: unknown, headers?: Record<string, string> | null, unpacked?: boolean | null, statusCode?: number): void {
 		if(!this.requestComplete) {
 			this.requestComplete = true;
 			if(!err && body) {
@@ -103,25 +123,24 @@ var XHRRequest = (function() {
 			this.emit('complete', err, body, headers, unpacked, statusCode);
 			this.dispose();
 		}
-	};
+	}
 
-	XHRRequest.prototype.abort = function() {
+	abort(): void {
 		this.dispose();
-	};
+	}
 
-	XHRRequest.prototype.exec = function() {
-		var timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
-			self = this,
-			timer = this.timer = setTimeout(function() {
-				self.timedOut = true;
+	exec(): void {
+		let headers = this.headers;
+		const timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
+			timer = this.timer = setTimeout(() => {
+				this.timedOut = true;
 				xhr.abort();
 			}, timeout),
-			body = this.body,
 			method = this.method,
-			headers = this.headers,
 			xhr = this.xhr = new XMLHttpRequest(),
-			accept = headers['accept'],
-			responseType = 'text';
+			accept = headers['accept'];
+		let body = this.body;
+		let responseType: XMLHttpRequestResponseType = 'text';
 
 		if(!accept) {
 			headers['accept'] = 'application/json';
@@ -130,7 +149,7 @@ var XHRRequest = (function() {
 		}
 
 		if(body) {
-			var contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
+			const contentType = headers['content-type'] || (headers['content-type'] = 'application/json');
 			if(contentType.indexOf('application/json') > -1 && typeof(body) != 'string')
 				body = JSON.stringify(body);
 		}
@@ -142,19 +161,20 @@ var XHRRequest = (function() {
 			xhr.withCredentials = true;
 		}
 
-		for(var h in headers)
+		for(const h in headers)
 			xhr.setRequestHeader(h, headers[h]);
 
-		var errorHandler = function(errorEvent, message, code, statusCode) {
-			var errorMessage = message + ' (event type: ' + errorEvent.type + ')' + (self.xhr.statusText ? ', current statusText is ' + self.xhr.statusText : '');
+		const errorHandler = (errorEvent: ProgressEvent<EventTarget>, message: string, code: number | null, statusCode: number) => {
+			let errorMessage = message + ' (event type: ' + errorEvent.type + ')';
+			if (this?.xhr?.statusText) errorMessage += ', current statusText is ' + this.xhr.statusText;
 			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
-			self.complete(new ErrorInfo(errorMessage, code, statusCode));
+			this.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
 		xhr.onerror = function(errorEvent) {
 			errorHandler(errorEvent, 'XHR error occurred', null, 400);
 		}
-		xhr.onabort = function(errorEvent) {
-			if(self.timedOut) {
+		xhr.onabort = (errorEvent) => {
+			if(this.timedOut) {
 				errorHandler(errorEvent, 'Request aborted due to request timeout expiring', null, 408);
 			} else {
 				errorHandler(errorEvent, 'Request cancelled', null, 400);
@@ -164,58 +184,57 @@ var XHRRequest = (function() {
 			errorHandler(errorEvent, 'Request timed out', null, 408);
 		};
 
-		var streaming,
-			statusCode,
-			responseBody,
-			contentType,
-			successResponse,
-			streamPos = 0,
-			unpacked = false;
+		let streaming: boolean | string;
+		let statusCode: number;
+		let successResponse: boolean;
+		let streamPos = 0;
+		let unpacked = false;
 
-		function onResponse() {
+		const onResponse = () => {
 			clearTimeout(timer);
-			successResponse = (isSuccessCode(statusCode));
-			if(statusCode === HttpStatusCodes.NoContent) {
-				self.complete(null, null, null, null, statusCode);
+			successResponse = (statusCode < 400);
+			if(statusCode == 204) {
+				this.complete(null, null, null, null, statusCode);
 				return;
 			}
-			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
+			streaming = (this.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
-		function onEnd() {
+		const onEnd = () => {
+			let parsedResponse: any;
 			try {
-				var contentType = getHeader(xhr, 'content-type'),
-					headers,
-					responseBody,
-					/* Be liberal in what we accept; buggy auth servers may respond
-					 * without the correct contenttype, but assume they're still
-					 * responding with json */
-					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
+				const contentType = getHeader(xhr, 'content-type');
+				/* Be liberal in what we accept; buggy auth servers may respond
+					* without the correct contenttype, but assume they're still
+					* responding with json */
+				const json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
 
 				if(json) {
 					/* If we requested msgpack but server responded with json, then since
 					 * we set the responseType expecting msgpack, the response will be
 					 * an ArrayBuffer containing json */
-					responseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
-					if(responseBody.length) {
-						responseBody = JSON.parse(responseBody);
+					const jsonResponseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
+					if(jsonResponseBody.length) {
+						parsedResponse = JSON.parse(jsonResponseBody);
+					} else {
+						parsedResponse = jsonResponseBody;
 					}
 					unpacked = true;
 				} else {
-					responseBody = xhr.response;
+					parsedResponse = xhr.response;
 				}
 
-				if(responseBody.response !== undefined) {
+				if(parsedResponse.response !== undefined) {
 					/* unwrap JSON envelope */
-					statusCode = responseBody.statusCode;
-					successResponse = (isSuccessCode(statusCode));
-					headers = responseBody.headers;
-					responseBody = responseBody.response;
+					statusCode = parsedResponse.statusCode;
+					successResponse = (statusCode < 400);
+					headers = parsedResponse.headers;
+					parsedResponse = parsedResponse.response;
 				} else {
 					headers = getHeadersAsObject(xhr);
 				}
 			} catch(e) {
-				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
+				this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
 				return;
 			}
 
@@ -223,48 +242,49 @@ var XHRRequest = (function() {
 			 * is contains an error action (hence the nonsuccess statuscode), we can
 			 * consider the request to have succeeded, just pass it on to
 			 * onProtocolMessage to decide what to do */
-			if(successResponse || Utils.isArray(responseBody)) {
-				self.complete(null, responseBody, headers, unpacked, statusCode);
+			if(successResponse || Utils.isArray(parsedResponse)) {
+				this.complete(null, parsedResponse, headers, unpacked, statusCode);
 				return;
 			}
 
-			var err = getAblyError(responseBody, headers);
+			let err = getAblyError(parsedResponse, headers);
 			if(!err) {
-				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(responseBody), null, statusCode);
+				err = new ErrorInfo('Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(parsedResponse), null, statusCode);
 			}
-			self.complete(err, responseBody, headers, unpacked, statusCode);
+			this.complete(err, parsedResponse, headers, unpacked, statusCode);
 		}
 
 		function onProgress() {
-			responseBody = xhr.responseText;
-			var bodyEnd = responseBody.length - 1, idx, chunk;
-			while((streamPos < bodyEnd) && (idx = responseBody.indexOf('\n', streamPos)) > -1) {
-				chunk = responseBody.slice(streamPos, idx);
+			const responseText = xhr.responseText;
+			const bodyEnd = responseText.length - 1;
+			let idx, chunk;
+			while((streamPos < bodyEnd) && (idx = responseText.indexOf('\n', streamPos)) > -1) {
+				chunk = responseText.slice(streamPos, idx);
 				streamPos = idx + 1;
 				onChunk(chunk);
 			}
 		}
 
-		function onChunk(chunk) {
+		const onChunk = (chunk: string) =>  {
 			try {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
-				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
+				this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
 				return;
 			}
-			self.emit('data', chunk);
+			this.emit('data', chunk);
 		}
 
-		function onStreamEnd() {
+		const onStreamEnd = () => {
 			onProgress();
-			self.streamComplete = true;
-			Utils.nextTick(function() {
-				self.complete();
+			this.streamComplete = true;
+			Utils.nextTick(() => {
+				this.complete();
 			});
 		}
 
 		xhr.onreadystatechange = function() {
-			var readyState = xhr.readyState;
+			const readyState = xhr.readyState;
 			if(readyState < 3) return;
 			if(xhr.status !== 0) {
 				if(statusCode === undefined) {
@@ -283,51 +303,46 @@ var XHRRequest = (function() {
 				}
 			}
 		};
-		xhr.send(body);
-	};
+		xhr.send(body as any);
+	}
 
-	XHRRequest.prototype.dispose = function() {
-		var xhr = this.xhr;
+	dispose(): void {
+		const xhr = this.xhr;
 		if(xhr) {
 			xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = noop;
 			this.xhr = null;
-			var timer = this.timer;
+			const timer = this.timer;
 			if(timer) {
-				clearTimeout(timer);
+				clearTimeout(timer as NodeJS.Timeout);
 				this.timer = null;
 			}
 			if(!this.requestComplete)
 				xhr.abort();
 		}
 		delete pendingRequests[this.id];
-	};
-
-	if(Platform.xhrSupported) {
-		if(typeof DomEvent === 'object') {
-			DomEvent.addUnloadListener(clearPendingRequests);
-		}
-		if(typeof(Http) !== 'undefined') {
-			Http.supportsAuthHeaders = true;
-			Http.Request = function(method, rest, uri, headers, params, body, callback) {
-				var req = createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
-				req.once('complete', callback);
-				req.exec();
-				return req;
-			};
-
-			Http.checkConnectivity = function(callback) {
-				var upUrl = Defaults.internetUpUrl;
-				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-				Http.getUri(null, upUrl, null, null, function(err, responseText) {
-					var result = (!err && responseText.replace(/\n/, '') == 'yes');
-					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-					callback(null, result);
-				});
-			};
-		}
 	}
+}
 
-	return XHRRequest;
-})();
+if(Platform.xhrSupported) {
+	if(typeof(Http) !== 'undefined') {
+		Http.supportsAuthHeaders = true;
+		Http.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
+			const req = XHRRequest.createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
+			req.once('complete', callback);
+			req.exec();
+			return req;
+		};
+
+		Http.checkConnectivity = function(callback: (err?: ErrorInfo | null, connectivity?: boolean) => void) {
+			const upUrl = Defaults.internetUpUrl;
+			Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+			Http.getUri(null, upUrl, null, null, function(err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
+				const result = (!err && (responseText as string)?.replace(/\n/, '') == 'yes');
+				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+				callback(null, result);
+			});
+		};
+	}
+}
 
 export default XHRRequest;
