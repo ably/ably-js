@@ -174,11 +174,11 @@ var XHRRequest = (function() {
 		function onResponse() {
 			clearTimeout(timer);
 			successResponse = (statusCode < 400);
-			if(statusCode == 204) {
+			if(statusCode === 204) {
 				self.complete(null, null, null, null, statusCode);
 				return;
 			}
-			streaming = (self.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
+			streaming = (self.requestMode === REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
 		function onEnd() {
@@ -217,11 +217,20 @@ var XHRRequest = (function() {
 				} else {
 					headers = getHeadersAsObject(xhr);
 				}
-			} catch(e) {
-				self.complete(new ErrorInfo(
-					'Error response received from server: 400 body was: ' + xhr.response.toString(),
-					null, 400)
-			);
+			} catch(bodyParsingError) {
+				// error parsing json
+				if(bodyParsingError.message.startsWith('SyntaxError: JSON.parse:')) {
+					self.complete(new ErrorInfo(
+						'Error response received from server: 400 body was: ' + xhr.response.toString(),
+						null, 400)
+					);
+				} else {
+					// other errors
+					self.complete(new ErrorInfo(
+						'Error parsing server response: ' + bodyParsingError + ' with body: ' + xhr.response.toString(),
+						null, 400)
+					);
+				}
 				return;
 			}
 
