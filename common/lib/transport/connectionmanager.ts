@@ -7,7 +7,7 @@ import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
 import ConnectionStateChange from '../client/connectionstatechange';
-import ConnectionErrors from '../transport/connectionerrors';
+import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
 import Http from 'platform-http';
