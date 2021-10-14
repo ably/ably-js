@@ -4,43 +4,65 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
+import Transport from './transport';
+import { ErrCallback } from '../../types/utils';
 
-var Protocol = (function() {
-	var actions = ProtocolMessage.Action;
+const actions = ProtocolMessage.Action;
 
-	function Protocol(transport) {
-		EventEmitter.call(this);
+export class PendingMessage {
+	message: ProtocolMessage;
+	callback?: ErrCallback;
+	merged: boolean;
+	sendAttempted: boolean;
+	ackRequired: boolean;
+
+	constructor(message: ProtocolMessage, callback?: ErrCallback) {
+		this.message = message;
+		this.callback = callback;
+		this.merged = false;
+		const action = message.action;
+		this.sendAttempted = false;
+		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
+	}
+}
+
+class Protocol extends EventEmitter {
+	transport: Transport;
+	messageQueue: MessageQueue;
+
+	constructor(transport: Transport) {
+		super();
 		this.transport = transport;
 		this.messageQueue = new MessageQueue();
-		var self = this;
-		transport.on('ack', function(serial, count) { self.onAck(serial, count); });
-		transport.on('nack', function(serial, count, err) { self.onNack(serial, count, err); });
+		transport.on('ack', (serial: number, count: number) => { this.onAck(serial, count); });
+		transport.on('nack', (serial: number, count: number, err: ErrorInfo) => { this.onNack(serial, count, err); });
 	}
-	Utils.inherits(Protocol, EventEmitter);
 
-	Protocol.prototype.onAck = function(serial, count) {
+	static PendingMessage = PendingMessage;
+
+	onAck(serial: number, count: number): void {
 		Logger.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
 		this.messageQueue.completeMessages(serial, count);
-	};
+	}
 
-	Protocol.prototype.onNack = function(serial, count, err) {
+	onNack(serial: number, count: number, err: ErrorInfo): void {
 		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 		if(!err) {
 			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
 		}
 		this.messageQueue.completeMessages(serial, count, err);
-	};
+	}
 
-	Protocol.prototype.onceIdle = function(listener) {
-		var messageQueue = this.messageQueue;
+	onceIdle(listener: ErrCallback): void {
+		const messageQueue = this.messageQueue;
 		if(messageQueue.count() === 0) {
 			listener();
 			return;
 		}
 		messageQueue.once('idle', listener);
-	};
+	}
 
-	Protocol.prototype.send = function(pendingMessage) {
+	send(pendingMessage: PendingMessage): void {
 		if(pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
@@ -49,38 +71,26 @@ var Protocol = (function() {
 		}
 		pendingMessage.sendAttempted = true;
 		this.transport.send(pendingMessage.message);
-	};
+	}
 
-	Protocol.prototype.getTransport = function() {
+	getTransport(): Transport {
 		return this.transport;
-	};
+	}
 
-	Protocol.prototype.getPendingMessages = function() {
+	getPendingMessages(): PendingMessage[] {
 		return this.messageQueue.copyAll();
-	};
+	}
 
-	Protocol.prototype.clearPendingMessages = function() {
+	clearPendingMessages(): void {
 		return this.messageQueue.clear();
-	};
+	}
 
-	Protocol.prototype.finish = function() {
-		var transport = this.transport;
+	finish(): void {
+		const transport = this.transport;
 		this.onceIdle(function() {
 			transport.disconnect();
 		});
-	};
-
-	function PendingMessage(message, callback) {
-		this.message = message;
-		this.callback = callback;
-		this.merged = false;
-		var action = message.action;
-		this.sendAttempted = false;
-		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
 	}
-	Protocol.PendingMessage = PendingMessage;
-
-	return Protocol;
-})();
+}
 
 export default Protocol;
