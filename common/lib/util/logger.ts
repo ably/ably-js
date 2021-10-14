@@ -63,7 +63,7 @@ class Logger {
     }
 
 	/* public static functions */
-	static logAction = (level: LogLevels, action: string, message: string) => {
+	static logAction = (level: LogLevels, action: string, message?: string) => {
 		if (Logger.shouldLog(level)) {
 			(level === LogLevels.Error ? Logger.logErrorHandler : Logger.logHandler)('Ably: ' + action + ': ' + message);
 		}
