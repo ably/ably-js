@@ -1,6 +1,6 @@
 import * as Utils from '../util/utils';
 import ProtocolMessage from '../types/protocolmessage';
-import Transport from '../transport/transport';
+import Transport from './transport';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
 import ConnectionErrors from './connectionerrors';
