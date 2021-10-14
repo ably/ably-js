@@ -1,72 +1,73 @@
-import * as Utils from '../util/utils';
+import ErrorInfo from '../types/errorinfo';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 
-var MessageQueue = (function() {
-	function MessageQueue() {
-		EventEmitter.call(this);
+type PendingMessage = any;
+
+class MessageQueue extends EventEmitter {
+	messages: Array<PendingMessage>;
+
+	constructor() {
+		super();
 		this.messages = [];
 	}
-	Utils.inherits(MessageQueue, EventEmitter);
 
-	MessageQueue.prototype.count = function() {
+	count(): number {
 		return this.messages.length;
-	};
+	}
 
-	MessageQueue.prototype.push = function(message) {
+	push(message: PendingMessage): void {
 		this.messages.push(message);
-	};
+	}
 
-	MessageQueue.prototype.shift = function() {
+	shift(): PendingMessage | undefined {
 		return this.messages.shift();
-	};
+	}
 
-	MessageQueue.prototype.last = function() {
+	last(): PendingMessage {
 		return this.messages[this.messages.length - 1];
-	};
+	}
 
-	MessageQueue.prototype.copyAll = function() {
+	copyAll(): PendingMessage[] {
 		return this.messages.slice();
-	};
+	}
 
-	MessageQueue.prototype.append = function(messages) {
+	append(messages: Array<PendingMessage>): void {
 		this.messages.push.apply(this.messages, messages);
-	};
+	}
 
-	MessageQueue.prototype.prepend = function(messages) {
+	prepend(messages: Array<PendingMessage>): void {
 		this.messages.unshift.apply(this.messages, messages);
-	};
+	}
 
-	MessageQueue.prototype.completeMessages = function(serial, count, err) {
+	completeMessages(serial: number, count: number, err?: ErrorInfo | null): void {
 		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
 		err = err || null;
-		var messages = this.messages;
-		var first = messages[0];
+		const messages = this.messages;
+		const first = messages[0];
 		if(first) {
-			var startSerial = first.message.msgSerial;
-			var endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
+			const startSerial = first.message.msgSerial as number;
+			const endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
 			if(endSerial > startSerial) {
-				var completeMessages = messages.splice(0, (endSerial - startSerial));
-				for(var i = 0; i < completeMessages.length; i++) {
-					completeMessages[i].callback(err);
+				const completeMessages = messages.splice(0, (endSerial - startSerial));
+				for(const message of completeMessages) {
+					(message.callback as Function)(err);
 				}
 			}
 			if(messages.length == 0)
 				this.emit('idle');
 		}
-	};
+	}
 
-	MessageQueue.prototype.completeAllMessages = function(err) {
+	completeAllMessages(err: ErrorInfo): void {
 		this.completeMessages(0, Number.MAX_SAFE_INTEGER || Number.MAX_VALUE, err);
-	};
+	}
 
-	MessageQueue.prototype.clear = function() {
+	clear(): void {
 		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
 		this.messages = [];
 		this.emit('idle');
-	};
-
-	return MessageQueue;
-})();
+	}
+}
 
 export default MessageQueue;
