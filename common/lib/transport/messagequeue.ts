@@ -1,8 +1,7 @@
 import ErrorInfo from '../types/errorinfo';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-
-type PendingMessage = any;
+import { PendingMessage } from './protocol';
 
 class MessageQueue extends EventEmitter {
 	messages: Array<PendingMessage>;
