@@ -1,4 +1,7 @@
-'use strict';
+"use strict";
+
+// Run this test suit directly
+// npx grunt mocha --test=spec/rest/request.test.js
 
 define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 	var rest;
@@ -238,35 +241,37 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			});
 		});
 
-		it('fails as expected when trying to parse malformed json response', function (done){
+		it('fails as expected when trying to parse malformed json response', function (done) {
 			// this test uses test echo server mentioned in https://github.com/ably/ably-js/pull/817#issuecomment-941054596
 			// to receive response with malformed JSON body
 			// related to https://github.com/ably/ably-js/issues/676
 			helper
-				.AblyRest({ restHost: echoServerHost, tls: true })
-				.request('get', '/?body=%7B%22something%22%3A%22malformed%22&status=400&type=json', null, null, null, function (err, resp) {
-				if (err) {
-					return done(err);
-				}
-				expect(
-					resp.errorMessage.startsWith('Error response received from server: 400 body was:')
-				).to.be.ok;
-				done();
-			});
+				.AblyRest({restHost: echoServerHost, tls: true})
+				.request('get', '/?body=' +
+					encodeURIComponent('{"something":"malformed"') +
+					'&status=400&type=json', null, null, null, function (err, resp) {
+					if (err) {
+						return done(err);
+					}
+					expect(
+						resp.errorMessage.startsWith('Error response received from server: 400 body was:')
+					).to.be.ok;
+					done();
+				});
 		});
 
 		it('fails as expected when trying to parse empty json response', function (done){
 			// related to https://github.com/ably/ably-js/issues/676
 			helper
 				.AblyRest({ restHost: echoServerHost, tls: true })
-				.request('get', '/respondWith?status=200', null, null, null, function (err, resp) {
+				.request('get', '/respondWith?status=200', null, null, null, function (err) {
 					if (err) {
-						expect(err.message, 'wrong message thrown').to.be.equal(
+						expect(err.message, 'wrong message thrown').to.equal(
 						 	'malformed messagepack (referenced offset is outside buffer)'
 						);
 						return done();
 					}
-					done(new Error('no body parsing error thrown properly'));
+					done(new Error('empty JSON body request returned no error'));
 				});
 		});
 	});
