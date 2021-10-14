@@ -108,7 +108,7 @@ var Rest = (function() {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		var self = this;
-		var timeUri = function(host) { return self.authority(host) + '/time' };
+		var timeUri = function(host) { return self.authority(host) + '/time'; };
 		Http.get(this, timeUri, headers, params, function(err, res, headers, unpacked) {
 			if(err) {
 				callback(err);

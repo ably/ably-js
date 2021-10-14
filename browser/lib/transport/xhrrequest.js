@@ -183,13 +183,11 @@ var XHRRequest = (function() {
 
 		function onEnd() {
 			try {
-				var contentType = getHeader(xhr, 'content-type'),
-					headers,
-					responseBody,
-					/* Be liberal in what we accept; buggy auth servers may respond
-					 * without the correct contenttype, but assume they're still
-					 * responding with json */
-					json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType == 'text');
+				contentType = getHeader(xhr, 'content-type');
+				/* Be liberal in what we accept; buggy auth servers may respond
+				 * without the correct contenttype, but assume they're still
+				 * responding with json */
+				var json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType === 'text');
 
 				if(json) {
 					/* If we requested msgpack but server responded with json, then since
@@ -198,12 +196,12 @@ var XHRRequest = (function() {
 					responseBody = (xhr.responseType === 'arraybuffer') ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
 					if(responseBody.length > 0) {
 						responseBody = JSON.parse(responseBody);
-						// throws
+						// throws errors like this for malformed json
 						// Uncaught SyntaxError: Unexpected end of JSON input
 						// Uncaught SyntaxError: Unexpected token s in JSON at position 0
 						// and so on
 					} else {
-						throw new Error('empty json');
+						throw new Error('empty response');
 					}
 					unpacked = true;
 				} else {
@@ -220,7 +218,10 @@ var XHRRequest = (function() {
 					headers = getHeadersAsObject(xhr);
 				}
 			} catch(e) {
-				self.complete(new ErrorInfo('Malformed response body from server: ' + e.message, null, 400));
+				self.complete(new ErrorInfo(
+					'Error parsing server response: ' + e.message + ' with body: ' + xhr.response.toString(),
+					null, 400)
+			);
 				return;
 			}
 
