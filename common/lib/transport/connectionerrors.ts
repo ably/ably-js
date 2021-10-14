@@ -38,7 +38,7 @@ const ConnectionErrors = {
 	})
 };
 
-function isRetriable(err: ErrorInfo) {
+export function isRetriable(err: ErrorInfo) {
 	if (!err.statusCode || !err.code || err.statusCode >= 500) {
 		return true;
 	}
@@ -51,4 +51,4 @@ function isRetriable(err: ErrorInfo) {
 	return retriable;
 }
 
-export default { ...ConnectionErrors, isRetriable };
+export default ConnectionErrors;
