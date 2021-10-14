@@ -484,9 +484,9 @@ export const trim = (String.prototype.trim as unknown)
 			return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
 		};
 
-export function promisify<T>(ob: Record<string, any>, fnName: string, args: unknown[]): Promise<T> {
+export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArguments | unknown[]): Promise<T> {
 	return new Promise(function (resolve, reject) {
-		ob[fnName](...args, function(err: Error, res: unknown) {
+		ob[fnName](...(args as unknown[]), function(err: Error, res: unknown) {
 			err ? reject(err) : resolve(res as T);
 		});
 	});

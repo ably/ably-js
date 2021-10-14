@@ -263,7 +263,7 @@ class Auth {
 		}
 		if(!callback) {
 			if(this.client.options.promises) {
-				return Utils.promisify(this, 'authorize', [tokenParams, authOptions, callback]);
+				return Utils.promisify(this, 'authorize', arguments);
 			}
 		}
 
@@ -421,13 +421,13 @@ class Auth {
 			authOptions = null;
 		}
 		if(!callback && this.client.options.promises) {
-			return Utils.promisify(this, 'requestToken', [tokenParams, authOptions, callback]);
+			return Utils.promisify(this, 'requestToken', arguments);
 		}
-		const _callback = callback || noop;
 
 		/* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
 		authOptions = authOptions || this.authOptions;
 		tokenParams = tokenParams || Utils.copy(this.tokenParams);
+		const _callback = callback || noop;
 
 		/* first set up whatever callback will be used to get signed
 		 * token requests */
@@ -637,7 +637,7 @@ class Auth {
 			authOptions = null;
 		}
 		if(!callback && this.client.options.promises) {
-			return Utils.promisify(this, 'createTokenRequest', [tokenParams, authOptions, callback]);
+			return Utils.promisify(this, 'createTokenRequest', arguments);
 		}
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
