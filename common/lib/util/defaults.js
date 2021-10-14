@@ -4,7 +4,9 @@ import Utils from './utils';
 import BufferUtils from 'platform-bufferutils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
-import { version } from '../../../package.json';
+import packageJson from '../../../package.json';
+
+var version = packageJson.version;
 
 Defaults.ENVIRONMENT              = '';
 Defaults.REST_HOST                = 'rest.ably.io';
