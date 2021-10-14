@@ -1,6 +1,3 @@
-/**
- * Webpack v4 is used as Webpack v5 does not offer support for ES3 and creates issues for ES3 support such as discarding string literal keyword property names.
- */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./browser/fragments/license');
@@ -85,6 +82,7 @@ const nodeConfig = {
 
 const browserConfig = {
     ...baseConfig,
+    target: ['web', 'es5'],
     output: {
         ...baseConfig.output,
         filename: 'ably.js',
@@ -102,10 +100,9 @@ const browserConfig = {
             'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
             'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
         },
-    },
-    node: {
-        crypto: 'empty',
-        Buffer: false,
+        fallback: {
+            crypto: false,
+        }
     },
     externals: {
         'crypto-js': true,
@@ -134,10 +131,9 @@ const nativeScriptConfig = {
             'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
             'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
         },
-    },
-    node: {
-        crypto: 'empty',
-        Buffer: false,
+        fallback: {
+            crypto: false,
+        }
     },
     externals: {
         request: false,
@@ -171,10 +167,9 @@ const reactNativeConfig = {
             'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
             'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
         },
-    },
-    node: {
-        crypto: 'empty',
-        Buffer: false,
+        fallback: {
+            crypto: false,
+        }
     },
     externals: {
         request: false,
