@@ -219,7 +219,7 @@ var XHRRequest = (function() {
 				}
 			} catch(e) {
 				self.complete(new ErrorInfo(
-					'Error parsing server response: ' + e.message + ' with body: ' + xhr.response.toString(),
+					'Error response received from server: 400 body was: ' + xhr.response.toString(),
 					null, 400)
 			);
 				return;
