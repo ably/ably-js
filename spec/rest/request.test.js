@@ -1,6 +1,9 @@
 "use strict";
 
-// Run this test suit directly
+// Run this test suit directly:
+// 1) with rebuilding library (slow)
+// npm run test:mocha --test=spec/rest/request.test.js
+// 2) with already build library (faster, but changes can be not applied as expected)
 // npx grunt mocha --test=spec/rest/request.test.js
 
 define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
