@@ -31,6 +31,24 @@ var Http = (function() {
 				return;
 			}
 			var statusCode = response.statusCode, headers = response.headers;
+			if (statusCode === 204) { // body is expected to be empty
+				// as described by Simon in
+				// https://ably-real-time.slack.com/archives/C017C5EPYG0/p1634299240108500?thread_ts=1634292721.104800&cid=C017C5EPYG0
+				// we ignore body, and make callback with body generated into
+				// empty object depending on request type
+				switch(true) {
+					case headers['content-type'] && headers['content-type'].startsWith('application/json'):
+						body = 'null'; // json representation of null object
+						break;
+					case headers['content-type'] && headers['content-type'].startsWith('application/x-msgpack'):
+						body = msgpack.encode(null); // empty msgpack buffer
+						break;
+					default:
+						body = msgpack.encode(null); // empty msgpack buffer
+				}
+				return callback(null, body, headers, false, statusCode);
+			}
+
 			if(statusCode >= 300) {
 				// Related to https://github.com/ably/ably-js/issues/676
 				// if body length is not zero, we try to parse it

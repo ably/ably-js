@@ -7,6 +7,7 @@ import Logger from '../../../common/lib/util/logger';
 import Defaults from '../../../common/lib/util/defaults';
 import BufferUtils from 'platform-bufferutils';
 import DomEvent from '../util/domevent';
+import msgpack from "../util/msgpack";
 
 function getAblyError(responseBody, headers) {
 	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {
@@ -182,13 +183,25 @@ var XHRRequest = (function() {
 		}
 
 		function onEnd() {
+			contentType = getHeader(xhr, 'content-type');
+			var json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType === 'text');
+
+			// special case for handling 204 status code while response body is ignored
+			if(statusCode === 204) {
+				// we forcibly consider body as unpacked, so its not processed at
+				// common/lib/client/resource.js via function `unenvelope(callback, format) {...}`
+				if(json) {
+					self.complete(null, 'null', headers, false, 204); // encoded null into json
+				} else {
+					self.complete(null, msgpack.encode(null), headers, false, 204); // encoded null into msgpack
+				}
+				return;
+			}
+
 			try {
-				contentType = getHeader(xhr, 'content-type');
 				/* Be liberal in what we accept; buggy auth servers may respond
 				 * without the correct contenttype, but assume they're still
 				 * responding with json */
-				var json = contentType ? (contentType.indexOf('application/json') >= 0) : (xhr.responseType === 'text');
-
 				if(json) {
 					/* If we requested msgpack but server responded with json, then since
 					 * we set the responseType expecting msgpack, the response will be

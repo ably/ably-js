@@ -267,18 +267,18 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 				});
 		});
 
-		it('fails as expected when trying to parse empty json response', function (done){
-			// related to https://github.com/ably/ably-js/issues/676
+		it('ignores response body, if status code is 204', function (done){
 			helper
-				.AblyRest({ restHost: echoServerHost, tls: true })
-				.request('get', '/respondWith?status=200', null, null, null, function (err) {
+				.AblyRest({restHost: echoServerHost, tls: true})
+				.request('get', '/?body=shouldBeIgnored&status=204&type=json', null, null, null,
+					function (err, resp) {
 					if (err) {
-						expect(err.message, 'wrong message thrown').to.equal(
-						 	'malformed messagepack (referenced offset is outside buffer)'
-						);
-						return done();
+						return done(err);
 					}
-					done(new Error('empty JSON body request returned no error'));
+					expect(resp.items.length,'body not empty').to.equal(0);
+					expect(resp.success,'success is not true').to.be.true;
+					expect(resp.statusCode,'status code is not 204').to.equal(204);
+					done();
 				});
 		});
 	});
