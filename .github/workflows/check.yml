@@ -21,3 +21,4 @@ jobs:
       - run: npm run build
       - run: npm run check-closure-compiler
       - run: npx tsc --noEmit ably.d.ts
+      - run: npm audit --production
