@@ -101,6 +101,6 @@
     "prepare": "npm run build",
     "sourcemap": "source-map-explorer browser/static/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js",
-    "install": "git submodule init && git submodule update"
+    "preinstall": "git submodule init && git submodule update"
   }
 }
