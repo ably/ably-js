@@ -57,10 +57,8 @@ abstract class CometTransport extends Transport {
 	recvUri?: string;
 
 	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
-		super(connectionManager, auth, params);
-		/* binary not supported for comet, so just fall back to default */
-		params.format = undefined;
-		params.heartbeats = true;
+		/* binary not supported for comet */
+		super(connectionManager, auth, params, true);
 		/* streaming defaults to true */
 		this.stream = ('stream' in params) ? params.stream : true;
 		this.sendRequest = null;
