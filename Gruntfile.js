@@ -1,6 +1,7 @@
 "use strict";
 
 var fs = require('fs');
+var path = require('path');
 var webpackConfig = require('./webpack.config');
 
 module.exports = function (grunt) {
@@ -86,7 +87,29 @@ module.exports = function (grunt) {
 
 	grunt.initConfig(gruntConfig);
 
+	grunt.registerTask('checkGitSubmodules',
+		'Check, if git submodules are properly installed', function (){
+			var done = this.async();
+			var pathToSubmodule = path.join(__dirname, 'spec', 'common', 'ably-common');
+			fs.stat(pathToSubmodule, function (error, stats){
+				if(error) {
+					grunt.log.writeln('%s : while checking submodule path!', error.message);
+					grunt.log.writeln('Probably, git submodule at %s are not initialized?', pathToSubmodule);
+					grunt.log.writeln('Please, initialize it with `git submodule init & git submodule update`!');
+					return done(false);
+				}
+				if(stats.isDirectory()) {
+					grunt.log.writeln('Git submodule at %s is found!', pathToSubmodule);
+					return done();
+				}
+				grunt.log.writeln('Git submodule at %s is not initialized!', pathToSubmodule);
+				grunt.log.writeln('Please, initialize it with `git submodule init & git submodule update`!');
+				return done(false);
+			});
+		});
+
 	grunt.registerTask('build', [
+		'checkGitSubmodules',
 		'webpack'
 	]);
 
@@ -124,7 +147,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'requirejs', 'mocha:webserver']
+		['build', 'checkGitSubmodules', 'requirejs', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',
@@ -168,7 +191,7 @@ module.exports = function (grunt) {
 					maxTraverseDepth = 3,
 					infrastructureFound;
 
-			var folderExists = function(relativePath) {
+			var infrastructureDirExists = function() {
 				try {
 					var fileStat = fs.statSync(infrastructurePath);
 					if (fileStat.isDirectory()) {
@@ -178,7 +201,7 @@ module.exports = function (grunt) {
 			}
 
 			while (infrastructurePath.length < 'infrastructure'.length + maxTraverseDepth*3) {
-				if (infrastructureFound = folderExists(infrastructurePath)) {
+				if (infrastructureFound = infrastructureDirExists(infrastructurePath)) {
 					break;
 				} else {
 					infrastructurePath = "../" + infrastructurePath;

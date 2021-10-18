@@ -128,13 +128,18 @@ define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module
 			}
 		}
 
-		function restTestOnJsonMsgpack(name, testFn) {
-			it(name + ' with binary protocol', function (done) {
+		function restTestOnJsonMsgpack(name, testFn, skip) {
+			var itFn = skip ? it.skip : it;
+			itFn(name + ' with binary protocol', function (done) {
 				testFn(done, new clientModule.AblyRest({useBinaryProtocol: true}), name + '_binary');
 			});
-			it(name + ' with text protocol', function (done) {
+			itFn(name + ' with text protocol', function (done) {
 				testFn(done, new clientModule.AblyRest({useBinaryProtocol: false}), name + '_text');
 			});
+		}
+
+		restTestOnJsonMsgpack.skip = function(name, testFn) {
+			restTestOnJsonMsgpack(name, testFn, true);
 		}
 
 		function clearTransportPreference() {
