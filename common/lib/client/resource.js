@@ -44,7 +44,7 @@ var Resource = (function() {
 				}
 			}
 
-			if(body.statusCode === undefined) {
+			if(body && body.statusCode === undefined) { // ensure body is not null before checking, if its unwrapped
 				/* Envelope already unwrapped by the transport */
 				callback(err, body, outerHeaders, true, outerStatusCode);
 				return;
@@ -92,7 +92,7 @@ var Resource = (function() {
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
 			if (callback) { callback(err, body, headers, unpacked, statusCode); }
-		}
+		};
 	}
 
 	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
