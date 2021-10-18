@@ -231,8 +231,11 @@ var XHRRequest = (function() {
 					headers = getHeadersAsObject(xhr);
 				}
 			} catch(bodyParsingError) {
-				// error parsing json
-				if(bodyParsingError.message.startsWith('SyntaxError: JSON.parse:')) {
+				// error parsing json, errors can be these ones like
+				// `Unexpected end of JSON input ....`
+				// `SyntaxError: JSON.parse: ....`
+				// so, all they contains capitalized JSON abbreviation in them
+				if(bodyParsingError.message.indexOf('JSON') !== -1) {
 					self.complete(new ErrorInfo(
 						'Error response received from server: 400 body was: ' + xhr.response.toString(),
 						null, 400)

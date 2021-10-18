@@ -260,8 +260,16 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 					type: 'json'
 				}, null, null, function (err, resp) {
 					if (err) {
+						if (err.message.indexOf('Error response received from server: 400 body was:') === 0) { // aka, starts width
+							if (err.statusCode === 400) {
+								// correct error object is thrown
+								return done();
+							}
+						}
+						// wrong error object is thrown
 						return done(err);
 					}
+					// no error object is thrown, like with backend code, but body depicts it is server error
 					expect(
 						resp.errorMessage.startsWith('Error response received from server: 400 body was:')
 					).to.be.ok;
