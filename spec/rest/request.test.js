@@ -254,9 +254,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 			// related to https://github.com/ably/ably-js/issues/676
 			helper
 				.AblyRest({restHost: echoServerHost, tls: true})
-				.request('get', '/?body=' +
-					encodeURIComponent('{"something":"malformed"') +
-					'&status=400&type=json', null, null, null, function (err, resp) {
+				.request('get', '/', {
+					body: encodeURIComponent('{"something":"malformed"'),
+					status: 400,
+					type: 'json'
+				}, null, null, function (err, resp) {
 					if (err) {
 						return done(err);
 					}
@@ -267,19 +269,23 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 				});
 		});
 
-		it('ignores response body, if status code is 204', function (done){
+		it('ignores response body, if status code is 204', function (done) {
 			helper
 				.AblyRest({restHost: echoServerHost, tls: true})
-				.request('get', '/?body=shouldBeIgnored&status=204&type=json', null, null, null,
+				.request('get', '/', { // query parameters
+						body: 'shouldBeIgnored',
+						status: 204,
+						type: 'json'
+					}, null, null,
 					function (err, resp) {
-					if (err) {
-						return done(err);
-					}
-					expect(resp.items.length,'body not empty').to.equal(0);
-					expect(resp.success,'success is not true').to.be.true;
-					expect(resp.statusCode,'status code is not 204').to.equal(204);
-					done();
-				});
+						if (err) {
+							return done(err);
+						}
+						expect(resp.items.length, 'body not empty').to.equal(0);
+						expect(resp.success, 'success is not true').to.be.true;
+						expect(resp.statusCode, 'status code is not 204').to.equal(204);
+						done();
+					});
 		});
 	});
 });
