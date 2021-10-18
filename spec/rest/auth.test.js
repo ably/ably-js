@@ -1,5 +1,16 @@
 'use strict';
 
+// How to execute this test suite
+// 1) with rebuilding library (slow)
+// npm run-script build
+// 2) with already build library (faster, but changes can be not applied as expected)
+// npx grunt mocha --test=spec/rest/auth.test.js
+
+// Run this test in browser
+// 1) npm run-script test:webserver
+// 2) open http://localhost:3000/mocha.html?grep=rest%2Fauth
+
+
 define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, async, globals) {
 	var currentTime;
 	var rest;
@@ -308,13 +319,62 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 		});
 
 		it('Token generation with defaultTokenParams set and no tokenParams passed in', function (done) {
-			var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
+			var logs = [];
+			var rest1 = helper.AblyRest({
+				defaultTokenParams: { ttl: 123, clientId: 'foo' },
+			});
+			rest1.setLog({
+				level: 3, // minor
+				handler: function (params) {
+					console.log('Ably logger rest1', params);
+					logs.push({
+						clientId: 'foo',
+						logName: 'rest1',
+						timestamp: new Date(),
+						params: params,
+					});
+				}
+			});
 			rest1.auth.requestToken(function (err, tokenDetails) {
 				if (err) {
 					done(err);
 					return;
 				}
 				try {
+					// console.log(logs);
+/*
+
+[
+  {
+    clientId: 'foo',
+    logName: 'rest1',
+    timestamp: 2021-10-18T12:38:52.996Z,
+    params: 'Ably: Auth.requestToken(): using token auth with client-side signing'
+  },
+  {
+    clientId: 'foo',
+    logName: 'rest1',
+    timestamp: 2021-10-18T12:38:52.996Z,
+    params: 'Ably: Auth.getTokenRequest(): generated signed request'
+  },
+  {
+    clientId: 'foo',
+    logName: 'rest1',
+    timestamp: 2021-10-18T12:38:53.081Z,
+    params: 'Ably: Auth.getToken(): token received'
+  }
+]
+
+ */
+					// ensure custom logger produced proper result
+					expect(logs.length, 'No logs emitted').to.be.gte(0);
+					expect(logs.length, 'wrong logs emitted').to.equal(3);
+					logs.map(function logEntryChecker(entry){
+						expect(entry.clientId, 'wrong client id').to.be.equal('foo');
+						expect(entry.logName, 'wrong client id').to.be.equal('rest1');
+						expect(entry.params.indexOf('Ably: Auth.'), 'wrong params').to.equal(0);
+					});
+					// ensure token generated properly
 					expect(tokenDetails.token, 'Verify token value').to.be.ok;
 					expect(tokenDetails.clientId).to.equal('foo', 'Verify client id from defaultTokenParams used');
 					expect(tokenDetails.expires - tokenDetails.issued).to.equal(123, 'Verify ttl from defaultTokenParams used');
@@ -326,13 +386,55 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 		});
 
 		it('Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged', function (done) {
-			var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
-			rest1.auth.requestToken({ clientId: 'bar' }, null, function (err, tokenDetails) {
+			var logs = [];
+			var rest2 = helper.AblyRest({
+				defaultTokenParams: { ttl: 123, clientId: 'foo' },
+			});
+			rest2.setLog({
+				level: 3, // minor
+				handler: function (params) {
+					console.log('Ably logger rest2', params);
+					logs.push({
+						logName: 'rest2',
+						timestamp: new Date(),
+						params: params,
+					});
+				}
+			});
+			rest2.auth.requestToken({ clientId: 'bar' }, null, function (err, tokenDetails) {
 				if (err) {
 					done(err);
 					return;
 				}
 				try {
+					/*
+					[
+						{
+							logName: 'rest2',
+							timestamp: 2021-10-18T12:38:53.087Z,
+							params: 'Ably: Auth.requestToken(): using token auth with client-side signing'
+						},
+						{
+							logName: 'rest2',
+							timestamp: 2021-10-18T12:38:53.088Z,
+							params: 'Ably: Auth.getTokenRequest(): generated signed request'
+						},
+						{
+							logName: 'rest2',
+							timestamp: 2021-10-18T12:38:53.149Z,
+							params: 'Ably: Auth.getToken(): token received'
+						}
+					]
+					 */
+
+					// ensure logs are correct
+					expect(logs.length, 'No logs emitted').to.be.gte(0);
+					expect(logs.length, 'Wrong number of logs is emitted').to.equal(3);
+					logs.map(function logEntryChecker(entry){
+						expect(entry.logName, 'wrong client id').to.be.equal('rest2');
+						expect(entry.params.indexOf('Ably: Auth.'), 'wrong params').to.equal(0);
+					});
+					// ensure token details are correct
 					expect(tokenDetails.clientId).to.equal(
 						'bar',
 						'Verify clientId passed in is used, not the one from defaultTokenParams'
