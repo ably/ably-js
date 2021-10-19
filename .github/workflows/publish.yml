@@ -28,8 +28,8 @@ jobs:
       - name: 'install'
         run: npm ci
 
-      - name: 'build'
-        run: npm run-script build
+#      - name: 'build'
+#        run: npm run-script build
 
       - name: 'prepare release'
         run: npm run-script publish-version-release
