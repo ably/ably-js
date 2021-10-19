@@ -3,21 +3,24 @@
 
 # We can use this tool to run actions locally using local docker daemon
 # https://github.com/nektos/act
-# todo - act uses ubuntu-18.4 image, is it ok?
 
-# to start this workflow using `act`:
-# act -j -v publish
+# Related task https://github.com/ably/ably-js/issues/805
+
+# To start this workflow using `act`:
+# act -v -j publish -e .github/example-publish-event.json
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version, without v prefix, appended to v to locate tag'
-        required: true
+#    inputs:
+#      version:
+#        description: 'Version, without v prefix, appended to v to locate tag'
+#        required: true
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    # todo - act uses ubuntu-18.04 image, not `ubuntu-latest`, is it ok?
+    # i cannot say i'm fan of ubuntu, i prefer centos --Anatolij
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -28,6 +31,7 @@ jobs:
       - name: 'install'
         run: npm ci
 
+# commented out, since next command already knows how to build code
 #      - name: 'build'
 #        run: npm run-script build
 

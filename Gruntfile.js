@@ -113,6 +113,7 @@ module.exports = function (grunt) {
 		});
 
 	// this function just bumps npm package version with respect to semver versioning
+	// via incrementing patch version
 	// so, 1.2.14 becomes 1.2.15
 	grunt.registerTask('bump', function (done) {
 		grunt.log.writeln('Current version is %s...', pkgJSON.version);
@@ -121,22 +122,27 @@ module.exports = function (grunt) {
 		var minor = parseInt(versions[1], 10);
 		var patch = parseInt(versions[2], 10);
 		if (!major) {
-			grunt.log.writeln('Malformed version');
+			grunt.log.writeln('Malformed version major %s instead of number', major);
 			return done(false);
 		}
 		if (!minor) {
-			grunt.log.writeln('Malformed version');
+			grunt.log.writeln('Malformed version minor %s instead of number', minor);
 			return done(false);
 		}
 		if (!patch) {
-			grunt.log.writeln('Malformed version');
+			grunt.log.writeln('Malformed version patch %s instead of number', patch);
 			return done(false);
 		}
 		patch += 1;
 		pkgJSON.version = util.format("%s.%s.%s", major, minor, patch);
+		grunt.log.writeln('Preparing to save package.json with new version %s into %s',
+			pkgJSON.version,
+			path.join(__dirname, 'package.json')
+		);
 		fs.writeFile(
 			path.join(__dirname, 'package.json'),
 			JSON.stringify(pkgJSON, null, '  '),
+			{encoding:'utf8', flag:'w+'},
 			function (error) {
 				if (error) {
 					grunt.log.writeln('%s - while saving package.json file', error);
