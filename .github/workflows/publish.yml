@@ -3,6 +3,7 @@
 
 # We can use this tool to run actions locally using local docker daemon
 # https://github.com/nektos/act
+# todo - act uses ubuntu-18.4 image, is it ok?
 
 # to start this workflow using `act`:
 # act -j -v publish
@@ -30,11 +31,14 @@ jobs:
       - name: 'build'
         run: npm run-script build
 
-      # TODO: git tag
-      # TODO: upd package.json
+      - name: 'prepare release'
+        run: publish-version-release
 
 # TODO: Seems like its not so trivial to set npmjs authorization https://github.com/npm/npm/issues/15565
       - name: publish npm package
-        run: npm publish
+#        run: npm publish
+        run: true
 
 # TODO: pretend we upload document to CDN
+      - name: upload artifacts to CDN
+        run: true

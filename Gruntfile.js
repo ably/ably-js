@@ -1,8 +1,12 @@
 "use strict";
 
+var async = require('async');
 var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
+var exec = require('child_process').exec;
+var pkgJSON = require('./package.json');
+var util = require('util');
 
 module.exports = function (grunt) {
 
@@ -33,7 +37,7 @@ module.exports = function (grunt) {
 		return function() {
 			var done = this.async();
 			grunt.log.ok("Executing " + cmd);
-			require('child_process').exec(cmd, function(err, stdout, stderr) {
+			exec(cmd, function(err, stdout, stderr) {
 				if (err) {
 					grunt.fatal('Error executing "' + cmd + '": ' + stderr);
 				}
@@ -108,6 +112,115 @@ module.exports = function (grunt) {
 			});
 		});
 
+	// this function just bumps npm package version with respect to semver versioning
+	// so, 1.2.14 becomes 1.2.15
+	grunt.registerTask('bump', function (done) {
+		grunt.log.writeln('Current version is %s...', pkgJSON.version);
+		var versions = pkgJSON.version.split('.');
+		var major = parseInt(versions[0], 10);
+		var minor = parseInt(versions[1], 10);
+		var patch = parseInt(versions[2], 10);
+		if (!major) {
+			grunt.log.writeln('Malformed version');
+			return done(false);
+		}
+		if (!minor) {
+			grunt.log.writeln('Malformed version');
+			return done(false);
+		}
+		if (!patch) {
+			grunt.log.writeln('Malformed version');
+			return done(false);
+		}
+		patch += 1;
+		pkgJSON.version = util.format("%s.%s.%s", major, minor, patch);
+		fs.writeFile(
+			path.join(__dirname, 'package.json'),
+			JSON.stringify(pkgJSON, null, '  '),
+			function (error) {
+				if (error) {
+					grunt.log.writeln('%s - while saving package.json file', error);
+					return done(false);
+				}
+				grunt.log.writeln('Package.json is upgraded! New version is %s!', pkgJSON.version);
+				return done(true);
+			});
+	});
+	// this command makes git commit with upgraded (by bump) package.json
+	// and version engraved as commit message
+	grunt.registerTask('commitVersion', function (done) {
+		async
+			.series([
+				function addPackageJSON(cb) {
+					exec('git add package.json', function (error, stdout, stderr) {
+						if (error) {
+							grunt.log.writeln('%s : while executing git tagging command', error);
+							grunt.log.writeln('STDOUT: %s', stdout);
+							grunt.log.writeln('STDERR: %s', stderr);
+							return cb(error);
+						}
+						return cb(null);
+					});
+				},
+				function commit(cb) {
+					exec(util.format('git commit -m "Version bumped to %s"', pkgJSON.version), function (error, stdout, stderr) {
+						if (error) {
+							grunt.log.writeln('%s : while executing git commit command', error);
+							grunt.log.writeln('STDOUT: %s', stdout);
+							grunt.log.writeln('STDERR: %s', stderr);
+							return cb(error);
+						}
+						return cb(null);
+					});
+				},
+				function push(cb) {
+					exec('git push"', function (error, stdout, stderr) {
+						if (error) {
+							grunt.log.writeln('%s : while executing git push command', error);
+							grunt.log.writeln('STDOUT: %s', stdout);
+							grunt.log.writeln('STDERR: %s', stderr);
+							return cb(error);
+						}
+						return cb(null);
+					});
+				}
+			], function (error) {
+				if (error) {
+					grunt.log.writeln('%s : while executing commitVersion', error);
+					return done(false);
+				}
+				done(true);
+			});
+	});
+	// this function just creates git tag in local repo
+	grunt.registerTask('tag', function (done){
+		exec(util.format('git tag v%s', pkgJSON.version), function (error, stdout, stderr){
+			if(error) {
+				grunt.log.writeln('%s : while executing git tagging command', error);
+				grunt.log.writeln('STDOUT: %s', stdout);
+				grunt.log.writeln('STDERR: %s', stderr);
+				return done(false);
+			}
+			grunt.log.writeln('New git tag is created - v%s', pkgJSON.version);
+			done(true);
+		});
+	});
+	// this function makes github release of code by
+	// calling github API via request as described here
+	// https://docs.github.com/en/rest/reference/repos#create-a-release
+	grunt.registerTask('release', function (done){
+		grunt.log.writeln('not implemented yet');
+		done(false);
+	});
+
+	grunt.registerTask('publish-version-release',[
+		'bump',
+		'commitVersion',
+		'tag',
+		'release'
+	]);
+
+
 	grunt.registerTask('build', [
 		'checkGitSubmodules',
 		'webpack'
@@ -171,7 +284,7 @@ module.exports = function (grunt) {
 			var cmd = 'git add -A ' + generatedFiles.join(' ');
 			grunt.log.ok("Executing " + cmd);
 
-			require('child_process').exec(cmd, function(err, stdout, stderr) {
+			exec(cmd, function(err, stdout, stderr) {
 				if (err) {
 					grunt.fatal('git add . -A failed with ' + stderr);
 				}
