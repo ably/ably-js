@@ -18,7 +18,7 @@ var Rest = (function() {
 		if(!(this instanceof Rest)){
 			return new Rest(options);
 		}
-		var r = this;
+		var self = this;
 
 		/* normalise options */
 		if(!options) {
@@ -30,13 +30,13 @@ var Rest = (function() {
 
 		// logger options provided, we initialize custom logging system for this particular client
 		if(options.log) {
-			r.logger = Logger;
-			r.logger.setLog(options.log.level, options.log.handler);
-			r.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+			self.logger = Logger;
+			self.logger.setLog(options.log.level, options.log.handler);
+			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		} else {
 			// we use global logger
-			r.logger = Logger;
-			r.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+			self.logger = Logger;
+			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		}
 
 		this.options = Defaults.normaliseOptions(options);
@@ -46,7 +46,7 @@ var Rest = (function() {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
 			if(!keyMatch) {
 				var msg = 'invalid key parameter';
-				r.logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
+				self.logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
 			options.keyName = keyMatch[1];
@@ -60,7 +60,7 @@ var Rest = (function() {
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		r.logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
+		self.logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 		this._currentFallback = null;
