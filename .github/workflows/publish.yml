@@ -1,0 +1,40 @@
+# This is a manually triggered workflow (hence on: workflow_dispatch).
+# See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows#manual-events
+
+# We can use this tool to run actions locally using local docker daemon
+# https://github.com/nektos/act
+
+# to start this workflow using `act`:
+# act -j -v publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version, without v prefix, appended to v to locate tag'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        name: 'setup node'
+        with:
+          node-version: '14.x'
+
+      - name: 'install'
+        run: npm ci
+
+      - name: 'build'
+        run: npm run-script build
+
+      # TODO: git tag
+      # TODO: upd package.json
+
+# TODO: Seems like its not so trivial to set npmjs authorization https://github.com/npm/npm/issues/15565
+      - name: publish npm package
+        run: npm publish
+
+# TODO: pretend we upload document to CDN
