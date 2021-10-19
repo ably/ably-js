@@ -15,7 +15,7 @@ var Channel = (function() {
 
 	/* public constructor */
 	function Channel(rest, name, channelOptions) {
-		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
+		Logger.default.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
 		EventEmitter.call(this);
 		this.rest = rest;
 		this.name = name;
@@ -41,7 +41,7 @@ var Channel = (function() {
 	};
 
 	Channel.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
+		Logger.default.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {

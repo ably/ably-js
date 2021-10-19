@@ -82,14 +82,14 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.onProtocolMessage = function(message) {
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message) + '; connectionId = ' + this.connectionManager.connectionId);
+		if (Logger.default.shouldLog(Logger.LOG_MICRO)) {
+			Logger.default.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message) + '; connectionId = ' + this.connectionManager.connectionId);
 		}
 		this.onActivity();
 
 		switch(message.action) {
 		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId);
+			Logger.default.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId);
 			this.emit('heartbeat', message.id);
 			break;
 		case actions.CONNECTED:
@@ -120,12 +120,12 @@ var Transport = (function() {
 		case actions.AUTH:
 			this.auth.authorize(function(err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
+					Logger.default.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
 				}
 			});
 			break;
 		case actions.ERROR:
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionId = ' + this.connectionManager.connectionId + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
+			Logger.default.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionId = ' + this.connectionManager.connectionId + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
 			if(message.channel === undefined) {
 				this.onFatalError(message);
 				break;
@@ -153,7 +153,7 @@ var Transport = (function() {
 		/* Used for when the server has disconnected the client (usually with a
 		 * DISCONNECTED action) */
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.finish('disconnected', err);
 	};
 
@@ -162,23 +162,23 @@ var Transport = (function() {
 		 * will close the connection and the transport, and do not need to request
 		 * a disconnection - RTN15i */
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
 		this.finish('failed', err);
 	};
 
 	Transport.prototype.onClose = function(message) {
 		var err = message && message.error;
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
 		this.finish('closed', err);
 	};
 
 	Transport.prototype.requestClose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
 		this.send(closeMessage);
 	};
 
 	Transport.prototype.requestDisconnect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
 		this.send(disconnectMessage);
 	};
 
@@ -189,7 +189,7 @@ var Transport = (function() {
 	};
 
 	Transport.prototype.dispose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
 		this.isDisposed = true;
 		this.off();
 	};
@@ -215,7 +215,7 @@ var Transport = (function() {
 			timeRemaining = this.maxIdleInterval - sinceLast;
 		if(timeRemaining <= 0) {
 			var msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
-			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
 		} else {
 			this.setIdleTimer(timeRemaining + 100);

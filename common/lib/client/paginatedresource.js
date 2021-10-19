@@ -65,7 +65,7 @@ var PaginatedResource = (function() {
 
 	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, statusCode, callback) {
 		if(err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
-			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
+			Logger.default.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
 			callback(err);
 			return;
 		}

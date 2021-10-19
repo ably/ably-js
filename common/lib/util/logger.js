@@ -44,7 +44,9 @@ var Logger = (function() {
 		logErrorHandler = getHandler(errorLogger);
 
 	/* public constructor */
-	function Logger(args) {}
+	function Logger(uniqueLoggerID) {
+		this.id  = uniqueLoggerID || 'logger-'+ Math.floor(1000*Math.random());
+	}
 
 	/* public constants */
 	Logger.LOG_NONE    = LOG_NONE;
@@ -57,33 +59,33 @@ var Logger = (function() {
 	Logger.LOG_DEBUG   = LOG_DEBUG;
 
 	/* public static functions */
-	Logger.logAction = function(level, action, message) {
-		if (Logger.shouldLog(level)) {
+	Logger.prototype.logAction = function(level, action, message) {
+		if (this.shouldLog(level)) {
 			(level === LOG_ERROR ? logErrorHandler : logHandler)('Ably: ' + action + ': ' + message);
 		}
 	};
 
-	Logger.deprecated = function(original, replacement) {
-		Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
+	Logger.prototype.deprecated = function(original, replacement) {
+		return this.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
 	};
 
-	Logger.deprecatedWithMsg = function(funcName, msg) {
-		if (Logger.shouldLog(LOG_ERROR)) {
+	Logger.prototype.deprecatedWithMsg = function(funcName, msg) {
+		if (this.shouldLog(LOG_ERROR)) {
 			logErrorHandler("Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg);
 		}
 	};
 
 	/* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
-	Logger.shouldLog = function(level) {
+	Logger.prototype.shouldLog = function(level) {
 		return level <= logLevel;
 	};
 
-	Logger.setLog = function(level, handler) {
+	Logger.prototype.setLog = function(level, handler) {
 		if(level !== undefined) logLevel = level;
 		if(handler !== undefined) logHandler = logErrorHandler = handler;
 	};
-
+	Logger.default = new Logger('default');
 	return Logger;
 })();
 

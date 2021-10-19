@@ -38,7 +38,7 @@ var MessageQueue = (function() {
 	};
 
 	MessageQueue.prototype.completeMessages = function(serial, count, err) {
-		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
+		Logger.default.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
 		err = err || null;
 		var messages = this.messages;
 		var first = messages[0];
@@ -61,7 +61,7 @@ var MessageQueue = (function() {
 	};
 
 	MessageQueue.prototype.clear = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
+		Logger.default.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
 		this.messages = [];
 		this.emit('idle');
 	};

@@ -102,7 +102,7 @@ var RealtimePresence = (function() {
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
 		  'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
 
 		var presence = PresenceMessage.fromValues({
@@ -166,7 +166,7 @@ var RealtimePresence = (function() {
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
 		var presence = PresenceMessage.fromValues({
 			action : 'leave',
 			data   : data
@@ -245,7 +245,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -272,7 +272,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.setPresence = function(presenceSet, isSync, syncChannelSerial) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
 		var syncCursor, match, members = this.members, myMembers = this._myMembers,
 			broadcastMessages = [], connId = this.channel.connectionManager.connectionId;
 
@@ -323,7 +323,7 @@ var RealtimePresence = (function() {
 	};
 
 	RealtimePresence.prototype.onAttached = function(hasPresence) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
+		Logger.default.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
 
 		if(hasPresence) {
 			this.members.startSync();
@@ -341,7 +341,7 @@ var RealtimePresence = (function() {
 			this.pendingPresence = [];
 			var presenceArray = [];
 			var multicaster = Multicaster();
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
+			Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
 			for(var i = 0; i < pendingPresCount; i++) {
 				var event = pendingPresence[i];
 				presenceArray.push(event.presence);
@@ -369,7 +369,7 @@ var RealtimePresence = (function() {
 
 	RealtimePresence.prototype.failPendingPresence = function(err) {
 		if(this.pendingPresence.length) {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingPresence', 'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err));
+			Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingPresence', 'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err));
 			for(var i = 0; i < this.pendingPresence.length; i++)
 				try {
 					this.pendingPresence[i].callback(err);
@@ -388,7 +388,7 @@ var RealtimePresence = (function() {
 				if(err) {
 					var msg = 'Presence auto-re-enter failed: ' + err.toString();
 					var wrappedErr = new ErrorInfo(msg, 91004, 400);
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+					Logger.default.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
 					var change = new ChannelStateChange(self.channel.state, self.channel.state, true, wrappedErr);
 					self.channel.emit('update', change);
 				}
@@ -397,7 +397,7 @@ var RealtimePresence = (function() {
 		for(var memberKey in myMembers.map) {
 			if(!(memberKey in members.map)) {
 				var entry = myMembers.map[memberKey];
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
+				Logger.default.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
 				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
 			}
@@ -569,7 +569,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.startSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.default.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		/* we might be called multiple times while a sync is in progress */
 		if(!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
@@ -579,7 +579,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.endSync = function() {
 		var map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.default.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		if(syncInProgress) {
 			/* we can now strip out the ABSENT members, as we have
 			 * received all of the out-of-order sync messages */
@@ -605,7 +605,7 @@ var RealtimePresence = (function() {
 
 	PresenceMap.prototype.waitSync = function(callback) {
 		var syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		Logger.default.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
 		if(!syncInProgress) {
 			callback();
 			return;
@@ -620,7 +620,7 @@ var RealtimePresence = (function() {
 	};
 
 	PresenceMap.prototype.setInProgress = function(inProgress) {
-		Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+		Logger.default.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
 		this.syncInProgress = inProgress;
 		this.presence.syncComplete = !inProgress;
 	};

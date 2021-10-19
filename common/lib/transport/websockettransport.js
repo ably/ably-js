@@ -32,7 +32,7 @@ var WebSocketTransport = function(connectionManager) {
 		var errorCb = function(err) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('wsopen', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
@@ -49,18 +49,18 @@ var WebSocketTransport = function(connectionManager) {
 	};
 
 	WebSocketTransport.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
+		Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
 		var wsScheme = options.tls ? 'wss://' : 'ws://';
 		var wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
+		Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(self.isDisposed) {
 				return;
 			}
 			var paramStr = ''; for(var param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
+			Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
 			if(err) {
 				self.disconnect(err);
 				return;
@@ -79,7 +79,7 @@ var WebSocketTransport = function(connectionManager) {
 					wsConnection.on('ping', function() { self.onActivity(); });
 				}
 			} catch(e) {
-				Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
+				Logger.default.logAction(Logger.LOG_ERROR, 'WebSocketTransport.connect()', 'Unexpected exception creating websocket: err = ' + (e.stack || e.message));
 				self.disconnect(e);
 			}
 		});
@@ -88,14 +88,14 @@ var WebSocketTransport = function(connectionManager) {
 	WebSocketTransport.prototype.send = function(message) {
 		var wsConnection = this.wsConnection;
 		if(!wsConnection) {
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
+			Logger.default.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
 			return;
 		}
 		try {
 			wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
 		} catch (e) {
 			var msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
 			/* Don't try to request a disconnect, that'll just involve sending data
 			 * down the websocket again. Just finish the transport. */
 			this.finish('disconnected', new ErrorInfo(msg, 50000, 500));
@@ -103,16 +103,16 @@ var WebSocketTransport = function(connectionManager) {
 	};
 
 	WebSocketTransport.prototype.onWsData = function(data) {
-		Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
+		Logger.default.logAction(Logger.LOG_MICRO, 'WebSocketTransport.onWsData()', 'data received; length = ' + data.length + '; type = ' + typeof(data));
 		try {
 			this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
+			Logger.default.logAction(Logger.LOG_ERROR, 'WebSocketTransport.onWsData()', 'Unexpected exception handing channel message: ' + e.stack);
 		}
 	};
 
 	WebSocketTransport.prototype.onWsOpen = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
+		Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
 		this.emit('wsopen');
 	};
 
@@ -129,20 +129,20 @@ var WebSocketTransport = function(connectionManager) {
 		}
 		delete this.wsConnection;
 		if(wasClean) {
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
+			Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
 			var err = new ErrorInfo('Websocket closed', 80003, 400);
 			this.finish('disconnected', err);
 		} else {
 			var msg = 'Unclean disconnection of WebSocket ; code = ' + code,
 				err = new ErrorInfo(msg, 80003, 400);
-			Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
+			Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
 			this.finish('disconnected', err);
 		}
 		this.emit('disposed');
 	};
 
 	WebSocketTransport.prototype.onWsError = function(err) {
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
+		Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
 		/* Wait a tick before aborting: if the websocket was connected, this event
 		 * will be immediately followed by an onclose event with a close code. Allow
 		 * that to close it (so we see the close code) rather than anticipating it */
@@ -153,7 +153,7 @@ var WebSocketTransport = function(connectionManager) {
 	};
 
 	WebSocketTransport.prototype.dispose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
 		this.isDisposed = true;
 		var wsConnection = this.wsConnection;
 		if(wsConnection) {
@@ -165,7 +165,7 @@ var WebSocketTransport = function(connectionManager) {
 			/* defer until the next event loop cycle before closing the socket,
 			 * giving some implementations the opportunity to send any outstanding close message */
 			Utils.nextTick(function() {
-				Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
+				Logger.default.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
 				wsConnection.close();
 			});
 		}

@@ -18,7 +18,7 @@ var RealtimeChannel = (function() {
 
 	/* public constructor */
 	function RealtimeChannel(realtime, name, options) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
+		Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		Channel.call(this, realtime, name, options);
 		this.realtime = realtime;
 		this.presence = new RealtimePresence(this, realtime.options);
@@ -85,7 +85,7 @@ var RealtimeChannel = (function() {
 
 			callback = function(err){
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
+					Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
 				}
 			};
 		}
@@ -186,7 +186,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype._publish = function(messages, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		var state = this.state;
 		switch(state) {
 			case 'failed':
@@ -194,7 +194,7 @@ var RealtimeChannel = (function() {
 				callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(state)));
 				break;
 			default:
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
+				Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
 				var msg = new ProtocolMessage();
 				msg.action = actions.MESSAGE;
 				msg.channel = this.name;
@@ -205,7 +205,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onEvent = function(messages) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
 		var subscriptions = this.subscriptions;
 		for(var i = 0; i < messages.length; i++) {
 			var message = messages[i];
@@ -224,7 +224,7 @@ var RealtimeChannel = (function() {
 			}
 			callback = function(err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
+					Logger.default.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
 				}
 			}
 		}
@@ -245,7 +245,7 @@ var RealtimeChannel = (function() {
 		if(!callback) {
 			callback = function(err) {
 				if (err) {
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
+					Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
 				}
 			}
 		}
@@ -278,7 +278,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.attachImpl = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
 		this.setInProgress(statechangeOp, true);
 		var attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name, params: this.channelOptions.params});
 		if(this._requestedFlags) {
@@ -340,7 +340,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.setInProgress(statechangeOp, true);
 		var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
 		this.sendMessage(msg, (callback || noop));
@@ -479,7 +479,7 @@ var RealtimeChannel = (function() {
 					var presenceMsg = presence[i];
 					PresenceMessage.decode(presenceMsg, options);
 				} catch (e) {
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
 				}
 				if(!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
 				if(!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
@@ -492,7 +492,7 @@ var RealtimeChannel = (function() {
 
 			//RTL17
 			if(this.state !== 'attached') {
-				Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message "' + message.id + '" skipped as this channel "' + this.name + '" state is not "attached" (state is "' + this.state + '").');
+				Logger.default.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Message "' + message.id + '" skipped as this channel "' + this.name + '" state is not "attached" (state is "' + this.state + '").');
 				return;
 			}
 
@@ -505,7 +505,7 @@ var RealtimeChannel = (function() {
 
 			if(firstMessage.extras && firstMessage.extras.delta && firstMessage.extras.delta.from !== this._lastPayload.messageId) {
 				var msg = 'Delta message decode failure - previous message not available for message "' + message.id + '" on this channel "' + this.name + '".';
-				Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+				Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
 				this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
 				break;
 			}
@@ -516,7 +516,7 @@ var RealtimeChannel = (function() {
 					Message.decode(msg, this._decodingContext);
 				} catch (e) {
 					/* decrypt failed .. the most likely cause is that we have the wrong key */
-					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
+					Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', e.toString());
 					switch(e.code) {
 						case 40018:
 							/* decode failure */
@@ -551,7 +551,7 @@ var RealtimeChannel = (function() {
 			break;
 
 		default:
-			Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
+			Logger.default.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', 'Fatal protocol error: unrecognised action (' + message.action + ')');
 			this.connectionManager.abort(ConnectionError.unknownChannelErr);
 		}
 	};
@@ -559,7 +559,7 @@ var RealtimeChannel = (function() {
 	RealtimeChannel.prototype._startDecodeFailureRecovery = function(reason) {
 		var self = this;
 		if(!this._lastPayload.decodeFailureRecoveryInProgress) {
-			Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
+			Logger.default.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
 			this._lastPayload.decodeFailureRecoveryInProgress = true;
 			this._attach(true, reason, function() {
 				self._lastPayload.decodeFailureRecoveryInProgress = false;
@@ -568,11 +568,11 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.onAttached = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
+		Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
 	};
 
 	RealtimeChannel.prototype.notifyState = function(state, reason, resumed, hasPresence) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
 		this.clearStateTimer();
 
 		if(state === this.state) {
@@ -589,7 +589,7 @@ var RealtimeChannel = (function() {
 		}
 		var change = new ChannelStateChange(this.state, state, resumed, reason);
 		var logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason) : ''));
+		Logger.default.logAction(logLevel, 'Channel state for channel "' + this.name + '"', state + (reason ? ('; reason: ' + reason) : ''));
 
 		/* Note: we don't set inProgress for pending states until the request is actually in progress */
 		if(state === 'attached') {
@@ -613,7 +613,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.requestState = function(state, reason) {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
+		Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
 		this.notifyState(state, reason);
 		/* send the event and await response */
 		this.checkPendingState();
@@ -625,11 +625,11 @@ var RealtimeChannel = (function() {
 		/* Allow attach messages to queue up when synchronizing, since this will be
 		 * the state we'll be in when upgrade transport.active triggers a checkpendingstate */
 		if(!(cmState.sendEvents || cmState.forceQueueEvents)) {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'sendEvents is false; state is ' + this.connectionManager.state.state);
+			Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'sendEvents is false; state is ' + this.connectionManager.state.state);
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'name = ' + this.name + ', state = ' + this.state);
+		Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.checkPendingState', 'name = ' + this.name + ', state = ' + this.state);
 		/* Only start the state timer running when actually sending the event */
 		switch(this.state) {
 			case 'attaching':
@@ -668,7 +668,7 @@ var RealtimeChannel = (function() {
 		var self = this;
 		if(!this.stateTimer) {
 			this.stateTimer = setTimeout(function() {
-				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
+				Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
 				self.stateTimer = null;
 				self.timeoutPendingState();
 			}, this.realtime.options.timeouts.realtimeRequestTimeout);
@@ -692,7 +692,7 @@ var RealtimeChannel = (function() {
 			 * will be triggered once it connects again */
 			if(self.state === 'suspended' && self.connectionManager.state.sendEvents) {
 				self.retryTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel retry timer expired', 'attempting a new attach');
+				Logger.default.logAction(Logger.LOG_MINOR, 'RealtimeChannel retry timer expired', 'attempting a new attach');
 				self.requestState('attaching');
 			}
 		}, this.realtime.options.timeouts.channelRetryTimeout);
@@ -710,7 +710,7 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
+		Logger.default.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {

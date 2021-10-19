@@ -34,7 +34,7 @@ var NodeCometTransport = function(connectionManager) {
 		var errorCb = function(err) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.tryConnect()', 'viable transport ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'NodeCometTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
@@ -195,7 +195,7 @@ var NodeCometTransport = function(connectionManager) {
 				chunk = JSON.parse(chunk);
 			} catch(e) {
 				var msg = 'Malformed response body from server: ' + e.message;
-				Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
+				Logger.default.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
 				self.complete(new ErrorInfo(msg, null, 400));
 				return;
 			}
@@ -249,7 +249,7 @@ var NodeCometTransport = function(connectionManager) {
 					body = JSON.parse(String(body));
 				} catch(e) {
 					var msg = 'Malformed response body from server: ' + e.message;
-					Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
+					Logger.default.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
 					self.complete(new ErrorInfo(msg, null, 400));
 					return;
 				}
@@ -291,7 +291,7 @@ var NodeCometTransport = function(connectionManager) {
 	};
 
 	Request.prototype.abort = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
 		var timer = this.timer;
 		if(timer) {
 			clearTimeout(timer);
@@ -299,7 +299,7 @@ var NodeCometTransport = function(connectionManager) {
 		}
 		var req = this.req;
 		if(req) {
-			Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', 'aborting request');
+			Logger.default.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', 'aborting request');
 			req.removeListener('error', this.onReqError);
 			req.on('error', noop);
 			req.abort();

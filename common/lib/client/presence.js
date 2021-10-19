@@ -14,7 +14,7 @@ var Presence = (function() {
 	Utils.inherits(Presence, EventEmitter);
 
 	Presence.prototype.get = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.get()', 'channel = ' + this.channel.name);
+		Logger.default.logAction(Logger.LOG_MICRO, 'Presence.get()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -42,7 +42,7 @@ var Presence = (function() {
 	};
 
 	Presence.prototype.history = function(params, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
+		Logger.default.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
 		this._history(params, callback);
 	};
 

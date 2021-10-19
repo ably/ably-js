@@ -86,9 +86,9 @@ var Resource = (function() {
 	function logResponseHandler(callback, method, path, params) {
 		return function(err, body, headers, unpacked, statusCode) {
 			if (err) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
+				Logger.default.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err));
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()',
+				Logger.default.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()',
 					'Received; ' + urlFromPathAndParams(path, params) + '; Headers: ' + paramString(headers) + '; StatusCode: ' + statusCode + '; Body: ' + (BufferUtils.isBuffer(body) ? body.toString() : body));
 			}
 			if (callback) { callback(err, body, headers, unpacked, statusCode); }
@@ -108,7 +108,7 @@ var Resource = (function() {
 	});
 
 	Resource['do'] = function(method, rest, path, body, origheaders, origparams, envelope, callback) {
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
+		if (Logger.default.shouldLog(Logger.LOG_MICRO)) {
 			callback = logResponseHandler(callback, method, path, origparams);
 		}
 
@@ -118,8 +118,8 @@ var Resource = (function() {
 		}
 
 		function doRequest(headers, params) {
-			if (Logger.shouldLog(Logger.LOG_MICRO)) {
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params));
+			if (Logger.default.shouldLog(Logger.LOG_MICRO)) {
+				Logger.default.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params));
 			}
 
 			var args = [rest, path, headers, body, params, function(err, res, headers, unpacked, statusCode) {
@@ -141,16 +141,16 @@ var Resource = (function() {
 				args.splice(3, 1);
 			}
 
-			if (Logger.shouldLog(Logger.LOG_MICRO)) {
+			if (Logger.default.shouldLog(Logger.LOG_MICRO)) {
 				var decodedBody = body;
 				if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
 					try {
 						decodedBody = msgpack.decode(body);
 					} catch (decodeErr) {
-						Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
+						Logger.default.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr));
 					}
 				}
-				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
+				Logger.default.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
 			Http[method].apply(this, args);
 		}

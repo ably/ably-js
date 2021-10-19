@@ -174,14 +174,14 @@ var ConnectionManager = (function() {
 		this.forceFallbackHost = false;
 		this.connectCounter = 0;
 
-		Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
-		Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
+		Logger.default.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']');
+		Logger.default.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'available transports = [' + this.transports + ']');
+		Logger.default.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
 
 		if(!this.transports.length) {
 			var msg = 'no requested transports available';
-			Logger.logAction(Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
 			throw new Error(msg);
 		}
 
@@ -195,7 +195,7 @@ var ConnectionManager = (function() {
 
 			if(options.closeOnUnload === true) {
 				addEventListener('beforeunload', function() {
-					Logger.logAction(Logger.LOG_MAJOR, 'Realtime.ConnectionManager()', 'beforeunload event has triggered the connection to close as closeOnUnload is true');
+					Logger.default.logAction(Logger.LOG_MAJOR, 'Realtime.ConnectionManager()', 'beforeunload event has triggered the connection to close as closeOnUnload is true');
 					self.requestState({state: 'closing'});
 				});
 			}
@@ -203,13 +203,13 @@ var ConnectionManager = (function() {
 			/* Listen for online and offline events */
 			addEventListener('online', function() {
 				if(self.state == self.states.disconnected || self.state == self.states.suspended) {
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
+					Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘online’ event', 'reattempting connection');
 					self.requestState({state: 'connecting'});
 				}
 			});
 			addEventListener('offline', function() {
 				if(self.state == self.states.connected) {
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
+					Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager caught browser ‘offline’ event', 'disconnecting active transport');
 					// Not sufficient to just go to the 'disconnected' state, want to
 					// force all transports to reattempt the connection. Will immediately
 					// retry.
@@ -258,7 +258,7 @@ var ConnectionManager = (function() {
 			var recoverFn = self.options.recover,
 				lastSessionData = getSessionRecoverData();
 			if(lastSessionData && typeof(recoverFn) === 'function') {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Calling clientOptions-provided recover function with last session data');
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Calling clientOptions-provided recover function with last session data');
 				recoverFn(lastSessionData, function(shouldRecover) {
 					if(shouldRecover) {
 						self.options.recover = lastSessionData.recoveryKey;
@@ -275,13 +275,13 @@ var ConnectionManager = (function() {
 		decideMode(function(mode) {
 			var transportParams = self.createTransportParams(null, mode);
 			if(mode === 'recover') {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = recover; recoveryKey = ' + self.options.recover);
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport recovery mode = recover; recoveryKey = ' + self.options.recover);
 				var match = self.options.recover.split(':');
 				if(match && match[2]) {
 					self.msgSerial = match[2];
 				}
 			} else {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport params = ' + transportParams.toString());
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.getTransportParams()', 'Transport params = ' + transportParams.toString());
 			}
 			callback(transportParams);
 		});
@@ -295,12 +295,12 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.tryATransport = function(transportParams, candidate, callback) {
 		var self = this, host = transportParams.host;
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
+		Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 		(ConnectionManager.supportedTransports[candidate]).tryConnect(this, this.realtime.auth, transportParams, function(wrappedErr, transport) {
 			var state = self.state;
 			if(state == self.states.closing || state == self.states.closed || state == self.states.failed) {
 				if(transport) {
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'connection ' + state.state + ' while we were attempting the transport; closing ' + transport);
+					Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'connection ' + state.state + ' while we were attempting the transport; closing ' + transport);
 					transport.close();
 				}
 				callback(true);
@@ -308,7 +308,7 @@ var ConnectionManager = (function() {
 			}
 
 			if(wrappedErr) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString());
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.tryATransport()', 'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString());
 
 				/* Comet transport onconnect token errors can be dealt with here.
 				* Websocket ones only happen after the transport claims to be viable,
@@ -340,7 +340,7 @@ var ConnectionManager = (function() {
 				return;
 			}
 
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'viable transport ' + candidate + '; setting pending');
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'viable transport ' + candidate + '; setting pending');
 			self.setTransportPending(transport, transportParams);
 			callback(null, transport);
 		});
@@ -355,7 +355,7 @@ var ConnectionManager = (function() {
 	 */
 	ConnectionManager.prototype.setTransportPending = function(transport, transportParams) {
 		var mode = transportParams.mode;
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport + '; mode = ' + mode);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.setTransportPending()', 'transport = ' + transport + '; mode = ' + mode);
 
 		Utils.arrDeleteValue(this.proposedTransports, transport);
 		this.pendingTransports.push(transport);
@@ -415,42 +415,42 @@ var ConnectionManager = (function() {
 
 		if(this.state !== this.states.connected && this.state !== this.states.connecting) {
 			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 			abandon();
 			return;
 		}
 
 		if(currentTransport && !betterTransportThan(transport, currentTransport)) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + ' is no better than current active transport ' + currentTransport.shortName + ' - abandoning upgrade');
 			abandon();
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Scheduling transport upgrade; transport = ' + transport);
 
 		this.realtime.channels.onceNopending(function(err) {
 			var oldProtocol;
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unable to activate transport; transport = ' + transport + '; err = ' + err);
 				return;
 			}
 
 			if(!transport.isConnected) {
 				/* This is only possible if the xhr streaming transport was disconnected during the parallelUpgradeDelay */
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade');
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade');
 				abandon();
 				return;
 			}
 
 			if(self.state === self.states.connected) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Currently connected, so temporarily pausing events until the upgrade is complete');
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Currently connected, so temporarily pausing events until the upgrade is complete');
 				self.state = self.states.synchronizing;
 				oldProtocol = self.activeProtocol;
 			} else if(self.state !== self.states.connecting) {
 				/* Note: upgrading from the connecting state is valid if the old active
 				* transport was deactivated after the upgrade transport first connected;
 				* see logic in deactivateTransport */
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + self.state.state + (self.state === self.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + self.state.state + (self.state === self.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 				abandon();
 				return;
 			}
@@ -463,10 +463,10 @@ var ConnectionManager = (function() {
 				syncPosition = connectionReset ? upgradeConnectionPosition : self;
 
 			if(connectionReset) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connection position from ' + (self.timeSerial || self.connectionSerial) + ' to ' + (syncPosition.timeSerial || syncPosition.connectionSerial) + '; upgrade error was ' + error);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Upgrade resulted in new connectionId; resetting library connection position from ' + (self.timeSerial || self.connectionSerial) + ' to ' + (syncPosition.timeSerial || syncPosition.connectionSerial) + '; upgrade error was ' + error);
 			}
 
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Syncing transport; transport = ' + transport);
 			self.sync(transport, syncPosition, function(syncErr, connectionId, postSyncPosition) {
 				/* If there's been some problem with syncing (and the connection hasn't
 				 * closed or something in the meantime), we have a problem -- we can't
@@ -475,13 +475,13 @@ var ConnectionManager = (function() {
 				 * valid. To be safe, we disconnect both and start again from scratch. */
 				if(syncErr) {
 					if(self.state === self.states.synchronizing) {
-						Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
+						Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.scheduleTransportActivation()', 'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr);
 						self.disconnectAllTransports();
 					}
 					return;
 				}
 				var finishUpgrade = function() {
-					Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
+					Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Activating transport; transport = ' + transport);
 					self.activateTransport(error, transport, connectionId, connectionDetails, postSyncPosition);
 					/* Restore pre-sync state. If state has changed in the meantime,
 					 * don't touch it -- since the websocket transport waits a tick before
@@ -489,10 +489,10 @@ var ConnectionManager = (function() {
 					 * without err while, unknown to it, the connection has closed in the
 					 * meantime and the ws transport is scheduled for death */
 					if(self.state === self.states.synchronizing) {
-						Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport);
+						Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport);
 						self.state = self.states.connected;
 					} else {
-						Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, but state is now ' + self.state.state + ', so leaving unchanged');
+						Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Pre-upgrade protocol idle, but state is now ' + self.state.state + ', so leaving unchanged');
 					}
 					if(self.state.sendEvents) {
 						self.sendQueuedMessages();
@@ -532,18 +532,18 @@ var ConnectionManager = (function() {
 	 * @param connectionPosition the position at the point activation; either {connectionSerial: <serial>} or {timeSerial: <serial>}
 	 */
 	ConnectionManager.prototype.activateTransport = function(error, transport, connectionId, connectionDetails, connectionPosition) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
 		if(error) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
+			Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
 		}
 		if(connectionId) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
 		}
 		if(connectionDetails) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionDetails =  ' + JSON.stringify(connectionDetails));
 		}
 		if(connectionPosition) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial));
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial));
 		}
 
 		this.persistTransportPreference(transport);
@@ -552,9 +552,9 @@ var ConnectionManager = (function() {
 		 * connection event, then we won't activate this transport */
 		var existingState = this.state,
 			connectedState = this.states.connected.state;
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'current state = ' + existingState.state);
 		if(existingState.state == this.states.closing.state || existingState.state == this.states.closed.state || existingState.state == this.states.failed.state) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Disconnecting transport and abandoning');
 			transport.disconnect();
 			return false;
 		}
@@ -565,7 +565,7 @@ var ConnectionManager = (function() {
 		/* if the transport is not connected (eg because it failed during a
 		 * scheduleTransportActivation#onceNoPending wait) then don't activate it */
 		if(!transport.isConnected) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Declining to activate transport ' + transport + ' since it appears to no longer be connected');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'Declining to activate transport ' + transport + ' since it appears to no longer be connected');
 			return false;
 		}
 
@@ -620,11 +620,11 @@ var ConnectionManager = (function() {
 				 * actually this should never happen: transports should only take over
 				 * from other active transports when upgrading, and upgrading waits for
 				 * the old transport to be idle. So log an error. */
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Previous active protocol (for transport ' + existingActiveProtocol.transport.shortName + ', new one is ' + transport.shortName + ') finishing with ' + existingActiveProtocol.messageQueue.count() + ' messages still pending');
 			}
 			if(existingActiveProtocol.transport === transport) {
 				var msg = 'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
 				ErrorReporter.report('error', msg, 'transport-previously-active');
 			} else {
 				existingActiveProtocol.finish();
@@ -636,7 +636,7 @@ var ConnectionManager = (function() {
 		Utils.safeArrForEach(this.pendingTransports, function(pendingTransport) {
 			if(pendingTransport === transport) {
 				var msg = 'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
 				ErrorReporter.report('error', msg, 'transport-activating-pending');
 				Utils.arrDeleteValue(self.pendingTransports, transport);
 			} else {
@@ -646,7 +646,7 @@ var ConnectionManager = (function() {
 		Utils.safeArrForEach(this.proposedTransports, function(proposedTransport) {
 			if(proposedTransport === transport) {
 				var msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
 				ErrorReporter.report('error', msg, 'transport-activating-proposed');
 				Utils.arrDeleteValue(self.proposedTransports, transport);
 			} else {
@@ -669,13 +669,13 @@ var ConnectionManager = (function() {
 			wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport),
 			noTransportsScheduledForActivation = this.noTransportsScheduledForActivation();
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') + (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'));
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'state = ' + state + (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') + (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'));
 		if(error && error.message)
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
 		if(wasActive) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'Getting, clearing, and requeuing ' + this.activeProtocol.messageQueue.count() + ' pending messages');
 			this.queuePendingMessages(currentProtocol.getPendingMessages());
 			/* Clear any messages we requeue to allow the protocol to become idle.
 			 * In case of an upgrade, this will trigger an immediate activation of
@@ -736,7 +736,7 @@ var ConnectionManager = (function() {
 			* disconnected before the new one got the sync -- ignore it and keep
 			* waiting for the sync. If it fails we have a separate sync timer that
 			* will expire). */
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates');
 			this.startSuspendTimer();
 			this.startTransitionTimer(this.states.connecting);
 			this.notifyState({state: 'connecting', error: error});
@@ -794,14 +794,14 @@ var ConnectionManager = (function() {
 			connIdChanged = prevConnId && (prevConnId !== connectionId),
 			recoverFailure = !prevConnId && hasConnectionError;
 		if(connIdChanged || recoverFailure)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
 			this.msgSerial = 0;
 		}
 		/* but do need to reattach channels, for channels that were previously in
 		 * the attached state even though the connection mode was 'clean' due to a
 		 * freshness check - see https://github.com/ably/ably-js/issues/394 */
 		if(this.connectionId !== connectionId)  {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId; reattaching any attached channels');
 			/* Wait till next tick before reattaching channels, so that connection
 			 * state will be updated and so that it will be applied after
 			 * Channels#onTransportUpdate, else channels will not have an ATTACHED
@@ -815,7 +815,7 @@ var ConnectionManager = (function() {
 			 * 30s was chosen to be 5s longer than the transport idle timeout expire
 			 * time, in an attempt to avoid false positives due to a transport
 			 * silently failing immediately after a resume */
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Same connectionId; checkChannelsOnResume is enabled');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Same connectionId; checkChannelsOnResume is enabled');
 			clearTimeout(this.channelResumeCheckTimer);
 			this.realtime.channels.resetAttachedMsgIndicators();
 			this.channelResumeCheckTimer = setTimeout(function() {
@@ -842,10 +842,10 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.setConnectionSerial = function(connectionPosition, force) {
 		var timeSerial = connectionPosition.timeSerial,
 			connectionSerial = connectionPosition.connectionSerial;
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
+		Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.setConnectionSerial()', 'Updating connection serial; serial = ' + connectionSerial + '; timeSerial = ' + timeSerial + '; force = ' + force + '; previous = ' + this.connectionSerial);
 		if(timeSerial !== undefined) {
 			if(timeSerial <= this.timeSerial && !force) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with timeSerial ' + timeSerial + ', but current timeSerial is ' + this.timeSerial + '; assuming message is a duplicate and discarding it');
 				return true;
 			}
 			this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
@@ -854,7 +854,7 @@ var ConnectionManager = (function() {
 		}
 		if(connectionSerial !== undefined) {
 			if(connectionSerial <= this.connectionSerial && !force) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.setConnectionSerial()', 'received message with connectionSerial ' + connectionSerial + ', but current connectionSerial is ' + this.connectionSerial + '; assuming message is a duplicate and discarding it');
 				return true;
 			}
 			this.realtime.connection.serial = this.connectionSerial = connectionSerial;
@@ -881,7 +881,7 @@ var ConnectionManager = (function() {
 
 		var sinceLast = Utils.now() - this.lastActivity;
 		if(sinceLast > this.connectionStateTtl + this.maxIdleInterval) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.checkConnectionStateFreshness()', 'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state');
 			this.clearConnection();
 			this.states.connecting.failState = 'suspended';
 			this.states.connecting.queueEvents = false;
@@ -932,8 +932,8 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.enactStateChange = function(stateChange) {
 		var logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-		Logger.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason) : ''));
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
+		Logger.default.logAction(logLevel, 'Connection state', stateChange.current + (stateChange.reason ? ('; reason: ' + stateChange.reason) : ''));
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.enactStateChange', 'setting new state: ' + stateChange.current + '; reason = ' + (stateChange.reason && stateChange.reason.message));
 		var newState = this.state = this.states[stateChange.current];
 		if(stateChange.reason) {
 			this.errorReason = stateChange.reason;
@@ -953,10 +953,10 @@ var ConnectionManager = (function() {
 	 ****************************************/
 
 	ConnectionManager.prototype.startTransitionTimer = function(transitionState) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState.state);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'transitionState: ' + transitionState.state);
 
 		if(this.transitionTimer) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
 			clearTimeout(this.transitionTimer);
 		}
 
@@ -964,14 +964,14 @@ var ConnectionManager = (function() {
 		this.transitionTimer = setTimeout(function() {
 			if(self.transitionTimer) {
 				self.transitionTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager ' + transitionState.state + ' timer expired', 'requesting new state: ' + transitionState.failState);
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager ' + transitionState.state + ' timer expired', 'requesting new state: ' + transitionState.failState);
 				self.notifyState({state: transitionState.failState});
 			}
 		}, transitionState.retryDelay);
 	};
 
 	ConnectionManager.prototype.cancelTransitionTimer = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
 		if(this.transitionTimer) {
 			clearTimeout(this.transitionTimer);
 			this.transitionTimer = null;
@@ -985,7 +985,7 @@ var ConnectionManager = (function() {
 		this.suspendTimer = setTimeout(function() {
 			if(self.suspendTimer) {
 				self.suspendTimer = null;
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager suspend timer expired', 'requesting new state: suspended');
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager suspend timer expired', 'requesting new state: suspended');
 				self.states.connecting.failState = 'suspended';
 				self.states.connecting.queueEvents = false;
 				self.notifyState({state: 'suspended'});
@@ -1010,7 +1010,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.startRetryTimer = function(interval) {
 		var self = this;
 		this.retryTimer = setTimeout(function() {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
 			self.retryTimer = null;
 			self.requestState({state: 'connecting'});
 		}, interval);
@@ -1043,7 +1043,7 @@ var ConnectionManager = (function() {
 					indicated.error && Auth.isTokenErr(indicated.error) &&
 					!(this.errorReason && Auth.isTokenErr(this.errorReason)))));
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.notifyState()', 'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''));
 		/* do nothing if we're already in the indicated state */
 		if(state == this.state.state)
 			return;
@@ -1071,7 +1071,7 @@ var ConnectionManager = (function() {
 			};
 			var sinceLast = this.lastAutoReconnectAttempt && (Utils.now() - this.lastAutoReconnectAttempt + 1);
 			if(sinceLast && (sinceLast < 1000)) {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.notifyState()', 'Last reconnect attempt was only ' + sinceLast + 'ms ago, waiting another ' + (1000 - sinceLast) + 'ms before trying again');
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.notifyState()', 'Last reconnect attempt was only ' + sinceLast + 'ms ago, waiting another ' + (1000 - sinceLast) + 'ms before trying again');
 				setTimeout(autoReconnect, 1000 - sinceLast);
 			} else {
 				Utils.nextTick(autoReconnect);
@@ -1093,7 +1093,7 @@ var ConnectionManager = (function() {
 		 }
 
 		if(state == 'connected' && !this.activeProtocol) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.notifyState()', 'Broken invariant: attempted to go into connected state, but there is no active protocol');
+			Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.notifyState()', 'Broken invariant: attempted to go into connected state, but there is no active protocol');
 		}
 
 		/* implement the change and notify */
@@ -1108,7 +1108,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.requestState = function(request) {
 		var state = request.state, self = this;
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state + '; current state: ' + this.state.state);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.requestState()', 'requested state: ' + state + '; current state: ' + this.state.state);
 		if(state == this.state.state)
 			return; /* silently do nothing */
 
@@ -1138,7 +1138,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.startConnect = function() {
 		if(this.state !== this.states.connecting) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'Must be in connecting state to connect, but was ' + this.state.state);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'Must be in connecting state to connect, but was ' + this.state.state);
 			return;
 		}
 
@@ -1163,7 +1163,7 @@ var ConnectionManager = (function() {
 			});
 		};
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'starting connection');
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'starting connection');
 		this.startSuspendTimer();
 		this.startTransitionTimer(this.states.connecting);
 
@@ -1215,9 +1215,9 @@ var ConnectionManager = (function() {
 			/* Only keep trying as long as in the 'connecting' state (or 'connected'
 			 * for upgrading). Any operation can put us into 'disconnected' to cancel
 			 * connection attempts and wait before retrying, or 'failed' to fail. */
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Must be in connecting state to connect (or connected to upgrade), but was ' + state);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Must be in connecting state to connect (or connected to upgrade), but was ' + state);
 		} else if(this.pendingTransports.length) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action');
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectImpl()', 'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action');
 		} else if(state == this.states.connected.state) {
 			this.upgradeIfNeeded(transportParams);
 		} else if(this.transports.length > 1 && this.getTransportPreference()) {
@@ -1238,12 +1238,12 @@ var ConnectionManager = (function() {
 			this.connectImpl(transportParams);
 		}
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectPreference()', 'Trying to connect with stored transport preference ' + preference);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectPreference()', 'Trying to connect with stored transport preference ' + preference);
 
 		var preferenceTimeout = setTimeout(function() {
 			preferenceTimeoutExpired = true;
 			if(!(self.state.state === self.states.connected.state)) {
-				Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectPreference()', 'Shortcircuit connection attempt with ' + preference + ' failed; clearing preference and trying from scratch');
+				Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectPreference()', 'Shortcircuit connection attempt with ' + preference + ' failed; clearing preference and trying from scratch');
 				/* Abort all connection attempts. (This also disconnects the active
 				 * protocol, but none exists if we're not in the connected state) */
 				self.disconnectAllTransports();
@@ -1297,7 +1297,7 @@ var ConnectionManager = (function() {
 				}
 			};
 
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectBase()', 'Trying to connect with base transport ' + this.baseTransport);
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.connectBase()', 'Trying to connect with base transport ' + this.baseTransport);
 
 		/* first try to establish a connection with the priority host with http transport */
 		var host = candidateHosts.shift();
@@ -1362,7 +1362,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.upgradeIfNeeded = function(transportParams) {
 		var upgradePossibilities = this.getUpgradePossibilities(),
 			self = this;
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.upgradeIfNeeded()', 'upgrade possibilities: ' + Utils.inspect(upgradePossibilities));
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.upgradeIfNeeded()', 'upgrade possibilities: ' + Utils.inspect(upgradePossibilities));
 
 		if(!upgradePossibilities.length) {
 			return;
@@ -1377,22 +1377,22 @@ var ConnectionManager = (function() {
 
 
 	ConnectionManager.prototype.closeImpl = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
 		this.cancelSuspendTimer();
 		this.startTransitionTimer(this.states.closing);
 
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
 			if(transport) transport.close();
 		});
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Disposing of proposed transport: ' + transport);
 			if(transport) transport.dispose();
 		});
 
 		if(this.activeProtocol) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing active transport: ' + this.activeProtocol.getTransport());
 			this.activeProtocol.getTransport().close();
 		}
 
@@ -1405,7 +1405,7 @@ var ConnectionManager = (function() {
 		var self = this;
 		switch(this.state.state) {
 			case 'connected':
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()', 'Sending AUTH message on active transport');
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()', 'Sending AUTH message on active transport');
 				/* If there are any proposed/pending transports (eg an upgrade that
 				 * isn't yet scheduled for activation) that hasn't yet started syncing,
 				 * just to get rid of them & restart the upgrade with the new token, to
@@ -1452,13 +1452,13 @@ var ConnectionManager = (function() {
 				break;
 
 			case 'connecting':
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
 					'Aborting current connection attempts in order to start again with the new auth details');
 				this.disconnectAllTransports();
 				/* fallthrough to add statechange listener */
 
 			default:
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()',
 					'Connection state is ' + this.state.state + '; waiting until either connected or failed');
 				var listener = function(stateChange) {
 					switch(stateChange.current) {
@@ -1489,25 +1489,25 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.disconnectAllTransports = function(exceptActive) {
-		Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''));
+		Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''));
 
 		/* This will prevent any connection procedure in an async part of one of its early stages from continuing */
 		this.connectCounter++;
 
 		Utils.safeArrForEach(this.pendingTransports, function(transport) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting pending transport: ' + transport);
 			if(transport) transport.disconnect();
 		});
 		this.pendingTransports = [];
 
 		Utils.safeArrForEach(this.proposedTransports, function(transport) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disposing of proposed transport: ' + transport);
 			if(transport) transport.dispose();
 		});
 		this.proposedTransports = [];
 
 		if(this.activeProtocol && !exceptActive) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting active transport: ' + this.activeProtocol.getTransport());
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting active transport: ' + this.activeProtocol.getTransport());
 			this.activeProtocol.getTransport().disconnect();
 		}
 		/* No need to notify state disconnected; disconnecting the active transport
@@ -1523,19 +1523,19 @@ var ConnectionManager = (function() {
 		var state = this.state;
 
 		if(state.sendEvents) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
 			this.sendImpl(new PendingMessage(msg, callback));
 			return;
 		}
 		var shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
 		if(!shouldQueue) {
 			var err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
 			callback(this.errorReason || new ErrorInfo(err, 90000, 400));
 			return;
 		}
-		if(Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
+		if(Logger.default.shouldLog(Logger.LOG_MICRO)) {
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
 		}
 		this.queue(msg, callback);
 	};
@@ -1551,7 +1551,7 @@ var ConnectionManager = (function() {
 		try {
 			this.activeProtocol.send(pendingMessage);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
+			Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.sendImpl()', 'Unexpected exception in transport.send(): ' + e.stack);
 		}
 	};
 
@@ -1592,7 +1592,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.queue = function(msg, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
+		Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
 		var lastQueued = this.queuedMessages.last();
 		var maxSize = this.options.maxMessageSize;
 		/* If have already attempted to send a message, don't merge more messages
@@ -1610,7 +1610,7 @@ var ConnectionManager = (function() {
 	};
 
 	ConnectionManager.prototype.sendQueuedMessages = function() {
-		Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.count() + ' queued messages');
+		Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.sendQueuedMessages()', 'sending ' + this.queuedMessages.count() + ' queued messages');
 		var pendingMessage;
 		while(pendingMessage = this.queuedMessages.shift())
 			this.sendImpl(pendingMessage);
@@ -1618,7 +1618,7 @@ var ConnectionManager = (function() {
 
 	ConnectionManager.prototype.queuePendingMessages = function(pendingMessages) {
 		if(pendingMessages && pendingMessages.length) {
-			Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
+			Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.queuePendingMessages()', 'queueing ' + pendingMessages.length + ' pending messages');
 			this.queuedMessages.prepend(pendingMessages);
 		}
 	};
@@ -1626,7 +1626,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.failQueuedMessages = function(err) {
 		var numQueued = this.queuedMessages.count();
 		if(numQueued > 0) {
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.failQueuedMessages()', 'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err));
+			Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.failQueuedMessages()', 'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err));
 			this.queuedMessages.completeAllMessages(err);
 		}
 	};
@@ -1646,7 +1646,7 @@ var ConnectionManager = (function() {
 					return;
 				}
 				if(ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
-					Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage()', 'received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
+					Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.onChannelMessage()', 'received message with different connectionSerial, but same message id as a previous; discarding; id = ' + message.id);
 					return;
 				}
 				this.mostRecentMsg = message;
@@ -1659,7 +1659,7 @@ var ConnectionManager = (function() {
 			if(Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
 				this.realtime.channels.onChannelMessage(message);
 			} else {
-				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage()', 'received message ' + JSON.stringify(message) + 'on defunct transport; discarding');
+				Logger.default.logAction(Logger.LOG_MICRO, 'ConnectionManager.onChannelMessage()', 'received message ' + JSON.stringify(message) + 'on defunct transport; discarding');
 			}
 		}
 	};
@@ -1667,7 +1667,7 @@ var ConnectionManager = (function() {
 	ConnectionManager.prototype.ping = function(transport, callback) {
 		/* if transport is specified, try that */
 		if(transport) {
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
 			var onTimeout = function () {
 				transport.off('heartbeat', onHeartbeat);
@@ -1763,11 +1763,11 @@ var ConnectionManager = (function() {
 			this.notifyState({state: 'failed', error: err});
 		} else if(err.statusCode === 403) {
 			var msg = 'Client configured authentication provider returned 403; failing the connection';
-			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
 			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});
 		} else {
 			var msg = 'Client configured authentication provider request failed';
-			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
+			Logger.default.logAction(Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
 			this.notifyState({state: this.state.failState, error: new ErrorInfo(msg, 80019, 401, err)});
 		}
 	};
@@ -1784,7 +1784,7 @@ var ConnectionManager = (function() {
 		if(clientId) {
 			var err = this.realtime.auth._uncheckedSetClientId(clientId);
 			if(err) {
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onConnectionDetailsUpdate()', err.message);
+				Logger.default.logAction(Logger.LOG_ERROR, 'ConnectionManager.onConnectionDetailsUpdate()', err.message);
 				/* Errors setting the clientId are fatal to the connection */
 				transport.fail(err);
 				return;

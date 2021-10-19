@@ -119,7 +119,7 @@ var PresenceMessage = (function() {
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
-				Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
+				Logger.default.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', e.toString());
 			}
 		}
 		return body;
@@ -146,7 +146,7 @@ var PresenceMessage = (function() {
 		try {
 			PresenceMessage.decode(msg, options);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
+			Logger.default.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', e.toString());
 		}
 		return msg;
 	};

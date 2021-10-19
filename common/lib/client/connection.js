@@ -40,12 +40,12 @@ var Connection = (function() {
 	}
 
 	Connection.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
 		this.connectionManager.requestState({state: 'connecting'});
 	};
 
 	Connection.prototype.ping = function(callback) {
-		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
 		if(!callback) {
 			if(this.ably.options.promises) {
 				return Utils.promisify(this, 'ping', arguments);
@@ -56,7 +56,7 @@ var Connection = (function() {
 	};
 
 	Connection.prototype.close = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
+		Logger.default.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
 	};
 

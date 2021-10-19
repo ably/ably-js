@@ -19,12 +19,12 @@ var Protocol = (function() {
 	Utils.inherits(Protocol, EventEmitter);
 
 	Protocol.prototype.onAck = function(serial, count) {
-		Logger.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
+		Logger.default.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
 		this.messageQueue.completeMessages(serial, count);
 	};
 
 	Protocol.prototype.onNack = function(serial, count, err) {
-		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
+		Logger.default.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
 		if(!err) {
 			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
 		}
@@ -44,8 +44,8 @@ var Protocol = (function() {
 		if(pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
-		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
+		if (Logger.default.shouldLog(Logger.LOG_MICRO)) {
+			Logger.default.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
 		}
 		pendingMessage.sendAttempted = true;
 		this.transport.send(pendingMessage.message);

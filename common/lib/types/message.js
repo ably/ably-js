@@ -242,7 +242,7 @@ var Message = (function() {
 			try {
 				Message.decode(msg, options);
 			} catch (e) {
-				Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
+				Logger.default.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', e.toString());
 			}
 		}
 		return body;
@@ -275,7 +275,7 @@ var Message = (function() {
 		try {
 			Message.decode(msg, options);
 		} catch(e) {
-			Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
+			Logger.default.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', e.toString());
 		}
 		return msg;
 	};

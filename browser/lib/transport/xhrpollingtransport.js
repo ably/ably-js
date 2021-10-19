@@ -23,7 +23,7 @@ var XHRPollingTransport = function(connectionManager) {
 		var errorCb = function(err) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'XHRPollingTransport.tryConnect()', 'viable transport ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'XHRPollingTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});

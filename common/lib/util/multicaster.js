@@ -12,7 +12,7 @@ var Multicaster = (function() {
 					try {
 						member.apply(null, arguments);
 					} catch(e){
-						Logger.logAction(Logger.LOG_ERROR, 'Multicaster multiple callback handler', 'Unexpected exception: ' + e + '; stack = ' + e.stack);
+						Logger.default.logAction(Logger.LOG_ERROR, 'Multicaster multiple callback handler', 'Unexpected exception: ' + e + '; stack = ' + e.stack);
 					}
 				}
 			}

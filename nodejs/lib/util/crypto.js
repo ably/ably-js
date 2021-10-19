@@ -127,11 +127,11 @@ var Crypto = (function() {
 		var key;
 		/* Backward compatibility */
 		if((typeof(params) === 'function') || (typeof(params) === 'string')) {
-			Logger.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
+			Logger.default.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
 			if(typeof(params) === 'function') {
 				Crypto.generateRandomKey(function(key) {
 					params(null, Crypto.getDefaultParams({key: key}));
-				})
+				});
 			} else if(typeof arguments[1] === 'function') {
 				arguments[1](null, Crypto.getDefaultParams({key: params}));
 			} else {
@@ -202,7 +202,7 @@ var Crypto = (function() {
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+		Logger.default.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		var plaintextLength = plaintext.length,
 			paddedLength = getPaddedLength(plaintextLength),
 			iv = this.getIv();

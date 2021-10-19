@@ -101,7 +101,7 @@ var Utils = (function() {
 
 	Utils.isEmptyArg = function(arg) {
 		return arg === null || arg === undefined;
-	}
+	};
 
 	/*
 	 * Perform a simple shallow clone of an object.

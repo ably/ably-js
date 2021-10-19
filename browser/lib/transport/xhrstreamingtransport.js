@@ -23,7 +23,7 @@ var XHRStreamingTransport = function(connectionManager) {
 		var errorCb = function(err) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'XHRStreamingTransport.tryConnect()', 'viable transport ' + transport);
+			Logger.defailt.logAction(Logger.LOG_MINOR, 'XHRStreamingTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});

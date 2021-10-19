@@ -19,23 +19,23 @@ var Rest = (function() {
 			return new Rest(options);
 		}
 		var self = this;
-
 		/* normalise options */
 		if(!options) {
 			var msg = 'no options provided';
-			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
+		self.logger = new Logger();
+		// console.log('self.logger',self.logger);
+		// console.log('self.logger.logAction',self.logger.logAction);
+
 		options = Defaults.objectifyOptions(options);
 
 		// logger options provided, we initialize custom logging system for this particular client
 		if(options.log) {
-			self.logger = Logger;
 			self.logger.setLog(options.log.level, options.log.handler);
 			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		} else {
-			// we use global logger
-			self.logger = Logger;
+			// we use default logger settings
 			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		}
 

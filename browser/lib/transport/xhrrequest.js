@@ -148,7 +148,7 @@ var XHRRequest = (function() {
 
 		var errorHandler = function(errorEvent, message, code, statusCode) {
 			var errorMessage = message + ' (event type: ' + errorEvent.type + ')' + (self.xhr.statusText ? ', current statusText is ' + self.xhr.statusText : '');
-			Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
+			Logger.default.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
 			self.complete(new ErrorInfo(errorMessage, code, statusCode));
 		};
 		xhr.onerror = function(errorEvent) {
@@ -318,10 +318,10 @@ var XHRRequest = (function() {
 
 			Http.checkConnectivity = function(callback) {
 				var upUrl = Defaults.internetUpUrl;
-				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+				Logger.default.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
 				Http.getUri(null, upUrl, null, null, function(err, responseText) {
 					var result = (!err && responseText.replace(/\n/, '') == 'yes');
-					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+					Logger.default.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
 					callback(null, result);
 				});
 			};

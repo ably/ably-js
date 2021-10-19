@@ -38,11 +38,12 @@ Defaults.errorReportingHeaders = {
 
 Defaults.version          = version;
 Defaults.apiVersion       = '1.2';
+Defaults.logger 					= new Logger();
 
 var agent = 'ably-js/' + Defaults.version;
 if (Platform.agent) {
 	agent += ' ' + Platform.agent;
-} 
+}
 Defaults.agent = agent;
 
 Defaults.getHost = function(options, host, ws) {
@@ -103,15 +104,15 @@ Defaults.objectifyOptions = function(options) {
 Defaults.normaliseOptions = function(options) {
 	/* Deprecated options */
 	if(options.host) {
-		Logger.deprecated('host', 'restHost');
+		Logger.default.deprecated('host', 'restHost');
 		options.restHost = options.host;
 	}
 	if(options.wsHost) {
-		Logger.deprecated('wsHost', 'realtimeHost');
+		Logger.default.deprecated('wsHost', 'realtimeHost');
 		options.realtimeHost = options.wsHost;
 	}
 	if(options.queueEvents) {
-		Logger.deprecated('queueEvents', 'queueMessages');
+		Logger.default.deprecated('queueEvents', 'queueMessages');
 		options.queueMessages = options.queueEvents;
 	}
 
@@ -119,22 +120,22 @@ Defaults.normaliseOptions = function(options) {
 		/* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
 		if(options.fallbackHosts) {
 			var msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
-			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* default fallbacks can't be used with custom ports */
 		if(options.port || options.tlsPort) {
 			var msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
-			Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
+			Logger.default.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
 			throw new ErrorInfo(msg, 40000, 400);
 		}
 
 		/* emit an appropriate deprecation warning */
 		if(options.environment) {
-			Logger.deprecatedWithMsg('fallbackHostsUseDefault', 'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.');
+			Logger.default.deprecatedWithMsg('fallbackHostsUseDefault', 'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.');
 		} else {
-			Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
+			Logger.default.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
 		}
 
 		/* use the default fallback hosts as requested */
@@ -142,12 +143,12 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(options.recover === true) {
-		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+		Logger.default.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
 		options.recover = function(lastConnectionDetails, cb) { cb(true); };
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
-		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
+		Logger.default.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
 		options.recover = null;
 	}
 
@@ -158,7 +159,7 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(options.transports && Utils.arrIn(options.transports, 'xhr')) {
-		Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
+		Logger.default.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
 		Utils.arrDeleteValue(options.transports, 'xhr');
 		options.transports.push('xhr_streaming');
 	}
@@ -178,7 +179,7 @@ Defaults.normaliseOptions = function(options) {
 		/* prefer setting realtimeHost to restHost as a custom restHost typically indicates
 		 * a development environment is being used that can't be inferred by the library */
 		if(options.restHost) {
-			Logger.logAction(Logger.LOG_WARN, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
+			Logger.default.logAction(Defaults.logger.LOG_WARN, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
 			options.realtimeHost = options.restHost
 		} else {
 			options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
@@ -218,7 +219,7 @@ Defaults.normaliseOptions = function(options) {
 	}
 
 	if(options.promises && !Platform.Promise) {
-		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
+		Logger.default.logAction(Defaults.logger.LOG_ERROR, 'Defaults.normaliseOptions', '{promises: true} was specified, but no Promise constructor found; disabling promises');
 		options.promises = false;
 	}
 

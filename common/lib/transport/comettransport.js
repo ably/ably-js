@@ -61,7 +61,7 @@ var CometTransport = (function() {
 
 	/* public instance methods */
 	CometTransport.prototype.connect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
+		Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
 		Transport.prototype.connect.call(this);
 		var self = this, params = this.params, options = params.options;
 		var host = Defaults.getHost(options, params.host);
@@ -70,7 +70,7 @@ var CometTransport = (function() {
 
 		this.baseUri = cometScheme + host + ':' + port + '/comet/';
 		var connectUri = this.baseUri + 'connect';
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
+		Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams(function(err, authParams) {
 			if(err) {
 				self.disconnect(err);
@@ -82,7 +82,7 @@ var CometTransport = (function() {
 			self.authParams = authParams;
 			var connectParams = self.params.getConnectParams(authParams);
 			if('stream' in connectParams) self.stream = connectParams.stream;
-			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + Utils.toQueryString(connectParams));
+			Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + Utils.toQueryString(connectParams));
 
 			/* this will be the 'recvRequest' so this connection can stream messages */
 			var preconnected = false,
@@ -134,12 +134,12 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.requestClose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()');
+		Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()');
 		this._requestCloseOrDisconnect(true);
 	};
 
 	CometTransport.prototype.requestDisconnect = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
+		Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
 		this._requestCloseOrDisconnect(false);
 	};
 
@@ -151,7 +151,7 @@ var CometTransport = (function() {
 
 			request.on('complete', function (err) {
 				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + Utils.inspectError(err));
+					Logger.default.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + Utils.inspectError(err));
 					self.finish('disconnected', err);
 				}
 			});
@@ -160,11 +160,11 @@ var CometTransport = (function() {
 	};
 
 	CometTransport.prototype.dispose = function() {
-		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
+		Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
 		if(!this.isDisposed) {
 			this.isDisposed = true;
 			if(this.recvRequest) {
-				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
+				Logger.default.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
 				this.recvRequest.abort();
 				this.recvRequest = null;
 			}
@@ -190,7 +190,7 @@ var CometTransport = (function() {
 		Transport.prototype.onConnect.call(this, message);
 
 		var baseConnectionUri =  this.baseUri + connectionStr;
-		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
+		Logger.default.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = baseConnectionUri + '/close';
@@ -228,7 +228,7 @@ var CometTransport = (function() {
 			sendRequest = this.sendRequest = self.createRequest(self.sendUri, null, self.authParams, this.encodeRequest(items), REQ_SEND);
 
 		sendRequest.on('complete', function(err, data) {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
+			if(err) Logger.default.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
 			self.sendRequest = null;
 
 			/* the result of the request, even if a nack, is usually a protocol response
@@ -313,7 +313,7 @@ var CometTransport = (function() {
 				for(var i = 0; i < items.length; i++)
 					this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
+			Logger.default.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + e.stack);
 		}
 	};
 

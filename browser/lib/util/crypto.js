@@ -32,7 +32,7 @@ var Crypto = (function() {
 		};
 	} else {
 		generateRandom = function(bytes, callback) {
-			Logger.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
+			Logger.default.logAction(Logger.LOG_MAJOR, 'Ably.Crypto.generateRandom()', 'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()');
 			var words = bytes / 4, array = new Array(words);
 			for(var i = 0; i < words; i++) {
 				/* cryptojs wordarrays use signed ints. When WordArray.create is fed a
@@ -154,7 +154,7 @@ var Crypto = (function() {
 		var key;
 		/* Backward compatibility */
 		if((typeof(params) === 'function') || (typeof(params) === 'string')) {
-			Logger.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
+			Logger.default.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
 			if(typeof(params) === 'function') {
 				Crypto.generateRandomKey(function(key) {
 					params(null, Crypto.getDefaultParams({key: key}));
@@ -229,7 +229,7 @@ var Crypto = (function() {
 	}
 
 	CBCCipher.prototype.encrypt = function(plaintext, callback) {
-		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+		Logger.default.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 		plaintext = BufferUtils.toWordArray(plaintext);
 		var plaintextLength = plaintext.sigBytes,
 			paddedLength = getPaddedLength(plaintextLength),
@@ -268,7 +268,7 @@ var Crypto = (function() {
 	};
 
 	CBCCipher.prototype.decrypt = function(ciphertext) {
-		Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
+		Logger.default.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
 		ciphertext = BufferUtils.toWordArray(ciphertext);
 		var blockLengthWords = this.blockLengthWords,
 			ciphertextWords = ciphertext.words,
@@ -299,7 +299,7 @@ var Crypto = (function() {
 			if (err) {
 				callback(err);
 				return;
-			} 
+			}
 			callback(null, self.encryptCipher.process(randomBlock));
 		});
 	};

@@ -51,7 +51,7 @@ var JSONPTransport = function(connectionManager) {
 		var errorCb = function(err) { callback({event: this.event, error: err}); };
 		transport.on(['failed', 'disconnected'], errorCb);
 		transport.on('preconnect', function() {
-			Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
+			Logger.default.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
 			transport.off(['failed', 'disconnected'], errorCb);
 			callback(null, transport);
 		});
@@ -115,7 +115,7 @@ var JSONPTransport = function(connectionManager) {
 			/* The src has been truncated. Can't abort, but can at least emit an
 			 * error so the user knows what's gone wrong. (Can't compare strings
 			 * directly as src may have a port, script.src won't) */
-			Logger.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
+			Logger.default.logAction(Logger.LOG_ERROR, 'JSONP Request.exec()', 'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param');
 		}
 		script.async = true;
 		script.type = 'text/javascript';
@@ -203,12 +203,12 @@ var JSONPTransport = function(connectionManager) {
 				return;
 			}
 			checksInProgress = [callback];
-			Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+			Logger.default.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
 
 			var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
 			req.once('complete', function(err, response) {
 				var result = !err && response;
-				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+				Logger.default.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
 				for(var i = 0; i < checksInProgress.length; i++) checksInProgress[i](null, result);
 				checksInProgress = null;
 			});
