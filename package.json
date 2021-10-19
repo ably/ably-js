@@ -39,6 +39,7 @@
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
     "ejs": "~2.5",
     "eslint": "^7.13.0",
+    "eslint-plugin-security": "^1.4.0",
     "express": "^4.17.1",
     "glob": "~4.4",
     "google-closure-compiler": "^20180610.0.1",
