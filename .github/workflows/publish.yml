@@ -32,7 +32,7 @@ jobs:
         run: npm run-script build
 
       - name: 'prepare release'
-        run: publish-version-release
+        run: npm run-script publish-version-release
 
 # TODO: Seems like its not so trivial to set npmjs authorization https://github.com/npm/npm/issues/15565
       - name: publish npm package
