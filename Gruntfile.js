@@ -213,7 +213,13 @@ module.exports = function (grunt) {
 		done(false);
 	});
 
+	// this grunt task makes
+	// 1. upgrade version
+	// 2. commit and push `package.json` with bumped version
+	// 3. make git tag with latest commit pushed in tag 2
+	// 4. makes github release (WIP)
 	grunt.registerTask('publish-version-release',[
+		'build',
 		'bump',
 		'commitVersion',
 		'tag',
