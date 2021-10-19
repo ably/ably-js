@@ -35,6 +35,12 @@ var Resource = (function() {
 				return;
 			}
 
+			// handle empty  body of 204 status code response properly
+			if (outerStatusCode === 204 && !body) {
+				callback(err, body, outerHeaders, true, outerStatusCode);
+				return;
+			}
+
 			if(!unpacked) {
 				try {
 					body = Utils.decodeBody(body, format);

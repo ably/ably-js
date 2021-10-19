@@ -2,7 +2,7 @@
 
 // Run this test suit directly on serverside:
 // 1) with rebuilding library (slow)
-// npm run test:mocha --test=spec/rest/request.test.js
+// npm run-script build
 // 2) with already build library (faster, but changes can be not applied as expected)
 // npx grunt mocha --test=spec/rest/request.test.js
 
@@ -284,7 +284,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 						body: 'shouldBeIgnored',
 						status: 204,
 						type: 'json'
-					}, null, null,
+					}, {}, {},
 					function (err, resp) {
 						if (err) {
 							return done(err);
