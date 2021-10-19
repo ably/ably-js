@@ -16,6 +16,7 @@ var Realtime = (function() {
 		}
 		Logger.default.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		Rest.call(this, options);
+		this.logger = new Logger();
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
 		if(options.autoConnect !== false)
