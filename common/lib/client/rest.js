@@ -18,22 +18,21 @@ var Rest = (function() {
 		if(!(this instanceof Rest)){
 			return new Rest(options);
 		}
-		var self = this;
 		/* normalise options */
 		if(!options) {
 			var msg = 'no options provided';
 			throw new Error(msg);
 		}
-		self.logger = new Logger();
+		this.logger = new Logger();
 		options = Defaults.objectifyOptions(options);
 
 		// logger options provided, we initialize custom logging system for this particular client
 		if(options.log) {
-			self.logger.setLog(options.log.level, options.log.handler);
-			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+			this.logger.setLog(options.log.level, options.log.handler);
+			this.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		} else {
 			// we use default logger settings
-			self.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+			this.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		}
 
 		this.options = Defaults.normaliseOptions(options);
@@ -43,7 +42,7 @@ var Rest = (function() {
 			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
 			if(!keyMatch) {
 				var msg = 'invalid key parameter';
-				self.logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
+				this.logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
 			options.keyName = keyMatch[1];
@@ -57,7 +56,7 @@ var Rest = (function() {
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		self.logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
+		this.logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
 
 		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
 		this._currentFallback = null;
