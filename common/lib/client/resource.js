@@ -3,7 +3,7 @@ import Http from 'platform-http';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Auth from './auth';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 import { isSuccessCode } from '../../constants/HttpStatusCodes';
 
 var Resource = (function() {
