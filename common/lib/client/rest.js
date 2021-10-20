@@ -25,9 +25,6 @@ var Rest = (function() {
 			throw new Error(msg);
 		}
 		self.logger = new Logger();
-		// console.log('self.logger',self.logger);
-		// console.log('self.logger.logAction',self.logger.logAction);
-
 		options = Defaults.objectifyOptions(options);
 
 		// logger options provided, we initialize custom logging system for this particular client
