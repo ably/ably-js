@@ -143,8 +143,10 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
 		let responseType: XMLHttpRequestResponseType = 'text';
 
 		if(!accept) {
+			// Default to JSON
 			headers['accept'] = 'application/json';
 		} else if(accept.indexOf('application/x-msgpack') === 0) {
+			// Msgpack responses will be typed as ArrayBuffer
 			responseType = 'arraybuffer';
 		}
 
