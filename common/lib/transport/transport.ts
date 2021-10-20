@@ -41,9 +41,9 @@ abstract class Transport extends EventEmitter {
 	idleTimer: NodeJS.Timeout | number | null;
 	lastActivity: number | null;
 
-	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams, binaryUnsupported?: boolean) {
+	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams, forceJsonProtocol?: boolean) {
 		super();
-		if (binaryUnsupported) {
+		if (forceJsonProtocol) {
 			params.format = undefined;
 			params.heartbeats = true;
 		}
