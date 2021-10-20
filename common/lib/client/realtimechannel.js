@@ -710,12 +710,13 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.history = function(params, callback) {
+		var options = params; // related to https://github.com/ably/ably-js/issues/679
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
-			if(typeof(params) == 'function') {
-				callback = params;
-				params = null;
+			if(typeof(options) == 'function') {
+				callback = options;
+				options = null;
 			} else {
 				if(this.rest.options.promises) {
 					return Utils.promisify(this, 'history', arguments);
@@ -723,8 +724,7 @@ var RealtimeChannel = (function() {
 				callback = noop;
 			}
 		}
-
-		if(params && params.untilAttach) {
+		if(options && options.untilAttach) {
 			if(this.state !== 'attached') {
 				callback(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 				return;
@@ -733,16 +733,15 @@ var RealtimeChannel = (function() {
 				callback(new ErrorInfo("untilAttach was specified and channel is attached, but attachSerial is not defined", 40000, 400));
 				return;
 			}
-			delete params.untilAttach;
-			params.from_serial = this.properties.attachSerial;
+			delete options.untilAttach;
+			options.from_serial = this.properties.attachSerial;
 		}
-
-		Channel.prototype._history.call(this, params, callback);
+		Channel.prototype._history.call(this, options, callback);
 	};
 
 	RealtimeChannel.prototype.whenState = function(state, listener) {
 		return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
-	}
+	};
 
 	/* @returns null (if can safely be released) | ErrorInfo (if cannot) */
 	RealtimeChannel.prototype.getReleaseErr = function() {
