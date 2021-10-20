@@ -98,7 +98,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 
 					 */
 					// ensure custom logger produced proper result
-					expect(logs.length, 'No logs emitted').to.be.gte(0);
+					expect(logs.length, 'No logs emitted').to.be.gt(0);
 					expect(logs.length, 'wrong logs emitted').to.equal(3);
 					logs.map(function logEntryChecker(entry){
 						expect(entry.clientId, 'wrong client id').to.be.equal('foo');
@@ -159,7 +159,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 					 */
 
 					// ensure logs are correct
-					expect(logs.length, 'No logs emitted').to.be.gte(0);
+					expect(logs.length, 'No logs emitted').to.be.gt(0);
 					expect(logs.length, 'Wrong number of logs is emitted').to.equal(3);
 					logs.map(function logEntryChecker(entry){
 						expect(entry.logName, 'wrong client id').to.be.equal('rest2');
