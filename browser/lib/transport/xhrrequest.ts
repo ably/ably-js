@@ -110,8 +110,8 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
 		/* XHR requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
-		timeouts = timeouts || Defaults.TIMEOUTS;
-		return new XHRRequest(uri, headers, Utils.copy(params) as Record<string, string>, body, requestMode, timeouts, method);
+		const _timeouts = timeouts || Defaults.TIMEOUTS;
+		return new XHRRequest(uri, headers, Utils.copy(params) as Record<string, string>, body, requestMode, _timeouts, method);
 	}
 
 	complete(err?: ErrorInfo | null, body?: unknown, headers?: Record<string, string> | null, unpacked?: boolean | null, statusCode?: number): void {
