@@ -32,7 +32,7 @@ var Rest = (function() {
 			this.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 		} else {
 			// we use default logger settings
-			this.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+			this.logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with default options');
 		}
 
 		this.options = Defaults.normaliseOptions(options);
