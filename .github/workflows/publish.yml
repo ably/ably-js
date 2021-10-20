@@ -11,10 +11,10 @@
 
 on:
   workflow_dispatch:
-#    inputs:
-#      version:
-#        description: 'Version, without v prefix, appended to v to locate tag'
-#        required: true
+    inputs:
+      changesetType:
+        description: 'can be `major`,`minor` or `patch`, used to bump version'
+        required: true
 
 jobs:
   publish:
@@ -31,18 +31,39 @@ jobs:
       - name: 'install'
         run: npm ci
 
-# commented out, since next command already knows how to build code
-#      - name: 'build'
-#        run: npm run-script build
+# we load release type (major/minor/patch) from event inputs
+# TODO - need to set github actions secrets as described here
+# https://docs.github.com/en/actions/security-guides/encrypted-secrets
+      - name: 'prepare release github release, aka bump version, make tag, etc'
+        env:
+          GITHUB_USERNAME: "${{ secrets.GITHUB_USERNAME }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: "npm run-script publish-release ${{ github.event.inputs.changesetType }}"
 
-      - name: 'prepare release'
-        run: npm run-script publish-version-release
+# Seems like its not so trivial to set npmjs authorization https://github.com/npm/npm/issues/15565
+# See also https://github.com/workshopper/how-to-npm/issues/25
+# TODO - need to set github actions secrets as described here
+# https://docs.github.com/en/actions/security-guides/encrypted-secrets
 
-# TODO: Seems like its not so trivial to set npmjs authorization https://github.com/npm/npm/issues/15565
+      - name: setup npmjs credentials
+        run: "npm config set _auth ${{ secrets.NPMJS_AUTH_SECRET }}"
+
+      - name: setup npmjs registry
+        run: npm config set registry "https://registry.npmjs.org/"
+
+      - name: setup authorization enabled
+        run: npm config set always-auth=true
+
+      - name: setup authorization enabled
+        run: npm config set email support@ably.com # todo confirm
+
+# when we have set authorization, we can try to `npm publish` this package to npmjs.org registry
       - name: publish npm package
 #        run: npm publish
-        run: true
+        run: "true"
 
-# TODO: pretend we upload document to CDN
+# TODO: upload artifacts to CDN
+# command to be executed - https://github.com/ably/ably-js/blob/b5d0015bafda91585bddecff282531d0f1df40cb/Gruntfile.js#L339
       - name: upload artifacts to CDN
-        run: true
+        # run: npm run-script release:ably-deploy
+        run: "true"

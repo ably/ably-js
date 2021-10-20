@@ -102,6 +102,6 @@
     "prepare": "npm run build",
     "sourcemap": "source-map-explorer browser/static/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js",
-    "publish-release": "grunt publish-version-release"
+    "publish-release": "grunt release"
   }
 }

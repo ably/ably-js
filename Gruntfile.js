@@ -1,12 +1,15 @@
 "use strict";
 
 var async = require('async');
+var request = require('request');
 var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
 var exec = require('child_process').exec;
 var pkgJSON = require('./package.json');
 var util = require('util');
+
+/* global process */
 
 module.exports = function (grunt) {
 
@@ -41,8 +44,10 @@ module.exports = function (grunt) {
 				if (err) {
 					grunt.fatal('Error executing "' + cmd + '": ' + stderr);
 				}
-				console.log(stdout)
-				stderr && console.error(stderr)
+				grunt.log.writeln('STDOUT:',stdout);
+				if(stderr) {
+					grunt.log.writeln('STDERR:',stderr);
+				}
 				done();
 			});
 		};
@@ -112,94 +117,7 @@ module.exports = function (grunt) {
 			});
 		});
 
-	// this function just bumps npm package version with respect to semver versioning
-	// via incrementing patch version
-	// so, 1.2.14 becomes 1.2.15
-	grunt.registerTask('bump', function (done) {
-		grunt.log.writeln('Current version is %s...', pkgJSON.version);
-		var versions = pkgJSON.version.split('.');
-		var major = parseInt(versions[0], 10);
-		var minor = parseInt(versions[1], 10);
-		var patch = parseInt(versions[2], 10);
-		if (!major) {
-			grunt.log.writeln('Malformed version major %s instead of number', major);
-			return done(false);
-		}
-		if (!minor) {
-			grunt.log.writeln('Malformed version minor %s instead of number', minor);
-			return done(false);
-		}
-		if (!patch) {
-			grunt.log.writeln('Malformed version patch %s instead of number', patch);
-			return done(false);
-		}
-		patch += 1;
-		pkgJSON.version = util.format("%s.%s.%s", major, minor, patch);
-		grunt.log.writeln('Preparing to save package.json with new version %s into %s',
-			pkgJSON.version,
-			path.join(__dirname, 'package.json')
-		);
-		fs.writeFile(
-			path.join(__dirname, 'package.json'),
-			JSON.stringify(pkgJSON, null, '  '),
-			{encoding:'utf8', flag:'w+'},
-			function (error) {
-				if (error) {
-					grunt.log.writeln('%s - while saving package.json file', error);
-					return done(false);
-				}
-				grunt.log.writeln('Package.json is upgraded! New version is %s!', pkgJSON.version);
-				return done(true);
-			});
-	});
-	// this command makes git commit with upgraded (by bump) package.json
-	// and version engraved as commit message
-	grunt.registerTask('commitVersion', function (done) {
-		async
-			.series([
-				function addPackageJSON(cb) {
-					exec('git add package.json', function (error, stdout, stderr) {
-						if (error) {
-							grunt.log.writeln('%s : while executing git tagging command', error);
-							grunt.log.writeln('STDOUT: %s', stdout);
-							grunt.log.writeln('STDERR: %s', stderr);
-							return cb(error);
-						}
-						return cb(null);
-					});
-				},
-				function commit(cb) {
-					exec(util.format('git commit -m "Version bumped to %s"', pkgJSON.version), function (error, stdout, stderr) {
-						if (error) {
-							grunt.log.writeln('%s : while executing git commit command', error);
-							grunt.log.writeln('STDOUT: %s', stdout);
-							grunt.log.writeln('STDERR: %s', stderr);
-							return cb(error);
-						}
-						return cb(null);
-					});
-				},
-				function push(cb) {
-					exec('git push"', function (error, stdout, stderr) {
-						if (error) {
-							grunt.log.writeln('%s : while executing git push command', error);
-							grunt.log.writeln('STDOUT: %s', stdout);
-							grunt.log.writeln('STDERR: %s', stderr);
-							return cb(error);
-						}
-						return cb(null);
-					});
-				}
-			], function (error) {
-				if (error) {
-					grunt.log.writeln('%s : while executing commitVersion', error);
-					return done(false);
-				}
-				done(true);
-			});
-	});
-	// this function just creates git tag in local repo
-	grunt.registerTask('tag', function (done){
+	grunt.registerTask('release:tag', function (done){
 		exec(util.format('git tag v%s', pkgJSON.version), function (error, stdout, stderr){
 			if(error) {
 				grunt.log.writeln('%s : while executing git tagging command', error);
@@ -211,26 +129,75 @@ module.exports = function (grunt) {
 			done(true);
 		});
 	});
-	// this function makes github release of code by
-	// calling github API via request as described here
-	// https://docs.github.com/en/rest/reference/repos#create-a-release
-	grunt.registerTask('release', function (done){
-		grunt.log.writeln('not implemented yet');
-		done(false);
-	});
 
-	// this grunt task makes
-	// 1. upgrade version
-	// 2. commit and push `package.json` with bumped version
-	// 3. make git tag with latest commit pushed in tag 2
-	// 4. makes github release (WIP)
-	grunt.registerTask('publish-version-release',[
-		'build',
-		'bump',
-		'commitVersion',
-		'tag',
-		'release'
-	]);
+	grunt.registerTask('release:call-github-api-to-make-release', function (done) {
+		var username = process.env.GITHUB_USERNAME;
+		var token = process.env.GITHUB_TOKEN;
+		if (!username) {
+			grunt.log.writeln('Github username is not set via environment variable `GITHUB_USERNAME`');
+			return done(false);
+		}
+		if (!token) {
+			grunt.log.writeln('Github token is not set via environment variable `GITHUB_TOKEN`');
+			return done(false);
+		}
+
+		async.waterfall([
+			function extractGitCommitHash(cb) {
+				exec('git log --format="%h" -n 1', function (error, stdout, stderr) {
+					if (error) {
+						grunt.log.writeln('STDERR: %s', stderr);
+						return cb(error);
+					}
+					cb(null, 'stdout');
+				});
+			},
+			function sendRequestToGithubAPI(hash, cb) {
+				// documentation https://docs.github.com/en/rest/reference/repos#create-a-release
+				grunt.log.writeln(
+					'Preparing to call github api to make release %s from commit %s',
+					grunt.config('pkgVersion'), hash
+				);
+				request({
+					method: 'POST',
+					url: 'https://api.github.com/repos/ably/ably-js/releases',
+// we authorize via username and personal access token
+// https://docs.github.com/en/rest/overview/other-authentication-methods#via-oauth-and-personal-access-tokens
+					auth: {
+						username: username,
+						token: token
+					},
+					headers: {
+						Accept: 'application/vnd.github.v3+json' // important!!!
+					},
+					json: true,
+					body: {
+						target_commitish: hash, // git referrence id to create tag from, for example, commit hash
+						tag_name: 'v' + grunt.config('pkgVersion'), // mandatory
+						name: 'v' + grunt.config('pkgVersion'), // release name
+						body: 'TODO add release description here',
+						draft: false, // create published release
+						prerelease: false, // create a pre release
+						discussion_category_name: 'v' + grunt.config('pkgVersion'),
+						generate_release_notes: false // generate release notes automatically
+					}
+				}, function (error, response) {
+					if (error) {
+						return cb(error);
+					}
+					grunt.log.writeln('Github API response status code is %s', response.statusCode);
+					cb(null);
+				});
+			},
+		], function (error) {
+			if (error) {
+				grunt.log.writeln('%s : while creating release', error);
+				return done(false);
+			}
+			grunt.log.writeln('Github release is created!');
+			done(true);
+		});
+	});
 
 
 	grunt.registerTask('build', [
@@ -312,6 +279,7 @@ module.exports = function (grunt) {
 	grunt.registerTask('release:ably-deploy',
 		'Deploys to ably CDN, assuming infrastructure repo is in same dir as ably-js',
 		function() {
+			/* jshint ignore:start */
 			var infrastructurePath = '../infrastructure',
 					maxTraverseDepth = 3,
 					infrastructureFound;
@@ -323,7 +291,7 @@ module.exports = function (grunt) {
 						return true;
 					}
 				} catch (e) { /* does not exist */ }
-			}
+			};
 
 			while (infrastructurePath.length < 'infrastructure'.length + maxTraverseDepth*3) {
 				if (infrastructureFound = infrastructureDirExists(infrastructurePath)) {
@@ -337,8 +305,9 @@ module.exports = function (grunt) {
 			}
 			var version = grunt.file.readJSON('package.json').version,
 					cmd = 'cd ' + infrastructurePath + '; bundle exec ./bin/ably-env deploy javascript --version ' + version;
-			console.log('Publishing version ' + version + ' of the library to the CDN');
+			grunt.log.writeln('Publishing version ' + version + ' of the library to the CDN');
 			execExternal(cmd).call(this);
+			/* jshint ignore:end */
 		}
 	);
 
@@ -356,11 +325,14 @@ module.exports = function (grunt) {
 		'Increments the version, regenerates, and makes a tagged commit. Run as "grunt release:type", where "type" is "major", "minor", "patch", "prepatch", etc.)',
 		function(versionType) {
 			grunt.task.run([
-				'bump-only:' + versionType,
-				'release:refresh-pkgVersion',
-				'all',
-				'release:git-add-generated',
-				'bump-commit']);
+				'bump-only:' + versionType, // update package.json with new version
+				'release:refresh-pkgVersion', // update grunt config with new version
+				'all', // build, lint, etc...
+				'release:git-add-generated', // stash state in git of updated files (package.json, etc...)
+				'release:tag', // create git tag (used for github releases)
+				'bump-commit', // commit package.json with version upgraded
+				'release:call-github-api-to-make-release' // call github api to make release
+			]);
 		}
 	);
 
