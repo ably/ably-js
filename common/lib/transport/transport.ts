@@ -39,8 +39,12 @@ abstract class Transport extends EventEmitter {
 	idleTimer: NodeJS.Timeout | number | null;
 	lastActivity: number | null;
 
-	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
+	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams, forceJsonProtocol?: boolean) {
 		super();
+		if (forceJsonProtocol) {
+			params.format = undefined;
+			params.heartbeats = true;
+		}
 		this.connectionManager = connectionManager;
 		connectionManager.registerProposedTransport(this);
 		this.auth = auth;

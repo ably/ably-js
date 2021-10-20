@@ -3,7 +3,7 @@ import Platform from 'platform';
 import * as Utils from '../util/utils';
 import Http from 'platform-http';
 import Multicaster from '../util/multicaster';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
 import Base64 from 'platform-base64';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';

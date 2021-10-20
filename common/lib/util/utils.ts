@@ -1,6 +1,6 @@
 import Platform from 'platform';
 import Defaults from './defaults';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
