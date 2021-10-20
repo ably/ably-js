@@ -39,7 +39,7 @@ Run the Mocha test suite
 
 Or run just one or more test files
 
-    npm run test:mocha -- --test spec/realtime/auth.test.js
+    npm run test:mocha -- --test=spec/realtime/auth.test.js
 
 ## Browser Tests
 
