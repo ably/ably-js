@@ -3,7 +3,7 @@ import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Platform from 'platform';
 import Logger from '../../../common/lib/util/logger';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';

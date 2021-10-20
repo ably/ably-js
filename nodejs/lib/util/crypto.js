@@ -1,6 +1,6 @@
 "use strict";
 import Logger from '../../../common/lib/util/logger';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function() {
 	var crypto = require('crypto');
