@@ -191,7 +191,7 @@ module.exports = function (grunt) {
 					maxTraverseDepth = 3,
 					infrastructureFound;
 
-			var folderExists = function(relativePath) {
+			var infrastructureDirExists = function() {
 				try {
 					var fileStat = fs.statSync(infrastructurePath);
 					if (fileStat.isDirectory()) {
@@ -201,7 +201,7 @@ module.exports = function (grunt) {
 			}
 
 			while (infrastructurePath.length < 'infrastructure'.length + maxTraverseDepth*3) {
-				if (infrastructureFound = folderExists(infrastructurePath)) {
+				if (infrastructureFound = infrastructureDirExists(infrastructurePath)) {
 					break;
 				} else {
 					infrastructurePath = "../" + infrastructurePath;
