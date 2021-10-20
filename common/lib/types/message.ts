@@ -1,4 +1,4 @@
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 import Logger from '../util/logger';
 import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';

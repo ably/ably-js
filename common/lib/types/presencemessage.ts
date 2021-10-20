@@ -1,5 +1,5 @@
 import Logger from '../util/logger';
-import BufferUtils from 'platform-bufferutils';
+import * as BufferUtils from 'platform-bufferutils';
 import Message, { CipherOptions } from './message';
 import * as Utils from '../util/utils';
 
