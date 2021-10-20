@@ -135,6 +135,8 @@ var XHRRequest = (function() {
 				body = JSON.stringify(body);
 		}
 
+		// Can probably remove this directive if https://github.com/nodesecurity/eslint-plugin-security/issues/26 is resolved
+		// eslint-disable-next-line security/detect-non-literal-fs-filename
 		xhr.open(method, this.uri, true);
 		xhr.responseType = responseType;
 
