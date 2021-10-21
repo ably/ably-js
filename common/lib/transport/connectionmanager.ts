@@ -14,7 +14,7 @@ import Http from 'platform-http';
 import Message from '../types/message';
 import Multicaster, { MulticasterInstance } from '../util/multicaster';
 import ErrorReporter from '../util/errorreporter';
-import WebStorage from 'platform-webstorage';
+import * as WebStorage from 'platform-webstorage';
 import PlatformTransports from 'platform-transports';
 import WebSocketTransport from './websockettransport';
 import Transport from './transport';
