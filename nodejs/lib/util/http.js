@@ -6,10 +6,14 @@ import ErrorInfo from '../../../common/lib/types/errorinfo';
 import got from 'got';
 import http from 'http';
 import https from 'https';
+import http2 from 'http2-wrapper';
+import semver from 'semver';
 
 var Http = (function() {
 	var msgpack = Platform.msgpack;
 	var noop = function() {};
+
+	const http2Supported = semver.gte(process.version, '15.10.0');
 
 	/***************************************************
 	 *
@@ -194,6 +198,14 @@ var Http = (function() {
 				http: new http.Agent(agentOptions),
 				https: new https.Agent(agentOptions)
 			}
+
+			if (http2Supported) {
+				Http.agent.http2 = new http2.Agent(agentOptions);
+			}
+		}
+
+		if (http2Supported) {
+			doOptions.http2 = true;
 		}
 
 		doOptions.agent = Http.agent;
