@@ -75,7 +75,7 @@ const nodeConfig = {
     },
     target: 'node',
     externals: {
-        request: true,
+        got: true,
         ws: true,
     },
     optimization: {

@@ -3,9 +3,11 @@ import Platform from 'platform';
 import Utils from '../../../common/lib/util/utils';
 import Defaults from '../../../common/lib/util/defaults';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
+import got from 'got';
+import http from 'http';
+import https from 'https';
 
 var Http = (function() {
-	var request = require('request');
 	var msgpack = Platform.msgpack;
 	var noop = function() {};
 
@@ -180,16 +182,49 @@ var Http = (function() {
 		* (Ably and perhaps an auth server), so for efficiency, use the
 		* foreverAgent to keep the TCP stream alive between requests where possible */
 		var agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-		var doOptions = {headers: headers, encoding: null, agentOptions: agentOptions};
+		var doOptions = { headers: headers || undefined, responseType: 'buffer' };
 		if (body) {
 			doOptions.body = body;
 		}
 		if(params)
-			doOptions.qs = params;
+			doOptions.searchParams = params;
 
-		doOptions.uri = uri;
-		doOptions.timeout = (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout;
-		request[method](doOptions, handler(uri, params, callback));
+		if (!Http.agent) {
+			Http.agent = {
+				http: new http.Agent(agentOptions),
+				https: new https.Agent(agentOptions)
+			}
+		}
+
+		doOptions.agent = Http.agent;
+
+		let url;
+		if(uri.indexOf('?') > -1) {
+			url = uri.split('?')[0];
+			const queryString = uri.split('?')[1];
+			const queryParts = queryString.split('&');
+			for (const part of queryParts) {
+				if (part) {
+					const pair = part.split('=');
+					doOptions.searchParams[pair[0]] = pair[1];
+				}
+			}
+		} else {
+			url = uri;
+		}
+
+		doOptions.url = url;
+		doOptions.timeout = { request: (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout };
+
+		got[method](doOptions).then(res => {
+			handler(uri, params, callback)(null, res, res.body);
+		}).catch(err => {
+			if (err instanceof got.HTTPError) {
+				handler(uri, params, callback)(null, err.response, err.response.body);
+				return;
+			}
+			handler(uri, params, callback)(err);
+		});
 	};
 
 	Http.supportsAuthHeaders = true;
