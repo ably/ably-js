@@ -13,6 +13,10 @@ var Http = (function() {
 	var msgpack = Platform.msgpack;
 	var noop = function() {};
 
+	/**
+	 * HTTP/2 support in got is buggy in NodeJS versions prior to 15.10.0
+	 * see https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#http2
+	 */
 	const http2Supported = semver.gte(process.version, '15.10.0');
 
 	/***************************************************
