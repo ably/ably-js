@@ -578,8 +578,17 @@ declare namespace Types {
 	}
 
 	interface RestPresenceParams {
+		/**
+		 * Maximum number of presence members to retrieve.
+		 */
 		limit?: number;
+		/**
+		 * When provided, will filter array of members returned that match the provided clientId string.
+		 */
 		clientId?: string;
+		/**
+		 * When provided, will filter array of members returned that match the provided connectionId string.
+		 */
 		connectionId?: string;
 	}
 
