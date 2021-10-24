@@ -608,10 +608,25 @@ declare namespace Types {
 	}
 
 	interface RealtimeHistoryParams {
+		/**
+		 * Earliest time in milliseconds since the epoch for any messages retrieved.
+		 */
 		start?: number;
+		/**
+		 * Latest time in milliseconds since the epoch for any messages retrieved.
+		 */
 		end?: number;
-		direction?: string;
+		/**
+		 * The direction to order messages retrieved. Defaults to backwards.
+		 */
+		direction?: 'forwards' | 'backwards';
+		/**
+		 * Maximum number of presence members to retrieve.
+		 */
 		limit?: number;
+		/**
+		 * When true, ensures message history is up until the point of the channel being attached. See [continuous history](https://ably.com/documentation/realtime/history#continuous-history) for more info. Requires the `direction` to be `backwards` (the default). If the `Channel` is not attached, or if `direction` is set to `forwards`, this option will result in an error.
+		 */
 		untilAttach?: boolean;
 	}
 
