@@ -559,9 +559,21 @@ declare namespace Types {
 	}
 
 	interface RestHistoryParams {
+		/**
+		 * Earliest time in milliseconds since the epoch for any messages retrieved.
+		 */
 		start?: number;
+		/**
+		 * Latest time in milliseconds since the epoch for any messages retrieved.
+		 */
 		end?: number;
-		direction?: string;
+		/**
+		 * The direction to order messages retrieved. Defaults to backwards.
+		 */
+		direction?: 'forwards' | 'backwards';
+		/**
+		 * Maximum number of messages to retrieve up to 1,000. Defaults to 100.
+		 */
 		limit?: number;
 	}
 
