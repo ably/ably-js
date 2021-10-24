@@ -320,10 +320,25 @@ declare namespace Types {
 		ttl?: number;
 	}
 
+	/**
+	 * An object containing configuration options for a channel cipher, including algorithm, mode, key length and key. ably-js currently supports AES with CBC, PKCS#7 with a default key length of 256 bits, and AES128.
+	 */
 	interface CipherParams {
+		/**
+		 * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”.
+		 */
 		algorithm: string;
+		/**
+		 * A binary (`ArrayBuffer` or `WordArray`) or base64-encoded String containing the secret key used for encryption and decryption.
+		 */
 		key: CipherKey;
+		/**
+		 * The key length in bits of the cipher, either 128 or 256.
+		 */
 		keyLength: number;
+		/**
+		 * The cipher mode (default: CBC).
+		 */
 		mode: string;
 	}
 
