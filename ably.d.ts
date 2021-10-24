@@ -294,11 +294,29 @@ declare namespace Types {
 	type capabilityOp = "publish" | "subscribe" | "presence" | "history" | "stats" | "channel-metadata" | "push-subscribe" | "push-admin";
 	type CapabilityOp = capabilityOp;
 
+	/**
+	 * An object providing parameters of a token request. These params are used when invoking `Auth.authorize`, `Auth.requestToken`, and `Auth.createTokenRequest`.
+	 */
 	interface TokenParams {
+		/**
+		 * Capability requirements JSON stringified for the token. When omitted, Ably will default to the capabilities of the underlying key.
+		 */
 		capability?: { [key: string]: capabilityOp[]; } | string;
+		/**
+		 * A `clientId` string to associate with this token. If `clientId` is `null` or omitted, then the token is prohibited from assuming a `clientId` in any operations, however if clientId` `is a wildcard string '*', then the token is permitted to assume any `clientId`. Any other string value for `clientId` implies that the `clientId` is both enforced and assumed for all operations for this token.
+		 */
 		clientId?: string;
+		/**
+		 * An unquoted, un-escaped random string of at least 16 characters, used to ensure the TokenRequest cannot be reused.
+		 */
 		nonce?: string;
+		/**
+		 *  The timestamp (in milliseconds since the epoch) of this request. Timestamps, in conjunction with the `nonce`, are used to prevent requests from being replayed. `timestamp` is a “one-time” value, and is valid in a request, but is not validly a member of any default token params such as `ClientOptions.defaultTokenParams`.
+		 */
 		timestamp?: number;
+		/**
+		 * Requested time to live for the token in milliseconds. When omitted, Ably will default to a TTL of 60 minutes.
+		 */
 		ttl?: number;
 	}
 
