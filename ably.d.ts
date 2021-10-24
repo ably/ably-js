@@ -643,9 +643,21 @@ declare namespace Types {
 	}
 
 	interface ChannelStateChange {
+		/**
+		 * The new current state.
+		 */
 		current: ChannelState;
+		/**
+		 * 	The previous state. (for the `update` event, this will be equal to the current state).
+		 */
 		previous: ChannelState;
+		/**
+		 * An ErrorInfo containing any information relating to the transition.
+		 */
 		reason?: ErrorInfo;
+		/**
+		 * A boolean indicated whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/documentation/realtime/channels#nonfatal-errors) for more info.
+		 */
 		resumed: boolean;
 	}
 
