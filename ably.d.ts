@@ -360,41 +360,119 @@ declare namespace Types {
 		statusCode: number;
 	}
 
+	/**
+	 * Aggregate counts for messages and data transferred.
+	 */
 	interface StatsMessageCount {
+		/**
+		 * Count of all messages.
+		 */
 		count: number;
+		/**
+		 * Total data transferred for all messages in bytes.
+		 */
 		data: number;
 	}
 
+	/**
+	 * A breakdown of summary stats data for different (message vs presence) message types.
+	 */
 	interface StatsMessageTypes {
+		/**
+		 * All messages count (includes both presence & messages).
+		 */
 		all: StatsMessageCount;
+		/**
+		 * Count of channel messages.
+		 */
 		messages: StatsMessageCount;
+		/**
+		 * Count of presence messages.
+		 */
 		presence: StatsMessageCount;
 	}
 
+	/**
+	 * Aggregate counts for requests made.
+	 */
 	interface StatsRequestCount {
+		/**
+		 * Requests failed.
+		 */
 		failed: number;
+		/**
+		 * Requests refused typically as a result of permissions or a limit being exceeded.
+		 */
 		refused: number;
+		/**
+		 * Requests succeeded.
+		 */
 		succeeded: number;
 	}
 
+	/**
+	 * Aggregate data for usage of a resource in a specific scope.
+	 */
 	interface StatsResourceCount {
+		/**
+		 * Average resources of this type used for this period.
+		 */
 		mean: number;
+		/**
+		 * Minimum total resources of this type used for this period.
+		 */
 		min: number;
+		/**
+		 * Total resources of this type opened.
+		 */
 		opened: number;
+		/**
+		 * Peak resources of this type used for this period.
+		 */
 		peak: number;
+		/**
+		 * Resource requests refused within this period.
+		 */
 		refused: number;
 	}
 
+	/**
+	 * A breakdown of summary stats data for different (TLS vs non-TLS) connection types.
+	 */
 	interface StatsConnectionTypes {
+		/**
+		 * All connection count (includes both TLS & non-TLS connections).
+		 */
 		all: StatsResourceCount;
+		/**
+		 * Non-TLS connection count (unencrypted).
+		 */
 		plain: StatsResourceCount;
+		/**
+		 * TLS connection count.
+		 */
 		tls: StatsResourceCount;
 	}
 
+	/**
+	 * A breakdown of summary stats data for traffic over various transport types.
+	 */
 	interface StatsMessageTraffic {
+		/**
+		 * All messages count (includes realtime, rest and webhook messages).
+		 */
 		all: StatsMessageTypes;
+		/**
+		 * Count of messages transferred over a realtime transport such as WebSockets.
+		 */
 		realtime: StatsMessageTypes;
+		/**
+		 * Count of messages transferred using REST.
+		 */
 		rest: StatsMessageTypes;
+		/**
+		 * Count of messages delivered using WebHooks.
+		 */
 		webhook: StatsMessageTypes;
 	}
 
@@ -800,15 +878,45 @@ declare namespace Types {
 		whenState: (targetState: ConnectionState) => Promise<ConnectionStateChange>;
 	}
 
+	/**
+	 * A class representing an individual statistic for a specified interval.
+	 */
 	class Stats {
+		/**
+		 * Aggregates inbound and outbound messages.
+		 */
 		all: StatsMessageTypes;
+		/**
+		 * Breakdown of API requests received via the REST API.
+		 */
 		apiRequests: StatsRequestCount;
+		/**
+		 * Breakdown of channels stats.
+		 */
 		channels: StatsResourceCount;
+		/**
+		 * Breakdown of connection stats data for different (TLS vs non-TLS) connection types.
+		 */
 		connections: StatsConnectionTypes;
+		/**
+		 * Breakdown of all inbound messages.
+		 */
 		inbound: StatsMessageTraffic;
+		/**
+		 * The interval that this statistic applies to.
+		 */
 		intervalId: string;
+		/**
+		 * Breakdown of all outbound messages.
+		 */
 		outbound: StatsMessageTraffic;
+		/**
+		 * Messages persisted for later retrieval via the history API.
+		 */
 		persisted: StatsMessageTypes;
+		/**
+		 * Breakdown of Token requests received via the REST API.
+		 */
 		tokenRequests: StatsRequestCount;
 	}
 
