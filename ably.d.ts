@@ -3,6 +3,8 @@
 // Definitions by: Ably <https://github.com/ably/>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
+import { AgentOptions } from "http";
+
 declare namespace Types {
 	namespace ChannelState {
 		type INITIALIZED = "initialized";
@@ -80,52 +82,88 @@ declare namespace Types {
 	// Interfaces
 	interface ClientOptions extends AuthOptions {
 		/**
-		 * When true will automatically connect to Ably when library is instanced. This is true by default
+		 * When true as soon as the client is instantiated it will connect to Ably. You can optionally set this to false and explicitly connect to Ably when require using the `connect` method. Defaults to `true`.
 		 */
 		autoConnect?: boolean;
 
+		/**
+		 * When a `TokenParams` object is provided, it will override the client library defaults when issuing new Ably Tokens or Ably TokenRequests.
+		 */
 		defaultTokenParams?: TokenParams;
 
 		/**
-		 * When true, messages published on channels by this client will be echoed back to this client.
-		 * This is true by default
+		 * If false, prevents messages originating from this connection being echoed back on the same connection. Defaults to `true`.
 		 */
 		echoMessages?: boolean;
 
 		/**
-		 * Use this only if you have been provided a dedicated environment by Ably
+		 * Allows a [custom environment](https://faqs.ably.com/steps-to-set-up-custom-environments-dedicated-clusters-and-regional-restrictions-for-your-account), region or cluster to be used with the Ably service. Please [contact us](https://ably.com/contact) if you require a custom environment. Note that once a custom environment is specified, the [fallback host functionality](https://faqs.ably.com/routing-around-network-and-dns-issues) is disabled by default.
 		 */
 		environment?: string;
 
 		/**
-		 * Logger configuration
+		 * Parameters to control the log output of the library.
 		 */
 		log?: LogInfo;
+
+		/**
+		 * For development environments only; allows a non-default Ably port to be specified.
+		 */
 		port?: number;
 
 		/**
-		 * When true, messages will be queued whilst the connection is disconnected. True by default.
+		 * If false, this disables the default behavior whereby the library queues messages on a connection in the disconnected or connecting states. The default behavior allows applications to submit messages immediately upon instancing the library without having to wait for the connection to be established. Applications may use this option to disable queueing if they wish to have application-level control over the queueing under those conditions.
 		 */
 		queueMessages?: boolean;
 
+		/**
+		 * For development environments only; allows a non-default Ably host to be specified.
+		 */
 		restHost?: string;
-		realtimeHost?: string;
-		fallbackHosts?: string[];
-		fallbackHostsUseDefault?: boolean;
-
-        restAgentOptions?: {
-            maxSockets?: number,
-            keepAlive?: boolean,
-        }
 
 		/**
-		 * Can be used to explicitly recover a connection.
-		 * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
+		 * For development environments only; allows a non-default Ably host to be specified for realtime connections.
+		 */
+		realtimeHost?: string;
+
+		/**
+		 * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
+		 * 
+		 * When a custom environment is specified, the [fallback host functionality](https://faqs.ably.com/routing-around-network-and-dns-issues) is disabled. If your customer success manager has provided you with a set of custom fallback hosts, please specify them here.
+		 */
+		fallbackHosts?: string[];
+
+		/**
+		 * If true, the library will use default fallbackHosts even when overriding environment or restHost/realtimeHost.
+		 */
+		fallbackHostsUseDefault?: boolean;
+
+		/**
+		 * Set of configurable options to set on the HTTP(S) agent used for REST requests.
+		 * 
+		 * See the [NodeJS docs](https://nodejs.org/api/http.html#new-agentoptions) for descriptions of these options.
+		 */
+		restAgentOptions?: AgentOptions;
+
+		/**
+		 * This option allows a connection to inherit the state of a previous connection that may have existed under a different instance of the Realtime library. This might typically be used by clients of the browser library to ensure connection state can be preserved when the user refreshes the page. A recovery key string can be explicitly provided, or alternatively if a callback function is provided, the client library will automatically persist the recovery key between page reloads and call the callback when the connection is recoverable. The callback is then responsible for confirming whether the connection should be recovered or not. See [connection state recovery](https://ably.com/documentation/realtime/connection/#connection-state-recovery) for further information.
 		 */
 		recover?: string | ((lastConnectionDetails: {
+			/**
+			 * The recovery key can be used by another client to recover this connection’s state in the `recover` client options property. See [connection state recover options](https://ably.com/documentation/realtime/connection/#connection-state-recover-options) for more information.
+			 */
 			recoveryKey: string;
+			/**
+			 * The time at which the previous client was abruptly disconnected before the page was unloaded. This is represented as milliseconds since epoch.
+			 */
 			disconnectedAt: number;
+			/**
+			 * A clone of the `location` object of the previous page’s document object before the page was unloaded. A common use case for this attribute is to ensure that the previous page URL is the same as the current URL before allowing the connection to be recovered. For example, you may want the connection to be recovered only for page reloads, but not when a user navigates to a different page.
+			 */
 			location: string;
+			/**
+			 * The `clientId` of the client’s `Auth` object before the page was unloaded. A common use case for this attribute is to ensure that the current logged in user’s `clientId` matches the previous connection’s `clientId` before allowing the connection to be recovered. Ably prohibits changing a `clientId` for an existing connection, so any mismatch in `clientId` during a recover will result in the connection moving to the failed state.
+			 */
 			clientId: string | null;
 		}, callback: (shouldRecover: boolean) => void) => void);
 
@@ -133,6 +171,10 @@ declare namespace Types {
 		 * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
 		 */
 		tls?: boolean;
+
+		/**
+		 * For development environments only; allows a non-default Ably TLS port to be specified.
+		 */
 		tlsPort?: number;
 
 		/**
@@ -141,18 +183,55 @@ declare namespace Types {
 		 */
 		useBinaryProtocol?: boolean;
 
+		/**
+		 * When the connection enters the `DISCONNECTED` state, after this delay in milliseconds, if the state is still `DISCONNECTED`, the client library will attempt to reconnect automatically. Defaults to 15,000ms.
+		 */
 		disconnectedRetryTimeout?: number;
+
+		/**
+		 * When the connection enters the `SUSPENDED` state, after this delay in milliseconds, if the state is still `SUSPENDED`, the client library will attempt to reconnect automatically.
+		 */
 		suspendedRetryTimeout?: number;
+
+		/**
+		 * When true, the client library will automatically send a close request to Ably whenever the `window beforeunload` event fires. By enabling this option, the close request sent to Ably ensures the connection state will not be retained and all channels associated with the channel will be detached. This is commonly used by developers who want presence leave events to fire immediately i.e. if a user navigates to another page or closes their browser, then enabling this option will result in the presence member leaving immediately. Without this option or an explicit call to the `close` method of the `Connection` object, Ably expects that the abruptly disconnected connection could later be recovered and therefore does not immediately remove the user from presence. Instead, to avoid “twitchy” presence behavior an abruptly disconnected client is removed from channels in which they are present after 15 seconds, and the connection state is retained for two minutes. Defaults to true.
+		 */
 		closeOnUnload?: boolean;
+
+		/**
+		 * When true, enables idempotent publishing by assigning a unique message ID client-side, allowing the Ably servers to discard automatic publish retries following a failure such as a network fault. We recommend you enable this by default. In version 1.2 onwards, idempotent publishing for retries will be enabled by default.
+		 */
 		idempotentRestPublishing?: boolean;
+
+		/**
+		 * Can be used to pass in arbitrary connection parameters.
+		 */
 		transportParams?: {[k: string]: string};
+
+		/**
+		 * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket`, `xhr`, and `jsonp`.
+		 */
 		transports?: Transport[];
 
+		/**
+		 * Maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host is unreachable or indicates that it is unserviceable.
+		 */
 		httpMaxRetryCount?: number;
-		httpMaxRetryDuration?: number;
-		httpOpenTimeout?: number;
-		httpRequestTimeout?: number;
 
+		/**
+		 * Maximum elapsed time in which fallback host retries for HTTP requests will be attempted.
+		 */
+		httpMaxRetryDuration?: number;
+
+		/**
+		 * Timeout for opening the connection, available in the client library if supported by the transport.
+		 */
+		httpOpenTimeout?: number;
+
+		/**
+		 * Timeout for any single HTTP request and response.
+		 */
+		httpRequestTimeout?: number;
 	}
 
 	interface AuthOptions {
@@ -332,14 +411,13 @@ declare namespace Types {
 
 	interface LogInfo {
 		/**
-		 * A number controlling the verbosity of the output. Valid values are: 0 (no logs), 1 (errors only),
-		 * 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
-		 **/
+		 * A number controlling the verbosity of the output. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
+		 */
 		level?: number;
 
 		/**
-		 * A function to handle each line of log output. If handler is not specified, console.log is used.
-		 **/
+		 * A function to handle each line of log output. If handler is not specified, `console.log` is used.
+		 */
 		handler?: (msg: string) => void;
 	}
 
