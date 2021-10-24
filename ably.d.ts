@@ -79,7 +79,9 @@ declare namespace Types {
 
 	type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
-	// Interfaces
+	/**
+	 * Configuration options for the creation of a new client.
+	 */
 	interface ClientOptions extends AuthOptions {
 		/**
 		 * When true as soon as the client is instantiated it will connect to Ably. You can optionally set this to false and explicitly connect to Ably when require using the `connect` method. Defaults to `true`.
