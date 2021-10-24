@@ -662,9 +662,21 @@ declare namespace Types {
 	}
 
 	interface ConnectionStateChange {
+		/**
+		 * The new state.
+		 */
 		current: ConnectionState;
+		/**
+		 * The previous state. (for the update event, this will be equal to the current state).
+		 */
 		previous: ConnectionState;
+		/**
+		 * An ErrorInfo containing any information relating to the transition.
+		 */
 		reason?: ErrorInfo;
+		/**
+		 * Duration upon which the client will retry a connection where applicable, as milliseconds.
+		 */
 		retryIn?: number;
 	}
 
