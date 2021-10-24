@@ -342,9 +342,21 @@ declare namespace Types {
 		mode: string;
 	}
 
+	/**
+	 * A type encapsulating error information containing an Ably-specific error code and generic status code.
+	 */
 	interface ErrorInfo {
+		/**
+		 * Ably error code (see [ably-common/protocol/errors.json](https://github.com/ably/ably-common/blob/main/protocol/errors.json)).
+		 */
 		code: number;
+		/**
+		 * Additional message information, where available.
+		 */
 		message: string;
+		/**
+		 * HTTP Status Code corresponding to this error, where applicable.
+		 */
 		statusCode: number;
 	}
 
