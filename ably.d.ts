@@ -504,13 +504,37 @@ declare namespace Types {
 		token: string;
 	}
 
+	/**
+	 * The parameters for an Ably TokenRequest. Tokens are requested using `Auth.requestToken`.
+	 */
 	interface TokenRequest {
+		/**
+		 * Capability of the requested Ably Token. If the Ably TokenRequest is successful, the capability of the returned Ably Token will be the intersection of this capability with the capability of the issuing key. The capability is a JSON stringified canonicalized representation of the resource paths and associated operations. [Read more about authentication and capabilities](https://ably.com/documentation/realtime/authentication).
+		 */
 		capability: string;
+		/**
+		 * The client ID to associate with the requested Ably Token. When provided, the Ably Token may only be used to perform operations on behalf of that client ID.
+		 */
 		clientId?: string;
+		/**
+		 * The key name of the key against which this request is made. The key name is public, whereas the key secret is private.
+		 */
 		keyName: string;
+		/**
+		 * The Message Authentication Code for this request.
+		 */
 		mac: string;
+		/**
+		 * An opaque nonce string of at least 16 characters.
+		 */
 		nonce: string;
+		/**
+		 * The timestamp of this request in milliseconds.
+		 */
 		timestamp: number;
+		/**
+		 * Requested time to live for the Ably Token in milliseconds. If the Ably TokenRequest is successful, the TTL of the returned Ably Token will be less than or equal to this value depending on application settings and the attributes of the issuing key.
+		 */
 		ttl?: number;
 	}
 
