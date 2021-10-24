@@ -543,8 +543,17 @@ declare namespace Types {
 	type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
 	type ChannelModes = Array<ChannelMode>;
 
+	/**
+	 * Channel options are used for setting [channel parameters](https://ably.com/documentation/realtime/channels/channel-parameters/overview) and [configuring encryption](https://ably.com/documentation/realtime/encryption).
+	 */
 	interface ChannelOptions {
+		/**
+		 * Requests encryption for this channel when not null, and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key). See [an example](https://ably.com/documentation/realtime/encryption#getting-started).
+		 */
 		cipher?: CipherParamOptions | CipherParams;
+		/**
+		 * Optional [parameters](https://ably.com/documentation/realtime/channels/channel-parameters/overview) which specify behaviour of the channel.
+		 */
 		params?: ChannelParams;
 		modes?: ChannelModes;
 	}
