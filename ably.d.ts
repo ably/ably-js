@@ -593,8 +593,17 @@ declare namespace Types {
 	}
 
 	interface RealtimePresenceParams {
+		/**
+		 * When true (default) waits for the initial presence synchronization following channel attachment to complete before returning the members present. When false, the current list of members is returned without waiting for a complete synchronization.
+		 */
 		waitForSync?: boolean;
+		/**
+		 * When provided, will filter array of members returned that match the provided clientId string.
+		 */
 		clientId?: string;
+		/**
+		 * When provided, will filter array of members returned that match the provided connectionId string.
+		 */
 		connectionId?: string;
 	}
 
