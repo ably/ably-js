@@ -821,7 +821,16 @@ declare namespace Types {
 
 	// Classes
 	class RestBase {
-		constructor(options: Types.ClientOptions | string);
+		/**
+		 * Create an instance of the Ably REST client
+		 * @param options a ClientOptions object
+		 */
+		constructor(options: Types.ClientOptions);
+		/**
+		 * Create an instance of the Ably REST client
+		 * @param key An Ably API Key
+		 */
+		constructor(key: string);
 		static Crypto: Types.Crypto;
 		static Message: Types.MessageStatic;
 		static PresenceMessage: Types.PresenceMessageStatic;
