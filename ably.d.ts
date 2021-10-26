@@ -763,9 +763,21 @@ declare namespace Types {
 	}
 
 	interface PushChannelSubscriptionParams {
+		/**
+		 * Filter to restrict to subscriptions associated with the given channel.
+		 */
 		channel?: string;
+		/**
+		 * Filter to restrict to devices associated with the given client identifier. Cannot be used with a clientId param.
+		 */
 		clientId?: string;
+		/**
+		 * Filter to restrict to devices associated with that device identifier. Cannot be used with a deviceId param.
+		 */
 		deviceId?: string;
+		/**
+		 * Maximum number of channel subscriptions per page to retrieve, up to 1,000. Defaults to 100.
+		 */
 		limit?: number;
 	}
 
