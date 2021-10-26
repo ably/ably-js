@@ -748,15 +748,15 @@ declare namespace Types {
 
 	interface DeviceRegistrationParams {
 		/**
-		 * filter to restrict to devices associated with the given client identifier
+		 * Filter to restrict to devices associated with the given client identifier
 		 */
 		clientId?: string;
 		/**
-		 * filter to restrict to devices associated with the given device identifier.
+		 * Filter to restrict to devices associated with the given device identifier.
 		 */
 		deviceId?: string;
 		/**
-		 * maximum number of devices per page to retrieve, up to 1,000. Defaults to 100.
+		 * Maximum number of devices per page to retrieve, up to 1,000. Defaults to 100.
 		 */
 		limit?: number;
 		state?: DevicePushState;
