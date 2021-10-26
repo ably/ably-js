@@ -782,6 +782,9 @@ declare namespace Types {
 	}
 
 	interface PushChannelsParams {
+		/**
+		 * Maximum number of channels per page to retrieve, up to 1,000. Defaults to 100.
+		 */
 		limit?: number;
 	}
 
