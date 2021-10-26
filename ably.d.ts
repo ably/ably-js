@@ -809,11 +809,13 @@ declare namespace Types {
 	// that returns a Promise if desired, EventEmitter uses method overloading to
 	// present both methods
 	class EventEmitter<CallbackType, ResultType, EventType, StateType> {
-		on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
+		on(event: EventType | EventType[], callback: CallbackType): void;
+		on(callback: CallbackType): void;
 		once(event: EventType, callback: CallbackType): void;
 		once(callback: CallbackType): void;
 		once(event?: EventType): Promise<ResultType>;
-		off(eventOrCallback?: EventType | CallbackType, callback?: CallbackType): void;
+		off(event: EventType, callback: CallbackType): void;
+		off(callback: CallbackType): void;
 		listeners(eventName?: EventType): CallbackType[] | null;
 	}
 
