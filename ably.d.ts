@@ -909,22 +909,68 @@ declare namespace Types {
 	}
 
 	class RealtimeCallbacks extends RealtimeBase {
+		/**
+		 * A reference to the Auth authentication object.
+		 */
 		auth: Types.AuthCallbacks;
+		/**
+		 * A reference to the `Channel` collection instance.
+		 */
 		channels: Types.Channels<Types.RealtimeChannelCallbacks>;
+		/**
+		 * A reference to the `Connection` object.
+		 */
 		connection: Types.ConnectionCallbacks;
+		/**
+		 * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+		 */
 		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
-		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		/**
+		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+		 */
+		stats: (params: any, callback: Types.paginatedResultCallback<Types.Stats>) => void;
+		/**
+		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+		 */
+		stats: (callback: Types.paginatedResultCallback<Types.Stats>) => void;
+		/**
+		 * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
+		 */
 		time: (callback?: Types.timeCallback) => void;
+		/**
+		 * A reference to the `Push` object.
+		 */
 		push: Types.PushCallbacks;
 	}
 
 	class RealtimePromise extends RealtimeBase {
+		/**
+		 * A reference to the Auth authentication object.
+		 */
 		auth: Types.AuthPromise;
+		/**
+		 * A reference to the `Channel` collection instance.
+		 */
 		channels: Types.Channels<Types.RealtimeChannelPromise>;
+		/**
+		 * A reference to the `Connection` object.
+		 */
 		connection: Types.ConnectionPromise;
+		/**
+		 * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+		 */
 		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse<T>>;
+		/**
+		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+		 */
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
+		/**
+		 * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
+		 */
 		time: () => Promise<number>;
+		/**
+		 * A reference to the `Push` object.
+		 */
 		push: Types.PushPromise;
 	}
 
