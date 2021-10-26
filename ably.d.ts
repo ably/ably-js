@@ -711,9 +711,21 @@ declare namespace Types {
 		push: DevicePushDetails;
 	}
 
+	/**
+	 * An object encapsulating the subscription of a device or group of devices sharing a client identifier to a channel in order to receive push notifications.
+	 */
 	interface PushChannelSubscription {
+		/**
+		 * The channel that this push notification subscription is associated with.
+		 */
 		channel: string;
+		/**
+		 * The device with this identifier is linked to this channel subscription. When present, `clientId` is never present.
+		 */
 		deviceId?: string;
+		/**
+		 * Devices with this client identifier are included in this channel subscription. When present, `deviceId` is never present.
+		 */
 		clientId?: string;
 	}
 
