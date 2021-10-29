@@ -259,7 +259,7 @@ declare namespace Types {
 
 		/**
 		 * A URL that the library may use to obtain a token string (in plain text format), or a signed TokenRequest or TokenDetails (in JSON format).
-		 **/
+		 */
 		authUrl?: string;
 
 		/**
@@ -823,11 +823,13 @@ declare namespace Types {
 	class RestBase {
 		/**
 		 * Creates an Ably client instance
+		 *
 		 * @param options a ClientOptions object
 		 */
 		constructor(options: Types.ClientOptions);
 		/**
 		 * Creates an Ably client instance
+		 *
 		 * @param key An Ably API Key
 		 */
 		constructor(key: string);
@@ -1367,11 +1369,14 @@ declare namespace Types {
  export declare class Rest extends Types.RestCallbacks {}
 
  /**
-	* The Ably Realtime client establishes and maintains a persistent connection to Ably and provides methods to publish and subscribe to messages over a low latency realtime connection.
-	* 
-	* The Realtime client extends the REST client and as such provides the functionality available in the REST client in addition to Realtime-specific features.
-	* 
-	* @extends Rest
-	*/
+  * The Ably Realtime client establishes and maintains a persistent connection to Ably and provides methods to publish and subscribe to messages over a low latency realtime connection.
+  * 
+  * 
+  * 
+  * The Realtime client extends the REST client and as such provides the functionality available in the REST client in addition to Realtime-specific features.
+  * 
+  * 
+  * 
+  * @augments Rest
+  */
  export declare class Realtime extends Types.RealtimeCallbacks {}
- 

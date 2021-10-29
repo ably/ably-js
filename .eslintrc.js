@@ -5,11 +5,14 @@ module.exports = {
     browser: true
   },
   plugins: [
-    "security"
+    "security",
+    '@typescript-eslint',
+    'jsdoc'
   ],
   extends: [
     "plugin:security/recommended"
   ],
+  parser: '@typescript-eslint/parser',
   rules: {
     "no-undef": "error",
     // comma-dangle used for browser compatibility for browsers that don't support trailing commas
@@ -21,5 +24,13 @@ module.exports = {
   },
   parserOptions: {
     sourceType: "module"
-  }
+  },
+  overrides: [
+    {
+      files: 'ably.d.ts',
+      extends: [
+        'plugin:jsdoc/recommended'
+      ]
+    }
+  ]
 }
