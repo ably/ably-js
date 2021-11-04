@@ -9,6 +9,7 @@ import * as BufferUtils from 'platform-bufferutils';
 import HttpMethods from '../../../common/constants/HttpMethods';
 import IXHRRequest from '../../../common/types/IXHRRequest';
 import { ErrnoException, RequestCallback, RequestParams } from '../../../common/types/http';
+import XHRStates from '../../../common/constants/XHRStates';
 
 // TODO replace this with the real type when Rest is in TypeScript
 type Rest = any;
@@ -30,11 +31,6 @@ declare const global: {
 const noop = function() {};
 let idCounter = 0;
 const pendingRequests: Record<string, XHRRequest> = {};
-
-const REQ_SEND = 0,
-	REQ_RECV = 1,
-	REQ_RECV_POLL = 2,
-	REQ_RECV_STREAM = 3;
 
 const isIE = typeof global !== 'undefined' && global.XDomainRequest;
 
@@ -131,7 +127,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
 
 	exec(): void {
 		let headers = this.headers;
-		const timeout = (this.requestMode == REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
+		const timeout = (this.requestMode == XHRStates.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			timer = this.timer = setTimeout(() => {
 				this.timedOut = true;
 				xhr.abort();
@@ -199,7 +195,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
 				this.complete(null, null, null, null, statusCode);
 				return;
 			}
-			streaming = (this.requestMode == REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
+			streaming = (this.requestMode == XHRStates.REQ_RECV_STREAM && successResponse && isEncodingChunked(xhr));
 		}
 
 		const onEnd = () => {
@@ -329,7 +325,7 @@ if(Platform.xhrSupported) {
 	if(typeof(Http) !== 'undefined') {
 		Http.supportsAuthHeaders = true;
 		Http.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
-			const req = XHRRequest.createRequest(uri, headers, params, body, REQ_SEND, rest && rest.options.timeouts, method);
+			const req = XHRRequest.createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
 			req.once('complete', callback);
 			req.exec();
 			return req;
