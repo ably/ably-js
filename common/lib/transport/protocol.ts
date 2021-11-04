@@ -38,8 +38,6 @@ class Protocol extends EventEmitter {
 		transport.on('nack', (serial: number, count: number, err: ErrorInfo) => { this.onNack(serial, count, err); });
 	}
 
-	static PendingMessage = PendingMessage;
-
 	onAck(serial: number, count: number): void {
 		Logger.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
 		this.messageQueue.completeMessages(serial, count);
