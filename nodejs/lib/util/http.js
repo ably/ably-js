@@ -198,22 +198,8 @@ var Http = (function() {
 
 		doOptions.agent = Http.agent;
 
-		let url;
-		if(uri.indexOf('?') > -1) {
-			url = uri.split('?')[0];
-			const queryString = uri.split('?')[1];
-			const queryParts = queryString.split('&');
-			for (const part of queryParts) {
-				if (part) {
-					const pair = part.split('=');
-					doOptions.searchParams[pair[0]] = pair[1];
-				}
-			}
-		} else {
-			url = uri;
-		}
 
-		doOptions.url = url;
+		doOptions.url = uri;
 		doOptions.timeout = { request: (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout };
 
 		got[method](doOptions).then(res => {

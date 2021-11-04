@@ -353,13 +353,14 @@ var Auth = (function() {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			tokenRequestCallback = function(params, cb) {
 				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders),
-					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
-				if(!usePost) {
-					/* Combine authParams with any qs params given in the authUrl */
-					var queryIdx = authOptions.authUrl.indexOf('?');
-					if(queryIdx > -1) {
-						var providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
-						authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post',
+					providedQsParams;
+				/* Combine authParams with any qs params given in the authUrl */
+				var queryIdx = authOptions.authUrl.indexOf('?');
+				if(queryIdx > -1) {
+					providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
+					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+					if (!usePost) {
 						/* In case of conflict, authParams take precedence over qs params in the authUrl */
 						authOptions.authParams = Utils.mixin(providedQsParams, authOptions.authParams);
 					}
@@ -406,7 +407,7 @@ var Auth = (function() {
 					var headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					var body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(client, authOptions.authUrl, headers, body, {}, authUrlRequestCallback);
+					Http.postUri(client, authOptions.authUrl, headers, body, providedQsParams, authUrlRequestCallback);
 				} else {
 					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback);
 				}
