@@ -47,6 +47,9 @@ class MessageQueue extends EventEmitter {
 		Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
 		err = err || null;
 		const messages = this.messages;
+		if (messages.length === 0) {
+			throw new Error('MessageQueue.completeMessages(): completeMessages called on any empty MessageQueue');
+		}
 		const first = messages[0];
 		if(first) {
 			const startSerial = first.message.msgSerial as number;
