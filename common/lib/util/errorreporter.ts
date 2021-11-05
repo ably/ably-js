@@ -1,25 +1,26 @@
 import * as Utils from './utils';
 import Platform from 'platform';
-import Defaults from '../util/defaults';
+import Defaults from './defaults';
 import Logger from './logger';
 import Http from 'platform-http';
+import ErrorInfo from '../types/errorinfo';
+import { ErrnoException } from '../../types/http';
 
-var ErrorReporter = (function() {
-	function ErrorReporter() {}
+const levels = [
+	'fatal',
+	'error',
+	'warning',
+	'info',
+	'debug'
+];
 
-	var levels = ErrorReporter.levels = [
-		'fatal',
-		'error',
-		'warning',
-		'info',
-		'debug'
-	];
+class ErrorReporter {
+	static levels = levels;
 
-	/* (level: typeof ErrorReporter.levels[number], message: string, fingerprint?: string, tags?: {[key: string]: string}): void */
-	ErrorReporter.report = function(level, message, fingerprint, tags) {
-		var eventId = Utils.randomHexString(16);
+	static report (level: string, message: string, fingerprint?: string, tags?: Record<string, string>): void {
+		const eventId = Utils.randomHexString(16);
 
-		var event = {
+		const event = {
 			event_id: eventId,
 			tags: Utils.mixin({
 				ablyAgent: Defaults.agent
@@ -38,14 +39,12 @@ var ErrorReporter = (function() {
 		};
 
 		Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter: ' + message);
-		Http.postUri(null, Defaults.errorReportingUrl, Defaults.errorReportingHeaders, JSON.stringify(event), {}, function(err, res) {
+		Http.postUri(null, Defaults.errorReportingUrl, Defaults.errorReportingHeaders, JSON.stringify(event), {}, function(err?: ErrorInfo | ErrnoException | null, res?: unknown) {
 			Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter resulted in: ' +
 				(err ? Utils.inspectError(err) : Utils.inspectBody(res))
 			);
 		});
-	};
-
-	return ErrorReporter;
-})();
+	}
+}
 
 export default ErrorReporter;
