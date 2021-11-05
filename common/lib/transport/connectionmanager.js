@@ -1,6 +1,6 @@
 import ProtocolMessage from '../types/protocolmessage';
 import * as Utils from '../util/utils';
-import Protocol from './protocol';
+import Protocol, { PendingMessage } from './protocol';
 import Defaults from '../util/defaults';
 import Platform from 'platform';
 import EventEmitter from '../util/eventemitter';
@@ -23,7 +23,6 @@ var ConnectionManager = (function() {
 	var haveWebStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.get);
 	var haveSessionStorage = !!(typeof(WebStorage) !== 'undefined' && WebStorage.getSession);
 	var actions = ProtocolMessage.Action;
-	var PendingMessage = Protocol.PendingMessage;
 	var noop = function() {};
 	var transportPreferenceOrder = Defaults.transportPreferenceOrder;
 	var optimalTransport = transportPreferenceOrder[transportPreferenceOrder.length - 1];
