@@ -4,9 +4,9 @@ class ConnectionStateChange {
 	previous?: string;
 	current?: string;
 	retryIn?: number;
-	reason?: string | Error | ErrorInfo;
+	reason?: ErrorInfo;
 
-	constructor(previous?: string, current?: string, retryIn?: number | null, reason?: string | Error | ErrorInfo) {
+	constructor(previous?: string, current?: string, retryIn?: number | null, reason?: ErrorInfo) {
 		this.previous = previous;
 		this.current = current;
 		if(retryIn) this.retryIn = retryIn;

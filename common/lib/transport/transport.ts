@@ -5,10 +5,8 @@ import Logger from '../util/logger';
 import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
-
-// TODO: replace these with the real types once these classes are in TypeScript
-type ConnectionManager = any;
-type TransportParams = any;
+import TokenDetails from '../../types/TokenDetails';
+import ConnectionManager, { TransportParams } from './connectionmanager';
 
 export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
 
@@ -251,6 +249,7 @@ abstract class Transport extends EventEmitter {
 	}
 
 	static tryConnect?: (connectionManager: ConnectionManager, auth: Auth, transportParams: TransportParams, callback: TryConnectCallback) => void;
+	onAuthUpdated?: (tokenDetails: TokenDetails) => void;
 }
 
 export default Transport;

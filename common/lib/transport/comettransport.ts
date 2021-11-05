@@ -8,10 +8,8 @@ import Auth from '../client/auth';
 import ErrorInfo from '../types/errorinfo';
 import IXHRRequest from '../../types/IXHRRequest';
 import TokenDetails from '../../types/TokenDetails';
+import ConnectionManager, { TransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
-
-type ConnectionManager = any;
-type TransportParams = any;
 
 /* TODO: can remove once realtime sends protocol message responses for comet errors */
 function shouldBeErrorAction(err: ErrorInfo) {
