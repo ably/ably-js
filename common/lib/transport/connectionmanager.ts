@@ -20,6 +20,7 @@ import WebSocketTransport from './websockettransport';
 import Transport from './transport';
 import TokenDetails from '../../types/TokenDetails';
 import { ErrCallback } from '../../types/utils';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 type Realtime = any;
 type ClientOptions = any;
@@ -1808,7 +1809,7 @@ class ConnectionManager extends EventEmitter {
 		if(err.code === 40171) {
 			/* No way to reauth */
 			this.notifyState({state: 'failed', error: err});
-		} else if(err.statusCode === 403) {
+		} else if(err.statusCode === HttpStatusCodes.Forbidden) {
 			const msg = 'Client configured authentication provider returned 403; failing the connection';
 			Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
 			this.notifyState({state: 'failed', error: new ErrorInfo(msg, 80019, 403, err)});
