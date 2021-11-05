@@ -10,5 +10,5 @@ export interface ChannelOptions {
     algorithm: string;
     encrypt: Function;
     decrypt: Function;
-  };
+  } | null;
 }

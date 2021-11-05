@@ -3,44 +3,73 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Presence from './presence';
 import Crypto from 'platform-crypto';
-import Message from '../types/message';
+import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
-import PaginatedResource from './paginatedresource';
+import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Http from 'platform-http';
 import Resource from './resource';
+import { ChannelOptions } from '../../types/channel';
+import { PaginatedResultCallback } from '../../types/utils';
 
-var Channel = (function() {
-	function noop() {}
-	var MSG_ID_ENTROPY_BYTES = 9;
+// TODO: Replace these when Realtime and Rest are in TypeScript
+type Realtime = any;
+type Rest = any;
 
-	/* public constructor */
-	function Channel(rest, name, channelOptions) {
+interface RestHistoryParams {
+	start?: number;
+	end?: number;
+	direction?: string;
+	limit?: number;
+}
+
+function noop() {}
+const MSG_ID_ENTROPY_BYTES = 9;
+
+function allEmptyIds(messages: Array<Message>) {
+	return Utils.arrEvery(messages, function(message: Message) {
+		return !message.id;
+	});
+}
+
+function normaliseChannelOptions(options?: ChannelOptions) {
+	const channelOptions = options || {};
+	if(channelOptions.cipher) {
+		if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+		const cipher = Crypto.getCipher(channelOptions.cipher);
+		channelOptions.cipher = cipher.cipherParams;
+		channelOptions.channelCipher = cipher.cipher;
+	} else if('cipher' in channelOptions) {
+		/* Don't deactivate an existing cipher unless options
+			* has a 'cipher' key that's falsey */
+		channelOptions.cipher = null;
+		channelOptions.channelCipher = null;
+	}
+	return channelOptions;
+}
+
+class Channel extends EventEmitter {
+	rest: Rest | Realtime;
+	name: string;
+	basePath: string;
+	presence: Presence;
+	channelOptions: ChannelOptions;
+
+	constructor(rest: Rest | Realtime, name: string, channelOptions?: ChannelOptions) {
+		super();
 		Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
-		EventEmitter.call(this);
 		this.rest = rest;
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
-		this.setOptions(channelOptions);
+		this.channelOptions = {};
+		this.channelOptions = normaliseChannelOptions(channelOptions);
 	}
-	Utils.inherits(Channel, EventEmitter);
 
-	Channel.prototype.setOptions = function(options) {
-		this.channelOptions = options = options || {};
-		if(options.cipher) {
-			if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-			var cipher = Crypto.getCipher(options.cipher);
-			options.cipher = cipher.cipherParams;
-			options.channelCipher = cipher.cipher;
-		} else if('cipher' in options) {
-			/* Don't deactivate an existing cipher unless options
-			 * has a 'cipher' key that's falsey */
-			options.cipher = null;
-			options.channelCipher = null;
-		}
-	};
+	setOptions(options: ChannelOptions): void {
+		this.channelOptions = normaliseChannelOptions(options);
+	}
 
-	Channel.prototype.history = function(params, callback) {
+	history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): Promise<PaginatedResult<Message>> | void {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
@@ -49,49 +78,41 @@ var Channel = (function() {
 				params = null;
 			} else {
 				if(this.rest.options.promises) {
-					return Utils.promisify(this, 'history', arguments);
+					return Utils.promisify(this, 'history', [params, callback]);
 				}
 				callback = noop;
 			}
 		}
 
 		this._history(params, callback);
-	};
+	}
 
-	Channel.prototype._history = function(params, callback) {
-		var rest = this.rest,
-			format = rest.options.useBinaryProtocol ? 'msgpack' : 'json',
+	_history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
+		const rest = this.rest,
+			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			envelope = Http.supportsLinkHeaders ? undefined : format,
-			headers = Utils.defaultGetHeaders(format),
-			channel = this;
+			headers = Utils.defaultGetHeaders(format);
 
 		if(rest.options.headers)
 			Utils.mixin(headers, rest.options.headers);
 
-		var options = this.channelOptions;
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body, headers, unpacked) {
-			return Message.fromResponseBody(body, options, !unpacked && format);
-		})).get(params, callback);
-	};
-
-	function allEmptyIds(messages) {
-		return Utils.arrEvery(messages, function(message) {
-			return !message.id;
-		});
+		const options = this.channelOptions;
+		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+			return Message.fromResponseBody(body, options, unpacked ? undefined : format);
+		})).get(params as Record<string, unknown>, callback);
 	}
 
-	Channel.prototype.publish = function() {
-		var argCount = arguments.length,
-			first = arguments[0],
-			second = arguments[1],
-			callback = arguments[argCount - 1],
-			messages,
-			params,
-			self = this;
+	publish(...args: any[]): void | Promise<void> {
+		const argCount = arguments.length,
+			first = args[0],
+			second = args[1];
+		let callback = args[argCount - 1];
+		let messages: Array<Message>;
+		let params: any;
 
 		if(typeof(callback) !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'publish', arguments);
+				return Utils.promisify(this, 'publish', args);
 			}
 			callback = noop;
 		}
@@ -99,13 +120,13 @@ var Channel = (function() {
 		if(typeof first === 'string' || first === null) {
 			/* (name, data, ...) */
 			messages = [Message.fromValues({name: first, data: second})];
-			params = arguments[2];
+			params = args[2];
 		} else if(Utils.isObject(first)) {
 			messages = [Message.fromValues(first)];
-			params = arguments[1];
+			params = args[1];
 		} else if(Utils.isArray(first)) {
 			messages = Message.fromValuesArray(first);
-			params = arguments[1];
+			params = args[1];
 		} else {
 			throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		}
@@ -115,9 +136,9 @@ var Channel = (function() {
 			params = {};
 		}
 
-		var rest = this.rest,
+		const rest = this.rest,
 			options = rest.options,
-			format = options.useBinaryProtocol ? 'msgpack' : 'json',
+			format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			idempotentRestPublishing = rest.options.idempotentRestPublishing,
 			headers = Utils.defaultPostHeaders(format);
 
@@ -125,35 +146,33 @@ var Channel = (function() {
 			Utils.mixin(headers, options.headers);
 
 		if(idempotentRestPublishing && allEmptyIds(messages)) {
-			var msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
+			const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
 			Utils.arrForEach(messages, function(message, index) {
 				message.id = msgIdBase + ':' + index.toString();
 			});
 		}
 
-		Message.encodeArray(messages, this.channelOptions, function(err) {
+		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
 			if(err) {
 				callback(err);
 				return;
 			}
 
 			/* RSL1i */
-			var size = Message.getMessagesSize(messages),
+			const size = Message.getMessagesSize(messages),
 				maxMessageSize = options.maxMessageSize;
 			if(size > maxMessageSize) {
 				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
 				return;
 			}
 
-			self._publish(Message.serialize(messages, format), headers, params, callback);
+			this._publish(Message.serialize(messages, format), headers, params, callback);
 		});
-	};
+	}
 
-	Channel.prototype._publish = function(requestBody, headers, params, callback) {
-		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, false, callback);
-	};
-
-	return Channel;
-})();
+	_publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: Function): void {
+		Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, null, callback);
+	}
+}
 
 export default Channel;
