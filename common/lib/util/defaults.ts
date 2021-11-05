@@ -5,8 +5,7 @@ import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
 import { version } from '../../../package.json';
-
-type ClientOptions = any;
+import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
 let agent = 'ably-js/' + version;
 if (Platform.agent) {
@@ -87,14 +86,14 @@ export function environmentFallbackHosts (environment: string): string[] {
 	];
 }
 
-export function getFallbackHosts (options: ClientOptions): string[] {
+export function getFallbackHosts (options: NormalisedClientOptions): string[] {
 	const fallbackHosts = options.fallbackHosts,
 		httpMaxRetryCount = typeof(options.httpMaxRetryCount) !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
 	return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 }
 
-export function getHosts (options: ClientOptions): string[] {
+export function getHosts (options: NormalisedClientOptions): string[] {
 	return [options.restHost].concat(getFallbackHosts(options));
 }
 
@@ -107,6 +106,26 @@ function checkHost(host: string): void {
 	}
 }
 
+function getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string {
+	if(options.realtimeHost) return options.realtimeHost;
+	/* prefer setting realtimeHost to restHost as a custom restHost typically indicates
+		* a development environment is being used that can't be inferred by the library */
+	if(options.restHost) {
+		Logger.logAction(Logger.LOG_MINOR, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
+		return options.restHost
+	}
+	return production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
+}
+
+function getTimeouts(options: ClientOptions) {
+	/* Allow values passed in options to override default timeouts */
+	const timeouts: Record<string, number> = {};
+	for(const prop in Defaults.TIMEOUTS) {
+		timeouts[prop] = (options as Record<string, number>)[prop] || (Defaults.TIMEOUTS as Record<string, number>)[prop];
+	}
+	return timeouts;
+}
+
 export function objectifyOptions(options: ClientOptions | string): ClientOptions {
 	if(typeof options == 'string') {
 		return (options.indexOf(':') == -1) ? {token: options} : {key: options};
@@ -114,7 +133,7 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 	return options;
 }
 
-export function normaliseOptions(options: ClientOptions): ClientOptions {
+export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
 	/* Deprecated options */
 	if(options.host) {
 		Logger.deprecated('host', 'restHost');
@@ -188,33 +207,16 @@ export function normaliseOptions(options: ClientOptions): ClientOptions {
 		options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : environmentFallbackHosts(environment);
 	}
 
-	if(!options.realtimeHost) {
-		/* prefer setting realtimeHost to restHost as a custom restHost typically indicates
-		 * a development environment is being used that can't be inferred by the library */
-		if(options.restHost) {
-			Logger.logAction(Logger.LOG_MINOR, 'Defaults.normaliseOptions', 'restHost is set to "' + options.restHost + '" but realtimeHost is not set, so setting realtimeHost to "' + options.restHost + '" too. If this is not what you want, please set realtimeHost explicitly.');
-			options.realtimeHost = options.restHost
-		} else {
-			options.realtimeHost = production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
-		}
-	}
+	const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
+	const realtimeHost = getRealtimeHost(options, production, environment);
 
-	if(!options.restHost) {
-		options.restHost = production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST;
-	}
-
-	Utils.arrForEach((options.fallbackHosts || []).concat(options.restHost, options.realtimeHost), checkHost);
+	Utils.arrForEach((options.fallbackHosts || []).concat(restHost, realtimeHost), checkHost);
 
 	options.port = options.port || Defaults.PORT;
 	options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
-	options.maxMessageSize = options.maxMessageSize || Defaults.maxMessageSize;
 	if(!('tls' in options)) options.tls = true;
 
-	/* Allow values passed in options to override default timeouts */
-	options.timeouts = {};
-	for(var prop in Defaults.TIMEOUTS) {
-		options.timeouts[prop] = options[prop] || (Defaults.TIMEOUTS as Record<string, any>)[prop];
-	};
+	const timeouts = getTimeouts(options);
 
 	if('useBinaryProtocol' in options) {
 		options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
@@ -236,13 +238,14 @@ export function normaliseOptions(options: ClientOptions): ClientOptions {
 		options.promises = false;
 	}
 
-	if(options.agents) {
-		for(var key in options.agents) {
-			Defaults.agent += ' ' + key + '/' + options.agents[key];
-		}
-	}
-
-	return options;
+	return {
+		...options,
+		useBinaryProtocol: ('useBinaryProtocol' in options) ? Platform.supportsBinary && options.useBinaryProtocol : Platform.preferBinary,
+		realtimeHost,
+		restHost,
+		maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
+		timeouts
+	};
 };
 
 export default Defaults;
