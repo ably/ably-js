@@ -1,71 +1,83 @@
 import Platform from 'platform';
 import * as Utils from '../util/utils';
-import Logger from '../util/logger';
+import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
 import Auth from './auth';
 import Push from './push';
 import Http from 'platform-http';
-import PaginatedResource from './paginatedresource';
+import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import Channel from './channel';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
-import HttpStatusCodes from '../../constants/HttpStatusCodes';
+import HttpMethods from '../../constants/HttpMethods';
+import { ChannelOptions } from '../../types/channel';
+import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
+import { ErrnoException, RequestParams } from '../../types/http';
+import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
-var Rest = (function() {
-	var noop = function() {};
-	var msgpack = Platform.msgpack;
+const noop = function() {};
+const msgpack = Platform.msgpack;
 
-	function Rest(options) {
-		if(!(this instanceof Rest)){
-			return new Rest(options);
-		}
+class Rest {
+	options: NormalisedClientOptions;
+	baseUri: (host: string) => string;
+	authority: (host: string) => string;
+	_currentFallback: null | {
+		host: string,
+		validUntil: number,
+	};
+	serverTimeOffset: number | null;
+	auth: Auth;
+	channels: Channels;
+	push: Push;
 
+	constructor(options: ClientOptions | string) {
 		/* normalise options */
 		if(!options) {
-			var msg = 'no options provided';
+			const msg = 'no options provided';
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 			throw new Error(msg);
 		}
-		options = Defaults.objectifyOptions(options);
+		const optionsObj = Defaults.objectifyOptions(options);
 
-		if(options.log) {
-			Logger.setLog(options.log.level, options.log.handler);
+		if(optionsObj.log) {
+			Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
 		}
 		Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
 
-		this.options = Defaults.normaliseOptions(options);
+		const normalOptions = this.options = Defaults.normaliseOptions(optionsObj);
 
 		/* process options */
-		if(options.key) {
-			var keyMatch = options.key.match(/^([^:\s]+):([^:.\s]+)$/);
+		if(normalOptions.key) {
+			const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
 			if(!keyMatch) {
-				var msg = 'invalid key parameter';
+				const msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
 				throw new Error(msg);
 			}
-			options.keyName = keyMatch[1];
-			options.keySecret = keyMatch[2];
+			normalOptions.keyName = keyMatch[1];
+			normalOptions.keySecret = keyMatch[2];
 		}
 
-		if('clientId' in options) {
-			if(!(typeof(options.clientId) === 'string' || options.clientId === null))
+		if('clientId' in normalOptions) {
+			if(!(typeof(normalOptions.clientId) === 'string' || normalOptions.clientId === null))
 				throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-			else if(options.clientId === '*')
+			else if(normalOptions.clientId === '*')
 				throw new ErrorInfo('Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})', 40012, 400);
 		}
 
-		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.libstring);
+		Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
 
-		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(options) + host + ':' + Defaults.getPort(options, false); };
+		this.baseUri = this.authority = function(host) { return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false); };
 		this._currentFallback = null;
 
 		this.serverTimeOffset = null;
-		this.auth = new Auth(this, options);
+		this.auth = new Auth(this, normalOptions);
 		this.channels = new Channels(this);
 		this.push = new Push(this);
 	}
 
-	Rest.prototype.stats = function(params, callback) {
+	stats(params: RequestParams, callback: StandardCallback<PaginatedResult<Stats>>): Promise<PaginatedResult<Stats>> | void {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -73,26 +85,26 @@ var Rest = (function() {
 				params = null;
 			} else {
 				if(this.options.promises) {
-					return Utils.promisify(this, 'stats', arguments);
+					return Utils.promisify(this, 'stats', [params, callback]) as Promise<PaginatedResult<Stats>>;
 				}
 				callback = noop;
 			}
 		}
-		var headers = Utils.defaultGetHeaders(),
-			format = this.options.useBinaryProtocol ? 'msgpack' : 'json',
+		const headers = Utils.defaultGetHeaders(),
+			format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			envelope = Http.supportsLinkHeaders ? undefined : format;
 
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 
-		(new PaginatedResource(this, '/stats', headers, envelope, function(body, headers, unpacked) {
-			var statsValues = (unpacked ? body : JSON.parse(body));
-			for(var i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
+		(new PaginatedResource(this, '/stats', headers, envelope, function(body: unknown, headers: Record<string, string>, unpacked?: boolean) {
+			const statsValues = (unpacked ? body : JSON.parse(body as string));
+			for(let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
 			return statsValues;
-		})).get(params, callback);
-	};
+		})).get(params as Record<string, string>, callback);
+	}
 
-	Rest.prototype.time = function(params, callback) {
+	time(params: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
@@ -100,48 +112,47 @@ var Rest = (function() {
 				params = null;
 			} else {
 				if(this.options.promises) {
-					return Utils.promisify(this, 'time', arguments);
+					return Utils.promisify(this, 'time', [params, callback]) as Promise<number>;
 				}
-				callback = noop;
 			}
 		}
-		var headers = Utils.defaultGetHeaders();
+
+		const _callback = callback || noop;
+
+		const headers = Utils.defaultGetHeaders();
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
-		var self = this;
-		var timeUri = function(host) { return self.authority(host) + '/time' };
-		Http.get(this, timeUri, headers, params, function(err, res, headers, unpacked) {
+		const timeUri = (host: string) => { return this.authority(host) + '/time' };
+		Http.get(this, timeUri, headers, params as RequestParams, (err?: ErrorInfo | ErrnoException | null, res?: unknown, headers?: Record<string, string>, unpacked?: boolean) => {
 			if(err) {
-				callback(err);
+				_callback(err);
 				return;
 			}
-			if(!unpacked) res = JSON.parse(res);
-			var time = res[0];
+			if(!unpacked) res = JSON.parse(res as string);
+			const time = (res as number[])[0];
 			if(!time) {
-				err = new Error('Internal error (unexpected result type from GET /time)');
-				err.statusCode = HttpStatusCodes.InternalServerError;
-				callback(err);
+				_callback(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
 				return;
 			}
 			/* calculate time offset only once for this device by adding to the prototype */
-			self.serverTimeOffset = (time - Utils.now());
-			callback(null, time);
+			this.serverTimeOffset = (time - Utils.now());
+			_callback(null, time);
 		});
-	};
+	}
 
-	Rest.prototype.request = function(method, path, params, body, customHeaders, callback) {
-		var useBinary = this.options.useBinaryProtocol,
+	request(method: HttpMethods, path: string, params: RequestParams, body: unknown, customHeaders: Record<string, string>, callback: StandardCallback<HttpPaginatedResponse<unknown>>): Promise<HttpPaginatedResponse<unknown>> | void {
+		const useBinary = this.options.useBinaryProtocol,
 			encoder = useBinary ? msgpack.encode: JSON.stringify,
 			decoder = useBinary ? msgpack.decode : JSON.parse,
-			format = useBinary ? 'msgpack' : 'json',
+			format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
 			envelope = Http.supportsLinkHeaders ? undefined : format;
 		params = params || {};
-		method = method.toLowerCase();
-		var headers = method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
+		const _method = method.toLowerCase();
+		const headers = _method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
 
 		if(callback === undefined) {
 			if(this.options.promises) {
-				return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]);
+				return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]) as Promise<HttpPaginatedResponse<unknown>>;
 			}
 			callback = noop;
 		}
@@ -155,8 +166,8 @@ var Rest = (function() {
 		if(customHeaders) {
 			Utils.mixin(headers, customHeaders);
 		}
-		var paginatedResource = new PaginatedResource(this, path, headers, envelope, function(resbody, headers, unpacked) {
-			return Utils.ensureArray(unpacked ? resbody : decoder(resbody));
+		const paginatedResource = new PaginatedResource(this, path, headers, envelope, function(resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
+			return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
 		}, /* useHttpPaginatedResponse: */ true);
 
 		if(!Utils.arrIn(Http.methods, method)) {
@@ -164,24 +175,37 @@ var Rest = (function() {
 		}
 
 		if(Utils.arrIn(Http.methodsWithBody, method)) {
-			paginatedResource[method](params, body, callback);
+			paginatedResource[method as (HttpMethods.Post)](params, body, callback as PaginatedResultCallback<unknown>);
 		} else {
-			paginatedResource[method](params, callback);
+			paginatedResource[method as (HttpMethods.Get | HttpMethods.Delete)](params, callback as PaginatedResultCallback<unknown>);
 		}
-	};
-
-	Rest.prototype.setLog = function(logOptions) {
-		Logger.setLog(logOptions.level, logOptions.handler);
-	};
-
-	function Channels(rest) {
-		this.rest = rest;
-		this.all = Object.create(null);
 	}
 
-	Channels.prototype.get = function(name, channelOptions) {
+	setLog(logOptions: LoggerOptions): void {
+		Logger.setLog(logOptions.level, logOptions.handler);
+	}
+
+	static Promise = function(options: DeprecatedClientOptions): Rest {
+		options = Defaults.objectifyOptions(options);
+		options.promises = true;
+		return new Rest(options);
+	};
+
+	static Callbacks = Rest;
+}
+
+class Channels {
+	rest: Rest;
+	all: Record<string, Channel>;
+
+	constructor(rest: Rest) {
+		this.rest = rest;
+		this.all = {};
+	}
+
+	get(name: string, channelOptions?: ChannelOptions) {
 		name = String(name);
-		var channel = this.all[name];
+		let channel = this.all[name];
 		if(!channel) {
 			this.all[name] = channel = new Channel(this.rest, name, channelOptions);
 		} else if(channelOptions) {
@@ -189,23 +213,13 @@ var Rest = (function() {
 		}
 
 		return channel;
-	};
+	}
 
 	/* Included to support certain niche use-cases; most users should ignore this.
 	 * Please do not use this unless you know what you're doing */
-	Channels.prototype.release = function(name) {
+	release(name: string) {
 		delete this.all[String(name)];
-	};
-
-	return Rest;
-})();
-
-Rest.Promise = function(options) {
-	options = Defaults.objectifyOptions(options);
-	options.promises = true;
-	return new Rest(options);
-};
-
-Rest.Callbacks = Rest;
+	}
+}
 
 export default Rest;
