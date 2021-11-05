@@ -7,6 +7,7 @@ import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Defaults from '../../../common/lib/util/defaults';
 import Logger from '../../../common/lib/util/logger';
 import HttpStatusCodes from '../../../common/constants/HttpStatusCodes';
+import XHRStates from '../../../common/constants/XHRStates';
 
 var JSONPTransport = function(connectionManager) {
 	var noop = function() {};
@@ -149,7 +150,7 @@ var JSONPTransport = function(connectionManager) {
 			}
 		};
 
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
+		var timeout = (this.requestMode == XHRStates.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
 		this.timer = setTimeout(function() { self.abort(); }, timeout);
 		head.insertBefore(script, head.firstChild);
 	};
@@ -188,7 +189,7 @@ var JSONPTransport = function(connectionManager) {
 
 	if(Platform.jsonpSupported && !Http.Request) {
 		Http.Request = function(method, rest, uri, headers, params, body, callback) {
-			var req = createRequest(uri, headers, params, body, CometTransport.REQ_SEND, rest && rest.options.timeouts, method);
+			var req = createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
 			req.once('complete', callback);
 			Utils.nextTick(function() {
 				req.exec();
@@ -206,7 +207,7 @@ var JSONPTransport = function(connectionManager) {
 			checksInProgress = [callback];
 			Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
 
-			var req = new Request('isTheInternetUp', upUrl, null, null, null, CometTransport.REQ_SEND, Defaults.TIMEOUTS);
+			var req = new Request('isTheInternetUp', upUrl, null, null, null, XHRStates.REQ_SEND, Defaults.TIMEOUTS);
 			req.once('complete', function(err, response) {
 				var result = !err && response;
 				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);

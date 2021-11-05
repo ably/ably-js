@@ -5,6 +5,7 @@ import * as Utils from '../../../common/lib/util/utils';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import EventEmitter from '../../../common/lib/util/eventemitter';
 import HttpStatusCodes from '../../../common/constants/HttpStatusCodes';
+import XHRStates from '../../../common/constants/XHRStates';
 
 var NodeCometTransport = function(connectionManager) {
 	var http = require('http');
@@ -137,7 +138,7 @@ var NodeCometTransport = function(connectionManager) {
 	Utils.inherits(Request, EventEmitter);
 
 	Request.prototype.exec = function() {
-		var timeout = (this.requestMode == CometTransport.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
+		var timeout = (this.requestMode == XHRStates.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
 			self = this;
 
 		var timer = this.timer = setTimeout(function() { self.abort(); }, timeout),
@@ -169,7 +170,7 @@ var NodeCometTransport = function(connectionManager) {
 
 			self.res = res;
 			/* responses with an non-success statusCode are never streamed */
-			if(self.requestMode == CometTransport.REQ_RECV_STREAM && statusCode < 400) {
+			if(self.requestMode == XHRStates.REQ_RECV_STREAM && statusCode < 400) {
 				self.readStream();
 			} else {
 				self.readFully();
