@@ -1,76 +1,103 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
-import Http from 'platform-http';
-import { isSuccessCode } from '../../constants/HttpStatusCodes';
+import ErrorInfo from '../types/errorinfo';
+import { PaginatedResultCallback } from '../../types/utils';
 
-var PaginatedResource = (function() {
+// TODO: Replace this once rest.js is converted to TypeScript
+type Rest = any;
 
-	function getRelParams(linkUrl) {
-		var urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
-		return urlMatch && Utils.parseQueryString(urlMatch[2]);
-	}
+export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => any;
 
-	function parseRelLinks(linkHeader) {
-		if(typeof(linkHeader) == 'string')
-			linkHeader = linkHeader.split(',');
+function getRelParams(linkUrl: string) {
+	const urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
+	return urlMatch && Utils.parseQueryString(urlMatch[2]);
+}
 
-		var relParams = {};
-		for(var i = 0; i < linkHeader.length; i++) {
-			var linkMatch = linkHeader[i].match(/^\s*<(.+)>;\s*rel="(\w+)"$/);
-			if(linkMatch) {
-				var params = getRelParams(linkMatch[1]);
-				if(params)
-					relParams[linkMatch[2]] = params;
-			}
+function parseRelLinks(linkHeader: string | Array<string>) {
+	if(typeof(linkHeader) == 'string')
+		linkHeader = linkHeader.split(',');
+
+	const relParams: Record<string, Record<string, string>> = {};
+	for(let i = 0; i < linkHeader.length; i++) {
+		const linkMatch = linkHeader[i].match(/^\s*<(.+)>;\s*rel="(\w+)"$/);
+		if(linkMatch) {
+			const params = getRelParams(linkMatch[1]);
+			if(params)
+				relParams[linkMatch[2]] = params;
 		}
-		return relParams;
 	}
+	return relParams;
+}
 
-	function PaginatedResource(rest, path, headers, envelope, bodyHandler, useHttpPaginatedResponse) {
+function returnErrOnly(err: ErrorInfo, body: unknown, useHPR?: boolean) {
+	/* If using httpPaginatedResponse, errors from Ably are returned as part of
+		* the HPR, only do callback(err) for network errors etc. which don't
+		* return a body and/or have no ably-originated error code (non-numeric
+		* error codes originate from node) */
+	return !(useHPR && (body || typeof err.code === 'number'));
+}
+
+class PaginatedResource {
+	rest: Rest;
+	path: string;
+	headers: Record<string, string>;
+	envelope: Utils.Format | null;
+	bodyHandler: BodyHandler;
+	useHttpPaginatedResponse: boolean;
+
+	constructor(rest: Rest, path: string, headers: Record<string, string>, envelope: Utils.Format | undefined, bodyHandler: BodyHandler, useHttpPaginatedResponse?: boolean) {
 		this.rest = rest;
 		this.path = path;
 		this.headers = headers;
-		this.envelope = envelope;
+		this.envelope = envelope ?? null;
 		this.bodyHandler = bodyHandler;
 		this.useHttpPaginatedResponse = useHttpPaginatedResponse || false;
 	}
 
-	Utils.arrForEach(Http.methodsWithoutBody, function(method) {
-		PaginatedResource.prototype[method] = function(params, callback) {
-			var self = this;
-			Resource[method](self.rest, self.path, self.headers, params, self.envelope, function(err, body, headers, unpacked, statusCode) {
-				self.handlePage(err, body, headers, unpacked, statusCode, callback);
-			});
-		};
-	})
-
-	Utils.arrForEach(Http.methodsWithBody, function(method) {
-		PaginatedResource.prototype[method] = function(params, body, callback) {
-			var self = this;
-			Resource[method](self.rest, self.path, body, self.headers, params, self.envelope, function(err, resbody, headers, unpacked, statusCode) {
-				if(callback) {
-					self.handlePage(err, resbody, headers, unpacked, statusCode, callback);
-				}
-			});
-		};
-	});
-
-	function returnErrOnly(err, body, useHPR) {
-		/* If using httpPaginatedResponse, errors from Ably are returned as part of
-		 * the HPR, only do callback(err) for network errors etc. which don't
-		 * return a body and/or have no ably-originated error code (non-numeric
-		 * error codes originate from node) */
-		return !(useHPR && (body || typeof err.code === 'number'));
+	get<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
+		Resource.get(this.rest, this.path, this.headers, params, this.envelope, (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+			this.handlePage(err, body, headers, unpacked, statusCode, callback);
+		});
 	}
 
-	PaginatedResource.prototype.handlePage = function(err, body, headers, unpacked, statusCode, callback) {
+	delete<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
+		Resource.delete(this.rest, this.path, this.headers, params, this.envelope, (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+			this.handlePage(err, body, headers, unpacked, statusCode, callback);
+		});
+	}
+
+	post<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+		Resource.post(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+			if(callback) {
+				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+			}
+		});
+	}
+
+	put<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+		Resource.put(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+			if(callback) {
+				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+			}
+		});
+	}
+
+	patch<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+		Resource.patch(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+			if(callback) {
+				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+			}
+		});
+	}
+
+	handlePage<T>(err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number, callback: PaginatedResultCallback<T>): void {
 		if(err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
 			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
 			callback(err);
 			return;
 		}
-		var items, linkHeader, relParams;
+		let items, linkHeader, relParams;
 		try {
 			items = this.bodyHandler(body, headers, unpacked);
 		} catch(e) {
@@ -89,66 +116,80 @@ var PaginatedResource = (function() {
 		} else {
 			callback(null, new PaginatedResult(this, items, relParams));
 		}
-	};
+	}
+}
 
-	function PaginatedResult(resource, items, relParams) {
+export class PaginatedResult <T> {
+	resource: PaginatedResource;
+	items: T[];
+	first?: (results: PaginatedResultCallback<T>) => void;
+	next?: (results: PaginatedResultCallback<T>) => void;
+	current?: (results: PaginatedResultCallback<T>) => void;
+	hasNext?: () => boolean;
+	isLast?: () => boolean;
+
+	constructor(resource: PaginatedResource, items: T[], relParams?: Record<string, any>) {
 		this.resource = resource;
 		this.items = items;
 
 		if(relParams) {
-			var self = this;
 			if('first' in relParams) {
-				this.first = function(cb) {
-					if(!cb && self.resource.rest.options.promises) {
-						return Utils.promisify(self, 'first', []);
+				this.first = (cb: (result?: ErrorInfo | null) => void) => {
+					if(!cb && this.resource.rest.options.promises) {
+						return Utils.promisify(this, 'first', []);
 					}
-					self.get(relParams.first, cb);
+					this.get(relParams.first, cb);
 				};
 			}
 			if('current' in relParams) {
-				this.current = function(cb) {
-					if(!cb && self.resource.rest.options.promises) {
-						return Utils.promisify(self, 'current', []);
+				this.current = (cb: (results?: ErrorInfo | null) => void) => {
+					if(!cb && this.resource.rest.options.promises) {
+						return Utils.promisify(this, 'current', []);
 					}
-					self.get(relParams.current, cb);
+					this.get(relParams.current, cb);
 				};
 			}
-			this.next = function(cb) {
-				if(!cb && self.resource.rest.options.promises) {
-					return Utils.promisify(self, 'next', []);
+			this.next = (cb: (results?: ErrorInfo | null) => void) => {
+				if(!cb && this.resource.rest.options.promises) {
+					return Utils.promisify(this, 'next', []);
 				}
 				if('next' in relParams) {
-					self.get(relParams.next, cb);
+					this.get(relParams.next, cb);
 				} else {
-					cb(null, null);
+					cb(null);
 				}
 			};
 
 			this.hasNext = function() { return ('next' in relParams) };
-			this.isLast = function() { return !this.hasNext(); }
+			this.isLast = () => { return !this.hasNext?.(); }
 		}
 	}
 
 	/* We assume that only the initial request can be a POST, and that accessing
 	 * the rest of a multipage set of results can always be done with GET */
-	PaginatedResult.prototype.get = function(params, callback) {
-		var res = this.resource;
-		Resource.get(res.rest, res.path, res.headers, params, res.envelope, function(err, body, headers, unpacked, statusCode) {
+	get(params: any, callback: PaginatedResultCallback<T>): void {
+		const res = this.resource;
+		Resource.get(res.rest, res.path, res.headers, params, res.envelope, function(err: ErrorInfo, body: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
 			res.handlePage(err, body, headers, unpacked, statusCode, callback);
 		});
-	};
+	}
+}
 
-	function HttpPaginatedResponse(resource, items, headers, statusCode, relParams, err) {
-		PaginatedResult.call(this, resource, items, relParams);
+export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
+	statusCode: number;
+	success: boolean;
+	headers: Record<string, string>;
+	errorCode?: number | null;
+	errorMessage?: string;
+
+	constructor(resource: PaginatedResource, items: T[], headers: Record<string, string>, statusCode: number, relParams: any, err: ErrorInfo) {
+		super(resource, items, relParams);
 		this.statusCode = statusCode;
-		this.success = isSuccessCode(statusCode);
+		this.success = statusCode < 300 && statusCode >= 200;
 		this.headers = headers;
 		this.errorCode = err && err.code;
 		this.errorMessage = err && err.message;
 	}
-	Utils.inherits(HttpPaginatedResponse, PaginatedResult);
-
-	return PaginatedResource;
-})();
+}
 
 export default PaginatedResource;
