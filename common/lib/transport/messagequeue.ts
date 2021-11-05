@@ -24,9 +24,6 @@ class MessageQueue extends EventEmitter {
 	}
 
 	last(): PendingMessage {
-		if (this.messages.length === 0) {
-			throw new Error('MessageQueue.last(): MessageQueue.last called on an empty MessageQueue');
-		}
 		return this.messages[this.messages.length - 1];
 	}
 
