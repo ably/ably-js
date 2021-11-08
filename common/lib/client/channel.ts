@@ -78,7 +78,7 @@ class Channel extends EventEmitter {
 				params = null;
 			} else {
 				if(this.rest.options.promises) {
-					return Utils.promisify(this, 'history', [params, callback]);
+					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
 			}
@@ -102,17 +102,17 @@ class Channel extends EventEmitter {
 		})).get(params as Record<string, unknown>, callback);
 	}
 
-	publish(...args: any[]): void | Promise<void> {
+	publish(): void | Promise<void> {
 		const argCount = arguments.length,
-			first = args[0],
-			second = args[1];
-		let callback = args[argCount - 1];
+			first = arguments[0],
+			second = arguments[1];
+		let callback = arguments[argCount - 1];
 		let messages: Array<Message>;
 		let params: any;
 
 		if(typeof(callback) !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'publish', args);
+				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 		}
@@ -120,13 +120,13 @@ class Channel extends EventEmitter {
 		if(typeof first === 'string' || first === null) {
 			/* (name, data, ...) */
 			messages = [Message.fromValues({name: first, data: second})];
-			params = args[2];
+			params = arguments[2];
 		} else if(Utils.isObject(first)) {
 			messages = [Message.fromValues(first)];
-			params = args[1];
+			params = arguments[1];
 		} else if(Utils.isArray(first)) {
 			messages = Message.fromValuesArray(first);
-			params = args[1];
+			params = arguments[1];
 		} else {
 			throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
 		}
