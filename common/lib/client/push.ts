@@ -286,18 +286,12 @@ class ChannelSubscriptions {
 			Utils.mixin(params, {fullWait: 'true'});
 
 		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body: unknown, headers: Record<string, string>, unpacked?: boolean) {
-			const f = !unpacked && format;
-
-			if(f) {
-				body = Utils.decodeBody(body, format);
-			}
-
-			const parsedBody = (f ? Utils.decodeBody(body, format) : body) as Array<string>
+			const parsedBody = ((!unpacked && format) ? Utils.decodeBody(body, format) : body) as Array<string>
 
 			for(let i = 0; i < parsedBody.length; i++) {
 				parsedBody[i] = String(parsedBody[i]);
 			}
-			return body;
+			return parsedBody;
 		})).get(params, callback);
 	}
 }
