@@ -75,6 +75,7 @@ export default interface ClientOptions extends AuthOptions {
   pushFullWait?: boolean;
   checkChannelsOnResume?: boolean;
   plugins?: Record<string, unknown>;
+  agents?: string[];
 }
 
 export type DeprecatedClientOptions = Modify<ClientOptions, {

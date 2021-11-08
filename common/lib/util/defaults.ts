@@ -238,6 +238,12 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		options.promises = false;
 	}
 
+	if(options.agents) {
+		for (var key in options.agents) {
+			Defaults.agent += ' ' + key + '/' + options.agents[key];
+		}
+	}
+
 	return {
 		...options,
 		useBinaryProtocol: ('useBinaryProtocol' in options) ? Platform.supportsBinary && options.useBinaryProtocol : Platform.preferBinary,
