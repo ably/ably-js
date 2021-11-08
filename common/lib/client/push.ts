@@ -42,7 +42,7 @@ class Admin {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'publish', [recipient, payload, callback]);
+				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 		}
@@ -74,7 +74,7 @@ class DeviceRegistrations {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'save', [device, callback]);
+				return Utils.promisify(this, 'save', arguments);
 			}
 			callback = noop;
 		}
@@ -99,7 +99,7 @@ class DeviceRegistrations {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'get', [deviceIdOrDetails, callback]);
+				return Utils.promisify(this, 'get', arguments);
 			}
 			callback = noop;
 		}
@@ -125,7 +125,7 @@ class DeviceRegistrations {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'list', [params, callback]);
+				return Utils.promisify(this, 'list', arguments);
 			}
 			callback = noop;
 		}
@@ -147,7 +147,7 @@ class DeviceRegistrations {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'remove', [deviceIdOrDetails, callback]);
+				return Utils.promisify(this, 'remove', arguments);
 			}
 			callback = noop;
 		}
@@ -173,7 +173,7 @@ class DeviceRegistrations {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'removeWhere', [params, callback]);
+				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
@@ -204,7 +204,7 @@ class ChannelSubscriptions {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'save', [subscription, callback]);
+				return Utils.promisify(this, 'save', arguments);
 			}
 			callback = noop;
 		}
@@ -229,7 +229,7 @@ class ChannelSubscriptions {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'list', [params, callback]);
+				return Utils.promisify(this, 'list', arguments);
 			}
 			callback = noop;
 		}
@@ -249,7 +249,7 @@ class ChannelSubscriptions {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'removeWhere', [params, callback]);
+				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
@@ -274,7 +274,7 @@ class ChannelSubscriptions {
 
 		if(typeof callback !== 'function') {
 			if(this.rest.options.promises) {
-				return Utils.promisify(this, 'listChannels', [params, callback]);
+				return Utils.promisify(this, 'listChannels', arguments);
 			}
 			callback = noop;
 		}
