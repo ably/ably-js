@@ -140,14 +140,14 @@ class Rest {
 		});
 	}
 
-	request(method: HttpMethods, path: string, params: RequestParams, body: unknown, customHeaders: Record<string, string>, callback: StandardCallback<HttpPaginatedResponse<unknown>>): Promise<HttpPaginatedResponse<unknown>> | void {
+	request(method: string, path: string, params: RequestParams, body: unknown, customHeaders: Record<string, string>, callback: StandardCallback<HttpPaginatedResponse<unknown>>): Promise<HttpPaginatedResponse<unknown>> | void {
 		const useBinary = this.options.useBinaryProtocol,
 			encoder = useBinary ? msgpack.encode: JSON.stringify,
 			decoder = useBinary ? msgpack.decode : JSON.parse,
 			format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
 			envelope = Http.supportsLinkHeaders ? undefined : format;
 		params = params || {};
-		const _method = method.toLowerCase();
+		const _method = method.toLowerCase() as HttpMethods;
 		const headers = _method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
 
 		if(callback === undefined) {
@@ -170,14 +170,14 @@ class Rest {
 			return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
 		}, /* useHttpPaginatedResponse: */ true);
 
-		if(!Utils.arrIn(Http.methods, method)) {
-			throw new ErrorInfo('Unsupported method ' + method, 40500, 405);
+		if(!Utils.arrIn(Http.methods, _method)) {
+			throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
 		}
 
-		if(Utils.arrIn(Http.methodsWithBody, method)) {
-			paginatedResource[method as (HttpMethods.Post)](params, body, callback as PaginatedResultCallback<unknown>);
+		if(Utils.arrIn(Http.methodsWithBody, _method)) {
+			paginatedResource[_method as HttpMethods.Post](params, body, callback as PaginatedResultCallback<unknown>);
 		} else {
-			paginatedResource[method as (HttpMethods.Get | HttpMethods.Delete)](params, callback as PaginatedResultCallback<unknown>);
+			paginatedResource[_method as (HttpMethods.Get | HttpMethods.Delete)](params, callback as PaginatedResultCallback<unknown>);
 		}
 	}
 
