@@ -1,8 +1,9 @@
 import Platform from 'platform';
-import Logger from '../util/logger';
 import BufferUtils from 'platform-bufferutils';
-import Message from './message';
-import Utils from '../util/utils';
+
+import Logger from '../util/logger.js';
+import Message from './message.js';
+import Utils from '../util/utils.js';
 
 var PresenceMessage = (function() {
 	var msgpack = Platform.msgpack;

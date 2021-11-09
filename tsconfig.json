@@ -4,6 +4,7 @@
     "module": "commonjs",
     "lib": ["ES5"],
     "strict": true,
+    "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

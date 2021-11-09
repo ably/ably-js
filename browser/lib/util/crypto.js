@@ -2,8 +2,9 @@ import WordArray from 'crypto-js/build/lib-typedarrays';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Platform from 'platform';
-import Logger from '../../../common/lib/util/logger';
 import BufferUtils from 'platform-bufferutils';
+
+import Logger from '../../../common/lib/util/logger.js';
 
 var Crypto = (function() {
 	var DEFAULT_ALGORITHM = 'aes';
@@ -299,7 +300,7 @@ var Crypto = (function() {
 			if (err) {
 				callback(err);
 				return;
-			} 
+			}
 			callback(null, self.encryptCipher.process(randomBlock));
 		});
 	};

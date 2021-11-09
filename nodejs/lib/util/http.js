@@ -1,8 +1,8 @@
 "use strict";
 import Platform from 'platform';
-import Utils from '../../../common/lib/util/utils';
-import Defaults from '../../../common/lib/util/defaults';
-import ErrorInfo from '../../../common/lib/types/errorinfo';
+import Utils from '../../../common/lib/util/utils.js';
+import Defaults from '../../../common/lib/util/defaults.js';
+import ErrorInfo from '../../../common/lib/types/errorinfo.js';
 
 var Http = (function() {
 	var request = require('request');

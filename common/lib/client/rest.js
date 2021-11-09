@@ -1,14 +1,14 @@
 import Platform from 'platform';
-import Utils from '../util/utils';
-import Logger from '../util/logger';
-import Defaults from '../util/defaults';
-import Auth from './auth';
-import Push from './push';
 import Http from 'platform-http';
-import PaginatedResource from './paginatedresource';
-import Channel from './channel';
-import ErrorInfo from '../types/errorinfo';
-import Stats from '../types/stats';
+import Utils from '../util/utils.js';
+import Logger from '../util/logger.js';
+import Defaults from '../util/defaults.js';
+import Auth from './auth.js';
+import Push from './push.js';
+import PaginatedResource from './paginatedresource.js';
+import Channel from './channel.js';
+import ErrorInfo from '../types/errorinfo.js';
+import Stats from '../types/stats.js';
 
 var Rest = (function() {
 	var noop = function() {};

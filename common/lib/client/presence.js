@@ -1,9 +1,9 @@
-import Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
-import Logger from '../util/logger';
 import Http from 'platform-http';
-import PaginatedResource from './paginatedresource';
-import PresenceMessage from '../types/presencemessage';
+import Utils from '../util/utils.js';
+import EventEmitter from '../util/eventemitter.js';
+import Logger from '../util/logger.js';
+import PaginatedResource from './paginatedresource.js';
+import PresenceMessage from '../types/presencemessage.js';
 
 var Presence = (function() {
 	function noop() {}

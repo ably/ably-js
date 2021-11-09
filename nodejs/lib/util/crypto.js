@@ -1,5 +1,5 @@
 "use strict";
-import Logger from '../../../common/lib/util/logger';
+import Logger from '../../../common/lib/util/logger.js';
 import BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function() {

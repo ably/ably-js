@@ -1,13 +1,14 @@
-import Logger from '../util/logger';
 import Platform from 'platform';
-import Utils from '../util/utils';
 import Http from 'platform-http';
-import Multicaster from '../util/multicaster';
 import BufferUtils from 'platform-bufferutils';
-import ErrorInfo from '../types/errorinfo';
 import Base64 from 'platform-base64';
-import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import HmacSHA256 from 'crypto-js/build/hmac-sha256';
+
+import Logger from '../util/logger.js';
+import Utils from '../util/utils.js';
+import Multicaster from '../util/multicaster.js';
+import ErrorInfo from '../types/errorinfo.js';
 
 var Auth = (function() {
 	var MAX_TOKEN_LENGTH = Math.pow(2, 17);

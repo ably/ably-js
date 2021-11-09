@@ -1,5 +1,5 @@
-import ErrorInfo from '../types/errorinfo';
-import Utils from '../util/utils';
+import ErrorInfo from '../types/errorinfo.js';
+import Utils from '../util/utils.js';
 
 var ConnectionError = {
 	disconnected: ErrorInfo.fromValues({

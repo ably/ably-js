@@ -1,6 +1,6 @@
 import Platform from 'platform';
-import Defaults from './defaults';
 import BufferUtils from 'platform-bufferutils';
+import Defaults from './defaults.js';
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 

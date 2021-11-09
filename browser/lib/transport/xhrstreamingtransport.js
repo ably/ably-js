@@ -1,8 +1,8 @@
-import Utils from '../../../common/lib/util/utils';
-import CometTransport from '../../../common/lib/transport/comettransport';
-import Logger from '../../../common/lib/util/logger';
 import Platform from 'platform';
-import XHRRequest from './xhrrequest';
+import Utils from '../../../common/lib/util/utils.js';
+import CometTransport from '../../../common/lib/transport/comettransport.js';
+import Logger from '../../../common/lib/util/logger.js';
+import XHRRequest from './xhrrequest.js';
 
 var XHRStreamingTransport = function(connectionManager) {
 	var shortName = 'xhr_streaming';

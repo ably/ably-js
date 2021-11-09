@@ -1,8 +1,8 @@
-import Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
-import ConnectionManager from '../transport/connectionmanager';
-import Logger from '../util/logger';
-import ConnectionStateChange from './connectionstatechange';
+import Utils from '../util/utils.js';
+import EventEmitter from '../util/eventemitter.js';
+import ConnectionManager from '../transport/connectionmanager.js';
+import Logger from '../util/logger.js';
+import ConnectionStateChange from './connectionstatechange.js';
 
 var Connection = (function() {
 	function noop() {}

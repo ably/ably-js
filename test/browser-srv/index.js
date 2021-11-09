@@ -1,8 +1,8 @@
 var async = require('async');
-var server = require('./lib/server');
-var testvars = require('./framework/testvars');
+var server = require('./lib/server.js');
+var testvars = require('./framework/testvars.js');
 var noop = function() {};
-var console2 = require('./lib/quietconsole');
+var console2 = require('./lib/quietconsole.js');
 
 var runModule = function(module, callback) {
 	callback = callback || noop;

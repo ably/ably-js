@@ -1,9 +1,9 @@
-import ProtocolMessage from '../types/protocolmessage';
-import Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
-import Logger from '../util/logger';
-import ConnectionError from '../transport/connectionerror';
-import ErrorInfo from '../types/errorinfo';
+import ProtocolMessage from '../types/protocolmessage.js';
+import Utils from '../util/utils.js';
+import EventEmitter from '../util/eventemitter.js';
+import Logger from '../util/logger.js';
+import ConnectionError from '../transport/connectionerror.js';
+import ErrorInfo from '../types/errorinfo.js';
 
 var Transport = (function() {
 	var actions = ProtocolMessage.Action;

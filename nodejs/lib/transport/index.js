@@ -1,4 +1,4 @@
-import NodeCometTransport from './nodecomettransport';
+import NodeCometTransport from './nodecomettransport.js';
 
 export default [
   NodeCometTransport

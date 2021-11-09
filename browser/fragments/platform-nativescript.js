@@ -1,4 +1,4 @@
-import msgpack from '../lib/util/msgpack';
+import msgpack from '../lib/util/msgpack.js';
 require('nativescript-websockets');
 
 var randomBytes;

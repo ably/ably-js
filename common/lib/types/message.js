@@ -1,8 +1,9 @@
 import BufferUtils from 'platform-bufferutils';
-import Utils from '../util/utils';
-import Logger from '../util/logger';
 import Crypto from 'platform-crypto';
-import ErrorInfo from './errorinfo';
+
+import Utils from '../util/utils.js';
+import Logger from '../util/logger.js';
+import ErrorInfo from './errorinfo.js';
 
 var Message = (function() {
 

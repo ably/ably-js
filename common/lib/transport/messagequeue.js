@@ -1,6 +1,6 @@
-import Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
-import Logger from '../util/logger';
+import Utils from '../util/utils.js';
+import EventEmitter from '../util/eventemitter.js';
+import Logger from '../util/logger.js';
 
 var MessageQueue = (function() {
 	function MessageQueue() {

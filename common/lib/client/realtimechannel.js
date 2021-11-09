@@ -1,14 +1,14 @@
-import ProtocolMessage from '../types/protocolmessage';
-import EventEmitter from '../util/eventemitter';
-import Utils from '../util/utils';
-import Channel from './channel';
-import Logger from '../util/logger';
-import RealtimePresence from './realtimepresence';
-import Message from '../types/message';
-import ChannelStateChange from './channelstatechange';
-import ErrorInfo from '../types/errorinfo';
-import PresenceMessage from '../types/presencemessage';
-import ConnectionError from '../transport/connectionerror';
+import ProtocolMessage from '../types/protocolmessage.js';
+import EventEmitter from '../util/eventemitter.js';
+import Utils from '../util/utils.js';
+import Channel from './channel.js';
+import Logger from '../util/logger.js';
+import RealtimePresence from './realtimepresence.js';
+import Message from '../types/message.js';
+import ChannelStateChange from './channelstatechange.js';
+import ErrorInfo from '../types/errorinfo.js';
+import PresenceMessage from '../types/presencemessage.js';
+import ConnectionError from '../transport/connectionerror.js';
 
 var RealtimeChannel = (function() {
 	var actions = ProtocolMessage.Action;

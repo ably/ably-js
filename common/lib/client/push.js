@@ -1,10 +1,10 @@
-import Utils from '../util/utils';
-import DeviceDetails from '../types/devicedetails';
-import Resource from './resource';
-import PaginatedResource from './paginatedresource';
-import ErrorInfo from '../types/errorinfo';
 import Http from 'platform-http';
-import PushChannelSubscription from '../types/pushchannelsubscription';
+import Utils from '../util/utils.js';
+import DeviceDetails from '../types/devicedetails.js';
+import Resource from './resource.js';
+import PaginatedResource from './paginatedresource.js';
+import ErrorInfo from '../types/errorinfo.js';
+import PushChannelSubscription from '../types/pushchannelsubscription.js';
 
 var Push = (function() {
 	var noop = function() {};

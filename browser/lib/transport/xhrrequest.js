@@ -1,12 +1,13 @@
-import Utils from '../../../common/lib/util/utils';
-import EventEmitter from '../../../common/lib/util/eventemitter';
 import Platform from 'platform';
-import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Http from 'platform-http';
-import Logger from '../../../common/lib/util/logger';
-import Defaults from '../../../common/lib/util/defaults';
 import BufferUtils from 'platform-bufferutils';
-import DomEvent from '../util/domevent';
+
+import Utils from '../../../common/lib/util/utils.js';
+import EventEmitter from '../../../common/lib/util/eventemitter.js';
+import ErrorInfo from '../../../common/lib/types/errorinfo.js';
+import Logger from '../../../common/lib/util/logger.js';
+import Defaults from '../../../common/lib/util/defaults.js';
+import DomEvent from '../util/domevent.js';
 
 function getAblyError(responseBody, headers) {
 	if (Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode')) {

@@ -1,7 +1,7 @@
-import Utils from '../util/utils';
-import ErrorInfo from './errorinfo';
-import Message from './message';
-import PresenceMessage from './presencemessage';
+import Utils from '../util/utils.js';
+import ErrorInfo from './errorinfo.js';
+import Message from './message.js';
+import PresenceMessage from './presencemessage.js';
 
 var ProtocolMessage = (function() {
 

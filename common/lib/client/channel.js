@@ -1,13 +1,13 @@
-import Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
-import Logger from '../util/logger';
-import Presence from './presence';
 import Crypto from 'platform-crypto';
-import Message from '../types/message';
-import ErrorInfo from '../types/errorinfo';
-import PaginatedResource from './paginatedresource';
 import Http from 'platform-http';
-import Resource from './resource';
+import Utils from '../util/utils.js';
+import EventEmitter from '../util/eventemitter.js';
+import Logger from '../util/logger.js';
+import Presence from './presence.js';
+import Message from '../types/message.js';
+import ErrorInfo from '../types/errorinfo.js';
+import PaginatedResource from './paginatedresource.js';
+import Resource from './resource.js';
 
 var Channel = (function() {
 	function noop() {}

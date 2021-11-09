@@ -6,10 +6,10 @@ var path = require('path');
 var url = require('url');
 var util = require('util');
 var ejs = require('ejs');
-var testvars = require('../framework/testvars');
-var console2 = require('../lib/quietconsole');
-var setup = require('../framework/setup');
-var teardown = require('../framework/teardown');
+var testvars = require('../framework/testvars.js');
+var console2 = require('../lib/quietconsole.js');
+var setup = require('../framework/setup.js');
+var teardown = require('../framework/teardown.js');
 
 var testAccounts = {}; // keep track of all accounts set up that have not yet been torn down
 

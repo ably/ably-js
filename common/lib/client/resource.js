@@ -1,9 +1,9 @@
+import BufferUtils from 'platform-bufferutils';
 import Platform from 'platform';
 import Http from 'platform-http';
-import Utils from '../util/utils';
-import Logger from '../util/logger';
-import Auth from './auth';
-import BufferUtils from 'platform-bufferutils';
+import Utils from '../util/utils.js';
+import Logger from '../util/logger.js';
+import Auth from './auth.js';
 
 var Resource = (function() {
 	var msgpack = Platform.msgpack;

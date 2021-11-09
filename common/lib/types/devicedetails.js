@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import Utils from '../util/utils.js';
 
 var DeviceDetails = (function() {
 
@@ -79,7 +79,7 @@ var DeviceDetails = (function() {
 	};
 
 	DeviceDetails.fromValues = function(values) {
-		values.error = values.error && ErrorInfo.fromValues(values.error); 
+		values.error = values.error && ErrorInfo.fromValues(values.error);
 		return Utils.mixin(new DeviceDetails(), values);
 	};
 

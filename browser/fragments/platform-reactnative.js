@@ -1,5 +1,5 @@
-import msgpack from '../lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
+import msgpack from '../lib/util/msgpack.js';
 
 var Platform = {
         agent: 'reactnative',

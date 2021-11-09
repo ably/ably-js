@@ -1,9 +1,9 @@
 import Defaults from 'platform-defaults';
 import Platform from 'platform';
-import Utils from './utils';
 import BufferUtils from 'platform-bufferutils';
-import Logger from './logger';
-import ErrorInfo from '../types/errorinfo';
+import Utils from './utils.js';
+import Logger from './logger.js';
+import ErrorInfo from '../types/errorinfo.js';
 import { version } from '../../../package.json';
 
 Defaults.ENVIRONMENT              = '';
@@ -42,7 +42,7 @@ Defaults.apiVersion       = '1.2';
 var agent = 'ably-js/' + Defaults.version;
 if (Platform.agent) {
 	agent += ' ' + Platform.agent;
-} 
+}
 Defaults.agent = agent;
 
 Defaults.getHost = function(options, host, ws) {

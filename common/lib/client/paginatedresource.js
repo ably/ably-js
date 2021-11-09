@@ -1,7 +1,7 @@
-import Utils from '../util/utils';
-import Logger from '../util/logger';
-import Resource from './resource';
 import Http from 'platform-http';
+import Utils from '../util/utils.js';
+import Logger from '../util/logger.js';
+import Resource from './resource.js';
 
 var PaginatedResource = (function() {
 

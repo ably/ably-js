@@ -1,4 +1,4 @@
-import Utils from '../util/utils';
+import Utils from '../util/utils.js';
 
 var PushChannelSubscription = (function() {
 

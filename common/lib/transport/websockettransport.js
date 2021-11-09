@@ -1,10 +1,10 @@
 import Platform from 'platform';
-import Utils from '../util/utils';
-import Transport from './transport';
-import Defaults from '../util/defaults';
-import Logger from '../util/logger';
-import ProtocolMessage from '../types/protocolmessage';
-import ErrorInfo from '../types/errorinfo';
+import Utils from '../util/utils.js';
+import Transport from './transport.js';
+import Defaults from '../util/defaults.js';
+import Logger from '../util/logger.js';
+import ProtocolMessage from '../types/protocolmessage.js';
+import ErrorInfo from '../types/errorinfo.js';
 
 var WebSocketTransport = function(connectionManager) {
 	var WebSocket = Platform.WebSocket;

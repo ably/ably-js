@@ -1,12 +1,12 @@
-import Utils from '../util/utils';
-import Rest from './rest';
-import EventEmitter from '../util/eventemitter';
-import Logger from '../util/logger';
-import Connection from './connection';
-import RealtimeChannel from './realtimechannel';
-import Defaults from '../util/defaults';
-import ErrorReporter from '../util/errorreporter';
-import ErrorInfo from '../types/errorinfo';
+import Utils from '../util/utils.js';
+import Rest from './rest.js';
+import EventEmitter from '../util/eventemitter.js';
+import Logger from '../util/logger.js';
+import Connection from './connection.js';
+import RealtimeChannel from './realtimechannel.js';
+import Defaults from '../util/defaults.js';
+import ErrorReporter from '../util/errorreporter.js';
+import ErrorInfo from '../types/errorinfo.js';
 
 var Realtime = (function() {
 

@@ -1,11 +1,11 @@
-import Utils from '../util/utils';
-import ProtocolMessage from '../types/protocolmessage';
-import Transport from '../transport/transport';
-import Logger from '../util/logger';
-import Defaults from '../util/defaults';
-import ConnectionError from './connectionerror';
-import Auth from '../client/auth';
-import ErrorInfo from '../types/errorinfo';
+import Utils from '../util/utils.js';
+import ProtocolMessage from '../types/protocolmessage.js';
+import Transport from '../transport/transport.js';
+import Logger from '../util/logger.js';
+import Defaults from '../util/defaults.js';
+import ConnectionError from './connectionerror.js';
+import Auth from '../client/auth.js';
+import ErrorInfo from '../types/errorinfo.js';
 
 var CometTransport = (function() {
 

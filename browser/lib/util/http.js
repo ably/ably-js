@@ -1,5 +1,5 @@
-import Utils from '../../../common/lib/util/utils';
-import Defaults from '../../../common/lib/util/defaults';
+import Utils from '../../../common/lib/util/utils.js';
+import Defaults from '../../../common/lib/util/defaults.js';
 
 var Http = (function() {
 	var noop = function() {};

@@ -1,6 +1,7 @@
-import Utils from './utils';
-import Logger from './logger';
 import Platform from 'platform';
+
+import Utils from './utils.js';
+import Logger from './logger.js';
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 

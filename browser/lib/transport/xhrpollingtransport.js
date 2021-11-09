@@ -1,8 +1,8 @@
-import Utils from '../../../common/lib/util/utils';
-import Logger from '../../../common/lib/util/logger';
 import Platform from 'platform';
-import CometTransport from '../../../common/lib/transport/comettransport';
-import XHRRequest from './xhrrequest';
+import Utils from '../../../common/lib/util/utils.js';
+import Logger from '../../../common/lib/util/logger.js';
+import CometTransport from '../../../common/lib/transport/comettransport.js';
+import XHRRequest from './xhrrequest.js';
 
 var XHRPollingTransport = function(connectionManager) {
 	var shortName = 'xhr_polling';

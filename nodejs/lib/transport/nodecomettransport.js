@@ -1,9 +1,9 @@
 "use strict";
-import CometTransport from '../../../common/lib/transport/comettransport';
-import Logger from '../../../common/lib/util/logger';
-import Utils from '../../../common/lib/util/utils';
-import ErrorInfo from '../../../common/lib/types/errorinfo';
-import EventEmitter from '../../../common/lib/util/eventemitter';
+import CometTransport from '../../../common/lib/transport/comettransport.js';
+import Logger from '../../../common/lib/util/logger.js';
+import Utils from '../../../common/lib/util/utils.js';
+import ErrorInfo from '../../../common/lib/types/errorinfo.js';
+import EventEmitter from '../../../common/lib/util/eventemitter.js';
 
 var NodeCometTransport = function(connectionManager) {
 	var http = require('http');

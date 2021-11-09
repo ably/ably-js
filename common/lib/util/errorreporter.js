@@ -1,8 +1,9 @@
-import Utils from './utils';
 import Platform from 'platform';
-import Defaults from '../util/defaults';
-import Logger from './logger';
 import Http from 'platform-http';
+
+import Utils from './utils.js';
+import Defaults from '../util/defaults.js';
+import Logger from './logger.js';
 
 var ErrorReporter = (function() {
 	function ErrorReporter() {}
