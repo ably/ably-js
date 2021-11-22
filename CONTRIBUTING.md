@@ -20,8 +20,8 @@
 3. Update the CHANGELOG.md with any customer-affecting changes since the last release and add this to the git index
 4. Run `npm version <VERSION_NUMBER> --no-git-tag-version` with the new version and add the changes to the git index
 5. Create a PR for the release branch
-6. Once the release PR is landed to the `main` branch, checkout the `main` branch locally and run `npm run build`
-7. Run `git tag <VERSION_NUMBER>` with the new version
+6. Once the release PR is landed to the `main` branch, checkout the `main` branch locally (remember to pull the remote changes) and run `npm run build`
+7. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to git
 8. Ensure that the infrastructure repository is in the same directory as `ably-js` and is up to date with the remote main branch
 9. Run `npm run grunt -- release:deploy` (requires the SDKDeveloper AWS role) - pushes commit and tag, then publishes to the Ably CDN
 10. Run `npm publish .` (should require OTP) - publishes to NPM
