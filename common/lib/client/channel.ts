@@ -61,7 +61,6 @@ class Channel extends EventEmitter {
 		this.name = name;
 		this.basePath = '/channels/' + encodeURIComponent(name);
 		this.presence = new Presence(this);
-		this.channelOptions = {};
 		this.channelOptions = normaliseChannelOptions(channelOptions);
 	}
 
