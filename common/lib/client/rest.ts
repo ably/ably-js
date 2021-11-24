@@ -32,7 +32,6 @@ class Rest {
 	push: Push;
 
 	constructor(options: ClientOptions | string) {
-		/* normalise options */
 		if(!options) {
 			const msg = 'no options provided';
 			Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
