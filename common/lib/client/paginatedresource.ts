@@ -11,7 +11,7 @@ export type BodyHandler = (body: unknown, headers: Record<string, string>, packe
 
 function getRelParams(linkUrl: string) {
 	const urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
-	return urlMatch && Utils.parseQueryString(urlMatch[2]);
+	return urlMatch && urlMatch[2] && Utils.parseQueryString(urlMatch[2]);
 }
 
 function parseRelLinks(linkHeader: string | Array<string>) {
