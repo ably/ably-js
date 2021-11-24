@@ -134,29 +134,29 @@ export class PaginatedResult <T> {
 
 		if(relParams) {
 			if('first' in relParams) {
-				this.first = (cb: (result?: ErrorInfo | null) => void) => {
-					if(!cb && this.resource.rest.options.promises) {
+				this.first = (callback: (result?: ErrorInfo | null) => void) => {
+					if(!callback && this.resource.rest.options.promises) {
 						return Utils.promisify(this, 'first', []);
 					}
-					this.get(relParams.first, cb);
+					this.get(relParams.first, callback);
 				};
 			}
 			if('current' in relParams) {
-				this.current = (cb: (results?: ErrorInfo | null) => void) => {
-					if(!cb && this.resource.rest.options.promises) {
+				this.current = (callback: (results?: ErrorInfo | null) => void) => {
+					if(!callback && this.resource.rest.options.promises) {
 						return Utils.promisify(this, 'current', []);
 					}
-					this.get(relParams.current, cb);
+					this.get(relParams.current, callback);
 				};
 			}
-			this.next = (cb: (results?: ErrorInfo | null) => void) => {
-				if(!cb && this.resource.rest.options.promises) {
+			this.next = (callback: (results?: ErrorInfo | null) => void) => {
+				if(!callback && this.resource.rest.options.promises) {
 					return Utils.promisify(this, 'next', []);
 				}
 				if('next' in relParams) {
-					this.get(relParams.next, cb);
+					this.get(relParams.next, callback);
 				} else {
-					cb(null);
+					callback(null);
 				}
 			};
 
