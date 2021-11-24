@@ -149,6 +149,7 @@ class Resource {
 				callback(err, res, headers, unpacked, statusCode);
 			}];
 			if (!body) {
+				// Removes the third argument (body) from the args array
 				args.splice(3, 1);
 			}
 
