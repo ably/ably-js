@@ -102,7 +102,7 @@ class PaginatedResource {
 			items = this.bodyHandler(body, headers, unpacked);
 		} catch(e) {
 			/* If we got an error, the failure to parse the body is almost certainly
-			 * due to that, so cb with that in preference to the parse error */
+			 * due to that, so callback with that in preference over the parse error */
 			callback(err || e);
 			return;
 		}
