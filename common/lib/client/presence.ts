@@ -6,9 +6,9 @@ import PaginatedResource from './paginatedresource';
 import PresenceMessage from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
+import Channel from './channel';
 
 // TODO: Replace these when Channel and RealtimeChannel are converted to TypeScript
-type Channel = any;
 type RealtimeChannel = any;
 
 function noop() {}
