@@ -1,5 +1,11 @@
 import Platform from 'platform';
 
+export type LoggerOptions = {
+    handler: LoggerFunction,
+    level: LogLevels,
+}
+type LoggerFunction = (...args: string[]) => void;
+
 enum LogLevels {
     None = 0,
     Error = 1,
