@@ -4,15 +4,13 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
 import ErrorInfo from '../types/errorinfo';
+import RealtimeChannel from './realtimechannel';
 import ConnectionErrors from '../transport/connectionerrors';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
-
-// TODO: Replace this with the real type when RealtimeChannel is in TypeScript
-type RealtimeChannel = any;
 
 interface RealtimePresenceParams {
 	waitForSync?: boolean;
