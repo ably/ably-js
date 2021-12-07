@@ -3,11 +3,11 @@ import * as Utils from "../util/utils";
 export default class ErrorInfo {
 	message: string;
 	code: number | null;
-	statusCode: number;
+	statusCode?: number;
 	cause?: string | Error | ErrorInfo;
 	href?: string;
 
-	constructor(message: string, code: number | null, statusCode: number, cause?: string | Error | ErrorInfo) {
+	constructor(message: string, code: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
 		this.message = message;
 		this.code = code;
 		this.statusCode = statusCode;
