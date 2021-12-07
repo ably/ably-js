@@ -7,130 +7,144 @@ import RealtimeChannel from './realtimechannel';
 import Defaults from '../util/defaults';
 import ErrorReporter from '../util/errorreporter';
 import ErrorInfo from '../types/errorinfo';
+import ProtocolMessage from '../types/protocolmessage';
+import { ChannelOptions } from '../../types/channel';
+import { ErrCallback } from '../../types/utils';
+import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
 
-var Realtime = (function() {
+class Realtime extends Rest {
+	channels: any;
+	connection: Connection;
 
-	function Realtime(options) {
-		if(!(this instanceof Realtime)){
-			return new Realtime(options);
-		}
-
+	constructor(options: ClientOptions) {
+		super(options);
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
-		Rest.call(this, options);
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
 		if(options.autoConnect !== false)
 			this.connect();
 	}
-	Utils.inherits(Realtime, Rest);
 
-	Realtime.prototype.connect = function() {
+	connect(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
 		this.connection.connect();
-	};
+	}
 
-	Realtime.prototype.close = function() {
+	close(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
 		this.connection.close();
+	}
+
+	static Promise = function(options: DeprecatedClientOptions): Realtime {
+		options = Defaults.objectifyOptions(options);
+		options.promises = true;
+		return new Realtime(options);
 	};
 
-	function Channels(realtime) {
-		EventEmitter.call(this);
+	static Callbacks = Realtime;
+
+}
+
+class Channels extends EventEmitter {
+	realtime: Realtime;
+	all: Record<string, RealtimeChannel>;
+	inProgress: Record<string, RealtimeChannel>;
+
+	constructor(realtime: Realtime) {
+		super();
 		this.realtime = realtime;
-		this.all = Object.create(null);
-		this.inProgress = Object.create(null);
-		var self = this;
-		realtime.connection.connectionManager.on('transport.active', function() {
-			self.onTransportActive();
+		this.all = {};
+		this.inProgress = {};
+		realtime.connection.connectionManager.on('transport.active', () => {
+			this.onTransportActive();
 		});
 	}
-	Utils.inherits(Channels, EventEmitter);
 
-	Channels.prototype.onChannelMessage = function(msg) {
-		var channelName = msg.channel;
+	onChannelMessage(msg: ProtocolMessage) {
+		const channelName = msg.channel;
 		if(channelName === undefined) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
 			return;
 		}
-		var channel = this.all[channelName];
+		const channel = this.all[channelName];
 		if(!channel) {
 			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
 			return;
 		}
 		channel.onMessage(msg);
-	};
+	}
 
 	/* called when a transport becomes connected; reattempt attach/detach
 	 * for channels that are attaching or detaching.
 	 * Note that this does not use inProgress as inProgress is only channels which have already made
 	* at least one attempt to attach/detach */
-	Channels.prototype.onTransportActive = function() {
-		for(var channelName in this.all) {
-			var channel = this.all[channelName];
+	onTransportActive() {
+		for(const channelName in this.all) {
+			const channel = this.all[channelName];
 			if(channel.state === 'attaching' || channel.state === 'detaching') {
 				channel.checkPendingState();
 			} else if(channel.state === 'suspended') {
 				channel.attach();
 			}
 		}
-	};
+	}
 
-	Channels.prototype.reattach = function(reason) {
-		for(var channelId in this.all) {
-			var channel = this.all[channelId];
+	reattach(reason: ErrorInfo) {
+		for(const channelId in this.all) {
+			const channel = this.all[channelId];
 			/* NB this should not trigger for merely attaching channels, as they will
 			 * be reattached anyway through the onTransportActive checkPendingState */
 			if(channel.state === 'attached') {
 				channel.requestState('attaching', reason);
 			}
 		}
-	};
+	}
 
-	Channels.prototype.resetAttachedMsgIndicators = function() {
-		for(var channelId in this.all) {
-			var channel = this.all[channelId];
+	resetAttachedMsgIndicators() {
+		for(const channelId in this.all) {
+			const channel = this.all[channelId];
 			if(channel.state === 'attached') {
 			channel._attachedMsgIndicator = false;
 			}
 		}
-	};
+	}
 
-	Channels.prototype.checkAttachedMsgIndicators = function(connectionId) {
-		for(var channelId in this.all) {
-			var channel = this.all[channelId];
+	checkAttachedMsgIndicators(connectionId: string) {
+		for(const channelId in this.all) {
+			const channel = this.all[channelId];
 			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
-				var msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
+				const msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
 				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
 				ErrorReporter.report('error', msg, 'channel-no-attached-after-resume');
 				channel.requestState('attaching');
-			};
+			}
 		}
-	};
+	}
 
 	/* Connection interruptions (ie when the connection will no longer queue
 	 * events) imply connection state changes for any channel which is either
 	 * attached, pending, or will attempt to become attached in the future */
-	Channels.prototype.propogateConnectionInterruption = function(connectionState, reason) {
-		var connectionStateToChannelState = {
+	propogateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
+		const connectionStateToChannelState: Record<string, string> = {
 			'closing'  : 'detached',
 			'closed'   : 'detached',
 			'failed'   : 'failed',
 			'suspended': 'suspended'
 		};
-		var fromChannelStates = ['attaching', 'attached', 'detaching', 'suspended'];
-		var toChannelState = connectionStateToChannelState[connectionState];
+		const fromChannelStates = ['attaching', 'attached', 'detaching', 'suspended'];
+		const toChannelState = connectionStateToChannelState[connectionState];
 
-		for(var channelId in this.all) {
-			var channel = this.all[channelId];
+		for(const channelId in this.all) {
+			const channel = this.all[channelId];
 			if(Utils.arrIn(fromChannelStates, channel.state)) {
-				 channel.notifyState(toChannelState, reason);
+				channel.notifyState(toChannelState, reason);
 			}
 		}
-	};
+	}
 
-	Channels.prototype.get = function(name, channelOptions) {
+	get(name: string, channelOptions: ChannelOptions) {
 		name = String(name);
-		var channel = this.all[name];
+		let channel = this.all[name];
 		if(!channel) {
 			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
 		} else if(channelOptions) {
@@ -140,60 +154,50 @@ var Realtime = (function() {
 			channel.setOptions(channelOptions);
 		}
 		return channel;
-	};
+	}
 
 	/* Included to support certain niche use-cases; most users should ignore this.
 	 * Please do not use this unless you know what you're doing */
-	Channels.prototype.release = function(name) {
+	release(name: string) {
 		name = String(name);
-		var channel = this.all[name];
+		const channel = this.all[name];
 		if(!channel) {
 			return;
 		}
-		var releaseErr = channel.getReleaseErr();
+		const releaseErr = channel.getReleaseErr();
 		if(releaseErr) {
 			throw releaseErr;
 		}
 		delete this.all[name];
 		delete this.inProgress[name];
-	};
+	}
 
 	/* Records operations currently pending on a transport; used by connectionManager to decide when
 	 * it's safe to upgrade. Note that a channel might be in the attaching state without any pending
 	 * operations (eg if attached while the connection state is connecting) - such a channel must not
 	 * hold up an upgrade, so is not considered inProgress.
 	 * Operation is currently one of either 'statechange' or 'sync' */
-	Channels.prototype.setInProgress = function(channel, operation, inProgress) {
+	setInProgress(channel: RealtimeChannel, operation: string, inProgress: boolean) {
 		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
-		this.inProgress[channel.name][operation] = inProgress;
+		(this.inProgress[channel.name] as any)[operation] = inProgress;
 		if(!inProgress && this.hasNopending()) {
 			this.emit('nopending');
 		}
-	};
+	}
 
-	Channels.prototype.onceNopending = function(listener) {
+	onceNopending(listener: ErrCallback) {
 		if(this.hasNopending()) {
 			listener();
 			return;
 		}
 		this.once('nopending', listener);
-	};
+	}
 
-	Channels.prototype.hasNopending = function() {
-		return Utils.arrEvery(Utils.valuesArray(this.inProgress, true), function(operations) {
+	hasNopending() {
+		return Utils.arrEvery(Utils.valuesArray(this.inProgress, true) as any, function(operations: Record<string, unknown>) {
 			return !Utils.containsValue(operations, true);
 		});
-	};
-
-	return Realtime;
-})();
-
-Realtime.Promise = function(options) {
-	options = Defaults.objectifyOptions(options);
-	options.promises = true;
-	return new Realtime(options);
-};
-
-Realtime.Callbacks = Realtime;
+	}
+}
 
 export default Realtime;
