@@ -134,7 +134,7 @@ class RealtimeChannel extends Channel {
 	setOptions(options: ChannelOptions, callback?: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if (this.rest.options.promises) {
-				return Utils.promisify(this, 'setOptions', [options, callback]);
+				return Utils.promisify(this, 'setOptions', arguments);
 			}
 		}
 		const _callback = callback || function (err?: ErrorInfo | null) {
@@ -185,7 +185,7 @@ class RealtimeChannel extends Channel {
 
 		if(typeof(callback) !== 'function') {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'publish', args);
+				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 			++argCount;
@@ -255,7 +255,7 @@ class RealtimeChannel extends Channel {
 		}
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'attach', [flags, callback]);
+				return Utils.promisify(this, 'attach', arguments);
 			}
 			callback = function(err?: ErrorInfo | null) {
 				if(err) {
@@ -333,7 +333,7 @@ class RealtimeChannel extends Channel {
 	detach(callback: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'detach', [callback]);
+				return Utils.promisify(this, 'detach', arguments);
 			}
 			callback = noop;
 		}
@@ -381,7 +381,7 @@ class RealtimeChannel extends Channel {
 
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'subscribe', [event, listener]);
+				return Utils.promisify(this, 'subscribe', arguments);
 			}
 		}
 
@@ -738,7 +738,7 @@ class RealtimeChannel extends Channel {
 		this.rest.channels.setInProgress(this, operation, value);
 	}
 
-	history = (((params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<Message>): void | Promise<PaginatedResultCallback<Message>> => {
+	history = ((function (this: RealtimeChannel, params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<Message>): void | Promise<PaginatedResultCallback<Message>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
@@ -747,7 +747,7 @@ class RealtimeChannel extends Channel {
 				params = null;
 			} else {
 				if(this.rest.options.promises) {
-					return Utils.promisify(this, 'history', [params, callback]);
+					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
 			}

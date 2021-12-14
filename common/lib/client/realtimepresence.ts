@@ -133,7 +133,7 @@ class RealtimePresence extends Presence {
 				data = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+					return Utils.promisify(this, '_enterOrUpdateClient', arguments);
 				}
 				callback = noop;
 			}
@@ -197,7 +197,7 @@ class RealtimePresence extends Presence {
 				data = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, 'leaveClient', [clientId, data]);
+					return Utils.promisify(this, 'leaveClient', arguments);
 				}
 				callback = noop;
 			}
@@ -240,7 +240,7 @@ class RealtimePresence extends Presence {
 		}
 	}
 
-	get = (((params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): void | Promise<PresenceMessage[]> => {
+	get = ((function (this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): void | Promise<PresenceMessage[]> {
 		if(!callback && typeof(params) == 'function')
 			params = callback;
 
@@ -248,7 +248,7 @@ class RealtimePresence extends Presence {
 
 		if(!callback) {
 			if(this.channel.realtime.options.promises) {
-				return Utils.promisify(this, 'get', [params, callback]);
+				return Utils.promisify(this, 'get', arguments);
 			}
 			callback = noop;
 		}
