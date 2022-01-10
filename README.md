@@ -109,29 +109,6 @@ For usage, jump to [Using the async API style](#using-the-async-api-style).
 
 See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript) for NativeScript usage details.
 
-## Delta Plugin
-
-From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
-This is an optional feature so our
-[Vcdiff Decoder plugin](https://github.com/ably-forks/vcdiff-decoder)
-must be supplied to the library in client options to enable this functionality.
-
-```js
-var vcdiffDecoder = require('@ably/vcdiff-decoder');
-
-var clientOptions = {
-  plugins: {
-    vcdiff: vcdiffDecoder,
-  },
-  // TODO provide auth option (e.g. key)
-};
-var client = new Ably.Realtime(clientOptions);
-```
-
-See also
-[Subscribing to a channel with deltas](#subscribing-to-a-channel-with-deltas),
-which describes how to enable delta compression when getting a channel.
-
 ## Using the Realtime API
 
 This readme gives some basic examples; for our full API documentation, please go to https://www.ably.com/documentation .
@@ -571,6 +548,29 @@ const ablyRestPromiseExample = async () => {
 
 ablyRestPromiseExample();
 ```
+
+## Delta Plugin
+
+From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
+This is an optional feature so our
+[Vcdiff Decoder plugin](https://github.com/ably-forks/vcdiff-decoder)
+must be supplied to the library in client options to enable this functionality.
+
+```js
+var vcdiffDecoder = require('@ably/vcdiff-decoder');
+
+var clientOptions = {
+  plugins: {
+    vcdiff: vcdiffDecoder,
+  },
+  // TODO provide auth option (e.g. key)
+};
+var client = new Ably.Realtime(clientOptions);
+```
+
+See also
+[Subscribing to a channel with deltas](#subscribing-to-a-channel-with-deltas),
+which describes how to enable delta compression when getting a channel.
 
 ## Support, feedback and troubleshooting
 
