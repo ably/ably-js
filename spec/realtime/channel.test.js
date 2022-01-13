@@ -1536,5 +1536,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       done();
                     });
                 });
+
+                it('rewind works on channel after reattaching', function (done) {
+                    var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+                    var channelName = 'rewind_after_detach';
+                    var channel = realtime.channels.get(channelName);
+                    var channelOpts = { params: { rewind: '1' } };
+                    channel.setOptions(channelOpts);
+
+                    var subscriber = function(message) {
+                      expect(message.data).to.equal('message');
+                      channel.unsubscribe(subscriber);
+                      channel.detach(function(err) {
+                        if (err) {
+                          closeAndFinish(done, realtime, err);
+                          return;
+                        }
+                        channel.subscribe(function(message) {
+                          expect(message.data).to.equal('message');
+                          closeAndFinish(done, realtime);
+                        });
+                      });
+                    }
+
+                    channel.publish('event', 'message');
+
+                    channel.subscribe(subscriber);
+                });
 	});
 });
