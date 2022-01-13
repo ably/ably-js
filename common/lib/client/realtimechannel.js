@@ -449,6 +449,9 @@ var RealtimeChannel = (function() {
 		case actions.DETACHED:
 			var err = message.error ? ErrorInfo.fromValues(message.error) : new ErrorInfo('Channel detached', 90001, 404);
 			if(this.state === 'detaching') {
+                                if (this.connectionManager.mostRecentMsg && this.connectionManager.mostRecentMsg.channel === this.name) {
+                                  this.connectionManager.mostRecentMsg = null;
+                                }
 				this.notifyState('detached', err);
 			} else if(this.state === 'attaching') {
 				/* Only retry immediately if we were previously attached. If we were
