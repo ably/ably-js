@@ -27,7 +27,7 @@
 10. Run `npm publish .` (should require OTP) - publishes to NPM
 11. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
 12. For nontrivial releases: update the ably-js submodule ref in the realtime repo
-13. Update the Ably changelog with these changes (again, you can just copy the notes you added to the CHANGELOG)
+13. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
 
 ## Test suite
 
