@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.17](https://github.com/ably/ably-js/tree/1.2.17) (2022-01-14)
+- Remove NPM preinstall script (this was breaking NPM installs when outside a git repository) [\#876](https://github.com/ably/ably-js/pull/876)
+
 ## [1.2.16](https://github.com/ably/ably-js/tree/1.2.16) (2022-01-14)
 - Fix bug where channel rewind would ignore messages after reattaching [\#873](https://github.com/ably/ably-js/pull/873)
 
