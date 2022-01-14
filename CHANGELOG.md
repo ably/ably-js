@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.16](https://github.com/ably/ably-js/tree/1.2.16) (2022-01-14)
+- Fix bug where channel rewind would ignore messages after reattaching [\#873](https://github.com/ably/ably-js/pull/873)
+
 ## [1.2.15](https://github.com/ably/ably-js/tree/1.2.15) (2021-11-22)
 - Replace deprecated request HTTP module with got [\#846](https://github.com/ably/ably-js/pull/846)
 - Improve checks for XHRRequest error responses [\#804](https://github.com/ably/ably-js/pull/804)
