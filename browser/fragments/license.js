@@ -1,6 +1,6 @@
 const { version } = require('../../package.json');
 
-module.exports = `@license Copyright 2021, Ably
+module.exports = `@license Copyright 2022, Ably
 
 Ably JavaScript Library v${version}
 https://github.com/ably/ably-js
