@@ -130,7 +130,7 @@ declare namespace Types {
 		}, callback: (shouldRecover: boolean) => void) => void);
 
 		/**
-		 * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
+		 * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
 		 */
 		tls?: boolean;
 		tlsPort?: number;
@@ -178,7 +178,7 @@ declare namespace Types {
 
 		/**
 		 * Optional clientId that can be used to specify the identity for this client. In most cases
-		 * it is preferable to instead specift a clientId in the token issued to this client.
+		 * it is preferable to instead specify a clientId in the token issued to this client.
 		 */
 		clientId?: string;
 	}

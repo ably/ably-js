@@ -104,9 +104,6 @@ class EventEmitter {
 
 	/**
 	 * Remove one or more event listeners
-	 * @param event (optional) the name of the event whose listener
-	 *        is to be removed. If not supplied, the listener is
-	 *        treated as an 'any' listener
 	 * @param listener (optional) the listener to remove. If not
 	 *        supplied, all listeners are removed.
 	 */
@@ -293,6 +290,7 @@ class EventEmitter {
 	 * @param targetState the name of the state event to listen to
 	 * @param currentState the name of the current state of this object
 	 * @param listener the listener to be called
+	 * @param listenerArgs
 	 */
 	private whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
 		const eventThis = { event: targetState };

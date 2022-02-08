@@ -287,7 +287,7 @@ abstract class CometTransport extends Transport {
 			if(err) {
 				if(err.code) {
 					/* A protocol error received from realtime. TODO: once realtime
-					 * consistendly sends errors wrapped in protocol messages, should be
+					 * consistently sends errors wrapped in protocol messages, should be
 					 * able to remove this */
 					this.onData(protocolMessageFromRawError(err));
 				} else {
