@@ -379,7 +379,7 @@ class ConnectionManager extends EventEmitter {
 
 	/**
 	 * Attempt to connect using a given transport
-	 * @param transportParam
+	 * @param transportParams
 	 * @param candidate, the transport to try
 	 * @param callback
 	 */
@@ -437,9 +437,9 @@ class ConnectionManager extends EventEmitter {
 
 
 	/**
-	 * Called when a transport is indicated to be viable, and the connectionmanager
+	 * Called when a transport is indicated to be viable, and the ConnectionManager
 	 * expects to activate this transport as soon as it is connected.
-	 * @param host
+	 * @param transport
 	 * @param transportParams
 	 */
 	setTransportPending(transport: Transport, transportParams: TransportParams): void {
@@ -492,7 +492,7 @@ class ConnectionManager extends EventEmitter {
 	 * @param transport
 	 * @param connectionId
 	 * @param connectionDetails
-	 * @param connectedMessage
+	 * @param upgradeConnectionPosition
 	 */
 	scheduleTransportActivation(error: ErrorInfo, transport: Transport, connectionId: string, connectionDetails: Record<string, any>, upgradeConnectionPosition?: ConnectionManager): void {
 			const currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
@@ -502,7 +502,7 @@ class ConnectionManager extends EventEmitter {
 			};
 
 		if(this.state !== this.states.connected && this.state !== this.states.connecting) {
-			/* This is most likely to happen for the delayed xhrs, when xhrs and ws are scheduled in parallel*/
+			/* This is most likely to happen for the delayed XHRs, when XHRs and ws are scheduled in parallel*/
 			Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.scheduleTransportActivation()', 'Current connection state (' + this.state.state + (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') + ') is not valid to upgrade in; abandoning upgrade to ' + transport.shortName);
 			abandon();
 			return;
@@ -1518,7 +1518,7 @@ class ConnectionManager extends EventEmitter {
 				this.send(authMsg);
 
 				/* The answer will come back as either a connectiondetails event
-				 * (realtime sends a CONNECTED to asknowledge the reauth) or a
+				 * (realtime sends a CONNECTED to acknowledge the reauth) or a
 				 * statechange to failed */
 				const successListener = () => {
 					this.off(failureListener);
@@ -1803,7 +1803,7 @@ class ConnectionManager extends EventEmitter {
 	}
 
 	/* This method is only used during connection attempts, so implements RSA4c1,
-	 * RSA4c2, and RSA4d. In particular it is not invoked for
+	 * RSA4c2, and RSA4d. In particular, it is not invoked for
 	 * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
 	actOnErrorFromAuthorize(err: ErrorInfo): void {
 		if(err.code === 40171) {

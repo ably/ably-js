@@ -180,14 +180,14 @@ class Auth {
 	 *
 	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
-	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               is 24hours; any request exceeding that lifetime will be rejected
 	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - clientId:   (optional) a client Id to associate with the token
+	 * - clientId:   (optional) a client ID to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
@@ -206,14 +206,14 @@ class Auth {
 	 *
 	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
-	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               is 24hours; any request exceeding that lifetime will be rejected
 	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - clientId:   (optional) a client Id to associate with the token
+	 * - clientId:   (optional) a client ID to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
@@ -346,13 +346,13 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:          (optional) the requested life of the token in milliseconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
@@ -368,13 +368,13 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:          (optional) the requested life of the token in milliseconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
@@ -614,18 +614,19 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:       (optional) the requested life of the token in ms. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
+	 * @param callback
 	 */
 	createTokenRequest(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function) {
 		/* shuffle and normalise arguments as necessary */
@@ -825,7 +826,7 @@ class Auth {
 				return;
 			}
 			/* RSA4b1 -- if we have a server time offset set already, we can
-			 * autoremove expired tokens. Else just use the cached token. If it is
+			 * automatically remove expired tokens. Else just use the cached token. If it is
 			 * expired Ably will tell us and we'll discard it then. */
 			if(!this.isTimeOffsetSet() || !token.expires || (token.expires >= this.getTimestampUsingOffset())) {
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);

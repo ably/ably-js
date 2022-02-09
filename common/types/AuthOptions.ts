@@ -27,7 +27,7 @@ export default interface AuthOptions {
 
   /**
    * Optional clientId that can be used to specify the identity for this client. In most cases
-   * it is preferable to instead specift a clientId in the token issued to this client.
+   * it is preferable to instead specify a clientId in the token issued to this client.
    */
   clientId?: string;
 }

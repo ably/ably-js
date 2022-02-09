@@ -52,7 +52,7 @@ export default interface ClientOptions extends AuthOptions {
   }, callback: (shouldRecover: boolean) => void) => void);
 
   /**
-   * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
+   * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
    */
   tls?: boolean;
   tlsPort?: number;
