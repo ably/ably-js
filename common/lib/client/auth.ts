@@ -826,7 +826,7 @@ class Auth {
 				return;
 			}
 			/* RSA4b1 -- if we have a server time offset set already, we can
-			 * auto remove expired tokens. Else just use the cached token. If it is
+			 * automatically remove expired tokens. Else just use the cached token. If it is
 			 * expired Ably will tell us and we'll discard it then. */
 			if(!this.isTimeOffsetSet() || !token.expires || (token.expires >= this.getTimestampUsingOffset())) {
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
