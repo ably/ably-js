@@ -19,7 +19,6 @@ async function run(){
 		...argv,
 	}
 
-
 	// if(!config.version)
 	// 	return console.error("Missing argument: --version");
 
@@ -29,12 +28,27 @@ async function run(){
 	});
 
 	let repo = await Git.Repository.open(path.resolve(config.path));
-	let ref = await repo.getReference(config.tag);
+	if(!config.tag && !config.force) {
+		let refs = await repo.getReferences();
+		console.log("Available tags:");
+		refs.filter((r)=>r.isTag()).forEach((r)=>console.log(`${r.name().substring(r.name().indexOf("tags/")+5)}`))
+		return fatal("You must supply a tag with --tag or skip this with --force")
+	}
 
-	if(!ref.isTag())
-		return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
 
-	await repo.checkoutRef(ref);
+	if(config.tag) {
+		let ref = await repo.getReference(config.tag);
+
+		if (!ref.isTag() && !config.force)
+			return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
+
+		await repo.checkoutRef(ref);
+	}
+
+	console.log(`Starting Ably Javascript S3 library deployment for version ${config.tag}`);
+
+	fs.readdirSync(config.path).filter((file)=>/.*\.(map|min\.js|html)/.exec(file))
+
 
 	console.log(repo);
 }
