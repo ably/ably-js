@@ -182,19 +182,7 @@ channel.subscribe('myEvent', function (message) {
 
 Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
-Provide the library with Vcdiff decoding capability - see
-[Delta Plugin](#delta-plugin).
-
-Request a Vcdiff formatted delta stream using channel options when you get the channel:
-
-```js
-var channelOptions = {
-  params: {
-    delta: 'vcdiff',
-  },
-};
-var channel = client.channels.get('test', channelOptions);
-```
+Configuring a channel for deltas is detailed in the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage).
 
 Beyond specifying channel options, the rest is transparent and requires no further changes to your application. The `message.data` instances that are delivered to your listening function continue to contain the values that were originally published.
 
@@ -553,24 +541,8 @@ ablyRestPromiseExample();
 
 From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
 This is an optional feature so our
-[Vcdiff Decoder plugin](https://github.com/ably-forks/vcdiff-decoder)
-must be supplied to the library in client options to enable this functionality.
 
-```js
-var vcdiffDecoder = require('@ably/vcdiff-decoder');
-
-var clientOptions = {
-  plugins: {
-    vcdiff: vcdiffDecoder,
-  },
-  // TODO provide auth option (e.g. key)
-};
-var client = new Ably.Realtime(clientOptions);
-```
-
-See also
-[Subscribing to a channel with deltas](#subscribing-to-a-channel-with-deltas),
-which describes how to enable delta compression when getting a channel.
+See the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage) for setup and usage examples.
 
 ## Support, feedback and troubleshooting
 
