@@ -9,6 +9,7 @@ const S3_DEFAULT_BUCKET = "cdn.ably.io";
 const S3_DEFAULT_ROOT = "lib";
 
 async function run(){
+
 	let config = {
 		bucket: S3_DEFAULT_BUCKET,
 		root: S3_DEFAULT_ROOT,
@@ -24,10 +25,6 @@ async function run(){
 	config.includeDirs = config.includeDirs.split(",").map((dir)=>path.resolve(dir));
 	config.excludeDirs = config.excludeDirs.split(",").map((dir)=>path.resolve(dir));
 
-	// if(!config.version)
-	// 	return console.error("Missing argument: --version");
-
-	console.log(config.s3Key, config.s3Secret);
 
 	const s3 = new AWS.S3({
 		region: "REGION",
@@ -35,7 +32,6 @@ async function run(){
 		secretAccessKey: config.s3Secret,
 		endpoint: config.endpoint,
 	})
-
 
 	let repo = await Git.Repository.open(config.path);
 	if(!config.tag && !config.force) {
@@ -53,24 +49,32 @@ async function run(){
 			return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
 
 		await repo.checkoutRef(ref);
+	}else{
+		// TODO: For testing only
+		config.tag = "1.2.3"
 	}
 
 	console.log(`Starting Ably Javascript S3 library deployment for version ${await repo.getCurrentBranch()}`);
 
 	const files = recursiveFile(config.includeDirs, config.excludeDirs, config.fileRegex);
+	const versions = getVersions(config.tag);
 	console.log(`Found ${files.length} files to upload...`);
 	try {
 		for (let file of files) {
 			console.log(`Uploading ${file}...`);
-			await upload(s3, {
-				Body: fs.readFileSync(file),
-				Key: path.relative(config.path, file),
-				Bucket: config.bucket,
-			})
+			for(let version of versions) {
+				const relativePath = path.relative(config.path, file);
+				const ext = path.extname(relativePath);
+				await upload(s3, {
+					Body: fs.readFileSync(file),
+					Key: path.join(config.root, `${relativePath.substring(0, relativePath.length-ext.length)}-${version}${ext}`),
+					Bucket: config.bucket,
+				})
+			}
 		}
 		console.log("Success!");
 	}catch(e){
-		console.log(e);
+		fatal(e);
 	}
 }
 
@@ -82,6 +86,7 @@ function upload(s3, upload){
 		})
 	})
 }
+
 
 run();
 
@@ -105,4 +110,10 @@ function scanDir(excludes){
 function fatal(message){
 	console.error(message);
 	process.exit(1);
+}
+
+
+function getVersions(fullVersion){
+	const split = fullVersion.split(".");
+	return split.map((v, i)=>split.slice(0,i+1).join("."))
 }
