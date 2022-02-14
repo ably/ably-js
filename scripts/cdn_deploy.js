@@ -21,10 +21,13 @@ async function run(){
 		fileRegex: "^(?!\\.).*\\.(map|js|html)$",
 		...argv,
 	}
+
+	if(!config.s3Key || !config.s3Secret)
+		fatal(`Missing S3 credentials, provide either --s3Key and --s3Secret or environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY`);
+
 	config.path = path.resolve(config.path);
 	config.includeDirs = config.includeDirs.split(",").map((dir)=>path.resolve(dir));
 	config.excludeDirs = config.excludeDirs.split(",").map((dir)=>path.resolve(dir));
-
 
 	const s3 = new AWS.S3({
 		region: "REGION",
@@ -34,27 +37,29 @@ async function run(){
 	})
 
 	let repo = await Git.Repository.open(config.path);
-	if(!config.tag && !config.force) {
+	if(!config.tag) {
 		let refs = await repo.getReferences();
 		console.log("Available tags:");
 		refs.filter((r)=>r.isTag()).forEach((r)=>console.log(`${r.name().substring(r.name().indexOf("tags/")+5)}`))
 		return fatal("You must supply a tag with --tag or skip this with --force")
 	}
 
+	let ref = await repo.getReference(config.tag);
 
-	if(config.tag) {
-		let ref = await repo.getReference(config.tag);
+	if (!ref.isTag())
+		return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
 
-		if (!ref.isTag() && !config.force)
-			return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
+	await repo.checkoutRef(ref);
 
-		await repo.checkoutRef(ref);
-	}else{
-		// TODO: For testing only
-		config.tag = "1.2.3"
-	}
 
 	console.log(`Starting Ably Javascript S3 library deployment for version ${await repo.getCurrentBranch()}`);
+	console.log("Bucket:", config.bucket);
+	console.log("Output Root:", config.root);
+	console.log("Input Path:", config.path);
+	console.log("Included Dirs:", config.includeDirs.join(", "));
+	console.log("Excluded Dirs:", config.excludeDirs.join(", "));
+	console.log("File Regex:", config.fileRegex);
+	console.log("-------");
 
 	const files = recursiveFile(config.includeDirs, config.excludeDirs, config.fileRegex);
 	const versions = getVersions(config.tag);
