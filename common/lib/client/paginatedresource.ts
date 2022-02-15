@@ -3,9 +3,7 @@ import Logger from '../util/logger';
 import Resource from './resource';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
-
-// TODO: Replace this once rest.js is converted to TypeScript
-type Rest = any;
+import Rest from './rest';
 
 export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => any;
 

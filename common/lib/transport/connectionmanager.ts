@@ -18,7 +18,7 @@ import * as WebStorage from 'platform-webstorage';
 import PlatformTransports from 'platform-transports';
 import WebSocketTransport from './websockettransport';
 import Transport from './transport';
-import TokenDetails from '../../types/TokenDetails';
+import {Types} from '../../../ably';
 import { ErrCallback } from '../../types/utils';
 import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
@@ -1483,7 +1483,7 @@ class ConnectionManager extends EventEmitter {
 		this.notifyState({state: 'closed'});
 	}
 
-	onAuthUpdated(tokenDetails: TokenDetails, callback: Function): void {
+	onAuthUpdated(tokenDetails: Types.TokenDetails, callback: Function): void {
 		switch(this.state.state) {
 			case 'connected':
 				Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.onAuthUpdated()', 'Sending AUTH message on active transport');

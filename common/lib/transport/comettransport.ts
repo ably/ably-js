@@ -7,7 +7,7 @@ import ConnectionErrors from './connectionerrors';
 import Auth from '../client/auth';
 import ErrorInfo from '../types/errorinfo';
 import IXHRRequest from '../../types/IXHRRequest';
-import TokenDetails from '../../types/TokenDetails';
+import {Types} from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
 
@@ -331,7 +331,7 @@ abstract class CometTransport extends Transport {
 	 * we need to send an AUTH for jsonp. In which case it's simpler to keep all
 	 * comet transports the same and do it for all of them. So we send the AUTH
 	 * instead, and don't need to abort the recv */
-	onAuthUpdated = (tokenDetails: TokenDetails): void => {
+	onAuthUpdated = (tokenDetails: Types.TokenDetails): void => {
 		this.authParams = {access_token: tokenDetails.token};
 	}
 }
