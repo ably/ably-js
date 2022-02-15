@@ -181,7 +181,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
 		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
-		options.recover = null;
+		options.recover = undefined;
 	}
 
 	if(!('closeOnUnload' in options)) {
