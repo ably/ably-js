@@ -1,4 +1,3 @@
-
 import {Types} from "../../ably";
 
 export interface ChannelOptions extends Types.ChannelOptions {

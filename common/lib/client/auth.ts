@@ -13,8 +13,6 @@ import { ErrnoException, RequestCallback, RequestParams } from '../../types/http
 import {Types} from '../../../ably';
 import { StandardCallback } from '../../types/utils';
 
-
-
 // TODO: replace these with the real types once these classes are in TypeScript
 type AuthOptions = any;
 type ClientOptions = any;
