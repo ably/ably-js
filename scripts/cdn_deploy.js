@@ -84,10 +84,10 @@ async function run(){
 }
 
 function upload(s3, upload){
-	return new Promise((fulfill, reject)=>{
+	return new Promise((resolve, reject)=>{
 		s3.upload(upload, (err, body)=>{
 			if(err)reject(err);
-			else fulfill(body);
+			else resolve(body);
 		})
 	})
 }
