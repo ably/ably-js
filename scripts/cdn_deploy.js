@@ -23,7 +23,7 @@ async function run(){
 	}
 
 	if(!config.s3Key || !config.s3Secret)
-		fatal(`Missing S3 credentials, provide either --s3Key and --s3Secret or environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY`);
+		throw new Error(`Missing S3 credentials, provide either --s3Key and --s3Secret or environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY`);
 
 	config.path = path.resolve(config.path);
 	config.includeDirs = config.includeDirs.split(",").map((dir)=>path.resolve(dir));
@@ -41,13 +41,13 @@ async function run(){
 		let refs = await repo.getReferences();
 		console.log("Available tags:");
 		refs.filter((r)=>r.isTag()).forEach((r)=>console.log(`${r.name().substring(r.name().indexOf("tags/")+5)}`))
-		return fatal("You must supply a tag with --tag or skip this with --force")
+		return throw new Error("You must supply a tag with --tag or skip this with --force")
 	}
 
 	let ref = await repo.getReference(config.tag);
 
 	if (!ref.isTag())
-		return fatal(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
+		return throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`)
 
 	await repo.checkoutRef(ref);
 
@@ -79,7 +79,7 @@ async function run(){
 		}
 		console.log("Success!");
 	}catch(e){
-		fatal(e);
+		throw new Error(e);
 	}
 }
 
@@ -112,10 +112,6 @@ function scanDir(excludes){
 }
 
 
-function fatal(message){
-	console.error(message);
-	process.exit(1);
-}
 
 
 function getVersions(fullVersion){
