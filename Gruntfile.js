@@ -185,33 +185,10 @@ module.exports = function (grunt) {
 	);
 
 	grunt.registerTask('release:ably-deploy',
-		'Deploys to ably CDN, assuming infrastructure repo is in same dir as ably-js',
+		'Deploys to ably CDN',
 		function() {
-			var infrastructurePath = '../infrastructure',
-					maxTraverseDepth = 3,
-					infrastructureFound;
-
-			var infrastructureDirExists = function() {
-				try {
-					var fileStat = fs.statSync(infrastructurePath);
-					if (fileStat.isDirectory()) {
-						return true;
-					}
-				} catch (e) { /* does not exist */ }
-			}
-
-			while (infrastructurePath.length < 'infrastructure'.length + maxTraverseDepth*3) {
-				if (infrastructureFound = infrastructureDirExists(infrastructurePath)) {
-					break;
-				} else {
-					infrastructurePath = "../" + infrastructurePath;
-				}
-			}
-			if (!infrastructureFound) {
-				grunt.fatal('Infrastructure repo could not be found in any parent folders up to a folder depth of ' + maxTraverseDepth);
-			}
 			var version = grunt.file.readJSON('package.json').version,
-					cmd = 'cd ' + infrastructurePath + '; bundle exec ./bin/ably-env deploy javascript --version ' + version;
+					cmd = 'node scripts/cdn_deploy.js --tag ' + version;
 			console.log('Publishing version ' + version + ' of the library to the CDN');
 			execExternal(cmd).call(this);
 		}
