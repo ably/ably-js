@@ -15,6 +15,6 @@ Arguments:
 **--excludeDirs**: A comma separated list of directories to exclude. Defaults to `node_modules,.git`.
 **--fileRegex**: A regular expression to test file names against for upload. Defaults to `^(?!\.).*\.(map|js|html)$`.
 **--endpoint**: Optional. The S3 endpoint to deploy to.
-
+**--skipCheckout**: Optional. Skip checking out the branch before running.
 
 

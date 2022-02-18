@@ -16,7 +16,7 @@ async function run() {
 		s3Key: process.env.AWS_ACCESS_KEY,
 		s3Secret: process.env.AWS_SECRET_ACCESS_KEY,
 		path: ".",
-		includeDirs: ".",
+		includeDirs: "browser/static",
 		excludeDirs: "node_modules,.git",
 		fileRegex: "^(?!\\.).*\\.(map|js|html)$",
 		...argv,
@@ -41,15 +41,16 @@ async function run() {
 		let refs = await repo.getReferences();
 		console.log("Available tags:");
 		refs.filter((r) => r.isTag()).forEach((r) => console.log(`${r.name().substring(r.name().indexOf("tags/") + 5)}`));
-		return throw new Error("You must supply a tag with --tag or skip this with --force")
+		throw new Error("You must supply a tag with --tag or skip this with --force")
 	}
 
 	let ref = await repo.getReference(config.tag);
 
 	if (!ref.isTag())
-		return throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
+		throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
 
-	await repo.checkoutRef(ref);
+	if(!config.skipCheckout)
+		await repo.checkoutRef(ref);
 
 	console.log(`Starting Ably Javascript S3 library deployment for version ${await repo.getCurrentBranch()}`);
 	console.log("Bucket:", config.bucket);
@@ -67,11 +68,16 @@ async function run() {
 		for (let file of files) {
 			console.log(`Uploading ${file}...`);
 			for (let version of versions) {
-				const relativePath = path.relative(config.path, file);
-				const ext = path.extname(relativePath);
+				const relativePath = path.relative(config.includeDirs.find((d)=>file.startsWith(d)), file);
+				const extIndex = relativePath.indexOf(".");
+				const ext = relativePath.substring(extIndex);
+				const newPath = `${relativePath.substring(0, extIndex)}-${version}${ext}`;
+				let fileData = fs.readFileSync(file).toString();
+				if(newPath.endsWith(".min.js"))
+					fileData = fileData.replace("//# sourceMappingURL=ably.min.js.map", `//# sourceMappingURL=${newPath}.map`);
 				await upload(s3, {
-					Body: fs.readFileSync(file),
-					Key: path.join(config.root, `${relativePath.substring(0, relativePath.length - ext.length)}-${version}${ext}`),
+					Body: fileData,
+					Key: path.join(config.root, newPath),
 					Bucket: config.bucket,
 				});
 			}
