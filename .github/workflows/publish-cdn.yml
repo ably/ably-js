@@ -23,4 +23,5 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: node scripts/cdn_deploy.js --tag=v${{ github.event.inputs.version }}
+      - run: npm run build
+      - run: node scripts/cdn_deploy.js --skipCheckout --tag=v${{ github.event.inputs.version }}

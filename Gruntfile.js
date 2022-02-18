@@ -188,7 +188,7 @@ module.exports = function (grunt) {
 		'Deploys to ably CDN',
 		function() {
 			var version = grunt.file.readJSON('package.json').version,
-					cmd = 'node scripts/cdn_deploy.js --tag ' + version;
+					cmd = 'node scripts/cdn_deploy.js --skipCheckout --tag ' + version;
 			console.log('Publishing version ' + version + ' of the library to the CDN');
 			execExternal(cmd).call(this);
 		}
