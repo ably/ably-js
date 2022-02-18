@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 const AWS = require('aws-sdk');
-const Git = require('nodegit');
 const fs = require('fs');
 const path = require('path');
+const {exec} = require('child_process');
 const argv = require('minimist')(process.argv.slice(2));
 const S3_DEFAULT_BUCKET = "cdn.ably.io";
 const S3_DEFAULT_ROOT = "lib";
@@ -11,13 +11,20 @@ const S3_DEFAULT_ROOT = "lib";
 async function run() {
 
 	let config = {
+		// The S3 Bucket to upload into
 		bucket: S3_DEFAULT_BUCKET,
+		// The root folder inside the S3 bucket where the files should be places
 		root: S3_DEFAULT_ROOT,
+		// S3 Credentials
 		s3Key: process.env.AWS_ACCESS_KEY,
 		s3Secret: process.env.AWS_SECRET_ACCESS_KEY,
+		// Local path to start from
 		path: ".",
+		// Comma separated directories (relative to `path`) to upload
 		includeDirs: "browser/static",
+		// Comma separated directories (relative to `path`) to exclude from upload
 		excludeDirs: "node_modules,.git",
+		// Regex to match files against for upload
 		fileRegex: "^(?!\\.).*\\.(map|js|html)$",
 		...argv,
 	};
@@ -25,6 +32,7 @@ async function run() {
 	if (!config.s3Key || !config.s3Secret)
 		throw new Error(`Missing S3 credentials, provide either --s3Key and --s3Secret or environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY`);
 
+	// Resolve all the paths into full paths
 	config.path = path.resolve(config.path);
 	config.includeDirs = config.includeDirs.split(",").map((dir) => path.resolve(dir));
 	config.excludeDirs = config.excludeDirs.split(",").map((dir) => path.resolve(dir));
@@ -36,23 +44,22 @@ async function run() {
 		endpoint: config.endpoint,
 	});
 
-	let repo = await Git.Repository.open(config.path);
+	// If no tag is specified, run an output displaying all available tags
 	if (!config.tag) {
-		let refs = await repo.getReferences();
+		let refs = await git("tag");
 		console.log("Available tags:");
-		refs.filter((r) => r.isTag()).forEach((r) => console.log(`${r.name().substring(r.name().indexOf("tags/") + 5)}`));
+		console.log(refs);
 		throw new Error("You must supply a tag with --tag or skip this with --force")
 	}
 
-	let ref = await repo.getReference(config.tag);
-
-	if (!ref.isTag())
+	const isTag = await git("tag --points-at HEAD");
+	if (isTag)
 		throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
 
 	if(!config.skipCheckout)
-		await repo.checkoutRef(ref);
+		await git(`checkout tags/${config.tag}`);
 
-	console.log(`Starting Ably Javascript S3 library deployment for version ${await repo.getCurrentBranch()}`);
+	console.log(`Starting Ably Javascript S3 library deployment for version ${await git("symbolic-ref --short HEAD")}`);
 	console.log("Bucket:", config.bucket);
 	console.log("Output Root:", config.root);
 	console.log("Input Path:", config.path);
@@ -118,5 +125,13 @@ function getVersions(fullVersion) {
 	return split.map((v, i) => split.slice(0, i + 1).join("."));
 }
 
+function git(command){
+	return new Promise((resolve, reject)=>{
+		exec(`git ${command}`, (err, stdout)=>{
+			if(err)return reject(err);
+			resolve(stdout);
+		})
+	})
+}
 
 run();
