@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version, without v prefix, appended to v to locate tag'
+        description: 'Version, without v prefix'
         required: true
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: v${{ github.event.inputs.version }}
+          ref: ${{ github.event.inputs.version }}
       - name: Use Node.js 14.x
         env:
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
@@ -24,4 +24,4 @@ jobs:
           node-version: 14.x
       - run: npm ci
       - run: npm run build
-      - run: node scripts/cdn_deploy.js --skipCheckout --tag=v${{ github.event.inputs.version }}
+      - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}
