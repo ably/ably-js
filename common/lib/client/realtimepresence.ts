@@ -133,7 +133,7 @@ class RealtimePresence extends Presence {
 				data = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+					return Utils.promisify(this, '_enterOrUpdateClient', arguments);
 				}
 				callback = noop;
 			}
@@ -168,7 +168,6 @@ class RealtimePresence extends Presence {
 				case 'initialized':
 				case 'detached':
 					channel.attach();
-					break;
 				case 'attaching':
 					this.pendingPresence.push({
 						presence : presence,
@@ -197,7 +196,7 @@ class RealtimePresence extends Presence {
 				data = null;
 			} else {
 				if(this.channel.realtime.options.promises) {
-					return Utils.promisify(this, 'leaveClient', [clientId, data]);
+					return Utils.promisify(this, 'leaveClient', arguments);
 				}
 				callback = noop;
 			}
@@ -240,15 +239,19 @@ class RealtimePresence extends Presence {
 		}
 	}
 
-	get = (((params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): void | Promise<PresenceMessage[]> => {
-		if(!callback && typeof(params) == 'function')
-			params = callback;
+	// Return type is any to avoid conflict with base Presence class
+	get(this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): any {
+		const args = Array.prototype.slice.call(arguments);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
-		const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+		params = args[0] as RealtimePresenceParams;
+	    	callback = args[1] as StandardCallback<PresenceMessage[]>;
+	      	const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
 		if(!callback) {
 			if(this.channel.realtime.options.promises) {
-				return Utils.promisify(this, 'get', [params, callback]);
+				return Utils.promisify(this, 'get', args);
 			}
 			callback = noop;
 		}
@@ -281,7 +284,7 @@ class RealtimePresence extends Presence {
 				returnMembers(members);
 			}
 		});
-	}) as any)
+	}
 
 	history(params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PaginatedResult<PresenceMessage>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);

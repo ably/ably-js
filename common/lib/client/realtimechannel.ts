@@ -134,7 +134,7 @@ class RealtimeChannel extends Channel {
 	setOptions(options: ChannelOptions, callback?: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if (this.rest.options.promises) {
-				return Utils.promisify(this, 'setOptions', [options, callback]);
+				return Utils.promisify(this, 'setOptions', arguments);
 			}
 		}
 		const _callback = callback || function (err?: ErrorInfo | null) {
@@ -185,7 +185,7 @@ class RealtimeChannel extends Channel {
 
 		if(typeof(callback) !== 'function') {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'publish', args);
+				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 			++argCount;
@@ -216,11 +216,12 @@ class RealtimeChannel extends Channel {
 				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
 				return;
 			}
-			this._publish(messages, callback);
+			this.__publish(messages, callback);
 		});
 	}
 
-	_publish = (((messages: Array<Message>, callback: ErrCallback) => {
+	// Double underscore used to prevent type conflict with underlying Channel._publish method
+	__publish (messages: Array<Message>, callback: ErrCallback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		const state = this.state;
 		switch(state) {
@@ -237,7 +238,7 @@ class RealtimeChannel extends Channel {
 				this.sendMessage(msg, callback);
 				break;
 		}
-	}) as any);
+	};
 
 	onEvent(messages: Array<any>): void {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
@@ -255,7 +256,7 @@ class RealtimeChannel extends Channel {
 		}
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'attach', [flags, callback]);
+				return Utils.promisify(this, 'attach', arguments);
 			}
 			callback = function(err?: ErrorInfo | null) {
 				if(err) {
@@ -295,7 +296,7 @@ class RealtimeChannel extends Channel {
 			this.requestState('attaching', attachReason);
 		}
 
-		this.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
+		this.once(function(this: { event: string }, stateChange: ChannelStateChange) {
 			switch(this.event) {
 				case 'attached':
 					callback?.();
@@ -333,7 +334,7 @@ class RealtimeChannel extends Channel {
 	detach(callback: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'detach', [callback]);
+				return Utils.promisify(this, 'detach', arguments);
 			}
 			callback = noop;
 		}
@@ -343,15 +344,20 @@ class RealtimeChannel extends Channel {
 			return;
 		}
 		switch(this.state) {
-			case 'detached':
-			case 'failed':
+			case 'suspended':
+				this.notifyState('detached');
 				callback();
+				break;
+			case 'detached':
+				callback();
+				break;
+			case 'failed':
+				callback(new ErrorInfo('Unable to detach; channel state = failed', 90001, 400));
 				break;
 			default:
 				this.requestState('detaching');
-				break;
 			case 'detaching':
-				this.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
+				this.once(function(this: { event: string }, stateChange: ChannelStateChange) {
 					switch(this.event) {
 						case 'detached':
 							callback();
@@ -381,7 +387,7 @@ class RealtimeChannel extends Channel {
 
 		if(!callback) {
 			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'subscribe', [event, listener]);
+				return Utils.promisify(this, 'subscribe', arguments);
 			}
 		}
 
@@ -493,7 +499,6 @@ class RealtimeChannel extends Channel {
 			/* syncs can happen on channels with no presence data as part of connection
 			 * resuming, in which case protocol message has no presence property */
 			if(!message.presence) break;
-			break;
 		case actions.PRESENCE: {
 			const presence = message.presence as Array<PresenceMessage>;
 			const id = message.id;
@@ -513,7 +518,7 @@ class RealtimeChannel extends Channel {
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
 				}
 			}
-			this.presence.setPresence(presence, isSync, syncChannelSerial);
+			this.presence.setPresence(presence, isSync, syncChannelSerial as any);
 			break;
 		}
 		case actions.MESSAGE:
@@ -552,7 +557,6 @@ class RealtimeChannel extends Channel {
 							return;
 						case 40019:
 							/* No vcdiff plugin passed in - no point recovering, give up */
-							break;
 						case 40021:
 							/* Browser does not support deltas, similarly no point recovering */
 							this.notifyState('failed', e as ErrorInfo);
@@ -738,7 +742,7 @@ class RealtimeChannel extends Channel {
 		this.rest.channels.setInProgress(this, operation, value);
 	}
 
-	history = (((params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<Message>): void | Promise<PaginatedResultCallback<Message>> => {
+	history = ((function (this: RealtimeChannel, params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<Message>): void | Promise<PaginatedResultCallback<Message>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
@@ -747,7 +751,7 @@ class RealtimeChannel extends Channel {
 				params = null;
 			} else {
 				if(this.rest.options.promises) {
-					return Utils.promisify(this, 'history', [params, callback]);
+					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
 			}
