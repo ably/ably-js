@@ -1,6 +1,6 @@
-import {Types} from "../../ably";
+import * as API from '../../ably';
 
-export interface ChannelOptions extends Types.ChannelOptions {
+export interface ChannelOptions extends API.Types.ChannelOptions {
   channelCipher?: {
     algorithm: string;
     encrypt: Function;

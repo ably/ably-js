@@ -5,7 +5,7 @@ import Logger from '../util/logger';
 import ConnectionErrors from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
-import {Types} from '../../../ably';
+import * as API from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 
 export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
@@ -249,7 +249,7 @@ abstract class Transport extends EventEmitter {
 	}
 
 	static tryConnect?: (connectionManager: ConnectionManager, auth: Auth, transportParams: TransportParams, callback: TryConnectCallback) => void;
-	onAuthUpdated?: (tokenDetails: Types.TokenDetails) => void;
+	onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
 }
 
 export default Transport;

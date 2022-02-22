@@ -1,9 +1,7 @@
-
 import { Modify } from "./utils";
+import * as API from '../../ably';
 
-import {Types} from "../../ably";
-
-export default interface ClientOptions extends Types.ClientOptions {
+export default interface ClientOptions extends API.Types.ClientOptions {
   restAgentOptions?: { keepAlive: boolean, maxSockets: number };
   pushFullWait?: boolean;
   checkChannelsOnResume?: boolean;

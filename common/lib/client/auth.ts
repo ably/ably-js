@@ -10,7 +10,7 @@ import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
-import {Types} from '../../../ably';
+import * as API from '../../../ably';
 import { StandardCallback } from '../../types/utils';
 
 // TODO: replace these with the real types once these classes are in TypeScript
@@ -119,11 +119,11 @@ function getTokenRequestId() {
 
 class Auth {
 	client: Rest | Realtime;
-	tokenParams: Types.TokenParams;
+	tokenParams: API.Types.TokenParams;
 	currentTokenRequestId: number | null;
 	waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
 	authOptions: AuthOptions;
-	tokenDetails?: Types.TokenDetails | null;
+	tokenDetails?: API.Types.TokenDetails | null;
 	method?: string;
 	key?: string;
 	basicKey?: string;
@@ -193,7 +193,7 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: Types.TokenParams | null, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, callback: Function): void;
 
 	/**
 	 * Instructs the library to get a token immediately and ensures Token Auth
@@ -249,7 +249,7 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void;
 
 	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: AuthOptions | Function, callback?: Function): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
@@ -281,7 +281,7 @@ class Auth {
 			}
 		}
 
-		this._forceNewToken(tokenParams as Types.TokenParams, authOptions, (err: ErrorInfo, tokenDetails: Types.TokenDetails) => {
+		this._forceNewToken(tokenParams as API.Types.TokenParams, authOptions, (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
 			if(err) {
 				if((this.client as Realtime).connection) {
 					/* We interpret RSA4d as including requests made by a client lib to
@@ -306,7 +306,7 @@ class Auth {
 		})
 	}
 
-	authorise(tokenParams: Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void {
+	authorise(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void {
 		Logger.deprecated('Auth.authorise', 'Auth.authorize');
 		this.authorize(tokenParams, authOptions, callback);
 	}
@@ -314,7 +314,7 @@ class Auth {
 	/* For internal use, eg by connectionManager - useful when want to call back
 	 * as soon as we have the new token, rather than waiting for it to take
 	 * effect on the connection as #authorize does */
-	_forceNewToken(tokenParams: Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	_forceNewToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
 		/* get rid of current token even if still valid */
 		this.tokenDetails = null;
 
@@ -325,7 +325,7 @@ class Auth {
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
-		this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: Types.TokenDetails) => {
+		this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) => {
 			/* RSA10g */
 			delete this.tokenParams.timestamp;
 			delete this.authOptions.queryTime;
@@ -337,7 +337,7 @@ class Auth {
 	 * Request an access token
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(callback: StandardCallback<Types.TokenDetails>): void;
+	requestToken(callback: StandardCallback<API.Types.TokenDetails>): void;
 
 	/**
 	 * Request an access token
@@ -359,7 +359,7 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(tokenParams: Types.TokenParams | null, callback: StandardCallback<Types.TokenDetails>): void;
+	requestToken(tokenParams: API.Types.TokenParams | null, callback: StandardCallback<API.Types.TokenDetails>): void;
 
 	/**
 	 * Request an access token
@@ -407,9 +407,9 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(tokenParams: Types.TokenParams | null, authOptions: AuthOptions, callback: StandardCallback<Types.TokenDetails>): void;
+	requestToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: StandardCallback<API.Types.TokenDetails>): void;
 
-	requestToken(tokenParams: Types.TokenParams | StandardCallback<Types.TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<Types.TokenDetails>, callback?: StandardCallback<Types.TokenDetails>): void | Promise<void> {
+	requestToken(tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<API.Types.TokenDetails>, callback?: StandardCallback<API.Types.TokenDetails>): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -552,7 +552,7 @@ class Auth {
 				} else if((tokenRequestOrDetails[0] === '{') && !(contentType && contentType.indexOf('application/jwt') > -1)) {
 					_callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
-					_callback(null, {token: tokenRequestOrDetails} as Types.TokenDetails);
+					_callback(null, {token: tokenRequestOrDetails} as API.Types.TokenDetails);
 				}
 				return;
 			}
@@ -579,7 +579,7 @@ class Auth {
 				return;
 			}
 			/* it's a token request, so make the request */
-			tokenRequest(tokenRequestOrDetails, function(err?: ErrorInfo | ErrnoException | null, tokenResponse?: Types.TokenDetails | string, headers?: Record<string, string>, unpacked?: boolean) {
+			tokenRequest(tokenRequestOrDetails, function(err?: ErrorInfo | ErrnoException | null, tokenResponse?: API.Types.TokenDetails | string, headers?: Record<string, string>, unpacked?: boolean) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
 					_callback(normaliseAuthcallbackError(err));
@@ -587,7 +587,7 @@ class Auth {
 				}
 				if(!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-				_callback(null, tokenResponse as Types.TokenDetails);
+				_callback(null, tokenResponse as API.Types.TokenDetails);
 			});
 		});
 	}
@@ -627,7 +627,7 @@ class Auth {
 	 *
 	 * @param callback
 	 */
-	createTokenRequest(tokenParams: Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -642,7 +642,7 @@ class Auth {
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
 		authOptions = authOptions || this.authOptions;
-		tokenParams = tokenParams || Utils.copy<Types.TokenParams>(this.tokenParams);
+		tokenParams = tokenParams || Utils.copy<API.Types.TokenParams>(this.tokenParams);
 
 		const key = authOptions.key;
 		if(!key) {
@@ -719,7 +719,7 @@ class Auth {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: Types.TokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -739,7 +739,7 @@ class Auth {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: Types.TokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -784,7 +784,7 @@ class Auth {
 		}
 	}
 
-	_saveTokenOptions(tokenParams: Types.TokenParams | null, authOptions: AuthOptions) {
+	_saveTokenOptions(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions) {
 		this.method = 'token';
 
 		if(tokenParams) {
@@ -815,7 +815,7 @@ class Auth {
 
 	/* @param forceSupersede: force a new token request even if there's one in
 	 * progress, making all pending callbacks wait for the new one */
-	_ensureValidAuthCredentials(forceSupersede: boolean, callback: (err: ErrorInfo | null, token?: Types.TokenDetails) => void) {
+	_ensureValidAuthCredentials(forceSupersede: boolean, callback: (err: ErrorInfo | null, token?: API.Types.TokenDetails) => void) {
 		const token = this.tokenDetails;
 
 		if(token) {
@@ -844,7 +844,7 @@ class Auth {
 
 		/* Request a new token */
 		const tokenRequestId = this.currentTokenRequestId = getTokenRequestId();
-		this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: Types.TokenDetails) => {
+		this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: API.Types.TokenDetails) => {
 			if((this.currentTokenRequestId as number) > tokenRequestId) {
 				Logger.logAction(Logger.LOG_MINOR, 'Auth._ensureValidAuthCredentials()', 'Discarding token request response; overtaken by newer one');
 				return;
