@@ -168,7 +168,6 @@ class RealtimePresence extends Presence {
 				case 'initialized':
 				case 'detached':
 					channel.attach();
-					break;
 				case 'attaching':
 					this.pendingPresence.push({
 						presence : presence,
