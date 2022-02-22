@@ -122,7 +122,7 @@ declare namespace Types {
 		 * Can be used to explicitly recover a connection.
 		 * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
 		 */
-		recover?: boolean | string | ((lastConnectionDetails: {
+		recover?: string | ((lastConnectionDetails: {
 			recoveryKey: string;
 			disconnectedAt: number;
 			location: string;
