@@ -295,7 +295,7 @@ class RealtimeChannel extends Channel {
 			this.requestState('attaching', attachReason);
 		}
 
-		this.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
+		this.once(function(this: { event: string }, stateChange: ChannelStateChange) {
 			switch(this.event) {
 				case 'attached':
 					callback?.();
@@ -343,15 +343,20 @@ class RealtimeChannel extends Channel {
 			return;
 		}
 		switch(this.state) {
-			case 'detached':
-			case 'failed':
+			case 'suspended':
+				this.notifyState('detached');
 				callback();
+				break;
+			case 'detached':
+				callback();
+				break;
+			case 'failed':
+				callback(new ErrorInfo('Unable to detach; channel state = failed', 90001, 400));
 				break;
 			default:
 				this.requestState('detaching');
-				break;
 			case 'detaching':
-				this.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
+				this.once(function(this: { event: string }, stateChange: ChannelStateChange) {
 					switch(this.event) {
 						case 'detached':
 							callback();
