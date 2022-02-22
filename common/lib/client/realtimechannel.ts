@@ -216,11 +216,12 @@ class RealtimeChannel extends Channel {
 				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
 				return;
 			}
-			this._publish(messages, callback);
+			this.__publish(messages, callback);
 		});
 	}
 
-	_publish = (((messages: Array<Message>, callback: ErrCallback) => {
+	// Double underscore used to prevent type conflict with underlying Channel._publish method
+	__publish (messages: Array<Message>, callback: ErrCallback) {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
 		const state = this.state;
 		switch(state) {
@@ -237,7 +238,7 @@ class RealtimeChannel extends Channel {
 				this.sendMessage(msg, callback);
 				break;
 		}
-	}) as any);
+	};
 
 	onEvent(messages: Array<any>): void {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
