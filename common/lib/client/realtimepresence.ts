@@ -241,14 +241,17 @@ class RealtimePresence extends Presence {
 
 	// Return type is any to avoid conflict with base Presence class
 	get(this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): any {
-		if(!callback && typeof(params) == 'function')
-			params = callback;
+		const args = Array.prototype.slice.call(arguments);
+		if(args.length == 1 && typeof(args[0]) == 'function')
+			args.unshift(null);
 
-		const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+		params = args[0] as RealtimePresenceParams;
+	    	callback = args[1] as StandardCallback<PresenceMessage[]>;
+	      	const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
 		if(!callback) {
 			if(this.channel.realtime.options.promises) {
-				return Utils.promisify(this, 'get', arguments);
+				return Utils.promisify(this, 'get', args);
 			}
 			callback = noop;
 		}
