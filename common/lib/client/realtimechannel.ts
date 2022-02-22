@@ -499,7 +499,6 @@ class RealtimeChannel extends Channel {
 			/* syncs can happen on channels with no presence data as part of connection
 			 * resuming, in which case protocol message has no presence property */
 			if(!message.presence) break;
-			break;
 		case actions.PRESENCE: {
 			const presence = message.presence as Array<PresenceMessage>;
 			const id = message.id;
@@ -519,7 +518,7 @@ class RealtimeChannel extends Channel {
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
 				}
 			}
-			this.presence.setPresence(presence, isSync, syncChannelSerial);
+			this.presence.setPresence(presence, isSync, syncChannelSerial as any);
 			break;
 		}
 		case actions.MESSAGE:
@@ -558,7 +557,6 @@ class RealtimeChannel extends Channel {
 							return;
 						case 40019:
 							/* No vcdiff plugin passed in - no point recovering, give up */
-							break;
 						case 40021:
 							/* Browser does not support deltas, similarly no point recovering */
 							this.notifyState('failed', e as ErrorInfo);
