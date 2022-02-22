@@ -239,7 +239,8 @@ class RealtimePresence extends Presence {
 		}
 	}
 
-	get = ((function (this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): void | Promise<PresenceMessage[]> {
+	// Return type is any to avoid conflict with base Presence class
+	get(this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): any {
 		if(!callback && typeof(params) == 'function')
 			params = callback;
 
@@ -280,7 +281,7 @@ class RealtimePresence extends Presence {
 				returnMembers(members);
 			}
 		});
-	}) as any)
+	}
 
 	history(params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PaginatedResult<PresenceMessage>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
