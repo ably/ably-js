@@ -1536,19 +1536,19 @@ declare namespace Types {
 
 	type CipherParamOptions = {
 		/**
-		 * A binary (ArrayBuffer or WordArray) or base64-encoded String containing the secret key used for encryption and decryption
+		 * A binary (ArrayBuffer or WordArray) or base64-encoded String containing the secret key used for encryption and decryption.
 		 */
 		key: CipherKeyParam;
 		/**
-		 * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”
+		 * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”.
 		 */
 		algorithm?: 'aes';
 		/**
-		 * The key length in bits of the cipher, either 128 or 256
+		 * The key length in bits of the cipher, either 128 or 256.
 		 */
 		keyLength?: number;
 		/**
-		 * Th
+		 * The cipher mode.
 		 */
 		mode?: 'cbc';
 	}
