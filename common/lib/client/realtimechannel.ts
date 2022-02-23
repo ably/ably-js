@@ -160,7 +160,7 @@ class RealtimeChannel extends Channel {
 			 * rejecting messages until we have confirmation that the options have changed,
 			 * which would unnecessarily lose message continuity. */
 			this.attachImpl();
-			this._allChannelChanges.once(function(this: any, stateChange: ConnectionStateChange) {
+			this._allChannelChanges.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
 				switch(this.event) {
 					case 'update':
 					case 'attached':
