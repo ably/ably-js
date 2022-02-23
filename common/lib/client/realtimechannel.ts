@@ -504,9 +504,7 @@ class RealtimeChannel extends Channel {
 			if(!message.presence) break;
 		case actions.PRESENCE: {
 			const presence = message.presence as Array<PresenceMessage>;
-			const id = message.id;
-			const connectionId = message.connectionId;
-			const timestamp = message.timestamp;
+			const { id, connectionId, timestamp } = message;
 
 			const options = this.channelOptions;
 			let presenceMsg: PresenceMessage;
