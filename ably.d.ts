@@ -1248,21 +1248,55 @@ declare namespace Types {
 	}
 
 	class ChannelBase {
+		/**
+		 * The name String unique to this channel.
+		 */
 		name: string;
 	}
 
 	class ChannelCallbacks extends ChannelBase {
+		/**
+		 * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
+		 */
 		presence: PresenceCallbacks;
-		history(paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>): void;
-                publish(messages: any, callback?: errorCallback): void;
-                publish(name: string, messages: any, callback?: errorCallback): void;
-                publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
+		history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
+		history(callback?: paginatedResultCallback<Message>): void;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+		 */
+		publish(name: string, messages: any, callback?: errorCallback): void;
+		/**
+		 * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. It is worth noting that there are additional considerations and constraints if you want to publish multiple messages idempotently in one publish operation with client-supplied IDs.
+		 */
+		publish(messages: any, callback?: errorCallback): void;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+		 */
+		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 	}
 
 	class ChannelPromise extends ChannelBase {
+		/**
+		 * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
+		 */
 		presence: PresencePromise;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
 		history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
+		/**
+		 * Publish several messages on this channel.
+		 */
 		publish(messages: any, options?: PublishOptions): Promise<void>;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload.
+		 */
 		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 	}
 
@@ -1272,7 +1306,14 @@ declare namespace Types {
 		readonly state: ChannelState;
 		params: ChannelParams;
 		modes: ChannelModes;
-		unsubscribe(eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>): void;
+    /**
+     * Unsubscribe the given listener for the specified event name. This removes an earlier event-specific subscription.
+     */
+		unsubscribe(event?: string | Array<string>, listener?: messageCallback<Message>): void;
+		/**
+		 * Unsubscribe the given listener (for any/all event names). This removes an earlier subscription.
+		 */
+		unsubscribe(listener?: messageCallback<Message>): void;
 	}
 
     type PublishOptions = {
@@ -1280,32 +1321,103 @@ declare namespace Types {
     }
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
+		/**
+		 * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
+		 */
 		presence: RealtimePresenceCallbacks;
+		/**
+		 * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel will be received by any channel listeners registered using `subscribe()`. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
+		 * 
+		 * As a convenience, `attach()` will be called implicitly if subscribe for the Channel is called, or `enter()` or `subscribe()` is called on the Presence for this Channel.
+		 */
 		attach(callback?: errorCallback): void;
+		/**
+		 * Detach from this channel. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
+		 * 
+		 * Please note: Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+		 */
 		detach(callback?: errorCallback): void;
-		history(paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>): void;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
+		history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
+		history(callback?: paginatedResultCallback<Message>): void;
 		setOptions(options: ChannelOptions, callback?: errorCallback): void;
-		subscribe(eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
-		publish(messages: any, callback?: errorCallback): void;
+		/**
+		 * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+		 */
+		subscribe(event: string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+		/**
+		 * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+		 */
+		subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
+		 */
 		publish(name: string, messages: any, callback?: errorCallback): void;
+		/**
+		 * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
+		 */
+		publish(messages: any, callback?: errorCallback): void;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
+		 */
 		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 		whenState(targetState: ChannelState, callback: channelEventCallback): void;
 	}
 
 	class RealtimeChannelPromise extends RealtimeChannelBase {
+		/**
+		 * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
+		 */
 		presence: RealtimePresencePromise;
+		/**
+		 * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel will be received by any channel listeners registered using `subscribe()`. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
+		 * 
+		 * As a convenience, `attach()` will be called implicitly if subscribe for the Channel is called, or `enter()` or `subscribe()` is called on the Presence for this Channel.
+		 */
 		attach(): Promise<void>;
+		/**
+		 * Detach from this channel. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
+		 * 
+		 * Please note: Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+		 */
 		detach(): Promise<void>;
+		/**
+		 * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+		 */
 		history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
 		setOptions(options: ChannelOptions): Promise<void>;
-		subscribe(eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
-		publish(messages: any, options?: PublishOptions): Promise<void>;
+		/**
+		 * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+		 */
+		subscribe(event: string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
+		/**
+		 * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+		 */
+		subscribe(callback: messageCallback<Message>): Promise<void>;
+		/**
+		 * Publish a single message on this channel based on a given event name and payload. When publish is called, it won’t attempt to implicitly attach to the channel.
+		 */
 		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+		/**
+		 * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
+		 */
+		publish(messages: any, options?: PublishOptions): Promise<void>;
 		whenState(targetState: ChannelState): Promise<ChannelStateChange>;
 	}
 
 	class Channels<T> {
+		/**
+		 * Creates a new Channel object if none for the channel exists, or returns the existing channel object.
+		 */
 		get(name: string, channelOptions?: ChannelOptions): T;
+		/**
+		 * Unsubscribes all listeners from a given Channel by name.
+		 */
 		release(name: string): void;
 	}
 
