@@ -17,7 +17,7 @@ import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
 // TODO: Replace this with the real type when Realtime is in TypeScript
 type Realtime = any;
 
-type RealtimeChannelState = 'initialized' | 'attaching' | 'attached' | 'suspended' | 'detaching' | 'detached' | 'failed';
+export type RealtimeChannelState = 'initialized' | 'attaching' | 'attached' | 'suspended' | 'detaching' | 'detached' | 'failed';
 
 interface RealtimeHistoryParams {
 	start?: number;
