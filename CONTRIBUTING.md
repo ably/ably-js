@@ -31,7 +31,7 @@
 
 ## Test suite
 
-To run both the Mocha & Karma Browser tests, simply run the following command:
+To run the Mocha tests, simply run the following command:
 
     npm test
 
@@ -39,29 +39,21 @@ To run both the Mocha & Karma Browser tests, simply run the following command:
 
 Run the Mocha test suite
 
-    npm run test:mocha
+    npm run test:node
 
 Or run just one or more test files
 
-    npm run test:mocha -- --test=spec/realtime/auth.test.js
-
-## Browser Tests
-
-Browser tests are run using [Karma test runner](http://karma-runner.github.io/0.12/index.html).
-
-### To build & run the tests in a single step
-
-    npm run test:karma
+    npm run test:node -- --test=spec/realtime/auth.test.js
 
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:mocha
+    node --inspect-brk=9229 node_modules/.bin/grunt test:node
 
 Alternatively you can also run the tests for single file
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:mocha --test=test/spec/presence.test.js
+    node --inspect-brk=9229 node_modules/.bin/grunt test:node --test=test/spec/presence.test.js
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
@@ -76,22 +68,6 @@ Run the following command to start a local Mocha test runner web server
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
 
 Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
-
-### Debugging the tests in your browser with Karma
-
-If you would like to run the tests through Karma, then:
-
-Start a Karma server
-
-    karma server
-
-You can optionally connect your browser to the server, visit http://localhost:9876/
-
-Click on the Debug button in the top right, and open your browser's debugging console.
-
-Then run the tests against the Karma server. The `test:karma:run` command will concatenate the Ably files beforehand so any changes made in the source will be reflected in the test run.
-
-    npm run test:karma:run
 
 ### Testing environment variables for Node.js
 

@@ -1,39 +1,8 @@
 "use strict";
 
-var allTestFiles = [],
-	TEST_REGEXP = /\.test\.js$/i,
-//	TEST_REGEXP = /simple\.test\.js$/i,
-		TEAR_DOWN_REGEXP = /tear_down\.js$/i;
+var allTestFiles = [];
 
-var pathToModule = function(path) {
-	return path.replace(/^\/base\//, '').replace(/\.js$/, '');
-};
-
-var forEachKey = function(object, fn) {
-	for(var prop in object) {
-		if(object.hasOwnProperty(prop)) {
-			fn(prop);
-		}
-	}
-}
-//
-// Match all test files
-forEachKey(window.__karma__.files, function(file) {
-	if (TEST_REGEXP.test(file)) {
-		// Normalize paths to RequireJS module names.
-		allTestFiles.push(pathToModule(file));
-	}
-});
-
-// Add the final tear down
-forEachKey(window.__karma__.files, function(file) {
-	if (TEAR_DOWN_REGEXP.test(file)) {
-		// Normalize paths to RequireJS module names.
-		allTestFiles.push(pathToModule(file));
-	}
-});
-
-var baseUrl = window.__karma__.base || '/base';
+var baseUrl = '';
 
 require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
 	var requireJsPaths = {};
@@ -70,13 +39,7 @@ require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','
 		// dynamically load all test files
 		deps: allTestFiles,
 
-		// we have to kickoff mocha with Karma
-		callback: function() {
-				if (window.__karma__.start) { 
-					window.__karma__.start();
-				} else {
-					mocha.run();
-				}
-		}
+		// we have to kickoff mocha
+		callback: ()=>mocha.run()
 	});
 });
