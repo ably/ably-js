@@ -1723,46 +1723,124 @@ declare namespace Types {
 	}
 
 	class PushAdminCallbacks {
+		/**
+		 * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
+		 */
 		deviceRegistrations: PushDeviceRegistrationsCallbacks;
+		/**
+		 * The returned PushChannelSubscriptions object provides functionality for subscribing, listing and unsubscribing individual devices or groups of identified devices to push notifications published on channels.
+		 */
 		channelSubscriptions: PushChannelSubscriptionsCallbacks;
+		/**
+		 * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
+		 */
 		publish(recipient: any, payload: any, callback?: errorCallback): void;
 	}
 
 	class PushAdminPromise {
+		/**
+		 * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
+		 */
 		deviceRegistrations: PushDeviceRegistrationsPromise;
+		/**
+		 * The returned PushChannelSubscriptions object provides functionality for subscribing, listing and unsubscribing individual devices or groups of identified devices to push notifications published on channels.
+		 */
 		channelSubscriptions: PushChannelSubscriptionsPromise;
+		/**
+		 * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
+		 */
 		publish(recipient: any, payload: any): Promise<void>;
 	}
 
 	class PushDeviceRegistrationsCallbacks {
+		/**
+		 * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
+		/**
+		 * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		get(deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>): void;
+		/**
+		 * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
+		 */
 		list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
+		/**
+		 * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		remove(deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback): void;
+		/**
+		 * Delete all devices matching the params filter. Requires push-admin permission.
+		 */
 		removeWhere(params: DeviceRegistrationParams, callback?: errorCallback): void;
 	}
 
 	class PushDeviceRegistrationsPromise {
+		/**
+		 * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
+		/**
+		 * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		get(deviceIdOrDetails: DeviceDetails | string): Promise<DeviceDetails>;
+		/**
+		 * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
+		 */
 		list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
+		/**
+		 * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+		 */
 		remove(deviceIdOrDetails: DeviceDetails | string): Promise<void>;
+		/**
+		 * Delete all devices matching the params filter. Requires push-admin permission.
+		 */
 		removeWhere(params: DeviceRegistrationParams): Promise<void>;
 	}
 
 	class PushChannelSubscriptionsCallbacks {
+		/**
+		 * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
+		 */
 		save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
+		/**
+		 * Retrieve all push channel subscriptions that match the provided params filter as a paginated list of PushChannelSubscription objects. Each PushChannelSubscription represents a device or set of devices sharing the same client identifier registered to a channel to receive push notifications.
+		 */
 		list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
+		/**
+		 * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
+		 */
 		listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
+		/**
+		 * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
+		 */
 		remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
+		/**
+		 * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
+		 */
 		removeWhere(params: PushChannelSubscriptionParams, callback?: errorCallback): void;
 	}
 
 	class PushChannelSubscriptionsPromise {
+		/**
+		 * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
+		 */
 		save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
+		/**
+		 * Retrieve all push channel subscriptions that match the provided params filter as a paginated list of PushChannelSubscription objects. Each PushChannelSubscription represents a device or set of devices sharing the same client identifier registered to a channel to receive push notifications.
+		 */
 		list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
+		/**
+		 * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
+		 */
 		listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
+		/**
+		 * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
+		 */
 		remove(subscription: PushChannelSubscription): Promise<void>;
+		/**
+		 * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
+		 */
 		removeWhere(params: PushChannelSubscriptionParams): Promise<void>;
 	}
 }
