@@ -292,7 +292,7 @@ class EventEmitter {
 	 * @param listener the listener to be called
 	 * @param listenerArgs
 	 */
-	private whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
+	whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
 		const eventThis = { event: targetState };
 
 		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {

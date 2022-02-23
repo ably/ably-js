@@ -3,13 +3,27 @@ import EventEmitter from '../util/eventemitter';
 import ConnectionManager from '../transport/connectionmanager';
 import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
+import ErrorInfo from '../types/errorinfo';
+import { NormalisedClientOptions } from '../../types/ClientOptions';
 
-var Connection = (function() {
-	function noop() {}
+// TODO: Replace this with the real type when Realtime is in TypeScript
+type Realtime = any;
 
-	/* public constructor */
-	function Connection(ably, options) {
-		EventEmitter.call(this);
+function noop() {}
+
+class Connection extends EventEmitter {
+	ably: Realtime;
+	connectionManager: ConnectionManager;
+	state: string;
+	key?: never;
+	id?: string;
+	serial: undefined;
+	timeSerial: undefined;
+	recoveryKey?: string | null;
+	errorReason: ErrorInfo | null;
+	
+	constructor(ably: Realtime, options: NormalisedClientOptions) {
+		super();
 		this.ably = ably;
 		this.connectionManager = new ConnectionManager(ably, options);
 		this.state = this.connectionManager.state.state;
@@ -20,47 +34,43 @@ var Connection = (function() {
 		this.recoveryKey = undefined;
 		this.errorReason = null;
 
-		var self = this;
-		this.connectionManager.on('connectionstate', function(stateChange) {
-			var state = self.state = stateChange.current;
-			Utils.nextTick(function() {
-				self.emit(state, stateChange);
+		this.connectionManager.on('connectionstate', (stateChange: ConnectionStateChange) => {
+			const state = this.state = stateChange.current as string;
+			Utils.nextTick(() => {
+				this.emit(state, stateChange);
 			});
 		});
-		this.connectionManager.on('update', function(stateChange) {
-			Utils.nextTick(function() {
-				self.emit('update', stateChange);
+		this.connectionManager.on('update', (stateChange: ConnectionStateChange) => {
+			Utils.nextTick(() => {
+				this.emit('update', stateChange);
 			});
 		});
 	}
-	Utils.inherits(Connection, EventEmitter);
 
-	Connection.prototype.whenState = function(state, listener) {
+	whenState = (((state: string, listener: Function) => {
 		return EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
-	}
+	}) as any)
 
-	Connection.prototype.connect = function() {
+	connect(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
 		this.connectionManager.requestState({state: 'connecting'});
-	};
+	}
 
-	Connection.prototype.ping = function(callback) {
+	ping(callback: Function): Promise<void> | void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
 		if(!callback) {
 			if(this.ably.options.promises) {
-				return Utils.promisify(this, 'ping', arguments);
+				return Utils.promisify(this, 'ping', [callback]);
 			}
 			callback = noop;
 		}
 		this.connectionManager.ping(null, callback);
-	};
+	}
 
-	Connection.prototype.close = function() {
+	close(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
 		this.connectionManager.requestState({state: 'closing'});
-	};
-
-	return Connection;
-})();
+	}
+}
 
 export default Connection;
