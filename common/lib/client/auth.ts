@@ -438,14 +438,15 @@ class Auth {
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			tokenRequestCallback = function(params: Record<string, unknown>, cb: Function) {
-				const authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders) as Record<string, string>,
-					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
-				if(!usePost) {
-					/* Combine authParams with any qs params given in the authUrl */
-					const queryIdx = authOptions.authUrl.indexOf('?');
-					if(queryIdx > -1) {
-						const providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
-						authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders) as Record<string, string>,
+					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post',
+					providedQsParams;
+				/* Combine authParams with any qs params given in the authUrl */
+				var queryIdx = authOptions.authUrl.indexOf('?');
+				if(queryIdx > -1) {
+					providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
+					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+					if (!usePost) {
 						/* In case of conflict, authParams take precedence over qs params in the authUrl */
 						authOptions.authParams = Utils.mixin(providedQsParams, authOptions.authParams);
 					}
@@ -492,7 +493,7 @@ class Auth {
 					const headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(client, authOptions.authUrl, headers, body, {}, authUrlRequestCallback as RequestCallback);
+					Http.postUri(client, authOptions.authUrl, headers, body, providedQsParams as Record<string, string>, authUrlRequestCallback as RequestCallback);
 				} else {
 					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback as RequestCallback);
 				}

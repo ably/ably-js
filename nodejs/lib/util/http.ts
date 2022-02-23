@@ -2,9 +2,11 @@ import Platform from 'platform';
 import * as Utils from '../../../common/lib/util/utils';
 import Defaults from '../../../common/lib/util/defaults';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
-import request, { Options as RequestOptions, RequestResponse } from 'request';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../common/types/http';
 import HttpMethods from '../../../common/constants/HttpMethods';
+import got, { Response, Options, CancelableRequest } from 'got';
+import http from 'http';
+import https from 'https';
 
 // TODO: replace these with the real types once these classes are in TypeScript
 type Rest = any;
@@ -27,12 +29,12 @@ const msgpack = Platform.msgpack;
  ***************************************************/
 
 const handler = function(uri: string, params: unknown, callback?: RequestCallback) {
-	return function(err: ErrnoException, response: RequestResponse, body: unknown) {
+	return function(err: ErrnoException | null, response?: Response, body?: unknown) {
 		if(err) {
 			callback?.(err);
 			return;
 		}
-		const statusCode = response.statusCode, headers = response.headers;
+		const statusCode = (response as Response).statusCode, headers = (response as Response).headers;
 		if(statusCode >= 300) {
 			switch(headers['content-type']) {
 				case 'application/json':
@@ -85,6 +87,7 @@ const Http: typeof IHttp = class {
 	static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
 	static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
 	static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+	static agent = null;
 
 	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
 	static do(method: HttpMethods, rest: Rest, path: PathParameter, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
@@ -143,16 +146,35 @@ const Http: typeof IHttp = class {
 		* (Ably and perhaps an auth server), so for efficiency, use the
 		* foreverAgent to keep the TCP stream alive between requests where possible */
 		const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-		const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
+		// const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
+		const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+		if (!Http.agent) {
+			Http.agent = {
+				http: new http.Agent(agentOptions),
+				https: new https.Agent(agentOptions)
+			}
+		}
+
 		if (body) {
-			doOptions.body = body;
+			doOptions.body = body as Buffer;
 		}
 		if(params)
-			doOptions.qs = params;
+			doOptions.searchParams = params;
 
-		doOptions.uri = uri;
-		doOptions.timeout = (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout;
-		request[method](doOptions, handler(uri, params, callback));
+		doOptions.agent = Http.agent;
+
+		doOptions.url = uri;
+		doOptions.timeout = { request: (rest && rest.options.timeouts || Defaults.TIMEOUTS).httpRequestTimeout };
+
+		(got[method](doOptions) as CancelableRequest<Response>).then((res: Response) => {
+			handler(uri, params, callback)(null, res, res.body);
+		}).catch((err: ErrnoException) => {
+			if (err instanceof got.HTTPError) {
+				handler(uri, params, callback)(null, err.response, err.response.body);
+				return;
+			}
+			handler(uri, params, callback)(err);
+		});
 	}
 
 	/** Http.get, Http.post, Http.put, ...
