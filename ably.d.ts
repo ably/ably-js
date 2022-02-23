@@ -990,17 +990,17 @@ declare namespace Types {
 		 * 
 		 * Any `tokenParams` and `authOptions` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams` and `authOptions`.
 		 */
-		authorize: (tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback) => void;
+		authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
 		/**
 		 * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
 		 * 
 		 * Any `tokenParams` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams`.
 		 */
-		authorize: (tokenParams?: TokenParams, callback?: tokenDetailsCallback) => void;
+		authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
 		/**
 		 * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
 		 */
-		authorize: (callback?: tokenDetailsCallback) => void;
+		authorize(callback?: tokenDetailsCallback): void;
 		/**
 		 * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
 		 * 
@@ -1008,7 +1008,7 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		createTokenRequest: (tokenParams?: TokenParams | null, authOptions?: AuthOptions | null, callback?: tokenRequestCallback) => void;
+		createTokenRequest(tokenParams?: TokenParams | null, authOptions?: AuthOptions | null, callback?: tokenRequestCallback): void;
 		/**
 		 * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
 		 * 
@@ -1016,13 +1016,13 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		createTokenRequest: (tokenParams?: TokenParams | null, callback?: tokenRequestCallback) => void;
+		createTokenRequest(tokenParams?: TokenParams | null, callback?: tokenRequestCallback): void;
 		/**
 		 * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		createTokenRequest: (callback?: tokenRequestCallback) => void;
+		createTokenRequest(callback?: tokenRequestCallback): void;
 		/**
 		 * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
 		 * 
@@ -1030,7 +1030,7 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		requestToken: (TokenParams?: TokenParams | null, authOptions?: AuthOptions | null, callback?: tokenDetailsCallback) => void;
+		requestToken(TokenParams?: TokenParams | null, authOptions?: AuthOptions | null, callback?: tokenDetailsCallback): void;
 		/**
 		 * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
 		 * 
@@ -1038,13 +1038,13 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		requestToken: (TokenParams?: TokenParams | null, callback?: tokenDetailsCallback) => void;
+		requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
 		/**
 		 * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		requestToken: (callback?: tokenDetailsCallback) => void;
+		requestToken(callback?: tokenDetailsCallback): void;
 	}
 
 	class AuthPromise extends AuthBase {
@@ -1053,7 +1053,7 @@ declare namespace Types {
 		 * 
 		 * Any `tokenParams` and `authOptions` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams` and `authOptions`.
 		 */
-		authorize: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
+		authorize(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
 		/**
 		 * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
 		 * 
@@ -1061,7 +1061,7 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		createTokenRequest: (tokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenRequest>;
+		createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
 		/**
 		 * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
 		 * 
@@ -1069,46 +1069,46 @@ declare namespace Types {
 		 * 
 		 * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
 		 */
-		requestToken: (TokenParams?: TokenParams, authOptions?: AuthOptions) => Promise<TokenDetails>;
+		requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
 	}
 
 	class PresenceCallbacks {
-		get: (paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-		history: (paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+		get(paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
+		history(paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
 	}
 
 	class PresencePromise {
-		get: (params?: RestPresenceParams) => Promise<PaginatedResult<PresenceMessage>>;
-		history: (params?: RestHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
+		get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
+		history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
 	}
 
 	class RealtimePresenceBase {
 		syncComplete: boolean;
-		unsubscribe: (presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;
+		unsubscribe(presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>): void;
 	}
 
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
-		get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
-		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback) => void;
-		enter: (data?: errorCallback | any, callback?: errorCallback) => void;
-		update: (data?: errorCallback | any, callback?: errorCallback) => void;
-		leave: (data?: errorCallback | any, callback?: errorCallback) => void;
-		enterClient: (clientId: string, data?: errorCallback | any, callback?: errorCallback) => void;
-		updateClient: (clientId: string, data?: errorCallback | any, callback?: errorCallback) => void;
-		leaveClient: (clientId: string, data?: errorCallback | any, callback?: errorCallback) => void;
+		get(paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
+		history(paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
+		subscribe(presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
+		enter(data?: errorCallback | any, callback?: errorCallback): void;
+		update(data?: errorCallback | any, callback?: errorCallback): void;
+		leave(data?: errorCallback | any, callback?: errorCallback): void;
+		enterClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
+		updateClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
+		leaveClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
 	}
 
 	class RealtimePresencePromise extends RealtimePresenceBase {
-		get: (params?: RealtimePresenceParams) => Promise<PresenceMessage[]>;
-		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
-		subscribe: (action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => Promise<void>;
-		enter: (data?: any) => Promise<void>;
-		update: (data?: any) => Promise<void>;
-		leave: (data?: any) => Promise<void>;
-		enterClient: (clientId: string, data?: any) => Promise<void>;
-		updateClient: (clientId: string, data?: any) => Promise<void>;
-		leaveClient: (clientId: string, data?: any) => Promise<void>;
+		get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
+		history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
+		subscribe(action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): Promise<void>;
+		enter(data?: any): Promise<void>;
+		update(data?: any): Promise<void>;
+		leave(data?: any): Promise<void>;
+		enterClient(clientId: string, data?: any): Promise<void>;
+		updateClient(clientId: string, data?: any): Promise<void>;
+		leaveClient(clientId: string, data?: any): Promise<void>;
 	}
 
 	class ChannelBase {
@@ -1117,7 +1117,7 @@ declare namespace Types {
 
 	class ChannelCallbacks extends ChannelBase {
 		presence: PresenceCallbacks;
-		history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+		history(paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>): void;
                 publish(messages: any, callback?: errorCallback): void;
                 publish(name: string, messages: any, callback?: errorCallback): void;
                 publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
@@ -1125,7 +1125,7 @@ declare namespace Types {
 
 	class ChannelPromise extends ChannelBase {
 		presence: PresencePromise;
-		history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
+		history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
 		publish(messages: any, options?: PublishOptions): Promise<void>;
 		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 	}
@@ -1136,7 +1136,7 @@ declare namespace Types {
 		readonly state: ChannelState;
 		params: ChannelParams;
 		modes: ChannelModes;
-		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
+		unsubscribe(eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>): void;
 	}
 
     type PublishOptions = {
@@ -1145,32 +1145,32 @@ declare namespace Types {
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
 		presence: RealtimePresenceCallbacks;
-		attach: (callback?: errorCallback) => void;
-		detach: (callback?: errorCallback) => void;
-		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
-		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
-		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
+		attach(callback?: errorCallback): void;
+		detach(callback?: errorCallback): void;
+		history(paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>): void;
+		setOptions(options: ChannelOptions, callback?: errorCallback): void;
+		subscribe(eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
 		publish(messages: any, callback?: errorCallback): void;
 		publish(name: string, messages: any, callback?: errorCallback): void;
 		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
-		whenState: (targetState: ChannelState, callback: channelEventCallback) => void;
+		whenState(targetState: ChannelState, callback: channelEventCallback): void;
 	}
 
 	class RealtimeChannelPromise extends RealtimeChannelBase {
 		presence: RealtimePresencePromise;
-		attach: () => Promise<void>;
-		detach: () => Promise<void>;
-		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
-		setOptions: (options: ChannelOptions) => Promise<void>;
-		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
+		attach(): Promise<void>;
+		detach(): Promise<void>;
+		history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
+		setOptions(options: ChannelOptions): Promise<void>;
+		subscribe(eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
 		publish(messages: any, options?: PublishOptions): Promise<void>;
 		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
-		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
+		whenState(targetState: ChannelState): Promise<ChannelStateChange>;
 	}
 
 	class Channels<T> {
-		get: (name: string, channelOptions?: ChannelOptions) => T;
-		release: (name: string) => void;
+		get(name: string, channelOptions?: ChannelOptions): T;
+		release(name: string): void;
 	}
 
 	class Message {
@@ -1222,8 +1222,8 @@ declare namespace Types {
 	}
 
 	interface Crypto {
-		generateRandomKey: (callback: Types.StandardCallback<CipherKey>) => void;
-		getDefaultParams: (params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>) => void;
+		generateRandomKey(callback: Types.StandardCallback<CipherKey>): void;
+		getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
 	}
 
 	class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
@@ -1233,18 +1233,18 @@ declare namespace Types {
 		recoveryKey: string;
 		serial: number;
 		readonly state: ConnectionState;
-		close: () => void;
-		connect: () => void;
+		close(): void;
+		connect(): void;
 	}
 
 	class ConnectionCallbacks extends ConnectionBase {
-		ping: (callback?: Types.StandardCallback<number>) => void;
-		whenState: (targetState: ConnectionState, callback: connectionEventCallback) => void;
+		ping(callback?: Types.StandardCallback<number>): void;
+		whenState(targetState: ConnectionState, callback: connectionEventCallback): void;
 	}
 
 	class ConnectionPromise extends ConnectionBase {
-		ping: () => Promise<number>;
-		whenState: (targetState: ConnectionState) => Promise<ConnectionStateChange>;
+		ping(): Promise<number>;
+		whenState(targetState: ConnectionState): Promise<ConnectionStateChange>;
 	}
 
 	/**
@@ -1297,8 +1297,8 @@ declare namespace Types {
 		next(): Promise<PaginatedResult<T>>;
 		current(results: paginatedResultCallback<T>): void;
 		current(): Promise<PaginatedResult<T>>;
-		hasNext: () => boolean;
-		isLast: () => boolean;
+		hasNext(): boolean;
+		isLast(): boolean;
 	}
 
 	class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
@@ -1320,45 +1320,45 @@ declare namespace Types {
 	class PushAdminCallbacks {
 		deviceRegistrations: PushDeviceRegistrationsCallbacks;
 		channelSubscriptions: PushChannelSubscriptionsCallbacks;
-		publish: (recipient: any, payload: any, callback?: errorCallback) => void;
+		publish(recipient: any, payload: any, callback?: errorCallback): void;
 	}
 
 	class PushAdminPromise {
 		deviceRegistrations: PushDeviceRegistrationsPromise;
 		channelSubscriptions: PushChannelSubscriptionsPromise;
-		publish: (recipient: any, payload: any) => Promise<void>;
+		publish(recipient: any, payload: any): Promise<void>;
 	}
 
 	class PushDeviceRegistrationsCallbacks {
-		save: (deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>) => void;
-		get: (deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>) => void;
-		list: (params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>) => void;
-		remove: (deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback) => void;
-		removeWhere: (params: DeviceRegistrationParams, callback?: errorCallback) => void;
+		save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
+		get(deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>): void;
+		list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
+		remove(deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback): void;
+		removeWhere(params: DeviceRegistrationParams, callback?: errorCallback): void;
 	}
 
 	class PushDeviceRegistrationsPromise {
-		save: (deviceDetails: DeviceDetails) => Promise<DeviceDetails>;
-		get: (deviceIdOrDetails: DeviceDetails | string) => Promise<DeviceDetails>;
-		list: (params: DeviceRegistrationParams) => Promise<PaginatedResult<DeviceDetails>>;
-		remove: (deviceIdOrDetails: DeviceDetails | string) => Promise<void>;
-		removeWhere: (params: DeviceRegistrationParams) => Promise<void>;
+		save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
+		get(deviceIdOrDetails: DeviceDetails | string): Promise<DeviceDetails>;
+		list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
+		remove(deviceIdOrDetails: DeviceDetails | string): Promise<void>;
+		removeWhere(params: DeviceRegistrationParams): Promise<void>;
 	}
 
 	class PushChannelSubscriptionsCallbacks {
-		save: (subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>) => void;
-		list: (params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>) => void;
-		listChannels: (params: PushChannelsParams, callback: paginatedResultCallback<string>) => void;
-		remove: (subscription: PushChannelSubscription, callback?: errorCallback) => void;
-		removeWhere: (params: PushChannelSubscriptionParams, callback?: errorCallback) => void;
+		save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
+		list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
+		listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
+		remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
+		removeWhere(params: PushChannelSubscriptionParams, callback?: errorCallback): void;
 	}
 
 	class PushChannelSubscriptionsPromise {
-		save: (subscription: PushChannelSubscription) => Promise<PushChannelSubscription>;
-		list: (params: PushChannelSubscriptionParams) => Promise<PaginatedResult<PushChannelSubscription>>;
-		listChannels: (params: PushChannelsParams) => Promise<PaginatedResult<string>>;
-		remove: (subscription: PushChannelSubscription) => Promise<void>;
-		removeWhere: (params: PushChannelSubscriptionParams) => Promise<void>;
+		save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
+		list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
+		listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
+		remove(subscription: PushChannelSubscription): Promise<void>;
+		removeWhere(params: PushChannelSubscriptionParams): Promise<void>;
 	}
 }
 
