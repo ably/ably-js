@@ -10,8 +10,7 @@ import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
-import TokenDetails from '../../types/TokenDetails';
-import TokenParams from '../../types/TokenParams';
+import * as API from '../../../ably';
 import { StandardCallback } from '../../types/utils';
 
 // TODO: replace these with the real types once these classes are in TypeScript
@@ -120,11 +119,11 @@ function getTokenRequestId() {
 
 class Auth {
 	client: Rest | Realtime;
-	tokenParams: TokenParams;
+	tokenParams: API.Types.TokenParams;
 	currentTokenRequestId: number | null;
 	waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
 	authOptions: AuthOptions;
-	tokenDetails?: TokenDetails | null;
+	tokenDetails?: API.Types.TokenDetails | null;
 	method?: string;
 	key?: string;
 	basicKey?: string;
@@ -180,21 +179,21 @@ class Auth {
 	 *
 	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
-	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               is 24hours; any request exceeding that lifetime will be rejected
 	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - clientId:   (optional) a client Id to associate with the token
+	 * - clientId:   (optional) a client ID to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: TokenParams | null, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, callback: Function): void;
 
 	/**
 	 * Instructs the library to get a token immediately and ensures Token Auth
@@ -206,14 +205,14 @@ class Auth {
 	 *
 	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
-	 *               is 24hours; any request exceeeding that lifetime will be rejected
+	 *               is 24hours; any request exceeding that lifetime will be rejected
 	 *               with an error.
 	 *
 	 * - capability: (optional) the capability to associate with the access token.
 	 *               If none is specified, a token will be requested with all of the
 	 *               capabilities of the specified key.
 	 *
-	 * - clientId:   (optional) a client Id to associate with the token
+	 * - clientId:   (optional) a client ID to associate with the token
 	 *
 	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
@@ -250,7 +249,7 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void;
 
 	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: AuthOptions | Function, callback?: Function): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
@@ -282,7 +281,7 @@ class Auth {
 			}
 		}
 
-		this._forceNewToken(tokenParams as TokenParams, authOptions, (err: ErrorInfo, tokenDetails: TokenDetails) => {
+		this._forceNewToken(tokenParams as API.Types.TokenParams, authOptions, (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
 			if(err) {
 				if((this.client as Realtime).connection) {
 					/* We interpret RSA4d as including requests made by a client lib to
@@ -307,7 +306,7 @@ class Auth {
 		})
 	}
 
-	authorise(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function): void {
+	authorise(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void {
 		Logger.deprecated('Auth.authorise', 'Auth.authorize');
 		this.authorize(tokenParams, authOptions, callback);
 	}
@@ -315,7 +314,7 @@ class Auth {
 	/* For internal use, eg by connectionManager - useful when want to call back
 	 * as soon as we have the new token, rather than waiting for it to take
 	 * effect on the connection as #authorize does */
-	_forceNewToken(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	_forceNewToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
 		/* get rid of current token even if still valid */
 		this.tokenDetails = null;
 
@@ -326,7 +325,7 @@ class Auth {
 
 		logAndValidateTokenAuthMethod(this.authOptions);
 
-		this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: TokenDetails) => {
+		this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) => {
 			/* RSA10g */
 			delete this.tokenParams.timestamp;
 			delete this.authOptions.queryTime;
@@ -338,7 +337,7 @@ class Auth {
 	 * Request an access token
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(callback: StandardCallback<TokenDetails>): void;
+	requestToken(callback: StandardCallback<API.Types.TokenDetails>): void;
 
 	/**
 	 * Request an access token
@@ -346,13 +345,13 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:          (optional) the requested life of the token in milliseconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
@@ -360,7 +359,7 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(tokenParams: TokenParams | null, callback: StandardCallback<TokenDetails>): void;
+	requestToken(tokenParams: API.Types.TokenParams | null, callback: StandardCallback<API.Types.TokenDetails>): void;
 
 	/**
 	 * Request an access token
@@ -368,13 +367,13 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:          (optional) the requested life of the token in milliseconds. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
@@ -408,9 +407,9 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: StandardCallback<TokenDetails>): void;
+	requestToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: StandardCallback<API.Types.TokenDetails>): void;
 
-	requestToken(tokenParams: TokenParams | StandardCallback<TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<TokenDetails>, callback?: StandardCallback<TokenDetails>): void | Promise<void> {
+	requestToken(tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<API.Types.TokenDetails>, callback?: StandardCallback<API.Types.TokenDetails>): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -553,7 +552,7 @@ class Auth {
 				} else if((tokenRequestOrDetails[0] === '{') && !(contentType && contentType.indexOf('application/jwt') > -1)) {
 					_callback(new ErrorInfo('Token was double-encoded; make sure you\'re not JSON-encoding an already encoded token request or details', 40170, 401));
 				} else {
-					_callback(null, {token: tokenRequestOrDetails} as TokenDetails);
+					_callback(null, {token: tokenRequestOrDetails} as API.Types.TokenDetails);
 				}
 				return;
 			}
@@ -580,7 +579,7 @@ class Auth {
 				return;
 			}
 			/* it's a token request, so make the request */
-			tokenRequest(tokenRequestOrDetails, function(err?: ErrorInfo | ErrnoException | null, tokenResponse?: TokenDetails | string, headers?: Record<string, string>, unpacked?: boolean) {
+			tokenRequest(tokenRequestOrDetails, function(err?: ErrorInfo | ErrnoException | null, tokenResponse?: API.Types.TokenDetails | string, headers?: Record<string, string>, unpacked?: boolean) {
 				if(err) {
 					Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', 'token request API call returned error; err = ' + Utils.inspectError(err));
 					_callback(normaliseAuthcallbackError(err));
@@ -588,7 +587,7 @@ class Auth {
 				}
 				if(!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-				_callback(null, tokenResponse as TokenDetails);
+				_callback(null, tokenResponse as API.Types.TokenDetails);
 			});
 		});
 	}
@@ -614,20 +613,21 @@ class Auth {
 	 * an object containing the parameters for the requested token:
 	 * - ttl:       (optional) the requested life of the token in ms. If none is specified
 	 *                  a default of 1 hour is provided. The maximum lifetime is 24hours; any request
-	 *                  exceeeding that lifetime will be rejected with an error.
+	 *                  exceeding that lifetime will be rejected with an error.
 	 *
 	 * - capability:    (optional) the capability to associate with the access token.
 	 *                  If none is specified, a token will be requested with all of the
 	 *                  capabilities of the specified key.
 	 *
-	 * - clientId:      (optional) a client Id to associate with the token; if not
+	 * - clientId:      (optional) a client ID to associate with the token; if not
 	 *                  specified, a clientId passed in constructing the Rest interface will be used
 	 *
 	 * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
 	 *                  the system will be queried for a time value to use.
 	 *
+	 * @param callback
 	 */
-	createTokenRequest(tokenParams: TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -642,7 +642,7 @@ class Auth {
 
 		/* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
 		authOptions = authOptions || this.authOptions;
-		tokenParams = tokenParams || Utils.copy<TokenParams>(this.tokenParams);
+		tokenParams = tokenParams || Utils.copy<API.Types.TokenParams>(this.tokenParams);
 
 		const key = authOptions.key;
 		if(!key) {
@@ -719,7 +719,7 @@ class Auth {
 		if(this.method == 'basic')
 			callback(null, {key: this.key});
 		else
-			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: TokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -739,7 +739,7 @@ class Auth {
 		if(this.method == 'basic') {
 			callback(null, {authorization: 'Basic ' + this.basicKey});
 		} else {
-			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: TokenDetails) {
+			this._ensureValidAuthCredentials(false, function(err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
 				if(err) {
 					callback(err);
 					return;
@@ -784,7 +784,7 @@ class Auth {
 		}
 	}
 
-	_saveTokenOptions(tokenParams: TokenParams | null, authOptions: AuthOptions) {
+	_saveTokenOptions(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions) {
 		this.method = 'token';
 
 		if(tokenParams) {
@@ -815,7 +815,7 @@ class Auth {
 
 	/* @param forceSupersede: force a new token request even if there's one in
 	 * progress, making all pending callbacks wait for the new one */
-	_ensureValidAuthCredentials(forceSupersede: boolean, callback: (err: ErrorInfo | null, token?: TokenDetails) => void) {
+	_ensureValidAuthCredentials(forceSupersede: boolean, callback: (err: ErrorInfo | null, token?: API.Types.TokenDetails) => void) {
 		const token = this.tokenDetails;
 
 		if(token) {
@@ -825,7 +825,7 @@ class Auth {
 				return;
 			}
 			/* RSA4b1 -- if we have a server time offset set already, we can
-			 * autoremove expired tokens. Else just use the cached token. If it is
+			 * automatically remove expired tokens. Else just use the cached token. If it is
 			 * expired Ably will tell us and we'll discard it then. */
 			if(!this.isTimeOffsetSet() || !token.expires || (token.expires >= this.getTimestampUsingOffset())) {
 				Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
@@ -844,7 +844,7 @@ class Auth {
 
 		/* Request a new token */
 		const tokenRequestId = this.currentTokenRequestId = getTokenRequestId();
-		this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: TokenDetails) => {
+		this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: API.Types.TokenDetails) => {
 			if((this.currentTokenRequestId as number) > tokenRequestId) {
 				Logger.logAction(Logger.LOG_MINOR, 'Auth._ensureValidAuthCredentials()', 'Discarding token request response; overtaken by newer one');
 				return;
@@ -862,7 +862,7 @@ class Auth {
 
 
 	/* User-set: check types, '*' is disallowed, throw any errors */
-	_userSetClientId(clientId: string | null) {
+	_userSetClientId(clientId: string | undefined) {
 		if(!(typeof(clientId) === 'string' || clientId === null)) {
 			throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
 		} else if(clientId === '*') {
@@ -874,7 +874,7 @@ class Auth {
 	}
 
 	/* Ably-set: no typechecking, '*' is allowed but not set on this.clientId), return errors to the caller */
-	_uncheckedSetClientId(clientId: string | null) {
+	_uncheckedSetClientId(clientId: string | undefined) {
 		if(this._tokenClientIdMismatch(clientId)) {
 			/* Should never happen in normal circumstances as realtime should
 			 * recognise mismatch and return an error */

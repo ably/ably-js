@@ -6,9 +6,7 @@ import Auth from './auth';
 import * as BufferUtils from 'platform-bufferutils';
 import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo from '../types/errorinfo';
-
-// TODO: Replace this once rest.js is converted to TypeScript
-type Rest = any;
+import Rest from './rest';
 
 const msgpack = Platform.msgpack;
 
@@ -100,23 +98,23 @@ function logResponseHandler(callback: Function, method: HttpMethods, path: strin
 class Resource {
 	static get(rest: Rest, path: string, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		Resource.do(HttpMethods.Get, rest, path, null, origheaders, origparams, envelope, callback);
-	} 
+	}
 
 	static delete(rest: Rest, path: string, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		Resource.do(HttpMethods.Delete, rest, path, null, origheaders, origparams, envelope, callback);
-	} 
+	}
 
 	static post(rest: Rest, path: string, body: unknown, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		Resource.do(HttpMethods.Post, rest, path, body, origheaders, origparams, envelope, callback);
-	} 
+	}
 
 	static patch(rest: Rest, path: string, body: unknown, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		Resource.do(HttpMethods.Patch, rest, path, body, origheaders, origparams, envelope, callback);
-	} 
+	}
 
 	static put(rest: Rest, path: string, body: unknown, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		Resource.do(HttpMethods.Put, rest, path, body, origheaders, origparams, envelope, callback);
-	} 
+	}
 
 	static do(method: HttpMethods, rest: Rest, path: string, body: unknown, origheaders: Record<string, string>, origparams: Record<string, any>, envelope: Utils.Format | null, callback: Function): void {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {

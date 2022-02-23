@@ -1,4 +1,4 @@
-import { ChannelMode } from '../../types/channel';
+import { Types } from '../../../ably';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';
@@ -73,7 +73,7 @@ class ProtocolMessage {
 	msgSerial?: number;
 	messages?: Message[];
 	presence?: PresenceMessage[];
-	auth?: unknown;	
+	auth?: unknown;
 	connectionDetails?: Record<string, unknown>;
 	timeSerial?: number;
 
@@ -87,7 +87,7 @@ class ProtocolMessage {
 		return (((this.flags as number) & flags[flag]) > 0);
 	};
 
-	setFlag(flag: ChannelMode): number {
+	setFlag(flag: Types.ChannelMode): number {
 		return this.flags = (this.flags as number) | flags[flag];
 	}
 
@@ -95,7 +95,7 @@ class ProtocolMessage {
 		return this.flags && (this.flags & flags.MODE_ALL);
 	}
 
-	encodeModesToFlags(modes: ChannelMode[]): void {
+	encodeModesToFlags(modes: Types.ChannelMode[]): void {
 		modes.forEach(mode => this.setFlag(mode));
 	}
 

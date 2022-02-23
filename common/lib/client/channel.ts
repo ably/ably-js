@@ -10,10 +10,11 @@ import Http from 'platform-http';
 import Resource from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback } from '../../types/utils';
+import Rest from './rest';
 
 // TODO: Replace these when Realtime and Rest are in TypeScript
 type Realtime = any;
-type Rest = any;
+
 
 interface RestHistoryParams {
 	start?: number;
@@ -41,7 +42,7 @@ function normaliseChannelOptions(options?: ChannelOptions) {
 	} else if('cipher' in channelOptions) {
 		/* Don't deactivate an existing cipher unless options
 			* has a 'cipher' key that's falsey */
-		channelOptions.cipher = null;
+		channelOptions.cipher = undefined;
 		channelOptions.channelCipher = null;
 	}
 	return channelOptions;

@@ -9,13 +9,15 @@ import ChannelStateChange from './channelstatechange';
 import ErrorInfo from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
-import { ChannelMode, ChannelOptions } from '../../types/channel';
+import * as API from '../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
 
 // TODO: Replace this with the real type when Realtime is in TypeScript
 type Realtime = any;
+
+type RealtimeChannelState = 'initialized' | 'attaching' | 'attached' | 'suspended' | 'detaching' | 'detached' | 'failed';
 
 interface RealtimeHistoryParams {
 	start?: number;
@@ -31,7 +33,7 @@ const noop = function() {};
 const statechangeOp = 'statechange';
 const syncOp = 'sync';
 
-function validateChannelOptions(options: ChannelOptions) {
+function validateChannelOptions(options: API.Types.ChannelOptions) {
 	if(options && 'params' in options && !Utils.isObject(options.params)) {
 		return new ErrorInfo('options.params must be an object', 40000, 400);
 	}
@@ -53,16 +55,16 @@ class RealtimeChannel extends Channel {
 	realtime: Realtime;
 	presence: RealtimePresence;
 	connectionManager: ConnectionManager;
-	state: string;
+	state: RealtimeChannelState;
 	subscriptions: EventEmitter;
 	syncChannelSerial?: number | null;
 	properties: { attachSerial: number | null | undefined; };
 	errorReason: ErrorInfo | string | null;
-	_requestedFlags: Array<ChannelMode> | null;
+	_requestedFlags: Array<API.Types.ChannelMode> | null;
 	_mode?: null | number;
 	_attachedMsgIndicator: boolean;
 	_attachResume: boolean;
-	_decodingContext: { channelOptions: ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined; };
+	_decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined; };
 	_lastPayload: { messageId?: string | null; protocolMessageChannelSerial?: number | null; decodeFailureRecoveryInProgress: null | boolean; };
 	_allChannelChanges: EventEmitter;
 	params?: Record<string, any>;
@@ -72,7 +74,7 @@ class RealtimeChannel extends Channel {
 	suspendTimer?: number | NodeJS.Timeout | null;
 
 
-	constructor(realtime: Realtime, name: string, options: ChannelOptions) {
+	constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
 		super(realtime, name, options);
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		this.realtime = realtime;
@@ -131,7 +133,7 @@ class RealtimeChannel extends Channel {
 		return args;
 	}
 
-	setOptions(options: ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+	setOptions(options: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'setOptions', arguments);
@@ -158,7 +160,7 @@ class RealtimeChannel extends Channel {
 			 * rejecting messages until we have confirmation that the options have changed,
 			 * which would unnecessarily lose message continuity. */
 			this.attachImpl();
-			this._allChannelChanges.once(function(this: any, stateChange: ConnectionStateChange) {
+			this._allChannelChanges.once(function(this: { event: string }, stateChange: ConnectionStateChange) {
 				switch(this.event) {
 					case 'update':
 					case 'attached':
@@ -174,7 +176,7 @@ class RealtimeChannel extends Channel {
 		}
 	}
 
-	_shouldReattachToSetOptions(options: ChannelOptions) {
+	_shouldReattachToSetOptions(options: API.Types.ChannelOptions) {
 		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
 	}
 
@@ -205,7 +207,7 @@ class RealtimeChannel extends Channel {
 			messages = [Message.fromValues({name: args[0], data: args[1]})];
 		}
 		const maxMessageSize = this.realtime.options.maxMessageSize;
-		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
 			if (err) {
 				callback(err);
 				return;
@@ -249,10 +251,13 @@ class RealtimeChannel extends Channel {
 		}
 	}
 
-	attach(flags?: any, callback?: ErrCallback): void | Promise<void> {
+	attach(flags?: API.Types.ChannelMode[] | ErrCallback, callback?: ErrCallback): void | Promise<void> {
+		let _flags: API.Types.ChannelMode[] | null | undefined;
 		if(typeof(flags) === 'function') {
 			callback = flags;
-			flags = null;
+			_flags = null;
+		} else {
+		  _flags = flags;
 		}
 		if(!callback) {
 			if(this.realtime.options.promises) {
@@ -264,11 +269,11 @@ class RealtimeChannel extends Channel {
 				}
 			}
 		}
-		if(flags) {
+		if(_flags) {
 			Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
 			/* If flags requested, always do a re-attach. TODO only do this if
 			 * current mode differs from requested mode */
-			this._requestedFlags = flags;
+			this._requestedFlags = _flags as API.Types.ChannelMode[];
 		} else if (this.state === 'attached') {
 			callback();
 			return;
@@ -318,9 +323,9 @@ class RealtimeChannel extends Channel {
 		this.setInProgress(statechangeOp, true);
 		const attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name, params: this.channelOptions.params});
 		if(this._requestedFlags) {
-			attachMsg.encodeModesToFlags(this._requestedFlags as ChannelMode[]);
+			attachMsg.encodeModesToFlags(this._requestedFlags);
 		} else if(this.channelOptions.modes) {
-			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as ChannelMode[]);
+			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.Types.ChannelMode[]);
 		}
 		if(this._attachResume) {
 			attachMsg.setFlag('ATTACH_RESUME');
@@ -385,10 +390,8 @@ class RealtimeChannel extends Channel {
 	subscribe(...args: unknown[]/* [event], listener, [callback] */): void | Promise<void> {
 		const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
-		if(!callback) {
-			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'subscribe', arguments);
-			}
+		if(!callback && this.realtime.options.promises) {
+			return Utils.promisify(this, 'subscribe', arguments);
 		}
 
 		if(this.state === 'failed') {
@@ -501,9 +504,7 @@ class RealtimeChannel extends Channel {
 			if(!message.presence) break;
 		case actions.PRESENCE: {
 			const presence = message.presence as Array<PresenceMessage>;
-			const id = message.id;
-			const connectionId = message.connectionId;
-			const timestamp = message.timestamp;
+			const { id, connectionId, timestamp } = message;
 
 			const options = this.channelOptions;
 			let presenceMsg: PresenceMessage;
@@ -603,7 +604,7 @@ class RealtimeChannel extends Channel {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
 	}
 
-	notifyState(state: string, reason?: ErrorInfo | null, resumed?: boolean, hasPresence?: boolean): void {
+	notifyState(state: RealtimeChannelState, reason?: ErrorInfo | null, resumed?: boolean, hasPresence?: boolean): void {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
 		this.clearStateTimer();
 
@@ -644,7 +645,7 @@ class RealtimeChannel extends Channel {
 		this.emit(state, change);
 	}
 
-	requestState(state: string, reason?: ErrorInfo | null): void {
+	requestState(state: RealtimeChannelState, reason?: ErrorInfo | null): void {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
 		this.notifyState(state, reason);
 		/* send the event and await response */
@@ -712,7 +713,7 @@ class RealtimeChannel extends Channel {
 	clearStateTimer(): void {
 		const stateTimer = this.stateTimer;
 		if(stateTimer) {
-			clearTimeout(stateTimer as NodeJS.Timeout);
+			clearTimeout(stateTimer);
 			this.stateTimer = null;
 		}
 	}

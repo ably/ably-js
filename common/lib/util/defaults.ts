@@ -174,14 +174,15 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		options.fallbackHosts = Defaults.FALLBACK_HOSTS;
 	}
 
-	if(options.recover === true) {
+	/* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
+	if(options.recover as any === true) {
 		Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
 		options.recover = function(lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) { cb(true); };
 	}
 
 	if(typeof options.recover === 'function' && options.closeOnUnload === true) {
 		Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', 'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter');
-		options.recover = null;
+		options.recover = undefined;
 	}
 
 	if(!('closeOnUnload' in options)) {
