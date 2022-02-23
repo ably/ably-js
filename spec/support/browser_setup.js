@@ -1,7 +1,37 @@
 "use strict";
 
-var allTestFiles = [];
+var allTestFiles = [],
+	TEST_REGEXP = /\.test\.js$/i,
+//	TEST_REGEXP = /simple\.test\.js$/i,
+	TEAR_DOWN_REGEXP = /tear_down\.js$/i;
 
+var pathToModule = function(path) {
+	return path.replace(/^\/base\//, '').replace(/\.js$/, '');
+};
+
+var forEachKey = function(object, fn) {
+	for(var prop in object) {
+		if(object.hasOwnProperty(prop)) {
+			fn(prop);
+		}
+	}
+};
+
+// Match all test files
+forEachKey(window.__testFiles__.files, function(file) {
+	if (TEST_REGEXP.test(file)) {
+		// Normalize paths to RequireJS module names.
+		allTestFiles.push(pathToModule(file));
+	}
+});
+
+// Add the final tear down
+forEachKey(window.__testFiles__.files, function(file) {
+	if (TEAR_DOWN_REGEXP.test(file)) {
+		// Normalize paths to RequireJS module names.
+		allTestFiles.push(pathToModule(file));
+	}
+});
 var baseUrl = '';
 
 require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
