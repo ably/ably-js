@@ -265,7 +265,7 @@ declare namespace Types {
 
 	type ChannelParams = { [key: string]: string };
 
-	type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
+	type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE' | 'ATTACH_RESUME';
 	type ChannelModes = Array<ChannelMode>;
 
 	interface ChannelOptions {

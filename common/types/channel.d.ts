@@ -6,4 +6,5 @@ export interface ChannelOptions extends API.Types.ChannelOptions {
     encrypt: Function;
     decrypt: Function;
   } | null;
+  updateOnAttached?: boolean;
 }
