@@ -4,7 +4,7 @@
 	Test App creation helper used within Mocha tests.
 */
 
-define(['spec/common/modules/testapp_manager', 'globals'], function(testAppManager, ablyGlobals) {
+define(['test/common/modules/testapp_manager', 'globals'], function(testAppManager, ablyGlobals) {
 	var globalObject = isBrowser? window : global;
 
 	function updateTestApp(newTestApp) {

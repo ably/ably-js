@@ -90,7 +90,7 @@ module.exports = function (grunt) {
 	grunt.registerTask('checkGitSubmodules',
 		'Check, if git submodules are properly installed', function (){
 			var done = this.async();
-			var pathToSubmodule = path.join(__dirname, 'spec', 'common', 'ably-common');
+			var pathToSubmodule = path.join(__dirname, 'test', 'common', 'ably-common');
 			fs.stat(pathToSubmodule, function (error, stats){
 				if(error) {
 					grunt.log.writeln('%s : while checking submodule path!', error.message);
@@ -120,7 +120,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('all', ['build', 'check-closure-compiler', 'requirejs']);
 
-	grunt.loadTasks('spec/tasks');
+	grunt.loadTasks('test/tasks');
 
 
 	grunt.registerTask('test', ['test:node']);
@@ -150,7 +150,7 @@ module.exports = function (grunt) {
 				'package.json',
 				'package-lock.json',
 				'README.md',
-				'spec/support/browser_file_list.js'
+				'test/support/browser_file_list.js'
 			];
 			var cmd = 'git add -A ' + generatedFiles.join(' ');
 			grunt.log.ok("Executing " + cmd);

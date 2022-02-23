@@ -3,7 +3,7 @@
 /* Shared test helper for the Jasmine test suite that simplifies
 	 the dependencies by providing common methods in a single dependency */
 
-define(['spec/common/modules/testapp_module', 'spec/common/modules/client_module', 'spec/common/modules/testapp_manager', 'async'],
+define(['test/common/modules/testapp_module', 'test/common/modules/client_module', 'test/common/modules/testapp_manager', 'async'],
 	function(testAppModule, clientModule, testAppManager, async) {
 		var utils = clientModule.Ably.Realtime.Utils;
 		var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),

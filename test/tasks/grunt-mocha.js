@@ -10,7 +10,7 @@ module.exports = function (grunt) {
 			debug = grunt.option('debug'),
 			inspector = grunt.option('inspector'),
 			fgrep = grunt.option('fgrep'),
-			helpers = ['spec/support/modules_helper.js', 'spec/support/test_helper.js', 'spec/support/root_hooks.js'];
+			helpers = ['test/support/modules_helper.js', 'test/support/test_helper.js', 'test/support/root_hooks.js'];
 
 	function getRelativePath(files) {
 		return files.map(function(helperPath) {
@@ -29,14 +29,14 @@ module.exports = function (grunt) {
 	grunt.registerTask('mocha:webserver',
 		'Run the Mocha web server',
 		function() {
-			kexec('spec/web_server');
+			kexec('test/web_server');
 		}
 	);
 
 	grunt.registerTask('mocha',
-		'Run the Mocha test suite.\nOptions:\n  --test [tests] e.g. --test spec/rest/auth.test.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
+		'Run the Mocha test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.test.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
 		function() {
-			var runTests = getRelativePath(helpers).concat(['spec/realtime/*.test.js', 'spec/rest/*.test.js']).join(' ');
+			var runTests = getRelativePath(helpers).concat(['test/realtime/*.test.js', 'test/rest/*.test.js']).join(' ');
 			grunt.log.writeln("Running Mocha test suite against " + (test ? test : 'all tests'));
 
 			if (test) {

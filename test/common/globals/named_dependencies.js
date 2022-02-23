@@ -7,10 +7,10 @@ define(function() {
 		'base64':            { browser: 'node_modules/crypto-js/build/enc-base64',            node: 'skip' },
 		'utf8':              { browser: 'node_modules/crypto-js/build/enc-utf8',            node: 'skip' },
 		'vcdiff-decoder':    { browser: 'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder',  node:'node_modules/@ably/vcdiff-decoder'},
-		
+
 		// test modules
-		'globals':           { browser: 'spec/common/globals/environment',    node: 'spec/common/globals/environment' },
-		'shared_helper':     { browser: 'spec/common/modules/shared_helper',  node: 'spec/common/modules/shared_helper' },
+		'globals':           { browser: 'test/common/globals/environment',    node: 'test/common/globals/environment' },
+		'shared_helper':     { browser: 'test/common/modules/shared_helper',  node: 'test/common/modules/shared_helper' },
 		'async':             { browser: 'node_modules/async/lib/async' },
 		'chai':              { browser: 'node_modules/chai/chai',             node: 'node_modules/chai/chai' }
 	};
