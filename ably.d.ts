@@ -1509,9 +1509,13 @@ declare namespace Types {
 		 * This will typically be empty as all presence updates received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
 		 */
 		encoding: string;
-		/
+		/**
+		 * Unique ID assigned by Ably to this presence update.
+		 */
 		id: string;
-
+		/**
+		 * Timestamp when the presence update was received by Ably, as milliseconds since the epoch.
+		 */
 		timestamp: number;
 	}
 
@@ -1531,14 +1535,34 @@ declare namespace Types {
 	// user should not be interacting with it - output of getDefaultParams should be used opaquely
 
 	type CipherParamOptions = {
+		/**
+		 * A binary (ArrayBuffer or WordArray) or base64-encoded String containing the secret key used for encryption and decryption
+		 */
 		key: CipherKeyParam;
+		/**
+		 * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”
+		 */
 		algorithm?: 'aes';
+		/**
+		 * The key length in bits of the cipher, either 128 or 256
+		 */
 		keyLength?: number;
+		/**
+		 * Th
+		 */
 		mode?: 'cbc';
 	}
 
 	interface Crypto {
+		/**
+		 * This call obtains a CipherParams object using the values passed in (which must be a subset of CipherParams fields that at a minimum includes a key), filling in any unspecified fields with default values, and checks that the result is a valid and self-consistent.
+		 * 
+		 * You will rarely need to call this yourself, since the client library will handle it for you if you specify cipher params when initializing a channel or when setting channel options with channel.setOptions().
+		 */
 		generateRandomKey(callback: Types.StandardCallback<CipherKey>): void;
+		/**
+		 * This call obtains a randomly-generated binary key of the specified key length.
+		 */
 		getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
 	}
 
