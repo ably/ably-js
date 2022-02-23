@@ -390,10 +390,8 @@ class RealtimeChannel extends Channel {
 	subscribe(...args: unknown[]/* [event], listener, [callback] */): void | Promise<void> {
 		const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
-		if(!callback) {
-			if(this.realtime.options.promises) {
-				return Utils.promisify(this, 'subscribe', arguments);
-			}
+		if(!callback && this.realtime.options.promises) {
+			return Utils.promisify(this, 'subscribe', arguments);
 		}
 
 		if(this.state === 'failed') {
