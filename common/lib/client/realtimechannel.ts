@@ -713,7 +713,7 @@ class RealtimeChannel extends Channel {
 	clearStateTimer(): void {
 		const stateTimer = this.stateTimer;
 		if(stateTimer) {
-			clearTimeout(stateTimer as NodeJS.Timeout);
+			clearTimeout(stateTimer);
 			this.stateTimer = null;
 		}
 	}
