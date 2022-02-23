@@ -249,10 +249,13 @@ class RealtimeChannel extends Channel {
 		}
 	}
 
-	attach(flags?: any, callback?: ErrCallback): void | Promise<void> {
+	attach(flags?: ChannelMode[] | ErrCallback, callback?: ErrCallback): void | Promise<void> {
+		let _flags: ChannelMode[] | null | undefined;
 		if(typeof(flags) === 'function') {
 			callback = flags;
-			flags = null;
+			_flags = null;
+		} else {
+		  _flags = flags;
 		}
 		if(!callback) {
 			if(this.realtime.options.promises) {
@@ -264,11 +267,11 @@ class RealtimeChannel extends Channel {
 				}
 			}
 		}
-		if(flags) {
+		if(_flags) {
 			Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
 			/* If flags requested, always do a re-attach. TODO only do this if
 			 * current mode differs from requested mode */
-			this._requestedFlags = flags;
+			this._requestedFlags = _flags as ChannelMode[];
 		} else if (this.state === 'attached') {
 			callback();
 			return;
