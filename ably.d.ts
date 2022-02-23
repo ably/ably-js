@@ -1421,40 +1421,108 @@ declare namespace Types {
 		release(name: string): void;
 	}
 
+	/**
+	 * A Message represents an individual message that is sent to or received from Ably.
+	 */
 	class Message {
 		constructor();
+		/**
+		 * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
+		 */
 		static fromEncoded: fromEncoded<Message>;
+		/**
+		 * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
+		 */
 		static fromEncodedArray: fromEncodedArray<Message>;
+		/**
+		 * The client ID of the publisher of this message.
+		 */
 		clientId: string;
+		/**
+		 * The connection ID of the publisher of this message.
+		 */
 		connectionId: string;
+		/**
+		 * The message payload, if provided.
+		 */
 		data: any;
+		/**
+		 * This will typically be empty as all messages received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
+		 */
 		encoding: string;
+		/**
+		 * Metadata and/or ancillary payloads, if provided. The only currently valid payload for extras is the push object.
+		 */
 		extras: any;
+		/**
+		 * A Unique ID assigned by Ably to this message.
+		 */
 		id: string;
+		/**
+		 * The event name, if provided.
+		 */
 		name: string;
+		/**
+		 * Timestamp when the message was received by the Ably, as milliseconds since the epoch
+		 */
 		timestamp: number;
 	}
 
 	interface MessageStatic {
+		/**
+		 * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
+		 */
 		fromEncoded: fromEncoded<Message>;
+		/**
+		 * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
+		 */
 		fromEncodedArray: fromEncodedArray<Message>;
 	}
 
 	class PresenceMessage {
 		constructor();
+		/**
+		 * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+		 */
 		static fromEncoded: fromEncoded<PresenceMessage>;
+		/**
+		 * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+		 */
 		static fromEncodedArray: fromEncodedArray<PresenceMessage>;
+		/**
+		 * The event signified by a PresenceMessage.
+		 */
 		action: PresenceAction;
+		/**
+		 * The client ID of the publisher of this presence update.
+		 */
 		clientId: string;
+		/**
+		 * The connection ID of the publisher of this presence update.
+		 */
 		connectionId: string;
+		/**
+		 * The presence update payload, if provided.
+		 */
 		data: any;
+		/**
+		 * This will typically be empty as all presence updates received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
+		 */
 		encoding: string;
+		/
 		id: string;
+
 		timestamp: number;
 	}
 
 	interface PresenceMessageStatic {
+		/**
+		 * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+		 */
 		fromEncoded: fromEncoded<PresenceMessage>;
+		/**
+		 * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+		 */
 		fromEncodedArray: fromEncodedArray<PresenceMessage>;
 	}
 
