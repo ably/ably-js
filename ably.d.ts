@@ -855,12 +855,15 @@ declare namespace Types {
 		/**
 		 * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
 		 */
-		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
+		request<T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>): void;
 		/**
-		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+		 * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
 		 */
-		stats: (params?: any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
-		stats: (callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		stats(params?: any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
+		/**
+		 * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+		 */
+		stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
 		/**
 		 * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
 		 */
@@ -1073,41 +1076,174 @@ declare namespace Types {
 	}
 
 	class PresenceCallbacks {
-		get(paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
-		history(paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+		 */
+		get(params?: RestPresenceParams, callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+		 */
+		get(callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
+		history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
+		history(callback: paginatedResultCallback<PresenceMessage>): void;
 	}
 
 	class PresencePromise {
+		/**
+		 * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+		 */
 		get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
 		history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
 	}
 
 	class RealtimePresenceBase {
 		syncComplete: boolean;
-		unsubscribe(presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>): void;
+		/**
+		 * Unsubscribe the given listener from presence message events on this channel for the given PresenceAction. This removes an earlier event-specific subscription.
+		 */
+		unsubscribe(presence?: PresenceAction | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): void;
+		/**
+		 * Unsubscribe the given listener from presence message events on this channel. This removes an earlier subscription.
+		 */
+		unsubscribe(listener?: messageCallback<PresenceMessage>): void;
+		/**
+		 * Unsubscribes all listeners to presence message events on this channel. This removes all earlier subscriptions.
+		 */
+		unsubscribe(): void;
 	}
 
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
-		get(paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
-		history(paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>): void;
-		subscribe(presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
-		enter(data?: errorCallback | any, callback?: errorCallback): void;
-		update(data?: errorCallback | any, callback?: errorCallback): void;
-		leave(data?: errorCallback | any, callback?: errorCallback): void;
-		enterClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
-		updateClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
-		leaveClient(clientId: string, data?: errorCallback | any, callback?: errorCallback): void;
+		/**
+		 * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
+		 * 
+		 * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
+		 * 
+		 * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+		 */
+		get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
+		/**
+		 * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
+		 * 
+		 * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
+		 * 
+		 * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+		 */
+		get(callback?: realtimePresenceGetCallback): void;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
+		history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
+		history(callback?: paginatedResultCallback<PresenceMessage>): void;
+		/**
+		 * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+		 */
+		subscribe(presence: PresenceAction | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
+		/**
+		 * Subscribe to presence message events on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+		 */
+		subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
+		/**
+		 * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+		 */
+		enter(data?: any, callback?: errorCallback): void;
+		/**
+		 * Enter a presence channel without any data. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+		 */
+		enter(callback?: errorCallback): void;
+		/**
+		 * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+		 */
+		update(data?: any, callback?: errorCallback): void;
+		/**
+		 * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+		 */
+		update(callback?: errorCallback): void;
+		/**
+		 * Leave a presence channel and emit data that is associated with the current leaving member.
+		 */
+		leave(data?: any, callback?: errorCallback): void;
+		/**
+		 * Leave a presence channel without emitting any data.
+		 */
+		leave(callback?: errorCallback): void;
+		/**
+		 * Enter a presence channel and provide data that is associated with the current present member.
+		 */
+		enterClient(clientId: string, data?: any, callback?: errorCallback): void;
+		/**
+		 * Enter a presence channel on behalf of the provided ClientId without any data.
+		 */
+		enterClient(clientId: string, callback?: errorCallback): void;
+		/**
+		 * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+		 */
+		updateClient(clientId: string, data?: any, callback?: errorCallback): void;
+		/**
+		 * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+		 */
+		updateClient(clientId: string, callback?: errorCallback): void;
+		/**
+		 * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
+		 */
+		leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
+		/**
+		 * Leave a presence channel on behalf of the provided ClientId without emitting any data.
+		 */
+		leaveClient(clientId: string, callback?: errorCallback): void;
 	}
 
 	class RealtimePresencePromise extends RealtimePresenceBase {
+		/**
+		 * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
+		 * 
+		 * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
+		 * 
+		 * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+		 */
 		get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
+		/**
+		 * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+		 */
 		history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
+		/**
+		 * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+		 */
 		subscribe(action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): Promise<void>;
+		/**
+		 * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+		 */
 		enter(data?: any): Promise<void>;
+		/**
+		 * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+		 */
 		update(data?: any): Promise<void>;
+		/**
+		 * Leave a presence channel and emit data that is associated with the current leaving member.
+		 */
 		leave(data?: any): Promise<void>;
+		/**
+		 * Enter a presence channel and provide data that is associated with the current present member.
+		 */
 		enterClient(clientId: string, data?: any): Promise<void>;
+		/**
+		 * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+		 */
 		updateClient(clientId: string, data?: any): Promise<void>;
+		/**
+		 * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
+		 */
 		leaveClient(clientId: string, data?: any): Promise<void>;
 	}
 
