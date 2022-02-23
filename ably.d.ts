@@ -934,11 +934,11 @@ declare namespace Types {
 		/**
 		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
 		 */
-		stats: (params: any, callback: Types.paginatedResultCallback<Types.Stats>) => void;
+		stats(params: any, callback: Types.paginatedResultCallback<Types.Stats>): void;
 		/**
 		 * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
 		 */
-		stats: (callback: Types.paginatedResultCallback<Types.Stats>) => void;
+		stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
 		/**
 		 * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
 		 */
