@@ -1661,23 +1661,56 @@ declare namespace Types {
 		tokenRequests: StatsRequestCount;
 	}
 
+	/**
+	 * A PaginatedResult is a type that represents a page of results for all message and presence history, stats and REST presence requests. The response from a Ably REST API paginated query is accompanied by metadata that indicates the relative queries available to the PaginatedResult object.
+	 */
 	class PaginatedResult<T> {
+		/**
+		 * Contains the current page of results (for example an Array of Message or PresenceMessage objects for a channel history request).
+		 */
 		items: T[];
+		/**
+		 * Returns a new PaginatedResult for the first page of results.
+		 */
 		first(results: paginatedResultCallback<T>): void;
+		/**
+		 * Returns a new PaginatedResult for the first page of results.
+		 */
 		first(): Promise<PaginatedResult<T>>;
+		/**
+		 * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
+		 */
 		next(results: paginatedResultCallback<T>): void;
+		/**
+		 * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
+		 */
 		next(): Promise<PaginatedResult<T>>;
 		current(results: paginatedResultCallback<T>): void;
 		current(): Promise<PaginatedResult<T>>;
+		/**
+		 * Returns `true` if there are more pages available by calling next and returns `false` if this page is the last page available.
+		 */
 		hasNext(): boolean;
+		/**
+		 * Returns `true` if this page is the last page and returns `false` if there are more pages available by calling next available.
+		 */
 		isLast(): boolean;
 	}
 
 	class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
+		/**
+		 * The HTTP status code of the response.
+		 */
 		statusCode: number;
+		/**
+		 * Whether that HTTP status code indicates success (equivalent to 200 <= statusCode < 300).
+		 */
 		success: boolean;
 		errorCode: number;
 		errorMessage: string;
+		/**
+		 * The response’s headers.
+		 */
 		headers: any;
 	}
 
