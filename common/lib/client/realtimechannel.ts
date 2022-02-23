@@ -323,7 +323,7 @@ class RealtimeChannel extends Channel {
 		this.setInProgress(statechangeOp, true);
 		const attachMsg = ProtocolMessage.fromValues({action: actions.ATTACH, channel: this.name, params: this.channelOptions.params});
 		if(this._requestedFlags) {
-			attachMsg.encodeModesToFlags(this._requestedFlags as ChannelMode[]);
+			attachMsg.encodeModesToFlags(this._requestedFlags);
 		} else if(this.channelOptions.modes) {
 			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as ChannelMode[]);
 		}
