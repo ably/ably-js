@@ -9,8 +9,7 @@
 "use strict";
 
 var express = require('express'),
-    cors = require('cors'),
-    browserTestFiles = require('./tasks/lib/browser_test_files');
+    cors = require('cors');
 
 var server = express();
 
@@ -36,12 +35,6 @@ server.get('/', function(req, res) {
 	}
 });
 
-server.get('/support/browser_file_list.js', function(req, res) {
-  var body = "window.__karma__ = { base: '../' };\n";
-  body += "window.__karma__.files = " + JSON.stringify(browserTestFiles()) + ";";
-  res.set('Content-Type', 'application/json');
-  res.send(body);
-});
 
 /**
  * This is a rather hacky workaround since crypto-js base64 depends on node_modules/crypto-js/build/core but will request the file from the root level of the server.
