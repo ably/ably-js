@@ -1,11 +1,6 @@
-type ChannelParams = { [key: string]: string };
-export type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
-type ChannelModes = Array<ChannelMode>;
+import * as API from '../../ably';
 
-export interface ChannelOptions {
-  cipher?: CipherParamOptions | CipherParams;
-  params?: ChannelParams;
-  modes?: ChannelModes;
+export interface ChannelOptions extends API.Types.ChannelOptions {
   channelCipher?: {
     algorithm: string;
     encrypt: Function;
