@@ -340,6 +340,9 @@ var RealtimeChannel = (function() {
 	};
 
 	RealtimeChannel.prototype.detachImpl = function(callback) {
+		if (this.connectionManager.mostRecentMsg && this.connectionManager.mostRecentMsg.channel === this.name) {
+			this.connectionManager.mostRecentMsg = null;
+		}
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
 		this.setInProgress(statechangeOp, true);
 		var msg = ProtocolMessage.fromValues({action: actions.DETACH, channel: this.name});
