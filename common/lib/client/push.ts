@@ -6,9 +6,7 @@ import ErrorInfo from '../types/errorinfo';
 import Http from 'platform-http';
 import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
-
-// TODO: Replace this once rest.js is converted to TypeScript
-type Rest = any;
+import Rest from './rest';
 
 const noop = function() {};
 

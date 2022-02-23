@@ -91,7 +91,7 @@ class Logger {
 		return level <= Logger.logLevel;
 	};
 
-	static setLog = (level: LogLevels, handler: Function) => {
+	static setLog = (level: LogLevels | undefined, handler: Function | undefined) => {
 		if(level !== undefined) Logger.logLevel = level;
 		if(handler !== undefined) Logger.logHandler = Logger.logErrorHandler = handler;
 	};

@@ -9,7 +9,7 @@ import ChannelStateChange from './channelstatechange';
 import ErrorInfo from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
-import { ChannelMode, ChannelOptions } from '../../types/channel';
+import * as API from '../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
@@ -33,7 +33,7 @@ const noop = function() {};
 const statechangeOp = 'statechange';
 const syncOp = 'sync';
 
-function validateChannelOptions(options: ChannelOptions) {
+function validateChannelOptions(options: API.Types.ChannelOptions) {
 	if(options && 'params' in options && !Utils.isObject(options.params)) {
 		return new ErrorInfo('options.params must be an object', 40000, 400);
 	}
@@ -60,11 +60,11 @@ class RealtimeChannel extends Channel {
 	syncChannelSerial?: number | null;
 	properties: { attachSerial: number | null | undefined; };
 	errorReason: ErrorInfo | string | null;
-	_requestedFlags: Array<ChannelMode> | null;
+	_requestedFlags: Array<API.Types.ChannelMode> | null;
 	_mode?: null | number;
 	_attachedMsgIndicator: boolean;
 	_attachResume: boolean;
-	_decodingContext: { channelOptions: ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined; };
+	_decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined; };
 	_lastPayload: { messageId?: string | null; protocolMessageChannelSerial?: number | null; decodeFailureRecoveryInProgress: null | boolean; };
 	_allChannelChanges: EventEmitter;
 	params?: Record<string, any>;
@@ -74,7 +74,7 @@ class RealtimeChannel extends Channel {
 	suspendTimer?: number | NodeJS.Timeout | null;
 
 
-	constructor(realtime: Realtime, name: string, options: ChannelOptions) {
+	constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
 		super(realtime, name, options);
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
 		this.realtime = realtime;
@@ -133,7 +133,7 @@ class RealtimeChannel extends Channel {
 		return args;
 	}
 
-	setOptions(options: ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+	setOptions(options: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
 		if(!callback) {
 			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'setOptions', arguments);
@@ -176,7 +176,7 @@ class RealtimeChannel extends Channel {
 		}
 	}
 
-	_shouldReattachToSetOptions(options: ChannelOptions) {
+	_shouldReattachToSetOptions(options: API.Types.ChannelOptions) {
 		return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
 	}
 
@@ -251,8 +251,8 @@ class RealtimeChannel extends Channel {
 		}
 	}
 
-	attach(flags?: ChannelMode[] | ErrCallback, callback?: ErrCallback): void | Promise<void> {
-		let _flags: ChannelMode[] | null | undefined;
+	attach(flags?: API.Types.ChannelMode[] | ErrCallback, callback?: ErrCallback): void | Promise<void> {
+		let _flags: API.Types.ChannelMode[] | null | undefined;
 		if(typeof(flags) === 'function') {
 			callback = flags;
 			_flags = null;
@@ -273,7 +273,7 @@ class RealtimeChannel extends Channel {
 			Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
 			/* If flags requested, always do a re-attach. TODO only do this if
 			 * current mode differs from requested mode */
-			this._requestedFlags = _flags as ChannelMode[];
+			this._requestedFlags = _flags as API.Types.ChannelMode[];
 		} else if (this.state === 'attached') {
 			callback();
 			return;
@@ -325,7 +325,7 @@ class RealtimeChannel extends Channel {
 		if(this._requestedFlags) {
 			attachMsg.encodeModesToFlags(this._requestedFlags);
 		} else if(this.channelOptions.modes) {
-			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as ChannelMode[]);
+			attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.Types.ChannelMode[]);
 		}
 		if(this._attachResume) {
 			attachMsg.setFlag('ATTACH_RESUME');
