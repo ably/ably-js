@@ -207,7 +207,7 @@ class RealtimeChannel extends Channel {
 			messages = [Message.fromValues({name: args[0], data: args[1]})];
 		}
 		const maxMessageSize = this.realtime.options.maxMessageSize;
-		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
 			if (err) {
 				callback(err);
 				return;
