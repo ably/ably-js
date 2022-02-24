@@ -164,7 +164,7 @@ class Message {
     if (!nativeDataType) {
       if (Utils.isObject(data) || Utils.isArray(data)) {
         msg.data = JSON.stringify(data);
-	encoding = msg.encoding;
+        encoding = msg.encoding;
         msg.encoding = encoding ? encoding + '/json' : 'json';
       } else {
         throw new ErrorInfo('Data type is unsupported', 40013, 400);

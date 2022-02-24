@@ -1953,7 +1953,7 @@ class ConnectionManager extends EventEmitter {
         break;
       }
 
-      case 'connecting': 
+      case 'connecting':
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
