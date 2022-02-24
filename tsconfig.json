@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "importHelpers": true,
     "paths": {
         "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"],
         "platform-defaults": ["./nodejs/lib/util/defaults", "./browser/lib/util/defaults"]
