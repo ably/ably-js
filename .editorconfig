@@ -8,4 +8,4 @@ trim_trailing_whitespace = true
 charset = utf-8
 
 [*.{js,ts,.ts.d}]
-indent_style = tab
+indent_style = space

@@ -1,3 +1,3 @@
 declare module 'platform-crypto' {
-	export const getCipher: Function;
+  export const getCipher: Function;
 }
