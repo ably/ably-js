@@ -75,11 +75,6 @@ var Crypto = (function() {
 	}
 
 	/**
-	 * Internal: a block containing zeros
-	 */
-	var emptyBlock = WordArray.create([0,0,0,0]);
-
-	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
 	 */
 	var pkcs5Padding = [
@@ -211,9 +206,7 @@ var Crypto = (function() {
 	 * fields that includes a key
 	 */
 	Crypto.getCipher = function(params) {
-		var cipherParams = (params instanceof CipherParams) ?
-		                   params :
-		                   Crypto.getDefaultParams(params);
+		var cipherParams = (params instanceof CipherParams) ? params : Crypto.getDefaultParams(params);
 
 		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS, params.iv)};
 	};

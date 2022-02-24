@@ -4,7 +4,6 @@ import * as BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function() {
 	var crypto = require('crypto');
-	var util = require('util');
 
 	var DEFAULT_ALGORITHM = 'aes';
 	var DEFAULT_KEYLENGTH = 256; // bits
@@ -47,11 +46,6 @@ var Crypto = (function() {
 		/* url-safe base64 strings use _ and - instread of / and + */
 		return string.replace('_', '/').replace('-', '+');
 	}
-
-	/**
-	 * Internal: a block containing zeros
-	 */
-	var emptyBlock = Buffer.alloc(DEFAULT_BLOCKLENGTH);
 
 	/**
 	 * Internal: obtain the pkcs5 padding string for a given padded length;
@@ -184,9 +178,7 @@ var Crypto = (function() {
 	 * fields that includes a key
 	 */
 	Crypto.getCipher = function(params) {
-		var cipherParams = (isInstCipherParams(params)) ?
-		                   params :
-		                   Crypto.getDefaultParams(params);
+		var cipherParams = (isInstCipherParams(params)) ? params : Crypto.getDefaultParams(params);
 
 		var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
 		return {cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv)};
@@ -195,8 +187,8 @@ var Crypto = (function() {
 	function CBCCipher(params, iv) {
 		var algorithm = this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
 		var key = this.key = params.key;
+		// eslint-disable-next-line no-redeclare
 		var iv = this.iv = iv;
-		var key = this.key = params.key;
 		this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
 		this.blockLength = iv.length;
 	}

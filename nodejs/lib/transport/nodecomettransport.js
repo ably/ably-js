@@ -185,7 +185,6 @@ var NodeCometTransport = function(connectionManager) {
 
 	Request.prototype.readStream = function() {
 		var res = this.res,
-			headers = res.headers,
 			self = this;
 
 		/* an array of text blocks to concatenate and parse once complete */

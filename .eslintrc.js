@@ -10,6 +10,7 @@ module.exports = {
     "security"
   ],
   extends: [
+    "eslint:recommended",
     "plugin:security/recommended"
   ],
   rules: {

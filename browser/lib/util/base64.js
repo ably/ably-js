@@ -100,6 +100,7 @@ var Base64 = (function() {
 				else
 				{
 					enumerator.moveNext();
+					// eslint-disable-next-line no-redeclare
 					var charCode2 = enumerator.current;
 
 					enumerator.moveNext();
