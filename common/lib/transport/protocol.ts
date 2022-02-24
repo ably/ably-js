@@ -22,7 +22,7 @@ export class PendingMessage {
 		this.merged = false;
 		const action = message.action;
 		this.sendAttempted = false;
-		this.ackRequired = (action == actions.MESSAGE || action == actions.PRESENCE);
+		this.ackRequired = action == actions.MESSAGE || action == actions.PRESENCE;
 	}
 }
 
@@ -34,8 +34,12 @@ class Protocol extends EventEmitter {
 		super();
 		this.transport = transport;
 		this.messageQueue = new MessageQueue();
-		transport.on('ack', (serial: number, count: number) => { this.onAck(serial, count); });
-		transport.on('nack', (serial: number, count: number, err: ErrorInfo) => { this.onNack(serial, count, err); });
+		transport.on('ack', (serial: number, count: number) => {
+			this.onAck(serial, count);
+		});
+		transport.on('nack', (serial: number, count: number, err: ErrorInfo) => {
+			this.onNack(serial, count, err);
+		});
 	}
 
 	onAck(serial: number, count: number): void {
@@ -44,8 +48,12 @@ class Protocol extends EventEmitter {
 	}
 
 	onNack(serial: number, count: number, err: ErrorInfo): void {
-		Logger.logAction(Logger.LOG_ERROR, 'Protocol.onNack()', 'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err));
-		if(!err) {
+		Logger.logAction(
+			Logger.LOG_ERROR,
+			'Protocol.onNack()',
+			'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err)
+		);
+		if (!err) {
 			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
 		}
 		this.messageQueue.completeMessages(serial, count, err);
@@ -53,7 +61,7 @@ class Protocol extends EventEmitter {
 
 	onceIdle(listener: ErrCallback): void {
 		const messageQueue = this.messageQueue;
-		if(messageQueue.count() === 0) {
+		if (messageQueue.count() === 0) {
 			listener();
 			return;
 		}
@@ -61,11 +69,15 @@ class Protocol extends EventEmitter {
 	}
 
 	send(pendingMessage: PendingMessage): void {
-		if(pendingMessage.ackRequired) {
+		if (pendingMessage.ackRequired) {
 			this.messageQueue.push(pendingMessage);
 		}
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Protocol.send()', 'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message));
+			Logger.logAction(
+				Logger.LOG_MICRO,
+				'Protocol.send()',
+				'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message)
+			);
 		}
 		pendingMessage.sendAttempted = true;
 		this.transport.send(pendingMessage.message);
@@ -85,7 +97,7 @@ class Protocol extends EventEmitter {
 
 	finish(): void {
 		const transport = this.transport;
-		this.onceIdle(function() {
+		this.onceIdle(function () {
 			transport.disconnect();
 		});
 	}

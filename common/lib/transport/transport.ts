@@ -8,23 +8,26 @@ import Auth from '../client/auth';
 import * as API from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 
-export type TryConnectCallback = (wrappedErr: { error: ErrorInfo, event: string } | null, transport?: Transport) => void;
+export type TryConnectCallback = (
+	wrappedErr: { error: ErrorInfo; event: string } | null,
+	transport?: Transport
+) => void;
 
 const actions = ProtocolMessage.Action;
-const closeMessage = ProtocolMessage.fromValues({action: actions.CLOSE});
-const disconnectMessage = ProtocolMessage.fromValues({action: actions.DISCONNECT});
+const closeMessage = ProtocolMessage.fromValues({ action: actions.CLOSE });
+const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNECT });
 
 /*
-	* Transport instances inherit from EventEmitter and emit the following events:
-	*
-	* event name       data
-	* closed           error
-	* failed           error
-	* disposed
-	* connected        null error, connectionSerial, connectionId, connectionDetails
-	* sync             connectionSerial, connectionId
-	* event            channel message object
-	*/
+ * Transport instances inherit from EventEmitter and emit the following events:
+ *
+ * event name       data
+ * closed           error
+ * failed           error
+ * disposed
+ * connected        null error, connectionSerial, connectionId, connectionDetails
+ * sync             connectionSerial, connectionId
+ * event            channel message object
+ */
 
 abstract class Transport extends EventEmitter {
 	connectionManager: ConnectionManager;
@@ -65,31 +68,31 @@ abstract class Transport extends EventEmitter {
 	connect(): void {}
 
 	close(): void {
-		if(this.isConnected) {
+		if (this.isConnected) {
 			this.requestClose();
 		}
 		this.finish('closed', ConnectionErrors.closed);
-	};
+	}
 
 	disconnect(err?: Error | ErrorInfo): void {
 		/* Used for network/transport issues that need to result in the transport
-			* being disconnected, but should not transition the connection to 'failed' */
-		if(this.isConnected) {
+		 * being disconnected, but should not transition the connection to 'failed' */
+		if (this.isConnected) {
 			this.requestDisconnect();
 		}
 		this.finish('disconnected', err || ConnectionErrors.disconnected);
-	};
+	}
 
 	fail(err: ErrorInfo): void {
 		/* Used for client-side-detected fatal connection issues */
-		if(this.isConnected) {
+		if (this.isConnected) {
 			this.requestDisconnect();
 		}
 		this.finish('failed', err || ConnectionErrors.failed);
-	};
+	}
 
 	finish(event: string, err?: Error | ErrorInfo): void {
-		if(this.isFinished) {
+		if (this.isFinished) {
 			return;
 		}
 
@@ -104,59 +107,84 @@ abstract class Transport extends EventEmitter {
 
 	onProtocolMessage(message: ProtocolMessage): void {
 		if (Logger.shouldLog(Logger.LOG_MICRO)) {
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', 'received on ' + this.shortName + ': ' + ProtocolMessage.stringify(message) + '; connectionId = ' + this.connectionManager.connectionId);
+			Logger.logAction(
+				Logger.LOG_MICRO,
+				'Transport.onProtocolMessage()',
+				'received on ' +
+					this.shortName +
+					': ' +
+					ProtocolMessage.stringify(message) +
+					'; connectionId = ' +
+					this.connectionManager.connectionId
+			);
 		}
 		this.onActivity();
 
-		switch(message.action) {
-		case actions.HEARTBEAT:
-			Logger.logAction(Logger.LOG_MICRO, 'Transport.onProtocolMessage()', this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId);
-			this.emit('heartbeat', message.id);
-			break;
-		case actions.CONNECTED:
-			this.onConnect(message);
-			this.emit('connected', message.error, message.connectionId, message.connectionDetails, message);
-			break;
-		case actions.CLOSED:
-			this.onClose(message);
-			break;
-		case actions.DISCONNECTED:
-			this.onDisconnect(message);
-			break;
-		case actions.ACK:
-			this.emit('ack', message.msgSerial, message.count);
-			break;
-		case actions.NACK:
-			this.emit('nack', message.msgSerial, message.count, message.error);
-			break;
-		case actions.SYNC:
-			if(message.connectionId !== undefined) {
-				/* a transport SYNC */
-				this.emit('sync', message.connectionId, message);
+		switch (message.action) {
+			case actions.HEARTBEAT:
+				Logger.logAction(
+					Logger.LOG_MICRO,
+					'Transport.onProtocolMessage()',
+					this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId
+				);
+				this.emit('heartbeat', message.id);
 				break;
-			}
-			/* otherwise it's a channel SYNC, so handle it in the channel */
-			this.connectionManager.onChannelMessage(message, this);
-			break;
-		case actions.AUTH:
-			this.auth.authorize(function(err: ErrorInfo) {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'Transport.onProtocolMessage()', 'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err));
+			case actions.CONNECTED:
+				this.onConnect(message);
+				this.emit('connected', message.error, message.connectionId, message.connectionDetails, message);
+				break;
+			case actions.CLOSED:
+				this.onClose(message);
+				break;
+			case actions.DISCONNECTED:
+				this.onDisconnect(message);
+				break;
+			case actions.ACK:
+				this.emit('ack', message.msgSerial, message.count);
+				break;
+			case actions.NACK:
+				this.emit('nack', message.msgSerial, message.count, message.error);
+				break;
+			case actions.SYNC:
+				if (message.connectionId !== undefined) {
+					/* a transport SYNC */
+					this.emit('sync', message.connectionId, message);
+					break;
 				}
-			});
-			break;
-		case actions.ERROR:
-			Logger.logAction(Logger.LOG_MINOR, 'Transport.onProtocolMessage()', 'received error action; connectionId = ' + this.connectionManager.connectionId + '; err = ' + Utils.inspect(message.error) + (message.channel ? (', channel: ' +  message.channel) : ''));
-			if(message.channel === undefined) {
-				this.onFatalError(message);
+				/* otherwise it's a channel SYNC, so handle it in the channel */
+				this.connectionManager.onChannelMessage(message, this);
 				break;
-			}
-			/* otherwise it's a channel-specific error, so handle it in the channel */
-			this.connectionManager.onChannelMessage(message, this);
-			break;
-		default:
-			/* all other actions are channel-specific */
-			this.connectionManager.onChannelMessage(message, this);
+			case actions.AUTH:
+				this.auth.authorize(function (err: ErrorInfo) {
+					if (err) {
+						Logger.logAction(
+							Logger.LOG_ERROR,
+							'Transport.onProtocolMessage()',
+							'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err)
+						);
+					}
+				});
+				break;
+			case actions.ERROR:
+				Logger.logAction(
+					Logger.LOG_MINOR,
+					'Transport.onProtocolMessage()',
+					'received error action; connectionId = ' +
+						this.connectionManager.connectionId +
+						'; err = ' +
+						Utils.inspect(message.error) +
+						(message.channel ? ', channel: ' + message.channel : '')
+				);
+				if (message.channel === undefined) {
+					this.onFatalError(message);
+					break;
+				}
+				/* otherwise it's a channel-specific error, so handle it in the channel */
+				this.connectionManager.onChannelMessage(message, this);
+				break;
+			default:
+				/* all other actions are channel-specific */
+				this.connectionManager.onChannelMessage(message, this);
 		}
 	}
 
@@ -166,7 +194,7 @@ abstract class Transport extends EventEmitter {
 			throw new Error('Transport.onConnect(): Connect message recieved without connectionDetails');
 		}
 		const maxPromisedIdle = message.connectionDetails.maxIdleInterval as number;
-		if(maxPromisedIdle) {
+		if (maxPromisedIdle) {
 			this.maxIdleInterval = maxPromisedIdle + this.timeouts.realtimeRequestTimeout;
 			this.onActivity();
 		}
@@ -175,7 +203,7 @@ abstract class Transport extends EventEmitter {
 
 	onDisconnect(message: ProtocolMessage): void {
 		/* Used for when the server has disconnected the client (usually with a
-			* DISCONNECTED action) */
+		 * DISCONNECTED action) */
 		const err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
 		this.finish('disconnected', err);
@@ -183,8 +211,8 @@ abstract class Transport extends EventEmitter {
 
 	onFatalError(message: ProtocolMessage): void {
 		/* On receipt of a fatal connection error, we can assume that the server
-			* will close the connection and the transport, and do not need to request
-			* a disconnection - RTN15i */
+		 * will close the connection and the transport, and do not need to request
+		 * a disconnection - RTN15i */
 		const err = message && message.error;
 		Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
 		this.finish('failed', err);
@@ -207,8 +235,8 @@ abstract class Transport extends EventEmitter {
 	}
 
 	ping(id: string): void {
-		const msg: Record<string, number | string> = {action: ProtocolMessage.Action.HEARTBEAT};
-		if(id) msg.id = id;
+		const msg: Record<string, number | string> = { action: ProtocolMessage.Action.HEARTBEAT };
+		if (id) msg.id = id;
 		this.send(ProtocolMessage.fromValues(msg));
 	}
 
@@ -219,13 +247,15 @@ abstract class Transport extends EventEmitter {
 	}
 
 	onActivity(): void {
-		if(!this.maxIdleInterval) { return; }
+		if (!this.maxIdleInterval) {
+			return;
+		}
 		this.lastActivity = this.connectionManager.lastActivity = Utils.now();
 		this.setIdleTimer(this.maxIdleInterval + 100);
 	}
 
 	setIdleTimer(timeout: number): void {
-		if(!this.idleTimer) {
+		if (!this.idleTimer) {
 			this.idleTimer = setTimeout(() => {
 				this.onIdleTimerExpire();
 			}, timeout);
@@ -239,7 +269,7 @@ abstract class Transport extends EventEmitter {
 		this.idleTimer = null;
 		const sinceLast = Utils.now() - this.lastActivity;
 		const timeRemaining = this.maxIdleInterval - sinceLast;
-		if(timeRemaining <= 0) {
+		if (timeRemaining <= 0) {
 			const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
 			Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
 			this.disconnect(new ErrorInfo(msg, 80003, 408));
@@ -248,7 +278,12 @@ abstract class Transport extends EventEmitter {
 		}
 	}
 
-	static tryConnect?: (connectionManager: ConnectionManager, auth: Auth, transportParams: TransportParams, callback: TryConnectCallback) => void;
+	static tryConnect?: (
+		connectionManager: ConnectionManager,
+		auth: Auth,
+		transportParams: TransportParams,
+		callback: TryConnectCallback
+	) => void;
 	onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
 }
 

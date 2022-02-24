@@ -43,11 +43,11 @@ export function isRetriable(err: ErrorInfo) {
 		return true;
 	}
 	let retriable = false;
-	Object.values(ConnectionErrors).forEach(function(connErr) {
+	Object.values(ConnectionErrors).forEach(function (connErr) {
 		if (connErr.code && connErr.code == err.code) {
 			retriable = true;
 		}
-	})
+	});
 	return retriable;
 }
 

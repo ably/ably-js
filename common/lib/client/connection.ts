@@ -21,7 +21,7 @@ class Connection extends EventEmitter {
 	timeSerial: undefined;
 	recoveryKey?: string | null;
 	errorReason: ErrorInfo | null;
-	
+
 	constructor(ably: Realtime, options: NormalisedClientOptions) {
 		super();
 		this.ably = ably;
@@ -35,7 +35,7 @@ class Connection extends EventEmitter {
 		this.errorReason = null;
 
 		this.connectionManager.on('connectionstate', (stateChange: ConnectionStateChange) => {
-			const state = this.state = stateChange.current as string;
+			const state = (this.state = stateChange.current as string);
 			Utils.nextTick(() => {
 				this.emit(state, stateChange);
 			});
@@ -47,19 +47,25 @@ class Connection extends EventEmitter {
 		});
 	}
 
-	whenState = (((state: string, listener: Function) => {
-		return EventEmitter.prototype.whenState.call(this, state, this.state, listener, new ConnectionStateChange(undefined, state));
-	}) as any)
+	whenState = ((state: string, listener: Function) => {
+		return EventEmitter.prototype.whenState.call(
+			this,
+			state,
+			this.state,
+			listener,
+			new ConnectionStateChange(undefined, state)
+		);
+	}) as any;
 
 	connect(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
-		this.connectionManager.requestState({state: 'connecting'});
+		this.connectionManager.requestState({ state: 'connecting' });
 	}
 
 	ping(callback: Function): Promise<void> | void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-		if(!callback) {
-			if(this.ably.options.promises) {
+		if (!callback) {
+			if (this.ably.options.promises) {
 				return Utils.promisify(this, 'ping', [callback]);
 			}
 			callback = noop;
@@ -69,7 +75,7 @@ class Connection extends EventEmitter {
 
 	close(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
-		this.connectionManager.requestState({state: 'closing'});
+		this.connectionManager.requestState({ state: 'closing' });
 	}
 }
 

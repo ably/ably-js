@@ -10,16 +10,16 @@ export interface MulticasterInstance extends Function {
 class Multicaster {
 	members: Array<AnyFunction>;
 
-  // Private constructor; use static Multicaster.create instead
+	// Private constructor; use static Multicaster.create instead
 	private constructor(members?: Array<AnyFunction | undefined>) {
-		this.members = members as Array<AnyFunction> || [];
+		this.members = (members as Array<AnyFunction>) || [];
 	}
 
 	call(...args: unknown[]): void {
 		for (const member of this.members) {
 			if (member) {
 				try {
-          member(...args);
+					member(...args);
 				} catch (e) {
 					Logger.logAction(
 						Logger.LOG_ERROR,
@@ -37,12 +37,9 @@ class Multicaster {
 
 	static create(members?: Array<AnyFunction | undefined>): MulticasterInstance {
 		const instance = new Multicaster(members);
-		return Object.assign(
-      (...args: unknown[]) => instance.call(...args),
-      {
-        push: (fn: AnyFunction) => instance.push(fn)
-      }
-		);
+		return Object.assign((...args: unknown[]) => instance.call(...args), {
+			push: (fn: AnyFunction) => instance.push(fn)
+		});
 	}
 }
 

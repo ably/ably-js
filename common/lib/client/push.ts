@@ -8,7 +8,7 @@ import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Rest from './rest';
 
-const noop = function() {};
+const noop = function () {};
 
 class Push {
 	rest: Rest;
@@ -36,23 +36,23 @@ class Admin {
 		const format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
-		const body = Utils.mixin({recipient: recipient}, payload);
+		const body = Utils.mixin({ recipient: recipient }, payload);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
 		const requestBody = Utils.encodeBody(body, format);
-		Resource.post(rest, '/push/publish', requestBody, headers, params, null, function(err: Error) { callback(err); });
+		Resource.post(rest, '/push/publish', requestBody, headers, params, null, function (err: Error) {
+			callback(err);
+		});
 	}
 }
 
@@ -70,23 +70,29 @@ class DeviceRegistrations {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'save', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
 		const requestBody = Utils.encodeBody(body, format);
-		Resource.put(rest, '/push/deviceRegistrations/' + encodeURIComponent(device.id), requestBody, headers, params, null, function(err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
-			callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
-		});
+		Resource.put(
+			rest,
+			'/push/deviceRegistrations/' + encodeURIComponent(device.id),
+			requestBody,
+			headers,
+			params,
+			null,
+			function (err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
+				callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
+			}
+		);
 	}
 
 	get(deviceIdOrDetails: any, callback: StandardCallback<DeviceDetails>) {
@@ -95,24 +101,36 @@ class DeviceRegistrations {
 			headers = Utils.defaultGetHeaders(format),
 			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'get', arguments);
 			}
 			callback = noop;
 		}
 
-		if(typeof deviceId !== 'string' || !deviceId.length) {
-			callback(new ErrorInfo('First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails', 40000, 400));
+		if (typeof deviceId !== 'string' || !deviceId.length) {
+			callback(
+				new ErrorInfo(
+					'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
+					40000,
+					400
+				)
+			);
 			return;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		Resource.get(rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, {}, null, function(err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
-			callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
-		});
+		Resource.get(
+			rest,
+			'/push/deviceRegistrations/' + encodeURIComponent(deviceId),
+			headers,
+			{},
+			null,
+			function (err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
+				callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
+			}
+		);
 	}
 
 	list(params: any, callback: PaginatedResultCallback<unknown>) {
@@ -121,19 +139,22 @@ class DeviceRegistrations {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'list', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+		new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function (
+			body: any,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
 			return DeviceDetails.fromResponseBody(body, unpacked ? undefined : format);
-		})).get(params, callback);
+		}).get(params, callback);
 	}
 
 	remove(deviceIdOrDetails: any, callback: ErrCallback) {
@@ -143,25 +164,38 @@ class DeviceRegistrations {
 			params = {},
 			deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'remove', arguments);
 			}
 			callback = noop;
 		}
 
-		if(typeof deviceId !== 'string' || !deviceId.length) {
-			callback(new ErrorInfo('First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails', 40000, 400));
+		if (typeof deviceId !== 'string' || !deviceId.length) {
+			callback(
+				new ErrorInfo(
+					'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
+					40000,
+					400
+				)
+			);
 			return;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-		Resource['delete'](rest, '/push/deviceRegistrations/' + encodeURIComponent(deviceId), headers, params, null, function(err: Error) { callback(err); });
+		Resource['delete'](
+			rest,
+			'/push/deviceRegistrations/' + encodeURIComponent(deviceId),
+			headers,
+			params,
+			null,
+			function (err: Error) {
+				callback(err);
+			}
+		);
 	}
 
 	removeWhere(params: any, callback: ErrCallback) {
@@ -169,20 +203,20 @@ class DeviceRegistrations {
 			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null, function(err: Error) { callback(err); });
+		Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null, function (err: Error) {
+			callback(err);
+		});
 	}
 }
 
@@ -200,23 +234,32 @@ class ChannelSubscriptions {
 			headers = Utils.defaultPostHeaders(format),
 			params = {};
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'save', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
 		const requestBody = Utils.encodeBody(body, format);
-		Resource.post(rest, '/push/channelSubscriptions', requestBody, headers, params, null, function(err: Error, body: Record<string, unknown>, headers: Record<string, string>, unpacked: boolean) {
-			callback(err, (!err || undefined) && PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format));
-		});
+		Resource.post(
+			rest,
+			'/push/channelSubscriptions',
+			requestBody,
+			headers,
+			params,
+			null,
+			function (err: Error, body: Record<string, unknown>, headers: Record<string, string>, unpacked: boolean) {
+				callback(
+					err,
+					(!err || undefined) && PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format)
+				);
+			}
+		);
 	}
 
 	list(params: any, callback: PaginatedResultCallback<unknown>) {
@@ -225,19 +268,22 @@ class ChannelSubscriptions {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'list', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		(new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+		new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function (
+			body: any,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
 			return PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format);
-		})).get(params, callback);
+		}).get(params, callback);
 	}
 
 	removeWhere(params: any, callback: PaginatedResultCallback<unknown>) {
@@ -245,20 +291,20 @@ class ChannelSubscriptions {
 			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'removeWhere', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, function(err: Error) { callback(err); });
+		Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, function (err: Error) {
+			callback(err);
+		});
 	}
 
 	/* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
@@ -266,31 +312,33 @@ class ChannelSubscriptions {
 
 	listChannels(params: any, callback: PaginatedResultCallback<unknown>) {
 		const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(typeof callback !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'listChannels', arguments);
 			}
 			callback = noop;
 		}
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
-		if(rest.options.pushFullWait)
-			Utils.mixin(params, {fullWait: 'true'});
+		if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-		(new PaginatedResource(rest, '/push/channels', headers, envelope, function(body: unknown, headers: Record<string, string>, unpacked?: boolean) {
-			const parsedBody = ((!unpacked && format) ? Utils.decodeBody(body, format) : body) as Array<string>
+		new PaginatedResource(rest, '/push/channels', headers, envelope, function (
+			body: unknown,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
+			const parsedBody = (!unpacked && format ? Utils.decodeBody(body, format) : body) as Array<string>;
 
-			for(let i = 0; i < parsedBody.length; i++) {
+			for (let i = 0; i < parsedBody.length; i++) {
 				parsedBody[i] = String(parsedBody[i]);
 			}
 			return parsedBody;
-		})).get(params, callback);
+		}).get(params, callback);
 	}
 }
 

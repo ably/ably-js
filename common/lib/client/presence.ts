@@ -24,12 +24,12 @@ class Presence extends EventEmitter {
 	get(params: any, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PresenceMessage> {
 		Logger.logAction(Logger.LOG_MICRO, 'Presence.get()', 'channel = ' + this.channel.name);
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined) {
-			if(typeof(params) == 'function') {
+		if (callback === undefined) {
+			if (typeof params == 'function') {
 				callback = params;
 				params = null;
 			} else {
-				if(this.channel.rest.options.promises) {
+				if (this.channel.rest.options.promises) {
 					return Utils.promisify(this, 'get', [params, callback]);
 				}
 				callback = noop;
@@ -40,13 +40,16 @@ class Presence extends EventEmitter {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
 		const options = this.channel.channelOptions;
-		(new PaginatedResource(rest, this.basePath, headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+		new PaginatedResource(rest, this.basePath, headers, envelope, function (
+			body: any,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
 			return PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
-		})).get(params, callback);
+		}).get(params, callback);
 	}
 
 	history(params: any, callback: PaginatedResultCallback<PresenceMessage>): void {
@@ -56,12 +59,12 @@ class Presence extends EventEmitter {
 
 	_history(params: any, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PresenceMessage> {
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined) {
-			if(typeof(params) == 'function') {
+		if (callback === undefined) {
+			if (typeof params == 'function') {
 				callback = params;
 				params = null;
 			} else {
-				if(this.channel.rest.options.promises) {
+				if (this.channel.rest.options.promises) {
 					return Utils.promisify(this, '_history', [params, callback]);
 				}
 				callback = noop;
@@ -72,13 +75,16 @@ class Presence extends EventEmitter {
 			envelope = Http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
 		const options = this.channel.channelOptions;
-		(new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+		new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function (
+			body: any,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
 			return PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
-		})).get(params, callback);
+		}).get(params, callback);
 	}
 }
 

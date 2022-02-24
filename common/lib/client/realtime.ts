@@ -22,8 +22,7 @@ class Realtime extends Rest {
 		Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
 		this.connection = new Connection(this, this.options);
 		this.channels = new Channels(this);
-		if(options.autoConnect !== false)
-			this.connect();
+		if (options.autoConnect !== false) this.connect();
 	}
 
 	connect(): void {
@@ -36,7 +35,7 @@ class Realtime extends Rest {
 		this.connection.close();
 	}
 
-	static Promise = function(options: DeprecatedClientOptions): Realtime {
+	static Promise = function (options: DeprecatedClientOptions): Realtime {
 		options = Defaults.objectifyOptions(options);
 		options.promises = true;
 		return new Realtime(options);
@@ -62,13 +61,21 @@ class Channels extends EventEmitter {
 
 	onChannelMessage(msg: ProtocolMessage) {
 		const channelName = msg.channel;
-		if(channelName === undefined) {
-			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event unspecified channel, action = ' + msg.action);
+		if (channelName === undefined) {
+			Logger.logAction(
+				Logger.LOG_ERROR,
+				'Channels.onChannelMessage()',
+				'received event unspecified channel, action = ' + msg.action
+			);
 			return;
 		}
 		const channel = this.all[channelName];
-		if(!channel) {
-			Logger.logAction(Logger.LOG_ERROR, 'Channels.onChannelMessage()', 'received event for non-existent channel: ' + channelName);
+		if (!channel) {
+			Logger.logAction(
+				Logger.LOG_ERROR,
+				'Channels.onChannelMessage()',
+				'received event for non-existent channel: ' + channelName
+			);
 			return;
 		}
 		channel.onMessage(msg);
@@ -77,43 +84,47 @@ class Channels extends EventEmitter {
 	/* called when a transport becomes connected; reattempt attach/detach
 	 * for channels that are attaching or detaching.
 	 * Note that this does not use inProgress as inProgress is only channels which have already made
-	* at least one attempt to attach/detach */
+	 * at least one attempt to attach/detach */
 	onTransportActive() {
-		for(const channelName in this.all) {
+		for (const channelName in this.all) {
 			const channel = this.all[channelName];
-			if(channel.state === 'attaching' || channel.state === 'detaching') {
+			if (channel.state === 'attaching' || channel.state === 'detaching') {
 				channel.checkPendingState();
-			} else if(channel.state === 'suspended') {
+			} else if (channel.state === 'suspended') {
 				channel.attach();
 			}
 		}
 	}
 
 	reattach(reason: ErrorInfo) {
-		for(const channelId in this.all) {
+		for (const channelId in this.all) {
 			const channel = this.all[channelId];
 			/* NB this should not trigger for merely attaching channels, as they will
 			 * be reattached anyway through the onTransportActive checkPendingState */
-			if(channel.state === 'attached') {
+			if (channel.state === 'attached') {
 				channel.requestState('attaching', reason);
 			}
 		}
 	}
 
 	resetAttachedMsgIndicators() {
-		for(const channelId in this.all) {
+		for (const channelId in this.all) {
 			const channel = this.all[channelId];
-			if(channel.state === 'attached') {
-			channel._attachedMsgIndicator = false;
+			if (channel.state === 'attached') {
+				channel._attachedMsgIndicator = false;
 			}
 		}
 	}
 
 	checkAttachedMsgIndicators(connectionId: string) {
-		for(const channelId in this.all) {
+		for (const channelId in this.all) {
 			const channel = this.all[channelId];
-			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
-				const msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
+			if (channel.state === 'attached' && channel._attachedMsgIndicator === false) {
+				const msg =
+					'30s after a resume, found channel which has not received an attached; channelId = ' +
+					channelId +
+					'; connectionId = ' +
+					connectionId;
 				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
 				ErrorReporter.report('error', msg, 'channel-no-attached-after-resume');
 				channel.requestState('attaching');
@@ -126,17 +137,17 @@ class Channels extends EventEmitter {
 	 * attached, pending, or will attempt to become attached in the future */
 	propogateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
 		const connectionStateToChannelState: Record<string, API.Types.ChannelState> = {
-			'closing'  : 'detached',
-			'closed'   : 'detached',
-			'failed'   : 'failed',
-			'suspended': 'suspended'
+			closing: 'detached',
+			closed: 'detached',
+			failed: 'failed',
+			suspended: 'suspended'
 		};
 		const fromChannelStates = ['attaching', 'attached', 'detaching', 'suspended'];
 		const toChannelState = connectionStateToChannelState[connectionState];
 
-		for(const channelId in this.all) {
+		for (const channelId in this.all) {
 			const channel = this.all[channelId];
-			if(Utils.arrIn(fromChannelStates, channel.state)) {
+			if (Utils.arrIn(fromChannelStates, channel.state)) {
 				channel.notifyState(toChannelState, reason);
 			}
 		}
@@ -145,11 +156,15 @@ class Channels extends EventEmitter {
 	get(name: string, channelOptions: ChannelOptions) {
 		name = String(name);
 		let channel = this.all[name];
-		if(!channel) {
+		if (!channel) {
 			channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
-		} else if(channelOptions) {
+		} else if (channelOptions) {
 			if (channel._shouldReattachToSetOptions(channelOptions)) {
-				throw new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.", 40000, 400);
+				throw new ErrorInfo(
+					'Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.',
+					40000,
+					400
+				);
 			}
 			channel.setOptions(channelOptions);
 		}
@@ -161,11 +176,11 @@ class Channels extends EventEmitter {
 	release(name: string) {
 		name = String(name);
 		const channel = this.all[name];
-		if(!channel) {
+		if (!channel) {
 			return;
 		}
 		const releaseErr = channel.getReleaseErr();
-		if(releaseErr) {
+		if (releaseErr) {
 			throw releaseErr;
 		}
 		delete this.all[name];
@@ -180,13 +195,13 @@ class Channels extends EventEmitter {
 	setInProgress(channel: RealtimeChannel, operation: string, inProgress: boolean) {
 		this.inProgress[channel.name] = this.inProgress[channel.name] || {};
 		(this.inProgress[channel.name] as any)[operation] = inProgress;
-		if(!inProgress && this.hasNopending()) {
+		if (!inProgress && this.hasNopending()) {
 			this.emit('nopending');
 		}
 	}
 
 	onceNopending(listener: ErrCallback) {
-		if(this.hasNopending()) {
+		if (this.hasNopending()) {
 			listener();
 			return;
 		}
@@ -194,9 +209,12 @@ class Channels extends EventEmitter {
 	}
 
 	hasNopending() {
-		return Utils.arrEvery(Utils.valuesArray(this.inProgress, true) as any, function(operations: Record<string, unknown>) {
-			return !Utils.containsValue(operations, true);
-		});
+		return Utils.arrEvery(
+			Utils.valuesArray(this.inProgress, true) as any,
+			function (operations: Record<string, unknown>) {
+				return !Utils.containsValue(operations, true);
+			}
+		);
 	}
 }
 
