@@ -443,11 +443,11 @@ class Auth {
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
 			tokenRequestCallback = function(params: Record<string, unknown>, cb: Function) {
-				var authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders) as Record<string, string>,
-					usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post',
-					providedQsParams;
+				const authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders) as Record<string, string>;
+				const usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
+				let providedQsParams;
 				/* Combine authParams with any qs params given in the authUrl */
-				var queryIdx = authOptions.authUrl.indexOf('?');
+				const queryIdx = authOptions.authUrl.indexOf('?');
 				if(queryIdx > -1) {
 					providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
 					authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
