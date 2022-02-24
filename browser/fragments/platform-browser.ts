@@ -40,7 +40,7 @@ const Platform: IPlatform = {
 	ArrayBuffer: global.ArrayBuffer,
 	atob: global.atob,
 	nextTick: typeof global.setImmediate !== 'undefined' ? global.setImmediate.bind(global) : function(f: () => void) { setTimeout(f, 0); },
-	addEventListener: global.addEventListener as unknown as null, // This is not ideal but TypeScript doesn't seem to allow anything else here
+	addEventListener: global.addEventListener,
 	inspect: JSON.stringify,
 	stringByteSize: function(str: string) {
 		/* str.length will be an underestimate for non-ascii strings. But if we're
