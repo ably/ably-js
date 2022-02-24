@@ -48,7 +48,9 @@ module.exports = function (grunt) {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version,
 		webpack: {
-			config: webpackConfig
+			all: Object.values(webpackConfig),
+			node: webpackConfig.node,
+			browser: [webpackConfig.browser, webpackConfig.browserMin]
 		}
 	};
 
@@ -110,7 +112,17 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'checkGitSubmodules',
-		'webpack'
+		'webpack:all'
+	]);
+
+	grunt.registerTask('build:node', [
+		'checkGitSubmodules',
+		'webpack:node'
+	]);
+
+	grunt.registerTask('build:browser', [
+		'checkGitSubmodules',
+		'webpack:browser'
 	]);
 
 	grunt.registerTask('check-closure-compiler', [
