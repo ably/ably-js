@@ -4,7 +4,9 @@ module.exports = {
     node: true,
     browser: true
   },
+  parser: '@typescript-eslint/parser',
   plugins: [
+    "@typescript-eslint",
     "security"
   ],
   extends: [

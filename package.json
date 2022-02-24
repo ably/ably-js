@@ -35,6 +35,8 @@
     "@types/node": "^15.0.0",
     "@types/request": "^2.48.7",
     "@types/ws": "^8.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
