@@ -14,10 +14,10 @@ import * as API from '../../../ably';
 import { StandardCallback } from '../../types/utils';
 import Rest from './rest';
 import Realtime from './realtime';
+import ClientOptions from '../../types/ClientOptions';
 
 // TODO: replace these with the real types once these classes are in TypeScript
 type AuthOptions = any;
-type ClientOptions = any;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -150,7 +150,7 @@ class Auth {
 			if(noWayToRenew(options)) {
 				Logger.logAction(Logger.LOG_ERROR, 'Auth()', 'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help');
 			}
-			this._saveTokenOptions(options.defaultTokenParams, options);
+			this._saveTokenOptions(options.defaultTokenParams as API.Types.TokenDetails, options);
 			logAndValidateTokenAuthMethod(this.authOptions);
 		} else {
 			/* Basic auth */
