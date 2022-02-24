@@ -251,9 +251,9 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions | null, callback: Function): void;
 
-	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: API.Types.AuthOptions | Function, callback?: Function): void | Promise<void> {
+	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: API.Types.AuthOptions | null | Function, callback?: Function): void | Promise<void> {
 		let _authOptions: API.Types.AuthOptions | null;
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
