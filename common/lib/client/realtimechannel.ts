@@ -13,9 +13,7 @@ import * as API from '../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
-
-// TODO: Replace this with the real type when Realtime is in TypeScript
-type Realtime = any;
+import Realtime from './realtime';
 
 export type RealtimeChannelState = 'initialized' | 'attaching' | 'attached' | 'suspended' | 'detaching' | 'detached' | 'failed';
 
