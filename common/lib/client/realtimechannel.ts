@@ -15,8 +15,6 @@ import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
 import Realtime from './realtime';
 
-export type RealtimeChannelState = 'initialized' | 'attaching' | 'attached' | 'suspended' | 'detaching' | 'detached' | 'failed';
-
 interface RealtimeHistoryParams {
 	start?: number;
 	end?: number;
@@ -53,7 +51,7 @@ class RealtimeChannel extends Channel {
 	realtime: Realtime;
 	presence: RealtimePresence;
 	connectionManager: ConnectionManager;
-	state: RealtimeChannelState;
+	state: API.Types.ChannelState;
 	subscriptions: EventEmitter;
 	syncChannelSerial?: number | null;
 	properties: { attachSerial: number | null | undefined; };
@@ -603,7 +601,7 @@ class RealtimeChannel extends Channel {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
 	}
 
-	notifyState(state: RealtimeChannelState, reason?: ErrorInfo | null, resumed?: boolean, hasPresence?: boolean): void {
+	notifyState(state: API.Types.ChannelState, reason?: ErrorInfo | null, resumed?: boolean, hasPresence?: boolean): void {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.notifyState', 'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state);
 		this.clearStateTimer();
 
@@ -644,7 +642,7 @@ class RealtimeChannel extends Channel {
 		this.emit(state, change);
 	}
 
-	requestState(state: RealtimeChannelState, reason?: ErrorInfo | null): void {
+	requestState(state: API.Types.ChannelState, reason?: ErrorInfo | null): void {
 		Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
 		this.notifyState(state, reason);
 		/* send the event and await response */
