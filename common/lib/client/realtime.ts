@@ -3,7 +3,7 @@ import Rest from './rest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
-import RealtimeChannel, { RealtimeChannelState } from './realtimechannel';
+import RealtimeChannel from './realtimechannel';
 import Defaults from '../util/defaults';
 import ErrorReporter from '../util/errorreporter';
 import ErrorInfo from '../types/errorinfo';
@@ -11,6 +11,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
+import * as API from '../../../ably';
 
 class Realtime extends Rest {
 	channels: any;
@@ -42,7 +43,6 @@ class Realtime extends Rest {
 	};
 
 	static Callbacks = Realtime;
-
 }
 
 class Channels extends EventEmitter {
@@ -125,7 +125,7 @@ class Channels extends EventEmitter {
 	 * events) imply connection state changes for any channel which is either
 	 * attached, pending, or will attempt to become attached in the future */
 	propogateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
-		const connectionStateToChannelState: Record<string, RealtimeChannelState> = {
+		const connectionStateToChannelState: Record<string, API.Types.ChannelState> = {
 			'closing'  : 'detached',
 			'closed'   : 'detached',
 			'failed'   : 'failed',
