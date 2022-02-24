@@ -7,10 +7,8 @@ import HttpMethods from '../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest } from 'got';
 import http from 'http';
 import https from 'https';
-
-// TODO: replace these with the real types once these classes are in TypeScript
-type Rest = any;
-type Realtime = any;
+import Rest from '../../../common/lib/client/rest';
+import Realtime from '../../../common/lib/client/realtime';
 
 const msgpack = Platform.msgpack;
 
