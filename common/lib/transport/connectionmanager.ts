@@ -125,7 +125,7 @@ export class TransportParams {
           params.connectionSerial = this.connectionSerial;
         }
         break;
-      case 'recover':
+      case 'recover': {
         const match = (options.recover as string).split(':');
         if (match) {
           params.recover = match[0];
@@ -137,6 +137,7 @@ export class TransportParams {
           }
         }
         break;
+      }
       default:
     }
     if (options.clientId !== undefined) {
@@ -1895,7 +1896,7 @@ class ConnectionManager extends EventEmitter {
 
   onAuthUpdated(tokenDetails: API.Types.TokenDetails, callback: Function): void {
     switch (this.state.state) {
-      case 'connected':
+      case 'connected': {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
@@ -1950,8 +1951,9 @@ class ConnectionManager extends EventEmitter {
         this.once('connectiondetails', successListener);
         this.on('connectionstate', failureListener);
         break;
+      }
 
-      case 'connecting':
+      case 'connecting': 
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
@@ -1960,7 +1962,7 @@ class ConnectionManager extends EventEmitter {
         this.disconnectAllTransports();
       /* fallthrough to add statechange listener */
 
-      default:
+      default: {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
@@ -1991,6 +1993,7 @@ class ConnectionManager extends EventEmitter {
         } else {
           this.requestState({ state: 'connecting' });
         }
+      }
     }
   }
 

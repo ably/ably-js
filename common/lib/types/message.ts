@@ -164,7 +164,8 @@ class Message {
     if (!nativeDataType) {
       if (Utils.isObject(data) || Utils.isArray(data)) {
         msg.data = JSON.stringify(data);
-        msg.encoding = (encoding = msg.encoding) ? encoding + '/json' : 'json';
+	encoding = msg.encoding;
+        msg.encoding = encoding ? encoding + '/json' : 'json';
       } else {
         throw new ErrorInfo('Data type is unsupported', 40013, 400);
       }
@@ -212,6 +213,7 @@ class Message {
       let xform = '';
       try {
         while ((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
+          // eslint-disable-next-line security/detect-unsafe-regex
           const match = xforms[--encodingsToProcess].match(/([-\w]+)(\+([\w-]+))?/);
           if (!match) break;
           xform = match[1];
@@ -281,7 +283,6 @@ class Message {
             default:
               throw new Error('Unknown encoding');
           }
-          break;
         }
       } catch (e) {
         const err = e as ErrorInfo;

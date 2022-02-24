@@ -175,6 +175,11 @@ class RealtimePresence extends Presence {
         case 'initialized':
         case 'detached':
           channel.attach();
+          this.pendingPresence.push({
+            presence: presence,
+            callback: callback,
+          });
+          break;
         case 'attaching':
           this.pendingPresence.push({
             presence: presence,
@@ -239,12 +244,13 @@ class RealtimePresence extends Presence {
         });
         break;
       case 'initialized':
-      case 'failed':
+      case 'failed': {
         /* we're not attached; therefore we let any entered status
          * timeout by itself instead of attaching just in order to leave */
         const err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
         callback?.(err);
         break;
+      }
       default:
         /* there is no connection; therefore we let
          * any entered status timeout by itself */
@@ -457,8 +463,9 @@ class RealtimePresence extends Presence {
       for (let i = 0; i < this.pendingPresence.length; i++)
         try {
           this.pendingPresence[i].callback(err);
-        } catch (e) {}
-      this.pendingPresence = [];
+        } finally {
+          this.pendingPresence = [];
+        }
     }
   }
 
