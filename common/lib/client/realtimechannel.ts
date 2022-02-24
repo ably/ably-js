@@ -71,8 +71,6 @@ class RealtimeChannel extends Channel {
 	modes: string[] | undefined;
 	stateTimer?: number | NodeJS.Timeout | null;
 	retryTimer?: number | NodeJS.Timeout | null;
-	suspendTimer?: number | NodeJS.Timeout | null;
-
 
 	constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
 		super(realtime, name, options);
@@ -738,7 +736,7 @@ class RealtimeChannel extends Channel {
 	cancelRetryTimer(): void {
 		if(this.retryTimer) {
 			clearTimeout(this.retryTimer as NodeJS.Timeout);
-			this.suspendTimer = null;
+			this.retryTimer = null;
 		}
 	}
 
