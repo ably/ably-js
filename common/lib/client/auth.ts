@@ -12,16 +12,20 @@ import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../ably';
 import { StandardCallback } from '../../types/utils';
+import Rest from './rest';
+import Realtime from './realtime';
 
 // TODO: replace these with the real types once these classes are in TypeScript
 type AuthOptions = any;
 type ClientOptions = any;
-type Realtime = any;
-type Rest = any;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
 function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
+
+function isRealtime(client: Rest | Realtime): client is Realtime {
+  return !!(client as Realtime).connection;
+}
 
 /* A client auth callback may give errors in any number of formats; normalise to an errorinfo */
 function normaliseAuthcallbackError(err: any) {
@@ -298,7 +302,7 @@ class Auth {
 			 * don't call back till new token has taken effect.
 			 * - Use this.client.connection as a proxy for (this.client instanceof Realtime),
 			 * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
-			if(this.client.connection) {
+			if(isRealtime(this.client)) {
 				this.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback || noop);
 			} else {
 				callback?.(null, tokenDetails);
