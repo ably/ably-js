@@ -138,12 +138,12 @@ module.exports = function (grunt) {
 	grunt.registerTask('test', ['test:node']);
 	grunt.registerTask('test:node',
 		'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['build', 'mocha']
+		['build:node', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'checkGitSubmodules', 'mocha:webserver']
+		['build:browser', 'checkGitSubmodules', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',
