@@ -122,32 +122,16 @@ module.exports = function (grunt) {
 
 	grunt.loadTasks('spec/tasks');
 
-	var browsers = grunt.option('browsers') || 'default';
-	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
 
-	grunt.registerTask('test',
-		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
-		['build', 'mocha', 'karma:' + browsers]
-	);
-
-	grunt.registerTask('test:karma',
-		'Run the Karma test suite' + optionsDescription,
-		['build', 'karma:' + browsers]
-	);
-
-	grunt.registerTask('test:karma:run',
-		'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
-		['build', 'requirejs', 'karma:run']
-	);
-
-	grunt.registerTask('test:mocha',
-		'Concat files and then run the Mocha specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+	grunt.registerTask('test', ['test:node']);
+	grunt.registerTask('test:node',
+		'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
 		['build', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'checkGitSubmodules', 'requirejs', 'mocha:webserver']
+		['build', 'checkGitSubmodules', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',
