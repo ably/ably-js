@@ -3,7 +3,7 @@ enum TransportNames {
 	Comet = 'comet',
 	XhrStreaming = 'xhr_streaming',
 	XhrPolling = 'xhr_polling',
-	JsonP = 'jsonp'
+	JsonP = 'jsonp',
 }
 
 export default TransportNames;

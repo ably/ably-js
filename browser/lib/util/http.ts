@@ -47,7 +47,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback?: RequestCallback
+		callback?: RequestCallback,
 	): void {
 		const uriFromHost =
 			typeof path == 'function'
@@ -80,7 +80,7 @@ const Http: typeof IHttp = class {
 							return;
 						}
 						callback?.(err, ...args);
-					}
+					},
 				);
 				return;
 			} else {
@@ -117,11 +117,11 @@ const Http: typeof IHttp = class {
 						/* RSC15f */
 						rest._currentFallback = {
 							host: host as string,
-							validUntil: Utils.now() + rest.options.timeouts.fallbackRetryTimeout
+							validUntil: Utils.now() + rest.options.timeouts.fallbackRetryTimeout,
 						};
 					}
 					callback?.(err, ...args);
-				}
+				},
 			);
 		};
 		tryAHost(hosts);
@@ -134,7 +134,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		if (!Http.Request) {
 			callback(new ErrorInfo('Request invoked before assigned to', null, 500));
@@ -167,7 +167,7 @@ const Http: typeof IHttp = class {
 		path: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Get, rest, path, headers, null, params, callback);
 	}
@@ -177,7 +177,7 @@ const Http: typeof IHttp = class {
 		uri: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
 	}
@@ -187,7 +187,7 @@ const Http: typeof IHttp = class {
 		path: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
 	}
@@ -197,7 +197,7 @@ const Http: typeof IHttp = class {
 		uri: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
 	}
@@ -208,7 +208,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Post, rest, path, headers, body, params, callback);
 	}
@@ -219,7 +219,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
 	}
@@ -230,7 +230,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Put, rest, path, headers, body, params, callback);
 	}
@@ -241,7 +241,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
 	}
@@ -252,7 +252,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
 	}
@@ -263,7 +263,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
 	}
@@ -275,7 +275,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		params: RequestParams,
 		body: unknown,
-		callback: RequestCallback
+		callback: RequestCallback,
 	) => void;
 
 	static checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity: boolean) => void) => void = undefined;

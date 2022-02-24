@@ -38,7 +38,7 @@ class PresenceMessage {
 		return {
 			connectionId: parts[0],
 			msgSerial: parseInt(parts[1], 10),
-			index: parseInt(parts[2], 10)
+			index: parseInt(parts[2], 10),
 		};
 	}
 
@@ -74,7 +74,7 @@ class PresenceMessage {
 			/* Convert presence action back to an int for sending to Ably */
 			action: toActionValue(this.action as string),
 			data: data,
-			encoding: encoding
+			encoding: encoding,
 		};
 	}
 
@@ -101,7 +101,7 @@ class PresenceMessage {
 	static fromResponseBody(
 		body: Record<string, unknown>[],
 		options: CipherOptions,
-		format?: Utils.Format
+		format?: Utils.Format,
 	): PresenceMessage[] {
 		const messages: PresenceMessage[] = [];
 		if (format) {

@@ -22,7 +22,7 @@ const Defaults = {
 		'B.ably-realtime.com',
 		'C.ably-realtime.com',
 		'D.ably-realtime.com',
-		'E.ably-realtime.com'
+		'E.ably-realtime.com',
 	],
 	PORT: 80,
 	TLS_PORT: 443,
@@ -39,7 +39,7 @@ const Defaults = {
 		realtimeRequestTimeout: 10000,
 		recvTimeout: 90000,
 		preferenceConnectTimeout: 6000,
-		parallelUpgradeDelay: 6000
+		parallelUpgradeDelay: 6000,
 	},
 	httpMaxRetryCount: 3,
 	maxMessageSize: 65536,
@@ -47,7 +47,7 @@ const Defaults = {
 	errorReportingUrl: 'https://errors.ably.io/api/15/store/',
 	errorReportingHeaders: {
 		'X-Sentry-Auth': 'Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1',
-		'Content-Type': 'application/json'
+		'Content-Type': 'application/json',
 	},
 
 	version,
@@ -61,7 +61,7 @@ const Defaults = {
 	getHosts,
 	checkHost,
 	objectifyOptions,
-	normaliseOptions
+	normaliseOptions,
 };
 
 export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
@@ -86,7 +86,7 @@ export function environmentFallbackHosts(environment: string): string[] {
 		environment + '-b-fallback.ably-realtime.com',
 		environment + '-c-fallback.ably-realtime.com',
 		environment + '-d-fallback.ably-realtime.com',
-		environment + '-e-fallback.ably-realtime.com'
+		environment + '-e-fallback.ably-realtime.com',
 	];
 }
 
@@ -123,7 +123,7 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
 				options.restHost +
 				'" but realtimeHost is not set, so setting realtimeHost to "' +
 				options.restHost +
-				'" too. If this is not what you want, please set realtimeHost explicitly.'
+				'" too. If this is not what you want, please set realtimeHost explicitly.',
 		);
 		return options.restHost;
 	}
@@ -180,7 +180,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		if (options.environment) {
 			Logger.deprecatedWithMsg(
 				'fallbackHostsUseDefault',
-				'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.'
+				'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.',
 			);
 		} else {
 			Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
@@ -202,7 +202,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		Logger.logAction(
 			Logger.LOG_ERROR,
 			'Defaults.normaliseOptions',
-			'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter'
+			'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter',
 		);
 		options.recover = undefined;
 	}
@@ -259,7 +259,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		Logger.logAction(
 			Logger.LOG_ERROR,
 			'Defaults.normaliseOptions',
-			'{promises: true} was specified, but no Promise constructor found; disabling promises'
+			'{promises: true} was specified, but no Promise constructor found; disabling promises',
 		);
 		options.promises = false;
 	}
@@ -277,7 +277,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 		realtimeHost,
 		restHost,
 		maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
-		timeouts
+		timeouts,
 	};
 }
 

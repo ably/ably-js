@@ -78,7 +78,7 @@ function utf8Read(view: DataView, offset: number, length: number) {
 		// Three byte character
 		if ((byte_ & 0xf0) === 0xe0) {
 			string += String.fromCharCode(
-				((byte_ & 0x0f) << 12) | ((view.getUint8(++i) & 0x3f) << 6) | ((view.getUint8(++i) & 0x3f) << 0)
+				((byte_ & 0x0f) << 12) | ((view.getUint8(++i) & 0x3f) << 6) | ((view.getUint8(++i) & 0x3f) << 0),
 			);
 			continue;
 		}
@@ -88,7 +88,7 @@ function utf8Read(view: DataView, offset: number, length: number) {
 				((byte_ & 0x07) << 18) |
 					((view.getUint8(++i) & 0x3f) << 12) |
 					((view.getUint8(++i) & 0x3f) << 6) |
-					((view.getUint8(++i) & 0x3f) << 0)
+					((view.getUint8(++i) & 0x3f) << 0),
 			);
 			continue;
 		}
@@ -220,7 +220,7 @@ class Decoder {
 		this.offset += length;
 		return {
 			type: this.view.getInt8(this.offset),
-			data: this.buf(length)
+			data: this.buf(length),
 		};
 	};
 
@@ -818,5 +818,5 @@ export default {
 	inspect,
 	utf8Write,
 	utf8Read,
-	utf8ByteCount
+	utf8ByteCount,
 };

@@ -123,7 +123,7 @@ class MessageCategory extends MessageCount {
 			this.category = {};
 			Utils.forInOwnNonNullProperties(values.category, (prop: string) => {
 				(this.category as Record<string, MessageCount>)[prop] = new MessageCount(
-					(values.category as Record<string, MessageCount>)[prop]
+					(values.category as Record<string, MessageCount>)[prop],
 				);
 			});
 		}
@@ -240,7 +240,7 @@ class PushStats {
 			invalid: (notifications && notifications.invalid) || 0,
 			attempted: (notifications && notifications.attempted) || 0,
 			successful: (notifications && notifications.successful) || 0,
-			failed: (notifications && notifications.failed) || 0
+			failed: (notifications && notifications.failed) || 0,
 		};
 		this.directPublishes = (values && values.directPublishes) || 0;
 	}
@@ -267,7 +267,7 @@ class ProcessedMessages {
 			this.delta = {};
 			Utils.forInOwnNonNullProperties(values.delta, (prop: string) => {
 				(this.delta as Record<string, ProcessedCount>)[prop] = new ProcessedCount(
-					(values.delta as Record<string, ProcessedCountValues>)[prop]
+					(values.delta as Record<string, ProcessedCountValues>)[prop],
 				);
 			});
 		}

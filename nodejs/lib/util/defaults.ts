@@ -11,7 +11,7 @@ const Defaults: IDefaults = {
 	baseTransportOrder: [TransportNames.Comet, TransportNames.WebSocket],
 	transportPreferenceOrder: [TransportNames.Comet, TransportNames.WebSocket],
 	upgradeTransports: [TransportNames.WebSocket],
-	restAgentOptions: { maxSockets: 40, keepAlive: true }
+	restAgentOptions: { maxSockets: 40, keepAlive: true },
 };
 
 export default Defaults;

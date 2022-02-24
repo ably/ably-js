@@ -41,7 +41,7 @@ const Platform: IPlatform = {
 				callback(err, !err && parseBase64(base64String));
 			});
 		};
-	})(require('react-native').NativeModules.RNRandomBytes)
+	})(require('react-native').NativeModules.RNRandomBytes),
 };
 
 export default Platform;

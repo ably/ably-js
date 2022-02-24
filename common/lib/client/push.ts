@@ -91,7 +91,7 @@ class DeviceRegistrations {
 			null,
 			function (err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
 				callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
-			}
+			},
 		);
 	}
 
@@ -113,8 +113,8 @@ class DeviceRegistrations {
 				new ErrorInfo(
 					'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
 					40000,
-					400
-				)
+					400,
+				),
 			);
 			return;
 		}
@@ -129,7 +129,7 @@ class DeviceRegistrations {
 			null,
 			function (err: Error, body: any, headers: Record<string, string>, unpacked: boolean) {
 				callback(err, (!err || undefined) && DeviceDetails.fromResponseBody(body, unpacked ? undefined : format));
-			}
+			},
 		);
 	}
 
@@ -151,7 +151,7 @@ class DeviceRegistrations {
 		new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function (
 			body: any,
 			headers: Record<string, string>,
-			unpacked?: boolean
+			unpacked?: boolean,
 		) {
 			return DeviceDetails.fromResponseBody(body, unpacked ? undefined : format);
 		}).get(params, callback);
@@ -176,8 +176,8 @@ class DeviceRegistrations {
 				new ErrorInfo(
 					'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
 					40000,
-					400
-				)
+					400,
+				),
 			);
 			return;
 		}
@@ -194,7 +194,7 @@ class DeviceRegistrations {
 			null,
 			function (err: Error) {
 				callback(err);
-			}
+			},
 		);
 	}
 
@@ -256,9 +256,9 @@ class ChannelSubscriptions {
 			function (err: Error, body: Record<string, unknown>, headers: Record<string, string>, unpacked: boolean) {
 				callback(
 					err,
-					(!err || undefined) && PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format)
+					(!err || undefined) && PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format),
 				);
-			}
+			},
 		);
 	}
 
@@ -280,7 +280,7 @@ class ChannelSubscriptions {
 		new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function (
 			body: any,
 			headers: Record<string, string>,
-			unpacked?: boolean
+			unpacked?: boolean,
 		) {
 			return PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format);
 		}).get(params, callback);
@@ -330,7 +330,7 @@ class ChannelSubscriptions {
 		new PaginatedResource(rest, '/push/channels', headers, envelope, function (
 			body: unknown,
 			headers: Record<string, string>,
-			unpacked?: boolean
+			unpacked?: boolean,
 		) {
 			const parsedBody = (!unpacked && format ? Utils.decodeBody(body, format) : body) as Array<string>;
 

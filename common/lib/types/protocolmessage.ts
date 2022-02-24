@@ -22,7 +22,7 @@ const actions = {
 	PRESENCE: 14,
 	MESSAGE: 15,
 	SYNC: 16,
-	AUTH: 17
+	AUTH: 17,
 };
 
 const ActionName: string[] = [];
@@ -41,7 +41,7 @@ const flags: { [key: string]: number } = {
 	PRESENCE: 1 << 16,
 	PUBLISH: 1 << 17,
 	SUBSCRIBE: 1 << 18,
-	PRESENCE_SUBSCRIBE: 1 << 19
+	PRESENCE_SUBSCRIBE: 1 << 19,
 };
 const flagNames = Object.keys(flags);
 flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;

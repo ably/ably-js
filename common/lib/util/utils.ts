@@ -127,7 +127,7 @@ export function shallowClone(ob: Record<string, unknown>): Record<string, unknow
  */
 export function prototypicalClone(
 	ob: Record<string, unknown>,
-	ownProperties: Record<string, unknown>
+	ownProperties: Record<string, unknown>,
 ): Record<string, unknown> {
 	class F {}
 	F.prototype = ob;
@@ -280,7 +280,7 @@ export const arrForEach = (Array.prototype.forEach as unknown)
 /* Useful when the function may mutate the array */
 export function safeArrForEach<T = unknown>(
 	arr: Array<T>,
-	fn: (value: T, index: number, arr: Array<T>) => unknown
+	fn: (value: T, index: number, arr: Array<T>) => unknown,
 ): void {
 	return arrForEach(arr.slice(), fn);
 }
@@ -344,7 +344,7 @@ const contentTypes = {
 	jsonp: 'application/javascript',
 	xml: 'application/xml',
 	html: 'text/html',
-	msgpack: 'application/x-msgpack'
+	msgpack: 'application/x-msgpack',
 };
 
 export function defaultGetHeaders(format?: Format): Record<string, string> {
@@ -352,7 +352,7 @@ export function defaultGetHeaders(format?: Format): Record<string, string> {
 	return {
 		accept: accept,
 		'X-Ably-Version': Defaults.apiVersion,
-		'Ably-Agent': Defaults.agent
+		'Ably-Agent': Defaults.agent,
 	};
 }
 
@@ -364,7 +364,7 @@ export function defaultPostHeaders(format?: Format): Record<string, string> {
 		accept: accept,
 		'content-type': contentType,
 		'X-Ably-Version': Defaults.apiVersion,
-		'Ably-Agent': Defaults.agent
+		'Ably-Agent': Defaults.agent,
 	};
 }
 
@@ -503,7 +503,7 @@ export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArg
 
 export enum Format {
 	msgpack = 'msgpack',
-	json = 'json'
+	json = 'json',
 }
 
 export function decodeBody<T>(body: unknown, format?: Format | null): T {

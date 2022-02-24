@@ -5,7 +5,7 @@ enum HttpStatusCodes {
 	Unauthorized = 401,
 	Forbidden = 403,
 	RequestTimeout = 408,
-	InternalServerError = 500
+	InternalServerError = 500,
 }
 
 export function isSuccessCode(statusCode: number) {

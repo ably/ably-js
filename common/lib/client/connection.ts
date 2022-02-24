@@ -53,7 +53,7 @@ class Connection extends EventEmitter {
 			state,
 			this.state,
 			listener,
-			new ConnectionStateChange(undefined, state)
+			new ConnectionStateChange(undefined, state),
 		);
 	}) as any;
 

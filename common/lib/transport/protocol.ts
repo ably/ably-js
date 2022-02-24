@@ -51,7 +51,7 @@ class Protocol extends EventEmitter {
 		Logger.logAction(
 			Logger.LOG_ERROR,
 			'Protocol.onNack()',
-			'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err)
+			'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err),
 		);
 		if (!err) {
 			err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
@@ -76,7 +76,7 @@ class Protocol extends EventEmitter {
 			Logger.logAction(
 				Logger.LOG_MICRO,
 				'Protocol.send()',
-				'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message)
+				'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message),
 			);
 		}
 		pendingMessage.sendAttempted = true;

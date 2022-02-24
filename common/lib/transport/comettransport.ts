@@ -64,7 +64,7 @@ abstract class CometTransport extends Transport {
 		headers: Record<string, string> | null,
 		params?: Record<string, unknown> | null,
 		body?: unknown,
-		requestMode?: number
+		requestMode?: number,
 	): IXHRRequest;
 
 	connect(): void {
@@ -93,7 +93,7 @@ abstract class CometTransport extends Transport {
 			Logger.logAction(
 				Logger.LOG_MINOR,
 				'CometTransport.connect()',
-				'connectParams:' + Utils.toQueryString(connectParams)
+				'connectParams:' + Utils.toQueryString(connectParams),
 			);
 
 			/* this will be the 'recvRequest' so this connection can stream messages */
@@ -103,7 +103,7 @@ abstract class CometTransport extends Transport {
 				null,
 				connectParams,
 				null,
-				this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV
+				this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV,
 			));
 
 			connectRequest.on('data', (data: any) => {
@@ -171,7 +171,7 @@ abstract class CometTransport extends Transport {
 					Logger.logAction(
 						Logger.LOG_ERROR,
 						'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'),
-						'request returned err = ' + Utils.inspectError(err)
+						'request returned err = ' + Utils.inspectError(err),
 					);
 					this.finish('disconnected', err);
 				}
@@ -213,7 +213,7 @@ abstract class CometTransport extends Transport {
 		Logger.logAction(
 			Logger.LOG_MICRO,
 			'CometTransport.onConnect()',
-			'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey
+			'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey,
 		);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
@@ -253,7 +253,7 @@ abstract class CometTransport extends Transport {
 			null,
 			this.authParams,
 			this.encodeRequest(items),
-			XHRStates.REQ_SEND
+			XHRStates.REQ_SEND,
 		));
 
 		sendRequest.on('complete', (err: ErrorInfo, data: string) => {
@@ -261,7 +261,7 @@ abstract class CometTransport extends Transport {
 				Logger.logAction(
 					Logger.LOG_ERROR,
 					'CometTransport.sendItems()',
-					'on complete: err = ' + Utils.inspectError(err)
+					'on complete: err = ' + Utils.inspectError(err),
 				);
 			this.sendRequest = null;
 
@@ -312,7 +312,7 @@ abstract class CometTransport extends Transport {
 			null,
 			this.authParams,
 			null,
-			this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL
+			this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL,
 		));
 
 		recvRequest.on('data', (data: string) => {
@@ -352,7 +352,7 @@ abstract class CometTransport extends Transport {
 			Logger.logAction(
 				Logger.LOG_ERROR,
 				'CometTransport.onData()',
-				'Unexpected exception handing channel event: ' + (e as Error).stack
+				'Unexpected exception handing channel event: ' + (e as Error).stack,
 			);
 		}
 	}

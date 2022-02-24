@@ -11,7 +11,7 @@ enum LogLevels {
 	Error = 1,
 	Major = 2,
 	Minor = 3,
-	Micro = 4
+	Micro = 4,
 }
 
 function pad(timeSegment: number, three?: number) {
@@ -31,7 +31,7 @@ function getHandler(logger: Function): Function {
 						'.' +
 						pad(time.getMilliseconds(), 1) +
 						' ' +
-						msg
+						msg,
 				);
 		  }
 		: logger;
@@ -103,7 +103,10 @@ class Logger {
 	static deprecatedWithMsg = (funcName: string, msg: string) => {
 		if (Logger.shouldLog(LogLevels.Error)) {
 			Logger.logErrorHandler(
-				"Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg
+				"Ably: Deprecation warning - '" +
+					funcName +
+					"' is deprecated and will be removed from a future version. " +
+					msg,
 			);
 		}
 	};

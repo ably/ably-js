@@ -9,13 +9,13 @@ enum DeviceFormFactor {
 	Watch = 'watch',
 	Car = 'car',
 	Embedded = 'embedded',
-	Other = 'other'
+	Other = 'other',
 }
 
 enum DevicePlatform {
 	Android = 'android',
 	IOS = 'ios',
-	Browser = 'browser'
+	Browser = 'browser',
 }
 
 type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
@@ -49,8 +49,8 @@ class DeviceDetails {
 			push: {
 				recipient: this.push?.recipient,
 				state: this.push?.state,
-				error: this.push?.error
-			}
+				error: this.push?.error,
+			},
 		} as DeviceDetails;
 	}
 
@@ -74,7 +74,7 @@ class DeviceDetails {
 
 	static fromResponseBody(
 		body: Array<Record<string, unknown>> | Record<string, unknown>,
-		format?: Utils.Format
+		format?: Utils.Format,
 	): DeviceDetails | DeviceDetails[] {
 		if (format) {
 			body = Utils.decodeBody(body, format);

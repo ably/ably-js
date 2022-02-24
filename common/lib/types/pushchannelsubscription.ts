@@ -19,7 +19,7 @@ class PushChannelSubscription {
 		return {
 			channel: this.channel,
 			deviceId: this.deviceId,
-			clientId: this.clientId
+			clientId: this.clientId,
 		};
 	}
 
@@ -36,7 +36,7 @@ class PushChannelSubscription {
 
 	static fromResponseBody(
 		body: Array<Record<string, unknown>> | Record<string, unknown>,
-		format?: Utils.Format
+		format?: Utils.Format,
 	): PushChannelSubscription | PushChannelSubscription[] {
 		if (format) {
 			body = Utils.decodeBody(body, format) as Record<string, unknown>;

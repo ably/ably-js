@@ -6,7 +6,7 @@ declare var msCrypto: typeof crypto; // for IE11
 
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
 	console.log(
-		"Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm"
+		"Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm",
 	);
 }
 
@@ -69,7 +69,7 @@ const Platform: IPlatform = {
 				callback(null);
 			}
 		};
-	})(global.crypto || msCrypto)
+	})(global.crypto || msCrypto),
 };
 
 export default Platform;

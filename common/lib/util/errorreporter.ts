@@ -18,9 +18,9 @@ class ErrorReporter {
 			event_id: eventId,
 			tags: Utils.mixin(
 				{
-					ablyAgent: Defaults.agent
+					ablyAgent: Defaults.agent,
 				},
-				tags
+				tags,
 			),
 			platform: 'javascript',
 			level: level,
@@ -29,10 +29,10 @@ class ErrorReporter {
 			message: message,
 			request: {
 				headers: {
-					'User-Agent': Platform.userAgent
+					'User-Agent': Platform.userAgent,
 				},
-				url: Platform.currentUrl
-			}
+				url: Platform.currentUrl,
+			},
 		};
 
 		Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter: ' + message);
@@ -46,9 +46,9 @@ class ErrorReporter {
 				Logger.logAction(
 					Logger.LOG_MICRO,
 					'ErrorReporter',
-					'POSTing to error reporter resulted in: ' + (err ? Utils.inspectError(err) : Utils.inspectBody(res))
+					'POSTing to error reporter resulted in: ' + (err ? Utils.inspectError(err) : Utils.inspectBody(res)),
 				);
-			}
+			},
 		);
 	}
 }

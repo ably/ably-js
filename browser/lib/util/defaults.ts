@@ -14,21 +14,21 @@ const Defaults: IDefaults = {
 		TransportNames.XhrPolling,
 		TransportNames.XhrStreaming,
 		TransportNames.JsonP,
-		TransportNames.WebSocket
+		TransportNames.WebSocket,
 	],
 	baseTransportOrder: [
 		TransportNames.XhrPolling,
 		TransportNames.XhrStreaming,
 		TransportNames.JsonP,
-		TransportNames.WebSocket
+		TransportNames.WebSocket,
 	],
 	transportPreferenceOrder: [
 		TransportNames.JsonP,
 		TransportNames.XhrPolling,
 		TransportNames.XhrStreaming,
-		TransportNames.WebSocket
+		TransportNames.WebSocket,
 	],
-	upgradeTransports: [TransportNames.XhrStreaming, TransportNames.WebSocket]
+	upgradeTransports: [TransportNames.XhrStreaming, TransportNames.WebSocket],
 };
 
 /* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -

@@ -48,7 +48,7 @@ const handler = function (uri: string, params: unknown, callback?: RequestCallba
 						(headers['x-ably-errormessage'] as string) ||
 							'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
 						Number(headers['x-ably-errorcode']),
-						statusCode
+						statusCode,
 				  );
 			callback?.(error, body, headers, true, statusCode);
 			return;
@@ -100,7 +100,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		const uriFromHost =
 			typeof path === 'function'
@@ -128,7 +128,7 @@ const Http: typeof IHttp = class {
 							return;
 						}
 						callback(err, ...args);
-					}
+					},
 				);
 				return;
 			} else {
@@ -163,11 +163,11 @@ const Http: typeof IHttp = class {
 						/* RSC15f */
 						rest._currentFallback = {
 							host: host as string,
-							validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout
+							validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout,
 						};
 					}
 					callback(err, ...args);
-				}
+				},
 			);
 		};
 		tryAHost(hosts);
@@ -180,7 +180,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		/* Will generally be making requests to one or two servers exclusively
 		 * (Ably and perhaps an auth server), so for efficiency, use the
@@ -191,7 +191,7 @@ const Http: typeof IHttp = class {
 		if (!Http.agent) {
 			Http.agent = {
 				http: new http.Agent(agentOptions),
-				https: new https.Agent(agentOptions)
+				https: new https.Agent(agentOptions),
 			};
 		}
 
@@ -242,7 +242,7 @@ const Http: typeof IHttp = class {
 		path: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Get, rest, path, headers, null, params, callback);
 	}
@@ -252,7 +252,7 @@ const Http: typeof IHttp = class {
 		uri: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
 	}
@@ -262,7 +262,7 @@ const Http: typeof IHttp = class {
 		path: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
 	}
@@ -272,7 +272,7 @@ const Http: typeof IHttp = class {
 		uri: string,
 		headers: Record<string, string> | null,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
 	}
@@ -283,7 +283,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Post, rest, path, headers, body, params, callback);
 	}
@@ -294,7 +294,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
 	}
@@ -305,7 +305,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Put, rest, path, headers, body, params, callback);
 	}
@@ -316,7 +316,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
 	}
@@ -327,7 +327,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
 	}
@@ -338,7 +338,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		body: unknown,
 		params: RequestParams,
-		callback: RequestCallback
+		callback: RequestCallback,
 	): void {
 		Http.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
 	}
@@ -351,7 +351,7 @@ const Http: typeof IHttp = class {
 			null,
 			function (err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
 				callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
-			}
+			},
 		);
 	};
 
@@ -362,7 +362,7 @@ const Http: typeof IHttp = class {
 		headers: Record<string, string> | null,
 		params: RequestParams,
 		body: unknown,
-		callback: RequestCallback
+		callback: RequestCallback,
 	) => void = undefined;
 
 	static _getHosts = getHosts;

@@ -24,7 +24,7 @@ class Multicaster {
 					Logger.logAction(
 						Logger.LOG_ERROR,
 						'Multicaster multiple callback handler',
-						'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack
+						'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack,
 					);
 				}
 			}
@@ -38,7 +38,7 @@ class Multicaster {
 	static create(members?: Array<AnyFunction | undefined>): MulticasterInstance {
 		const instance = new Multicaster(members);
 		return Object.assign((...args: unknown[]) => instance.call(...args), {
-			push: (fn: AnyFunction) => instance.push(fn)
+			push: (fn: AnyFunction) => instance.push(fn),
 		});
 	}
 }

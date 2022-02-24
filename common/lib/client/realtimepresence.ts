@@ -129,7 +129,7 @@ class RealtimePresence extends Presence {
 		clientId: string | undefined,
 		data: unknown,
 		action: string,
-		callback: ErrCallback
+		callback: ErrCallback,
 	): void | Promise<void> {
 		if (!callback) {
 			if (typeof data === 'function') {
@@ -152,12 +152,12 @@ class RealtimePresence extends Presence {
 		Logger.logAction(
 			Logger.LOG_MICRO,
 			'RealtimePresence.' + action + 'Client()',
-			'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
+			'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)),
 		);
 
 		const presence = PresenceMessage.fromValues({
 			action: action,
-			data: data
+			data: data,
 		});
 		if (clientId) {
 			presence.clientId = clientId;
@@ -178,7 +178,7 @@ class RealtimePresence extends Presence {
 				case 'attaching':
 					this.pendingPresence.push({
 						presence: presence,
-						callback: callback
+						callback: callback,
 					});
 					break;
 				default:
@@ -218,11 +218,11 @@ class RealtimePresence extends Presence {
 		Logger.logAction(
 			Logger.LOG_MICRO,
 			'RealtimePresence.leaveClient()',
-			'leaving; channel = ' + this.channel.name + ', client = ' + clientId
+			'leaving; channel = ' + this.channel.name + ', client = ' + clientId,
 		);
 		const presence = PresenceMessage.fromValues({
 			action: 'leave',
-			data: data
+			data: data,
 		});
 		if (clientId) {
 			presence.clientId = clientId;
@@ -235,7 +235,7 @@ class RealtimePresence extends Presence {
 			case 'attaching':
 				this.pendingPresence.push({
 					presence: presence,
-					callback: callback
+					callback: callback,
 				});
 				break;
 			case 'initialized':
@@ -279,8 +279,8 @@ class RealtimePresence extends Presence {
 					ErrorInfo.fromValues({
 						statusCode: 400,
 						code: 91005,
-						message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
-					})
+						message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+					}),
 				);
 			} else {
 				returnMembers(this.members);
@@ -302,7 +302,7 @@ class RealtimePresence extends Presence {
 
 	history(
 		params: RealtimeHistoryParams | null,
-		callback: PaginatedResultCallback<PresenceMessage>
+		callback: PaginatedResultCallback<PresenceMessage>,
 	): void | Promise<PaginatedResult<PresenceMessage>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
@@ -327,8 +327,8 @@ class RealtimePresence extends Presence {
 					new ErrorInfo(
 						'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
 						40000,
-						400
-					)
+						400,
+					),
 				);
 			}
 		}
@@ -340,7 +340,7 @@ class RealtimePresence extends Presence {
 		Logger.logAction(
 			Logger.LOG_MICRO,
 			'RealtimePresence.setPresence()',
-			'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial
+			'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial,
 		);
 		let syncCursor, match;
 		const members = this.members,
@@ -398,7 +398,7 @@ class RealtimePresence extends Presence {
 		Logger.logAction(
 			Logger.LOG_MINOR,
 			'RealtimePresence.onAttached()',
-			'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence
+			'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence,
 		);
 
 		if (hasPresence) {
@@ -420,7 +420,7 @@ class RealtimePresence extends Presence {
 			Logger.logAction(
 				Logger.LOG_MICRO,
 				'RealtimePresence.onAttached',
-				'sending ' + pendingPresCount + ' queued presence messages'
+				'sending ' + pendingPresCount + ' queued presence messages',
 			);
 			for (let i = 0; i < pendingPresCount; i++) {
 				const event = pendingPresence[i];
@@ -452,7 +452,7 @@ class RealtimePresence extends Presence {
 			Logger.logAction(
 				Logger.LOG_MINOR,
 				'RealtimeChannel.failPendingPresence',
-				'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err)
+				'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err),
 			);
 			for (let i = 0; i < this.pendingPresence.length; i++)
 				try {
@@ -485,7 +485,7 @@ class RealtimePresence extends Presence {
 				Logger.logAction(
 					Logger.LOG_MICRO,
 					'RealtimePresence._ensureMyMembersPresent()',
-					'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
+					'Auto-reentering clientId "' + entry.clientId + '" into the presence set',
 				);
 				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
@@ -502,7 +502,7 @@ class RealtimePresence extends Presence {
 				clientId: item.clientId,
 				data: item.data,
 				encoding: item.encoding,
-				timestamp: Utils.now()
+				timestamp: Utils.now(),
 			});
 			subscriptions.emit('leave', presence);
 		});
@@ -651,7 +651,7 @@ class PresenceMap extends EventEmitter {
 		Logger.logAction(
 			Logger.LOG_MINOR,
 			'PresenceMap.startSync()',
-			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
 		);
 		/* we might be called multiple times while a sync is in progress */
 		if (!this.syncInProgress) {
@@ -666,7 +666,7 @@ class PresenceMap extends EventEmitter {
 		Logger.logAction(
 			Logger.LOG_MINOR,
 			'PresenceMap.endSync()',
-			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
 		);
 		if (syncInProgress) {
 			/* we can now strip out the ABSENT members, as we have
@@ -696,7 +696,7 @@ class PresenceMap extends EventEmitter {
 		Logger.logAction(
 			Logger.LOG_MINOR,
 			'PresenceMap.waitSync()',
-			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
 		);
 		if (!syncInProgress) {
 			callback();
