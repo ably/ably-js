@@ -11,10 +11,7 @@ import Resource from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
-
-// TODO: Replace these when Realtime and Rest are in TypeScript
-type Realtime = any;
-
+import Realtime from './realtime';
 
 interface RestHistoryParams {
 	start?: number;
