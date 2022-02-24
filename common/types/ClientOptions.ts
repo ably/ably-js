@@ -5,7 +5,6 @@ export default interface ClientOptions extends API.Types.ClientOptions {
   restAgentOptions?: { keepAlive: boolean, maxSockets: number };
   pushFullWait?: boolean;
   checkChannelsOnResume?: boolean;
-  plugins?: Record<string, unknown>;
   agents?: string[];
 }
 

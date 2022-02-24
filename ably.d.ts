@@ -153,6 +153,7 @@ declare namespace Types {
 		httpOpenTimeout?: number;
 		httpRequestTimeout?: number;
 
+		plugins?: { vcdiff?: any };
 	}
 
 	interface AuthOptions {
