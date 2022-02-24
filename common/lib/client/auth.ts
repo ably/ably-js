@@ -16,9 +16,6 @@ import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 
-// TODO: replace these with the real types once these classes are in TypeScript
-type AuthOptions = any;
-
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
 function random() { return ('000000' + Math.floor(Math.random() * 1E16)).slice(-16); }
@@ -79,7 +76,7 @@ function c14n(capability?: string | Record<string, Array<string>>) {
 	return JSON.stringify(c14nCapability);
 }
 
-function logAndValidateTokenAuthMethod(authOptions: AuthOptions) {
+function logAndValidateTokenAuthMethod(authOptions: API.Types.AuthOptions) {
 	if(authOptions.authCallback) {
 		Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
 	} else if(authOptions.authUrl) {
@@ -126,7 +123,8 @@ class Auth {
 	tokenParams: API.Types.TokenParams;
 	currentTokenRequestId: number | null;
 	waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
-	authOptions: AuthOptions;
+	// This initialization is always overwritten and only used to prevent a TypeScript compiler error
+	authOptions: API.Types.AuthOptions = {} as API.Types.AuthOptions;
 	tokenDetails?: API.Types.TokenDetails | null;
 	method?: string;
 	key?: string;
@@ -253,16 +251,19 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	authorize(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void;
+	authorize(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: Function): void;
 
-	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: AuthOptions | Function, callback?: Function): void | Promise<void> {
+	authorize(tokenParams: Record<string, any> | Function | null, authOptions?: API.Types.AuthOptions | Function, callback?: Function): void | Promise<void> {
+		let _authOptions: API.Types.AuthOptions | null;
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
-			authOptions = tokenParams = null;
+			_authOptions = tokenParams = null;
 		} else if(typeof(authOptions) == 'function' && !callback) {
 			callback = authOptions;
-			authOptions = null;
+			_authOptions = null;
+		} else {
+		  _authOptions = authOptions as API.Types.AuthOptions;
 		}
 		if(!callback) {
 			if(this.client.options.promises) {
@@ -272,20 +273,20 @@ class Auth {
 
 		/* RSA10a: authorize() call implies token auth. If a key is passed it, we
 		 * just check if it doesn't clash and assume we're generating a token from it */
-		if(authOptions && authOptions.key && (this.authOptions.key !== authOptions.key)) {
+		if(_authOptions && _authOptions.key && (this.authOptions.key !== _authOptions.key)) {
 			throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
 		}
 
-		if(authOptions && ('force' in authOptions)) {
+		if(_authOptions && ('force' in _authOptions)) {
 			Logger.logAction(Logger.LOG_ERROR, 'Auth.authorize', 'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want');
 			/* Emulate the old behaviour: if 'force' was the only member of authOptions,
 			 * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */
-			if(Utils.isOnlyPropIn(authOptions, 'force')) {
-				authOptions = null;
+			if(Utils.isOnlyPropIn(_authOptions, 'force')) {
+				_authOptions = null;
 			}
 		}
 
-		this._forceNewToken(tokenParams as API.Types.TokenParams, authOptions, (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
+		this._forceNewToken(tokenParams as API.Types.TokenParams, _authOptions, (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
 			if(err) {
 				if((this.client as Realtime).connection) {
 					/* We interpret RSA4d as including requests made by a client lib to
@@ -310,7 +311,7 @@ class Auth {
 		})
 	}
 
-	authorise(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function): void {
+	authorise(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: Function): void {
 		Logger.deprecated('Auth.authorise', 'Auth.authorize');
 		this.authorize(tokenParams, authOptions, callback);
 	}
@@ -318,7 +319,7 @@ class Auth {
 	/* For internal use, eg by connectionManager - useful when want to call back
 	 * as soon as we have the new token, rather than waiting for it to take
 	 * effect on the connection as #authorize does */
-	_forceNewToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	_forceNewToken(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions | null, callback: Function) {
 		/* get rid of current token even if still valid */
 		this.tokenDetails = null;
 
@@ -411,9 +412,9 @@ class Auth {
 	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	requestToken(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: StandardCallback<API.Types.TokenDetails>): void;
+	requestToken(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: StandardCallback<API.Types.TokenDetails>): void;
 
-	requestToken(tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null, authOptions?: AuthOptions | StandardCallback<API.Types.TokenDetails>, callback?: StandardCallback<API.Types.TokenDetails>): void | Promise<void> {
+	requestToken(tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null, authOptions?: any | StandardCallback<API.Types.TokenDetails>, callback?: StandardCallback<API.Types.TokenDetails>): void | Promise<void> {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -632,7 +633,7 @@ class Auth {
 	 *
 	 * @param callback
 	 */
-	createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions, callback: Function) {
+	createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: any, callback: Function) {
 		/* shuffle and normalise arguments as necessary */
 		if(typeof(tokenParams) == 'function' && !callback) {
 			callback = tokenParams;
@@ -779,17 +780,17 @@ class Auth {
 		return this.client.serverTimeOffset !== null;
 	}
 
-	_saveBasicOptions(authOptions: AuthOptions) {
+	_saveBasicOptions(authOptions: API.Types.AuthOptions) {
 		this.method = 'basic';
 		this.key = authOptions.key;
-		this.basicKey = toBase64(authOptions.key);
+		this.basicKey = toBase64(authOptions.key as string);
 		this.authOptions = authOptions || {};
 		if('clientId' in authOptions) {
 			this._userSetClientId(authOptions.clientId);
 		}
 	}
 
-	_saveTokenOptions(tokenParams: API.Types.TokenParams | null, authOptions: AuthOptions) {
+	_saveTokenOptions(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions | null) {
 		this.method = 'token';
 
 		if(tokenParams) {
@@ -803,7 +804,7 @@ class Auth {
 			/* normalise */
 			if(authOptions.token) {
 				/* options.token may contain a token string or, for convenience, a TokenDetails */
-				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} : authOptions.token;
+				authOptions.tokenDetails = (typeof(authOptions.token) === 'string') ? {token: authOptions.token} as API.Types.TokenDetails : authOptions.token;
 			}
 
 			if(authOptions.tokenDetails) {
