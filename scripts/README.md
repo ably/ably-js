@@ -8,8 +8,8 @@ Arguments:
 
 **--bucket**: The S3 bucket name to deploy to, defaults to `cdn.ably.io`.
 **--root**: The base directory inside the bucket to deploy to, defaults to `lib`.
-**--s3Key**: S3 Access Key. Can also be set with AWS_ACCESS_KEY env variable.
-**--s3Secret**: S3 Secret Access Key. Can also be set with AWS_SECRET_ACCESS_KEY env variable.
+**--s3Key**: S3 Access Key. Can also be set with `AWS_ACCESS_KEY` env variable.
+**--s3Secret**: S3 Secret Access Key. Can also be set with `AWS_SECRET_ACCESS_KEY` env variable.
 **--path**: The local path to retrieve source files from. Defaults to `.`.
 **--includeDirs**: A comma separated list of directories to include. Defaults to `.`.
 **--excludeDirs**: A comma separated list of directories to exclude. Defaults to `node_modules,.git`.
