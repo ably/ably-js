@@ -282,15 +282,15 @@ const commonJsNoEncryptionConfig = {
     },
 };
 
-module.exports = [
-	nodeConfig,
-	browserConfig,
-	browserMinConfig,
-    webworkerConfig,
-    nativeScriptConfig,
-    reactNativeConfig,
-    noEncryptionConfig,
-    noEncryptionMinConfig,
-    commonJsConfig,
-    commonJsNoEncryptionConfig,
-];
+module.exports = {
+    node: nodeConfig,
+    browser: browserConfig,
+    browserMin: browserMinConfig,
+    webworker: webworkerConfig,
+    nativeScript: nativeScriptConfig,
+    reactNative: reactNativeConfig,
+    noEncryption: noEncryptionConfig,
+    noEncryptionMin: noEncryptionMinConfig,
+    commonJs: commonJsConfig,
+    commonJsNoEncryption: commonJsNoEncryptionConfig,
+};
