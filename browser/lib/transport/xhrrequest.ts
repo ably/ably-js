@@ -10,9 +10,7 @@ import HttpMethods from '../../../common/constants/HttpMethods';
 import IXHRRequest from '../../../common/types/IXHRRequest';
 import { ErrnoException, RequestCallback, RequestParams } from '../../../common/types/http';
 import XHRStates from '../../../common/constants/XHRStates';
-
-// TODO replace this with the real type when Rest is in TypeScript
-type Rest = any;
+import Rest from '../../../common/lib/client/rest';
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
 	return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');

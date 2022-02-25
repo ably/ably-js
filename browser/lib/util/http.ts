@@ -3,10 +3,8 @@ import Defaults from '../../../common/lib/util/defaults';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import { ErrnoException, IHttp, RequestCallback, RequestParams } from '../../../common/types/http';
 import HttpMethods from '../../../common/constants/HttpMethods';
-
-// TODO: replace these with the real types once these classes are in TypeScript
-type Rest = any;
-type Realtime = any;
+import Rest from '../../../common/lib/client/rest';
+import Realtime from '../../../common/lib/client/realtime';
 
 function shouldFallback(errorInfo: ErrorInfo) {
 	const statusCode = errorInfo.statusCode as number;

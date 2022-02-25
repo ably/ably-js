@@ -5,9 +5,7 @@ import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
-
-// TODO: Replace this with the real type when Realtime is in TypeScript
-type Realtime = any;
+import Realtime from './realtime';
 
 function noop() {}
 
