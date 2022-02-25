@@ -939,22 +939,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 						}
 
 						/* soon after connected, reauth */
-						realtime.auth.authorize(null, null, function (err) {
-							try {
-								expect(!err, err && displayError(err)).to.be.ok;
-							} catch (err) {
-								done(err);
-								return;
-							}
-							channel.attach(function (err) {
+						realtime.connection.connectionManager.activeProtocol.transport.on('disconnected', function() {
+							realtime.auth.authorize(null, null, function (err) {
 								try {
-									expect(!err, 'Check using second token, with channel attach capability').to.be.ok;
-									closeAndFinish(done, realtime);
+									expect(!err, err && displayError(err)).to.be.ok;
 								} catch (err) {
-									closeAndFinish(done, realtime, err);
+									done(err);
+									return;
 								}
+								channel.attach(function (err) {
+									try {
+									  console.log(err);
+										expect(!err, 'Check using second token, with channel attach capability').to.be.ok;
+										closeAndFinish(done, realtime);
+									} catch (err) {
+									  console.log(err);
+										closeAndFinish(done, realtime, err);
+									}
+								});
 							});
 						});
+
 					});
 				});
 				monitorConnection(done, realtime);
