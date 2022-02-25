@@ -12,7 +12,7 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { ErrnoException, RequestParams } from '../../types/http';
+import { ErrnoException, IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
 const noop = function() {};
@@ -27,6 +27,7 @@ class Rest {
 		validUntil: number,
 	};
 	serverTimeOffset: number | null;
+	http: IHttp;
 	auth: Auth;
 	channels: Channels;
 	push: Push;
@@ -71,6 +72,7 @@ class Rest {
 		this._currentFallback = null;
 
 		this.serverTimeOffset = null;
+		this.http = new Http();
 		this.auth = new Auth(this, normalOptions);
 		this.channels = new Channels(this);
 		this.push = new Push(this);
@@ -91,7 +93,7 @@ class Rest {
 		}
 		const headers = Utils.defaultGetHeaders(),
 			format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format;
+			envelope = this.http.supportsLinkHeaders ? undefined : format;
 
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
@@ -122,7 +124,7 @@ class Rest {
 		if(this.options.headers)
 			Utils.mixin(headers, this.options.headers);
 		const timeUri = (host: string) => { return this.authority(host) + '/time' };
-		Http.get(this, timeUri, headers, params as RequestParams, (err?: ErrorInfo | ErrnoException | null, res?: unknown, headers?: Record<string, string>, unpacked?: boolean) => {
+		this.http.get(this, timeUri, headers, params as RequestParams, (err?: ErrorInfo | ErrnoException | null, res?: unknown, headers?: Record<string, string>, unpacked?: boolean) => {
 			if(err) {
 				_callback(err);
 				return;
@@ -144,7 +146,7 @@ class Rest {
 			encoder = useBinary ? msgpack.encode: JSON.stringify,
 			decoder = useBinary ? msgpack.decode : JSON.parse,
 			format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format;
+			envelope = this.http.supportsLinkHeaders ? undefined : format;
 		params = params || {};
 		const _method = method.toLowerCase() as HttpMethods;
 		const headers = _method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);

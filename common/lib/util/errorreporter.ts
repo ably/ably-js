@@ -4,7 +4,7 @@ import Defaults from './defaults';
 import Logger from './logger';
 import Http from 'platform-http';
 import ErrorInfo from '../types/errorinfo';
-import { ErrnoException } from '../../types/http';
+import { ErrnoException, IHttp } from '../../types/http';
 
 const levels = [
 	'fatal',
@@ -17,7 +17,7 @@ const levels = [
 class ErrorReporter {
 	static levels = levels;
 
-	static report (level: string, message: string, fingerprint?: string, tags?: Record<string, string>): void {
+	static report (http: IHttp, level: string, message: string, fingerprint?: string, tags?: Record<string, string>): void {
 		const eventId = Utils.randomHexString(16);
 
 		const event = {
@@ -39,7 +39,7 @@ class ErrorReporter {
 		};
 
 		Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter: ' + message);
-		Http.postUri(null, Defaults.errorReportingUrl, Defaults.errorReportingHeaders, JSON.stringify(event), {}, function(err?: ErrorInfo | ErrnoException | null, res?: unknown) {
+		http.postUri(null, Defaults.errorReportingUrl, Defaults.errorReportingHeaders, JSON.stringify(event), {}, function(err?: ErrorInfo | ErrnoException | null, res?: unknown) {
 			Logger.logAction(Logger.LOG_MICRO, 'ErrorReporter', 'POSTing to error reporter resulted in: ' +
 				(err ? Utils.inspectError(err) : Utils.inspectBody(res))
 			);

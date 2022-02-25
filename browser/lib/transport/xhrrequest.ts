@@ -321,26 +321,4 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
 	}
 }
 
-if(Platform.xhrSupported) {
-	if(typeof(Http) !== 'undefined') {
-		Http.supportsAuthHeaders = true;
-		Http.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
-			const req = XHRRequest.createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
-			req.once('complete', callback);
-			req.exec();
-			return req;
-		};
-
-		Http.checkConnectivity = function(callback: (err?: ErrorInfo | null, connectivity?: boolean) => void) {
-			const upUrl = Defaults.internetUpUrl;
-			Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-			Http.getUri(null, upUrl, null, null, function(err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
-				const result = (!err && (responseText as string)?.replace(/\n/, '') == 'yes');
-				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-				callback(null, result);
-			});
-		};
-	}
-}
-
 export default XHRRequest;
