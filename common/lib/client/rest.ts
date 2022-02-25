@@ -103,7 +103,7 @@ class Rest {
 		})).get(params as Record<string, string>, callback);
 	}
 
-	time(params: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
+	time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
 		/* params and callback are optional; see if params contains the callback */
 		if(callback === undefined) {
 			if(typeof(params) == 'function') {
