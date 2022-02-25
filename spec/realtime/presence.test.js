@@ -203,7 +203,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 		 * Attach to channel, enter presence channel (without waiting for attach callback), detach
 		 * from channel immediately in 'attached' callback
 		 */
-		it('presenceEnterDetachRace', function (done) {
+		it.skip('presenceEnterDetachRace', function (done) {
 			// Can't use runTestWithEventListener helper as one of the successful
 			// outcomes is an error in presence enter, in which case listenForEventOn
 			// will not run its callback
