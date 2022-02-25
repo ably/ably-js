@@ -48,7 +48,9 @@ module.exports = function (grunt) {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version,
 		webpack: {
-			config: webpackConfig
+			all: Object.values(webpackConfig),
+			node: webpackConfig.node,
+			browser: [webpackConfig.browser, webpackConfig.browserMin]
 		}
 	};
 
@@ -110,7 +112,17 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'checkGitSubmodules',
-		'webpack'
+		'webpack:all'
+	]);
+
+	grunt.registerTask('build:node', [
+		'checkGitSubmodules',
+		'webpack:node'
+	]);
+
+	grunt.registerTask('build:browser', [
+		'checkGitSubmodules',
+		'webpack:browser'
 	]);
 
 	grunt.registerTask('check-closure-compiler', [
@@ -126,12 +138,12 @@ module.exports = function (grunt) {
 	grunt.registerTask('test', ['test:node']);
 	grunt.registerTask('test:node',
 		'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['build', 'mocha']
+		['build:node', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'checkGitSubmodules', 'mocha:webserver']
+		['build:browser', 'checkGitSubmodules', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',

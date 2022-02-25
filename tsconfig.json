@@ -2,10 +2,16 @@
   "compilerOptions": {
     "target": "es3",
     "module": "commonjs",
-    "lib": ["ES5"],
+    "lib": ["ES5", "DOM", "webworker"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "paths": {
+        "platform": ["./nodejs/platform", "./browser/fragments/platform-browser", "./browser/fragments/platform-reactnative"],
+        "platform-defaults": ["./nodejs/lib/util/defaults", "./browser/lib/util/defaults"]
+    }
   }
 }

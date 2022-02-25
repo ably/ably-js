@@ -159,7 +159,7 @@ const reactNativeConfig = {
         filename: 'ably-reactnative.js',
     },
     resolve: {
-        extensions: ['.js'],
+        extensions: ['.js', '.ts'],
         alias: {
             platform: path.resolve(browserPath, 'fragments', 'platform-reactnative'),
             'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
@@ -282,15 +282,15 @@ const commonJsNoEncryptionConfig = {
     },
 };
 
-module.exports = [
-	nodeConfig,
-	browserConfig,
-	browserMinConfig,
-    webworkerConfig,
-    nativeScriptConfig,
-    reactNativeConfig,
-    noEncryptionConfig,
-    noEncryptionMinConfig,
-    commonJsConfig,
-    commonJsNoEncryptionConfig,
-];
+module.exports = {
+    node: nodeConfig,
+    browser: browserConfig,
+    browserMin: browserMinConfig,
+    webworker: webworkerConfig,
+    nativeScript: nativeScriptConfig,
+    reactNative: reactNativeConfig,
+    noEncryption: noEncryptionConfig,
+    noEncryptionMin: noEncryptionMinConfig,
+    commonJs: commonJsConfig,
+    commonJsNoEncryption: commonJsNoEncryptionConfig,
+};
