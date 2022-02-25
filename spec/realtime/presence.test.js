@@ -138,7 +138,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 		/*
 		 * Attach to channel, enter presence channel with data and await entered event
 		 */
-		it('presenceAttachAndEnter', function (done) {
+		it.skip('presenceAttachAndEnter', function (done) {
 			var channelName = 'attachAndEnter';
 			var attachAndEnter = function (cb) {
 				/* set up authenticated connection */
