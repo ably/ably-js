@@ -40,7 +40,7 @@ if(Platform.jsonpSupported) {
 	head = document.getElementsByTagName('head')[0];
 }
 
-function createRequest(uri: string, headers: Record<string, string> | null, params?: RequestParams, body?: unknown, requestMode?: number, timeouts?: Record<string, number> | null, method?: HttpMethods) {
+export function createRequest(uri: string, headers: Record<string, string> | null, params?: RequestParams, body?: unknown, requestMode?: number, timeouts?: Record<string, number> | null, method?: HttpMethods) {
 	/* JSONP requests are used either with the context being a realtime
 	 * transport, or with timeouts passed in (for when used by a rest client),
 	 * or completely standalone.  Use the appropriate timeouts in each case */
@@ -89,7 +89,7 @@ class JSONPTransport extends CometTransport {
 	}
 }
 
-class Request extends EventEmitter {
+export class Request extends EventEmitter {
 	id: string | number;
 	uri: string;
 	params: Record<string, string>;
@@ -223,42 +223,10 @@ class Request extends EventEmitter {
 	}
 }
 
-export default function(connectionManager: typeof ConnectionManager, http: IHttp): typeof JSONPTransport {
+export default function(connectionManager: typeof ConnectionManager): typeof JSONPTransport {
 	global.JSONPTransport = JSONPTransport;
 	if(JSONPTransport.isAvailable()) {
 		connectionManager.supportedTransports[shortName] = JSONPTransport;
-	}
-	if(Platform.jsonpSupported && !http.Request) {
-		http.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
-			const req = createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
-			req.once('complete', callback);
-			Utils.nextTick(function() {
-				req.exec();
-			});
-			return req;
-		};
-
-		http.checkConnectivity = function(callback: (err?: ErrorInfo | null, connectivity?: boolean) => void) {
-			const upUrl = Defaults.jsonpInternetUpUrl;
-
-			if(checksInProgress) {
-				checksInProgress.push(callback);
-				return;
-			}
-			checksInProgress = [callback];
-			Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
-
-			const req = new Request('isTheInternetUp', upUrl as string, null, null, null, XHRStates.REQ_SEND, Defaults.TIMEOUTS);
-			req.once('complete', function(err: Error, response: string) {
-				const result = !err && response;
-				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
-				for(let i = 0; i < (checksInProgress as Array<StandardCallback<boolean>>).length; i++) (checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
-				checksInProgress = null;
-			});
-			Utils.nextTick(function() {
-				req.exec();
-			});
-		};
 	}
 	return JSONPTransport
 }
