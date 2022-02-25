@@ -16,12 +16,12 @@ jobs:
         with:
           ref: ${{ github.event.inputs.version }}
       - name: Use Node.js 14.x
-        env:
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SET_ACCESS_KEY }}
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
       - run: npm ci
       - run: npm run build
       - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}
+        env:
+          AWS_ACCESS_KEY: ${{ secrets.CDN_PUBLISH_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CDN_PUBLISH_AWS_SET_ACCESS_KEY }}
