@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version, without v prefix'
+        description: 'Release tag'
         required: true
 
 jobs:
