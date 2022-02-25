@@ -33,8 +33,7 @@ const Platform: IPlatform = {
 	streamingSupported: true,
 	useProtocolHeartbeats: true,
 	createHmac: null,
-	// TODO: type this properly
-	msgpack: msgpack as unknown as typeof import('@ably/msgpack-js'),
+	msgpack: msgpack,
 	supportsBinary: !!global.TextDecoder,
 	preferBinary: false,
 	ArrayBuffer: global.ArrayBuffer,

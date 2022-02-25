@@ -1,5 +1,10 @@
 export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array;
 
+interface MsgPack {
+  encode(value: any, sparse?: boolean): Buffer | ArrayBuffer | undefined;
+  decode(buffer: Buffer): any;
+}
+
 export interface IPlatform {
     agent: string;
     logTimestamps: boolean;
@@ -7,7 +12,7 @@ export interface IPlatform {
     WebSocket: typeof WebSocket | typeof import('ws');
     useProtocolHeartbeats: boolean;
     createHmac: ((algorithm: string, key: import('crypto').BinaryLike | import('crypto').KeyObject) => import('crypto').Hmac) | null;
-    msgpack: typeof import('@ably/msgpack-js');
+    msgpack: MsgPack;
     supportsBinary: boolean;
     preferBinary: boolean;
     nextTick: process.nextTick;

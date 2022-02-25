@@ -502,7 +502,7 @@ export function decodeBody<T>(body: unknown, format?: Format | null): T {
 }
 
 export function encodeBody(body: unknown, format?: Format): string | Buffer {
-	return (format == 'msgpack') ? Platform.msgpack.encode(body, true) : JSON.stringify(body);
+	return (format == 'msgpack') ? Platform.msgpack.encode(body, true) as Buffer : JSON.stringify(body);
 }
 
 export function allToLowerCase(arr: Array<string>): Array<string> {
