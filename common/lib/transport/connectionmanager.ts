@@ -13,7 +13,6 @@ import Auth from '../client/auth';
 import Http from 'platform-http';
 import Message from '../types/message';
 import Multicaster, { MulticasterInstance } from '../util/multicaster';
-import ErrorReporter from '../util/errorreporter';
 import * as WebStorage from 'platform-webstorage';
 import PlatformTransports from 'platform-transports';
 import WebSocketTransport from './websockettransport';
@@ -712,7 +711,6 @@ class ConnectionManager extends EventEmitter {
 			if(existingActiveProtocol.transport === transport) {
 				const msg = 'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-previously-active');
 			} else {
 				existingActiveProtocol.finish();
 			}
@@ -724,7 +722,6 @@ class ConnectionManager extends EventEmitter {
 			if(pendingTransport === transport) {
 				const msg = 'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-activating-pending');
 				Utils.arrDeleteValue(this.pendingTransports, transport);
 			} else {
 				pendingTransport.disconnect();
@@ -734,7 +731,6 @@ class ConnectionManager extends EventEmitter {
 			if(proposedTransport === transport) {
 				const msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-activating-proposed');
 				Utils.arrDeleteValue(this.proposedTransports, transport);
 			} else {
 				proposedTransport.dispose();

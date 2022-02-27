@@ -5,7 +5,6 @@ import Logger from '../util/logger';
 import Connection from './connection';
 import RealtimeChannel from './realtimechannel';
 import Defaults from '../util/defaults';
-import ErrorReporter from '../util/errorreporter';
 import ErrorInfo from '../types/errorinfo';
 import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
@@ -115,7 +114,6 @@ class Channels extends EventEmitter {
 			if(channel.state === 'attached' && channel._attachedMsgIndicator === false) {
 				const msg = '30s after a resume, found channel which has not received an attached; channelId = ' + channelId + '; connectionId = ' + connectionId;
 				Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
-				ErrorReporter.report(this.realtime.http, 'error', msg, 'channel-no-attached-after-resume');
 				channel.requestState('attaching');
 			}
 		}
