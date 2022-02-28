@@ -186,7 +186,7 @@ export class Request extends EventEmitter {
 		};
 
 		const timeout = (this.requestMode == XHRStates.REQ_SEND) ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
-		this.timer = setTimeout(() => { this.abort(); }, timeout);
+		this.timer = setTimeout(this.abort.bind(this), timeout);
 		(head as HTMLHeadElement).insertBefore(script, (head as HTMLHeadElement).firstChild);
 	}
 
