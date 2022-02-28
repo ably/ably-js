@@ -59,7 +59,6 @@ const nodeConfig = {
             'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
             'platform-transports': path.resolve(nodePath, 'lib', 'transport'),
             // webpack null-loader is used to ensure that the following modules resolve to null - webpack won't compile unless these aliases are pointing at a valid module so these values are irrelevant.
-            'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
             'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
             'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
         },
@@ -68,7 +67,7 @@ const nodeConfig = {
         rules: [
             ...baseConfig.module.rules,
             {
-                test: /(platform-base64|platform-webstorage|platform-msgpack)/,
+                test: /(platform-webstorage|platform-msgpack)/,
                 use: 'null-loader',
             },
         ],
@@ -95,7 +94,6 @@ const browserConfig = {
             platform: path.resolve(browserPath, 'fragments', 'platform-browser'),
             'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
             'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-            'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
             'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
             'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
             'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
@@ -127,7 +125,6 @@ const nativeScriptConfig = {
             platform: path.resolve(browserPath, 'fragments', 'platform-nativescript'),
             'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
             'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-            'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
             'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
             'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
             'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
@@ -164,7 +161,6 @@ const reactNativeConfig = {
             platform: path.resolve(browserPath, 'fragments', 'platform-reactnative'),
             'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
             'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-            'platform-base64': path.resolve(browserPath, 'lib', 'util', 'base64'),
             'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
             'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
             'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),

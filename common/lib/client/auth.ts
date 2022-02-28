@@ -5,7 +5,6 @@ import Http from 'platform-http';
 import Multicaster from '../util/multicaster';
 import * as BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
-import Base64 from 'platform-base64';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import { createHmac } from 'crypto';
@@ -43,16 +42,14 @@ function normaliseAuthcallbackError(err: any) {
 }
 
 let hmac: (text: string, key: string) => string;
-let toBase64: typeof Base64.encode;
+let toBase64 = (str: string)=>Buffer.from(str, 'ascii').toString("base64");
 if(Platform.createHmac) {
-	toBase64 = function(str: string) { return (Buffer.from(str, 'ascii')).toString('base64'); };
 	hmac = function(text, key) {
 		const inst = (Platform.createHmac as typeof createHmac) ('SHA256', key);
 		inst.update(text);
 		return inst.digest('base64');
 	};
 } else {
-	toBase64 = Base64.encode;
 	hmac = function(text, key) {
 		return stringifyBase64(HmacSHA256(text, key));
 	};
