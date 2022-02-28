@@ -42,14 +42,16 @@ function normaliseAuthcallbackError(err: any) {
 }
 
 let hmac: (text: string, key: string) => string;
-let toBase64 = (str: string)=>Buffer.from(str, 'ascii').toString("base64");
+let toBase64: (str: string) => string;
 if(Platform.createHmac) {
+	toBase64 = (str)=>Buffer.from(str, 'ascii').toString("base64");
 	hmac = function(text, key) {
 		const inst = (Platform.createHmac as typeof createHmac) ('SHA256', key);
 		inst.update(text);
 		return inst.digest('base64');
 	};
 } else {
+	toBase64 = (str)=>CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(str));
 	hmac = function(text, key) {
 		return stringifyBase64(HmacSHA256(text, key));
 	};
