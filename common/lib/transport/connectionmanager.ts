@@ -729,8 +729,7 @@ class ConnectionManager extends EventEmitter {
 		});
 		Utils.safeArrForEach(this.proposedTransports, (proposedTransport: Transport) => {
 			if(proposedTransport === transport) {
-				const msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
-				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack);
 				Utils.arrDeleteValue(this.proposedTransports, transport);
 			} else {
 				proposedTransport.dispose();
