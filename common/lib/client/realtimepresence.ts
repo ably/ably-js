@@ -233,9 +233,7 @@ class RealtimePresence extends Presence {
 				callback?.(err);
 				break;
 			default:
-				/* there is no connection; therefore we let
-				 * any entered status timeout by itself */
-				callback?.(ConnectionErrors.failed);
+				callback?.(RealtimeChannel.invalidStateError(channel.state));
 		}
 	}
 
