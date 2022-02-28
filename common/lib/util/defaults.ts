@@ -38,12 +38,6 @@ const Defaults = {
 	httpMaxRetryCount : 3,
 	maxMessageSize    : 65536,
 
-	errorReportingUrl : 'https://errors.ably.io/api/15/store/',
-	errorReportingHeaders : {
-		"X-Sentry-Auth": "Sentry sentry_version=7, sentry_key=a04e33c8674c451f8a310fbec029acf5, sentry_client=ably-js/0.1",
-		"Content-Type": "application/json"
-	},
-
 	version,
 	apiVersion       : '1.2',
 	agent,
