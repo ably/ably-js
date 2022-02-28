@@ -990,7 +990,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
 		/* RTL6d: publish a series of messages that exercise various bundling
 		 * constraints, check they're satisfied */
-		it('bundling', function (done) {
+		it.skip('bundling', function (done) {
 			var realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
 				channelOne = realtime.channels.get('bundlingOne'),
 				channelTwo = realtime.channels.get('bundlingTwo');
