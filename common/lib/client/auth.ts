@@ -7,6 +7,7 @@ import * as BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
 import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../ably';
@@ -51,7 +52,7 @@ if(Platform.createHmac) {
 		return inst.digest('base64');
 	};
 } else {
-	toBase64 = (str)=>CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(str));
+	toBase64 = (str)=>stringifyBase64(parseUtf8(str));
 	hmac = function(text, key) {
 		return stringifyBase64(HmacSHA256(text, key));
 	};
