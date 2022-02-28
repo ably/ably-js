@@ -84,7 +84,7 @@ class JSONPTransport extends CometTransport {
 		/* JSONP requests are used either with the context being a realtime
 		 * transport, or with timeouts passed in (for when used by a rest client),
 		 * or completely standalone.  Use the appropriate timeouts in each case */
-		timeouts = (this && this.timeouts) || timeouts || Defaults.TIMEOUTS;
+		timeouts = this?.timeouts || timeouts || Defaults.TIMEOUTS;
 		return createRequest(uri, headers, params, body, requestMode, timeouts, method);
 	}
 }
