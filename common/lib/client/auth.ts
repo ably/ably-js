@@ -442,7 +442,7 @@ class Auth {
 			tokenRequestCallback = authOptions.authCallback;
 		} else if(authOptions.authUrl) {
 			Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
-			tokenRequestCallback = function(params: Record<string, unknown>, cb: Function) {
+			tokenRequestCallback = (params: Record<string, unknown>, cb: Function) => {
 				const authHeaders = Utils.mixin({accept: 'application/json, text/plain'}, authOptions.authHeaders) as Record<string, string>;
 				const usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
 				let providedQsParams;
@@ -498,9 +498,9 @@ class Auth {
 					const headers = authHeaders || {};
 					headers['content-type'] = 'application/x-www-form-urlencoded';
 					const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-					Http.postUri(client, authOptions.authUrl, headers, body, providedQsParams as Record<string, string>, authUrlRequestCallback as RequestCallback);
+					this.client.http.postUri(client, authOptions.authUrl, headers, body, providedQsParams as Record<string, string>, authUrlRequestCallback as RequestCallback);
 				} else {
-					Http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback as RequestCallback);
+					this.client.http.getUri(client, authOptions.authUrl, authHeaders || {}, authParams, authUrlRequestCallback as RequestCallback);
 				}
 			};
 		} else if(authOptions.key) {
@@ -517,7 +517,7 @@ class Auth {
 		if('capability' in (tokenParams as Record<string, any>))
 			(tokenParams as Record<string, any>).capability = c14n((tokenParams as Record<string, any>).capability);
 
-		const tokenRequest = function(signedTokenParams: Record<string, any>, tokenCb: Function) {
+		const tokenRequest = (signedTokenParams: Record<string, any>, tokenCb: Function) => {
 			const keyName = signedTokenParams.keyName,
 				path = '/keys/' + keyName + '/requestToken',
 				tokenUri = function(host: string) { return client.baseUri(host) + path; };
@@ -525,7 +525,7 @@ class Auth {
 			const requestHeaders = Utils.defaultPostHeaders();
 			if(authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
 			Logger.logAction(Logger.LOG_MICRO, 'Auth.requestToken().requestToken', 'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams));
-			Http.post(client, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null, tokenCb as RequestCallback);
+			this.client.http.post(client, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null, tokenCb as RequestCallback);
 		};
 
 		let tokenRequestCallbackTimeoutExpired = false,

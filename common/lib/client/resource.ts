@@ -11,7 +11,7 @@ import Rest from './rest';
 const msgpack = Platform.msgpack;
 
 function withAuthDetails(rest: Rest, headers: Record<string, string>, params: Record<string, any>, errCallback: Function, opCallback: Function) {
-	if (Http.supportsAuthHeaders) {
+	if (rest.http.supportsAuthHeaders) {
 		rest.auth.getAuthHeaders(function(err: Error, authHeaders: Record<string, string>) {
 			if(err)
 				errCallback(err);
@@ -162,7 +162,7 @@ class Resource {
 				}
 				Logger.logAction(Logger.LOG_MICRO, 'Resource.' + method + '()', 'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody);
 			}
-			(Http[method] as Function).apply(this, args);
+			(rest.http[method] as Function).apply(rest.http, args);
 		}
 
 		withAuthDetails(rest, origheaders, origparams, callback, doRequest);

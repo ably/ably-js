@@ -712,7 +712,7 @@ class ConnectionManager extends EventEmitter {
 			if(existingActiveProtocol.transport === transport) {
 				const msg = 'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report('error', msg, 'transport-previously-active');
+				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-previously-active');
 			} else {
 				existingActiveProtocol.finish();
 			}
@@ -724,7 +724,7 @@ class ConnectionManager extends EventEmitter {
 			if(pendingTransport === transport) {
 				const msg = 'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report('error', msg, 'transport-activating-pending');
+				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-activating-pending');
 				Utils.arrDeleteValue(this.pendingTransports, transport);
 			} else {
 				pendingTransport.disconnect();
@@ -734,7 +734,7 @@ class ConnectionManager extends EventEmitter {
 			if(proposedTransport === transport) {
 				const msg = 'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' + transport.shortName + '; stack = ' + new Error().stack;
 				Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-				ErrorReporter.report('error', msg, 'transport-activating-proposed');
+				ErrorReporter.report(this.realtime.http, 'error', msg, 'transport-activating-proposed');
 				Utils.arrDeleteValue(this.proposedTransports, transport);
 			} else {
 				proposedTransport.dispose();
@@ -1396,11 +1396,11 @@ class ConnectionManager extends EventEmitter {
 			/* before trying any fallback (or any remaining fallback) we decide if
 			 * there is a problem with the ably host, or there is a general connectivity
 			 * problem */
-			if (!Http.checkConnectivity) {
+			if (!this.realtime.http.checkConnectivity) {
 				giveUp(new ErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
 				return;
 			}
-			Http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {
+			this.realtime.http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {
 				if(connectCount !== this.connectCounter) {
 					return;
 				}

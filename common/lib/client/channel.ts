@@ -87,7 +87,7 @@ class Channel extends EventEmitter {
 	_history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
 		const rest = this.rest,
 			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format,
+			envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
 		if(rest.options.headers)

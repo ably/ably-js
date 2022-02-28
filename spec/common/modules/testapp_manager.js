@@ -100,7 +100,7 @@ define(['globals', 'base64', 'utf8', 'ably'], function(ablyGlobals, Base64, UTF8
 						 * simulation apps self-delete after a while */
 						callback();
 					} else {
-						ably.Rest.Http.doUri(options.method, null, uri, options.headers, options.body, options.paramsIfNoHeaders || {}, callback);
+						new ably.Rest.Http().doUri(options.method, null, uri, options.headers, options.body, options.paramsIfNoHeaders || {}, callback);
 					}
 					return;
 				}

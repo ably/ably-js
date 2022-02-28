@@ -118,7 +118,7 @@ class DeviceRegistrations {
 	list(params: any, callback: PaginatedResultCallback<unknown>) {
 		const rest = this.rest,
 			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format,
+			envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
@@ -222,7 +222,7 @@ class ChannelSubscriptions {
 	list(params: any, callback: PaginatedResultCallback<unknown>) {
 		const rest = this.rest,
 			format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format,
+			envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {
@@ -267,7 +267,7 @@ class ChannelSubscriptions {
 	listChannels(params: any, callback: PaginatedResultCallback<unknown>) {
 		const rest = this.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-			envelope = Http.supportsLinkHeaders ? undefined : format,
+			envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
 		if(typeof callback !== 'function') {

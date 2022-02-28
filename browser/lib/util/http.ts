@@ -1,3 +1,4 @@
+import Platform from 'platform';
 import * as Utils from '../../../common/lib/util/utils';
 import Defaults from '../../../common/lib/util/defaults';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
@@ -5,6 +6,11 @@ import { ErrnoException, IHttp, RequestCallback, RequestParams } from '../../../
 import HttpMethods from '../../../common/constants/HttpMethods';
 import Rest from '../../../common/lib/client/rest';
 import Realtime from '../../../common/lib/client/realtime';
+import XHRRequest from '../transport/xhrrequest';
+import XHRStates from '../../../common/constants/XHRStates';
+import Logger from '../../../common/lib/util/logger';
+import { StandardCallback } from '../../../common/types/utils';
+import { createRequest, Request } from '../transport/jsonptransport';
 
 function shouldFallback(errorInfo: ErrorInfo) {
 	const statusCode = errorInfo.statusCode as number;
@@ -34,25 +40,79 @@ const Http: typeof IHttp = class {
 	static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
 	static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
 	static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+	checksInProgress: Array<StandardCallback<boolean>> | null = null;
+
+	constructor() {
+		if(Platform.xhrSupported) {
+			this.supportsAuthHeaders = true;
+			this.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
+				const req = XHRRequest.createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
+				req.once('complete', callback);
+				req.exec();
+				return req;
+			};
+
+			this.checkConnectivity = function(callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+				const upUrl = Defaults.internetUpUrl;
+				Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+				this.getUri(null as any, upUrl, null, null, function(err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
+					const result = (!err && (responseText as string)?.replace(/\n/, '') == 'yes');
+					Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+					callback(null, result);
+				});
+			};
+		} else if (Platform.jsonpSupported) {
+			this.Request = function(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) {
+				const req = createRequest(uri, headers, params, body, XHRStates.REQ_SEND, rest && rest.options.timeouts, method);
+				req.once('complete', callback);
+				Utils.nextTick(function() {
+					req.exec();
+				});
+				return req;
+			};
+	
+			this.checkConnectivity = function(callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
+				const upUrl = Defaults.jsonpInternetUpUrl;
+	
+				if(this.checksInProgress) {
+					this.checksInProgress.push(callback);
+					return;
+				}
+				this.checksInProgress = [callback];
+				Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+	
+				const req = new Request('isTheInternetUp', upUrl as string, null, null, null, XHRStates.REQ_SEND, Defaults.TIMEOUTS);
+				req.once('complete', (err: Error, response: string) => {
+					const result = !err && response;
+					Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+					for(let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++) (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
+					this.checksInProgress = null;
+				});
+				Utils.nextTick(function() {
+					req.exec();
+				});
+			};
+		}
+	}
 
 	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
-	static do(method: HttpMethods, rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback?: RequestCallback): void {
+	do(method: HttpMethods, rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback?: RequestCallback): void {
 		const uriFromHost = (typeof(path) == 'function') ? path : function(host: string) { return rest.baseUri(host) + path; };
 
 		const currentFallback = rest._currentFallback;
 		if(currentFallback) {
 			if(currentFallback.validUntil > Utils.now()) {
 				/* Use stored fallback */
-				if (!Http.Request) {
+				if (!this.Request) {
 					callback?.(new ErrorInfo('Request invoked before assigned to', null, 500));
 					return;
 				}
-				Http.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
+				this.Request(method, rest, uriFromHost(currentFallback.host), headers, params, body, (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
 					// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
 					if(err && shouldFallback(err as ErrorInfo)) {
 						/* unstore the fallback and start from the top with the default sequence */
 						rest._currentFallback = null;
-						Http.do(method, rest, path, headers, body, params, callback);
+						this.do(method, rest, path, headers, body, params, callback);
 						return;
 					}
 					callback?.(err, ...args);
@@ -68,14 +128,14 @@ const Http: typeof IHttp = class {
 
 		/* if there is only one host do it */
 		if(hosts.length === 1) {
-			Http.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
+			this.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
 			return;
 		}
 
 		/* hosts is an array with preferred host plus at least one fallback */
-		const tryAHost = function(candidateHosts: Array<string>, persistOnSuccess?: boolean) {
+		const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
 			const host = candidateHosts.shift();
-			Http.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
+			this.doUri(method, rest, uriFromHost(host as string), headers, body, params, function(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
 				// This typecast is safe because ErrnoExceptions are only thrown in NodeJS
 				if(err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
 					tryAHost(candidateHosts, true);
@@ -94,12 +154,12 @@ const Http: typeof IHttp = class {
 		tryAHost(hosts);
 	}
 
-	static doUri(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		if (!Http.Request) {
+	doUri(method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		if (!this.Request) {
 			callback(new ErrorInfo('Request invoked before assigned to', null, 500));
 			return;
 		}
-		Http.Request(method, rest, uri, headers, params, body, callback);
+		this.Request(method, rest, uri, headers, params, body, callback);
 	}
 
 	/** Http.get, Http.post, Http.put, ...
@@ -121,54 +181,54 @@ const Http: typeof IHttp = class {
 		* @param callback (err, response)
 		*/
 
-	static get(rest: Rest | null, path: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
-		Http.do(HttpMethods.Get, rest, path, headers, null, params, callback);
+	get(rest: Rest, path: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
+		this.do(HttpMethods.Get, rest, path, headers, null, params, callback);
 	}
 
-	static getUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
-		Http.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
+	getUri(rest: Rest, uri: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
+		this.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
 	}
 
-	static delete(rest: Rest | null, path: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
-		Http.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
+	delete(rest: Rest, path: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
+		this.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
 	}
 
-	static deleteUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
-		Http.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
+	deleteUri(rest: Rest, uri: string, headers: Record<string, string> | null, params: RequestParams, callback: RequestCallback): void {
+		this.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
 	}
 
-	static post(rest: Rest | null, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.do(HttpMethods.Post, rest, path, headers, body, params, callback);
+	post(rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.do(HttpMethods.Post, rest, path, headers, body, params, callback);
 	}
 
-	static postUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
+	postUri(rest: Rest, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
 	}
 
-	static put(rest: Rest | null, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.do(HttpMethods.Put, rest, path, headers, body, params, callback);
+	put(rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.do(HttpMethods.Put, rest, path, headers, body, params, callback);
 	}
 
-	static putUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
+	putUri(rest: Rest, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
 	}
 
-	static patch(rest: Rest | null, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
+	patch(rest: Rest, path: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
 	}
 
-	static patchUri(rest: Rest | null, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
-		Http.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
+	patchUri(rest: Rest, uri: string, headers: Record<string, string> | null, body: unknown, params: RequestParams, callback: RequestCallback): void {
+		this.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
 	}
 
-	static Request?: (method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) => void;
+	Request?: (method: HttpMethods, rest: Rest | null, uri: string, headers: Record<string, string> | null, params: RequestParams, body: unknown, callback: RequestCallback) => void;
 
-	static checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity: boolean) => void) => void = undefined;
+	checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) => void = undefined;
 
-	static supportsAuthHeaders = false;
-	static supportsLinkHeaders = false;
+	supportsAuthHeaders = false;
+	supportsLinkHeaders = false;
 
-	static _getHosts = getHosts;
+	_getHosts = getHosts;
 }
 
 export default Http;
