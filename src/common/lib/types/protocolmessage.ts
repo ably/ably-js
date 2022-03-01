@@ -1,4 +1,4 @@
-import { Types } from '../../../ably';
+import { Types } from '../../../../ably';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';

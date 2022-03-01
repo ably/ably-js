@@ -4,7 +4,7 @@ import * as BufferUtils from 'platform-bufferutils';
 import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from '../types/errorinfo';
-import { version } from '../../../package.json';
+import { version } from '../../../../package.json';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
 let agent = 'ably-js/' + version;

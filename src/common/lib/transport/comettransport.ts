@@ -7,7 +7,7 @@ import ConnectionErrors from './connectionerrors';
 import Auth from '../client/auth';
 import ErrorInfo from '../types/errorinfo';
 import IXHRRequest from '../../types/IXHRRequest';
-import * as API from '../../../ably';
+import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
 

@@ -17,7 +17,7 @@ import * as WebStorage from 'platform-webstorage';
 import PlatformTransports from 'platform-transports';
 import WebSocketTransport from './websockettransport';
 import Transport from './transport';
-import * as API from '../../../ably';
+import * as API from '../../../../ably';
 import { ErrCallback } from '../../types/utils';
 import HttpStatusCodes from '../../constants/HttpStatusCodes';
 

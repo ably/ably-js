@@ -3,19 +3,20 @@
  */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
-const banner = require('./browser/fragments/license');
+const banner = require('./src/browser/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
 const fs = require('fs');
 
-const nodePath = path.resolve(__dirname, 'nodejs');
-const browserPath = path.resolve(__dirname, 'browser');
-
+const srcPath = path.resolve(__dirname, 'src');
 const distPath = path.resolve(__dirname, 'dist');
+
+const nodePath = path.resolve(srcPath, 'nodejs');
+const browserPath = path.resolve(srcPath, 'browser');
 
 const baseConfig = {
     mode: 'production',
     entry: {
-        index: path.resolve(__dirname, 'common', 'lib', 'index.js'),
+        index: path.resolve(srcPath, 'common', 'lib', 'index.js'),
     },
     resolve: {
         extensions: ['.js', '.ts'],

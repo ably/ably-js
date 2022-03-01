@@ -36,3 +36,5 @@ export interface IPlatform {
     TextDecoder?: typeof TextDecoder;
     getRandomWordArray?: (byteLength: number, callback: (err: Error, result: boolean | CryptoJS.lib.WordArray) => void) => void;
 }
+
+export declare const Platform: IPlatform;
