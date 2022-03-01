@@ -15,8 +15,8 @@ module.exports = function (grunt) {
 		common: 'common',
 		browser: 'browser',
 		fragments: 'browser/fragments',
-		static: 'browser/static',
-		dest: 'browser/static',
+		static: 'dist',
+		dest: 'dist',
 		compat: 'browser/compat',
 		crypto_js: 'node_modules/crypto-js/src',
 		tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar'

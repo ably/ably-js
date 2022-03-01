@@ -5,9 +5,15 @@ const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./browser/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
+const fs = require('fs');
 
 const nodePath = path.resolve(__dirname, 'nodejs');
 const browserPath = path.resolve(__dirname, 'browser');
+
+const distPath = path.resolve(__dirname, 'dist');
+if (!fs.existsSync(distPath)) {
+  fs.mkdirSync(distPath);
+}
 
 const baseConfig = {
     mode: 'production',
@@ -18,7 +24,7 @@ const baseConfig = {
         extensions: ['.js', '.ts'],
     },
     output: {
-        path: path.resolve(__dirname, 'browser/static'),
+        path: distPath,
         library: 'Ably',
         libraryTarget: 'umd',
         libraryExport: 'default',

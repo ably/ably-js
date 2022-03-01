@@ -6,7 +6,6 @@
 2. When pulling to local, make sure to also pull the `ably-common` repo (`git submodule init && git submodule update`)
 3. Create your feature branch (`git checkout -b my-new-feature`)
 4. Commit your changes (`git commit -am 'Add some feature'`)
-   Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
 5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
 6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/main/ably.d.ts) have been updated if the public API has changed
 7. Ensure you stick to the version of JS used by the library (currently ES3). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES3 syntax, but will not enforce that you don't use, for example, new methods)
@@ -57,7 +56,7 @@ Alternatively you can also run the tests for single file
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
-browser/static directory, not the raw source files, and breakpoints in files under spec/test should work directly.
+dist directory, not the raw source files, and breakpoints in files under spec/test should work directly.
 
 ### Debugging the tests in a browser with Mocha test runner
 

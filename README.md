@@ -26,7 +26,7 @@ This SDK supports the following platforms:
 
 **WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
 ```js
-import Ably from 'ably/browser/static/ably-webworker.min';
+import Ably from 'ably/dist/ably-webworker.min';
 ```
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
@@ -76,7 +76,7 @@ For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using t
 
 WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
 
-If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/browser/static/ably-commonjs.js');` (or `import * as Ably from 'ably/browser/static/ably-commonjs.js'` for typescript / ES6 modules).
+If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/dist/ably-commonjs.js');` (or `import * as Ably from 'ably/dist/ably-commonjs.js'` for typescript / ES6 modules).
 
 ### TypeScript
 
