@@ -11,9 +11,6 @@ const nodePath = path.resolve(__dirname, 'nodejs');
 const browserPath = path.resolve(__dirname, 'browser');
 
 const distPath = path.resolve(__dirname, 'dist');
-if (!fs.existsSync(distPath)) {
-  fs.mkdirSync(distPath);
-}
 
 const baseConfig = {
     mode: 'production',
