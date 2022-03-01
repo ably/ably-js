@@ -229,7 +229,7 @@ const webworkerConfig = {
             patterns: [
                 {
                     from: path.resolve(browserPath, 'fragments', 'ably.d.ts'),
-                    to: path.resolve(browserPath, 'static', 'ably-webworker.min.d.ts'),
+                    to: path.resolve(distPath, 'ably-webworker.min.d.ts'),
                 }
             ],
         }),
