@@ -188,6 +188,17 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
 		this.errorCode = err && err.code;
 		this.errorMessage = err && err.message;
 	}
+
+	toJSON() {
+	  return {
+	    items: this.items,
+	    statusCode: this.statusCode,
+	    success: this.success,
+	    headers: this.headers,
+	    errorCode: this.errorCode,
+	    errorMessage: this.errorMessage,
+	  };
+	}
 }
 
 export default PaginatedResource;
