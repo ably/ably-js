@@ -25,13 +25,16 @@
     "resources/**"
   ],
   "dependencies": {
-    "@ably/msgpack-js": "^0.3.3",
+    "@ably/msgpack-js": "^0.4.0",
     "got": "^11.8.2",
     "ws": "^5.1"
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
+    "@types/crypto-js": "^4.0.1",
     "@types/node": "^15.0.0",
+    "@types/request": "^2.48.7",
+    "@types/ws": "^8.2.0",
     "async": "ably-forks/async#requirejs",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
@@ -59,6 +62,7 @@
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
     "ts-loader": "^8.2.0",
+    "tslib": "^2.3.1",
     "typescript": "^4.2.4",
     "webpack": "^4.44.2",
     "webpack-cli": "^4.2.0"
@@ -81,7 +85,9 @@
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
     "concat": "grunt concat",
-    "build": "grunt build",
+    "build": "grunt build:all",
+    "build:node": "grunt build:node",
+    "build:browser": "grunt build:browser",
     "requirejs": "grunt requirejs",
     "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",

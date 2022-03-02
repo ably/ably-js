@@ -12,7 +12,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 	var monitorConnection = helper.monitorConnection;
 	var testOnAllTransports = helper.testOnAllTransports;
 	var mixin = helper.Utils.mixin;
-	var http = Ably.Rest.Http;
+	var http = new Ably.Rest.Http();
 	var jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1);
 	var echoServer = 'https://echo.ably.io';
 
@@ -908,7 +908,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 		/*
 		 * use authorize() to force a reauth using an existing authCallback
 		 */
-		testOnAllTransports('reauth_authCallback', function (realtimeOpts) {
+		testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
 			return function (done) {
 				var realtime,
 					rest = helper.AblyRest();

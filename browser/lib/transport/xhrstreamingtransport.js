@@ -1,4 +1,4 @@
-import Utils from '../../../common/lib/util/utils';
+import * as Utils from '../../../common/lib/util/utils';
 import CometTransport from '../../../common/lib/transport/comettransport';
 import Logger from '../../../common/lib/util/logger';
 import Platform from 'platform';

@@ -113,19 +113,24 @@ define(['test/common/modules/testapp_module', 'test/common/modules/client_module
 		}
 
 		/* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-		function testOnAllTransports(name, testFn, excludeUpgrade) {
+		function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
+			var itFn = skip ? it.skip : it;
 			utils.arrForEach(availableTransports, function(transport) {
-				it(name + '_with_' + transport + '_binary_transport', testFn({transports: [transport], useBinaryProtocol: true}));
-				it(name + '_with_' + transport + '_text_transport', testFn({transports: [transport], useBinaryProtocol: false}));
+				itFn(name + '_with_' + transport + '_binary_transport', testFn({transports: [transport], useBinaryProtocol: true}));
+				itFn(name + '_with_' + transport + '_text_transport', testFn({transports: [transport], useBinaryProtocol: false}));
 			});
 			/* Plus one for no transport specified (ie use upgrade mechanism if
 			 * present).  (we explicitly specify all transports since node only does
 			 * nodecomet+upgrade if comet is explicitly requested
 			 * */
 			if(!excludeUpgrade) {
-				it(name + '_with_binary_transport', testFn({transports: availableTransports, useBinaryProtocol: true}));
-				it(name + '_with_text_transport', testFn({transports: availableTransports, useBinaryProtocol: false}));
+				itFn(name + '_with_binary_transport', testFn({transports: availableTransports, useBinaryProtocol: true}));
+				itFn(name + '_with_text_transport', testFn({transports: availableTransports, useBinaryProtocol: false}));
 			}
+		}
+
+		testOnAllTransports.skip = function(name, testFn, excludeUpgrade) {
+			testOnAllTransports(name, testFn, excludeUpgrade, true);
 		}
 
 		function restTestOnJsonMsgpack(name, testFn, skip) {

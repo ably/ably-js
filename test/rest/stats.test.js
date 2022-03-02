@@ -191,7 +191,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 		 * Check day-level stats exist (forwards)
 		 * @spec : (RSC6b4)
 		 */
-		it('appstats_day0', function (done) {
+		it.skip('appstats_day0', function (done) {
 			rest.stats(
 				{
 					end: lastYear + '-02-03',
@@ -228,7 +228,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 		 * Check month-level stats exist (forwards)
 		 * @spec : (RSC6b4)
 		 */
-		it('appstats_month0', function (done) {
+		it.skip('appstats_month0', function (done) {
 			rest.stats(
 				{
 					end: lastYear + '-02',
