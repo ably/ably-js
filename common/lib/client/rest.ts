@@ -53,7 +53,7 @@ class Rest {
 			if(!keyMatch) {
 				const msg = 'invalid key parameter';
 				Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-				throw new Error(msg);
+				throw new ErrorInfo(msg, 40400, 404);
 			}
 			normalOptions.keyName = keyMatch[1];
 			normalOptions.keySecret = keyMatch[2];
