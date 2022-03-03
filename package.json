@@ -83,7 +83,7 @@
     "test": "grunt test",
     "test:node": "grunt test:node",
     "test:webserver": "grunt test:webserver",
-    "test:playwright": "node spec/support/runPlaywrightTests.js",
+    "test:playwright": "node test/support/runPlaywrightTests.js",
     "concat": "grunt concat",
     "build": "grunt build:all",
     "build:node": "grunt build:node",

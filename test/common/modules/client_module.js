@@ -2,7 +2,7 @@
 
 /* Shared test helper used for creating Rest and Real-time clients */
 
-define(['ably', 'globals', 'spec/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
+define(['ably', 'globals', 'test/common/modules/testapp_module'], function(Ably, ablyGlobals, testAppHelper) {
 	var utils = Ably.Realtime.Utils;
 
 	function ablyClientOptions(options) {

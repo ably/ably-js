@@ -45,7 +45,7 @@ server.get('/core.js', function (req, res) {
 });
 
 server.use('/node_modules', express.static(__dirname + '/../node_modules'));
-server.use('/spec', express.static(__dirname));
+server.use('/test', express.static(__dirname));
 server.use('/browser', express.static(__dirname + '/../browser'));
 server.use(express.static(__dirname));
 

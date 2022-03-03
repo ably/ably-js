@@ -12,7 +12,7 @@ define(['globals', 'base64', 'utf8', 'ably'], function(ablyGlobals, Base64, UTF8
 		httpReq   = httpReqFunction(),
 		toBase64  =  base64Function(),
 		loadJsonData = loadJsonDataNode,
-		testResourcesPath = 'spec/common/ably-common/test-resources/';
+		testResourcesPath = 'test/common/ably-common/test-resources/';
 
 	if (isNativescript) {
 		loadJsonData = loadJsonNativescript;

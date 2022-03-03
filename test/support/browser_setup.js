@@ -34,7 +34,7 @@ forEachKey(window.__testFiles__.files, function(file) {
 });
 var baseUrl = '';
 
-require([(baseUrl + '/spec/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
+require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//','/')], function(modules) {
 	var requireJsPaths = {};
 	for (var key in modules) {
 		if (modules.hasOwnProperty(key) && modules[key].browser) {
