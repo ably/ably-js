@@ -130,7 +130,7 @@ var client = new Ably.Realtime(options: ClientOptions);
 // you don't pass a callback:
 var client = new Ably.Realtime.Promise(options: string | ClientOptions);
 
-// For the explicitly-callback-based variant (see 'Async API style' above):
+// For the explicitly-callback-based variant (see 'Async API style' below):
 var client = new Ably.Rest.Callbacks(options: string | ClientOptions);
 ```
 
