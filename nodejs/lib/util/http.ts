@@ -27,347 +27,347 @@ const msgpack = Platform.msgpack;
  ***************************************************/
 
 const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
-	return function (err: ErrnoException | null, response?: Response, body?: unknown) {
-		if (err) {
-			callback?.(err);
-			return;
-		}
-		const statusCode = (response as Response).statusCode,
-			headers = (response as Response).headers;
-		if (statusCode >= 300) {
-			switch (headers['content-type']) {
-				case 'application/json':
-					body = JSON.parse(body as string);
-					break;
-				case 'application/x-msgpack':
-					body = msgpack.decode(body as Buffer);
-			}
-			const error = (body as { error: ErrorInfo }).error
-				? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
-				: new ErrorInfo(
-						(headers['x-ably-errormessage'] as string) ||
-							'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
-						Number(headers['x-ably-errorcode']),
-						statusCode
-				  );
-			callback?.(error, body, headers, true, statusCode);
-			return;
-		}
-		callback?.(null, body, headers, false, statusCode);
-	};
+  return function (err: ErrnoException | null, response?: Response, body?: unknown) {
+    if (err) {
+      callback?.(err);
+      return;
+    }
+    const statusCode = (response as Response).statusCode,
+      headers = (response as Response).headers;
+    if (statusCode >= 300) {
+      switch (headers['content-type']) {
+        case 'application/json':
+          body = JSON.parse(body as string);
+          break;
+        case 'application/x-msgpack':
+          body = msgpack.decode(body as Buffer);
+      }
+      const error = (body as { error: ErrorInfo }).error
+        ? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
+        : new ErrorInfo(
+            (headers['x-ably-errormessage'] as string) ||
+              'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(body),
+            Number(headers['x-ably-errorcode']),
+            statusCode,
+          );
+      callback?.(error, body, headers, true, statusCode);
+      return;
+    }
+    callback?.(null, body, headers, false, statusCode);
+  };
 };
 
 function shouldFallback(err: ErrnoException) {
-	const { code, statusCode } = err;
-	return (
-		code === 'ENETUNREACH' ||
-		code === 'EHOSTUNREACH' ||
-		code === 'EHOSTDOWN' ||
-		code === 'ETIMEDOUT' ||
-		code === 'ESOCKETTIMEDOUT' ||
-		code === 'ENOTFOUND' ||
-		code === 'ECONNRESET' ||
-		code === 'ECONNREFUSED' ||
-		(statusCode >= 500 && statusCode <= 504)
-	);
+  const { code, statusCode } = err;
+  return (
+    code === 'ENETUNREACH' ||
+    code === 'EHOSTUNREACH' ||
+    code === 'EHOSTDOWN' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ESOCKETTIMEDOUT' ||
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ECONNREFUSED' ||
+    (statusCode >= 500 && statusCode <= 504)
+  );
 }
 
 function getHosts(client: Rest | Realtime): string[] {
-	/* If we're a connected realtime client, try the endpoint we're connected
-	 * to first -- but still have fallbacks, being connected is not an absolute
-	 * guarantee that a datacenter has free capacity to service REST requests. */
-	const connection = (client as Realtime).connection;
-	const connectionHost = connection && connection.connectionManager.host;
+  /* If we're a connected realtime client, try the endpoint we're connected
+   * to first -- but still have fallbacks, being connected is not an absolute
+   * guarantee that a datacenter has free capacity to service REST requests. */
+  const connection = (client as Realtime).connection;
+  const connectionHost = connection && connection.connectionManager.host;
 
-	if (connectionHost) {
-		return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
-	}
+  if (connectionHost) {
+    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+  }
 
-	return Defaults.getHosts(client.options);
+  return Defaults.getHosts(client.options);
 }
 
 const Http: typeof IHttp = class {
-	static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
-	static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
-	static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
-	agent: { http: http.Agent; https: https.Agent } | null = null;
-	_getHosts = getHosts;
-	supportsAuthHeaders = true;
-	supportsLinkHeaders = true;
+  static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+  static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
+  static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+  agent: { http: http.Agent; https: https.Agent } | null = null;
+  _getHosts = getHosts;
+  supportsAuthHeaders = true;
+  supportsLinkHeaders = true;
 
-	/* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
-	do(
-		method: HttpMethods,
-		rest: Rest,
-		path: PathParameter,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		const uriFromHost =
-			typeof path === 'function'
-				? path
-				: function (host: string) {
-						return rest.baseUri(host) + path;
-				  };
+  /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
+  do(
+    method: HttpMethods,
+    rest: Rest,
+    path: PathParameter,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    const uriFromHost =
+      typeof path === 'function'
+        ? path
+        : function (host: string) {
+            return rest.baseUri(host) + path;
+          };
 
-		const currentFallback = rest._currentFallback;
-		if (currentFallback) {
-			if (currentFallback.validUntil > Date.now()) {
-				/* Use stored fallback */
-				this.doUri(
-					method,
-					rest,
-					uriFromHost(currentFallback.host),
-					headers,
-					body,
-					params,
-					(err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
-						if (err && shouldFallback(err as ErrnoException)) {
-							/* unstore the fallback and start from the top with the default sequence */
-							rest._currentFallback = null;
-							this.do(method, rest, path, headers, body, params, callback);
-							return;
-						}
-						callback(err, ...args);
-					}
-				);
-				return;
-			} else {
-				/* Fallback expired; remove it and fallthrough to normal sequence */
-				rest._currentFallback = null;
-			}
-		}
+    const currentFallback = rest._currentFallback;
+    if (currentFallback) {
+      if (currentFallback.validUntil > Date.now()) {
+        /* Use stored fallback */
+        this.doUri(
+          method,
+          rest,
+          uriFromHost(currentFallback.host),
+          headers,
+          body,
+          params,
+          (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
+            if (err && shouldFallback(err as ErrnoException)) {
+              /* unstore the fallback and start from the top with the default sequence */
+              rest._currentFallback = null;
+              this.do(method, rest, path, headers, body, params, callback);
+              return;
+            }
+            callback(err, ...args);
+          },
+        );
+        return;
+      } else {
+        /* Fallback expired; remove it and fallthrough to normal sequence */
+        rest._currentFallback = null;
+      }
+    }
 
-		const hosts = getHosts(rest);
+    const hosts = getHosts(rest);
 
-		/* see if we have one or more than one host */
-		if (hosts.length === 1) {
-			this.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
-			return;
-		}
+    /* see if we have one or more than one host */
+    if (hosts.length === 1) {
+      this.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
+      return;
+    }
 
-		const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
-			const host = candidateHosts.shift();
-			this.doUri(
-				method,
-				rest,
-				uriFromHost(host as string),
-				headers,
-				body,
-				params,
-				function (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
-					if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
-						tryAHost(candidateHosts, true);
-						return;
-					}
-					if (persistOnSuccess) {
-						/* RSC15f */
-						rest._currentFallback = {
-							host: host as string,
-							validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout
-						};
-					}
-					callback(err, ...args);
-				}
-			);
-		};
-		tryAHost(hosts);
-	}
+    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
+      const host = candidateHosts.shift();
+      this.doUri(
+        method,
+        rest,
+        uriFromHost(host as string),
+        headers,
+        body,
+        params,
+        function (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
+          if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
+            tryAHost(candidateHosts, true);
+            return;
+          }
+          if (persistOnSuccess) {
+            /* RSC15f */
+            rest._currentFallback = {
+              host: host as string,
+              validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout,
+            };
+          }
+          callback(err, ...args);
+        },
+      );
+    };
+    tryAHost(hosts);
+  }
 
-	doUri(
-		method: HttpMethods,
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		/* Will generally be making requests to one or two servers exclusively
-		 * (Ably and perhaps an auth server), so for efficiency, use the
-		 * foreverAgent to keep the TCP stream alive between requests where possible */
-		const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-		// const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
-		const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
-		if (!this.agent) {
-			this.agent = {
-				http: new http.Agent(agentOptions),
-				https: new https.Agent(agentOptions)
-			};
-		}
+  doUri(
+    method: HttpMethods,
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    /* Will generally be making requests to one or two servers exclusively
+     * (Ably and perhaps an auth server), so for efficiency, use the
+     * foreverAgent to keep the TCP stream alive between requests where possible */
+    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
+    // const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
+    const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+    if (!this.agent) {
+      this.agent = {
+        http: new http.Agent(agentOptions),
+        https: new https.Agent(agentOptions),
+      };
+    }
 
-		if (body) {
-			doOptions.body = body as Buffer;
-		}
-		if (params) doOptions.searchParams = params;
+    if (body) {
+      doOptions.body = body as Buffer;
+    }
+    if (params) doOptions.searchParams = params;
 
-		doOptions.agent = this.agent;
+    doOptions.agent = this.agent;
 
-		doOptions.url = uri;
-		doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
+    doOptions.url = uri;
+    doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
 
-		(got[method](doOptions) as CancelableRequest<Response>)
-			.then((res: Response) => {
-				handler(uri, params, callback)(null, res, res.body);
-			})
-			.catch((err: ErrnoException) => {
-				if (err instanceof got.HTTPError) {
-					handler(uri, params, callback)(null, err.response, err.response.body);
-					return;
-				}
-				handler(uri, params, callback)(err);
-			});
-	}
+    (got[method](doOptions) as CancelableRequest<Response>)
+      .then((res: Response) => {
+        handler(uri, params, callback)(null, res, res.body);
+      })
+      .catch((err: ErrnoException) => {
+        if (err instanceof got.HTTPError) {
+          handler(uri, params, callback)(null, err.response, err.response.body);
+          return;
+        }
+        handler(uri, params, callback)(err);
+      });
+  }
 
-	/** Http.get, Http.post, Http.put, ...
-	 * Perform an HTTP request for a given path against prime and fallback Ably hosts
-	 * @param rest
-	 * @param path the full path
-	 * @param headers optional hash of headers
-	 * [only for methods with body: @param body object or buffer containing request body]
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 *
-	 ** Http.getUri, Http.postUri, Http.putUri, ...
-	 * Perform an HTTP request for a given full URI
-	 * @param rest
-	 * @param uri the full URI
-	 * @param headers optional hash of headers
-	 * [only for methods with body: @param body object or buffer containing request body]
-	 * @param params optional hash of params
-	 * @param callback (err, response)
-	 */
+  /** Http.get, Http.post, Http.put, ...
+   * Perform an HTTP request for a given path against prime and fallback Ably hosts
+   * @param rest
+   * @param path the full path
+   * @param headers optional hash of headers
+   * [only for methods with body: @param body object or buffer containing request body]
+   * @param params optional hash of params
+   * @param callback (err, response)
+   *
+   ** Http.getUri, Http.postUri, Http.putUri, ...
+   * Perform an HTTP request for a given full URI
+   * @param rest
+   * @param uri the full URI
+   * @param headers optional hash of headers
+   * [only for methods with body: @param body object or buffer containing request body]
+   * @param params optional hash of params
+   * @param callback (err, response)
+   */
 
-	get(
-		rest: Rest,
-		path: string,
-		headers: Record<string, string> | null,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.do(HttpMethods.Get, rest, path, headers, null, params, callback);
-	}
+  get(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string> | null,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.do(HttpMethods.Get, rest, path, headers, null, params, callback);
+  }
 
-	getUri(
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
-	}
+  getUri(
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
+  }
 
-	delete(
-		rest: Rest,
-		path: string,
-		headers: Record<string, string> | null,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
-	}
+  delete(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string> | null,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
+  }
 
-	deleteUri(
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
-	}
+  deleteUri(
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
+  }
 
-	post(
-		rest: Rest,
-		path: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.do(HttpMethods.Post, rest, path, headers, body, params, callback);
-	}
+  post(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.do(HttpMethods.Post, rest, path, headers, body, params, callback);
+  }
 
-	postUri(
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
-	}
+  postUri(
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
+  }
 
-	put(
-		rest: Rest,
-		path: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.do(HttpMethods.Put, rest, path, headers, body, params, callback);
-	}
+  put(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.do(HttpMethods.Put, rest, path, headers, body, params, callback);
+  }
 
-	putUri(
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
-	}
+  putUri(
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
+  }
 
-	patch(
-		rest: Rest,
-		path: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
-	}
+  patch(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
+  }
 
-	patchUri(
-		rest: Rest,
-		uri: string,
-		headers: Record<string, string> | null,
-		body: unknown,
-		params: RequestParams,
-		callback: RequestCallback
-	): void {
-		this.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
-	}
+  patchUri(
+    rest: Rest,
+    uri: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback: RequestCallback,
+  ): void {
+    this.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
+  }
 
-	checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
-		// TODO: fix this
-		this.getUri(
-			null as any,
-			Defaults.internetUpUrl,
-			null,
-			null,
-			function (err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
-				callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
-			}
-		);
-	};
+  checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
+    // TODO: fix this
+    this.getUri(
+      null as any,
+      Defaults.internetUpUrl,
+      null,
+      null,
+      function (err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
+        callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
+      },
+    );
+  };
 
-	Request?: (
-		method: HttpMethods,
-		rest: Rest | null,
-		uri: string,
-		headers: Record<string, string> | null,
-		params: RequestParams,
-		body: unknown,
-		callback: RequestCallback
-	) => void = undefined;
+  Request?: (
+    method: HttpMethods,
+    rest: Rest | null,
+    uri: string,
+    headers: Record<string, string> | null,
+    params: RequestParams,
+    body: unknown,
+    callback: RequestCallback,
+  ) => void = undefined;
 };
 
 export default Http;
