@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /*
 	Modules helper
@@ -18,39 +18,41 @@
 		return modules.exports = yourObject;
 */
 
-var isBrowser = (typeof(window) == 'object');
+var isBrowser = typeof window == 'object';
 if (isBrowser) {
-	window.module = {};
-	window.isBrowser = true;
+  window.module = {};
+  window.isBrowser = true;
 } else {
-	global.isBrowser = false;
+  global.isBrowser = false;
 
-	// Simulate the dependency injection from RequireJS in Node.js
-	global.define = function(requireModules, callback) {
-		if (typeof(requireModules) === 'function') {
-			// no dependencies were provided, just call the provided callback
-			requireModules.apply(this, require);
-		} else {
-			var namedDependencies = require('../common/globals/named_dependencies');
+  // Simulate the dependency injection from RequireJS in Node.js
+  global.define = function (requireModules, callback) {
+    if (typeof requireModules === 'function') {
+      // no dependencies were provided, just call the provided callback
+      requireModules.apply(this, require);
+    } else {
+      var namedDependencies = require('../common/globals/named_dependencies');
 
-			var required = requireModules.map(function (module) {
-				var modulePath = (namedDependencies[module] || {}).node;
-				if (modulePath === 'skip') { return; }
+      var required = requireModules.map(function (module) {
+        var modulePath = (namedDependencies[module] || {}).node;
+        if (modulePath === 'skip') {
+          return;
+        }
 
-				if (modulePath) {
-					return require("../../" + modulePath);
-				} else {
-					/* define has used a relative path to the base such as spec/file */
-					if (module.indexOf('/') >= 0) {
-						return require("../../" + module);
-					} else {
-						/* requiring a named Node.js module such as async */
-						return require(module);
-					}
-				}
-			});
+        if (modulePath) {
+          return require('../../' + modulePath);
+        } else {
+          /* define has used a relative path to the base such as spec/file */
+          if (module.indexOf('/') >= 0) {
+            return require('../../' + module);
+          } else {
+            /* requiring a named Node.js module such as async */
+            return require(module);
+          }
+        }
+      });
 
-			callback.apply(this, required);
-		}
-	};
+      callback.apply(this, required);
+    }
+  };
 }

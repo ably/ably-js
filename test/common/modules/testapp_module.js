@@ -1,81 +1,91 @@
-"use strict";
+'use strict';
 
 /*
 	Test App creation helper used within Mocha tests.
 */
 
-define(['test/common/modules/testapp_manager', 'globals'], function(testAppManager, ablyGlobals) {
-	var globalObject = isBrowser? window : global;
+define(['test/common/modules/testapp_manager', 'globals'], function (testAppManager, ablyGlobals) {
+  var globalObject = isBrowser ? window : global;
 
-	function updateTestApp(newTestApp) {
-		globalObject.AblyTestApp = newTestApp;
-	}
+  function updateTestApp(newTestApp) {
+    globalObject.AblyTestApp = newTestApp;
+  }
 
-	function configuredTestApp() {
-		return globalObject.AblyTestApp;
-	}
+  function configuredTestApp() {
+    return globalObject.AblyTestApp;
+  }
 
-	/* setup is typically called at the start of a test suite.
+  /* setup is typically called at the start of a test suite.
 		 If setup is called more than once i.e. across multiple suites,
 		 then no need to recreate a test app, unless forceSetup is true.
 		 If forceSetup is true and existing app exists, then the app will be torn down (deleted)
 		 first */
-	function setup(forceSetup, done) {
-		if (typeof(forceSetup) === 'function') {
-			done = forceSetup;
-			forceSetup = false;
-		}
-		if (configuredTestApp() && !forceSetup) { return done(); }
+  function setup(forceSetup, done) {
+    if (typeof forceSetup === 'function') {
+      done = forceSetup;
+      forceSetup = false;
+    }
+    if (configuredTestApp() && !forceSetup) {
+      return done();
+    }
 
-		var setupFn = function() {
-			testAppManager.setup(function(err, newTestApp) {
-				if (err) {
-					done(new Error("Could not set up Test App: " + JSON.stringify(err)));
-				} else {
-					updateTestApp(newTestApp);
-					console.info("Test App " + configuredTestApp().appId + " in environment " + (ablyGlobals.environment || 'production') + " has been set up");
-					done();
-				}
-			});
-		};
+    var setupFn = function () {
+      testAppManager.setup(function (err, newTestApp) {
+        if (err) {
+          done(new Error('Could not set up Test App: ' + JSON.stringify(err)));
+        } else {
+          updateTestApp(newTestApp);
+          console.info(
+            'Test App ' +
+              configuredTestApp().appId +
+              ' in environment ' +
+              (ablyGlobals.environment || 'production') +
+              ' has been set up',
+          );
+          done();
+        }
+      });
+    };
 
-		if (configuredTestApp() && forceSetup) {
-			tearDown(function(err) {
-				if (err) {
-					done(err);
-				} else {
-					setupFn();
-				}
-			});
-		} else {
-			setupFn();
-		}
-	}
+    if (configuredTestApp() && forceSetup) {
+      tearDown(function (err) {
+        if (err) {
+          done(err);
+        } else {
+          setupFn();
+        }
+      });
+    } else {
+      setupFn();
+    }
+  }
 
-	/* tearDown is typically called by an afterAll test suite block.
+  /* tearDown is typically called by an afterAll test suite block.
 		 If tearDown is called more than once i.e. across multiple suites,
 		 and other test suites are still to run, then we must not yet delete the test app */
-	function tearDown(done) {
-		if (!configuredTestApp()) {
-			done();
-			return;
-		}
+  function tearDown(done) {
+    if (!configuredTestApp()) {
+      done();
+      return;
+    }
 
-		testAppManager.tearDown(configuredTestApp(), function(err) {
-			if (err) {
-				done(new Error("Could not tear down Test App: " + JSON.stringify(err)));
-			} else {
-				console.info("Test App " + configuredTestApp().appId + " has been torn down");
-				updateTestApp(null);
-				done();
-			}
-		});
-	}
+    testAppManager.tearDown(configuredTestApp(), function (err) {
+      if (err) {
+        done(new Error('Could not tear down Test App: ' + JSON.stringify(err)));
+      } else {
+        console.info('Test App ' + configuredTestApp().appId + ' has been torn down');
+        updateTestApp(null);
+        done();
+      }
+    });
+  }
 
-	return module.exports = {
-		setup: setup,
-		tearDown: tearDown,
-		createStatsFixtureData: testAppManager.createStatsFixtureData,
-		getTestApp: function() { return globalObject.AblyTestApp; }
-	};
+  return (module.exports = {
+    setup: setup,
+    tearDown: tearDown,
+    createStatsFixtureData: testAppManager.createStatsFixtureData,
+    getTestApp: function () {
+      return globalObject.AblyTestApp;
+    },
+  });
 });

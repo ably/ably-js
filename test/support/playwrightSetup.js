@@ -1,11 +1,5 @@
 console.log('hello?');
-const {
-  EVENT_RUN_END,
-  EVENT_TEST_FAIL,
-  EVENT_TEST_PASS,
-  EVENT_SUITE_BEGIN,
-  EVENT_SUITE_END,
-} = Mocha.Runner.constants;
+const { EVENT_RUN_END, EVENT_TEST_FAIL, EVENT_TEST_PASS, EVENT_SUITE_BEGIN, EVENT_SUITE_END } = Mocha.Runner.constants;
 
 const { ok: passSymbol, err: failSymbol } = Mocha.reporters.Base.symbols;
 
@@ -40,13 +34,13 @@ class CustomEventReporter extends Mocha.reporters.HTML {
                 passes: runner.stats.passes,
                 total: runner.stats.passes + runner.stats.failures,
               },
-            })
+            }),
           );
       });
   }
 
   logToNodeConsole(text) {
-    window.dispatchEvent(new CustomEvent('testLog', { detail: this.indent() + text}));
+    window.dispatchEvent(new CustomEvent('testLog', { detail: this.indent() + text }));
   }
 
   indent() {
