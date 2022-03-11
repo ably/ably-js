@@ -20,6 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run check-closure-compiler
       - run: npx tsc --noEmit ably.d.ts
       - run: npm audit --production
