@@ -245,7 +245,7 @@ class RealtimeChannel extends Channel {
       case 'suspended':
         callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(state)));
         break;
-      default:
+      default: {
         Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
         const msg = new ProtocolMessage();
         msg.action = actions.MESSAGE;
@@ -253,6 +253,7 @@ class RealtimeChannel extends Channel {
         msg.messages = messages;
         this.sendMessage(msg, callback);
         break;
+      }
     }
   }
 
@@ -383,6 +384,7 @@ class RealtimeChannel extends Channel {
         break;
       default:
         this.requestState('detaching');
+      // eslint-disable-next-line no-fallthrough
       case 'detaching':
         this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
           switch (this.event) {
@@ -481,7 +483,7 @@ class RealtimeChannel extends Channel {
     let syncChannelSerial,
       isSync = false;
     switch (message.action) {
-      case actions.ATTACHED:
+      case actions.ATTACHED: {
         this._attachedMsgIndicator = true;
         this.properties.attachSerial = message.channelSerial;
         this._mode = message.getMode();
@@ -510,8 +512,9 @@ class RealtimeChannel extends Channel {
           this.notifyState('attached', message.error, resumed, hasPresence);
         }
         break;
+      }
 
-      case actions.DETACHED:
+      case actions.DETACHED: {
         const detachErr = message.error
           ? ErrorInfo.fromValues(message.error)
           : new ErrorInfo('Channel detached', 90001, 404);
@@ -526,6 +529,7 @@ class RealtimeChannel extends Channel {
           this.requestState('attaching', detachErr);
         }
         break;
+      }
 
       case actions.SYNC:
         /* syncs can have channelSerials, but might not if the sync is one page long */
@@ -534,6 +538,7 @@ class RealtimeChannel extends Channel {
         /* syncs can happen on channels with no presence data as part of connection
          * resuming, in which case protocol message has no presence property */
         if (!message.presence) break;
+      // eslint-disable-next-line no-fallthrough
       case actions.PRESENCE: {
         const presence = message.presence as Array<PresenceMessage>;
         const { id, connectionId, timestamp } = message;
@@ -554,7 +559,7 @@ class RealtimeChannel extends Channel {
         this.presence.setPresence(presence, isSync, syncChannelSerial as any);
         break;
       }
-      case actions.MESSAGE:
+      case actions.MESSAGE: {
         //RTL17
         if (this.state !== 'attached') {
           Logger.logAction(
@@ -607,7 +612,8 @@ class RealtimeChannel extends Channel {
                 this._startDecodeFailureRecovery(e as ErrorInfo);
                 return;
               case 40019:
-              /* No vcdiff plugin passed in - no point recovering, give up */
+                /* No vcdiff plugin passed in - no point recovering, give up */
+                break;
               case 40021:
                 /* Browser does not support deltas, similarly no point recovering */
                 this.notifyState('failed', e as ErrorInfo);
@@ -622,8 +628,9 @@ class RealtimeChannel extends Channel {
         this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
         this.onEvent(messages);
         break;
+      }
 
-      case actions.ERROR:
+      case actions.ERROR: {
         /* there was a channel-specific error */
         const err = message.error as ErrorInfo;
         if (err && err.code == 80016) {
@@ -633,6 +640,7 @@ class RealtimeChannel extends Channel {
           this.notifyState('failed', ErrorInfo.fromValues(err));
         }
         break;
+      }
 
       default:
         Logger.logAction(

@@ -5,7 +5,6 @@ import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
 import ErrorInfo from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
-import ConnectionErrors from '../transport/connectionerrors';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
@@ -175,6 +174,7 @@ class RealtimePresence extends Presence {
         case 'initialized':
         case 'detached':
           channel.attach();
+        // eslint-disable-next-line no-fallthrough
         case 'attaching':
           this.pendingPresence.push({
             presence: presence,
@@ -239,12 +239,13 @@ class RealtimePresence extends Presence {
         });
         break;
       case 'initialized':
-      case 'failed':
+      case 'failed': {
         /* we're not attached; therefore we let any entered status
          * timeout by itself instead of attaching just in order to leave */
         const err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
         callback?.(err);
         break;
+      }
       default:
         callback?.(RealtimeChannel.invalidStateError(channel.state));
     }
@@ -455,6 +456,7 @@ class RealtimePresence extends Presence {
       for (let i = 0; i < this.pendingPresence.length; i++)
         try {
           this.pendingPresence[i].callback(err);
+          // eslint-disable-next-line no-empty
         } catch (e) {}
       this.pendingPresence = [];
     }

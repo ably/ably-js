@@ -3,7 +3,6 @@ import DeviceDetails from '../types/devicedetails';
 import Resource from './resource';
 import PaginatedResource from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
-import Http from 'platform-http';
 import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Rest from './rest';

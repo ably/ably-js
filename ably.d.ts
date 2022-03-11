@@ -448,7 +448,7 @@ declare namespace Types {
   // promisified version of the lib, but still allow once to be used in a way
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
-  class EventEmitter<CallbackType, ResultType, EventType, StateType> {
+  class EventEmitter<CallbackType, ResultType, EventType> {
     on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
     once(event: EventType, callback: CallbackType): void;
     once(callback: CallbackType): void;

@@ -23,5 +23,5 @@ Object.assign(RealtimePromise, Ably.Realtime);
 
 module.exports = {
   Rest: RestPromise,
-  Realtime: RealtimePromise
+  Realtime: RealtimePromise,
 };

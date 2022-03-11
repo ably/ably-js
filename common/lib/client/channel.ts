@@ -6,7 +6,6 @@ import Crypto from 'platform-crypto';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import Http from 'platform-http';
 import Resource from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback } from '../../types/utils';
