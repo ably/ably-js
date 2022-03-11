@@ -4,4 +4,5 @@ test
 resources
 test
 tools
+scripts
 webpack.config.js
