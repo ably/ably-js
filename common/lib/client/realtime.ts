@@ -11,10 +11,12 @@ import { ChannelOptions } from '../../types/channel';
 import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../ably';
+import YjsPlugin from '../../plugins/YjsPlugin';
 
 class Realtime extends Rest {
 	channels: any;
 	connection: Connection;
+	docs?: YjsPlugin;
 
 	constructor(options: ClientOptions) {
 		super(options);
@@ -23,6 +25,9 @@ class Realtime extends Rest {
 		this.channels = new Channels(this);
 		if(options.autoConnect !== false)
 			this.connect();
+		if(options.plugins?.yjs) {
+		  this.docs = new YjsPlugin(this);
+		}
 	}
 
 	connect(): void {

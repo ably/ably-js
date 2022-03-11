@@ -11,6 +11,7 @@ import Resource from './client/resource';
 import ProtocolMessage from './types/protocolmessage';
 import ConnectionManager from './transport/connectionmanager';
 import msgpack from 'platform-msgpack';
+import YjsPlugin from '../plugins/YjsPlugin';
 
 Rest.Utils = Utils;
 Rest.BufferUtils = BufferUtils;
@@ -34,5 +35,6 @@ Realtime.ConnectionManager = ConnectionManager;
 export default {
   Rest,
   Realtime,
-  msgpack
+  msgpack,
+  YjsPlugin
 }
