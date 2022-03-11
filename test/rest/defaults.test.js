@@ -55,7 +55,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io',
+        'sandbox-realtime.ably.io'
       );
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
@@ -76,7 +76,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io',
+        'sandbox-realtime.ably.io'
       );
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
@@ -195,7 +195,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io',
+        'sandbox-realtime.ably.io'
       );
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);

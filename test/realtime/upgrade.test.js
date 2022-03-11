@@ -233,7 +233,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               return 'Hello world at: ' + new Date();
             };
             publishAtIntervals(count, channel, dataFn, onPublish);
-          },
+          }
         );
       });
 
@@ -267,7 +267,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               return 'Hello world at: ' + new Date();
             };
             publishAtIntervals(count, channel, dataFn, onPublish);
-          },
+          }
         );
       });
 
@@ -483,7 +483,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           realtime.connection.connectionManager.once('transport.active', function (transport) {
             expect(
               transport.toString().indexOf('/comet/') > -1,
-              'assert first transport to become active is a comet transport',
+              'assert first transport to become active is a comet transport'
             ).to.be.ok;
             try {
               expect(realtime.connection.errorReason).to.equal(null, 'Check connection.errorReason is initially null');
@@ -502,7 +502,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 expect(stateChange.current).to.equal('connected', 'Check current is connected');
                 expect(realtime.connection.errorReason.code).to.equal(
                   80008,
-                  'Check error set in connection.errorReason',
+                  'Check error set in connection.errorReason'
                 );
                 expect(realtime.connection.state).to.equal('connected', 'Check still connected');
               } catch (err) {
@@ -575,7 +575,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               ],
               function (err) {
                 closeAndFinish(done, realtime, err);
-              },
+              }
             );
           });
         });
@@ -667,7 +667,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 try {
                   expect(
                     helper.isWebsocket(transport),
-                    'Check first transport to become active the second time round is websocket',
+                    'Check first transport to become active the second time round is websocket'
                   ).to.be.ok;
                 } catch (err) {
                   cb(err);
@@ -680,7 +680,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           ],
           function (err) {
             closeAndFinish(done, realtime, err);
-          },
+          }
         );
       });
 
@@ -722,7 +722,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   try {
                     expect(stateChange.current).to.equal(
                       'connecting',
-                      'check that deactivateTransport only drops us to connecting as another transport is ready for activation',
+                      'check that deactivateTransport only drops us to connecting as another transport is ready for activation'
                     );
                   } catch (err) {
                     cb(err);
@@ -749,7 +749,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           ],
           function (err) {
             closeAndFinish(done, realtime, err);
-          },
+          }
         );
       });
     });

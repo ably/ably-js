@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       function (channel, cb) {
         channel.attach(cb);
       },
-      callback,
+      callback
     );
   }
 
@@ -210,7 +210,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
-        },
+        }
       );
     });
 
@@ -226,7 +226,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
-        },
+        }
       );
     });
 
@@ -241,7 +241,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
-        },
+        }
       );
     });
 
@@ -256,7 +256,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
-        },
+        }
       );
     });
 
@@ -297,7 +297,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
-                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
+                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage))
               );
 
               try {
@@ -305,7 +305,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                  * CryptoJS (a wordArray) into the msgpack binary type */
                 expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare',
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -315,7 +315,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 done(err);
               }
             });
-          },
+          }
         );
       });
 
@@ -330,7 +330,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
-                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
+                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage))
               );
 
               try {
@@ -338,7 +338,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                  * CryptoJS (a wordArray) into the msgpack binary type */
                 expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare',
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -348,7 +348,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 done(err);
               }
             });
-          },
+          }
         );
       });
     }
@@ -532,7 +532,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
               txChannel.publish('event0', messageText);
             });
-          },
+          }
         );
       });
     }
@@ -586,7 +586,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           function () {
             var txChannel = txRealtime.channels.get(channelName, { cipher: { key: key } });
             txChannel.publish('event0', messageText);
-          },
+          }
         );
       });
     });
@@ -648,9 +648,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 closeAndFinish(done, [txRealtime, rxRealtime]);
               });
               txChannel.publish('event0', messageText);
-            },
+            }
           );
-        },
+        }
       );
     });
 
@@ -782,7 +782,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 innercb();
               },
             ],
-            cb,
+            cb
           );
         });
       };
@@ -815,7 +815,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 innercb();
               },
             ],
-            cb,
+            cb
           );
         });
       };
@@ -857,7 +857,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [txRealtime, rxRealtime], err);
-        },
+        }
       );
     });
   });

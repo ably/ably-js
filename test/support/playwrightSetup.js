@@ -34,7 +34,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
                 passes: runner.stats.passes,
                 total: runner.stats.passes + runner.stats.failures,
               },
-            }),
+            })
           );
       });
   }

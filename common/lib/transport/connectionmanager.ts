@@ -312,7 +312,7 @@ class ConnectionManager extends EventEmitter {
 
     this.transports = Utils.intersect(
       options.transports || Defaults.defaultTransports,
-      ConnectionManager.supportedTransports,
+      ConnectionManager.supportedTransports
     );
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
      * that's both requested and supported. Normally this will be xhr_polling;
@@ -337,12 +337,12 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
-      'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']',
+      'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']'
     );
     Logger.logAction(
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
-      'available transports = [' + this.transports + ']',
+      'available transports = [' + this.transports + ']'
     );
     Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
 
@@ -365,7 +365,7 @@ class ConnectionManager extends EventEmitter {
           Logger.logAction(
             Logger.LOG_MAJOR,
             'Realtime.ConnectionManager()',
-            'beforeunload event has triggered the connection to close as closeOnUnload is true',
+            'beforeunload event has triggered the connection to close as closeOnUnload is true'
           );
           this.requestState({ state: 'closing' });
         });
@@ -377,7 +377,7 @@ class ConnectionManager extends EventEmitter {
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager caught browser ‘online’ event',
-            'reattempting connection',
+            'reattempting connection'
           );
           this.requestState({ state: 'connecting' });
         }
@@ -387,7 +387,7 @@ class ConnectionManager extends EventEmitter {
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager caught browser ‘offline’ event',
-            'disconnecting active transport',
+            'disconnecting active transport'
           );
           // Not sufficient to just go to the 'disconnected' state, want to
           // force all transports to reattempt the connection. Will immediately
@@ -432,7 +432,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
-          'Calling clientOptions-provided recover function with last session data',
+          'Calling clientOptions-provided recover function with last session data'
         );
         recoverFn(lastSessionData, (shouldRecover?: boolean) => {
           if (shouldRecover) {
@@ -453,7 +453,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
-          'Transport recovery mode = recover; recoveryKey = ' + this.options.recover,
+          'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
         );
         const match = (this.options.recover as string).split(':');
         if (match && match[2]) {
@@ -463,7 +463,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
-          'Transport params = ' + transportParams.toString(),
+          'Transport params = ' + transportParams.toString()
         );
       }
       callback(transportParams);
@@ -489,7 +489,7 @@ class ConnectionManager extends EventEmitter {
             Logger.logAction(
               Logger.LOG_MINOR,
               'ConnectionManager.tryATransport()',
-              'connection ' + state.state + ' while we were attempting the transport; closing ' + transport,
+              'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
             );
             transport.close();
           }
@@ -501,7 +501,7 @@ class ConnectionManager extends EventEmitter {
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager.tryATransport()',
-            'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString(),
+            'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
           );
 
           /* Comet transport onconnect token errors can be dealt with here.
@@ -540,11 +540,11 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.tryATransport()',
-          'viable transport ' + candidate + '; setting pending',
+          'viable transport ' + candidate + '; setting pending'
         );
         this.setTransportPending(transport as Transport, transportParams);
         callback(null, transport);
-      },
+      }
     );
   }
 
@@ -559,7 +559,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.setTransportPending()',
-      'transport = ' + transport + '; mode = ' + mode,
+      'transport = ' + transport + '; mode = ' + mode
     );
 
     Utils.arrDeleteValue(this.proposedTransports, transport);
@@ -571,7 +571,7 @@ class ConnectionManager extends EventEmitter {
         error: ErrorInfo,
         connectionId: string,
         connectionDetails: Record<string, any>,
-        connectionPosition: ConnectionManager,
+        connectionPosition: ConnectionManager
       ) => {
         if (mode == 'upgrade' && this.activeProtocol) {
           /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
@@ -601,7 +601,7 @@ class ConnectionManager extends EventEmitter {
           this.options.recover = null;
           this.unpersistConnection();
         }
-      },
+      }
     );
 
     const self = this;
@@ -626,7 +626,7 @@ class ConnectionManager extends EventEmitter {
     transport: Transport,
     connectionId: string,
     connectionDetails: Record<string, any>,
-    upgradeConnectionPosition?: ConnectionManager,
+    upgradeConnectionPosition?: ConnectionManager
   ): void {
     const currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
       abandon = () => {
@@ -643,7 +643,7 @@ class ConnectionManager extends EventEmitter {
           this.state.state +
           (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') +
           ') is not valid to upgrade in; abandoning upgrade to ' +
-          transport.shortName,
+          transport.shortName
       );
       abandon();
       return;
@@ -657,7 +657,7 @@ class ConnectionManager extends EventEmitter {
           transport.shortName +
           ' is no better than current active transport ' +
           currentTransport.shortName +
-          ' - abandoning upgrade',
+          ' - abandoning upgrade'
       );
       abandon();
       return;
@@ -666,7 +666,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.scheduleTransportActivation()',
-      'Scheduling transport upgrade; transport = ' + transport,
+      'Scheduling transport upgrade; transport = ' + transport
     );
 
     this.realtime.channels.onceNopending((err: ErrorInfo) => {
@@ -675,7 +675,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_ERROR,
           'ConnectionManager.scheduleTransportActivation()',
-          'Unable to activate transport; transport = ' + transport + '; err = ' + err,
+          'Unable to activate transport; transport = ' + transport + '; err = ' + err
         );
         return;
       }
@@ -685,7 +685,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.scheduleTransportActivation()',
-          'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade',
+          'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade'
         );
         abandon();
         return;
@@ -695,7 +695,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.scheduleTransportActivation()',
-          'Currently connected, so temporarily pausing events until the upgrade is complete',
+          'Currently connected, so temporarily pausing events until the upgrade is complete'
         );
         this.state = this.states.synchronizing;
         oldProtocol = this.activeProtocol;
@@ -710,7 +710,7 @@ class ConnectionManager extends EventEmitter {
             this.state.state +
             (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') +
             ') is not valid to upgrade in; abandoning upgrade to ' +
-            transport.shortName,
+            transport.shortName
         );
         abandon();
         return;
@@ -732,14 +732,14 @@ class ConnectionManager extends EventEmitter {
             ' to ' +
             ((syncPosition as ConnectionManager).timeSerial || (syncPosition as ConnectionManager).connectionSerial) +
             '; upgrade error was ' +
-            error,
+            error
         );
       }
 
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.scheduleTransportActivation()',
-        'Syncing transport; transport = ' + transport,
+        'Syncing transport; transport = ' + transport
       );
       this.sync(
         transport,
@@ -755,7 +755,7 @@ class ConnectionManager extends EventEmitter {
               Logger.logAction(
                 Logger.LOG_ERROR,
                 'ConnectionManager.scheduleTransportActivation()',
-                'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr,
+                'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr
               );
               this.disconnectAllTransports();
             }
@@ -765,7 +765,7 @@ class ConnectionManager extends EventEmitter {
             Logger.logAction(
               Logger.LOG_MINOR,
               'ConnectionManager.scheduleTransportActivation()',
-              'Activating transport; transport = ' + transport,
+              'Activating transport; transport = ' + transport
             );
             this.activateTransport(error, transport, connectionId, connectionDetails, postSyncPosition);
             /* Restore pre-sync state. If state has changed in the meantime,
@@ -777,14 +777,14 @@ class ConnectionManager extends EventEmitter {
               Logger.logAction(
                 Logger.LOG_MICRO,
                 'ConnectionManager.scheduleTransportActivation()',
-                'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport,
+                'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport
               );
               this.state = this.states.connected;
             } else {
               Logger.logAction(
                 Logger.LOG_MINOR,
                 'ConnectionManager.scheduleTransportActivation()',
-                'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged',
+                'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged'
               );
             }
             if (this.state.sendEvents) {
@@ -811,7 +811,7 @@ class ConnectionManager extends EventEmitter {
           } else {
             finishUpgrade();
           }
-        },
+        }
       );
     });
   }
@@ -830,7 +830,7 @@ class ConnectionManager extends EventEmitter {
     transport: Transport,
     connectionId: string,
     connectionDetails: Record<string, any>,
-    connectionPosition: ConnectionManager,
+    connectionPosition: ConnectionManager
   ): boolean {
     Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
     if (error) {
@@ -843,14 +843,14 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.activateTransport()',
-        'connectionDetails =  ' + JSON.stringify(connectionDetails),
+        'connectionDetails =  ' + JSON.stringify(connectionDetails)
       );
     }
     if (connectionPosition) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.activateTransport()',
-        'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial),
+        'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial)
       );
     }
 
@@ -863,7 +863,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.activateTransport()',
-      'current state = ' + existingState.state,
+      'current state = ' + existingState.state
     );
     if (
       existingState.state == this.states.closing.state ||
@@ -873,7 +873,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.activateTransport()',
-        'Disconnecting transport and abandoning',
+        'Disconnecting transport and abandoning'
       );
       transport.disconnect();
       return false;
@@ -888,7 +888,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.activateTransport()',
-        'Declining to activate transport ' + transport + ' since it appears to no longer be connected',
+        'Declining to activate transport ' + transport + ' since it appears to no longer be connected'
       );
       return false;
     }
@@ -916,7 +916,7 @@ class ConnectionManager extends EventEmitter {
         (connectedErr: ErrorInfo, _connectionId: string, connectionDetails: Record<string, any>) => {
           this.onConnectionDetailsUpdate(connectionDetails, transport);
           this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, connectedErr));
-        },
+        }
       );
     });
 
@@ -955,7 +955,7 @@ class ConnectionManager extends EventEmitter {
             transport.shortName +
             ') finishing with ' +
             existingActiveProtocol.messageQueue.count() +
-            ' messages still pending',
+            ' messages still pending'
         );
       }
       if (existingActiveProtocol.transport === transport) {
@@ -993,7 +993,7 @@ class ConnectionManager extends EventEmitter {
           'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' +
             transport.shortName +
             '; stack = ' +
-            new Error().stack,
+            new Error().stack
         );
         Utils.arrDeleteValue(this.proposedTransports, transport);
       } else {
@@ -1023,7 +1023,7 @@ class ConnectionManager extends EventEmitter {
       'state = ' +
         state +
         (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') +
-        (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'),
+        (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation')
     );
     if (error && error.message)
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
@@ -1034,7 +1034,7 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.deactivateTransport()',
         'Getting, clearing, and requeuing ' +
           (this.activeProtocol as Protocol).messageQueue.count() +
-          ' pending messages',
+          ' pending messages'
       );
       this.queuePendingMessages((currentProtocol as Protocol).getPendingMessages());
       /* Clear any messages we requeue to allow the protocol to become idle.
@@ -1101,7 +1101,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.deactivateTransport()',
-        'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates',
+        'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates'
       );
       this.startSuspendTimer();
       this.startTransitionTimer(this.states.connecting);
@@ -1154,7 +1154,7 @@ class ConnectionManager extends EventEmitter {
     connectionId: string,
     connectionDetails: Record<string, any>,
     connectionPosition: ConnectionManager,
-    hasConnectionError?: boolean,
+    hasConnectionError?: boolean
   ): void {
     /* if connectionKey changes but connectionId stays the same, then just a
      * transport change on the same connection. If connectionId changes, we're
@@ -1176,7 +1176,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.setConnection()',
-        'New connectionId; reattaching any attached channels',
+        'New connectionId; reattaching any attached channels'
       );
       /* Wait till next tick before reattaching channels, so that connection
        * state will be updated and so that it will be applied after
@@ -1194,7 +1194,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.setConnection()',
-        'Same connectionId; checkChannelsOnResume is enabled',
+        'Same connectionId; checkChannelsOnResume is enabled'
       );
       clearTimeout(this.channelResumeCheckTimer as number);
       this.realtime.channels.resetAttachedMsgIndicators();
@@ -1232,7 +1232,7 @@ class ConnectionManager extends EventEmitter {
         '; force = ' +
         force +
         '; previous = ' +
-        this.connectionSerial,
+        this.connectionSerial
     );
     if (timeSerial !== undefined) {
       if (timeSerial <= (this.timeSerial as number) && !force) {
@@ -1243,7 +1243,7 @@ class ConnectionManager extends EventEmitter {
             timeSerial +
             ', but current timeSerial is ' +
             this.timeSerial +
-            '; assuming message is a duplicate and discarding it',
+            '; assuming message is a duplicate and discarding it'
         );
         return true;
       }
@@ -1260,7 +1260,7 @@ class ConnectionManager extends EventEmitter {
             connectionSerial +
             ', but current connectionSerial is ' +
             this.connectionSerial +
-            '; assuming message is a duplicate and discarding it',
+            '; assuming message is a duplicate and discarding it'
         );
         return true;
       }
@@ -1294,7 +1294,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.checkConnectionStateFreshness()',
-        'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state',
+        'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state'
       );
       this.clearConnection();
       this.states.connecting.failState = 'suspended';
@@ -1349,7 +1349,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       logLevel,
       'Connection state',
-      stateChange.current + (stateChange.reason ? '; reason: ' + stateChange.reason : ''),
+      stateChange.current + (stateChange.reason ? '; reason: ' + stateChange.reason : '')
     );
     Logger.logAction(
       Logger.LOG_MINOR,
@@ -1357,7 +1357,7 @@ class ConnectionManager extends EventEmitter {
       'setting new state: ' +
         stateChange.current +
         '; reason = ' +
-        (stateChange.reason && (stateChange.reason as ErrorInfo).message),
+        (stateChange.reason && (stateChange.reason as ErrorInfo).message)
     );
     const newState = (this.state = this.states[stateChange.current as string]);
     if (stateChange.reason) {
@@ -1381,7 +1381,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.startTransitionTimer()',
-      'transitionState: ' + transitionState.state,
+      'transitionState: ' + transitionState.state
     );
 
     if (this.transitionTimer) {
@@ -1395,7 +1395,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager ' + transitionState.state + ' timer expired',
-          'requesting new state: ' + transitionState.failState,
+          'requesting new state: ' + transitionState.failState
         );
         this.notifyState({ state: transitionState.failState as string });
       }
@@ -1418,7 +1418,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager suspend timer expired',
-          'requesting new state: suspended',
+          'requesting new state: suspended'
         );
         this.states.connecting.failState = 'suspended';
         this.states.connecting.queueEvents = false;
@@ -1479,7 +1479,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.notifyState()',
-      'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''),
+      'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : '')
     );
     /* do nothing if we're already in the indicated state */
     if (state == this.state.state) return;
@@ -1499,7 +1499,7 @@ class ConnectionManager extends EventEmitter {
         this.state.state,
         newState.state,
         newState.retryDelay,
-        indicated.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state],
+        indicated.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
       );
 
     if (retryImmediately) {
@@ -1518,7 +1518,7 @@ class ConnectionManager extends EventEmitter {
             sinceLast +
             'ms ago, waiting another ' +
             (1000 - sinceLast) +
-            'ms before trying again',
+            'ms before trying again'
         );
         setTimeout(autoReconnect, 1000 - sinceLast);
       } else {
@@ -1542,7 +1542,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConnectionManager.notifyState()',
-        'Broken invariant: attempted to go into connected state, but there is no active protocol',
+        'Broken invariant: attempted to go into connected state, but there is no active protocol'
       );
     }
 
@@ -1561,7 +1561,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.requestState()',
-      'requested state: ' + state + '; current state: ' + this.state.state,
+      'requested state: ' + state + '; current state: ' + this.state.state
     );
     if (state == this.state.state) return; /* silently do nothing */
 
@@ -1580,7 +1580,7 @@ class ConnectionManager extends EventEmitter {
         this.state.state,
         newState.state,
         null,
-        request.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state],
+        request.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
       );
 
     this.enactStateChange(change);
@@ -1600,7 +1600,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.startConnect()',
-        'Must be in connecting state to connect, but was ' + this.state.state,
+        'Must be in connecting state to connect, but was ' + this.state.state
       );
       return;
     }
@@ -1680,13 +1680,13 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.connectImpl()',
-        'Must be in connecting state to connect (or connected to upgrade), but was ' + state,
+        'Must be in connecting state to connect (or connected to upgrade), but was ' + state
       );
     } else if (this.pendingTransports.length) {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.connectImpl()',
-        'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action',
+        'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action'
       );
     } else if (state == this.states.connected.state) {
       this.upgradeIfNeeded(transportParams);
@@ -1709,7 +1709,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.connectPreference()',
-      'Trying to connect with stored transport preference ' + preference,
+      'Trying to connect with stored transport preference ' + preference
     );
 
     const preferenceTimeout = setTimeout(() => {
@@ -1718,7 +1718,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.connectPreference()',
-          'Shortcircuit connection attempt with ' + preference + ' failed; clearing preference and trying from scratch',
+          'Shortcircuit connection attempt with ' + preference + ' failed; clearing preference and trying from scratch'
         );
         /* Abort all connection attempts. (This also disconnects the active
          * protocol, but none exists if we're not in the connected state) */
@@ -1774,7 +1774,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.connectBase()',
-      'Trying to connect with base transport ' + this.baseTransport,
+      'Trying to connect with base transport ' + this.baseTransport
     );
 
     /* first try to establish a connection with the priority host with http transport */
@@ -1844,7 +1844,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.upgradeIfNeeded()',
-      'upgrade possibilities: ' + Utils.inspect(upgradePossibilities),
+      'upgrade possibilities: ' + Utils.inspect(upgradePossibilities)
     );
 
     if (!upgradePossibilities.length) {
@@ -1872,7 +1872,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
-        'Disposing of proposed transport: ' + transport,
+        'Disposing of proposed transport: ' + transport
       );
       if (transport) transport.dispose();
     });
@@ -1881,7 +1881,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
-        'Closing active transport: ' + this.activeProtocol.getTransport(),
+        'Closing active transport: ' + this.activeProtocol.getTransport()
       );
       this.activeProtocol.getTransport().close();
     }
@@ -1897,7 +1897,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
-          'Sending AUTH message on active transport',
+          'Sending AUTH message on active transport'
         );
         /* If there are any proposed/pending transports (eg an upgrade that
          * isn't yet scheduled for activation) that hasn't yet started syncing,
@@ -1953,7 +1953,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
-          'Aborting current connection attempts in order to start again with the new auth details',
+          'Aborting current connection attempts in order to start again with the new auth details'
         );
         this.disconnectAllTransports();
       /* fallthrough to add statechange listener */
@@ -1962,7 +1962,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
-          'Connection state is ' + this.state.state + '; waiting until either connected or failed',
+          'Connection state is ' + this.state.state + '; waiting until either connected or failed'
         );
         const listener = (stateChange: ConnectionStateChange) => {
           switch (stateChange.current) {
@@ -1996,7 +1996,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.disconnectAllTransports()',
-      'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''),
+      'Disconnecting all transports' + (exceptActive ? ' except the active transport' : '')
     );
 
     /* This will prevent any connection procedure in an async part of one of its early stages from continuing */
@@ -2006,7 +2006,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
-        'Disconnecting pending transport: ' + transport,
+        'Disconnecting pending transport: ' + transport
       );
       if (transport) transport.disconnect();
     });
@@ -2016,7 +2016,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
-        'Disposing of proposed transport: ' + transport,
+        'Disposing of proposed transport: ' + transport
       );
       if (transport) transport.dispose();
     });
@@ -2026,7 +2026,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
-        'Disconnecting active transport: ' + this.activeProtocol.getTransport(),
+        'Disconnecting active transport: ' + this.activeProtocol.getTransport()
       );
       this.activeProtocol.getTransport().disconnect();
     }
@@ -2074,7 +2074,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConnectionManager.sendImpl()',
-        'Unexpected exception in transport.send(): ' + (e as Error).stack,
+        'Unexpected exception in transport.send(): ' + (e as Error).stack
       );
     }
   }
@@ -2101,7 +2101,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MICRO,
       'ConnectionManager.sendQueuedMessages()',
-      'sending ' + this.queuedMessages.count() + ' queued messages',
+      'sending ' + this.queuedMessages.count() + ' queued messages'
     );
     let pendingMessage;
     while ((pendingMessage = this.queuedMessages.shift())) this.sendImpl(pendingMessage);
@@ -2112,7 +2112,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.queuePendingMessages()',
-        'queueing ' + pendingMessages.length + ' pending messages',
+        'queueing ' + pendingMessages.length + ' pending messages'
       );
       this.queuedMessages.prepend(pendingMessages);
     }
@@ -2124,7 +2124,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConnectionManager.failQueuedMessages()',
-        'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err),
+        'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err)
       );
       this.queuedMessages.completeAllMessages(err);
     }
@@ -2149,7 +2149,7 @@ class ConnectionManager extends EventEmitter {
             Logger.LOG_ERROR,
             'ConnectionManager.onChannelMessage()',
             'received message with different connectionSerial, but same message id as a previous; discarding; id = ' +
-              message.id,
+              message.id
           );
           return;
         }
@@ -2166,7 +2166,7 @@ class ConnectionManager extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onChannelMessage()',
-          'received message ' + JSON.stringify(message) + 'on defunct transport; discarding',
+          'received message ' + JSON.stringify(message) + 'on defunct transport; discarding'
         );
       }
     }

@@ -75,7 +75,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 realtime.connection.serial +
                 ':' +
                 realtime.connection.connectionManager.msgSerial,
-              'verify correct recovery key',
+              'verify correct recovery key'
             );
           } catch (err) {
             closeAndFinish(done, realtime, err);
@@ -100,7 +100,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           'connectionAttributes test: connection serial is ' +
                             realtime.connection.serial +
                             '; active transport' +
-                            (cm.activeProtocol && cm.activeProtocol.transport && cm.activeProtocol.transport.shortName),
+                            (cm.activeProtocol && cm.activeProtocol.transport && cm.activeProtocol.transport.shortName)
                         );
                       }
                       expect(realtime.connection.recoveryKey).to.equal(
@@ -109,7 +109,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           realtime.connection.serial +
                           ':' +
                           realtime.connection.connectionManager.msgSerial,
-                        'verify recovery key still correct',
+                        'verify recovery key still correct'
                       );
                       cb();
                     }, 0);
@@ -119,7 +119,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   channel.publish('name', 'data', cb);
                   expect(realtime.connection.serial).to.equal(
                     -1,
-                    'verify serial is -1 after publish begun but before message received',
+                    'verify serial is -1 after publish begun but before message received'
                   );
                 },
               ],
@@ -137,7 +137,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     closeAndFinish(done, realtime, err);
                   }
                 });
-              },
+              }
             );
           });
         });
@@ -156,20 +156,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(stateChange.reason.code).to.equal(
               80008,
-              'verify unrecoverable-connection error set in stateChange.reason',
+              'verify unrecoverable-connection error set in stateChange.reason'
             );
             expect(realtime.connection.errorReason.code).to.equal(
               80008,
-              'verify unrecoverable-connection error set in connection.errorReason',
+              'verify unrecoverable-connection error set in connection.errorReason'
             );
             expect(realtime.connection.serial).to.equal(-1, 'verify serial is -1 (new connection), not 5');
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
               0,
-              'verify msgSerial is 0 (new connection), not 3',
+              'verify msgSerial is 0 (new connection), not 3'
             );
             expect(realtime.connection.key.indexOf('ablyjs_test_fake')).to.equal(
               -1,
-              'verify connection using a new connectionkey',
+              'verify connection using a new connectionkey'
             );
             closeAndFinish(done, realtime);
           } catch (err) {
@@ -232,7 +232,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
                           expect(msg.messages.length).to.equal(
                             1,
-                            'Expect second message to not have been merged with the attempted message',
+                            'Expect second message to not have been merged with the attempted message'
                           );
                         } catch (err) {
                           cb(err);
@@ -259,7 +259,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            },
+            }
           );
         });
       });
@@ -277,7 +277,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(details.connectionStateTtl).to.equal(12345, 'Check connectionStateTtl in event');
             expect(connectionManager.connectionStateTtl).to.equal(
               12345,
-              'Check connectionStateTtl set in connectionManager',
+              'Check connectionStateTtl set in connectionManager'
             );
             expect(details.clientId).to.equal('foo', 'Check clientId in event');
             expect(realtime.auth.clientId).to.equal('foo', 'Check clientId set in auth');
@@ -299,7 +299,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               maxMessageSize: 98765,
               connectionStateTtl: 12345,
             },
-          }),
+          })
         );
       });
       monitorConnection(done, realtime);

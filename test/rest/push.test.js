@@ -90,7 +90,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -217,7 +217,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -301,7 +301,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   rest.push.admin.deviceRegistrations.removeWhere({ clientId: 'testClient2' }, callback);
                 },
               ],
-              callback,
+              callback
             );
           },
           function (callback) {
@@ -323,7 +323,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -362,7 +362,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             done(err);
           }
           done();
-        },
+        }
       );
     });
 
@@ -436,7 +436,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -491,7 +491,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -515,7 +515,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return;
           }
           test.done();
-        },
+        }
       );
     };
 
@@ -560,7 +560,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -668,7 +668,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var eq = includesUnordered(x, y);
       expect(eq).to.equal(
         true,
-        JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')',
+        JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')'
       );
     }
   });

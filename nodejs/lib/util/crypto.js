@@ -42,7 +42,7 @@ var Crypto = (function () {
       throw new Error(
         'Unsupported key length ' +
           params.keyLength +
-          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)',
+          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)'
       );
     }
   }
@@ -169,7 +169,7 @@ var Crypto = (function () {
         'Crypto.getDefaultParams: a keyLength of ' +
           params.keyLength +
           ' was specified, but the key actually has length ' +
-          cipherParams.keyLength,
+          cipherParams.keyLength
       );
     }
 

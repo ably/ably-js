@@ -66,7 +66,7 @@ class Rest {
         throw new ErrorInfo(
           'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
           40012,
-          400,
+          400
         );
     }
 
@@ -86,7 +86,7 @@ class Rest {
 
   stats(
     params: RequestParams,
-    callback: StandardCallback<PaginatedResult<Stats>>,
+    callback: StandardCallback<PaginatedResult<Stats>>
   ): Promise<PaginatedResult<Stats>> | void {
     /* params and callback are optional; see if params contains the callback */
     if (callback === undefined) {
@@ -109,7 +109,7 @@ class Rest {
     new PaginatedResource(this, '/stats', headers, envelope, function (
       body: unknown,
       headers: Record<string, string>,
-      unpacked?: boolean,
+      unpacked?: boolean
     ) {
       const statsValues = unpacked ? body : JSON.parse(body as string);
       for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
@@ -146,7 +146,7 @@ class Rest {
         err?: ErrorInfo | ErrnoException | null,
         res?: unknown,
         headers?: Record<string, string>,
-        unpacked?: boolean,
+        unpacked?: boolean
       ) => {
         if (err) {
           _callback(err);
@@ -161,7 +161,7 @@ class Rest {
         /* calculate time offset only once for this device by adding to the prototype */
         this.serverTimeOffset = time - Utils.now();
         _callback(null, time);
-      },
+      }
     );
   }
 
@@ -171,7 +171,7 @@ class Rest {
     params: RequestParams,
     body: unknown,
     customHeaders: Record<string, string>,
-    callback: StandardCallback<HttpPaginatedResponse<unknown>>,
+    callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
     const useBinary = this.options.useBinaryProtocol,
       encoder = useBinary ? msgpack.encode : JSON.stringify,
@@ -206,7 +206,7 @@ class Rest {
       function (resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
         return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
       },
-      /* useHttpPaginatedResponse: */ true,
+      /* useHttpPaginatedResponse: */ true
     );
 
     if (!Utils.arrIn(Http.methods, _method)) {
@@ -218,7 +218,7 @@ class Rest {
     } else {
       paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](
         params,
-        callback as PaginatedResultCallback<unknown>,
+        callback as PaginatedResultCallback<unknown>
       );
     }
   }

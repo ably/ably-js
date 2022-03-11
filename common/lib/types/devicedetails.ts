@@ -74,7 +74,7 @@ class DeviceDetails {
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
-    format?: Utils.Format,
+    format?: Utils.Format
   ): DeviceDetails | DeviceDetails[] {
     if (format) {
       body = Utils.decodeBody(body, format);

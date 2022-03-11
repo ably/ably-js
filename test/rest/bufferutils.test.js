@@ -22,10 +22,10 @@ define(['ably', 'chai'], function (Ably, chai) {
 
       /* compare */
       expect(
-        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode(testString)),
+        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode(testString))
       ).to.equal(0);
       expect(
-        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode('other')),
+        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode('other'))
       ).to.not.equal(0);
     });
 

@@ -172,7 +172,7 @@ declare namespace Types {
             location: string;
             clientId: string | null;
           },
-          callback: (shouldRecover: boolean) => void,
+          callback: (shouldRecover: boolean) => void
         ) => void);
 
     /**
@@ -210,7 +210,7 @@ declare namespace Types {
      **/
     authCallback?: (
       data: TokenParams,
-      callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void,
+      callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
     ) => void;
     authHeaders?: { [index: string]: string };
     authMethod?: HTTPMethods;
@@ -476,11 +476,11 @@ declare namespace Types {
       params?: any,
       body?: any[] | any,
       headers?: any,
-      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>,
+      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
     ) => void;
     stats: (
       paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any,
-      callback?: Types.paginatedResultCallback<Types.Stats>,
+      callback?: Types.paginatedResultCallback<Types.Stats>
     ) => void;
     time: (callback?: Types.timeCallback) => void;
     push: Types.PushCallbacks;
@@ -496,7 +496,7 @@ declare namespace Types {
       path: string,
       params?: any,
       body?: any[] | any,
-      headers?: any,
+      headers?: any
     ) => Promise<Types.HttpPaginatedResponse<T>>;
     stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
     time: () => Promise<number>;
@@ -521,11 +521,11 @@ declare namespace Types {
       params?: any,
       body?: any[] | any,
       headers?: any,
-      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>,
+      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
     ) => void;
     stats: (
       paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any,
-      callback?: Types.paginatedResultCallback<Types.Stats>,
+      callback?: Types.paginatedResultCallback<Types.Stats>
     ) => void;
     time: (callback?: Types.timeCallback) => void;
     push: Types.PushCallbacks;
@@ -540,7 +540,7 @@ declare namespace Types {
       path: string,
       params?: any,
       body?: any[] | any,
-      headers?: any,
+      headers?: any
     ) => Promise<Types.HttpPaginatedResponse<T>>;
     stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
     time: () => Promise<number>;
@@ -555,17 +555,17 @@ declare namespace Types {
     authorize: (
       tokenParams?: TokenParams | tokenDetailsCallback,
       authOptions?: AuthOptions | tokenDetailsCallback,
-      callback?: tokenDetailsCallback,
+      callback?: tokenDetailsCallback
     ) => void;
     createTokenRequest: (
       tokenParams?: TokenParams | tokenRequestCallback,
       authOptions?: AuthOptions | tokenRequestCallback,
-      callback?: tokenRequestCallback,
+      callback?: tokenRequestCallback
     ) => void;
     requestToken: (
       TokenParams?: TokenParams | tokenDetailsCallback,
       authOptions?: AuthOptions | tokenDetailsCallback,
-      callback?: tokenDetailsCallback,
+      callback?: tokenDetailsCallback
     ) => void;
   }
 
@@ -578,11 +578,11 @@ declare namespace Types {
   class PresenceCallbacks {
     get: (
       paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>,
-      callback?: paginatedResultCallback<PresenceMessage>,
+      callback?: paginatedResultCallback<PresenceMessage>
     ) => void;
     history: (
       paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>,
-      callback?: paginatedResultCallback<PresenceMessage>,
+      callback?: paginatedResultCallback<PresenceMessage>
     ) => void;
   }
 
@@ -595,23 +595,23 @@ declare namespace Types {
     syncComplete: boolean;
     unsubscribe: (
       presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>,
-      listener?: messageCallback<PresenceMessage>,
+      listener?: messageCallback<PresenceMessage>
     ) => void;
   }
 
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     get: (
       paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams,
-      callback?: realtimePresenceGetCallback,
+      callback?: realtimePresenceGetCallback
     ) => void;
     history: (
       paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>,
-      callback?: paginatedResultCallback<PresenceMessage>,
+      callback?: paginatedResultCallback<PresenceMessage>
     ) => void;
     subscribe: (
       presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
       listener?: messageCallback<PresenceMessage>,
-      callbackWhenAttached?: errorCallback,
+      callbackWhenAttached?: errorCallback
     ) => void;
     enter: (data?: errorCallback | any, callback?: errorCallback) => void;
     update: (data?: errorCallback | any, callback?: errorCallback) => void;
@@ -626,7 +626,7 @@ declare namespace Types {
     history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
     subscribe: (
       action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
-      listener?: messageCallback<PresenceMessage>,
+      listener?: messageCallback<PresenceMessage>
     ) => Promise<void>;
     enter: (data?: any) => Promise<void>;
     update: (data?: any) => Promise<void>;
@@ -644,7 +644,7 @@ declare namespace Types {
     presence: PresenceCallbacks;
     history: (
       paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>,
-      callback?: paginatedResultCallback<Message>,
+      callback?: paginatedResultCallback<Message>
     ) => void;
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
@@ -666,7 +666,7 @@ declare namespace Types {
     modes: ChannelModes;
     unsubscribe: (
       eventOrListener?: string | Array<string> | messageCallback<Message>,
-      listener?: messageCallback<Message>,
+      listener?: messageCallback<Message>
     ) => void;
   }
 
@@ -680,13 +680,13 @@ declare namespace Types {
     detach: (callback?: errorCallback) => void;
     history: (
       paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>,
-      callback?: paginatedResultCallback<Message>,
+      callback?: paginatedResultCallback<Message>
     ) => void;
     setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
     subscribe: (
       eventOrCallback: messageCallback<Message> | string | Array<string>,
       listener?: messageCallback<Message>,
-      callbackWhenAttached?: errorCallback,
+      callbackWhenAttached?: errorCallback
     ) => void;
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
@@ -702,7 +702,7 @@ declare namespace Types {
     setOptions: (options: ChannelOptions) => Promise<void>;
     subscribe: (
       eventOrCallback: messageCallback<Message> | string | Array<string>,
-      listener?: messageCallback<Message>,
+      listener?: messageCallback<Message>
     ) => Promise<void>;
     publish(messages: any, options?: PublishOptions): Promise<void>;
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;

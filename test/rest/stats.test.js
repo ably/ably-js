@@ -108,7 +108,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -145,7 +145,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -183,7 +183,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -220,7 +220,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -257,7 +257,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -294,7 +294,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -331,7 +331,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           } catch (err) {
             done(err);
           }
-        },
+        }
       );
     });
 
@@ -417,7 +417,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               });
             });
           });
-        },
+        }
       );
     });
 
@@ -507,7 +507,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               });
             });
           });
-        },
+        }
       );
     });
 
@@ -596,7 +596,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               });
             });
           });
-        },
+        }
       );
     });
   });

@@ -72,7 +72,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
           expect(
             message.clientId == clientId,
-            'client ID is added by the client library as it is explicit in the publish',
+            'client ID is added by the client library as it is explicit in the publish'
           ).to.be.ok;
         } catch (err) {
           done(err);
@@ -126,7 +126,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
             expect(
               message.clientId == invalidClientId,
-              'invalid client ID is added by the client library as it is explicit in the publish',
+              'invalid client ID is added by the client library as it is explicit in the publish'
             ).to.be.ok;
           } catch (err) {
             done(err);
@@ -211,7 +211,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               done(err);
             }
           });
-        },
+        }
       );
     });
 
@@ -306,7 +306,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             try {
               expect(
                 message.data == 'data',
-                'Check publish and history promise methods both worked as expected',
+                'Check publish and history promise methods both worked as expected'
               ).to.be.ok;
               done();
             } catch (err) {

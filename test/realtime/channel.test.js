@@ -281,7 +281,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
         };
       },
-      true,
+      true
     );
     /* NB upgrade is excluded because realtime now sends an ATTACHED
      * post-upgrade, which can race with the DETACHED if the DETACH is only sent
@@ -540,7 +540,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  },
+                  }
                 );
               });
             });
@@ -589,7 +589,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  },
+                  }
                 );
               });
             });
@@ -696,10 +696,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     function () {
                       expect(
                         !setOptionsReturned,
-                        'setOptions failed to call back immediately, when no reattach is required',
+                        'setOptions failed to call back immediately, when no reattach is required'
                       ).to.be.ok;
                       cb();
-                    },
+                    }
                   );
                   setOptionsReturned = true;
                 },
@@ -723,15 +723,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       helper.Utils.nextTick(function () {
                         expect(
                           setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach',
+                          'setOptions should return immediately and call back after the reattach'
                         ).to.be.ok;
                         expect(
                           channelUpdated,
-                          'Check channel went to the server to update the channel params',
+                          'Check channel went to the server to update the channel params'
                         ).to.be.ok;
                         cb();
                       });
-                    },
+                    }
                   );
                   setOptionsReturned = true;
                 },
@@ -750,12 +750,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       helper.Utils.nextTick(function () {
                         expect(
                           setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach',
+                          'setOptions should return immediately and call back after the reattach'
                         ).to.be.ok;
                         expect(channelUpdated, 'Check channel went to the server to update the channel mode').to.be.ok;
                         cb();
                       });
-                    },
+                    }
                   );
                   setOptionsReturned = true;
                 },
@@ -764,7 +764,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   channel.setOptions({}, function () {
                     expect(
                       !setOptionsReturned,
-                      'setOptions failed to call back immediately, when no reattach is required',
+                      'setOptions failed to call back immediately, when no reattach is required'
                     ).to.be.ok;
                     cb();
                   });
@@ -773,7 +773,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               ],
               function (err) {
                 closeAndFinish(done, realtime, err);
-              },
+              }
             );
           });
           monitorConnection(done, realtime);
@@ -826,7 +826,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  },
+                  }
                 );
               });
             });
@@ -875,7 +875,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  },
+                  }
                 );
               });
             });
@@ -926,7 +926,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  },
+                  }
                 );
               });
             });
@@ -961,7 +961,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result',
+                    'Check channel options modes result'
                   );
                   cb();
                 });
@@ -975,7 +975,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result',
+                    'Check channel options modes result'
                   );
                   cb();
                 });
@@ -1011,7 +1011,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   expect(channel.params).to.deep.equal({}, 'Check channel options params result');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result',
+                    'Check channel options modes result'
                   );
                   cb();
                 });
@@ -1026,7 +1026,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   expect(channel.params).to.deep.equal({}, 'Check channel options params result');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result',
+                    'Check channel options modes result'
                   );
                   cb();
                 });
@@ -1034,7 +1034,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            },
+            }
           );
         });
         monitorConnection(done, realtime);
@@ -1188,7 +1188,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 13,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              }),
+              })
             );
           },
           function (cb) {
@@ -1201,7 +1201,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1230,7 +1230,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 13,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              }),
+              })
             );
           });
         };
@@ -1275,7 +1275,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               action: 9,
               channel: channelName,
               error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-            }),
+            })
           );
         });
       });
@@ -1317,13 +1317,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 11,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              }),
+              })
             );
           },
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1388,7 +1388,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1451,7 +1451,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             channel.once(function (stateChange) {
               expect(stateChange.current).to.equal(
                 'suspended',
-                'Check that the channel goes back into suspended after attach fails',
+                'Check that the channel goes back into suspended after attach fails'
               );
               expect(stateChange.reason && stateChange.reason.code).to.equal(90007, 'Check correct error code');
               cb();
@@ -1460,7 +1460,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1503,7 +1503,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1517,7 +1517,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       channel.detach(function () {
         expect(channel.state).to.equal(
           'detached',
-          'Check that detach on suspended channel results in detached channel',
+          'Check that detach on suspended channel results in detached channel'
         );
         done();
       });

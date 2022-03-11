@@ -52,7 +52,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           action: 11,
           channel: channelName,
           flags: 1,
-        }),
+        })
       );
 
       async.series(
@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
                 expect(extractClientIds(results)).to.deep.equal(
                   ['one', 'three'],
-                  'check two has gone and three is there',
+                  'check two has gone and three is there'
                 );
               } catch (err) {
                 cb(err);
@@ -136,7 +136,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -154,7 +154,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           action: 11,
           channel: channelName,
           flags: 1,
-        }),
+        })
       );
 
       /* First sync */
@@ -247,7 +247,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           action: 11,
           channel: channelName,
           flags: 1,
-        }),
+        })
       );
 
       channel.onMessage({
@@ -324,7 +324,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           action: 11,
           channel: channelName,
           flags: 1,
-        }),
+        })
       );
 
       channel.onMessage({
@@ -401,7 +401,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         createPM({
           action: 11,
           channel: channelName,
-        }),
+        })
       );
 
       /* One enters */
@@ -563,7 +563,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             ],
             function () {
               cb();
-            },
+            }
           );
         }
 
@@ -579,7 +579,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 function (i, presCb) {
                   entererChannel.presence.enterClient(i.toString(), null, presCb);
                 },
-                cb,
+                cb
               );
             },
             function (cb) {
@@ -619,7 +619,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           ],
           function (err) {
             closeAndFinish(done, [enterer, syncer], err);
-          },
+          }
         );
       });
     }

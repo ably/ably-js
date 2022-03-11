@@ -240,15 +240,15 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         try {
           expect(realtime.connection.connectionManager.states.disconnected.retryDelay).to.equal(
             123,
-            'Verify disconnected retry frequency is settable',
+            'Verify disconnected retry frequency is settable'
           );
           expect(realtime.connection.connectionManager.states.suspended.retryDelay).to.equal(
             456,
-            'Verify suspended retry frequency is settable',
+            'Verify suspended retry frequency is settable'
           );
           expect(realtime.connection.connectionManager.options.timeouts.httpRequestTimeout).to.equal(
             789,
-            'Verify suspended retry frequency is settable',
+            'Verify suspended retry frequency is settable'
           );
         } catch (err) {
           closeAndFinish(done, realtime, err);
@@ -273,7 +273,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         /* Note: uses internal knowledge of connectionManager */
         expect(realtime.connection.connectionManager.httpHosts.length).to.equal(
           3,
-          'Verify hosts list is the expected length',
+          'Verify hosts list is the expected length'
         );
         expect(realtime.connection.connectionManager.httpHosts[0]).to.equal('a', 'Verify given restHost is first');
         /* Replace chooseTransportForHost with a spy, then try calling
@@ -336,7 +336,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
                 expect(message.connectionDetails.connectionKey).to.be.ok;
                 expect(message.connectionDetails.connectionKey).to.equal(
                   message.connectionKey,
-                  'connection keys should match',
+                  'connection keys should match'
                 );
                 message.connectionDetails.connectionKey = 'importantConnectionKey';
                 message.connectionDetails.clientId = 'customClientId';
@@ -351,11 +351,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           try {
             expect(realtime.auth.clientId).to.equal(
               'customClientId',
-              'clientId should be set on the Auth object from connectionDetails',
+              'clientId should be set on the Auth object from connectionDetails'
             );
             expect(realtime.connection.key).to.equal(
               'importantConnectionKey',
-              'connection key from connectionDetails should be used',
+              'connection key from connectionDetails should be used'
             );
           } catch (err) {
             closeAndFinish(done, realtime, err);

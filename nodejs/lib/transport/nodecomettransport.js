@@ -162,7 +162,7 @@ var NodeCometTransport = function (connectionManager) {
         clearTimeout(timer);
         self.timer = null;
         self.complete(err);
-      }),
+      })
     );
 
     req.on('response', function (res) {
@@ -182,7 +182,7 @@ var NodeCometTransport = function (connectionManager) {
         (self.onResError = function (err) {
           err = new ErrorInfo('Response error: ' + err.message, null, 400);
           self.complete(err);
-        }),
+        })
       );
 
       self.res = res;
@@ -241,7 +241,7 @@ var NodeCometTransport = function (connectionManager) {
 
         /* the remaining new chunks are complete */
         newChunks.map(onChunk);
-      }),
+      })
     );
 
     res.on('end', function () {
@@ -289,7 +289,7 @@ var NodeCometTransport = function (connectionManager) {
           err = new ErrorInfo(
             'Error response received from server: ' + statusCode + ', body was: ' + Utils.inspect(body),
             null,
-            statusCode,
+            statusCode
           );
         }
         self.complete(err);

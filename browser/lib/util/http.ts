@@ -54,7 +54,7 @@ const Http: typeof IHttp = class {
         headers: Record<string, string> | null,
         params: RequestParams,
         body: unknown,
-        callback: RequestCallback,
+        callback: RequestCallback
       ) {
         const req = XHRRequest.createRequest(
           uri,
@@ -63,7 +63,7 @@ const Http: typeof IHttp = class {
           body,
           XHRStates.REQ_SEND,
           rest && rest.options.timeouts,
-          method,
+          method
         );
         req.once('complete', callback);
         req.exec();
@@ -82,7 +82,7 @@ const Http: typeof IHttp = class {
             const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
             Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
             callback(null, result);
-          },
+          }
         );
       };
     } else if (Platform.jsonpSupported) {
@@ -93,7 +93,7 @@ const Http: typeof IHttp = class {
         headers: Record<string, string> | null,
         params: RequestParams,
         body: unknown,
-        callback: RequestCallback,
+        callback: RequestCallback
       ) {
         const req = createRequest(
           uri,
@@ -102,7 +102,7 @@ const Http: typeof IHttp = class {
           body,
           XHRStates.REQ_SEND,
           rest && rest.options.timeouts,
-          method,
+          method
         );
         req.once('complete', callback);
         Utils.nextTick(function () {
@@ -128,7 +128,7 @@ const Http: typeof IHttp = class {
           null,
           null,
           XHRStates.REQ_SEND,
-          Defaults.TIMEOUTS,
+          Defaults.TIMEOUTS
         );
         req.once('complete', (err: Error, response: string) => {
           const result = !err && response;
@@ -152,7 +152,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback?: RequestCallback,
+    callback?: RequestCallback
   ): void {
     const uriFromHost =
       typeof path == 'function'
@@ -185,7 +185,7 @@ const Http: typeof IHttp = class {
               return;
             }
             callback?.(err, ...args);
-          },
+          }
         );
         return;
       } else {
@@ -226,7 +226,7 @@ const Http: typeof IHttp = class {
             };
           }
           callback?.(err, ...args);
-        },
+        }
       );
     };
     tryAHost(hosts);
@@ -239,7 +239,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     if (!this.Request) {
       callback(new ErrorInfo('Request invoked before assigned to', null, 500));
@@ -272,7 +272,7 @@ const Http: typeof IHttp = class {
     path: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.do(HttpMethods.Get, rest, path, headers, null, params, callback);
   }
@@ -282,7 +282,7 @@ const Http: typeof IHttp = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
   }
@@ -292,7 +292,7 @@ const Http: typeof IHttp = class {
     path: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
   }
@@ -302,7 +302,7 @@ const Http: typeof IHttp = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
   }
@@ -313,7 +313,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.do(HttpMethods.Post, rest, path, headers, body, params, callback);
   }
@@ -324,7 +324,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
   }
@@ -335,7 +335,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.do(HttpMethods.Put, rest, path, headers, body, params, callback);
   }
@@ -346,7 +346,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
   }
@@ -357,7 +357,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
   }
@@ -368,7 +368,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void {
     this.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
   }
@@ -380,7 +380,7 @@ const Http: typeof IHttp = class {
     headers: Record<string, string> | null,
     params: RequestParams,
     body: unknown,
-    callback: RequestCallback,
+    callback: RequestCallback
   ) => void;
 
   checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) => void = undefined;

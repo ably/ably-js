@@ -101,7 +101,7 @@ class PresenceMessage {
   static fromResponseBody(
     body: Record<string, unknown>[],
     options: CipherOptions,
-    format?: Utils.Format,
+    format?: Utils.Format
   ): PresenceMessage[] {
     const messages: PresenceMessage[] = [];
     if (format) {

@@ -49,7 +49,7 @@ export function createRequest(
   body?: unknown,
   requestMode?: number,
   timeouts?: Record<string, number> | null,
-  method?: HttpMethods,
+  method?: HttpMethods
 ) {
   /* JSONP requests are used either with the context being a realtime
    * transport, or with timeouts passed in (for when used by a rest client),
@@ -63,7 +63,7 @@ export function createRequest(
     body,
     requestMode as number,
     timeouts as Record<string, number>,
-    method,
+    method
   );
 }
 
@@ -87,7 +87,7 @@ class JSONPTransport extends CometTransport {
     connectionManager: ConnectionManager,
     auth: Auth,
     params: TransportParams,
-    callback: TryConnectCallback,
+    callback: TryConnectCallback
   ) {
     const transport = new JSONPTransport(connectionManager, auth, params);
     const errorCb = function (this: { event: string }, err: ErrorInfo) {
@@ -113,7 +113,7 @@ class JSONPTransport extends CometTransport {
     body?: unknown,
     requestMode?: number,
     timeouts?: Record<string, number>,
-    method?: HttpMethods,
+    method?: HttpMethods
   ) {
     /* JSONP requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
@@ -143,7 +143,7 @@ export class Request extends EventEmitter {
     body: unknown | null,
     requestMode: number,
     timeouts: Record<string, number>,
-    method?: HttpMethods,
+    method?: HttpMethods
   ) {
     super();
     if (id === undefined) id = idCounter++;
@@ -190,7 +190,7 @@ export class Request extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'JSONP Request.exec()',
-        'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param',
+        'Warning: the browser appears to have truncated the script URI. This will likely result in the request failing due to an unparseable body param'
       );
     }
     script.async = true;

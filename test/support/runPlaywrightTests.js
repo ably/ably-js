@@ -11,7 +11,7 @@ const browserEnv = process.env.PLAYWRIGHT_BROWSER;
 
 if (!['chromium', 'firefox', 'webkit'].includes(browserEnv)) {
   throw new Error(
-    `PLAYWRIGHT_BROWSER environment variable must be either 'chromium', 'webkit' or 'firefox' (currently ${browserEnv})`,
+    `PLAYWRIGHT_BROWSER environment variable must be either 'chromium', 'webkit' or 'firefox' (currently ${browserEnv})`
   );
 }
 

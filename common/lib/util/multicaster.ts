@@ -24,7 +24,7 @@ class Multicaster {
           Logger.logAction(
             Logger.LOG_ERROR,
             'Multicaster multiple callback handler',
-            'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack,
+            'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack
           );
         }
       }

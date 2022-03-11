@@ -40,7 +40,7 @@ define(['test/common/modules/testapp_manager', 'globals'], function (testAppMana
               configuredTestApp().appId +
               ' in environment ' +
               (ablyGlobals.environment || 'production') +
-              ' has been set up',
+              ' has been set up'
           );
           done();
         }

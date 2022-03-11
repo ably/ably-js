@@ -144,7 +144,7 @@ class Auth {
         Logger.logAction(
           Logger.LOG_ERROR,
           'Auth()',
-          'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
+          'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
         );
       }
       this._saveTokenOptions(options.defaultTokenParams as API.Types.TokenDetails, options);
@@ -254,13 +254,13 @@ class Auth {
   authorize(
     tokenParams: API.Types.TokenParams | null,
     authOptions: API.Types.AuthOptions | null,
-    callback: Function,
+    callback: Function
   ): void;
 
   authorize(
     tokenParams: Record<string, any> | Function | null,
     authOptions?: API.Types.AuthOptions | null | Function,
-    callback?: Function,
+    callback?: Function
   ): void | Promise<void> {
     let _authOptions: API.Types.AuthOptions | null;
     /* shuffle and normalise arguments as necessary */
@@ -289,7 +289,7 @@ class Auth {
       Logger.logAction(
         Logger.LOG_ERROR,
         'Auth.authorize',
-        'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want',
+        'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want'
       );
       /* Emulate the old behaviour: if 'force' was the only member of authOptions,
        * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */
@@ -323,7 +323,7 @@ class Auth {
         } else {
           callback?.(null, tokenDetails);
         }
-      },
+      }
     );
   }
 
@@ -338,7 +338,7 @@ class Auth {
   _forceNewToken(
     tokenParams: API.Types.TokenParams | null,
     authOptions: API.Types.AuthOptions | null,
-    callback: Function,
+    callback: Function
   ) {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
@@ -435,13 +435,13 @@ class Auth {
   requestToken(
     tokenParams: API.Types.TokenParams | null,
     authOptions: API.Types.AuthOptions,
-    callback: StandardCallback<API.Types.TokenDetails>,
+    callback: StandardCallback<API.Types.TokenDetails>
   ): void;
 
   requestToken(
     tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null,
     authOptions?: any | StandardCallback<API.Types.TokenDetails>,
-    callback?: StandardCallback<API.Types.TokenDetails>,
+    callback?: StandardCallback<API.Types.TokenDetails>
   ): void | Promise<void> {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
@@ -493,21 +493,21 @@ class Auth {
           err: ErrorInfo,
           body: string,
           headers: Record<string, string>,
-          unpacked: any,
+          unpacked: any
         ) {
           let contentType;
           if (err) {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
-              'Received Error: ' + Utils.inspectError(err),
+              'Received Error: ' + Utils.inspectError(err)
             );
           } else {
             contentType = headers['content-type'];
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
-              'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body),
+              'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body)
             );
           }
           if (err || unpacked) return cb(err, body);
@@ -525,8 +525,8 @@ class Auth {
                   contentType +
                   ', should be either text/plain, application/jwt or application/json',
                 40170,
-                401,
-              ),
+                401
+              )
             );
             return;
           }
@@ -539,11 +539,7 @@ class Auth {
               body = JSON.parse(body);
             } catch (e) {
               cb(
-                new ErrorInfo(
-                  'Unexpected error processing authURL response; err = ' + (e as Error).message,
-                  40170,
-                  401,
-                ),
+                new ErrorInfo('Unexpected error processing authURL response; err = ' + (e as Error).message, 40170, 401)
               );
               return;
             }
@@ -558,7 +554,7 @@ class Auth {
             '; Params: ' +
             JSON.stringify(authParams) +
             '; method: ' +
-            (usePost ? 'POST' : 'GET'),
+            (usePost ? 'POST' : 'GET')
         );
         if (usePost) {
           /* send body form-encoded */
@@ -571,7 +567,7 @@ class Auth {
             headers,
             body,
             providedQsParams as Record<string, string>,
-            authUrlRequestCallback as RequestCallback,
+            authUrlRequestCallback as RequestCallback
           );
         } else {
           this.client.http.getUri(
@@ -579,7 +575,7 @@ class Auth {
             authOptions.authUrl,
             authHeaders || {},
             authParams,
-            authUrlRequestCallback as RequestCallback,
+            authUrlRequestCallback as RequestCallback
           );
         }
       };
@@ -594,7 +590,7 @@ class Auth {
       Logger.logAction(
         Logger.LOG_ERROR,
         'Auth()',
-        'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
+        'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
       );
       _callback(new ErrorInfo(msg, 40171, 403));
       return;
@@ -616,7 +612,7 @@ class Auth {
       Logger.logAction(
         Logger.LOG_MICRO,
         'Auth.requestToken().requestToken',
-        'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams),
+        'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams)
       );
       this.client.http.post(
         client,
@@ -624,7 +620,7 @@ class Auth {
         requestHeaders,
         JSON.stringify(signedTokenParams),
         null,
-        tokenCb as RequestCallback,
+        tokenCb as RequestCallback
       );
     };
 
@@ -645,7 +641,7 @@ class Auth {
         Logger.logAction(
           Logger.LOG_ERROR,
           'Auth.requestToken()',
-          'token request signing call returned error; err = ' + Utils.inspectError(err),
+          'token request signing call returned error; err = ' + Utils.inspectError(err)
         );
         _callback(normaliseAuthcallbackError(err));
         return;
@@ -659,8 +655,8 @@ class Auth {
             new ErrorInfo(
               'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
               40170,
-              401,
-            ),
+              401
+            )
           );
         } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
           /* common failure mode with poorly-implemented authCallbacks */
@@ -670,8 +666,8 @@ class Auth {
             new ErrorInfo(
               "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
               40170,
-              401,
-            ),
+              401
+            )
           );
         } else {
           _callback(null, { token: tokenRequestOrDetails } as API.Types.TokenDetails);
@@ -692,8 +688,8 @@ class Auth {
           new ErrorInfo(
             'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
             40170,
-            401,
-          ),
+            401
+          )
         );
         return;
       }
@@ -716,13 +712,13 @@ class Auth {
           err?: ErrorInfo | ErrnoException | null,
           tokenResponse?: API.Types.TokenDetails | string,
           headers?: Record<string, string>,
-          unpacked?: boolean,
+          unpacked?: boolean
         ) {
           if (err) {
             Logger.logAction(
               Logger.LOG_ERROR,
               'Auth.requestToken()',
-              'token request API call returned error; err = ' + Utils.inspectError(err),
+              'token request API call returned error; err = ' + Utils.inspectError(err)
             );
             _callback(normaliseAuthcallbackError(err));
             return;
@@ -730,7 +726,7 @@ class Auth {
           if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
           Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
           _callback(null, tokenResponse as API.Types.TokenDetails);
-        },
+        }
       );
     });
   }
@@ -960,7 +956,7 @@ class Auth {
    * progress, making all pending callbacks wait for the new one */
   _ensureValidAuthCredentials(
     forceSupersede: boolean,
-    callback: (err: ErrorInfo | null, token?: API.Types.TokenDetails) => void,
+    callback: (err: ErrorInfo | null, token?: API.Types.TokenDetails) => void
   ) {
     const token = this.tokenDetails;
 
@@ -971,8 +967,8 @@ class Auth {
           new ErrorInfo(
             'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
             40102,
-            403,
-          ),
+            403
+          )
         );
         return;
       }
@@ -1001,7 +997,7 @@ class Auth {
         Logger.logAction(
           Logger.LOG_MINOR,
           'Auth._ensureValidAuthCredentials()',
-          'Discarding token request response; overtaken by newer one',
+          'Discarding token request response; overtaken by newer one'
         );
         return;
       }
@@ -1024,7 +1020,7 @@ class Auth {
       throw new ErrorInfo(
         'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)',
         40012,
-        400,
+        400
       );
     } else {
       const err = this._uncheckedSetClientId(clientId);

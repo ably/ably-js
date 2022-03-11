@@ -15,7 +15,7 @@ function withAuthDetails(
   headers: Record<string, string>,
   params: Record<string, any>,
   errCallback: Function,
-  opCallback: Function,
+  opCallback: Function
 ) {
   if (rest.http.supportsAuthHeaders) {
     rest.auth.getAuthHeaders(function (err: Error, authHeaders: Record<string, string>) {
@@ -36,7 +36,7 @@ function unenvelope(callback: Function, format: Utils.Format | null) {
     body: Record<string, any>,
     outerHeaders: Record<string, string>,
     unpacked: boolean,
-    outerStatusCode: number,
+    outerStatusCode: number
   ) {
     if (err && !body) {
       callback(err);
@@ -97,7 +97,7 @@ function logResponseHandler(callback: Function, method: HttpMethods, path: strin
       Logger.logAction(
         Logger.LOG_MICRO,
         'Resource.' + method + '()',
-        'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err),
+        'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err)
       );
     } else {
       Logger.logAction(
@@ -110,7 +110,7 @@ function logResponseHandler(callback: Function, method: HttpMethods, path: strin
           '; StatusCode: ' +
           statusCode +
           '; Body: ' +
-          (BufferUtils.isBuffer(body) ? body.toString() : body),
+          (BufferUtils.isBuffer(body) ? body.toString() : body)
       );
     }
     if (callback) {
@@ -126,7 +126,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     Resource.do(HttpMethods.Get, rest, path, null, origheaders, origparams, envelope, callback);
   }
@@ -137,7 +137,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     Resource.do(HttpMethods.Delete, rest, path, null, origheaders, origparams, envelope, callback);
   }
@@ -149,7 +149,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     Resource.do(HttpMethods.Post, rest, path, body, origheaders, origparams, envelope, callback);
   }
@@ -161,7 +161,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     Resource.do(HttpMethods.Patch, rest, path, body, origheaders, origparams, envelope, callback);
   }
@@ -173,7 +173,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     Resource.do(HttpMethods.Put, rest, path, body, origheaders, origparams, envelope, callback);
   }
@@ -186,7 +186,7 @@ class Resource {
     origheaders: Record<string, string>,
     origparams: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function,
+    callback: Function
   ): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       callback = logResponseHandler(callback, method, path, origparams);
@@ -202,7 +202,7 @@ class Resource {
         Logger.logAction(
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
-          'Sending; ' + urlFromPathAndParams(path, params),
+          'Sending; ' + urlFromPathAndParams(path, params)
         );
       }
 
@@ -242,14 +242,14 @@ class Resource {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Resource.' + method + '()',
-              'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr),
+              'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr)
             );
           }
         }
         Logger.logAction(
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
-          'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody,
+          'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody
         );
       }
       (rest.http[method] as Function).apply(rest.http, args);

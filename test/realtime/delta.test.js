@@ -58,8 +58,8 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           channel.on('attaching', function (stateChange) {
             done(
               new Error(
-                'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason),
-              ),
+                'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason)
+              )
             );
           });
 
@@ -165,7 +165,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
                   closeAndFinish(
                     done,
                     realtime,
-                    new Error('Check no further decode failures; reason =' + displayError(stateChange.reason)),
+                    new Error('Check no further decode failures; reason =' + displayError(stateChange.reason))
                   );
                 });
               });

@@ -53,7 +53,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               var currentFallback = rest._currentFallback;
               expect(currentFallback.validUntil).to.equal(
                 validUntil,
-                'Check validUntil is the same (implying currentFallback has not been re-set)',
+                'Check validUntil is the same (implying currentFallback has not been re-set)'
               );
               cb();
             });
@@ -81,7 +81,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             return;
           }
           done();
-        },
+        }
       );
     });
   });

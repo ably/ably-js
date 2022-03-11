@@ -197,7 +197,7 @@ class Message {
 
   static decode(
     message: Message | PresenceMessage,
-    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
+    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
   ): void {
     const context = normaliseContext(inputContext);
 
@@ -250,14 +250,14 @@ class Message {
                 throw new ErrorInfo(
                   'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
                   40019,
-                  400,
+                  400
                 );
               }
               if (typeof Uint8Array === 'undefined') {
                 throw new ErrorInfo(
                   'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
                   40020,
-                  400,
+                  400
                 );
               }
               try {
@@ -288,7 +288,7 @@ class Message {
         throw new ErrorInfo(
           'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
           err.code || 40013,
-          400,
+          400
         );
       } finally {
         message.encoding =
@@ -302,7 +302,7 @@ class Message {
   static fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
-    format?: Utils.Format,
+    format?: Utils.Format
   ): Message[] {
     if (format) {
       body = Utils.decodeBody(body, format);

@@ -46,7 +46,7 @@ class Presence extends EventEmitter {
     new PaginatedResource(rest, this.basePath, headers, envelope, function (
       body: any,
       headers: Record<string, string>,
-      unpacked?: boolean,
+      unpacked?: boolean
     ) {
       return PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
     }).get(params, callback);
@@ -81,7 +81,7 @@ class Presence extends EventEmitter {
     new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function (
       body: any,
       headers: Record<string, string>,
-      unpacked?: boolean,
+      unpacked?: boolean
     ) {
       return PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
     }).get(params, callback);

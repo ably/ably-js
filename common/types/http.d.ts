@@ -10,7 +10,7 @@ export type RequestCallback = (
   body?: unknown,
   headers?: IncomingHttpHeaders,
   packed?: boolean,
-  statusCode?: number,
+  statusCode?: number
 ) => void;
 export type RequestParams = Record<string, string> | null;
 
@@ -28,7 +28,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     params: RequestParams,
     body: unknown,
-    callback: RequestCallback,
+    callback: RequestCallback
   ) => void;
   _getHosts: (client: Rest | Realtime) => string[];
   do(
@@ -38,7 +38,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback?: RequestCallback,
+    callback?: RequestCallback
   ): void;
   doUri(
     method: HttpMethods,
@@ -47,35 +47,35 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback?: RequestCallback,
+    callback?: RequestCallback
   ): void;
   get(
     rest: Rest | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   getUri(
     rest: Rest | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   delete(
     rest: Rest | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   deleteUri(
     rest: Rest | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   post(
     rest: Rest | null,
@@ -83,7 +83,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   postUri(
     rest: Rest | null,
@@ -91,7 +91,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   put(
     rest: Rest | null,
@@ -99,7 +99,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   putUri(
     rest: Rest | null,
@@ -107,7 +107,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   patch(
     rest: Rest | null,
@@ -115,7 +115,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   patchUri(
     rest: Rest | null,
@@ -123,7 +123,7 @@ export declare class IHttp {
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
-    callback: RequestCallback,
+    callback: RequestCallback
   ): void;
   checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
 }

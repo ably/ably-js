@@ -37,7 +37,7 @@ class WebSocketTransport extends Transport {
     connectionManager: ConnectionManager,
     auth: Auth,
     params: TransportParams,
-    callback: TryConnectCallback,
+    callback: TryConnectCallback
   ) {
     const transport = new WebSocketTransport(connectionManager, auth, params);
     const errorCb = function (this: { event: string }, err: ErrorInfo) {
@@ -112,7 +112,7 @@ class WebSocketTransport extends Transport {
         Logger.logAction(
           Logger.LOG_ERROR,
           'WebSocketTransport.connect()',
-          'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message),
+          'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message)
         );
         self.disconnect(e as Error);
       }
@@ -140,7 +140,7 @@ class WebSocketTransport extends Transport {
     Logger.logAction(
       Logger.LOG_MICRO,
       'WebSocketTransport.onWsData()',
-      'data received; length = ' + data.length + '; type = ' + typeof data,
+      'data received; length = ' + data.length + '; type = ' + typeof data
     );
     try {
       this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
@@ -148,7 +148,7 @@ class WebSocketTransport extends Transport {
       Logger.logAction(
         Logger.LOG_ERROR,
         'WebSocketTransport.onWsData()',
-        'Unexpected exception handing channel message: ' + (e as Error).stack,
+        'Unexpected exception handing channel message: ' + (e as Error).stack
       );
     }
   }

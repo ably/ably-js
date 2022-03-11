@@ -335,11 +335,11 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         try {
           expect(tokenDetails.clientId).to.equal(
             'bar',
-            'Verify clientId passed in is used, not the one from defaultTokenParams',
+            'Verify clientId passed in is used, not the one from defaultTokenParams'
           );
           expect(tokenDetails.expires - tokenDetails.issued).to.equal(
             60 * 60 * 1000,
-            'Verify ttl from defaultTokenParams ignored completely, even though not overridden',
+            'Verify ttl from defaultTokenParams ignored completely, even though not overridden'
           );
           done();
         } catch (err) {
@@ -378,7 +378,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
             done(err);
           }
           done();
-        },
+        }
       );
     });
 
@@ -460,7 +460,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
           expect(!('ttl' in tokenRequest), 'check tokenRequest does not contains a ttl by default').to.be.ok;
           expect(
             !('capability' in tokenRequest),
-            'check tokenRequest does not contains capabilities by default',
+            'check tokenRequest does not contains capabilities by default'
           ).to.be.ok;
           expect(tokenRequest.keyName).to.equal(helper.getTestApp().keys[0].keyName);
           done();
@@ -525,7 +525,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         try {
           expect(JSON.parse(tokenRequest.capability)).to.deep.equal(
             capability,
-            'Verify createTokenRequest has JSON-stringified capability',
+            'Verify createTokenRequest has JSON-stringified capability'
           );
           done();
         } catch (err) {
@@ -683,7 +683,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
           expect(!err, err && helper.displayError(err)).to.be.ok;
           expect(authCallbackInvocations).to.equal(
             1,
-            'Check authCallback only invoked once -- was: ' + authCallbackInvocations,
+            'Check authCallback only invoked once -- was: ' + authCallbackInvocations
           );
           done();
         } catch (err) {

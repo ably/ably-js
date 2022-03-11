@@ -103,7 +103,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         try {
                           expect(
                             !err,
-                            'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''),
+                            'successfully published ' + i + (err ? ' err was ' + displayError(err) : '')
                           ).to.be.ok;
                         } catch (err) {
                           cb(err);
@@ -123,7 +123,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 ],
                 function (err) {
                   closeAndFinish(done, realtime, err);
-                },
+                }
               );
             });
           });
@@ -183,7 +183,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           try {
                             expect(
                               !err,
-                              'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''),
+                              'successfully published ' + i + (err ? ' err was ' + displayError(err) : '')
                             ).to.be.ok;
                           } catch (err) {
                             parCb(err);
@@ -207,13 +207,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       txRealtime.connection.connect();
                     },
                   ],
-                  cb,
+                  cb
                 );
               },
             ],
             function (err) {
               closeAndFinish(done, [rxRealtime, txRealtime], err);
-            },
+            }
           );
         } catch (err) {
           closeAndFinish(done, [rxRealtime, txRealtime], err);
@@ -351,14 +351,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   case 'objectWithNameAndEmptyStringData':
                     expect(msg.data).to.equal(
                       '',
-                      'Msg data received was a ' + typeof msg.data + ' when should have been an empty string',
+                      'Msg data received was a ' + typeof msg.data + ' when should have been an empty string'
                     );
                     break;
                   case 'objectWithNameAndFalseData':
                   case 'nameAndFalseData':
                     expect(msg.data).to.equal(
                       false,
-                      'Msg data received was a ' + typeof msg.data + ' when should have been a bool false',
+                      'Msg data received was a ' + typeof msg.data + ' when should have been a bool false'
                     );
                     break;
                   case 'nameAndData':
@@ -405,7 +405,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   closeAndFinish(done, realtime, err);
                   return;
                 }
-              },
+              }
             );
           });
         });
@@ -543,7 +543,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     callback(err);
                   }
                 },
-                cb,
+                cb
               );
             };
 
@@ -613,7 +613,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return 'Hello world at: ' + new Date();
             };
             publishAtIntervals(count, channel, dataFn, onPublish);
-          },
+          }
         );
       };
     });
@@ -634,7 +634,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             id: 'foo:0',
             connectionSerial: 0,
             messages: [{ name: null, data: null }],
-          }),
+          })
         );
 
         /* add some nonmessage channel message inbetween */
@@ -642,7 +642,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           createPM({
             action: 11,
             channel: channel.name,
-          }),
+          })
         );
 
         realtime.connection.connectionManager.activeProtocol.getTransport().onProtocolMessage(
@@ -652,7 +652,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             id: 'foo:0',
             connectionSerial: 1,
             messages: [{ name: null, data: null }],
-          }),
+          })
         );
 
         try {
@@ -681,7 +681,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             id: 'foo:0',
             connectionSerial: 0,
             messages: [{ name: null, data: null }],
-          }),
+          })
         );
 
         realtime.connection.connectionManager.activeProtocol.getTransport().onProtocolMessage(
@@ -691,7 +691,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             id: 'bar:0',
             connectionSerial: 0,
             messages: [{ name: null, data: null }],
-          }),
+          })
         );
 
         try {
@@ -798,7 +798,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            },
+            }
           );
         });
       });
@@ -906,13 +906,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
               ],
-              outercb,
+              outercb
             );
           },
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -948,13 +948,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   channel.publish([{ name: 'a', extras: extras }], innercb);
                 },
               ],
-              outercb,
+              outercb
             );
           },
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -983,7 +983,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           createPM({
             action: 4,
             connectionDetails: connectionDetails,
-          }),
+          })
         );
       });
     });
@@ -1096,7 +1096,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           .then(function (connectionStateChange) {
             expect(connectionStateChange.current).to.equal(
               'connected',
-              'Check promise is resolved with a connectionStateChange',
+              'Check promise is resolved with a connectionStateChange'
             );
             return channel.attach();
           })

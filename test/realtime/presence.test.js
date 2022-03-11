@@ -82,7 +82,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             // testRunner might or might not call back with an open realtime
             var openConnections = res[1] && res[1].close ? [listenerRealtime, res[1]] : listenerRealtime;
             closeAndFinish(done, openConnections);
-          },
+          }
         );
       });
     } catch (err) {
@@ -365,7 +365,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return;
           }
           clientChannel.presence.enter();
-        },
+        }
       );
       monitorConnection(done, clientRealtime);
     });
@@ -718,7 +718,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           expect(actions).to.deep.equal(['enter', 'leave'], 'Verify presenceMessages have correct actions');
           expect(presenceMessages[0].data || presenceMessages[1].data).to.equal(
             testClientData,
-            'Verify correct data (from whichever message was the "enter")',
+            'Verify correct data (from whichever message was the "enter")'
           );
           closeAndFinish(done, clientRealtime);
         });
@@ -822,7 +822,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         try {
                           expect(presenceMembers1).to.deep.equal(
                             presenceMembers2,
-                            'Verify member presence is indicated after attach',
+                            'Verify member presence is indicated after attach'
                           );
                         } catch (err) {
                           closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
@@ -918,7 +918,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     [waitForClient(testClientId), waitForClient(testClientId2), enterPresence],
                     function () {
                       cb2();
-                    },
+                    }
                   );
                 });
               });
@@ -942,7 +942,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       expect(members.length).to.equal(2, 'Verify both members present');
                       expect(members[0].connectionId).to.not.equal(
                         members[1].connectionId,
-                        'Verify members have distinct connectionIds',
+                        'Verify members have distinct connectionIds'
                       );
                     } catch (err) {
                       cb(err);
@@ -976,11 +976,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     try {
                       expect(members.length).to.equal(
                         1,
-                        'Verify only one member present when filtered by connectionId',
+                        'Verify only one member present when filtered by connectionId'
                       );
                       expect(members[0].connectionId).to.equal(
                         clientRealtime1.connection.id,
-                        'Verify connectionId filter works',
+                        'Verify connectionId filter works'
                       );
                     } catch (err) {
                       cb(err);
@@ -996,9 +996,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   return;
                 }
                 closeAndFinish(done, [clientRealtime1, clientRealtime2]);
-              },
+              }
             );
-          },
+          }
         );
       } catch (err) {
         closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
@@ -1191,7 +1191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
 
           var channel = realtime.channels.get(
-            'presence-' + (realtime.options.useBinaryProtocol ? 'bin' : 'json') + '-encoding',
+            'presence-' + (realtime.options.useBinaryProtocol ? 'bin' : 'json') + '-encoding'
           );
           channel.presence.enter(data);
         });
@@ -1209,7 +1209,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [realtimeBin, realtimeJson], err);
-        },
+        }
       );
     });
 
@@ -1312,7 +1312,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           ],
           function () {
             cb();
-          },
+          }
         );
       }
 
@@ -1326,7 +1326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               realtimeChannel.presence.enterClient('two', enterCb);
             },
           ],
-          cb,
+          cb
         );
       }
 
@@ -1359,7 +1359,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               realtimeChannel.presence.enterClient('three', innerCb);
             },
           ],
-          cb,
+          cb
         );
       }
 
@@ -1403,7 +1403,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [realtime, observer], err);
-        },
+        }
       );
     });
 
@@ -1426,7 +1426,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           ],
           function () {
             cb();
-          },
+          }
         );
       }
 
@@ -1454,7 +1454,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [enterer, detacher], err);
-        },
+        }
       );
     });
 
@@ -1561,7 +1561,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1657,7 +1657,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1708,7 +1708,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1802,7 +1802,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(members && members.length).to.equal(1, 'Check back to one member present');
                 expect(members && members[0] && members[0].clientId).to.equal(
                   continuousClientId,
-                  'check cont still present',
+                  'check cont still present'
                 );
               } catch (err) {
                 cb(err);
@@ -1814,7 +1814,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [realtime, continuousRealtime], err);
-        },
+        }
       );
     });
 
@@ -1879,7 +1879,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 11,
                 channelSerial: channel.properties.attachSerial,
                 flags: 0,
-              }),
+              })
             );
           },
           function (cb) {
@@ -1896,7 +1896,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        },
+        }
       );
     });
 
@@ -1930,7 +1930,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 channel.presence.enter(cb);
               },
             ],
-            outerCb,
+            outerCb
           );
         };
       };
@@ -2033,7 +2033,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [mainRealtime, continuousRealtime, leavesRealtime], err);
-        },
+        }
       );
     });
 
@@ -2077,7 +2077,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
               closeAndFinish(done, client);
             }, 1000);
-          },
+          }
         );
       });
     });

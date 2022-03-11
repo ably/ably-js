@@ -44,7 +44,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         try {
           expect(err).to.equal(
             null,
-            'Check that we do not get an error response for a failure that returns an actual ably error code',
+            'Check that we do not get an error response for a failure that returns an actual ably error code'
           );
           expect(res.success).to.equal(false, 'Check res.success is false for a failure');
           expect(res.statusCode).to.equal(404, 'Check HPR.statusCode is 404');
@@ -155,7 +155,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             return;
           }
           done();
-        },
+        }
       );
     });
 
@@ -172,7 +172,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
           expect(
             !res.items[0].batchResponse,
-            'Check no batchResponse, since items is now just a flat array of channel responses',
+            'Check no batchResponse, since items is now just a flat array of channel responses'
           ).to.be.ok;
           expect(res.items.length).to.equal(2, 'Verify batched response includes response for each channel');
           expect(!res.items[0].error, 'Verify channel1 response is not an error').to.be.ok;
@@ -201,17 +201,17 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           expect(response.error.code).to.equal(40020, 'Verify response has an errorCode');
           expect(response.batchResponse.length).to.equal(
             3,
-            'Verify batched response includes response for each channel',
+            'Verify batched response includes response for each channel'
           );
           expect(response.batchResponse[0].channel).to.equal(name, 'Verify channel1 response includes correct channel');
           expect(!response.batchResponse[0].error, 'Verify first channel response is not an error').to.be.ok;
           expect(response.batchResponse[1].error.code).to.equal(
             40010,
-            'Verify [invalid response includes an error with the right code',
+            'Verify [invalid response includes an error with the right code'
           );
           expect(response.batchResponse[2].error.code).to.equal(
             40010,
-            'Verify empty channel response includes an error with the right code',
+            'Verify empty channel response includes an error with the right code'
           );
           done();
         } catch (err) {

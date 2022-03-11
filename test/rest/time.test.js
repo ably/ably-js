@@ -27,7 +27,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
           expect(
             serverTime > localFiveMinutesAgo,
-            'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks',
+            'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks'
           ).to.be.ok;
           done();
         } catch (err) {

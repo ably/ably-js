@@ -64,7 +64,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           if (encodingSpec.expectedHexValue) {
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
-                              'Check data matches',
+                              'Check data matches'
                             );
                           } else {
                             expect(msg.data).to.deep.equal(encodingSpec.expectedValue, 'Check data matches');
@@ -82,7 +82,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           if (encodingSpec.expectedHexValue) {
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
-                              'Check data matches',
+                              'Check data matches'
                             );
                           } else {
                             expect(msg.data).to.deep.equal(encodingSpec.expectedValue, 'Check data matches');
@@ -103,18 +103,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         null,
                         function (err) {
                           parallelCb(err);
-                        },
+                        }
                       );
                     },
                   ],
-                  eachOfCb,
+                  eachOfCb
                 );
               },
               function (err) {
                 closeAndFinish(done, [realtime, binaryrealtime], err);
-              },
+              }
             );
-          },
+          }
         );
       });
     });
@@ -185,18 +185,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         });
                         expect(msgs.length).to.equal(
                           2,
-                          'Check expected number of results (one from json rt, one from binary rt)',
+                          'Check expected number of results (one from json rt, one from binary rt)'
                         );
                         expect(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
                         expect(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
                         if (msgs[0].encoding === 'json') {
                           expect(JSON.parse(encodingSpec.data)).to.deep.equal(
                             JSON.parse(msgs[0].data),
-                            'Check data matches',
+                            'Check data matches'
                           );
                           expect(JSON.parse(encodingSpec.data)).to.deep.equal(
                             JSON.parse(msgs[1].data),
-                            'Check data matches',
+                            'Check data matches'
                           );
                         } else {
                           expect(encodingSpec.data).to.equal(msgs[0].data, 'Check data matches');
@@ -207,14 +207,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         eachOfCb(err);
                       }
                     });
-                  },
+                  }
                 );
               },
               function (err) {
                 closeAndFinish(done, [realtime, binaryrealtime], err);
-              },
+              }
             );
-          },
+          }
         );
       });
     });

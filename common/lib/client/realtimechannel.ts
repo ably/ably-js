@@ -205,7 +205,7 @@ class RealtimeChannel extends Channel {
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
           40013,
-          400,
+          400
         );
     } else {
       messages = [Message.fromValues({ name: args[0], data: args[1] })];
@@ -227,8 +227,8 @@ class RealtimeChannel extends Channel {
               maxMessageSize +
               ' bytes)',
             40009,
-            400,
-          ),
+            400
+          )
         );
         return;
       }
@@ -326,7 +326,7 @@ class RealtimeChannel extends Channel {
           callback?.(
             stateChange.reason ||
               connectionManager.getError() ||
-              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500),
+              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500)
           );
           break;
         case 'detaching':
@@ -395,7 +395,7 @@ class RealtimeChannel extends Channel {
               callback(
                 stateChange.reason ||
                   connectionManager.getError() ||
-                  new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500),
+                  new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500)
               );
               break;
             case 'attaching':
@@ -566,7 +566,7 @@ class RealtimeChannel extends Channel {
               this.name +
               '" state is not "attached" (state is "' +
               this.state +
-              '").',
+              '").'
           );
           return;
         }
@@ -638,7 +638,7 @@ class RealtimeChannel extends Channel {
         Logger.logAction(
           Logger.LOG_ERROR,
           'RealtimeChannel.onMessage()',
-          'Fatal protocol error: unrecognised action (' + message.action + ')',
+          'Fatal protocol error: unrecognised action (' + message.action + ')'
         );
         this.connectionManager.abort(ConnectionErrors.unknownChannelErr);
     }
@@ -662,12 +662,12 @@ class RealtimeChannel extends Channel {
     state: API.Types.ChannelState,
     reason?: ErrorInfo | null,
     resumed?: boolean,
-    hasPresence?: boolean,
+    hasPresence?: boolean
   ): void {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.notifyState',
-      'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state,
+      'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state
     );
     this.clearStateTimer();
 
@@ -688,7 +688,7 @@ class RealtimeChannel extends Channel {
     Logger.logAction(
       logLevel,
       'Channel state for channel "' + this.name + '"',
-      state + (reason ? '; reason: ' + reason : ''),
+      state + (reason ? '; reason: ' + reason : '')
     );
 
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
@@ -728,7 +728,7 @@ class RealtimeChannel extends Channel {
       Logger.logAction(
         Logger.LOG_MINOR,
         'RealtimeChannel.checkPendingState',
-        'sendEvents is false; state is ' + this.connectionManager.state.state,
+        'sendEvents is false; state is ' + this.connectionManager.state.state
       );
       return;
     }
@@ -736,7 +736,7 @@ class RealtimeChannel extends Channel {
     Logger.logAction(
       Logger.LOG_MINOR,
       'RealtimeChannel.checkPendingState',
-      'name = ' + this.name + ', state = ' + this.state,
+      'name = ' + this.name + ', state = ' + this.state
     );
     /* Only start the state timer running when actually sending the event */
     switch (this.state) {
@@ -821,7 +821,7 @@ class RealtimeChannel extends Channel {
   history = function (
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
-    callback: PaginatedResultCallback<Message>,
+    callback: PaginatedResultCallback<Message>
   ): void | Promise<PaginatedResultCallback<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
     /* params and callback are optional; see if params contains the callback */
@@ -847,8 +847,8 @@ class RealtimeChannel extends Channel {
           new ErrorInfo(
             'untilAttach was specified and channel is attached, but attachSerial is not defined',
             40000,
-            400,
-          ),
+            400
+          )
         );
         return;
       }
@@ -873,7 +873,7 @@ class RealtimeChannel extends Channel {
       'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' +
         s,
       90001,
-      400,
+      400
     );
   }
 }

@@ -118,7 +118,7 @@ define([
           }
           done(e);
         });
-      },
+      }
     );
   }
 
@@ -128,11 +128,11 @@ define([
     utils.arrForEach(availableTransports, function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',
-        testFn({ transports: [transport], useBinaryProtocol: true }),
+        testFn({ transports: [transport], useBinaryProtocol: true })
       );
       itFn(
         name + '_with_' + transport + '_text_transport',
-        testFn({ transports: [transport], useBinaryProtocol: false }),
+        testFn({ transports: [transport], useBinaryProtocol: false })
       );
     });
     /* Plus one for no transport specified (ie use upgrade mechanism if

@@ -110,7 +110,7 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
               options.headers,
               options.body,
               options.paramsIfNoHeaders || {},
-              callback,
+              callback
             );
           }
           return;

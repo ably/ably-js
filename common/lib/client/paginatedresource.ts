@@ -48,7 +48,7 @@ class PaginatedResource {
     headers: Record<string, string>,
     envelope: Utils.Format | undefined,
     bodyHandler: BodyHandler,
-    useHttpPaginatedResponse?: boolean,
+    useHttpPaginatedResponse?: boolean
   ) {
     this.rest = rest;
     this.path = path;
@@ -67,7 +67,7 @@ class PaginatedResource {
       this.envelope,
       (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
         this.handlePage(err, body, headers, unpacked, statusCode, callback);
-      },
+      }
     );
   }
 
@@ -80,7 +80,7 @@ class PaginatedResource {
       this.envelope,
       (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
         this.handlePage(err, body, headers, unpacked, statusCode, callback);
-      },
+      }
     );
   }
 
@@ -96,7 +96,7 @@ class PaginatedResource {
         if (callback) {
           this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
         }
-      },
+      }
     );
   }
 
@@ -112,7 +112,7 @@ class PaginatedResource {
         if (callback) {
           this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
         }
-      },
+      }
     );
   }
 
@@ -128,7 +128,7 @@ class PaginatedResource {
         if (callback) {
           this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
         }
-      },
+      }
     );
   }
 
@@ -138,13 +138,13 @@ class PaginatedResource {
     headers: Record<string, string>,
     unpacked: boolean,
     statusCode: number,
-    callback: PaginatedResultCallback<T>,
+    callback: PaginatedResultCallback<T>
   ): void {
     if (err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'PaginatedResource.handlePage()',
-        'Unexpected error getting resource: err = ' + Utils.inspectError(err),
+        'Unexpected error getting resource: err = ' + Utils.inspectError(err)
       );
       callback(err);
       return;
@@ -233,7 +233,7 @@ export class PaginatedResult<T> {
       res.envelope,
       function (err: ErrorInfo, body: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
         res.handlePage(err, body, headers, unpacked, statusCode, callback);
-      },
+      }
     );
   }
 }
@@ -251,7 +251,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
     headers: Record<string, string>,
     statusCode: number,
     relParams: any,
-    err: ErrorInfo,
+    err: ErrorInfo
   ) {
     super(resource, items, relParams);
     this.statusCode = statusCode;

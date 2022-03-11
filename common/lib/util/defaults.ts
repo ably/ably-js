@@ -117,7 +117,7 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
         options.restHost +
         '" but realtimeHost is not set, so setting realtimeHost to "' +
         options.restHost +
-        '" too. If this is not what you want, please set realtimeHost explicitly.',
+        '" too. If this is not what you want, please set realtimeHost explicitly.'
     );
     return options.restHost;
   }
@@ -174,7 +174,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     if (options.environment) {
       Logger.deprecatedWithMsg(
         'fallbackHostsUseDefault',
-        'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.',
+        'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.'
       );
     } else {
       Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
@@ -196,7 +196,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
-      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter',
+      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter'
     );
     options.recover = undefined;
   }
@@ -253,7 +253,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
-      '{promises: true} was specified, but no Promise constructor found; disabling promises',
+      '{promises: true} was specified, but no Promise constructor found; disabling promises'
     );
     options.promises = false;
   }

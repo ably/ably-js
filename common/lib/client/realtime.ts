@@ -64,7 +64,7 @@ class Channels extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'Channels.onChannelMessage()',
-        'received event unspecified channel, action = ' + msg.action,
+        'received event unspecified channel, action = ' + msg.action
       );
       return;
     }
@@ -73,7 +73,7 @@ class Channels extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'Channels.onChannelMessage()',
-        'received event for non-existent channel: ' + channelName,
+        'received event for non-existent channel: ' + channelName
       );
       return;
     }
@@ -161,7 +161,7 @@ class Channels extends EventEmitter {
         throw new ErrorInfo(
           'Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.',
           40000,
-          400,
+          400
         );
       }
       channel.setOptions(channelOptions);
@@ -211,7 +211,7 @@ class Channels extends EventEmitter {
       Utils.valuesArray(this.inProgress, true) as any,
       function (operations: Record<string, unknown>) {
         return !Utils.containsValue(operations, true);
-      },
+      }
     );
   }
 }

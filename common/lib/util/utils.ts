@@ -127,7 +127,7 @@ export function shallowClone(ob: Record<string, unknown>): Record<string, unknow
  */
 export function prototypicalClone(
   ob: Record<string, unknown>,
-  ownProperties: Record<string, unknown>,
+  ownProperties: Record<string, unknown>
 ): Record<string, unknown> {
   class F {}
   F.prototype = ob;
@@ -280,7 +280,7 @@ export const arrForEach = (Array.prototype.forEach as unknown)
 /* Useful when the function may mutate the array */
 export function safeArrForEach<T = unknown>(
   arr: Array<T>,
-  fn: (value: T, index: number, arr: Array<T>) => unknown,
+  fn: (value: T, index: number, arr: Array<T>) => unknown
 ): void {
   return arrForEach(arr.slice(), fn);
 }

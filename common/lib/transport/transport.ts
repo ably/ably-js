@@ -10,7 +10,7 @@ import ConnectionManager, { TransportParams } from './connectionmanager';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
-  transport?: Transport,
+  transport?: Transport
 ) => void;
 
 const actions = ProtocolMessage.Action;
@@ -115,7 +115,7 @@ abstract class Transport extends EventEmitter {
           ': ' +
           ProtocolMessage.stringify(message) +
           '; connectionId = ' +
-          this.connectionManager.connectionId,
+          this.connectionManager.connectionId
       );
     }
     this.onActivity();
@@ -125,7 +125,7 @@ abstract class Transport extends EventEmitter {
         Logger.logAction(
           Logger.LOG_MICRO,
           'Transport.onProtocolMessage()',
-          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId,
+          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId
         );
         this.emit('heartbeat', message.id);
         break;
@@ -160,7 +160,7 @@ abstract class Transport extends EventEmitter {
             Logger.logAction(
               Logger.LOG_ERROR,
               'Transport.onProtocolMessage()',
-              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err),
+              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err)
             );
           }
         });
@@ -173,7 +173,7 @@ abstract class Transport extends EventEmitter {
             this.connectionManager.connectionId +
             '; err = ' +
             Utils.inspect(message.error) +
-            (message.channel ? ', channel: ' + message.channel : ''),
+            (message.channel ? ', channel: ' + message.channel : '')
         );
         if (message.channel === undefined) {
           this.onFatalError(message);
@@ -282,7 +282,7 @@ abstract class Transport extends EventEmitter {
     connectionManager: ConnectionManager,
     auth: Auth,
     transportParams: TransportParams,
-    callback: TryConnectCallback,
+    callback: TryConnectCallback
   ) => void;
   onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
 }

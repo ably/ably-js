@@ -68,7 +68,7 @@ class Channel extends EventEmitter {
 
   history(
     params: RestHistoryParams | null,
-    callback: PaginatedResultCallback<Message>,
+    callback: PaginatedResultCallback<Message>
   ): Promise<PaginatedResult<Message>> | void {
     Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
     /* params and callback are optional; see if params contains the callback */
@@ -99,7 +99,7 @@ class Channel extends EventEmitter {
     new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function (
       body: any,
       headers: Record<string, string>,
-      unpacked?: boolean,
+      unpacked?: boolean
     ) {
       return Message.fromResponseBody(body, options, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>, callback);
@@ -134,7 +134,7 @@ class Channel extends EventEmitter {
       throw new ErrorInfo(
         'The single-argument form of publish() expects a message object or an array of message objects',
         40013,
-        400,
+        400
       );
     }
 
@@ -176,8 +176,8 @@ class Channel extends EventEmitter {
               maxMessageSize +
               ' bytes)',
             40009,
-            400,
-          ),
+            400
+          )
         );
         return;
       }
