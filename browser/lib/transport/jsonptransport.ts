@@ -2,17 +2,14 @@ import * as Utils from '../../../common/lib/util/utils';
 import CometTransport from '../../../common/lib/transport/comettransport';
 import Platform from 'platform';
 import EventEmitter from '../../../common/lib/util/eventemitter';
-import Http from 'platform-http';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
 import Defaults from '../../../common/lib/util/defaults';
 import Logger from '../../../common/lib/util/logger';
 import Auth from '../../../common/lib/client/auth';
 import HttpMethods from '../../../common/constants/HttpMethods';
-import Rest from '../../../common/lib/client/rest';
-import { IHttp, RequestCallback, RequestParams } from '../../../common/types/http';
+import { RequestParams } from '../../../common/types/http';
 import ConnectionManager, { TransportParams } from '../../../common/lib/transport/connectionmanager';
 import { TryConnectCallback } from '../../../common/lib/transport/transport';
-import { StandardCallback } from '../../../common/types/utils';
 import XHRStates from '../../../common/constants/XHRStates';
 
 declare const global: {
@@ -35,8 +32,6 @@ _._ = function (id: string) {
 let idCounter = 1;
 let head: HTMLHeadElement | null = null;
 const shortName = 'jsonp';
-
-let checksInProgress: Array<StandardCallback<boolean>> | null = null;
 
 if (Platform.jsonpSupported) {
   head = document.getElementsByTagName('head')[0];

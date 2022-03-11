@@ -1,11 +1,9 @@
 'use strict';
 import Logger from '../../../common/lib/util/logger';
 import * as BufferUtils from 'platform-bufferutils';
+import crypto from 'crypto';
 
 var Crypto = (function () {
-  var crypto = require('crypto');
-  var util = require('util');
-
   var DEFAULT_ALGORITHM = 'aes';
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
@@ -51,11 +49,6 @@ var Crypto = (function () {
     /* url-safe base64 strings use _ and - instread of / and + */
     return string.replace('_', '/').replace('-', '+');
   }
-
-  /**
-   * Internal: a block containing zeros
-   */
-  var emptyBlock = Buffer.alloc(DEFAULT_BLOCKLENGTH);
 
   /**
    * Internal: obtain the pkcs5 padding string for a given padded length;
@@ -206,8 +199,8 @@ var Crypto = (function () {
   function CBCCipher(params, iv) {
     var algorithm = (this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode);
     var key = (this.key = params.key);
+    // eslint-disable-next-line no-redeclare
     var iv = (this.iv = iv);
-    var key = (this.key = params.key);
     this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
     this.blockLength = iv.length;
   }
