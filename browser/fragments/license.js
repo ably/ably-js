@@ -1,11 +1,8 @@
 const { version } = require('../../package.json');
 
-module.exports = `@license Copyright 2021, Ably
+module.exports = `@license Copyright 2015-2022 Ably Real-time Ltd (ably.com)
 
 Ably JavaScript Library v${version}
 https://github.com/ably/ably-js
-
-Ably Realtime Messaging
-https://www.ably.com
 
 Released under the Apache Licence v2.0`

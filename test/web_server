@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+
+/*
+  Runs a simple web server that runs the mocha.html tests
+  This is useful if you need to run the mocha tests visually
+  via a tunnel to your localhost server
+*/
+
+"use strict";
+
+var express = require('express'),
+    cors = require('cors');
+
+var server = express();
+
+/*
+ * This environment varuable is used to let this script know that tests are
+ * running in a playwright context. When truthy, a different html document is
+ * returned on 'GET /' and console logging is skipped.
+ */
+const playwrightTest = !!process.env.PLAYWRIGHT_TEST;
+
+server.use(function(req, res, next) {
+  if (!playwrightTest) console.log('%s %s %s', req.method, req.url, req.path);
+  next();
+});
+
+server.use(cors());
+
+server.get('/', function(req, res) {
+	if (playwrightTest) {
+	  res.redirect('/playwright.html');
+	} else {
+	  res.redirect('/mocha.html');
+	}
+});
+
+
+/**
+ * This is a rather hacky workaround since crypto-js base64 depends on node_modules/crypto-js/build/core but will request the file from the root level of the server.
+ * I'm leaving this here for now in lieu of a more elegant solution as the 'real' solution is to improve the way we use dependencies in these tests.
+ */
+server.get('/core.js', function (req, res) {
+  res.redirect('/node_modules/crypto-js/build/core.js');
+});
+
+server.use('/node_modules', express.static(__dirname + '/../node_modules'));
+server.use('/test', express.static(__dirname));
+server.use('/browser', express.static(__dirname + '/../browser'));
+server.use(express.static(__dirname));
+
+var port = process.env.PORT || 3000;
+server.listen(port);
+
+console.log("Mocha test server listening on http://localhost:3000/");

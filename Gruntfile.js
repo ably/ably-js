@@ -48,7 +48,9 @@ module.exports = function (grunt) {
 		dirs: dirs,
 		pkgVersion: grunt.file.readJSON('package.json').version,
 		webpack: {
-			config: webpackConfig
+			all: Object.values(webpackConfig),
+			node: webpackConfig.node,
+			browser: [webpackConfig.browser, webpackConfig.browserMin]
 		}
 	};
 
@@ -90,7 +92,7 @@ module.exports = function (grunt) {
 	grunt.registerTask('checkGitSubmodules',
 		'Check, if git submodules are properly installed', function (){
 			var done = this.async();
-			var pathToSubmodule = path.join(__dirname, 'spec', 'common', 'ably-common');
+			var pathToSubmodule = path.join(__dirname, 'test', 'common', 'ably-common');
 			fs.stat(pathToSubmodule, function (error, stats){
 				if(error) {
 					grunt.log.writeln('%s : while checking submodule path!', error.message);
@@ -110,7 +112,17 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('build', [
 		'checkGitSubmodules',
-		'webpack'
+		'webpack:all'
+	]);
+
+	grunt.registerTask('build:node', [
+		'checkGitSubmodules',
+		'webpack:node'
+	]);
+
+	grunt.registerTask('build:browser', [
+		'checkGitSubmodules',
+		'webpack:browser'
 	]);
 
 	grunt.registerTask('check-closure-compiler', [
@@ -120,34 +132,18 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('all', ['build', 'check-closure-compiler', 'requirejs']);
 
-	grunt.loadTasks('spec/tasks');
+	grunt.loadTasks('test/tasks');
 
-	var browsers = grunt.option('browsers') || 'default';
-	var optionsDescription = '\nOptions:\n  --browsers [browsers] e.g. Chrome,PhantomJS (Firefox is default)';
 
-	grunt.registerTask('test',
-		'Concat files and run the entire test suite (Jasmine with node & Karma in a browser)' + optionsDescription,
-		['build', 'mocha', 'karma:' + browsers]
-	);
-
-	grunt.registerTask('test:karma',
-		'Run the Karma test suite' + optionsDescription,
-		['build', 'karma:' + browsers]
-	);
-
-	grunt.registerTask('test:karma:run',
-		'Concat files and then run the Karma test runner.  Assumes a Karma server is running',
-		['build', 'requirejs', 'karma:run']
-	);
-
-	grunt.registerTask('test:mocha',
-		'Concat files and then run the Mocha specs\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-		['build', 'mocha']
+	grunt.registerTask('test', ['test:node']);
+	grunt.registerTask('test:node',
+		'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
+		['build:node', 'mocha']
 	);
 
 	grunt.registerTask('test:webserver',
 		'Launch the Mocha test web server on http://localhost:3000/',
-		['build', 'checkGitSubmodules', 'requirejs', 'mocha:webserver']
+		['build:browser', 'checkGitSubmodules', 'mocha:webserver']
 	);
 
 	grunt.registerTask('release:refresh-pkgVersion',
@@ -166,7 +162,7 @@ module.exports = function (grunt) {
 				'package.json',
 				'package-lock.json',
 				'README.md',
-				'spec/support/browser_file_list.js'
+				'test/support/browser_file_list.js'
 			];
 			var cmd = 'git add -A ' + generatedFiles.join(' ');
 			grunt.log.ok("Executing " + cmd);

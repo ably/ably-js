@@ -42,7 +42,7 @@
     "PresenceMessage": true,
     "ProtocolMessage": true,
     "Stats": true,
-    "ConnectionError": true,
+    "ConnectionErrors": true,
     "MessageQueue": true,
     "Protocol": true,
     "ConnectionManager": true,
