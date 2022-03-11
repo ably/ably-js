@@ -2,13 +2,18 @@ module.exports = {
   env: {
     es6: true,
     node: true,
-    browser: true
+    browser: true,
+  },
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    sourceType: "module",
   },
   plugins: [
-    "security"
+    "@typescript-eslint",
+    "security",
   ],
   extends: [
-    "plugin:security/recommended"
+    "plugin:security/recommended",
   ],
   rules: {
     "no-undef": "error",
@@ -17,9 +22,6 @@ module.exports = {
     "eol-last": "error",
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
-    "security/detect-object-injection": "off"
+    "security/detect-object-injection": "off",
   },
-  parserOptions: {
-    sourceType: "module"
-  }
 }
