@@ -14,10 +14,10 @@ import XHRStates from '../../constants/XHRStates';
 /* TODO: can remove once realtime sends protocol message responses for comet errors */
 function shouldBeErrorAction(err: ErrorInfo) {
 	const UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
-	if(err.code) {
-		if(Auth.isTokenErr(err)) return false;
-		if(Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
-		return (err.code >= 40000 && err.code < 50000);
+	if (err.code) {
+		if (Auth.isTokenErr(err)) return false;
+		if (Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+		return err.code >= 40000 && err.code < 50000;
 	} else {
 		/* Likely a network or transport error of some kind. Certainly not fatal to the connection */
 		return false;
@@ -26,17 +26,17 @@ function shouldBeErrorAction(err: ErrorInfo) {
 
 function protocolMessageFromRawError(err: ErrorInfo) {
 	/* err will be either a legacy (non-protocolmessage) comet error response
-		* (which will have an err.code), or a xhr/network error (which won't). */
-	if(shouldBeErrorAction(err)) {
-		return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.ERROR, error: err})];
+	 * (which will have an err.code), or a xhr/network error (which won't). */
+	if (shouldBeErrorAction(err)) {
+		return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.ERROR, error: err })];
 	} else {
-		return [ProtocolMessage.fromValues({action: ProtocolMessage.Action.DISCONNECTED, error: err})];
+		return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.DISCONNECTED, error: err })];
 	}
 }
 
-	/*
-	 * A base comet transport class
-	 */
+/*
+ * A base comet transport class
+ */
 abstract class CometTransport extends Transport {
 	stream: string | boolean;
 	sendRequest: IXHRRequest | null;
@@ -52,14 +52,20 @@ abstract class CometTransport extends Transport {
 
 	constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
 		super(connectionManager, auth, params, /* binary not supported for comet so force JSON protocol */ true);
-		this.stream = ('stream' in params) ? params.stream : true;
+		this.stream = 'stream' in params ? params.stream : true;
 		this.sendRequest = null;
 		this.recvRequest = null;
 		this.pendingCallback = null;
 		this.pendingItems = null;
 	}
 
-	abstract createRequest(uri: string, headers: Record<string, string> | null, params?: Record<string, unknown> | null, body?: unknown, requestMode?: number): IXHRRequest;
+	abstract createRequest(
+		uri: string,
+		headers: Record<string, string> | null,
+		params?: Record<string, unknown> | null,
+		body?: unknown,
+		requestMode?: number
+	): IXHRRequest;
 
 	connect(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
@@ -74,48 +80,58 @@ abstract class CometTransport extends Transport {
 		const connectUri = this.baseUri + 'connect';
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
 		this.auth.getAuthParams((err: Error, authParams: Record<string, any>) => {
-			if(err) {
+			if (err) {
 				this.disconnect(err);
 				return;
 			}
-			if(this.isDisposed) {
+			if (this.isDisposed) {
 				return;
 			}
 			this.authParams = authParams;
 			const connectParams = this.params.getConnectParams(authParams);
-			if('stream' in connectParams) this.stream = connectParams.stream;
-			Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'connectParams:' + Utils.toQueryString(connectParams));
+			if ('stream' in connectParams) this.stream = connectParams.stream;
+			Logger.logAction(
+				Logger.LOG_MINOR,
+				'CometTransport.connect()',
+				'connectParams:' + Utils.toQueryString(connectParams)
+			);
 
 			/* this will be the 'recvRequest' so this connection can stream messages */
 			let preconnected = false;
-			const connectRequest = this.recvRequest = this.createRequest(connectUri, null, connectParams, null, (this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV));
+			const connectRequest = (this.recvRequest = this.createRequest(
+				connectUri,
+				null,
+				connectParams,
+				null,
+				this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV
+			));
 
-			connectRequest.on('data', (data: any) =>  {
-				if(!this.recvRequest) {
+			connectRequest.on('data', (data: any) => {
+				if (!this.recvRequest) {
 					/* the transport was disposed before we connected */
 					return;
 				}
-				if(!preconnected) {
+				if (!preconnected) {
 					preconnected = true;
 					this.emit('preconnect');
 				}
 				this.onData(data);
 			});
 			connectRequest.on('complete', (err: ErrorInfo, _body: unknown, headers: Record<string, string>) => {
-				if(!this.recvRequest) {
+				if (!this.recvRequest) {
 					/* the transport was disposed before we connected */
 					err = err || new ErrorInfo('Request cancelled', 80003, 400);
 				}
 				this.recvRequest = null;
 				/* Connect request may complete without a emitting 'data' event since that is not
 				 * emitted for e.g. a non-streamed error response. Still implies preconnect. */
-				if(!preconnected && !err) {
+				if (!preconnected && !err) {
 					preconnected = true;
 					this.emit('preconnect');
 				}
 				this.onActivity();
-				if(err) {
-					if(err.code) {
+				if (err) {
+					if (err.code) {
 						/* A protocol error received from realtime. TODO: once realtime
 						 * consistendly sends errors wrapped in protocol messages, should be
 						 * able to remove this */
@@ -147,12 +163,16 @@ abstract class CometTransport extends Transport {
 
 	_requestCloseOrDisconnect(closing: boolean): void {
 		const closeOrDisconnectUri = closing ? this.closeUri : this.disconnectUri;
-		if(closeOrDisconnectUri) {
+		if (closeOrDisconnectUri) {
 			const request = this.createRequest(closeOrDisconnectUri, null, this.authParams, null, XHRStates.REQ_SEND);
 
 			request.on('complete', (err: ErrorInfo) => {
-				if(err) {
-					Logger.logAction(Logger.LOG_ERROR, 'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'), 'request returned err = ' + Utils.inspectError(err));
+				if (err) {
+					Logger.logAction(
+						Logger.LOG_ERROR,
+						'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'),
+						'request returned err = ' + Utils.inspectError(err)
+					);
 					this.finish('disconnected', err);
 				}
 			});
@@ -162,9 +182,9 @@ abstract class CometTransport extends Transport {
 
 	dispose(): void {
 		Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
-		if(!this.isDisposed) {
+		if (!this.isDisposed) {
 			this.isDisposed = true;
-			if(this.recvRequest) {
+			if (this.recvRequest) {
 				Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
 				this.recvRequest.abort();
 				this.recvRequest = null;
@@ -180,7 +200,7 @@ abstract class CometTransport extends Transport {
 
 	onConnect(message: ProtocolMessage): void {
 		/* if this transport has been disposed whilst awaiting connection, do nothing */
-		if(this.isDisposed) {
+		if (this.isDisposed) {
 			return;
 		}
 
@@ -189,8 +209,12 @@ abstract class CometTransport extends Transport {
 		const connectionStr = message.connectionKey;
 		Transport.prototype.onConnect.call(this, message);
 
-		const baseConnectionUri =  (this.baseUri as string) + connectionStr;
-		Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey);
+		const baseConnectionUri = (this.baseUri as string) + connectionStr;
+		Logger.logAction(
+			Logger.LOG_MICRO,
+			'CometTransport.onConnect()',
+			'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey
+		);
 		this.sendUri = baseConnectionUri + '/send';
 		this.recvUri = baseConnectionUri + '/recv';
 		this.closeUri = baseConnectionUri + '/close';
@@ -198,7 +222,7 @@ abstract class CometTransport extends Transport {
 	}
 
 	send(message: ProtocolMessage): void {
-		if(this.sendRequest) {
+		if (this.sendRequest) {
 			/* there is a pending send, so queue this message */
 			this.pendingItems = this.pendingItems || [];
 			this.pendingItems.push(message);
@@ -215,7 +239,7 @@ abstract class CometTransport extends Transport {
 	sendAnyPending(): void {
 		const pendingItems = this.pendingItems;
 
-		if(!pendingItems) {
+		if (!pendingItems) {
 			return;
 		}
 
@@ -224,17 +248,28 @@ abstract class CometTransport extends Transport {
 	}
 
 	sendItems(items: Array<ProtocolMessage>): void {
-		const sendRequest = this.sendRequest = this.createRequest(this.sendUri as string, null, this.authParams, this.encodeRequest(items), XHRStates.REQ_SEND);
+		const sendRequest = (this.sendRequest = this.createRequest(
+			this.sendUri as string,
+			null,
+			this.authParams,
+			this.encodeRequest(items),
+			XHRStates.REQ_SEND
+		));
 
 		sendRequest.on('complete', (err: ErrorInfo, data: string) => {
-			if(err) Logger.logAction(Logger.LOG_ERROR, 'CometTransport.sendItems()', 'on complete: err = ' + Utils.inspectError(err));
+			if (err)
+				Logger.logAction(
+					Logger.LOG_ERROR,
+					'CometTransport.sendItems()',
+					'on complete: err = ' + Utils.inspectError(err)
+				);
 			this.sendRequest = null;
 
 			/* the result of the request, even if a nack, is usually a protocol response
 			 * contained in the data. An err is anomolous, and indicates some issue with the
 			 * network,transport, or connection */
-			if(err) {
-				if(err.code) {
+			if (err) {
+				if (err.code) {
 					/* A protocol error received from realtime. TODO: once realtime
 					 * consistendly sends errors wrapped in protocol messages, should be
 					 * able to remove this */
@@ -247,16 +282,16 @@ abstract class CometTransport extends Transport {
 				return;
 			}
 
-			if(data) {
+			if (data) {
 				this.onData(data);
 			}
 
-			if(this.pendingItems) {
+			if (this.pendingItems) {
 				Utils.nextTick(() => {
 					/* If there's a new send request by now, any pending items will have
 					 * been picked up by that; any new ones added since then will be
 					 * picked up after that one completes */
-					if(!this.sendRequest) {
+					if (!this.sendRequest) {
 						this.sendAnyPending();
 					}
 				});
@@ -267,14 +302,18 @@ abstract class CometTransport extends Transport {
 
 	recv(): void {
 		/* do nothing if there is an active request, which might be streaming */
-		if(this.recvRequest)
-			return;
+		if (this.recvRequest) return;
 
 		/* If we're no longer connected, do nothing */
-		if(!this.isConnected)
-			return;
+		if (!this.isConnected) return;
 
-		const recvRequest = this.recvRequest = this.createRequest(this.recvUri as string, null, this.authParams, null, (this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL));
+		const recvRequest = (this.recvRequest = this.createRequest(
+			this.recvUri as string,
+			null,
+			this.authParams,
+			null,
+			this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL
+		));
 
 		recvRequest.on('data', (data: string) => {
 			this.onData(data);
@@ -284,8 +323,8 @@ abstract class CometTransport extends Transport {
 			/* A request completing must be considered activity, as realtime sends
 			 * heartbeats every 15s since a request began, not every 15s absolutely */
 			this.onActivity();
-			if(err) {
-				if(err.code) {
+			if (err) {
+				if (err.code) {
 					/* A protocol error received from realtime. TODO: once realtime
 					 * consistently sends errors wrapped in protocol messages, should be
 					 * able to remove this */
@@ -307,11 +346,14 @@ abstract class CometTransport extends Transport {
 	onData(responseData: string | Record<string, any>): void {
 		try {
 			const items = this.decodeResponse(responseData);
-			if(items && items.length)
-				for(let i = 0; i < items.length; i++)
-					this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
+			if (items && items.length)
+				for (let i = 0; i < items.length; i++) this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
 		} catch (e) {
-			Logger.logAction(Logger.LOG_ERROR, 'CometTransport.onData()', 'Unexpected exception handing channel event: ' + (e as Error).stack);
+			Logger.logAction(
+				Logger.LOG_ERROR,
+				'CometTransport.onData()',
+				'Unexpected exception handing channel event: ' + (e as Error).stack
+			);
 		}
 	}
 
@@ -320,8 +362,7 @@ abstract class CometTransport extends Transport {
 	}
 
 	decodeResponse(responseData: string | Record<string, any>): Record<string, any> {
-		if(typeof(responseData) == 'string')
-			return JSON.parse(responseData);
+		if (typeof responseData == 'string') return JSON.parse(responseData);
 		return responseData;
 	}
 
@@ -332,8 +373,8 @@ abstract class CometTransport extends Transport {
 	 * comet transports the same and do it for all of them. So we send the AUTH
 	 * instead, and don't need to abort the recv */
 	onAuthUpdated = (tokenDetails: API.Types.TokenDetails): void => {
-		this.authParams = {access_token: tokenDetails.token};
-	}
+		this.authParams = { access_token: tokenDetails.token };
+	};
 }
 
 export default CometTransport;

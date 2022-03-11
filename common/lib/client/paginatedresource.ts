@@ -13,16 +13,14 @@ function getRelParams(linkUrl: string) {
 }
 
 function parseRelLinks(linkHeader: string | Array<string>) {
-	if(typeof(linkHeader) == 'string')
-		linkHeader = linkHeader.split(',');
+	if (typeof linkHeader == 'string') linkHeader = linkHeader.split(',');
 
 	const relParams: Record<string, Record<string, string>> = {};
-	for(let i = 0; i < linkHeader.length; i++) {
+	for (let i = 0; i < linkHeader.length; i++) {
 		const linkMatch = linkHeader[i].match(/^\s*<(.+)>;\s*rel="(\w+)"$/);
-		if(linkMatch) {
+		if (linkMatch) {
 			const params = getRelParams(linkMatch[1]);
-			if(params)
-				relParams[linkMatch[2]] = params;
+			if (params) relParams[linkMatch[2]] = params;
 		}
 	}
 	return relParams;
@@ -30,9 +28,9 @@ function parseRelLinks(linkHeader: string | Array<string>) {
 
 function returnErrOnly(err: ErrorInfo, body: unknown, useHPR?: boolean) {
 	/* If using httpPaginatedResponse, errors from Ably are returned as part of
-		* the HPR, only do callback(err) for network errors etc. which don't
-		* return a body and/or have no ably-originated error code (non-numeric
-		* error codes originate from node) */
+	 * the HPR, only do callback(err) for network errors etc. which don't
+	 * return a body and/or have no ably-originated error code (non-numeric
+	 * error codes originate from node) */
 	return !(useHPR && (body || typeof err.code === 'number'));
 }
 
@@ -44,7 +42,14 @@ class PaginatedResource {
 	bodyHandler: BodyHandler;
 	useHttpPaginatedResponse: boolean;
 
-	constructor(rest: Rest, path: string, headers: Record<string, string>, envelope: Utils.Format | undefined, bodyHandler: BodyHandler, useHttpPaginatedResponse?: boolean) {
+	constructor(
+		rest: Rest,
+		path: string,
+		headers: Record<string, string>,
+		envelope: Utils.Format | undefined,
+		bodyHandler: BodyHandler,
+		useHttpPaginatedResponse?: boolean
+	) {
 		this.rest = rest;
 		this.path = path;
 		this.headers = headers;
@@ -54,62 +59,111 @@ class PaginatedResource {
 	}
 
 	get<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
-		Resource.get(this.rest, this.path, this.headers, params, this.envelope, (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
-			this.handlePage(err, body, headers, unpacked, statusCode, callback);
-		});
+		Resource.get(
+			this.rest,
+			this.path,
+			this.headers,
+			params,
+			this.envelope,
+			(err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+				this.handlePage(err, body, headers, unpacked, statusCode, callback);
+			}
+		);
 	}
 
 	delete<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
-		Resource.delete(this.rest, this.path, this.headers, params, this.envelope, (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
-			this.handlePage(err, body, headers, unpacked, statusCode, callback);
-		});
+		Resource.delete(
+			this.rest,
+			this.path,
+			this.headers,
+			params,
+			this.envelope,
+			(err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+				this.handlePage(err, body, headers, unpacked, statusCode, callback);
+			}
+		);
 	}
 
 	post<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-		Resource.post(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
-			if(callback) {
-				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+		Resource.post(
+			this.rest,
+			this.path,
+			body,
+			this.headers,
+			params,
+			this.envelope,
+			(err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+				if (callback) {
+					this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+				}
 			}
-		});
+		);
 	}
 
 	put<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-		Resource.put(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
-			if(callback) {
-				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+		Resource.put(
+			this.rest,
+			this.path,
+			body,
+			this.headers,
+			params,
+			this.envelope,
+			(err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+				if (callback) {
+					this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+				}
 			}
-		});
+		);
 	}
 
 	patch<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-		Resource.patch(this.rest, this.path, body, this.headers, params, this.envelope, (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
-			if(callback) {
-				this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+		Resource.patch(
+			this.rest,
+			this.path,
+			body,
+			this.headers,
+			params,
+			this.envelope,
+			(err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+				if (callback) {
+					this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+				}
 			}
-		});
+		);
 	}
 
-	handlePage<T>(err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number, callback: PaginatedResultCallback<T>): void {
-		if(err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
-			Logger.logAction(Logger.LOG_ERROR, 'PaginatedResource.handlePage()', 'Unexpected error getting resource: err = ' + Utils.inspectError(err));
+	handlePage<T>(
+		err: ErrorInfo,
+		body: unknown,
+		headers: Record<string, string>,
+		unpacked: boolean,
+		statusCode: number,
+		callback: PaginatedResultCallback<T>
+	): void {
+		if (err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
+			Logger.logAction(
+				Logger.LOG_ERROR,
+				'PaginatedResource.handlePage()',
+				'Unexpected error getting resource: err = ' + Utils.inspectError(err)
+			);
 			callback(err);
 			return;
 		}
 		let items, linkHeader, relParams;
 		try {
 			items = this.bodyHandler(body, headers, unpacked);
-		} catch(e) {
+		} catch (e) {
 			/* If we got an error, the failure to parse the body is almost certainly
 			 * due to that, so callback with that in preference over the parse error */
 			callback(err || e);
 			return;
 		}
 
-		if(headers && (linkHeader = (headers['Link'] || headers['link']))) {
+		if (headers && (linkHeader = headers['Link'] || headers['link'])) {
 			relParams = parseRelLinks(linkHeader);
 		}
 
-		if(this.useHttpPaginatedResponse) {
+		if (this.useHttpPaginatedResponse) {
 			callback(null, new HttpPaginatedResponse(this, items, headers, statusCode, relParams, err));
 		} else {
 			callback(null, new PaginatedResult(this, items, relParams));
@@ -117,7 +171,7 @@ class PaginatedResource {
 	}
 }
 
-export class PaginatedResult <T> {
+export class PaginatedResult<T> {
 	resource: PaginatedResource;
 	items: T[];
 	first?: (results: PaginatedResultCallback<T>) => void;
@@ -130,36 +184,40 @@ export class PaginatedResult <T> {
 		this.resource = resource;
 		this.items = items;
 
-		if(relParams) {
-			if('first' in relParams) {
+		if (relParams) {
+			if ('first' in relParams) {
 				this.first = (callback: (result?: ErrorInfo | null) => void) => {
-					if(!callback && this.resource.rest.options.promises) {
+					if (!callback && this.resource.rest.options.promises) {
 						return Utils.promisify(this, 'first', []);
 					}
 					this.get(relParams.first, callback);
 				};
 			}
-			if('current' in relParams) {
+			if ('current' in relParams) {
 				this.current = (callback: (results?: ErrorInfo | null) => void) => {
-					if(!callback && this.resource.rest.options.promises) {
+					if (!callback && this.resource.rest.options.promises) {
 						return Utils.promisify(this, 'current', []);
 					}
 					this.get(relParams.current, callback);
 				};
 			}
 			this.next = (callback: (results?: ErrorInfo | null) => void) => {
-				if(!callback && this.resource.rest.options.promises) {
+				if (!callback && this.resource.rest.options.promises) {
 					return Utils.promisify(this, 'next', []);
 				}
-				if('next' in relParams) {
+				if ('next' in relParams) {
 					this.get(relParams.next, callback);
 				} else {
 					callback(null);
 				}
 			};
 
-			this.hasNext = function() { return ('next' in relParams) };
-			this.isLast = () => { return !this.hasNext?.(); }
+			this.hasNext = function () {
+				return 'next' in relParams;
+			};
+			this.isLast = () => {
+				return !this.hasNext?.();
+			};
 		}
 	}
 
@@ -167,9 +225,16 @@ export class PaginatedResult <T> {
 	 * the rest of a multipage set of results can always be done with GET */
 	get(params: any, callback: PaginatedResultCallback<T>): void {
 		const res = this.resource;
-		Resource.get(res.rest, res.path, res.headers, params, res.envelope, function(err: ErrorInfo, body: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
-			res.handlePage(err, body, headers, unpacked, statusCode, callback);
-		});
+		Resource.get(
+			res.rest,
+			res.path,
+			res.headers,
+			params,
+			res.envelope,
+			function (err: ErrorInfo, body: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
+				res.handlePage(err, body, headers, unpacked, statusCode, callback);
+			}
+		);
 	}
 }
 
@@ -180,7 +245,14 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
 	errorCode?: number | null;
 	errorMessage?: string;
 
-	constructor(resource: PaginatedResource, items: T[], headers: Record<string, string>, statusCode: number, relParams: any, err: ErrorInfo) {
+	constructor(
+		resource: PaginatedResource,
+		items: T[],
+		headers: Record<string, string>,
+		statusCode: number,
+		relParams: any,
+		err: ErrorInfo
+	) {
 		super(resource, items, relParams);
 		this.statusCode = statusCode;
 		this.success = statusCode < 300 && statusCode >= 200;
@@ -190,14 +262,14 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
 	}
 
 	toJSON() {
-	  return {
-	    items: this.items,
-	    statusCode: this.statusCode,
-	    success: this.success,
-	    headers: this.headers,
-	    errorCode: this.errorCode,
-	    errorMessage: this.errorMessage,
-	  };
+		return {
+			items: this.items,
+			statusCode: this.statusCode,
+			success: this.success,
+			headers: this.headers,
+			errorCode: this.errorCode,
+			errorMessage: this.errorMessage
+		};
 	}
 }
 

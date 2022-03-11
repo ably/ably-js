@@ -27,7 +27,7 @@ interface RealtimeHistoryParams {
 	from_serial?: number | null;
 }
 
-const noop = function() {};
+const noop = function () {};
 
 function memberKey(item: PresenceMessage) {
 	return item.clientId + ':' + item.connectionId;
@@ -40,16 +40,16 @@ function getClientId(realtimePresence: RealtimePresence) {
 function isAnonymousOrWildcard(realtimePresence: RealtimePresence) {
 	const realtime = realtimePresence.channel.realtime;
 	/* If not currently connected, we can't assume that we're an anonymous
-		* client, as realtime may inform us of our clientId in the CONNECTED
-		* message. So assume we're not anonymous and leave it to realtime to
-		* return an error if we are */
+	 * client, as realtime may inform us of our clientId in the CONNECTED
+	 * message. So assume we're not anonymous and leave it to realtime to
+	 * return an error if we are */
 	const clientId = realtime.auth.clientId;
-	return (!clientId || (clientId === '*')) && realtime.connection.state === 'connected';
+	return (!clientId || clientId === '*') && realtime.connection.state === 'connected';
 }
 
 /* Callback is called only in the event of an error */
 function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: () => void) {
-	switch(channel.state) {
+	switch (channel.state) {
 		case 'attached':
 		case 'suspended':
 			action();
@@ -58,8 +58,8 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
 		case 'detached':
 		case 'detaching':
 		case 'attaching':
-			channel.attach(function(err: Error) {
-				if(err) callback(err);
+			channel.attach(function (err: Error) {
+				if (err) callback(err);
 				else action();
 			});
 			break;
@@ -70,24 +70,23 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
 
 function newerThan(item: PresenceMessage, existing: PresenceMessage) {
 	/* RTP2b1: if either is synthesised, compare by timestamp */
-	if(item.isSynthesized() || existing.isSynthesized()) {
+	if (item.isSynthesized() || existing.isSynthesized()) {
 		return (item.timestamp as number) > (existing.timestamp as number);
 	}
 
 	/* RTP2b2 */
 	const itemOrderings = item.parseId(),
 		existingOrderings = existing.parseId();
-	if(itemOrderings.msgSerial === existingOrderings.msgSerial) {
+	if (itemOrderings.msgSerial === existingOrderings.msgSerial) {
 		return itemOrderings.index > existingOrderings.index;
 	} else {
 		return itemOrderings.msgSerial > existingOrderings.msgSerial;
 	}
 }
 
-
 class RealtimePresence extends Presence {
 	channel: RealtimeChannel;
-	pendingPresence: { presence: PresenceMessage, callback: ErrCallback }[];
+	pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
 	syncComplete: boolean;
 	members: PresenceMap;
 	_myMembers: PresenceMap;
@@ -105,14 +104,14 @@ class RealtimePresence extends Presence {
 	}
 
 	enter(data: unknown, callback: ErrCallback): void | Promise<void> {
-		if(isAnonymousOrWildcard(this)) {
+		if (isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
 		}
 		return this._enterOrUpdateClient(undefined, data, 'enter', callback);
 	}
 
 	update(data: unknown, callback: ErrCallback): void | Promise<void> {
-		if(isAnonymousOrWildcard(this)) {
+		if (isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
 		}
 		return this._enterOrUpdateClient(undefined, data, 'update', callback);
@@ -126,13 +125,18 @@ class RealtimePresence extends Presence {
 		return this._enterOrUpdateClient(clientId, data, 'update', callback);
 	}
 
-	_enterOrUpdateClient(clientId: string | undefined, data: unknown, action: string, callback: ErrCallback): void | Promise<void> {
+	_enterOrUpdateClient(
+		clientId: string | undefined,
+		data: unknown,
+		action: string,
+		callback: ErrCallback
+	): void | Promise<void> {
 		if (!callback) {
-			if (typeof(data)==='function') {
+			if (typeof data === 'function') {
 				callback = data as ErrCallback;
 				data = null;
 			} else {
-				if(this.channel.realtime.options.promises) {
+				if (this.channel.realtime.options.promises) {
 					return Utils.promisify(this, '_enterOrUpdateClient', arguments);
 				}
 				callback = noop;
@@ -140,17 +144,20 @@ class RealtimePresence extends Presence {
 		}
 
 		const channel = this.channel;
-		if(!channel.connectionManager.activeState()) {
+		if (!channel.connectionManager.activeState()) {
 			callback(channel.connectionManager.getError());
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.' + action + 'Client()',
-			'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this)));
+		Logger.logAction(
+			Logger.LOG_MICRO,
+			'RealtimePresence.' + action + 'Client()',
+			'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
+		);
 
 		const presence = PresenceMessage.fromValues({
-			action : action,
-			data   : data
+			action: action,
+			data: data
 		});
 		if (clientId) {
 			presence.clientId = clientId;
@@ -161,7 +168,7 @@ class RealtimePresence extends Presence {
 				callback(err);
 				return;
 			}
-			switch(channel.state) {
+			switch (channel.state) {
 				case 'attached':
 					channel.sendPresence(presence, callback);
 					break;
@@ -170,8 +177,8 @@ class RealtimePresence extends Presence {
 					channel.attach();
 				case 'attaching':
 					this.pendingPresence.push({
-						presence : presence,
-						callback : callback
+						presence: presence,
+						callback: callback
 					});
 					break;
 				default:
@@ -183,7 +190,7 @@ class RealtimePresence extends Presence {
 	}
 
 	leave(data: unknown, callback: ErrCallback): void | Promise<void> {
-		if(isAnonymousOrWildcard(this)) {
+		if (isAnonymousOrWildcard(this)) {
 			throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
 		}
 		return this.leaveClient(undefined, data, callback);
@@ -191,11 +198,11 @@ class RealtimePresence extends Presence {
 
 	leaveClient(clientId?: string, data?: unknown, callback?: ErrCallback): void | Promise<void> {
 		if (!callback) {
-			if (typeof(data)==='function') {
+			if (typeof data === 'function') {
 				callback = data as ErrCallback;
 				data = null;
 			} else {
-				if(this.channel.realtime.options.promises) {
+				if (this.channel.realtime.options.promises) {
 					return Utils.promisify(this, 'leaveClient', arguments);
 				}
 				callback = noop;
@@ -203,26 +210,32 @@ class RealtimePresence extends Presence {
 		}
 
 		const channel = this.channel;
-		if(!channel.connectionManager.activeState()) {
+		if (!channel.connectionManager.activeState()) {
 			callback?.(channel.connectionManager.getError());
 			return;
 		}
 
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.leaveClient()', 'leaving; channel = ' + this.channel.name + ', client = ' + clientId);
+		Logger.logAction(
+			Logger.LOG_MICRO,
+			'RealtimePresence.leaveClient()',
+			'leaving; channel = ' + this.channel.name + ', client = ' + clientId
+		);
 		const presence = PresenceMessage.fromValues({
-			action : 'leave',
-			data   : data
+			action: 'leave',
+			data: data
 		});
-		if (clientId) { presence.clientId = clientId; }
+		if (clientId) {
+			presence.clientId = clientId;
+		}
 
-		switch(channel.state) {
+		switch (channel.state) {
 			case 'attached':
 				channel.sendPresence(presence, callback);
 				break;
 			case 'attaching':
 				this.pendingPresence.push({
-					presence : presence,
-					callback : callback
+					presence: presence,
+					callback: callback
 				});
 				break;
 			case 'initialized':
@@ -240,15 +253,14 @@ class RealtimePresence extends Presence {
 	// Return type is any to avoid conflict with base Presence class
 	get(this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): any {
 		const args = Array.prototype.slice.call(arguments);
-		if(args.length == 1 && typeof(args[0]) == 'function')
-			args.unshift(null);
+		if (args.length == 1 && typeof args[0] == 'function') args.unshift(null);
 
 		params = args[0] as RealtimePresenceParams;
-	    	callback = args[1] as StandardCallback<PresenceMessage[]>;
-	      	const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
+		callback = args[1] as StandardCallback<PresenceMessage[]>;
+		const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
-		if(!callback) {
-			if(this.channel.realtime.options.promises) {
+		if (!callback) {
+			if (this.channel.realtime.options.promises) {
 				return Utils.promisify(this, 'get', args);
 			}
 			callback = noop;
@@ -259,13 +271,15 @@ class RealtimePresence extends Presence {
 		}
 
 		/* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
-		if(this.channel.state === 'suspended') {
-			if(waitForSync) {
-				callback(ErrorInfo.fromValues({
-					statusCode: 400,
-					code: 91005,
-					message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
-				}));
+		if (this.channel.state === 'suspended') {
+			if (waitForSync) {
+				callback(
+					ErrorInfo.fromValues({
+						statusCode: 400,
+						code: 91005,
+						message: 'Presence state is out of sync due to channel being in the SUSPENDED state'
+					})
+				);
 			} else {
 				returnMembers(this.members);
 			}
@@ -274,8 +288,8 @@ class RealtimePresence extends Presence {
 
 		waitAttached(this.channel, callback, () => {
 			const members = this.members;
-			if(waitForSync) {
-				members.waitSync(function() {
+			if (waitForSync) {
+				members.waitSync(function () {
 					returnMembers(members);
 				});
 			} else {
@@ -284,27 +298,36 @@ class RealtimePresence extends Presence {
 		});
 	}
 
-	history(params: RealtimeHistoryParams | null, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PaginatedResult<PresenceMessage>> {
+	history(
+		params: RealtimeHistoryParams | null,
+		callback: PaginatedResultCallback<PresenceMessage>
+	): void | Promise<PaginatedResult<PresenceMessage>> {
 		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined) {
-			if(typeof(params) == 'function') {
+		if (callback === undefined) {
+			if (typeof params == 'function') {
 				callback = params;
 				params = null;
 			} else {
-				if(this.channel.realtime.options.promises) {
+				if (this.channel.realtime.options.promises) {
 					return Utils.promisify(this, 'history', [params, callback]);
 				}
 				callback = noop;
 			}
 		}
 
-		if(params && params.untilAttach) {
-			if(this.channel.state === 'attached') {
+		if (params && params.untilAttach) {
+			if (this.channel.state === 'attached') {
 				delete params.untilAttach;
 				params.from_serial = this.channel.properties.attachSerial;
 			} else {
-				callback(new ErrorInfo("option untilAttach requires the channel to be attached, was: " + this.channel.state, 40000, 400));
+				callback(
+					new ErrorInfo(
+						'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
+						40000,
+						400
+					)
+				);
 			}
 		}
 
@@ -312,43 +335,49 @@ class RealtimePresence extends Presence {
 	}
 
 	setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
-		Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.setPresence()', 'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial);
+		Logger.logAction(
+			Logger.LOG_MICRO,
+			'RealtimePresence.setPresence()',
+			'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial
+		);
 		let syncCursor, match;
-		const members = this.members, myMembers = this._myMembers,
-			broadcastMessages = [], connId = this.channel.connectionManager.connectionId;
+		const members = this.members,
+			myMembers = this._myMembers,
+			broadcastMessages = [],
+			connId = this.channel.connectionManager.connectionId;
 
-		if(isSync) {
+		if (isSync) {
 			this.members.startSync();
-			if(syncChannelSerial && (match = syncChannelSerial.match(/^[\w-]+:(.*)$/))) {
+			if (syncChannelSerial && (match = syncChannelSerial.match(/^[\w-]+:(.*)$/))) {
 				syncCursor = match[1];
 			}
 		}
 
-		for(let i = 0; i < presenceSet.length; i++) {
+		for (let i = 0; i < presenceSet.length; i++) {
 			const presence = PresenceMessage.fromValues(presenceSet[i]);
-			switch(presence.action) {
+			switch (presence.action) {
 				case 'leave':
-					if(members.remove(presence)) {
+					if (members.remove(presence)) {
 						broadcastMessages.push(presence);
 					}
-					if(presence.connectionId === connId && !presence.isSynthesized()) {
+					if (presence.connectionId === connId && !presence.isSynthesized()) {
 						myMembers.remove(presence);
 					}
 					break;
 				case 'enter':
 				case 'present':
 				case 'update':
-					if(members.put(presence)) {
+					if (members.put(presence)) {
 						broadcastMessages.push(presence);
 					}
-					if(presence.connectionId === connId) {
+					if (presence.connectionId === connId) {
 						myMembers.put(presence);
 					}
 					break;
 			}
 		}
 		/* if this is the last (or only) message in a sequence of sync updates, end the sync */
-		if(isSync && !syncCursor) {
+		if (isSync && !syncCursor) {
 			members.endSync();
 			/* RTP5c2: re-enter our own members if they haven't shown up in the sync */
 			this._ensureMyMembersPresent();
@@ -357,16 +386,20 @@ class RealtimePresence extends Presence {
 		}
 
 		/* broadcast to listeners */
-		for(let i = 0; i < broadcastMessages.length; i++) {
+		for (let i = 0; i < broadcastMessages.length; i++) {
 			const presence = broadcastMessages[i];
 			this.subscriptions.emit(presence.action as string, presence);
 		}
 	}
 
 	onAttached(hasPresence?: boolean): void {
-		Logger.logAction(Logger.LOG_MINOR, 'RealtimePresence.onAttached()', 'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence);
+		Logger.logAction(
+			Logger.LOG_MINOR,
+			'RealtimePresence.onAttached()',
+			'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence
+		);
 
-		if(hasPresence) {
+		if (hasPresence) {
 			this.members.startSync();
 		} else {
 			this._synthesizeLeaves(this.members.values());
@@ -378,12 +411,16 @@ class RealtimePresence extends Presence {
 		const pendingPresence = this.pendingPresence,
 			pendingPresCount = pendingPresence.length;
 
-		if(pendingPresCount) {
+		if (pendingPresCount) {
 			this.pendingPresence = [];
 			const presenceArray = [];
 			const multicaster = Multicaster.create();
-			Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.onAttached', 'sending ' + pendingPresCount + ' queued presence messages');
-			for(let i = 0; i < pendingPresCount; i++) {
+			Logger.logAction(
+				Logger.LOG_MICRO,
+				'RealtimePresence.onAttached',
+				'sending ' + pendingPresCount + ' queued presence messages'
+			);
+			for (let i = 0; i < pendingPresCount; i++) {
 				const event = pendingPresence[i];
 				presenceArray.push(event.presence);
 				multicaster.push(event.callback);
@@ -393,7 +430,7 @@ class RealtimePresence extends Presence {
 	}
 
 	actOnChannelState(state: string, hasPresence?: boolean, err?: ErrorInfo | null): void {
-		switch(state) {
+		switch (state) {
 			case 'attached':
 				this.onAttached(hasPresence);
 				break;
@@ -401,7 +438,7 @@ class RealtimePresence extends Presence {
 			case 'failed':
 				this._clearMyMembers();
 				this.members.clear();
-				/* falls through */
+			/* falls through */
 			case 'suspended':
 				this.failPendingPresence(err);
 				break;
@@ -409,12 +446,16 @@ class RealtimePresence extends Presence {
 	}
 
 	failPendingPresence(err?: ErrorInfo | null): void {
-		if(this.pendingPresence.length) {
-			Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.failPendingPresence', 'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err));
-			for(let i = 0; i < this.pendingPresence.length; i++)
+		if (this.pendingPresence.length) {
+			Logger.logAction(
+				Logger.LOG_MINOR,
+				'RealtimeChannel.failPendingPresence',
+				'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err)
+			);
+			for (let i = 0; i < this.pendingPresence.length; i++)
 				try {
 					this.pendingPresence[i].callback(err);
-				} catch(e) {}
+				} catch (e) {}
 			this.pendingPresence = [];
 		}
 	}
@@ -424,9 +465,10 @@ class RealtimePresence extends Presence {
 	}
 
 	_ensureMyMembersPresent(): void {
-		const members = this.members, myMembers = this._myMembers,
+		const members = this.members,
+			myMembers = this._myMembers,
 			reenterCb = (err?: ErrorInfo | null) => {
-				if(err) {
+				if (err) {
 					const msg = 'Presence auto-re-enter failed: ' + err.toString();
 					const wrappedErr = new ErrorInfo(msg, 91004, 400);
 					Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
@@ -434,11 +476,15 @@ class RealtimePresence extends Presence {
 					this.channel.emit('update', change);
 				}
 			};
- 
-		for(const memberKey in myMembers.map) {
-			if(!(memberKey in members.map)) {
+
+		for (const memberKey in myMembers.map) {
+			if (!(memberKey in members.map)) {
 				const entry = myMembers.map[memberKey];
-				Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence._ensureMyMembersPresent()', 'Auto-reentering clientId "' + entry.clientId + '" into the presence set');
+				Logger.logAction(
+					Logger.LOG_MICRO,
+					'RealtimePresence._ensureMyMembersPresent()',
+					'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
+				);
 				this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
 				delete myMembers.map[memberKey];
 			}
@@ -447,7 +493,7 @@ class RealtimePresence extends Presence {
 
 	_synthesizeLeaves(items: PresenceMessage[]): void {
 		const subscriptions = this.subscriptions;
-		Utils.arrForEach(items, function(item) {
+		Utils.arrForEach(items, function (item) {
 			const presence = PresenceMessage.fromValues({
 				action: 'leave',
 				connectionId: item.connectionId,
@@ -463,7 +509,7 @@ class RealtimePresence extends Presence {
 	/* Deprecated */
 	on(...args: unknown[]): void {
 		Logger.deprecated('presence.on', 'presence.subscribe');
-		this.subscribe(...args)
+		this.subscribe(...args);
 	}
 
 	/* Deprecated */
@@ -472,21 +518,21 @@ class RealtimePresence extends Presence {
 		this.unsubscribe(...args);
 	}
 
-	subscribe(..._args: unknown[]/* [event], listener, [callback] */): void | Promise<void> {
+	subscribe(..._args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
 		const args = RealtimeChannel.processListenerArgs(_args);
 		const event = args[0];
 		const listener = args[1];
 		let callback = args[2];
 		const channel = this.channel;
 
-		if(!callback) {
-			if(this.channel.realtime.options.promises) {
+		if (!callback) {
+			if (this.channel.realtime.options.promises) {
 				return Utils.promisify(this, 'subscribe', [event, listener]);
 			}
 			callback = noop;
 		}
 
-		if(channel.state === 'failed') {
+		if (channel.state === 'failed') {
 			callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
 			return;
 		}
@@ -495,7 +541,7 @@ class RealtimePresence extends Presence {
 		channel.attach(callback);
 	}
 
-	unsubscribe(..._args: unknown[]/* [event], listener */): void {
+	unsubscribe(..._args: unknown[] /* [event], listener */): void {
 		const args = RealtimeChannel.processListenerArgs(_args);
 		const event = args[0];
 		const listener = args[1];
@@ -522,11 +568,11 @@ class PresenceMap extends EventEmitter {
 	}
 
 	getClient(clientId: string) {
-		const map = this.map, result = [];
-		for(const key in map) {
+		const map = this.map,
+			result = [];
+		for (const key in map) {
 			const item = map[key];
-			if(item.clientId == clientId && item.action != 'absent')
-				result.push(item);
+			if (item.clientId == clientId && item.action != 'absent') result.push(item);
 		}
 		return result;
 	}
@@ -537,56 +583,56 @@ class PresenceMap extends EventEmitter {
 			connectionId = params && params.connectionId,
 			result = [];
 
-		for(const key in map) {
+		for (const key in map) {
 			const item = map[key];
-			if(item.action === 'absent') continue;
-			if(clientId && clientId != item.clientId) continue;
-			if(connectionId && connectionId != item.connectionId) continue;
+			if (item.action === 'absent') continue;
+			if (clientId && clientId != item.clientId) continue;
+			if (connectionId && connectionId != item.connectionId) continue;
 			result.push(item);
 		}
 		return result;
 	}
 
 	put(item: PresenceMessage) {
-		if(item.action === 'enter' || item.action === 'update') {
+		if (item.action === 'enter' || item.action === 'update') {
 			item = PresenceMessage.fromValues(item);
 			item.action = 'present';
 		}
-		const map = this.map, key = memberKey(item);
+		const map = this.map,
+			key = memberKey(item);
 		/* we've seen this member, so do not remove it at the end of sync */
-		if(this.residualMembers)
-			delete this.residualMembers[key];
+		if (this.residualMembers) delete this.residualMembers[key];
 
 		/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
 		const existingItem = map[key];
-		if(existingItem && !newerThan(item, existingItem)) {
+		if (existingItem && !newerThan(item, existingItem)) {
 			return false;
 		}
 		map[key] = item;
 		return true;
-
 	}
 
 	values() {
-		const map = this.map, result = [];
-		for(const key in map) {
+		const map = this.map,
+			result = [];
+		for (const key in map) {
 			const item = map[key];
-			if(item.action != 'absent')
-				result.push(item);
+			if (item.action != 'absent') result.push(item);
 		}
 		return result;
 	}
 
 	remove(item: PresenceMessage) {
-		const map = this.map, key = memberKey(item);
+		const map = this.map,
+			key = memberKey(item);
 		const existingItem = map[key];
 
-		if(existingItem && !newerThan(item, existingItem)) {
+		if (existingItem && !newerThan(item, existingItem)) {
 			return false;
 		}
 
 		/* RTP2f */
-		if(this.syncInProgress) {
+		if (this.syncInProgress) {
 			item = PresenceMessage.fromValues(item);
 			item.action = 'absent';
 			map[key] = item;
@@ -598,31 +644,41 @@ class PresenceMap extends EventEmitter {
 	}
 
 	startSync() {
-		const map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.startSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
+		const map = this.map,
+			syncInProgress = this.syncInProgress;
+		Logger.logAction(
+			Logger.LOG_MINOR,
+			'PresenceMap.startSync()',
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+		);
 		/* we might be called multiple times while a sync is in progress */
-		if(!this.syncInProgress) {
+		if (!this.syncInProgress) {
 			this.residualMembers = Utils.copy(map);
 			this.setInProgress(true);
 		}
 	}
 
 	endSync() {
-		const map = this.map, syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.endSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
-		if(syncInProgress) {
+		const map = this.map,
+			syncInProgress = this.syncInProgress;
+		Logger.logAction(
+			Logger.LOG_MINOR,
+			'PresenceMap.endSync()',
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+		);
+		if (syncInProgress) {
 			/* we can now strip out the ABSENT members, as we have
 			 * received all of the out-of-order sync messages */
-			for(const memberKey in map) {
+			for (const memberKey in map) {
 				const entry = map[memberKey];
-				if(entry.action === 'absent') {
+				if (entry.action === 'absent') {
 					delete map[memberKey];
 				}
 			}
 			/* any members that were present at the start of the sync,
 			 * and have not been seen in sync, can be removed, and leave events emitted */
 			this.presence._synthesizeLeaves(Utils.valuesArray(this.residualMembers as Record<string, PresenceMessage>));
-			for(const memberKey in this.residualMembers) {
+			for (const memberKey in this.residualMembers) {
 				delete map[memberKey];
 			}
 			this.residualMembers = null;
@@ -635,8 +691,12 @@ class PresenceMap extends EventEmitter {
 
 	waitSync(callback: () => void) {
 		const syncInProgress = this.syncInProgress;
-		Logger.logAction(Logger.LOG_MINOR, 'PresenceMap.waitSync()', 'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress);
-		if(!syncInProgress) {
+		Logger.logAction(
+			Logger.LOG_MINOR,
+			'PresenceMap.waitSync()',
+			'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
+		);
+		if (!syncInProgress) {
 			callback();
 			return;
 		}

@@ -47,17 +47,16 @@ class MessageQueue extends EventEmitter {
 			throw new Error('MessageQueue.completeMessages(): completeMessages called on any empty MessageQueue');
 		}
 		const first = messages[0];
-		if(first) {
+		if (first) {
 			const startSerial = first.message.msgSerial as number;
 			const endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
-			if(endSerial > startSerial) {
-				const completeMessages = messages.splice(0, (endSerial - startSerial));
-				for(const message of completeMessages) {
+			if (endSerial > startSerial) {
+				const completeMessages = messages.splice(0, endSerial - startSerial);
+				for (const message of completeMessages) {
 					(message.callback as Function)(err);
 				}
 			}
-			if(messages.length == 0)
-				this.emit('idle');
+			if (messages.length == 0) this.emit('idle');
 		}
 	}
 

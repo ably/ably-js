@@ -17,13 +17,7 @@ class PresenceMessage {
 	encoding?: string;
 	size?: number;
 
-	static Actions = [
-		'absent',
-		'present',
-		'enter',
-		'leave',
-		'update'
-	];
+	static Actions = ['absent', 'present', 'enter', 'leave', 'update'];
 
 	/* Returns whether this presenceMessage is synthesized, i.e. was not actually
 	 * sent by the connection (usually means a leave event sent 15s after a
@@ -31,12 +25,14 @@ class PresenceMessage {
 	 * compared for newness by id lexicographically - RTP2b1
 	 */
 	isSynthesized(): boolean {
-		if (!this.id || !this.connectionId) { return true }
+		if (!this.id || !this.connectionId) {
+			return true;
+		}
 		return this.id.substring(this.connectionId.length, 0) !== this.connectionId;
 	}
 
 	/* RTP2b2 */
-	parseId(): { connectionId: string, msgSerial: number, index: number } {
+	parseId(): { connectionId: string; msgSerial: number; index: number } {
 		if (!this.id) throw new Error('parseId(): Presence message does not contain an id');
 		const parts = this.id.split(':');
 		return {
@@ -51,20 +47,20 @@ class PresenceMessage {
 	 * @return {*}
 	 */
 	toJSON(): {
-		clientId?: string,
-		action: number,
-		data: string | Buffer,
-		encoding?: string,
+		clientId?: string;
+		action: number;
+		data: string | Buffer;
+		encoding?: string;
 	} {
 		/* encode data to base64 if present and we're returning real JSON;
 		 * although msgpack calls toJSON(), we know it is a stringify()
 		 * call if it has a non-empty arguments list */
 		let data = this.data as string | Buffer;
 		let encoding = this.encoding;
-		if(data && BufferUtils.isBuffer(data)) {
-			if(arguments.length > 0) {
+		if (data && BufferUtils.isBuffer(data)) {
+			if (arguments.length > 0) {
 				/* stringify call */
-				encoding = encoding ? (encoding + '/base64') : 'base64';
+				encoding = encoding ? encoding + '/base64' : 'base64';
 				data = BufferUtils.base64Encode(data);
 			} else {
 				/* Called by msgpack. toBuffer returns a datatype understandable by
@@ -79,29 +75,21 @@ class PresenceMessage {
 			action: toActionValue(this.action as string),
 			data: data,
 			encoding: encoding
-		}
+		};
 	}
 
 	toString(): string {
 		let result = '[PresenceMessage';
 		result += '; action=' + this.action;
-		if(this.id)
-			result += '; id=' + this.id;
-		if(this.timestamp)
-			result += '; timestamp=' + this.timestamp;
-		if(this.clientId)
-			result += '; clientId=' + this.clientId;
-		if(this.connectionId)
-			result += '; connectionId=' + this.connectionId;
-		if(this.encoding)
-			result += '; encoding=' + this.encoding;
-		if(this.data) {
-			if (typeof(this.data) == 'string')
-				result += '; data=' + this.data;
-			else if (BufferUtils.isBuffer(this.data))
-				result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
-			else
-				result += '; data (json)=' + JSON.stringify(this.data);
+		if (this.id) result += '; id=' + this.id;
+		if (this.timestamp) result += '; timestamp=' + this.timestamp;
+		if (this.clientId) result += '; clientId=' + this.clientId;
+		if (this.connectionId) result += '; connectionId=' + this.connectionId;
+		if (this.encoding) result += '; encoding=' + this.encoding;
+		if (this.data) {
+			if (typeof this.data == 'string') result += '; data=' + this.data;
+			else if (BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+			else result += '; data (json)=' + JSON.stringify(this.data);
 		}
 		result += ']';
 		return result;
@@ -110,14 +98,18 @@ class PresenceMessage {
 	static encode = Message.encode;
 	static decode = Message.decode;
 
-	static fromResponseBody(body: Record<string, unknown>[], options: CipherOptions, format?: Utils.Format): PresenceMessage[] {
+	static fromResponseBody(
+		body: Record<string, unknown>[],
+		options: CipherOptions,
+		format?: Utils.Format
+	): PresenceMessage[] {
 		const messages: PresenceMessage[] = [];
-		if(format) {
+		if (format) {
 			body = Utils.decodeBody(body, format);
 		}
 
-		for(let i = 0; i < body.length; i++) {
-			const msg = messages[i] = PresenceMessage.fromValues(body[i], true);
+		for (let i = 0; i < body.length; i++) {
+			const msg = (messages[i] = PresenceMessage.fromValues(body[i], true));
 			try {
 				PresenceMessage.decode(msg, options);
 			} catch (e) {
@@ -126,17 +118,18 @@ class PresenceMessage {
 		}
 		return messages;
 	}
-	
+
 	static fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage {
-		if(stringifyAction) {
-			values.action = PresenceMessage.Actions[values.action as number]
+		if (stringifyAction) {
+			values.action = PresenceMessage.Actions[values.action as number];
 		}
 		return Object.assign(new PresenceMessage(), values);
 	}
-	
+
 	static fromValuesArray(values: unknown[]): PresenceMessage[] {
-		const count = values.length, result = new Array(count);
-		for(let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i] as Record<string, unknown>);
+		const count = values.length,
+			result = new Array(count);
+		for (let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i] as Record<string, unknown>);
 		return result;
 	}
 
@@ -146,14 +139,14 @@ class PresenceMessage {
 		 * the fullest extent possible */
 		try {
 			PresenceMessage.decode(msg, options);
-		} catch(e) {
+		} catch (e) {
 			Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
 		}
 		return msg;
 	}
 
 	static fromEncodedArray(encodedArray: Record<string, unknown>[], options: CipherOptions): PresenceMessage[] {
-		return encodedArray.map(function(encoded) {
+		return encodedArray.map(function (encoded) {
 			return PresenceMessage.fromEncoded(encoded, options);
 		});
 	}

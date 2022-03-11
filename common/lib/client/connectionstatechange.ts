@@ -1,4 +1,4 @@
-import ErrorInfo from "../types/errorinfo";
+import ErrorInfo from '../types/errorinfo';
 
 class ConnectionStateChange {
 	previous?: string;
@@ -9,8 +9,8 @@ class ConnectionStateChange {
 	constructor(previous?: string, current?: string, retryIn?: number | null, reason?: ErrorInfo) {
 		this.previous = previous;
 		this.current = current;
-		if(retryIn) this.retryIn = retryIn;
-		if(reason) this.reason = reason;
+		if (retryIn) this.retryIn = retryIn;
+		if (reason) this.reason = reason;
 	}
 }
 

@@ -5,73 +5,114 @@
 
 declare namespace Types {
 	namespace ChannelState {
-		type INITIALIZED = "initialized";
-		type ATTACHING = "attaching";
-		type ATTACHED = "attached";
-		type DETACHING = "detaching";
-		type DETACHED = "detached";
-		type SUSPENDED = "suspended";
-		type FAILED = "failed";
+		type INITIALIZED = 'initialized';
+		type ATTACHING = 'attaching';
+		type ATTACHED = 'attached';
+		type DETACHING = 'detaching';
+		type DETACHED = 'detached';
+		type SUSPENDED = 'suspended';
+		type FAILED = 'failed';
 	}
-	type ChannelState = ChannelState.FAILED | ChannelState.INITIALIZED | ChannelState.SUSPENDED | ChannelState.ATTACHED | ChannelState.ATTACHING | ChannelState.DETACHED | ChannelState.DETACHING;
+	type ChannelState =
+		| ChannelState.FAILED
+		| ChannelState.INITIALIZED
+		| ChannelState.SUSPENDED
+		| ChannelState.ATTACHED
+		| ChannelState.ATTACHING
+		| ChannelState.DETACHED
+		| ChannelState.DETACHING;
 
 	namespace ChannelEvent {
-		type INITIALIZED = "initialized";
-		type ATTACHING = "attaching";
-		type ATTACHED = "attached";
-		type DETACHING = "detaching";
-		type DETACHED = "detached";
-		type SUSPENDED = "suspended";
-		type FAILED = "failed";
-		type UPDATE = "update";
+		type INITIALIZED = 'initialized';
+		type ATTACHING = 'attaching';
+		type ATTACHED = 'attached';
+		type DETACHING = 'detaching';
+		type DETACHED = 'detached';
+		type SUSPENDED = 'suspended';
+		type FAILED = 'failed';
+		type UPDATE = 'update';
 	}
-	type ChannelEvent = ChannelEvent.FAILED | ChannelEvent.INITIALIZED | ChannelEvent.SUSPENDED | ChannelEvent.ATTACHED | ChannelEvent.ATTACHING | ChannelEvent.DETACHED | ChannelEvent.DETACHING | ChannelEvent.UPDATE;
+	type ChannelEvent =
+		| ChannelEvent.FAILED
+		| ChannelEvent.INITIALIZED
+		| ChannelEvent.SUSPENDED
+		| ChannelEvent.ATTACHED
+		| ChannelEvent.ATTACHING
+		| ChannelEvent.DETACHED
+		| ChannelEvent.DETACHING
+		| ChannelEvent.UPDATE;
 
 	namespace ConnectionState {
-		type INITIALIZED = "initialized";
-		type CONNECTING = "connecting";
-		type CONNECTED = "connected";
-		type DISCONNECTED = "disconnected";
-		type SUSPENDED = "suspended";
-		type CLOSING = "closing";
-		type CLOSED = "closed";
-		type FAILED = "failed";
+		type INITIALIZED = 'initialized';
+		type CONNECTING = 'connecting';
+		type CONNECTED = 'connected';
+		type DISCONNECTED = 'disconnected';
+		type SUSPENDED = 'suspended';
+		type CLOSING = 'closing';
+		type CLOSED = 'closed';
+		type FAILED = 'failed';
 	}
-	type ConnectionState = ConnectionState.INITIALIZED | ConnectionState.CONNECTED | ConnectionState.CONNECTING | ConnectionState.DISCONNECTED | ConnectionState.SUSPENDED | ConnectionState.CLOSED | ConnectionState.CLOSING | ConnectionState.FAILED;
+	type ConnectionState =
+		| ConnectionState.INITIALIZED
+		| ConnectionState.CONNECTED
+		| ConnectionState.CONNECTING
+		| ConnectionState.DISCONNECTED
+		| ConnectionState.SUSPENDED
+		| ConnectionState.CLOSED
+		| ConnectionState.CLOSING
+		| ConnectionState.FAILED;
 
 	namespace ConnectionEvent {
-		type INITIALIZED = "initialized";
-		type CONNECTING = "connecting";
-		type CONNECTED = "connected";
-		type DISCONNECTED = "disconnected";
-		type SUSPENDED = "suspended";
-		type CLOSING = "closing";
-		type CLOSED = "closed";
-		type FAILED = "failed";
-		type UPDATE = "update";
+		type INITIALIZED = 'initialized';
+		type CONNECTING = 'connecting';
+		type CONNECTED = 'connected';
+		type DISCONNECTED = 'disconnected';
+		type SUSPENDED = 'suspended';
+		type CLOSING = 'closing';
+		type CLOSED = 'closed';
+		type FAILED = 'failed';
+		type UPDATE = 'update';
 	}
-	type ConnectionEvent = ConnectionEvent.INITIALIZED | ConnectionEvent.CONNECTED | ConnectionEvent.CONNECTING | ConnectionEvent.DISCONNECTED | ConnectionEvent.SUSPENDED | ConnectionEvent.CLOSED | ConnectionEvent.CLOSING | ConnectionEvent.FAILED | ConnectionEvent.UPDATE;
+	type ConnectionEvent =
+		| ConnectionEvent.INITIALIZED
+		| ConnectionEvent.CONNECTED
+		| ConnectionEvent.CONNECTING
+		| ConnectionEvent.DISCONNECTED
+		| ConnectionEvent.SUSPENDED
+		| ConnectionEvent.CLOSED
+		| ConnectionEvent.CLOSING
+		| ConnectionEvent.FAILED
+		| ConnectionEvent.UPDATE;
 
 	namespace PresenceAction {
-		type ABSENT = "absent";
-		type PRESENT = "present";
-		type ENTER = "enter";
-		type LEAVE = "leave";
-		type UPDATE = "update";
+		type ABSENT = 'absent';
+		type PRESENT = 'present';
+		type ENTER = 'enter';
+		type LEAVE = 'leave';
+		type UPDATE = 'update';
 	}
-	type PresenceAction = PresenceAction.ABSENT | PresenceAction.PRESENT | PresenceAction.ENTER | PresenceAction.LEAVE | PresenceAction.UPDATE;
+	type PresenceAction =
+		| PresenceAction.ABSENT
+		| PresenceAction.PRESENT
+		| PresenceAction.ENTER
+		| PresenceAction.LEAVE
+		| PresenceAction.UPDATE;
 
 	namespace StatsIntervalGranularity {
-		type MINUTE = "minute";
-		type HOUR = "hour";
-		type DAY = "day";
-		type MONTH = "month";
+		type MINUTE = 'minute';
+		type HOUR = 'hour';
+		type DAY = 'day';
+		type MONTH = 'month';
 	}
-	type StatsIntervalGranularity = StatsIntervalGranularity.MINUTE | StatsIntervalGranularity.HOUR | StatsIntervalGranularity.DAY | StatsIntervalGranularity.MONTH;
+	type StatsIntervalGranularity =
+		| StatsIntervalGranularity.MINUTE
+		| StatsIntervalGranularity.HOUR
+		| StatsIntervalGranularity.DAY
+		| StatsIntervalGranularity.MONTH;
 
 	namespace HTTPMethods {
-		type POST = "POST";
-		type GET = "GET";
+		type POST = 'POST';
+		type GET = 'GET';
 	}
 	type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
@@ -113,21 +154,26 @@ declare namespace Types {
 		fallbackHosts?: string[];
 		fallbackHostsUseDefault?: boolean;
 
-        restAgentOptions?: {
-            maxSockets?: number,
-            keepAlive?: boolean,
-        }
+		restAgentOptions?: {
+			maxSockets?: number;
+			keepAlive?: boolean;
+		};
 
 		/**
 		 * Can be used to explicitly recover a connection.
 		 * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
 		 */
-		recover?: string | ((lastConnectionDetails: {
-			recoveryKey: string;
-			disconnectedAt: number;
-			location: string;
-			clientId: string | null;
-		}, callback: (shouldRecover: boolean) => void) => void);
+		recover?:
+			| string
+			| ((
+					lastConnectionDetails: {
+						recoveryKey: string;
+						disconnectedAt: number;
+						location: string;
+						clientId: string | null;
+					},
+					callback: (shouldRecover: boolean) => void
+			  ) => void);
 
 		/**
 		 * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
@@ -145,7 +191,7 @@ declare namespace Types {
 		suspendedRetryTimeout?: number;
 		closeOnUnload?: boolean;
 		idempotentRestPublishing?: boolean;
-		transportParams?: {[k: string]: string};
+		transportParams?: { [k: string]: string };
 		transports?: Transport[];
 
 		httpMaxRetryCount?: number;
@@ -162,7 +208,10 @@ declare namespace Types {
 		 * The role of the callback is to either generate a signed TokenRequest which may then be submitted automatically
 		 * by the library to the Ably REST API requestToken; or to provide a valid token in as a TokenDetails object.
 		 **/
-		authCallback?: (data: TokenParams, callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void) => void;
+		authCallback?: (
+			data: TokenParams,
+			callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
+		) => void;
 		authHeaders?: { [index: string]: string };
 		authMethod?: HTTPMethods;
 		authParams?: { [index: string]: string };
@@ -184,11 +233,19 @@ declare namespace Types {
 		clientId?: string;
 	}
 
-	type capabilityOp = "publish" | "subscribe" | "presence" | "history" | "stats" | "channel-metadata" | "push-subscribe" | "push-admin";
+	type capabilityOp =
+		| 'publish'
+		| 'subscribe'
+		| 'presence'
+		| 'history'
+		| 'stats'
+		| 'channel-metadata'
+		| 'push-subscribe'
+		| 'push-admin';
 	type CapabilityOp = capabilityOp;
 
 	interface TokenParams {
-		capability?: { [key: string]: capabilityOp[]; } | string;
+		capability?: { [key: string]: capabilityOp[] } | string;
 		clientId?: string;
 		nonce?: string;
 		timestamp?: number;
@@ -332,8 +389,8 @@ declare namespace Types {
 	interface DeviceDetails {
 		id: string;
 		clientId?: string;
-		platform: "android" | "ios" | "browser";
-		formFactor: "phone" | "tablet" | "desktop" | "tv" | "watch" | "car" | "embedded" | "other";
+		platform: 'android' | 'ios' | 'browser';
+		formFactor: 'phone' | 'tablet' | 'desktop' | 'tv' | 'watch' | 'car' | 'embedded' | 'other';
 		metadata?: any;
 		deviceSecret?: string;
 		push: DevicePushDetails;
@@ -345,7 +402,7 @@ declare namespace Types {
 		clientId?: string;
 	}
 
-	type DevicePushState = "ACTIVE" | "FAILING" | "FAILED";
+	type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
 	interface DevicePushDetails {
 		recipient: any;
@@ -413,8 +470,18 @@ declare namespace Types {
 		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.ChannelCallbacks>;
-		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
-		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		request: <T = any>(
+			method: string,
+			path: string,
+			params?: any,
+			body?: any[] | any,
+			headers?: any,
+			callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
+		) => void;
+		stats: (
+			paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any,
+			callback?: Types.paginatedResultCallback<Types.Stats>
+		) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
 	}
@@ -424,7 +491,13 @@ declare namespace Types {
 		static Callbacks: typeof Types.RestCallbacks;
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.ChannelPromise>;
-		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse<T>>;
+		request: <T = any>(
+			method: string,
+			path: string,
+			params?: any,
+			body?: any[] | any,
+			headers?: any
+		) => Promise<Types.HttpPaginatedResponse<T>>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
 		push: Types.PushPromise;
@@ -442,8 +515,18 @@ declare namespace Types {
 		auth: Types.AuthCallbacks;
 		channels: Types.Channels<Types.RealtimeChannelCallbacks>;
 		connection: Types.ConnectionCallbacks;
-		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any, callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>) => void;
-		stats: (paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any, callback?: Types.paginatedResultCallback<Types.Stats>) => void;
+		request: <T = any>(
+			method: string,
+			path: string,
+			params?: any,
+			body?: any[] | any,
+			headers?: any,
+			callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
+		) => void;
+		stats: (
+			paramsOrCallback?: Types.paginatedResultCallback<Types.Stats> | any,
+			callback?: Types.paginatedResultCallback<Types.Stats>
+		) => void;
 		time: (callback?: Types.timeCallback) => void;
 		push: Types.PushCallbacks;
 	}
@@ -452,7 +535,13 @@ declare namespace Types {
 		auth: Types.AuthPromise;
 		channels: Types.Channels<Types.RealtimeChannelPromise>;
 		connection: Types.ConnectionPromise;
-		request: <T = any>(method: string, path: string, params?: any, body?: any[] | any, headers?: any) => Promise<Types.HttpPaginatedResponse<T>>;
+		request: <T = any>(
+			method: string,
+			path: string,
+			params?: any,
+			body?: any[] | any,
+			headers?: any
+		) => Promise<Types.HttpPaginatedResponse<T>>;
 		stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
 		time: () => Promise<number>;
 		push: Types.PushPromise;
@@ -463,9 +552,21 @@ declare namespace Types {
 	}
 
 	class AuthCallbacks extends AuthBase {
-		authorize: (tokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
-		createTokenRequest: (tokenParams?: TokenParams | tokenRequestCallback, authOptions?: AuthOptions | tokenRequestCallback, callback?: tokenRequestCallback) => void;
-		requestToken: (TokenParams?: TokenParams | tokenDetailsCallback, authOptions?: AuthOptions | tokenDetailsCallback, callback?: tokenDetailsCallback) => void;
+		authorize: (
+			tokenParams?: TokenParams | tokenDetailsCallback,
+			authOptions?: AuthOptions | tokenDetailsCallback,
+			callback?: tokenDetailsCallback
+		) => void;
+		createTokenRequest: (
+			tokenParams?: TokenParams | tokenRequestCallback,
+			authOptions?: AuthOptions | tokenRequestCallback,
+			callback?: tokenRequestCallback
+		) => void;
+		requestToken: (
+			TokenParams?: TokenParams | tokenDetailsCallback,
+			authOptions?: AuthOptions | tokenDetailsCallback,
+			callback?: tokenDetailsCallback
+		) => void;
 	}
 
 	class AuthPromise extends AuthBase {
@@ -475,8 +576,14 @@ declare namespace Types {
 	}
 
 	class PresenceCallbacks {
-		get: (paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-		history: (paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
+		get: (
+			paramsOrCallback?: RestPresenceParams | paginatedResultCallback<PresenceMessage>,
+			callback?: paginatedResultCallback<PresenceMessage>
+		) => void;
+		history: (
+			paramsOrCallback: RestHistoryParams | paginatedResultCallback<PresenceMessage>,
+			callback?: paginatedResultCallback<PresenceMessage>
+		) => void;
 	}
 
 	class PresencePromise {
@@ -486,13 +593,26 @@ declare namespace Types {
 
 	class RealtimePresenceBase {
 		syncComplete: boolean;
-		unsubscribe: (presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>, listener?: messageCallback<PresenceMessage>) => void;
+		unsubscribe: (
+			presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>,
+			listener?: messageCallback<PresenceMessage>
+		) => void;
 	}
 
 	class RealtimePresenceCallbacks extends RealtimePresenceBase {
-		get: (paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams, callback?: realtimePresenceGetCallback) => void;
-		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>, callback?: paginatedResultCallback<PresenceMessage>) => void;
-		subscribe: (presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback) => void;
+		get: (
+			paramsOrCallback?: realtimePresenceGetCallback | RealtimePresenceParams,
+			callback?: realtimePresenceGetCallback
+		) => void;
+		history: (
+			paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<PresenceMessage>,
+			callback?: paginatedResultCallback<PresenceMessage>
+		) => void;
+		subscribe: (
+			presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
+			listener?: messageCallback<PresenceMessage>,
+			callbackWhenAttached?: errorCallback
+		) => void;
 		enter: (data?: errorCallback | any, callback?: errorCallback) => void;
 		update: (data?: errorCallback | any, callback?: errorCallback) => void;
 		leave: (data?: errorCallback | any, callback?: errorCallback) => void;
@@ -504,7 +624,10 @@ declare namespace Types {
 	class RealtimePresencePromise extends RealtimePresenceBase {
 		get: (params?: RealtimePresenceParams) => Promise<PresenceMessage[]>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
-		subscribe: (action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>) => Promise<void>;
+		subscribe: (
+			action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
+			listener?: messageCallback<PresenceMessage>
+		) => Promise<void>;
 		enter: (data?: any) => Promise<void>;
 		update: (data?: any) => Promise<void>;
 		leave: (data?: any) => Promise<void>;
@@ -519,10 +642,13 @@ declare namespace Types {
 
 	class ChannelCallbacks extends ChannelBase {
 		presence: PresenceCallbacks;
-		history: (paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
-                publish(messages: any, callback?: errorCallback): void;
-                publish(name: string, messages: any, callback?: errorCallback): void;
-                publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+		history: (
+			paramsOrCallback?: RestHistoryParams | paginatedResultCallback<Message>,
+			callback?: paginatedResultCallback<Message>
+		) => void;
+		publish(messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, callback?: errorCallback): void;
+		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
 	}
 
 	class ChannelPromise extends ChannelBase {
@@ -538,20 +664,30 @@ declare namespace Types {
 		readonly state: ChannelState;
 		params: ChannelParams;
 		modes: ChannelModes;
-		unsubscribe: (eventOrListener?: string | Array<string> | messageCallback<Message>, listener?: messageCallback<Message>) => void;
+		unsubscribe: (
+			eventOrListener?: string | Array<string> | messageCallback<Message>,
+			listener?: messageCallback<Message>
+		) => void;
 	}
 
-    type PublishOptions = {
-        quickAck?: boolean;
-    }
+	type PublishOptions = {
+		quickAck?: boolean;
+	};
 
 	class RealtimeChannelCallbacks extends RealtimeChannelBase {
 		presence: RealtimePresenceCallbacks;
 		attach: (callback?: errorCallback) => void;
 		detach: (callback?: errorCallback) => void;
-		history: (paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>, callback?: paginatedResultCallback<Message>) => void;
+		history: (
+			paramsOrCallback?: RealtimeHistoryParams | paginatedResultCallback<Message>,
+			callback?: paginatedResultCallback<Message>
+		) => void;
 		setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
-		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
+		subscribe: (
+			eventOrCallback: messageCallback<Message> | string | Array<string>,
+			listener?: messageCallback<Message>,
+			callbackWhenAttached?: errorCallback
+		) => void;
 		publish(messages: any, callback?: errorCallback): void;
 		publish(name: string, messages: any, callback?: errorCallback): void;
 		publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
@@ -564,7 +700,10 @@ declare namespace Types {
 		detach: () => Promise<void>;
 		history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
 		setOptions: (options: ChannelOptions) => Promise<void>;
-		subscribe: (eventOrCallback: messageCallback<Message> | string | Array<string>, listener?: messageCallback<Message>) => Promise<void>;
+		subscribe: (
+			eventOrCallback: messageCallback<Message> | string | Array<string>,
+			listener?: messageCallback<Message>
+		) => Promise<void>;
 		publish(messages: any, options?: PublishOptions): Promise<void>;
 		publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
 		whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
@@ -621,14 +760,19 @@ declare namespace Types {
 		algorithm?: 'aes';
 		keyLength?: number;
 		mode?: 'cbc';
-	}
+	};
 
 	interface Crypto {
 		generateRandomKey: (callback: Types.StandardCallback<CipherKey>) => void;
 		getDefaultParams: (params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>) => void;
 	}
 
-	class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent, ConnectionState> {
+	class ConnectionBase extends EventEmitter<
+		connectionEventCallback,
+		ConnectionStateChange,
+		ConnectionEvent,
+		ConnectionState
+	> {
 		errorReason: ErrorInfo;
 		id: string;
 		key: string;

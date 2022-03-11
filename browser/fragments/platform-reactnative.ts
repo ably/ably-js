@@ -15,28 +15,28 @@ const Platform: IPlatform = {
 	useProtocolHeartbeats: true,
 	createHmac: null,
 	msgpack: msgpack,
-	supportsBinary: ((typeof TextDecoder !== 'undefined') && TextDecoder) ? true : false,
+	supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder ? true : false,
 	preferBinary: false,
-	ArrayBuffer: (typeof ArrayBuffer !== 'undefined') && ArrayBuffer,
+	ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
 	atob: global.atob,
-	nextTick: function(f: Function) { setTimeout(f, 0); },
+	nextTick: function (f: Function) {
+		setTimeout(f, 0);
+	},
 	addEventListener: null,
 	inspect: JSON.stringify,
-	stringByteSize: function(str: string) {
+	stringByteSize: function (str: string) {
 		/* str.length will be an underestimate for non-ascii strings. But if we're
 		 * in a browser too old to support TextDecoder, not much we can do. Better
 		 * to underestimate, so if we do go over-size, the server will reject the
 		 * message */
-		return (typeof TextDecoder !== 'undefined') &&
-			(new TextEncoder().encode(str)).length ||
-			str.length;
+		return (typeof TextDecoder !== 'undefined' && new TextEncoder().encode(str).length) || str.length;
 	},
 	TextEncoder: global.TextEncoder,
 	TextDecoder: global.TextDecoder,
 	Promise: global.Promise,
-	getRandomWordArray: (function(RNRandomBytes) {
-		return function(byteLength: number, callback: Function) {
-			RNRandomBytes.randomBytes(byteLength, function(err: Error, base64String: string) {
+	getRandomWordArray: (function (RNRandomBytes) {
+		return function (byteLength: number, callback: Function) {
+			RNRandomBytes.randomBytes(byteLength, function (err: Error, base64String: string) {
 				callback(err, !err && parseBase64(base64String));
 			});
 		};

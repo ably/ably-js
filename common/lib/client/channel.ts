@@ -24,21 +24,21 @@ function noop() {}
 const MSG_ID_ENTROPY_BYTES = 9;
 
 function allEmptyIds(messages: Array<Message>) {
-	return Utils.arrEvery(messages, function(message: Message) {
+	return Utils.arrEvery(messages, function (message: Message) {
 		return !message.id;
 	});
 }
 
 function normaliseChannelOptions(options?: ChannelOptions) {
 	const channelOptions = options || {};
-	if(channelOptions.cipher) {
-		if(!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+	if (channelOptions.cipher) {
+		if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
 		const cipher = Crypto.getCipher(channelOptions.cipher);
 		channelOptions.cipher = cipher.cipherParams;
 		channelOptions.channelCipher = cipher.cipher;
-	} else if('cipher' in channelOptions) {
+	} else if ('cipher' in channelOptions) {
 		/* Don't deactivate an existing cipher unless options
-			* has a 'cipher' key that's falsey */
+		 * has a 'cipher' key that's falsey */
 		channelOptions.cipher = undefined;
 		channelOptions.channelCipher = null;
 	}
@@ -66,15 +66,18 @@ class Channel extends EventEmitter {
 		this.channelOptions = normaliseChannelOptions(options);
 	}
 
-	history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): Promise<PaginatedResult<Message>> | void {
+	history(
+		params: RestHistoryParams | null,
+		callback: PaginatedResultCallback<Message>
+	): Promise<PaginatedResult<Message>> | void {
 		Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
 		/* params and callback are optional; see if params contains the callback */
-		if(callback === undefined) {
-			if(typeof(params) == 'function') {
+		if (callback === undefined) {
+			if (typeof params == 'function') {
 				callback = params;
 				params = null;
 			} else {
-				if(this.rest.options.promises) {
+				if (this.rest.options.promises) {
 					return Utils.promisify(this, 'history', arguments);
 				}
 				callback = noop;
@@ -90,13 +93,16 @@ class Channel extends EventEmitter {
 			envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
 			headers = Utils.defaultGetHeaders(format);
 
-		if(rest.options.headers)
-			Utils.mixin(headers, rest.options.headers);
+		if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
 		const options = this.channelOptions;
-		(new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function(body: any, headers: Record<string, string>, unpacked?: boolean) {
+		new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function (
+			body: any,
+			headers: Record<string, string>,
+			unpacked?: boolean
+		) {
 			return Message.fromResponseBody(body, options, unpacked ? undefined : format);
-		})).get(params as Record<string, unknown>, callback);
+		}).get(params as Record<string, unknown>, callback);
 	}
 
 	publish(): void | Promise<void> {
@@ -107,28 +113,32 @@ class Channel extends EventEmitter {
 		let messages: Array<Message>;
 		let params: any;
 
-		if(typeof(callback) !== 'function') {
-			if(this.rest.options.promises) {
+		if (typeof callback !== 'function') {
+			if (this.rest.options.promises) {
 				return Utils.promisify(this, 'publish', arguments);
 			}
 			callback = noop;
 		}
 
-		if(typeof first === 'string' || first === null) {
+		if (typeof first === 'string' || first === null) {
 			/* (name, data, ...) */
-			messages = [Message.fromValues({name: first, data: second})];
+			messages = [Message.fromValues({ name: first, data: second })];
 			params = arguments[2];
-		} else if(Utils.isObject(first)) {
+		} else if (Utils.isObject(first)) {
 			messages = [Message.fromValues(first)];
 			params = arguments[1];
-		} else if(Utils.isArray(first)) {
+		} else if (Utils.isArray(first)) {
 			messages = Message.fromValuesArray(first);
 			params = arguments[1];
 		} else {
-			throw new ErrorInfo('The single-argument form of publish() expects a message object or an array of message objects', 40013, 400);
+			throw new ErrorInfo(
+				'The single-argument form of publish() expects a message object or an array of message objects',
+				40013,
+				400
+			);
 		}
 
-		if(typeof params !== 'object' || !params) {
+		if (typeof params !== 'object' || !params) {
 			/* No params supplied (so after-message argument is just the callback or undefined) */
 			params = {};
 		}
@@ -139,18 +149,17 @@ class Channel extends EventEmitter {
 			idempotentRestPublishing = rest.options.idempotentRestPublishing,
 			headers = Utils.defaultPostHeaders(format);
 
-		if(options.headers)
-			Utils.mixin(headers, options.headers);
+		if (options.headers) Utils.mixin(headers, options.headers);
 
-		if(idempotentRestPublishing && allEmptyIds(messages)) {
+		if (idempotentRestPublishing && allEmptyIds(messages)) {
 			const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
-			Utils.arrForEach(messages, function(message, index) {
+			Utils.arrForEach(messages, function (message, index) {
 				message.id = msgIdBase + ':' + index.toString();
 			});
 		}
 
 		Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
-			if(err) {
+			if (err) {
 				callback(err);
 				return;
 			}
@@ -158,8 +167,18 @@ class Channel extends EventEmitter {
 			/* RSL1i */
 			const size = Message.getMessagesSize(messages),
 				maxMessageSize = options.maxMessageSize;
-			if(size > maxMessageSize) {
-				callback(new ErrorInfo('Maximum size of messages that can be published at once exceeded ( was ' + size + ' bytes; limit is ' + maxMessageSize + ' bytes)', 40009, 400));
+			if (size > maxMessageSize) {
+				callback(
+					new ErrorInfo(
+						'Maximum size of messages that can be published at once exceeded ( was ' +
+							size +
+							' bytes; limit is ' +
+							maxMessageSize +
+							' bytes)',
+						40009,
+						400
+					)
+				);
 				return;
 			}
 

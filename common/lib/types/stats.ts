@@ -1,4 +1,4 @@
-import * as Utils from "../util/utils"
+import * as Utils from '../util/utils';
 
 type MessageValues = {
 	count?: number;
@@ -7,7 +7,7 @@ type MessageValues = {
 	failed?: number;
 	refused?: number;
 	category?: Record<string, MessageValues>;
-}
+};
 
 type ResourceValues = {
 	peak?: number;
@@ -15,89 +15,89 @@ type ResourceValues = {
 	mean?: number;
 	opened?: number;
 	refused?: number;
-}
+};
 
 type RequestValues = {
 	succeeded?: number;
 	failed?: number;
 	refused?: number;
-}
+};
 
 type ConnectionTypesValues = {
 	plain?: ResourceValues;
 	tls?: ResourceValues;
 	all?: ResourceValues;
-}
+};
 
 type MessageTypesValues = {
 	messages?: MessageValues;
 	presence?: MessageValues;
-	all?: MessageValues;	
-}
+	all?: MessageValues;
+};
 
 type MessageTrafficValues = {
-		realtime?: MessageTypesValues;
-		rest?: MessageTypesValues;
-		webhook?: MessageTypesValues;
-		sharedQueue?: MessageTypesValues;
-		externalQueue?: MessageTypesValues;
-		httpEvent?: MessageTypesValues;
-		push?: MessageTypesValues;
-		all?: MessageTypesValues;
-}
+	realtime?: MessageTypesValues;
+	rest?: MessageTypesValues;
+	webhook?: MessageTypesValues;
+	sharedQueue?: MessageTypesValues;
+	externalQueue?: MessageTypesValues;
+	httpEvent?: MessageTypesValues;
+	push?: MessageTypesValues;
+	all?: MessageTypesValues;
+};
 
 type MessageDirectionsValues = {
 	all?: MessageTypesValues;
 	inbound?: MessageTrafficValues;
 	outbound?: MessageTrafficValues;
-}
+};
 
 type XchgMessagesValues = {
 	all?: MessageTypesValues;
 	producerPaid?: MessageDirectionsValues;
 	consumerPaid?: MessageDirectionsValues;
-}
+};
 
 type NotificationsValues = {
 	invalid?: number;
 	attempted?: number;
 	successful?: number;
-	failed?: number;	
-}
+	failed?: number;
+};
 
 type PushValues = {
 	messages?: number;
 	notifications?: NotificationsValues;
 	directPublishes?: number;
-}
+};
 
 type ProcessedCountValues = {
 	succeeded?: number;
 	skipped?: number;
 	failed?: number;
-}
+};
 
 type ProcessedMessagesValues = {
 	delta?: Record<string, ProcessedCountValues>;
-}
+};
 
 type StatsValues = {
-		all?: MessageTypesValues;
-		inbound?: MessageTrafficValues;
-		outbound?: MessageTrafficValues;
-		persisted?: MessageTypesValues;
-		connections?: ConnectionTypesValues;
-		channels?: ResourceValues;
-		apiRequests?: RequestValues;
-		tokenRequests?: RequestValues;
-		xchgProducer?: XchgMessagesValues;
-		xchgConsumer?: XchgMessagesValues;
-		pushStats?: PushValues;
-		processed?: ProcessedMessagesValues;
-		inProgress?: never;
-		unit?: never;
-		intervalId?: never;
-}
+	all?: MessageTypesValues;
+	inbound?: MessageTrafficValues;
+	outbound?: MessageTrafficValues;
+	persisted?: MessageTypesValues;
+	connections?: ConnectionTypesValues;
+	channels?: ResourceValues;
+	apiRequests?: RequestValues;
+	tokenRequests?: RequestValues;
+	xchgProducer?: XchgMessagesValues;
+	xchgConsumer?: XchgMessagesValues;
+	pushStats?: PushValues;
+	processed?: ProcessedMessagesValues;
+	inProgress?: never;
+	unit?: never;
+	intervalId?: never;
+};
 
 class MessageCount {
 	count?: number;
@@ -122,7 +122,9 @@ class MessageCategory extends MessageCount {
 		if (values && values.category) {
 			this.category = {};
 			Utils.forInOwnNonNullProperties(values.category, (prop: string) => {
-				(this.category as Record<string, MessageCount>)[prop] = new MessageCount((values.category as Record<string, MessageCount>)[prop]);
+				(this.category as Record<string, MessageCount>)[prop] = new MessageCount(
+					(values.category as Record<string, MessageCount>)[prop]
+				);
 			});
 		}
 	}
@@ -208,9 +210,9 @@ class MessageDirections {
 	outbound?: MessageTraffic;
 
 	constructor(values?: MessageDirectionsValues) {
-		this.all           = new MessageTypes(values && values.all);
-		this.inbound       = new MessageTraffic(values && values.inbound);
-		this.outbound      = new MessageTraffic(values && values.outbound);
+		this.all = new MessageTypes(values && values.all);
+		this.inbound = new MessageTraffic(values && values.inbound);
+		this.outbound = new MessageTraffic(values && values.outbound);
 	}
 }
 
@@ -220,9 +222,9 @@ class XchgMessages {
 	consumerPaid?: MessageDirections;
 
 	constructor(values?: XchgMessagesValues) {
-		this.all           = new MessageTypes(values && values.all);
-		this.producerPaid  = new MessageDirections(values && values.producerPaid);
-		this.consumerPaid  = new MessageDirections(values && values.consumerPaid);
+		this.all = new MessageTypes(values && values.all);
+		this.producerPaid = new MessageDirections(values && values.producerPaid);
+		this.consumerPaid = new MessageDirections(values && values.consumerPaid);
 	}
 }
 
@@ -235,10 +237,10 @@ class PushStats {
 		this.messages = (values && values.messages) || 0;
 		const notifications = values && values.notifications;
 		this.notifications = {
-			invalid: notifications && notifications.invalid || 0,
-			attempted: notifications && notifications.attempted || 0,
-			successful: notifications && notifications.successful || 0,
-			failed: notifications && notifications.failed || 0
+			invalid: (notifications && notifications.invalid) || 0,
+			attempted: (notifications && notifications.attempted) || 0,
+			successful: (notifications && notifications.successful) || 0,
+			failed: (notifications && notifications.failed) || 0
 		};
 		this.directPublishes = (values && values.directPublishes) || 0;
 	}
@@ -262,9 +264,11 @@ class ProcessedMessages {
 	constructor(values?: ProcessedMessagesValues) {
 		this.delta = undefined;
 		if (values && values.delta) {
-			this.delta = { };
+			this.delta = {};
 			Utils.forInOwnNonNullProperties(values.delta, (prop: string) => {
-				(this.delta as Record<string, ProcessedCount>)[prop] = new ProcessedCount((values.delta as Record<string, ProcessedCountValues>)[prop]);
+				(this.delta as Record<string, ProcessedCount>)[prop] = new ProcessedCount(
+					(values.delta as Record<string, ProcessedCountValues>)[prop]
+				);
 			});
 		}
 	}
@@ -286,18 +290,18 @@ class Stats extends MessageDirections {
 
 	constructor(values?: StatsValues) {
 		super(values as MessageDirectionsValues);
-		this.persisted     = new MessageTypes(values && values.persisted);
-		this.connections   = new ConnectionTypes(values && values.connections);
-		this.channels      = new ResourceCount(values && values.channels);
-		this.apiRequests   = new RequestCount(values && values.apiRequests);
+		this.persisted = new MessageTypes(values && values.persisted);
+		this.connections = new ConnectionTypes(values && values.connections);
+		this.channels = new ResourceCount(values && values.channels);
+		this.apiRequests = new RequestCount(values && values.apiRequests);
 		this.tokenRequests = new RequestCount(values && values.tokenRequests);
-		this.xchgProducer  = new XchgMessages(values && values.xchgProducer);
-		this.xchgConsumer  = new XchgMessages(values && values.xchgConsumer);
-		this.push          = new PushStats(values && values.pushStats);
-		this.processed     = new ProcessedMessages(values && values.processed);
-		this.inProgress    = (values && values.inProgress) || undefined;
-		this.unit          = (values && values.unit) || undefined;
-		this.intervalId    = (values && values.intervalId) || undefined;
+		this.xchgProducer = new XchgMessages(values && values.xchgProducer);
+		this.xchgConsumer = new XchgMessages(values && values.xchgConsumer);
+		this.push = new PushStats(values && values.pushStats);
+		this.processed = new ProcessedMessages(values && values.processed);
+		this.inProgress = (values && values.inProgress) || undefined;
+		this.unit = (values && values.unit) || undefined;
+		this.intervalId = (values && values.intervalId) || undefined;
 	}
 
 	static fromValues(values: StatsValues): Stats {

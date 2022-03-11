@@ -6,8 +6,12 @@ import Platform from 'platform';
 function callListener(eventThis: { event: string }, listener: Function, args: unknown[]) {
 	try {
 		listener.apply(eventThis, args);
-	} catch(e) {
-		Logger.logAction(Logger.LOG_ERROR, 'EventEmitter.emit()', 'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack));
+	} catch (e) {
+		Logger.logAction(
+			Logger.LOG_ERROR,
+			'EventEmitter.emit()',
+			'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack)
+		);
 	}
 }
 
@@ -24,7 +28,9 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 
 	for (let targetListenersIndex = 0; targetListenersIndex < targetListeners.length; targetListenersIndex++) {
 		listeners = targetListeners[targetListenersIndex];
-		if (eventFilter) { listeners = listeners[eventFilter] as Record<string, unknown>; }
+		if (eventFilter) {
+			listeners = listeners[eventFilter] as Record<string, unknown>;
+		}
 
 		if (Utils.isArray(listeners)) {
 			while ((index = Utils.arrIndexOf(listeners, listener)) !== -1) {
@@ -32,7 +38,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
 			}
 			/* If events object has an event name key with no listeners then
 					remove the key to stop the list growing indefinitely */
-			if (eventFilter && (listeners.length === 0)) {
+			if (eventFilter && listeners.length === 0) {
 				delete targetListeners[targetListenersIndex][eventFilter];
 			}
 		} else if (Utils.isObject(listeners)) {
@@ -72,9 +78,9 @@ class EventEmitter {
 	 */
 	on(event: null | string | string[], listener: Function): void;
 
-	on (...args: unknown[]) {
+	on(...args: unknown[]) {
 		if (args.length === 1) {
-			const listener = args[0]
+			const listener = args[0];
 			if (typeof listener === 'function') {
 				this.any.push(listener);
 			} else {
@@ -89,18 +95,18 @@ class EventEmitter {
 			if (Utils.isEmptyArg(event)) {
 				this.any.push(listener);
 			} else if (Utils.isArray(event)) {
-				event.forEach(eventName => {
+				event.forEach((eventName) => {
 					this.on(eventName, listener);
 				});
 			} else {
 				if (typeof event !== 'string') {
 					throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
 				}
-				const listeners = (this.events[event] || (this.events[event] = []));
+				const listeners = this.events[event] || (this.events[event] = []);
 				listeners.push(listener);
 			}
 		}
-	};
+	}
 
 	/**
 	 * Remove one or more event listeners
@@ -120,7 +126,7 @@ class EventEmitter {
 	off(event: string | string[] | null, listener?: Function | null): void;
 
 	off(...args: unknown[]) {
-		if(args.length == 0 || (Utils.isEmptyArg(args[0]) && Utils.isEmptyArg(args[1]))) {
+		if (args.length == 0 || (Utils.isEmptyArg(args[0]) && Utils.isEmptyArg(args[1]))) {
 			this.any = [];
 			this.events = Object.create(null);
 			this.anyOnce = [];
@@ -130,7 +136,7 @@ class EventEmitter {
 		const [firstArg, secondArg] = args;
 		let listener: Function | null = null;
 		let event: unknown = null;
-		if(args.length === 1 || !secondArg) {
+		if (args.length === 1 || !secondArg) {
 			if (typeof firstArg === 'function') {
 				/* we take this to be the listener and treat the event as "any" .. */
 				listener = firstArg;
@@ -145,12 +151,12 @@ class EventEmitter {
 			[event, listener] = [firstArg, secondArg];
 		}
 
-		if(listener && Utils.isEmptyArg(event)) {
+		if (listener && Utils.isEmptyArg(event)) {
 			removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
 			return;
 		}
 
-		if(Utils.isArray(event)) {
+		if (Utils.isArray(event)) {
 			event.forEach((eventName) => {
 				this.off(eventName, listener);
 			});
@@ -161,13 +167,13 @@ class EventEmitter {
 		if (typeof event !== 'string') {
 			throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
 		}
-		if(listener) {
+		if (listener) {
 			removeListener([this.events, this.eventsOnce], listener, event);
 		} else {
 			delete this.events[event];
 			delete this.eventsOnce[event];
 		}
-	};
+	}
 
 	/**
 	 * Get the array of listeners for a given event; excludes once events
@@ -175,45 +181,44 @@ class EventEmitter {
 	 * @return array of events, or null if none
 	 */
 	listeners(event: string) {
-		if(event) {
-			const listeners = (this.events[event] || []);
-			if(this.eventsOnce[event])
-				Array.prototype.push.apply(listeners, this.eventsOnce[event]);
+		if (event) {
+			const listeners = this.events[event] || [];
+			if (this.eventsOnce[event]) Array.prototype.push.apply(listeners, this.eventsOnce[event]);
 			return listeners.length ? listeners : null;
 		}
 		return this.any.length ? this.any : null;
-	};
+	}
 
 	/**
 	 * Emit an event
 	 * @param event the event name
 	 * @param args the arguments to pass to the listener
 	 */
-	emit (event: string, ...args: unknown[]  /* , args... */) {
+	emit(event: string, ...args: unknown[] /* , args... */) {
 		const eventThis = { event };
 		const listeners: Function[] = [];
 
-		if(this.anyOnce.length) {
+		if (this.anyOnce.length) {
 			Array.prototype.push.apply(listeners, this.anyOnce);
 			this.anyOnce = [];
 		}
-		if(this.any.length) {
+		if (this.any.length) {
 			Array.prototype.push.apply(listeners, this.any);
 		}
 		const eventsOnceListeners = this.eventsOnce[event];
-		if(eventsOnceListeners) {
+		if (eventsOnceListeners) {
 			Array.prototype.push.apply(listeners, eventsOnceListeners);
 			delete this.eventsOnce[event];
 		}
 		const eventsListeners = this.events[event];
-		if(eventsListeners) {
+		if (eventsListeners) {
 			Array.prototype.push.apply(listeners, eventsListeners);
 		}
 
-		Utils.arrForEach(listeners, function(listener) {
+		Utils.arrForEach(listeners, function (listener) {
 			callListener(eventThis, listener, args);
 		});
-	};
+	}
 
 	/**
 	 * Listen for a single occurrence of an event
@@ -236,10 +241,10 @@ class EventEmitter {
 
 	once(...args: unknown[]): void | Promise<void> {
 		const argCount = args.length;
-		if((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Promise) {
+		if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Promise) {
 			const event = args[0];
 			if (typeof event !== 'string') {
-				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
 			}
 			return new Platform.Promise((resolve) => {
 				this.once(event, resolve);
@@ -247,41 +252,41 @@ class EventEmitter {
 		}
 
 		const [firstArg, secondArg] = args;
-		if(args.length === 1 && typeof(firstArg) === 'function') {
+		if (args.length === 1 && typeof firstArg === 'function') {
 			this.anyOnce.push(firstArg);
-		} else if(Utils.isEmptyArg(firstArg)) {
+		} else if (Utils.isEmptyArg(firstArg)) {
 			if (typeof secondArg !== 'function') {
-				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
 			}
 			this.anyOnce.push(secondArg);
-		} else if(Utils.isArray(firstArg)){
+		} else if (Utils.isArray(firstArg)) {
 			const self = this;
-			const listenerWrapper = function(this: any) {
+			const listenerWrapper = function (this: any) {
 				const innerArgs = Array.prototype.slice.call(arguments);
-				Utils.arrForEach(firstArg, function(eventName) {
+				Utils.arrForEach(firstArg, function (eventName) {
 					self.off(eventName, listenerWrapper);
 				});
 				if (typeof secondArg !== 'function') {
-					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
 				}
 				secondArg.apply(this, innerArgs);
 			};
-			Utils.arrForEach(firstArg, function(eventName) {
+			Utils.arrForEach(firstArg, function (eventName) {
 				self.on(eventName, listenerWrapper);
 			});
 		} else {
 			if (typeof firstArg !== 'string') {
-				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+				throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
 			}
-			const listeners = (this.eventsOnce[firstArg] || (this.eventsOnce[firstArg] = []));
+			const listeners = this.eventsOnce[firstArg] || (this.eventsOnce[firstArg] = []);
 			if (secondArg) {
 				if (typeof secondArg !== 'function') {
-					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args))
+					throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
 				}
 				listeners.push(secondArg);
 			}
 		}
-	};
+	}
 
 	/**
 	 * Private API
@@ -295,15 +300,18 @@ class EventEmitter {
 	whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
 		const eventThis = { event: targetState };
 
-		if((typeof(targetState) !== 'string') || (typeof(currentState) !== 'string')) {
-			throw("whenState requires a valid event String argument");
+		if (typeof targetState !== 'string' || typeof currentState !== 'string') {
+			throw 'whenState requires a valid event String argument';
 		}
-		if(typeof listener !== 'function' && Platform.Promise) {
-			return new Platform.Promise(function(resolve) {
-				EventEmitter.prototype.whenState.apply(self, [targetState, currentState, resolve].concat(listenerArgs as any[]) as any);
+		if (typeof listener !== 'function' && Platform.Promise) {
+			return new Platform.Promise(function (resolve) {
+				EventEmitter.prototype.whenState.apply(
+					self,
+					[targetState, currentState, resolve].concat(listenerArgs as any[]) as any
+				);
 			});
 		}
-		if(targetState === currentState) {
+		if (targetState === currentState) {
 			callListener(eventThis, listener, listenerArgs);
 		} else {
 			this.once(targetState, listener);
