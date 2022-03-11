@@ -12,5 +12,5 @@ declare module 'platform-bufferutils' {
   export const utf8Decode: (buffer: Buffer) => string;
   export const bufferCompare: (buffer1: Buffer, buffer2: Buffer) => number;
   export const byteLength: (buffer: Buffer | ArrayBuffer | DataView) => number;
-  export const typedArrayToBuffer: (typedArray: TypedArray) => Buffer
+  export const typedArrayToBuffer: (typedArray: TypedArray) => Buffer;
 }

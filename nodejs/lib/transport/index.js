@@ -1,5 +1,3 @@
 import NodeCometTransport from './nodecomettransport';
 
-export default [
-  NodeCometTransport
-]
+export default [NodeCometTransport];

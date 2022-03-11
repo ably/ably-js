@@ -60,6 +60,7 @@
     "mocha": "^8.1.3",
     "null-loader": "^4.0.1",
     "playwright": "^1.10.0",
+    "prettier": "^2.5.1",
     "requirejs": "~2.1",
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
@@ -95,6 +96,8 @@
     "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
+    "format": "prettier --write --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
+    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
     "sourcemap": "source-map-explorer browser/static/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
   }

@@ -13,7 +13,7 @@ module.exports = {
   rules: {
     "no-undef": "error",
     // comma-dangle used for browser compatibility for browsers that don't support trailing commas
-    "comma-dangle": ["error", "never"],
+    "comma-dangle": ["error", "always-multiline"],
     "eol-last": "error",
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
