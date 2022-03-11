@@ -38,4 +38,14 @@ module.exports = {
       },
     },
   ],
+  ignorePatterns: [
+    "node_modules",
+    "browser/static",
+    "resources",
+    "test",
+    "tools",
+    "scripts",
+    "webpack.config.js",
+    "Gruntfile.js",
+  ],
 }
