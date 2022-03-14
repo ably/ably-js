@@ -658,7 +658,7 @@ declare namespace Types {
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
   }
 
-  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
+  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     readonly name: string;
     errorReason: ErrorInfo;
     readonly state: ChannelState;
@@ -767,12 +767,7 @@ declare namespace Types {
     getDefaultParams: (params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>) => void;
   }
 
-  class ConnectionBase extends EventEmitter<
-    connectionEventCallback,
-    ConnectionStateChange,
-    ConnectionEvent,
-    ConnectionState
-  > {
+  class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     errorReason: ErrorInfo;
     id: string;
     key: string;
