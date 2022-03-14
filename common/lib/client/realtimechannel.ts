@@ -612,8 +612,8 @@ class RealtimeChannel extends Channel {
                 this._startDecodeFailureRecovery(e as ErrorInfo);
                 return;
               case 40019:
-                /* No vcdiff plugin passed in - no point recovering, give up */
-                break;
+              /* No vcdiff plugin passed in - no point recovering, give up */
+              // eslint-disable-next-line no-fallthrough
               case 40021:
                 /* Browser does not support deltas, similarly no point recovering */
                 this.notifyState('failed', e as ErrorInfo);
