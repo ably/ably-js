@@ -10,7 +10,6 @@ import ConnectionStateChange from '../client/connectionstatechange';
 import ConnectionErrors, { isRetriable } from './connectionerrors';
 import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
-import Http from 'platform-http';
 import Message from '../types/message';
 import Multicaster, { MulticasterInstance } from '../util/multicaster';
 import * as WebStorage from 'platform-webstorage';
@@ -124,7 +123,7 @@ export class TransportParams {
           params.connectionSerial = this.connectionSerial;
         }
         break;
-      case 'recover':
+      case 'recover': {
         const match = (options.recover as string).split(':');
         if (match) {
           params.recover = match[0];
@@ -136,6 +135,7 @@ export class TransportParams {
           }
         }
         break;
+      }
       default:
     }
     if (options.clientId !== undefined) {
@@ -1893,7 +1893,7 @@ class ConnectionManager extends EventEmitter {
 
   onAuthUpdated(tokenDetails: API.Types.TokenDetails, callback: Function): void {
     switch (this.state.state) {
-      case 'connected':
+      case 'connected': {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
@@ -1948,6 +1948,7 @@ class ConnectionManager extends EventEmitter {
         this.once('connectiondetails', successListener);
         this.on('connectionstate', failureListener);
         break;
+      }
 
       case 'connecting':
         Logger.logAction(
@@ -1958,7 +1959,7 @@ class ConnectionManager extends EventEmitter {
         this.disconnectAllTransports();
       /* fallthrough to add statechange listener */
 
-      default:
+      default: {
         Logger.logAction(
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
@@ -1989,6 +1990,7 @@ class ConnectionManager extends EventEmitter {
         } else {
           this.requestState({ state: 'connecting' });
         }
+      }
     }
   }
 

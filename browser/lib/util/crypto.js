@@ -85,11 +85,6 @@ var Crypto = (function () {
   }
 
   /**
-   * Internal: a block containing zeros
-   */
-  var emptyBlock = WordArray.create([0, 0, 0, 0]);
-
-  /**
    * Internal: obtain the pkcs5 padding string for a given padded length;
    */
   var pkcs5Padding = [

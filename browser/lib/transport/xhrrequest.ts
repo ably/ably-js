@@ -1,16 +1,13 @@
 import * as Utils from '../../../common/lib/util/utils';
 import EventEmitter from '../../../common/lib/util/eventemitter';
-import Platform from 'platform';
 import ErrorInfo from '../../../common/lib/types/errorinfo';
-import Http from 'platform-http';
 import Logger from '../../../common/lib/util/logger';
 import Defaults from '../../../common/lib/util/defaults';
 import * as BufferUtils from 'platform-bufferutils';
 import HttpMethods from '../../../common/constants/HttpMethods';
 import IXHRRequest from '../../../common/types/IXHRRequest';
-import { ErrnoException, RequestCallback, RequestParams } from '../../../common/types/http';
+import { RequestParams } from '../../../common/types/http';
 import XHRStates from '../../../common/constants/XHRStates';
-import Rest from '../../../common/lib/client/rest';
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
   return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');

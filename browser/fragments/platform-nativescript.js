@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import msgpack from '../lib/util/msgpack';
 require('nativescript-websockets');
 

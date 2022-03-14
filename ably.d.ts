@@ -448,7 +448,7 @@ declare namespace Types {
   // promisified version of the lib, but still allow once to be used in a way
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
-  class EventEmitter<CallbackType, ResultType, EventType, StateType> {
+  class EventEmitter<CallbackType, ResultType, EventType> {
     on(eventOrCallback: EventType | EventType[] | CallbackType, callback?: CallbackType): void;
     once(event: EventType, callback: CallbackType): void;
     once(callback: CallbackType): void;
@@ -658,7 +658,7 @@ declare namespace Types {
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
   }
 
-  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
+  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     readonly name: string;
     errorReason: ErrorInfo;
     readonly state: ChannelState;
@@ -767,12 +767,7 @@ declare namespace Types {
     getDefaultParams: (params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>) => void;
   }
 
-  class ConnectionBase extends EventEmitter<
-    connectionEventCallback,
-    ConnectionStateChange,
-    ConnectionEvent,
-    ConnectionState
-  > {
+  class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     errorReason: ErrorInfo;
     id: string;
     key: string;
