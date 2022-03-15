@@ -198,6 +198,7 @@ declare namespace Types {
     httpMaxRetryDuration?: number;
     httpOpenTimeout?: number;
     httpRequestTimeout?: number;
+    realtimeRequestTimeout?: number;
 
     plugins?: { vcdiff?: any };
   }
