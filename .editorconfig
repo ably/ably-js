@@ -9,3 +9,4 @@ charset = utf-8
 
 [*.{js,ts,.ts.d}]
 indent_style = space
+indent_size = 2
