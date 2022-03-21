@@ -49,7 +49,7 @@ class Admin {
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     const requestBody = Utils.encodeBody(body, format);
-    Resource.post(rest, '/push/publish', requestBody, headers, params, null,  err => callback(err));
+    Resource.post(rest, '/push/publish', requestBody, headers, params, null, (err) => callback(err));
   }
 }
 
@@ -85,8 +85,17 @@ class DeviceRegistrations {
       requestBody,
       headers,
       params,
-      null, (err, body, headers, unpacked) => {
-        callback(err, !err ? DeviceDetails.fromResponseBody(body as Record<string, unknown>, unpacked ? undefined : format) as DeviceDetails : undefined);
+      null,
+      (err, body, headers, unpacked) => {
+        callback(
+          err,
+          !err
+            ? (DeviceDetails.fromResponseBody(
+                body as Record<string, unknown>,
+                unpacked ? undefined : format
+              ) as DeviceDetails)
+            : undefined
+        );
       }
     );
   }
@@ -124,7 +133,15 @@ class DeviceRegistrations {
       {},
       null,
       function (err, body, headers, unpacked) {
-        callback(err, !err ? DeviceDetails.fromResponseBody(body as Record<string, unknown>, unpacked ? undefined : format) as DeviceDetails : undefined);
+        callback(
+          err,
+          !err
+            ? (DeviceDetails.fromResponseBody(
+                body as Record<string, unknown>,
+                unpacked ? undefined : format
+              ) as DeviceDetails)
+            : undefined
+        );
       }
     );
   }
@@ -188,7 +205,7 @@ class DeviceRegistrations {
       headers,
       params,
       null,
-        (err) => callback(err)
+      (err) => callback(err)
     );
   }
 
@@ -208,7 +225,7 @@ class DeviceRegistrations {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null,  err => callback(err));
+    Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null, (err) => callback(err));
   }
 }
 
@@ -294,7 +311,7 @@ class ChannelSubscriptions {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, err => callback(err));
+    Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, (err) => callback(err));
   }
 
   /* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */

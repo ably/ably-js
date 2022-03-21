@@ -46,11 +46,11 @@ function unenvelope(callback: ResourceCallback, format: Utils.Format | null): Re
     }
 
     if (!body) {
-      callback(new ErrorInfo("Body is missing", null));
-      return
+      callback(new ErrorInfo('Body is missing', null));
+      return;
     }
 
-    const {statusCode: wrappedStatusCode, response, headers: wrappedHeaders} = body as Record<string, any>;
+    const { statusCode: wrappedStatusCode, response, headers: wrappedHeaders } = body as Record<string, any>;
 
     if (wrappedStatusCode === undefined) {
       /* Envelope already unwrapped by the transport */
@@ -87,7 +87,12 @@ function urlFromPathAndParams(path: string, params: Record<string, any>) {
   return path + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler(callback: ResourceCallback, method: HttpMethods, path: string, params: Record<string, string>): ResourceCallback {
+function logResponseHandler(
+  callback: ResourceCallback,
+  method: HttpMethods,
+  path: string,
+  params: Record<string, string>
+): ResourceCallback {
   return (err, body, headers, unpacked, statusCode) => {
     if (err) {
       Logger.logAction(
@@ -100,13 +105,13 @@ function logResponseHandler(callback: ResourceCallback, method: HttpMethods, pat
         Logger.LOG_MICRO,
         'Resource.' + method + '()',
         'Received; ' +
-        urlFromPathAndParams(path, params) +
-        '; Headers: ' +
-        (headers ? paramString(headers) : "None") +
-        '; StatusCode: ' +
-        statusCode +
-        '; Body: ' +
-        (BufferUtils.isBuffer(body) ? body.toString() : body)
+          urlFromPathAndParams(path, params) +
+          '; Headers: ' +
+          (headers ? paramString(headers) : 'None') +
+          '; StatusCode: ' +
+          statusCode +
+          '; Body: ' +
+          (BufferUtils.isBuffer(body) ? body.toString() : body)
       );
     }
     if (callback) {
@@ -115,7 +120,13 @@ function logResponseHandler(callback: ResourceCallback, method: HttpMethods, pat
   };
 }
 
-export type ResourceCallback = (err: ErrorInfo | null, body?: unknown, headers?: Record<string, string>, unpacked?: boolean, statusCode?: number) => void;
+export type ResourceCallback = (
+  err: ErrorInfo | null,
+  body?: unknown,
+  headers?: Record<string, string>,
+  unpacked?: boolean,
+  statusCode?: number
+) => void;
 
 class Resource {
   static get(
