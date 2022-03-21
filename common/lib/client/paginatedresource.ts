@@ -26,7 +26,7 @@ function parseRelLinks(linkHeader: string | Array<string>) {
   return relParams;
 }
 
-function returnErrOnly(err: ErrorInfo, body: unknown, useHPR?: boolean) {
+function returnErrOnly(err: Error | ErrorInfo, body: unknown, useHPR?: boolean) {
   /* If using httpPaginatedResponse, errors from Ably are returned as part of
    * the HPR, only do callback(err) for network errors etc. which don't
    * return a body and/or have no ably-originated error code (non-numeric
@@ -65,7 +65,7 @@ class PaginatedResource {
       this.headers,
       params,
       this.envelope,
-      (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+      (err, body, headers, unpacked, statusCode) => {
         this.handlePage(err, body, headers, unpacked, statusCode, callback);
       }
     );
@@ -78,7 +78,7 @@ class PaginatedResource {
       this.headers,
       params,
       this.envelope,
-      (err: ErrorInfo, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+      (err, body, headers, unpacked, statusCode) => {
         this.handlePage(err, body, headers, unpacked, statusCode, callback);
       }
     );
@@ -92,9 +92,9 @@ class PaginatedResource {
       this.headers,
       params,
       this.envelope,
-      (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+      (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
         }
       }
     );
@@ -108,9 +108,9 @@ class PaginatedResource {
       this.headers,
       params,
       this.envelope,
-      (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+      (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
         }
       }
     );
@@ -124,16 +124,16 @@ class PaginatedResource {
       this.headers,
       params,
       this.envelope,
-      (err: ErrorInfo, resbody: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) => {
+      (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, resbody, headers, unpacked, statusCode, callback);
+          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
         }
       }
     );
   }
 
   handlePage<T>(
-    err: ErrorInfo,
+    err: ErrorInfo | null,
     body: unknown,
     headers: Record<string, string>,
     unpacked: boolean,
@@ -231,7 +231,7 @@ export class PaginatedResult<T> {
       res.headers,
       params,
       res.envelope,
-      function (err: ErrorInfo, body: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
+      function (err, body, headers, unpacked, statusCode) {
         res.handlePage(err, body, headers, unpacked, statusCode, callback);
       }
     );

@@ -29,51 +29,49 @@ function withAuthDetails(
   }
 }
 
-function unenvelope(callback: Function, format: Utils.Format | null) {
-  return function (
-    err: Error,
-    body: Record<string, any>,
-    outerHeaders: Record<string, string>,
-    unpacked: boolean,
-    outerStatusCode: number
-  ) {
-    if (err && !body) {
-      callback(err);
-      return;
-    }
+function unenvelope(callback: ResourceCallback, format: Utils.Format | null): ResourceCallback {
+    return (err, body, outerHeaders, unpacked, outerStatusCode) => {
+        if (err && !body) {
+            callback(err);
+            return;
+        }
 
-    if (!unpacked) {
-      try {
-        body = Utils.decodeBody(body, format);
-      } catch (e) {
-        callback(e);
-        return;
-      }
-    }
+        if (!unpacked) {
+            try {
+                body = Utils.decodeBody(body, format);
+            } catch (e) {
+                callback(e);
+                return;
+            }
+        }
 
-    if (body.statusCode === undefined) {
-      /* Envelope already unwrapped by the transport */
-      callback(err, body, outerHeaders, true, outerStatusCode);
-      return;
-    }
+        if (!body) {
+            // TODO: use ErrorInfo
+            callback(new Error('Error in unenveloping - body missing'));
+            return
+        }
 
-    const wrappedStatusCode = body.statusCode,
-      response = body.response,
-      wrappedHeaders = body.headers;
+        const {statusCode: wrappedStatusCode, response, headers: wrappedHeaders} = body as Record<string, any>;
 
-    if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
-      /* handle wrapped errors */
-      let wrappedErr = (response && response.error) || err;
-      if (!wrappedErr) {
-        wrappedErr = new Error('Error in unenveloping ' + body);
-        wrappedErr.statusCode = wrappedStatusCode;
-      }
-      callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
-      return;
-    }
+        if (wrappedStatusCode === undefined) {
+            /* Envelope already unwrapped by the transport */
+            callback(err, body, outerHeaders, true, outerStatusCode);
+            return;
+        }
 
-    callback(err, response, wrappedHeaders, true, wrappedStatusCode);
-  };
+        if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
+            /* handle wrapped errors */
+            let wrappedErr = (response && response.error) || err;
+            if (!wrappedErr) {
+                wrappedErr = new Error('Error in unenveloping ' + body);
+                wrappedErr.statusCode = wrappedStatusCode;
+            }
+            callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
+            return;
+        }
+
+        callback(err, response, wrappedHeaders, true, wrappedStatusCode);
+    };
 }
 
 function paramString(params: Record<string, any>) {
@@ -90,8 +88,8 @@ function urlFromPathAndParams(path: string, params: Record<string, any>) {
   return path + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler(callback: Function, method: HttpMethods, path: string, params: Record<string, string>) {
-  return function (err: Error, body: unknown, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
+function logResponseHandler(callback: ResourceCallback, method: HttpMethods, path: string, params: Record<string, string>): ResourceCallback {
+  return (err, body, headers, unpacked, statusCode) => {
     if (err) {
       Logger.logAction(
         Logger.LOG_MICRO,
@@ -105,7 +103,7 @@ function logResponseHandler(callback: Function, method: HttpMethods, path: strin
         'Received; ' +
           urlFromPathAndParams(path, params) +
           '; Headers: ' +
-          paramString(headers) +
+          (headers ? paramString(headers) : "None") +
           '; StatusCode: ' +
           statusCode +
           '; Body: ' +
@@ -118,63 +116,66 @@ function logResponseHandler(callback: Function, method: HttpMethods, path: strin
   };
 }
 
+// TODO: Remove Error from type
+export type ResourceCallback = (err: ErrorInfo | null, body?: unknown, headers?: Record<string, string>, unpacked?: boolean, statusCode?: number)=>void;
+
 class Resource {
   static get(
     rest: Rest,
     path: string,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Get, rest, path, null, origheaders, origparams, envelope, callback);
+    Resource.do(HttpMethods.Get, rest, path, null, headers, params, envelope, callback);
   }
 
   static delete(
     rest: Rest,
     path: string,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Delete, rest, path, null, origheaders, origparams, envelope, callback);
+    Resource.do(HttpMethods.Delete, rest, path, null, headers, params, envelope, callback);
   }
 
   static post(
     rest: Rest,
     path: string,
     body: unknown,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Post, rest, path, body, origheaders, origparams, envelope, callback);
+    Resource.do(HttpMethods.Post, rest, path, body, headers, params, envelope, callback);
   }
 
   static patch(
     rest: Rest,
     path: string,
     body: unknown,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Patch, rest, path, body, origheaders, origparams, envelope, callback);
+    Resource.do(HttpMethods.Patch, rest, path, body, headers, params, envelope, callback);
   }
 
   static put(
     rest: Rest,
     path: string,
     body: unknown,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Put, rest, path, body, origheaders, origparams, envelope, callback);
+    Resource.do(HttpMethods.Put, rest, path, body, headers, params, envelope, callback);
   }
 
   static do(
@@ -182,18 +183,18 @@ class Resource {
     rest: Rest,
     path: string,
     body: unknown,
-    origheaders: Record<string, string>,
-    origparams: Record<string, any>,
+    headers: Record<string, string>,
+    params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: Function
+    callback: ResourceCallback
   ): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback, method, path, origparams);
+      callback = logResponseHandler(callback, method, path, params);
     }
 
     if (envelope) {
       callback = callback && unenvelope(callback, envelope);
-      (origparams = origparams || {})['envelope'] = envelope;
+      (params = params || {})['envelope'] = envelope;
     }
 
     function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
@@ -220,7 +221,7 @@ class Resource {
                 return;
               }
               /* retry ... */
-              withAuthDetails(rest, origheaders, origparams, callback, doRequest);
+              withAuthDetails(rest, headers, params, callback, doRequest);
             });
             return;
           }
@@ -234,7 +235,7 @@ class Resource {
 
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
-        if ((headers['content-type'] || '').indexOf('msgpack') > 0) {
+        if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
             decodedBody = msgpack.decode(body as Buffer);
           } catch (decodeErr) {
@@ -254,7 +255,7 @@ class Resource {
       (rest.http[method] as Function).apply(rest.http, args);
     }
 
-    withAuthDetails(rest, origheaders, origparams, callback, doRequest);
+    withAuthDetails(rest, headers, params, callback, doRequest);
   }
 }
 
