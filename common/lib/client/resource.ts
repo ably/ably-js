@@ -46,8 +46,7 @@ function unenvelope(callback: ResourceCallback, format: Utils.Format | null): Re
         }
 
         if (!body) {
-            // TODO: use ErrorInfo
-            callback(new Error('Error in unenveloping - body missing'));
+            callback(new ErrorInfo("Body is missing", null));
             return
         }
 
@@ -116,7 +115,6 @@ function logResponseHandler(callback: ResourceCallback, method: HttpMethods, pat
   };
 }
 
-// TODO: Remove Error from type
 export type ResourceCallback = (err: ErrorInfo | null, body?: unknown, headers?: Record<string, string>, unpacked?: boolean, statusCode?: number)=>void;
 
 class Resource {
@@ -217,7 +215,7 @@ class Resource {
             /* token has expired, so get a new one */
             rest.auth.authorize(null, null, function (err: Error) {
               if (err) {
-                callback(err);
+                callback(ErrorInfo.fromValues(err));
                 return;
               }
               /* retry ... */
