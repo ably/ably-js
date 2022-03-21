@@ -131,8 +131,7 @@ class PaginatedResource {
       }
     );
   }
-
-
+  
   handlePage<T>(
     err: ErrorInfo | null,
     body: unknown,
