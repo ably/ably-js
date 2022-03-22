@@ -46,7 +46,7 @@ function unenvelope(callback: ResourceCallback, format: Utils.Format | null): Re
     }
 
     if (!body) {
-      callback(new ErrorInfo('Body is missing', null));
+      callback(new ErrorInfo('unenvelope(): Response body is missing', null));
       return;
     }
 
@@ -107,7 +107,7 @@ function logResponseHandler(
         'Received; ' +
           urlFromPathAndParams(path, params) +
           '; Headers: ' +
-          (headers ? paramString(headers) : 'None') +
+          (paramString(headers as Record<string, any>) ) +
           '; StatusCode: ' +
           statusCode +
           '; Body: ' +
@@ -224,9 +224,9 @@ class Resource {
         function (err: ErrorInfo, res: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
           if (err && Auth.isTokenErr(err)) {
             /* token has expired, so get a new one */
-            rest.auth.authorize(null, null, function (err: Error) {
+            rest.auth.authorize(null, null, function (err: ErrorInfo) {
               if (err) {
-                callback(ErrorInfo.fromValues(err));
+                callback(err);
                 return;
               }
               /* retry ... */
