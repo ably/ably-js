@@ -6,7 +6,7 @@ import Crypto from 'platform-crypto';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import Resource from './resource';
+import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
@@ -20,6 +20,7 @@ interface RestHistoryParams {
 }
 
 function noop() {}
+
 const MSG_ID_ENTROPY_BYTES = 9;
 
 function allEmptyIds(messages: Array<Message>) {
@@ -185,7 +186,7 @@ class Channel extends EventEmitter {
     });
   }
 
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: Function): void {
+  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
     Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, null, callback);
   }
 }
