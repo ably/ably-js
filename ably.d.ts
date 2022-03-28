@@ -191,7 +191,7 @@ declare namespace Types {
     suspendedRetryTimeout?: number;
     closeOnUnload?: boolean;
     idempotentRestPublishing?: boolean;
-    transportParams?: { [k: string]: string };
+    transportParams?: { [k: string]: string | number };
     transports?: Transport[];
 
     httpMaxRetryCount?: number;
