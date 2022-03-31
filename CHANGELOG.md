@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.18](https://github.com/ably/ably-js/tree/1.2.18) (2022-03-31)
+- Convert library source code to TypeScript [\#762](https://github.com/ably/ably-js/pull/762)
+- Add `realtimeRequestTimeout` to ClientOptions type [\#934](https://github.com/ably/ably-js/pull/934)
+- Override toJSON for HttpPaginatedResponse [\#913](https://github.com/ably/ably-js/pull/913)
+- Throw ErrorInfo when invalid key supplied [\#912](https://github.com/ably/ably-js/pull/912)
+- Remove ErrorReporter [\#908](https://github.com/ably/ably-js/pull/908)
+- Fix nonsensical error in RealtimePresence.leaveClient when channel state is invalid [\#911](https://github.com/ably/ably-js/pull/911)
+
 ## [1.2.17](https://github.com/ably/ably-js/tree/1.2.17) (2022-01-14)
 - Remove NPM preinstall script (this was breaking NPM installs when outside a git repository) [\#876](https://github.com/ably/ably-js/pull/876)
 
