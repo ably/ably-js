@@ -9,7 +9,6 @@ This contains only the most important and/or user-facing changes; for a full cha
 - Throw ErrorInfo when invalid key supplied [\#912](https://github.com/ably/ably-js/pull/912)
 - Remove ErrorReporter [\#908](https://github.com/ably/ably-js/pull/908)
 - Fix nonsensical error in RealtimePresence.leaveClient when channel state is invalid [\#911](https://github.com/ably/ably-js/pull/911)
-- Remove ErrorReporter [\]
 
 ## [1.2.17](https://github.com/ably/ably-js/tree/1.2.17) (2022-01-14)
 - Remove NPM preinstall script (this was breaking NPM installs when outside a git repository) [\#876](https://github.com/ably/ably-js/pull/876)
