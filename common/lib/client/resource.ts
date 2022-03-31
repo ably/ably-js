@@ -107,7 +107,7 @@ function logResponseHandler(
         'Received; ' +
           urlFromPathAndParams(path, params) +
           '; Headers: ' +
-          (paramString(headers as Record<string, any>) ) +
+          paramString(headers as Record<string, any>) +
           '; StatusCode: ' +
           statusCode +
           '; Body: ' +
