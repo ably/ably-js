@@ -58,7 +58,7 @@ class WebSocketTransport extends Transport {
       for (const key in connectParams) uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
     }
     this.uri = uri;
-    return new WebSocket(uri);
+    return new WebSocket(encodeURI(uri));
   }
 
   toString() {
