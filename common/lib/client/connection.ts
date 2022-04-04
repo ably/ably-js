@@ -64,7 +64,7 @@ class Connection extends EventEmitter {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
     if (!callback) {
       if (this.ably.options.promises) {
-        return Utils.promisify(this, 'ping', [callback]);
+        return Utils.promisify(this, 'ping', arguments);
       }
       callback = noop;
     }

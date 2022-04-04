@@ -29,7 +29,7 @@ class Presence extends EventEmitter {
         params = null;
       } else {
         if (this.channel.rest.options.promises) {
-          return Utils.promisify(this, 'get', [params, callback]);
+          return Utils.promisify(this, 'get', arguments);
         }
         callback = noop;
       }
@@ -64,7 +64,7 @@ class Presence extends EventEmitter {
         params = null;
       } else {
         if (this.channel.rest.options.promises) {
-          return Utils.promisify(this, '_history', [params, callback]);
+          return Utils.promisify(this, '_history', arguments);
         }
         callback = noop;
       }

@@ -184,29 +184,30 @@ export class PaginatedResult<T> {
     this.resource = resource;
     this.items = items;
 
+    const self = this;
     if (relParams) {
       if ('first' in relParams) {
-        this.first = (callback: (result?: ErrorInfo | null) => void) => {
-          if (!callback && this.resource.rest.options.promises) {
-            return Utils.promisify(this, 'first', []);
+        this.first = function (callback: (result?: ErrorInfo | null) => void) {
+          if (!callback && self.resource.rest.options.promises) {
+            return Utils.promisify(self, 'first', arguments);
           }
-          this.get(relParams.first, callback);
+          self.get(relParams.first, callback);
         };
       }
       if ('current' in relParams) {
-        this.current = (callback: (results?: ErrorInfo | null) => void) => {
-          if (!callback && this.resource.rest.options.promises) {
-            return Utils.promisify(this, 'current', []);
+        this.current = function (callback: (results?: ErrorInfo | null) => void) {
+          if (!callback && self.resource.rest.options.promises) {
+            return Utils.promisify(self, 'current', arguments);
           }
-          this.get(relParams.current, callback);
+          self.get(relParams.current, callback);
         };
       }
-      this.next = (callback: (results?: ErrorInfo | null) => void) => {
-        if (!callback && this.resource.rest.options.promises) {
-          return Utils.promisify(this, 'next', []);
+      this.next = function (callback: (results?: ErrorInfo | null) => void) {
+        if (!callback && self.resource.rest.options.promises) {
+          return Utils.promisify(self, 'next', arguments);
         }
         if ('next' in relParams) {
-          this.get(relParams.next, callback);
+          self.get(relParams.next, callback);
         } else {
           callback(null);
         }
