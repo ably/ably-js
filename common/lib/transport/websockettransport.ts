@@ -162,8 +162,9 @@ class WebSocketTransport extends Transport {
     let wasClean, code;
     if (typeof ev == 'object') {
       /* W3C spec-compatible */
-      wasClean = ev.wasClean;
       code = ev.code;
+      // ev.wasClean is undefined in reactnative
+      wasClean = ev.wasClean || code === 1000;
     } /*if(typeof(ev) == 'number')*/ else {
       /* ws in node */
       code = ev;
