@@ -154,7 +154,7 @@ export class TransportParams {
       params.heartbeats = this.heartbeats;
     }
     params.v = Defaults.apiVersion;
-    params.agent = Defaults.agent;
+    params.agent = encodeURIComponent(Defaults.agent);
     if (options.transportParams !== undefined) {
       Utils.mixin(params, options.transportParams);
     }
