@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.19](https://github.com/ably/ably-js/tree/1.2.19) (2022-04-05)
+- Fix error where some promisified REST methods caused call stack errors [\#943](https://github.com/ably/ably-js/issue/943)
+- Fix wasClean implementation for reactnative websocket transport [\#946](https://github.com/ably/ably-js/pull/946)
+- Ensure that Ably-Agent is always URI encoded [\#947](https://github.com/ably/ably-js/pull/947)
+
 ## [1.2.18](https://github.com/ably/ably-js/tree/1.2.18) (2022-03-31)
 - Convert library source code to TypeScript [\#762](https://github.com/ably/ably-js/pull/762)
 - Add `realtimeRequestTimeout` to ClientOptions type [\#934](https://github.com/ably/ably-js/pull/934)
