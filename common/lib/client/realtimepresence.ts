@@ -311,7 +311,7 @@ class RealtimePresence extends Presence {
         params = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, 'history', [params, callback]);
+          return Utils.promisify(this, 'history', arguments);
         }
         callback = noop;
       }
@@ -529,7 +529,7 @@ class RealtimePresence extends Presence {
 
     if (!callback) {
       if (this.channel.realtime.options.promises) {
-        return Utils.promisify(this, 'subscribe', [event, listener]);
+        return Utils.promisify(this, 'subscribe', arguments);
       }
       callback = noop;
     }

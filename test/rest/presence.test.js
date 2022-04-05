@@ -145,5 +145,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         done(err);
       }
     });
+
+    if (typeof Promise !== 'undefined') {
+      it('presencePromise', function (done) {
+        var rest = helper.AblyRest({ promises: true });
+        var channel = rest.channels.get('some_channel');
+
+        channel.presence
+          .get()
+          .then(function () {
+            done();
+          })
+          ['catch'](function (err) {
+            done(err);
+          });
+      });
+    }
   });
 });
