@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.20](https://github.com/ably/ably-js/tree/1.2.20) (2022-04-06)
+- Fix error where calling realtime presence update caused call stack errors [\#949](https://github.com/ably/ably-js/issue/949)
+- Fix an issue where Ably-Agent headers were encoded incorrectly [\#950](https://github.com/ably/ably-js/pull/950)
+
 ## [1.2.19](https://github.com/ably/ably-js/tree/1.2.19) (2022-04-05)
 - Fix error where some promisified REST methods caused call stack errors [\#943](https://github.com/ably/ably-js/issue/943)
 - Fix wasClean implementation for reactnative websocket transport [\#946](https://github.com/ably/ably-js/pull/946)
