@@ -770,8 +770,8 @@ declare namespace Types {
 
   class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     errorReason: ErrorInfo;
-    id: string;
-    key: string;
+    id?: string;
+    key?: string;
     recoveryKey: string;
     serial: number;
     readonly state: ConnectionState;
