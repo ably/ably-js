@@ -136,7 +136,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', arguments);
+          return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
         }
         callback = noop;
       }
