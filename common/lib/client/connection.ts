@@ -13,7 +13,7 @@ class Connection extends EventEmitter {
   ably: Realtime;
   connectionManager: ConnectionManager;
   state: string;
-  key?: never;
+  key?: string;
   id?: string;
   serial: undefined;
   timeSerial: undefined;
