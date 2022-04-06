@@ -136,7 +136,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', arguments);
+          return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
         }
         callback = noop;
       }
@@ -203,7 +203,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, 'leaveClient', arguments);
+          return Utils.promisify(this, 'leaveClient', [clientId, data]);
         }
         callback = noop;
       }
@@ -529,7 +529,7 @@ class RealtimePresence extends Presence {
 
     if (!callback) {
       if (this.channel.realtime.options.promises) {
-        return Utils.promisify(this, 'subscribe', arguments);
+        return Utils.promisify(this, 'subscribe', [event, listener]);
       }
       callback = noop;
     }
