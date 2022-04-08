@@ -22,8 +22,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * RSC7a
      */
     it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', function (done) {
-      //Intercept get&post methods with test
-      function testRequestHandler(_, __, headers) {
+      //Intercept Http.do with test
+      function testRequestHandler(_, __, ___, headers) {
         try {
           expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
           expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
@@ -50,11 +50,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         }
       }
 
-      var get_inner = Ably.Rest.Http.get;
-      Ably.Rest.Http.get = testRequestHandler;
-
-      var post_inner = Ably.Rest.Http.post;
-      Ably.Rest.Http.post = testRequestHandler;
+      var do_inner = Ably.Rest.Http.do;
+      Ably.Rest.Http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
       rest.auth.requestToken();
@@ -64,9 +61,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       channel.publish('test', 'Testing http headers');
       channel.presence.get();
 
-      // Clean interceptors from get&post methods
-      Ably.Rest.Http.get = get_inner;
-      Ably.Rest.Http.post = post_inner;
+      // Clean interceptors from Http.do
+      Ably.Rest.Http.do = do_inner;
 
       done();
     });

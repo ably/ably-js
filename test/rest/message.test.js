@@ -228,7 +228,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           fallbackHosts: [host, host, host],
         }),
         channel = rest.channels.get('automatic_idempotent_rest_publishing'),
-        originalPost = Ably.Rest.Http.post,
         idOne,
         idTwo,
         originalPublish = channel._publish,
