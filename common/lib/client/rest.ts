@@ -137,10 +137,12 @@ class Rest {
     const timeUri = (host: string) => {
       return this.authority(host) + '/time';
     };
-    this.http.get(
+    this.http.do(
+      HttpMethods.Get,
       this,
       timeUri,
       headers,
+      null,
       params as RequestParams,
       (
         err?: ErrorInfo | ErrnoException | null,

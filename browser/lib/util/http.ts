@@ -73,9 +73,11 @@ const Http: typeof IHttp = class {
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
         const upUrl = Defaults.internetUpUrl;
         Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-        this.getUri(
+        this.doUri(
+          HttpMethods.Get,
           null as any,
           upUrl,
+          null,
           null,
           null,
           function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
@@ -246,131 +248,6 @@ const Http: typeof IHttp = class {
       return;
     }
     this.Request(method, rest, uri, headers, params, body, callback);
-  }
-
-  /** Http.get, Http.post, Http.put, ...
-   * Perform an HTTP request for a given path against prime and fallback Ably hosts
-   * @param rest
-   * @param path the full path
-   * @param headers optional hash of headers
-   * [only for methods with body: @param body object or buffer containing request body]
-   * @param params optional hash of params
-   * @param callback (err, response)
-   *
-   ** Http.getUri, Http.postUri, Http.putUri, ...
-   * Perform an HTTP request for a given full URI
-   * @param rest
-   * @param uri the full URI
-   * @param headers optional hash of headers
-   * [only for methods with body: @param body object or buffer containing request body]
-   * @param params optional hash of params
-   * @param callback (err, response)
-   */
-
-  get(
-    rest: Rest,
-    path: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.do(HttpMethods.Get, rest, path, headers, null, params, callback);
-  }
-
-  getUri(
-    rest: Rest,
-    uri: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.doUri(HttpMethods.Get, rest, uri, headers, null, params, callback);
-  }
-
-  delete(
-    rest: Rest,
-    path: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.do(HttpMethods.Delete, rest, path, headers, null, params, callback);
-  }
-
-  deleteUri(
-    rest: Rest,
-    uri: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.doUri(HttpMethods.Delete, rest, uri, headers, null, params, callback);
-  }
-
-  post(
-    rest: Rest,
-    path: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.do(HttpMethods.Post, rest, path, headers, body, params, callback);
-  }
-
-  postUri(
-    rest: Rest,
-    uri: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.doUri(HttpMethods.Post, rest, uri, headers, body, params, callback);
-  }
-
-  put(
-    rest: Rest,
-    path: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.do(HttpMethods.Put, rest, path, headers, body, params, callback);
-  }
-
-  putUri(
-    rest: Rest,
-    uri: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.doUri(HttpMethods.Put, rest, uri, headers, body, params, callback);
-  }
-
-  patch(
-    rest: Rest,
-    path: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.do(HttpMethods.Patch, rest, path, headers, body, params, callback);
-  }
-
-  patchUri(
-    rest: Rest,
-    uri: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    this.doUri(HttpMethods.Patch, rest, uri, headers, body, params, callback);
   }
 
   Request?: (

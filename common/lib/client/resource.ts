@@ -6,6 +6,7 @@ import * as BufferUtils from 'platform-bufferutils';
 import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo from '../types/errorinfo';
 import Rest from './rest';
+import { ErrnoException } from '../../types/http';
 
 const msgpack = Platform.msgpack;
 
@@ -215,33 +216,6 @@ class Resource {
         );
       }
 
-      const args = [
-        rest,
-        path,
-        headers,
-        body,
-        params,
-        function (err: ErrorInfo, res: any, headers: Record<string, string>, unpacked: boolean, statusCode: number) {
-          if (err && Auth.isTokenErr(err)) {
-            /* token has expired, so get a new one */
-            rest.auth.authorize(null, null, function (err: ErrorInfo) {
-              if (err) {
-                callback(err);
-                return;
-              }
-              /* retry ... */
-              withAuthDetails(rest, headers, params, callback, doRequest);
-            });
-            return;
-          }
-          callback(err, res, headers, unpacked, statusCode);
-        },
-      ];
-      if (!body) {
-        // Removes the third argument (body) from the args array
-        args.splice(3, 1);
-      }
-
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
@@ -261,7 +235,36 @@ class Resource {
           'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody
         );
       }
-      (rest.http[method] as Function).apply(rest.http, args);
+
+      rest.http.do(
+        method,
+        rest,
+        path,
+        headers,
+        body,
+        params,
+        function (
+          err: ErrorInfo | ErrnoException | null | undefined,
+          res: any,
+          headers: Record<string, string>,
+          unpacked?: boolean,
+          statusCode?: number
+        ) {
+          if (err && Auth.isTokenErr(err as ErrorInfo)) {
+            /* token has expired, so get a new one */
+            rest.auth.authorize(null, null, function (err: ErrorInfo) {
+              if (err) {
+                callback(err);
+                return;
+              }
+              /* retry ... */
+              withAuthDetails(rest, headers, params, callback, doRequest);
+            });
+            return;
+          }
+          callback(err as ErrorInfo, res, headers, unpacked, statusCode);
+        }
+      );
     }
 
     withAuthDetails(rest, headers, params, callback, doRequest);
