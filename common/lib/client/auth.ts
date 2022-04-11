@@ -14,6 +14,7 @@ import { StandardCallback } from '../../types/utils';
 import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
+import HttpMethods from '../../constants/HttpMethods';
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -560,7 +561,8 @@ class Auth {
           const headers = authHeaders || {};
           headers['content-type'] = 'application/x-www-form-urlencoded';
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-          this.client.http.postUri(
+          this.client.http.doUri(
+            HttpMethods.Post,
             client,
             authOptions.authUrl,
             headers,
@@ -569,10 +571,12 @@ class Auth {
             authUrlRequestCallback as RequestCallback
           );
         } else {
-          this.client.http.getUri(
+          this.client.http.doUri(
+            HttpMethods.Get,
             client,
             authOptions.authUrl,
             authHeaders || {},
+            null,
             authParams,
             authUrlRequestCallback as RequestCallback
           );
@@ -613,7 +617,8 @@ class Auth {
         'Auth.requestToken().requestToken',
         'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams)
       );
-      this.client.http.post(
+      this.client.http.do(
+        HttpMethods.Post,
         client,
         tokenUri,
         requestHeaders,

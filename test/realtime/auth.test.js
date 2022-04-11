@@ -21,7 +21,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
    */
   function getJWT(params, callback) {
     var authUrl = echoServer + '/createJWT';
-    http.getUri(null, authUrl, null, params, function (err, body) {
+    http.doUri('get', null, authUrl, null, null, params, function (err, body) {
       if (err) {
         callback(err, null);
       }
