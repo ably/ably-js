@@ -47,7 +47,7 @@ For complete API documentation, see the [Ably documentation](https://www.ably.co
 and require as:
 
 ```javascript
-var Ably = require('ably');
+var Ably = require('src/ably');
 ```
 
 For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. For the explicitly-callback-based variant use `require('ably/callbacks')`– see [Async API style](#async-api-style).
@@ -83,8 +83,9 @@ If that doesn't work for some reason (e.g. you are using a custom webpack target
 The TypeScript typings are included in the package and so all you have to do is:
 
 ```typescript
-import * as Ably from 'ably';
-let options: Ably.Types.ClientOptions = { key: 'foo' };
+import * as Ably from 'src/ably';
+
+let options: Ably.Types.ClientOptions = {key: 'foo'};
 let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
 let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
@@ -95,7 +96,7 @@ Intellisense in IDEs with TypeScript support is supported:
 
 ![TypeScript suggestions](./resources/typescript-demo.gif)
 
-If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
+If you need to explicitly import the type definitions, see [ably.d.ts](src/ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
 
 ## Async API style
 

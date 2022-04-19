@@ -16,12 +16,12 @@
     "./browser/static/ably-node.js": "./browser/static/ably-commonjs.js"
   },
   "files": [
-    "ably.d.ts",
+    "src/ably.d.ts",
     "browser/static/**",
-    "callbacks.d.ts",
-    "callbacks.js",
-    "promises.d.ts",
-    "promises.js",
+    "src/callbacks.d.ts",
+    "src/callbacks.js",
+    "src/promises.d.ts",
+    "src/promises.js",
     "resources/**"
   ],
   "dependencies": {
@@ -98,8 +98,8 @@
     "lint:fix": "eslint --fix .",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
-    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
+    "format": "prettier --write --ignore-path .gitignore common browser nodejs test src/ably.d.ts webpack.config.js Gruntfile.js",
+    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test src/ably.d.ts webpack.config.js Gruntfile.js",
     "sourcemap": "source-map-explorer browser/static/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
   }

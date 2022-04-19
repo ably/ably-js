@@ -3,22 +3,22 @@
  */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
-const banner = require('./browser/fragments/license');
+const banner = require('./src/platform/web/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
 
-const nodePath = path.resolve(__dirname, 'nodejs');
-const browserPath = path.resolve(__dirname, 'browser');
+const nodePath = path.resolve(__dirname, 'src', 'platform', 'nodejs');
+const browserPath = path.resolve(__dirname, 'src', 'platform', 'web');
 
 const baseConfig = {
   mode: 'production',
   entry: {
-    index: path.resolve(__dirname, 'common', 'lib', 'index.js'),
+    index: path.resolve(__dirname, 'src', 'common', 'lib', 'index.js'),
   },
   resolve: {
     extensions: ['.js', '.ts'],
   },
   output: {
-    path: path.resolve(__dirname, 'browser/static'),
+    path: path.resolve(__dirname, 'build'),
     library: 'Ably',
     libraryTarget: 'umd',
     libraryExport: 'default',
@@ -53,11 +53,11 @@ const nodeConfig = {
     ...baseConfig.resolve,
     alias: {
       platform: path.resolve(nodePath, 'platform'),
-      'platform-http': path.resolve(nodePath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(nodePath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(nodePath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
-      'platform-transports': path.resolve(nodePath, 'lib', 'transport'),
+      'platform-http': path.resolve(nodePath,  'lib', 'util', 'http'),
+      'platform-bufferutils': path.resolve(nodePath,  'lib', 'util', 'bufferutils'),
+      'platform-defaults': path.resolve(nodePath,  'lib', 'util', 'defaults'),
+      'platform-crypto': path.resolve(nodePath,  'lib', 'util', 'crypto'),
+      'platform-transports': path.resolve(nodePath,  'lib', 'transport'),
       // webpack null-loader is used to ensure that the following modules resolve to null - webpack won't compile unless these aliases are pointing at a valid module so these values are irrelevant.
       'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
       'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
@@ -158,7 +158,7 @@ const reactNativeConfig = {
   resolve: {
     extensions: ['.js', '.ts'],
     alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-reactnative'),
+      platform: path.resolve(browserPath,  'fragments', 'platform-reactnative'),
       'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
       'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
       'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
@@ -218,8 +218,8 @@ const webworkerConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: path.resolve(browserPath, 'fragments', 'ably.d.ts'),
-          to: path.resolve(browserPath, 'static', 'ably-webworker.min.d.ts'),
+          from: path.resolve(browserPath,  'fragments', 'ably.d.ts'),
+          to: path.resolve(browserPath, 'build', 'ably-webworker.min.d.ts'),
         },
       ],
     }),
