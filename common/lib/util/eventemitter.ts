@@ -304,9 +304,9 @@ class EventEmitter {
       throw 'whenState requires a valid event String argument';
     }
     if (typeof listener !== 'function' && Platform.Promise) {
-      return new Platform.Promise(function (resolve) {
+      return new Platform.Promise((resolve) => {
         EventEmitter.prototype.whenState.apply(
-          self,
+          this,
           [targetState, currentState, resolve].concat(listenerArgs as any[]) as any
         );
       });
