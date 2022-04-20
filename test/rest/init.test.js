@@ -85,11 +85,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(rest.options.promises, 'Check promises default to true with promise constructor').to.be.ok;
 
       if (!isBrowser && typeof require == 'function') {
-        var AblyPromises = require('../../promises');
+        var AblyPromises = require('../../src/promises');
         rest = new AblyPromises.Rest(keyStr);
         expect(rest.options.promises, 'Check promises default to true with promise require target').to.be.ok;
 
-        var AblyCallbacks = require('../../callbacks');
+        var AblyCallbacks = require('../../src/callbacks');
         rest = new AblyCallbacks.Rest(keyStr);
         expect(!rest.options.promises, 'Check promises default to false with callback require target').to.be.ok;
       }

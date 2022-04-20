@@ -9,7 +9,7 @@ function promisifyOptions(options) {
 
 /* Please note that the file imported below is only generated after running
  * the build task. */
-var Ably = require('../browser/static/ably-node');
+var Ably = require('../build/ably-node');
 
 var RestPromise = function(options) {
   return new Ably.Rest(promisifyOptions(options));

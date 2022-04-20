@@ -7,13 +7,13 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
-  "main": "./browser/static/ably-node.js",
+  "main": "./build/ably-node.js",
   "typings": "./ably.d.ts",
   "react-native": {
-    "./browser/static/ably-node.js": "./browser/static/ably-reactnative.js"
+    "./build/ably-node.js": "./build/ably-reactnative.js"
   },
   "browser": {
-    "./browser/static/ably-node.js": "./browser/static/ably-commonjs.js"
+    "./build/ably-node.js": "./build/ably-commonjs.js"
   },
   "files": [
     "src/ably.d.ts",
