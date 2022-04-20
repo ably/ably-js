@@ -2131,10 +2131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     .then(function () {
                       channel.presence.get().then(function (members) {
                         expect(members.length).to.equal(1, 'Expect test client to be the only member present');
-                        expect(members[0].clientId).to.equal(
-                          testClientId,
-                          'Expected test clientId to be correct'
-                        );
+                        expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
                         expect(members[0].data).to.equal(testData2, 'Expected data to be correct');
                         closeAndFinish(done, client);
                       });
