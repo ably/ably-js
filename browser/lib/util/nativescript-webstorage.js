@@ -1,8 +1,7 @@
 import * as Utils from '../../../common/lib/util/utils';
+import appSettings from 'application-settings';
 
 var WebStorage = (function () {
-  var appSettings = require('application-settings');
-
   function WebStorage() {}
 
   function set(name, value, ttl) {
