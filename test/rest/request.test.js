@@ -237,5 +237,24 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         });
       });
     });
+
+    if (typeof Promise !== 'undefined') {
+      it('request_promise', function (done) {
+        var client = helper.AblyRest({ promises: true });
+
+        client
+          .request('get', '/time', null, null, null)
+          .then(function (res) {
+            expect(res.statusCode).to.equal(200, 'Check statusCode');
+            expect(res.success).to.equal(true, 'Check success');
+            expect(utils.isArray(res.items), true, 'Check array returned').to.be.ok;
+            expect(res.items.length).to.equal(1, 'Check array was of length 1');
+            done();
+          })
+          ['catch'](function (err) {
+            done(err);
+          });
+      });
+    }
   });
 });
