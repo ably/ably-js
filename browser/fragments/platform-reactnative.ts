@@ -1,6 +1,7 @@
 import msgpack from '../lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import { IPlatform } from '../../common/types/IPlatform';
+import ReactNative from 'react-native';
 
 const Platform: IPlatform = {
   agent: 'reactnative',
@@ -40,7 +41,7 @@ const Platform: IPlatform = {
         callback(err, !err && parseBase64(base64String));
       });
     };
-  })(require('react-native').NativeModules.RNRandomBytes),
+  })(ReactNative.NativeModules.RNRandomBytes),
 };
 
 export default Platform;
