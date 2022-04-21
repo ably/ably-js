@@ -438,5 +438,37 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
       closeAndFinish(done, realtime);
     });
+
+    if (typeof Promise !== 'undefined') {
+      describe('event_emitter_promise', function () {
+        it('whenState', function (done) {
+          var realtime = helper.AblyRealtime({ promises: true });
+          var eventEmitter = realtime.connection;
+
+          eventEmitter
+            .whenState('connected')
+            .then(function () {
+              closeAndFinish(done, realtime);
+            })
+            ['catch'](function (err) {
+              closeAndFinish(done, realtime, err);
+            });
+        });
+
+        it('once', function (done) {
+          var realtime = helper.AblyRealtime({ promises: true });
+          var eventEmitter = realtime.connection;
+
+          eventEmitter
+            .once('connected')
+            .then(function () {
+              closeAndFinish(done, realtime);
+            })
+            ['catch'](function (err) {
+              closeAndFinish(done, realtime, err);
+            });
+        });
+      });
+    }
   });
 });

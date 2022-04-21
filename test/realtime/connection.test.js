@@ -304,5 +304,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
       monitorConnection(done, realtime);
     });
+
+    if (typeof Promise !== 'undefined') {
+      describe('connection_promise', function () {
+        it('ping', function (done) {
+          var client = helper.AblyRealtime({ promises: true });
+
+          client.connection
+            .once('connected')
+            .then(function () {
+              client.connection
+                .ping()
+                .then(function (responseTime) {
+                  expect(typeof responseTime).to.equal('number', 'check that a responseTime returned');
+                  expect(responseTime > 0, 'check that responseTime was positive').to.be.ok;
+                  closeAndFinish(done, client);
+                })
+                ['catch'](function (err) {
+                  closeAndFinish(done, client, err);
+                });
+            })
+            ['catch'](function (err) {
+              closeAndFinish(done, client, err);
+            });
+        });
+      });
+    }
   });
 });
