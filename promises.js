@@ -9,6 +9,7 @@ function promisifyOptions(options) {
 
 /* Please note that the file imported below is only generated after running 
  * the build task. */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 var Ably = require('./browser/static/ably-node');
 
 var RestPromise = function(options) {
