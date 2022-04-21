@@ -1,7 +1,6 @@
 import msgpack from '../lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import { IPlatform } from '../../common/types/IPlatform';
-import ReactNative from 'react-native';
 
 const Platform: IPlatform = {
   agent: 'reactnative',
@@ -41,7 +40,10 @@ const Platform: IPlatform = {
         callback(err, !err && parseBase64(base64String));
       });
     };
-  })(ReactNative.NativeModules.RNRandomBytes),
+    // Installing @types/react-native would fix this but conflicts with @types/node
+    // See https://github.com/DefinitelyTyped/DefinitelyTyped/issues/15960
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+  })(require('react-native').NativeModules.RNRandomBytes),
 };
 
 export default Platform;
