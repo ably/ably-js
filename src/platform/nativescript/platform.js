@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import msgpack from '../lib/util/msgpack';
+import msgpack from '../web/lib/util/msgpack';
 require('nativescript-websockets');
 
 var randomBytes;

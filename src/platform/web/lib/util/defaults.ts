@@ -1,6 +1,5 @@
-import Platform from 'platform';
-import IDefaults from '../../../../common/types/IDefaults';
-import TransportNames from '../../../../common/constants/TransportNames';
+import IDefaults from 'common/types/IDefaults';
+import TransportNames from 'common/constants/TransportNames';
 
 const Defaults: IDefaults = {
   internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
@@ -31,12 +30,15 @@ const Defaults: IDefaults = {
   upgradeTransports: [TransportNames.XhrStreaming, TransportNames.WebSocket],
 };
 
+// TODO: move this
+
 /* If using IE8, don't attempt to upgrade from xhr_polling to xhr_streaming -
  * while it can do streaming, the low max http-connections-per-host limit means
  * that the polling transport is crippled during the upgrade process. So just
  * leave it at the base transport */
-if (Platform.noUpgrade) {
-  Defaults.upgradeTransports = [];
-}
+// if (Platform.Config.noUpgrade) {
+//   Defaults.upgradeTransports = [];
+// }
+
 
 export default Defaults;

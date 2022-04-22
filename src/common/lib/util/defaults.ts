@@ -1,19 +1,17 @@
-import PlatformDefaults from 'platform-defaults';
-import Platform from 'platform';
-import * as BufferUtils from 'platform-bufferutils';
+import Platform from 'common/platform';
 import * as Utils from './utils';
 import Logger from './logger';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
-import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
+import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
 
 let agent = 'ably-js/' + version;
-if (Platform.agent) {
-  agent += ' ' + Platform.agent;
+if (Platform.Config.agent) {
+  agent += ' ' + Platform.Config.agent;
 }
 
 const Defaults = {
-  ...PlatformDefaults,
+  ...Platform.Defaults,
   ENVIRONMENT: '',
   REST_HOST: 'rest.ably.io',
   REALTIME_HOST: 'realtime.ably.io',
@@ -235,21 +233,21 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   const timeouts = getTimeouts(options);
 
   if ('useBinaryProtocol' in options) {
-    options.useBinaryProtocol = Platform.supportsBinary && options.useBinaryProtocol;
+    options.useBinaryProtocol = Platform.Config.supportsBinary && options.useBinaryProtocol;
   } else {
-    options.useBinaryProtocol = Platform.preferBinary;
+    options.useBinaryProtocol = Platform.Config.preferBinary;
   }
 
   if (options.clientId) {
     const headers = (options.headers = options.headers || {});
-    headers['X-Ably-ClientId'] = BufferUtils.base64Encode(BufferUtils.utf8Encode(options.clientId));
+    headers['X-Ably-ClientId'] = Platform.BufferUtils.base64Encode(Platform.BufferUtils.utf8Encode(options.clientId));
   }
 
   if (!('idempotentRestPublishing' in options)) {
     options.idempotentRestPublishing = true;
   }
 
-  if (options.promises && !Platform.Promise) {
+  if (options.promises && !Platform.Config.Promise) {
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
@@ -267,7 +265,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   return {
     ...options,
     useBinaryProtocol:
-      'useBinaryProtocol' in options ? Platform.supportsBinary && options.useBinaryProtocol : Platform.preferBinary,
+      'useBinaryProtocol' in options ? Platform.Config.supportsBinary && options.useBinaryProtocol : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,

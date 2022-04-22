@@ -2,7 +2,6 @@ import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Presence from './presence';
-import Crypto from 'platform-crypto';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
@@ -11,6 +10,7 @@ import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
 import Realtime from './realtime';
+import Platform from 'common/platform';
 
 interface RestHistoryParams {
   start?: number;
@@ -32,8 +32,8 @@ function allEmptyIds(messages: Array<Message>) {
 function normaliseChannelOptions(options?: ChannelOptions) {
   const channelOptions = options || {};
   if (channelOptions.cipher) {
-    if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Crypto.getCipher(channelOptions.cipher);
+    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+    const cipher = Platform.Crypto.getCipher(channelOptions.cipher);
     channelOptions.cipher = cipher.cipherParams;
     channelOptions.channelCipher = cipher.cipher;
   } else if ('cipher' in channelOptions) {

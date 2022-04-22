@@ -1,16 +1,16 @@
-import * as Utils from '../../../../common/lib/util/utils';
-import CometTransport from '../../../../common/lib/transport/comettransport';
-import Platform from 'platform';
-import EventEmitter from '../../../../common/lib/util/eventemitter';
-import ErrorInfo from '../../../../common/lib/types/errorinfo';
-import Defaults from '../../../../common/lib/util/defaults';
-import Logger from '../../../../common/lib/util/logger';
-import Auth from '../../../../common/lib/client/auth';
-import HttpMethods from '../../../../common/constants/HttpMethods';
-import { RequestParams } from '../../../../common/types/http';
-import ConnectionManager, { TransportParams } from '../../../../common/lib/transport/connectionmanager';
-import { TryConnectCallback } from '../../../../common/lib/transport/transport';
-import XHRStates from '../../../../common/constants/XHRStates';
+import * as Utils from 'common/lib/util/utils';
+import CometTransport from 'common/lib/transport/comettransport';
+import Platform from 'common/platform';
+import EventEmitter from 'common/lib/util/eventemitter';
+import ErrorInfo from 'common/lib/types/errorinfo';
+import Defaults from 'common/lib/util/defaults';
+import Logger from 'common/lib/util/logger';
+import Auth from 'common/lib/client/auth';
+import HttpMethods from 'common/constants/HttpMethods';
+import { RequestParams } from 'common/types/http';
+import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
+import { TryConnectCallback } from 'common/lib/transport/transport';
+import XHRStates from 'common/constants/XHRStates';
 
 declare const global: {
   _ablyjs_jsonp: Record<string, unknown>;
@@ -33,7 +33,7 @@ let idCounter = 1;
 let head: HTMLHeadElement | null = null;
 const shortName = 'jsonp';
 
-if (Platform.jsonpSupported) {
+if (Platform.Config.jsonpSupported) {
   head = document.getElementsByTagName('head')[0];
 }
 
@@ -71,7 +71,7 @@ class JSONPTransport extends CometTransport {
   }
 
   static isAvailable() {
-    return Platform.jsonpSupported && Platform.allowComet;
+    return Platform.Config.jsonpSupported && Platform.Config.allowComet;
   }
 
   /* connectivity check; since this has a hard-coded callback id,

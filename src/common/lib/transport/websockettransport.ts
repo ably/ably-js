@@ -1,4 +1,4 @@
-import Platform from 'platform';
+import Platform from 'common/platform';
 import * as Utils from '../util/utils';
 import Transport, { TryConnectCallback } from './transport';
 import Defaults from '../util/defaults';
@@ -9,7 +9,7 @@ import NodeWebSocket from 'ws';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Auth from '../client/auth';
 
-const WebSocket = Platform.WebSocket;
+const WebSocket = Platform.Config.WebSocket;
 const shortName = 'web_socket';
 
 function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
@@ -25,7 +25,7 @@ class WebSocketTransport extends Transport {
   constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
-    params.heartbeats = Platform.useProtocolHeartbeats;
+    params.heartbeats = Platform.Config.useProtocolHeartbeats;
     this.wsHost = Defaults.getHost(params.options, params.host, true);
   }
 
@@ -88,7 +88,7 @@ class WebSocketTransport extends Transport {
       const connectParams = params.getConnectParams(authParams);
       try {
         const wsConnection = (self.wsConnection = self.createWebSocket(wsUri, connectParams));
-        wsConnection.binaryType = Platform.binaryType;
+        wsConnection.binaryType = Platform.Config.binaryType;
         wsConnection.onopen = function () {
           self.onWsOpen();
         };

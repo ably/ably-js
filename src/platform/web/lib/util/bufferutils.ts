@@ -2,17 +2,17 @@ import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/en
 import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
 import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
-import Platform from 'platform';
-import { TypedArray } from '../../../../common/types/IPlatform';
+import Platform from 'common/platform';
+import { TypedArray } from 'common/types/IPlatform';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
  * returns a Uint8Array (and won't work on browsers too old to support it) */
 
-const ArrayBuffer = Platform.ArrayBuffer;
-const atob = Platform.atob;
-const TextEncoder = Platform.TextEncoder;
-const TextDecoder = Platform.TextDecoder;
+const ArrayBuffer = Platform.Config.ArrayBuffer;
+const atob = Platform.Config.atob;
+const TextEncoder = Platform.Config.TextEncoder;
+const TextDecoder = Platform.Config.TextDecoder;
 export const base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 export const hexCharSet = '0123456789abcdef';
 

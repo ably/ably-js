@@ -1,8 +1,6 @@
 import Logger from '../util/logger';
-import Platform from 'platform';
 import * as Utils from '../util/utils';
 import Multicaster from '../util/multicaster';
-import * as BufferUtils from 'platform-bufferutils';
 import ErrorInfo from '../types/errorinfo';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
@@ -15,6 +13,7 @@ import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
+import Platform from '../../platform'
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -46,10 +45,10 @@ function normaliseAuthcallbackError(err: any) {
 
 let hmac: (text: string, key: string) => string;
 let toBase64: (str: string) => string;
-if (Platform.createHmac) {
+if (Platform.Config.createHmac) {
   toBase64 = (str) => Buffer.from(str, 'ascii').toString('base64');
   hmac = function (text, key) {
-    const inst = (Platform.createHmac as typeof createHmac)('SHA256', key);
+    const inst = (Platform.Config.createHmac as typeof createHmac)('SHA256', key);
     inst.update(text);
     return inst.digest('base64');
   };
@@ -511,7 +510,7 @@ class Auth {
             );
           }
           if (err || unpacked) return cb(err, body);
-          if (BufferUtils.isBuffer(body)) body = body.toString();
+          if (Platform.BufferUtils.isBuffer(body)) body = body.toString();
           if (!contentType) {
             cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401));
             return;

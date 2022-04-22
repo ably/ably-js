@@ -9,9 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "importHelpers": true,
-    "paths": {
-        "platform": ["./src/platform/nodejs/platform", "./src/platform/web/fragments/platform-browser", "./src/platform/web/fragments/platform-reactnative"],
-        "platform-defaults": ["./src/platform/nodejs/lib/util/defaults", "./src/platform/browser/lib/util/defaults"]
-    }
+    "baseUrl": "./src"
   }
 }

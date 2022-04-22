@@ -1,16 +1,16 @@
-import Platform from 'platform';
-import * as Utils from '../../../../common/lib/util/utils';
-import Defaults from '../../../../common/lib/util/defaults';
-import ErrorInfo from '../../../../common/lib/types/errorinfo';
+import Platform from 'common/platform';
+import * as Utils from 'common/lib/util/utils';
+import Defaults from 'common/lib/util/defaults';
+import ErrorInfo from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest } from 'got';
 import http from 'http';
 import https from 'https';
-import Rest from '../../../../common/lib/client/rest';
-import Realtime from '../../../../common/lib/client/realtime';
+import Rest from 'common/lib/client/rest';
+import Realtime from 'common/lib/client/realtime';
 
-const msgpack = Platform.msgpack;
+const msgpack = Platform.Config.msgpack;
 
 /***************************************************
  *

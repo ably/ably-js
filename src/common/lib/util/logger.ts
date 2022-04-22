@@ -1,4 +1,4 @@
-import Platform from 'platform';
+import Platform from 'common/platform';
 
 export type LoggerOptions = {
   handler: LoggerFunction;
@@ -19,7 +19,7 @@ function pad(timeSegment: number, three?: number) {
 }
 
 function getHandler(logger: Function): Function {
-  return Platform.logTimestamps
+  return Platform.Config.logTimestamps
     ? function (msg: unknown) {
         const time = new Date();
         logger(

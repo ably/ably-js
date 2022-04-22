@@ -1,7 +1,6 @@
-import Platform from 'platform';
+import Platform from 'common/platform';
 import Defaults from './defaults';
-import * as BufferUtils from 'platform-bufferutils';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo from 'common/lib/types/errorinfo';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -144,7 +143,7 @@ export function prototypicalClone(
  * See node.js util.inherits
  */
 export const inherits =
-  Platform.inherits ||
+  Platform.Config.inherits ||
   function (ctor: any, superCtor: Function) {
     ctor.super_ = superCtor;
     ctor.prototype = prototypicalClone(superCtor.prototype, { constructor: ctor });
@@ -337,7 +336,7 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
   });
 }
 
-export const nextTick = Platform.nextTick;
+export const nextTick = Platform.Config.nextTick;
 
 const contentTypes = {
   json: 'application/json',
@@ -397,34 +396,34 @@ export const now =
     return new Date().getTime();
   };
 
-export const inspect = Platform.inspect;
+export const inspect = Platform.Config.inspect;
 
 export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
   return err.constructor.name == 'ErrorInfo';
 }
 
 export function inspectError(err: unknown): string {
-  if (err instanceof Error || (err as ErrorInfo)?.constructor?.name === 'ErrorInfo') return Platform.inspect(err);
+  if (err instanceof Error || (err as ErrorInfo)?.constructor?.name === 'ErrorInfo') return Platform.Config.inspect(err);
   return (err as Error).toString();
 }
 
 export function inspectBody(body: unknown): string {
-  if (BufferUtils.isBuffer(body)) {
-    return body.toString();
+  if (Platform.BufferUtils.isBuffer(body)) {
+    return (body as any).toString();
   } else if (typeof body === 'string') {
     return body;
   } else {
-    return Platform.inspect(body);
+    return Platform.Config.inspect(body);
   }
 }
 
 /* Data is assumed to be either a string or a buffer. */
 export function dataSizeBytes(data: string | Buffer): number {
-  if (BufferUtils.isBuffer(data)) {
-    return BufferUtils.byteLength(data);
+  if (Platform.BufferUtils.isBuffer(data)) {
+    return Platform.BufferUtils.byteLength(data);
   }
   if (typeof data === 'string') {
-    return Platform.stringByteSize(data);
+    return Platform.Config.stringByteSize(data);
   }
   throw new Error('Expected input of Utils.dataSizeBytes to be a buffer or string, but was: ' + typeof data);
 }
@@ -437,17 +436,17 @@ export function cheapRandStr(): string {
  * include, not the length of the string. String length produced is not
  * guaranteed. */
 export const randomString =
-  Platform.getRandomValues && typeof Uint8Array !== 'undefined'
+  Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'
     ? function (numBytes: number) {
         const uIntArr = new Uint8Array(numBytes);
-        (Platform.getRandomValues as Function)(uIntArr);
-        return BufferUtils.base64Encode(uIntArr);
+        (Platform.Config.getRandomValues as Function)(uIntArr);
+        return Platform.BufferUtils.base64Encode(uIntArr);
       }
     : function (numBytes: number) {
         /* Old browser; fall back to Math.random. Could just use a
          * CryptoJS version of the above, but want this to still work in nocrypto
          * versions of the library */
-        const charset = BufferUtils.base64CharSet;
+        const charset = Platform.BufferUtils.base64CharSet;
         /* base64 has 33% overhead; round length up */
         const length = Math.round((numBytes * 4) / 3);
         let result = '';
@@ -458,14 +457,14 @@ export const randomString =
       };
 
 export const randomHexString =
-  Platform.getRandomValues && typeof Uint8Array !== 'undefined'
+  Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'
     ? function (numBytes: number) {
         const uIntArr = new Uint8Array(numBytes);
-        (Platform.getRandomValues as Function)(uIntArr);
-        return BufferUtils.hexEncode(uIntArr);
+        (Platform.Config.getRandomValues as Function)(uIntArr);
+        return Platform.BufferUtils.hexEncode(uIntArr);
       }
     : function (numBytes: number) {
-        const charset = BufferUtils.hexCharSet;
+        const charset = Platform.BufferUtils.hexCharSet;
         const length = numBytes * 2;
         let result = '';
         for (let i = 0; i < length; i++) {
@@ -507,11 +506,11 @@ export enum Format {
 }
 
 export function decodeBody<T>(body: unknown, format?: Format | null): T {
-  return format == 'msgpack' ? Platform.msgpack.decode(body as Buffer) : JSON.parse(String(body));
+  return format == 'msgpack' ? Platform.Config.msgpack.decode(body as Buffer) : JSON.parse(String(body));
 }
 
 export function encodeBody(body: unknown, format?: Format): string | Buffer {
-  return format == 'msgpack' ? (Platform.msgpack.encode(body, true) as Buffer) : JSON.stringify(body);
+  return format == 'msgpack' ? (Platform.Config.msgpack.encode(body, true) as Buffer) : JSON.stringify(body);
 }
 
 export function allToLowerCase(arr: Array<string>): Array<string> {

@@ -5,9 +5,8 @@ const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./src/platform/web/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
-
-const nodePath = path.resolve(__dirname, 'src', 'platform', 'nodejs');
-const browserPath = path.resolve(__dirname, 'src', 'platform', 'web');
+// This is needed for baseUrl to resolve correctly from tsconfig
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 
 const baseConfig = {
   mode: 'production',
@@ -16,6 +15,7 @@ const baseConfig = {
   },
   resolve: {
     extensions: ['.js', '.ts'],
+    plugins: [new TsconfigPathsPlugin()],
   },
   output: {
     path: path.resolve(__dirname, 'build'),
@@ -43,25 +43,18 @@ const baseConfig = {
   },
 };
 
+function platformPath(platform, ...dir){
+  return path.resolve(__dirname, 'src', 'platform', platform, ...dir);
+}
+
 const nodeConfig = {
   ...baseConfig,
+  entry: {
+    index: platformPath("nodejs"),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably-node.js',
-  },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: path.resolve(nodePath, 'platform'),
-      'platform-http': path.resolve(nodePath,  'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(nodePath,  'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(nodePath,  'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(nodePath,  'lib', 'util', 'crypto'),
-      'platform-transports': path.resolve(nodePath,  'lib', 'transport'),
-      // webpack null-loader is used to ensure that the following modules resolve to null - webpack won't compile unless these aliases are pointing at a valid module so these values are irrelevant.
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-    },
   },
   module: {
     rules: [
@@ -91,14 +84,14 @@ const browserConfig = {
   resolve: {
     ...baseConfig.resolve,
     alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-browser'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
+      platform: platformPath("web", "platform"),
+      'platform-http': platformPath("web", 'lib', 'util', 'http'),
+      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
+      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
+      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
+      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
+      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
+      'platform-transports': platformPath("web", 'lib', 'transport'),
     },
   },
   node: {
@@ -122,14 +115,14 @@ const nativeScriptConfig = {
   resolve: {
     ...baseConfig.resolve,
     alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-nativescript'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
+      platform: platformPath("nativescript", "platform"),
+      'platform-http': platformPath("web", 'lib', 'util', 'http'),
+      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
+      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
+      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
+      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
+      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
+      'platform-transports': platformPath("web", 'lib', 'transport', 'withoutjsonp'),
     },
   },
   node: {
@@ -158,14 +151,14 @@ const reactNativeConfig = {
   resolve: {
     extensions: ['.js', '.ts'],
     alias: {
-      platform: path.resolve(browserPath,  'fragments', 'platform-reactnative'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
+      platform: platformPath("react-native", "platform"),
+      'platform-http': platformPath("web", 'lib', 'util', 'http'),
+      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
+      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
+      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
+      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
+      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
+      'platform-transports': platformPath("web", 'lib', 'transport', 'withoutjsonp'),
     },
   },
   node: {
@@ -218,8 +211,8 @@ const webworkerConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: path.resolve(browserPath,  'fragments', 'ably.d.ts'),
-          to: path.resolve(browserPath, 'build', 'ably-webworker.min.d.ts'),
+          from: platformPath("web",  'fragments', 'ably.d.ts'),
+          to: path.resolve(__dirname, 'build', 'ably-webworker.min.d.ts'),
         },
       ],
     }),
@@ -236,7 +229,7 @@ const noEncryptionConfig = {
     rules: [
       ...baseConfig.module.rules,
       {
-        test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
+        test: platformPath("web", 'lib', 'util', 'crypto'),
         use: 'null-loader',
       },
     ],
@@ -253,7 +246,7 @@ const noEncryptionMinConfig = {
     rules: [
       ...baseConfig.module.rules,
       {
-        test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
+        test: platformPath("web", 'lib', 'util', 'crypto'),
         use: 'null-loader',
       },
     ],

@@ -1,10 +1,8 @@
-import Platform from 'platform';
 import * as Utils from '../util/utils';
 import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
 import Auth from './auth';
 import Push from './push';
-import Http from 'platform-http';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import Channel from './channel';
 import ErrorInfo from '../types/errorinfo';
@@ -15,8 +13,10 @@ import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
+import Platform from '../../platform'
+
 const noop = function () {};
-const msgpack = Platform.msgpack;
+const msgpack = Platform.Config.msgpack;
 
 class Rest {
   options: NormalisedClientOptions;
@@ -78,7 +78,7 @@ class Rest {
     this._currentFallback = null;
 
     this.serverTimeOffset = null;
-    this.http = new Http();
+    this.http = new Platform.Http();
     this.auth = new Auth(this, normalOptions);
     this.channels = new Channels(this);
     this.push = new Push(this);
@@ -211,11 +211,11 @@ class Rest {
       /* useHttpPaginatedResponse: */ true
     );
 
-    if (!Utils.arrIn(Http.methods, _method)) {
+    if (!Utils.arrIn(Platform.Http.methods, _method)) {
       throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
     }
 
-    if (Utils.arrIn(Http.methodsWithBody, _method)) {
+    if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
       paginatedResource[_method as HttpMethods.Post](params, body, callback as PaginatedResultCallback<unknown>);
     } else {
       paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](

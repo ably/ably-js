@@ -1,7 +1,7 @@
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
-import Platform from 'platform';
+import Platform from '../../../../common/platform';
 import Logger from '../../../../common/lib/util/logger';
 import * as BufferUtils from 'platform-bufferutils';
 
@@ -114,7 +114,7 @@ var Crypto = (function () {
    * but supporting other keylengths. Other algorithms and chaining modes are
    * not supported directly, but supportable by extending/implementing the base
    * classes and interfaces here.
-   *
+   *-
    * Secure random data for creation of Initialization Vectors (IVs) and keys
    * is obtained from window.crypto.getRandomValues if available, or from
    * Math.random() if not. Clients who do not want to depend on Math.random()

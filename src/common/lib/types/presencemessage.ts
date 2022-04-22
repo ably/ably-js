@@ -1,5 +1,5 @@
 import Logger from '../util/logger';
-import * as BufferUtils from 'platform-bufferutils';
+import Platform from 'common/platform';
 import Message, { CipherOptions } from './message';
 import * as Utils from '../util/utils';
 
@@ -57,16 +57,16 @@ class PresenceMessage {
      * call if it has a non-empty arguments list */
     let data = this.data as string | Buffer;
     let encoding = this.encoding;
-    if (data && BufferUtils.isBuffer(data)) {
+    if (data && Platform.BufferUtils.isBuffer(data)) {
       if (arguments.length > 0) {
         /* stringify call */
         encoding = encoding ? encoding + '/base64' : 'base64';
-        data = BufferUtils.base64Encode(data);
+        data = Platform.BufferUtils.base64Encode(data);
       } else {
         /* Called by msgpack. toBuffer returns a datatype understandable by
          * that platform's msgpack implementation (Buffer in node, Uint8Array
          * in browsers) */
-        data = BufferUtils.toBuffer(data);
+        data = Platform.BufferUtils.toBuffer(data);
       }
     }
     return {
@@ -88,7 +88,7 @@ class PresenceMessage {
     if (this.encoding) result += '; encoding=' + this.encoding;
     if (this.data) {
       if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+      else if (Platform.BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     result += ']';

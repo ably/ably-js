@@ -1,6 +1,6 @@
 import * as Utils from './utils';
 import Logger from './logger';
-import Platform from 'platform';
+import Platform from 'common/platform';
 
 /* Call the listener, catch any exceptions and log, but continue operation*/
 function callListener(eventThis: { event: string }, listener: Function, args: unknown[]) {
@@ -241,12 +241,12 @@ class EventEmitter {
 
   once(...args: unknown[]): void | Promise<void> {
     const argCount = args.length;
-    if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Promise) {
+    if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Config.Promise) {
       const event = args[0];
       if (typeof event !== 'string') {
         throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
       }
-      return new Platform.Promise((resolve) => {
+      return new Platform.Config.Promise((resolve) => {
         this.once(event, resolve);
       });
     }
@@ -303,8 +303,8 @@ class EventEmitter {
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
       throw 'whenState requires a valid event String argument';
     }
-    if (typeof listener !== 'function' && Platform.Promise) {
-      return new Platform.Promise(function (resolve) {
+    if (typeof listener !== 'function' && Platform.Config.Promise) {
+      return new Platform.Config.Promise(function (resolve) {
         EventEmitter.prototype.whenState.apply(
           self,
           [targetState, currentState, resolve].concat(listenerArgs as any[]) as any

@@ -1,14 +1,13 @@
-import Platform from 'platform';
+import Platform from '../../platform';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Auth from './auth';
-import * as BufferUtils from 'platform-bufferutils';
 import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo from '../types/errorinfo';
 import Rest from './rest';
 import { ErrnoException } from '../../types/http';
 
-const msgpack = Platform.msgpack;
+const msgpack = Platform.Config.msgpack;
 
 function withAuthDetails(
   rest: Rest,
@@ -112,7 +111,7 @@ function logResponseHandler(
           '; StatusCode: ' +
           statusCode +
           '; Body: ' +
-          (BufferUtils.isBuffer(body) ? body.toString() : body)
+          (Platform.BufferUtils.isBuffer(body) ? body.toString() : body)
       );
     }
     if (callback) {

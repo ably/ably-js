@@ -1,15 +1,15 @@
-import Platform from 'platform';
-import * as Utils from '../../../../common/lib/util/utils';
-import Defaults from '../../../../common/lib/util/defaults';
-import ErrorInfo from '../../../../common/lib/types/errorinfo';
-import { ErrnoException, IHttp, RequestCallback, RequestParams } from '../../../../common/types/http';
-import HttpMethods from '../../../../common/constants/HttpMethods';
-import Rest from '../../../../common/lib/client/rest';
-import Realtime from '../../../../common/lib/client/realtime';
+import Platform from 'common/platform';
+import * as Utils from 'common/lib/util/utils';
+import Defaults from 'common/lib/util/defaults';
+import ErrorInfo from 'common/lib/types/errorinfo';
+import { ErrnoException, IHttp, RequestCallback, RequestParams } from 'common/types/http';
+import HttpMethods from 'common/constants/HttpMethods';
+import Rest from 'common/lib/client/rest';
+import Realtime from 'common/lib/client/realtime';
 import XHRRequest from '../transport/xhrrequest';
-import XHRStates from '../../../../common/constants/XHRStates';
-import Logger from '../../../../common/lib/util/logger';
-import { StandardCallback } from '../../../../common/types/utils';
+import XHRStates from 'common/constants/XHRStates';
+import Logger from 'common/lib/util/logger';
+import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
 
 function shouldFallback(errorInfo: ErrorInfo) {
@@ -45,7 +45,7 @@ const Http: typeof IHttp = class {
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
 
   constructor() {
-    if (Platform.xhrSupported) {
+    if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
@@ -87,7 +87,7 @@ const Http: typeof IHttp = class {
           }
         );
       };
-    } else if (Platform.jsonpSupported) {
+    } else if (Platform.Config.jsonpSupported) {
       this.Request = function (
         method: HttpMethods,
         rest: Rest | null,

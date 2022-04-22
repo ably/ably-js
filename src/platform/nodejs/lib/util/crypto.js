@@ -1,6 +1,6 @@
 'use strict';
 import Logger from '../../../../common/lib/util/logger';
-import * as BufferUtils from 'platform-bufferutils';
+import Platform from '../../../../common/platform'
 import crypto from 'crypto';
 
 var Crypto = (function () {
@@ -146,7 +146,7 @@ var Crypto = (function () {
     }
 
     if (typeof params.key === 'string') {
-      key = BufferUtils.base64Decode(normaliseBase64(params.key));
+      key = Platform.BufferUtils.base64Decode(normaliseBase64(params.key));
     } else {
       key = params.key;
     }

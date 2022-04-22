@@ -1,5 +1,5 @@
-import msgpack from '../lib/util/msgpack';
-import { TypedArray, IPlatform } from '../../../common/types/IPlatform';
+import msgpack from './lib/util/msgpack';
+import { TypedArray, IPlatform } from '../../common/types/IPlatform';
 
 declare var MozWebSocket: typeof WebSocket; // For Chrome 14 and Firefox 7
 declare var msCrypto: typeof crypto; // for IE11

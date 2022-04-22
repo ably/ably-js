@@ -1,4 +1,4 @@
-import * as Utils from '../../../../common/lib/util/utils';
+import * as Utils from '../../../common/lib/util/utils';
 
 var WebStorage = (function () {
   var appSettings = require('application-settings');

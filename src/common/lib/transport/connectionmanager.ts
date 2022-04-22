@@ -1,30 +1,31 @@
-import ProtocolMessage from '../types/protocolmessage';
-import * as Utils from '../util/utils';
+import ProtocolMessage from 'common/lib/types/protocolmessage';
+import * as Utils from 'common/lib/util/utils';
 import Protocol, { PendingMessage } from './protocol';
-import Defaults from '../util/defaults';
-import Platform from 'platform';
+import Defaults from 'common/lib/util/defaults';
+import Platform from 'common/platform';
 import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
-import ConnectionStateChange from '../client/connectionstatechange';
+import ConnectionStateChange from 'common/lib/client/connectionstatechange';
 import ConnectionErrors, { isRetriable } from './connectionerrors';
-import ErrorInfo from '../types/errorinfo';
-import Auth from '../client/auth';
-import Message from '../types/message';
-import Multicaster, { MulticasterInstance } from '../util/multicaster';
-import * as WebStorage from 'platform-webstorage';
-import PlatformTransports from 'platform-transports';
+import ErrorInfo from 'common/lib/types/errorinfo';
+import Auth from 'common/lib/client/auth';
+import Message from 'common/lib/types/message';
+import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import WebSocketTransport from './websockettransport';
 import Transport from './transport';
-import * as API from '../../../ably';
-import { ErrCallback } from '../../types/utils';
-import HttpStatusCodes from '../../constants/HttpStatusCodes';
+import * as API from 'ably';
+import { ErrCallback } from 'common/types/utils';
+import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 
 type Realtime = any;
 type ClientOptions = any;
 
-const haveWebStorage = !!(typeof WebStorage !== 'undefined' && WebStorage.get);
-const haveSessionStorage = !!(typeof WebStorage !== 'undefined' && WebStorage.getSession);
+const WebStorage = Platform.WebStorage;
+const PlatformTransports = Platform.Transports;
+
+const haveWebStorage = typeof WebStorage !== 'undefined' && WebStorage.localSupported;
+const haveSessionStorage = typeof WebStorage !== 'undefined' && WebStorage.sessionSupported;
 const actions = ProtocolMessage.Action;
 const noop = function () {};
 const transportPreferenceOrder = Defaults.transportPreferenceOrder;
@@ -352,7 +353,7 @@ class ConnectionManager extends EventEmitter {
       throw new Error(msg);
     }
 
-    const addEventListener = Platform.addEventListener;
+    const addEventListener = Platform.Config.addEventListener;
     if (addEventListener) {
       /* intercept close event in browser to persist connection id if requested */
       if (haveSessionStorage && typeof options.recover === 'function') {

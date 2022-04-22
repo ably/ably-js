@@ -1,6 +1,5 @@
-import * as BufferUtils from 'platform-bufferutils';
+import Platform from 'common/platform'
 import Logger from '../util/logger';
-import Crypto from 'platform-crypto';
 import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
@@ -43,8 +42,8 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
 
 function normalizeCipherOptions(options: CipherOptions): CipherOptions {
   if (options && options.cipher && !options.cipher.channelCipher) {
-    if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Crypto.getCipher(options.cipher);
+    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+    const cipher = Platform.Crypto.getCipher(options.cipher);
     return {
       cipher: cipher.cipherParams,
       channelCipher: cipher.cipher,
@@ -92,16 +91,16 @@ class Message {
      * call if it has a non-empty arguments list */
     let encoding = this.encoding;
     let data = this.data;
-    if (data && BufferUtils.isBuffer(data)) {
+    if (data && Platform.BufferUtils.isBuffer(data)) {
       if (arguments.length > 0) {
         /* stringify call */
         encoding = encoding ? encoding + '/base64' : 'base64';
-        data = BufferUtils.base64Encode(data);
+        data = Platform.BufferUtils.base64Encode(data);
       } else {
         /* Called by msgpack. toBuffer returns a datatype understandable by
          * that platform's msgpack implementation (Buffer in node, Uint8Array
          * in browsers) */
-        data = BufferUtils.toBuffer(data);
+        data = Platform.BufferUtils.toBuffer(data);
       }
     }
     return {
@@ -127,7 +126,7 @@ class Message {
     if (this.extras) result += '; extras =' + JSON.stringify(this.extras);
     if (this.data) {
       if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + BufferUtils.base64Encode(this.data);
+      else if (Platform.BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
@@ -141,8 +140,8 @@ class Message {
       cipher = options.channelCipher;
 
     encoding = encoding ? encoding + '/' : '';
-    if (!BufferUtils.isBuffer(data)) {
-      data = BufferUtils.utf8Encode(String(data));
+    if (!Platform.BufferUtils.isBuffer(data)) {
+      data = Platform.BufferUtils.utf8Encode(String(data));
       encoding = encoding + 'utf-8/';
     }
     cipher.encrypt(data, function (err: Error, data: unknown) {
@@ -158,7 +157,7 @@ class Message {
 
   static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
     const data = msg.data;
-    const nativeDataType = typeof data == 'string' || BufferUtils.isBuffer(data) || data === null || data === undefined;
+    const nativeDataType = typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
 
     if (!nativeDataType) {
       if (Utils.isObject(data) || Utils.isArray(data)) {
@@ -217,13 +216,13 @@ class Message {
           xform = match[1];
           switch (xform) {
             case 'base64':
-              data = BufferUtils.base64Decode(String(data));
+              data = Platform.BufferUtils.base64Decode(String(data));
               if (lastProcessedEncodingIndex == xforms.length) {
                 lastPayload = data;
               }
               continue;
             case 'utf-8':
-              data = BufferUtils.utf8Decode(data);
+              data = Platform.BufferUtils.utf8Decode(data);
               continue;
             case 'json':
               data = JSON.parse(data);
@@ -263,16 +262,16 @@ class Message {
               try {
                 let deltaBase = context.baseEncodedPreviousPayload;
                 if (typeof deltaBase === 'string') {
-                  deltaBase = BufferUtils.utf8Encode(deltaBase);
+                  deltaBase = Platform.BufferUtils.utf8Encode(deltaBase);
                 }
 
                 /* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
                  * don't have a TextDecoder, deltaBase might be a WordArray here, so need
                  * to process it into a buffer anyway) */
-                deltaBase = BufferUtils.toBuffer(deltaBase as Buffer);
-                data = BufferUtils.toBuffer(data);
+                deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
+                data = Platform.BufferUtils.toBuffer(data);
 
-                data = BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+                data = Platform.BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
                 lastPayload = data;
               } catch (e) {
                 throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
