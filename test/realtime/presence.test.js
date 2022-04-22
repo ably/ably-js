@@ -2083,7 +2083,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     if (typeof Promise !== 'undefined') {
-      describe('presence_promise', function () {
+      describe.only('presence_promise', function () {
         var options = { clientId: testClientId, promises: true };
 
         it('enter_get', function (done) {
@@ -2092,8 +2092,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var testData = 'test_presence_data';
 
           channel.presence
-            .enter(testData)
-            .then(function () {
+            .subscribe(function () {
               channel.presence
                 .get()
                 .then(function (members) {
@@ -2106,6 +2105,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   closeAndFinish(done, client, err);
                 });
             })
+            .then(function () {
+              channel.presence.enter(testData)['catch'](function (err) {
+                closeAndFinish(done, client, err);
+              });
+            })
             ['catch'](function (err) {
               closeAndFinish(done, client, err);
             });
@@ -2116,33 +2120,47 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var channel = client.channels.get('presence_promise_update');
           var testData1 = 'test_presence_data1';
           var testData2 = 'test_presence_data2';
+          var idx = 0;
 
           channel.presence
-            .enter(testData1)
-            .then(function () {
-              channel.presence
-                .get()
-                .then(function (members) {
-                  expect(members.length).to.equal(1, 'Expect test client to be the only member present');
-                  expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
-                  expect(members[0].data).to.equal(testData1, 'Expected data to be correct');
-                  channel.presence
-                    .update(testData2)
-                    .then(function () {
-                      channel.presence.get().then(function (members) {
-                        expect(members.length).to.equal(1, 'Expect test client to be the only member present');
-                        expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
-                        expect(members[0].data).to.equal(testData2, 'Expected data to be correct');
-                        closeAndFinish(done, client);
-                      });
-                    })
-                    ['catch'](function (err) {
-                      closeAndFinish(done, client, err);
+            .subscribe(function () {
+              if (idx === 0) {
+                idx++;
+                channel.presence
+                  .get()
+                  .then(function (members) {
+                    expect(members.length).to.equal(1, 'Expect test client to be the only member present');
+                    expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
+                    expect(members[0].data).to.equal(testData1, 'Expected data to be correct');
+                    channel.presence.update(testData2)['catch'](function (err) {
+                      // If idx == 2 this means the update was succesful but the connection was closed before it was ACKed
+                      if (idx !== 2) {
+                        closeAndFinish(done, client, err);
+                      }
                     });
-                })
-                ['catch'](function (err) {
-                  closeAndFinish(done, client, err);
-                });
+                  })
+                  ['catch'](function (err) {
+                    closeAndFinish(done, client, err);
+                  });
+              } else {
+                idx++;
+                channel.presence
+                  .get()
+                  .then(function (members) {
+                    expect(members.length).to.equal(1, 'Expect test client to be the only member present');
+                    expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
+                    expect(members[0].data).to.equal(testData2, 'Expected data to be correct');
+                    closeAndFinish(done, client);
+                  })
+                  ['catch'](function (err) {
+                    closeAndFinish(done, client, err);
+                  });
+              }
+            })
+            .then(function () {
+              channel.presence.enter(testData1)['catch'](function (err) {
+                closeAndFinish(done, client, err);
+              });
             })
             ['catch'](function (err) {
               closeAndFinish(done, client, err);
@@ -2152,31 +2170,44 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         it('enterClient_leaveClient', function (done) {
           var client = helper.AblyRealtime(options);
           var channel = client.channels.get('presence_promise_leaveClient');
+          var idx = 0;
+
           channel.presence
-            .enterClient(testClientId)
+            .subscribe(function () {
+              if (idx === 0) {
+                idx++;
+                channel.presence
+                  .get()
+                  .then(function (members) {
+                    expect(members.length).to.equal(1, 'Expect test client to be the only member present');
+                    expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
+                    channel.presence.leaveClient(testClientId)['catch'](function (err) {
+                      // If idx == 2 this means the leave was succesful but the connection was closed before it was ACKed
+                      if (idx !== 2) {
+                        closeAndFinish(done, client, err);
+                      }
+                    });
+                  })
+                  ['catch'](function (err) {
+                    closeAndFinish(done, client, err);
+                  });
+              } else {
+                idx++;
+                channel.presence
+                  .get()
+                  .then(function (members) {
+                    expect(members.length).to.equal(0, 'Expect test client to no longer be present');
+                    closeAndFinish(done, client);
+                  })
+                  ['catch'](function (err) {
+                    closeAndFinish(done, client, err);
+                  });
+              }
+            })
             .then(function () {
               channel.presence
-                .get()
-                .then(function (members) {
-                  expect(members.length).to.equal(1, 'Expect test client to be the only member present');
-                  expect(members[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
-                  channel.presence
-                    .leaveClient(testClientId)
-                    .then(function () {
-                      channel.presence
-                        .get()
-                        .then(function (members) {
-                          expect(members.length).to.equal(0, 'Expect test client to no longer be present');
-                          closeAndFinish(done, client);
-                        })
-                        ['catch'](function (err) {
-                          closeAndFinish(done, client, err);
-                        });
-                    })
-                    ['catch'](function (err) {
-                      closeAndFinish(done, client, err);
-                    });
-                })
+                .enterClient(testClientId)
+                .then(function () {})
                 ['catch'](function (err) {
                   closeAndFinish(done, client, err);
                 });
