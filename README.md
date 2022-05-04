@@ -121,7 +121,7 @@ All examples assume a client has been created as follows:
 // basic auth with an API key
 var client = new Ably.Realtime(key: string);
 
-// using a Client Options object, see https://www.ably.com/docs/rest/usage#options
+// using a Client Options object, see https://www.ably.com/docs/rest/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(options: ClientOptions);
