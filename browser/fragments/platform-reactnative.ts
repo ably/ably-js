@@ -40,6 +40,9 @@ const Platform: IPlatform = {
         callback(err, !err && parseBase64(base64String));
       });
     };
+    // Installing @types/react-native would fix this but conflicts with @types/node
+    // See https://github.com/DefinitelyTyped/DefinitelyTyped/issues/15960
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
   })(require('react-native').NativeModules.RNRandomBytes),
 };
 
