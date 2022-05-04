@@ -554,7 +554,7 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Known Limitations
 
-This library currently does not support being the [target of a push notification](https://www.ably.com/docs/general/push#activate) (i.e. web push).
+This library currently does not support being the [target of a push notification](https://www.ably.com/docs/general/push/activate-subscribe) (i.e. web push).
 
 #### Browser-specific issues
 
