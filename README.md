@@ -1,12 +1,12 @@
 # [Ably](https://www.ably.com)
 
-_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
+_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/docs)._
 
 [![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
 
 This is a JavaScript client library for Ably Realtime.
 
-This library currently targets the [Ably client library features spec](https://www.ably.com/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
+This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported platforms
 
@@ -36,7 +36,7 @@ However, we aim to be compatible with a much wider set of platforms and browsers
 Ably-js has fallback mechanisms in order to be able to support older browsers; specifically it supports comet-based connections for browsers that do not support websockets, and this includes JSONP for browsers that do not support cross-origin XHR. Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks. These mean that the library should be compatible with nearly any browser on most platforms.
 Known browser incompatibilities will be documented as an issue in this repository using the ["compatibility" label](https://github.com/ably/ably-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22compatibility%22).
 
-For complete API documentation, see the [Ably documentation](https://www.ably.com/documentation).
+For complete API documentation, see the [Ably documentation](https://www.ably.com/docs).
 
 ## Installation
 
@@ -111,7 +111,7 @@ See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript
 
 ## Using the Realtime API
 
-This readme gives some basic examples; for our full API documentation, please go to https://www.ably.com/documentation .
+This readme gives some basic examples; for our full API documentation, please go to https://www.ably.com/docs .
 
 ### Introduction
 
@@ -121,7 +121,7 @@ All examples assume a client has been created as follows:
 // basic auth with an API key
 var client = new Ably.Realtime(key: string);
 
-// using a Client Options object, see https://www.ably.com/documentation/rest/usage#options
+// using a Client Options object, see https://www.ably.com/docs/rest/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(options: ClientOptions);
@@ -180,7 +180,7 @@ channel.subscribe('myEvent', function (message) {
 
 ### Subscribing to a channel with deltas
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Configuring a channel for deltas is detailed in the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage).
 
@@ -220,7 +220,7 @@ channel.history(function(err, messagesPage) {
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
@@ -256,7 +256,7 @@ channel.presence.leave(function (err) {
 If you are using a client which is allowed to use any clientId --
 that is, if you didn't specify a clientId when initializing the
 client, and are using basic auth or a token witha wildcard clientId (see
-https://www.ably.com/documentation/general/authentication for more information), you
+https://www.ably.com/docs/general/authentication for more information), you
 can use
 
 ```javascript
@@ -276,13 +276,13 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
 channel.presence.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Symmetrical end-to-end encrypted payloads on a channel
 
-When a 128 bit or 256 bit key is provided to the library, the `data` attributes of all messages are encrypted and decrypted automatically using that key. The secret key is never transmitted to Ably. See https://www.ably.com/documentation/realtime/encryption
+When a 128 bit or 256 bit key is provided to the library, the `data` attributes of all messages are encrypted and decrypted automatically using that key. The secret key is never transmitted to Ably. See https://www.ably.com/docs/realtime/encryption
 
 ```javascript
 // Generate a random 256-bit key for demonstration purposes (in
@@ -309,7 +309,7 @@ channel.setOptions({cipher: {key: <key>}}, function() {
 
 ## Using the REST API
 
-This readme gives some basic examples. For our full API documentation, please go to https://www.ably.com/documentation .
+This readme gives some basic examples. For our full API documentation, please go to https://www.ably.com/docs .
 
 ### Introduction
 
@@ -319,7 +319,7 @@ All examples assume a client and/or channel has been created as follows:
 // basic auth with an API key
 var client = new Ably.Rest(key: string);
 
-// using a Client Options object, see https://www.ably.com/documentation/realtime/usage#client-options
+// using a Client Options object, see https://www.ably.com/docs/realtime/usage#client-options
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Rest(options: ClientOptions);
@@ -370,7 +370,7 @@ channel.history(function(err, messagesPage) {
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
@@ -399,13 +399,13 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
   messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
 });
 
-// Can optionally take an options param, see https://www.ably.com/documentation/rest-api/#message-history
+// Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
 ### Generate Token and Token Request
 
-See https://www.ably.com/documentation/general/authentication for an
+See https://www.ably.com/docs/general/authentication for an
 explanation of Ably's authentication mechanism.
 
 Requesting a token:
@@ -413,15 +413,15 @@ Requesting a token:
 ```javascript
 client.auth.requestToken(function(err, tokenDetails) {
   // tokenDetails is instance of TokenDetails
-  // see https://www.ably.com/documentation/rest/authentication/#token-details for its properties
+  // see https://www.ably.com/docs/rest/authentication/#token-details for its properties
 
   // Now we have the token, we can send it to someone who can instantiate a client with it:
   var clientUsingToken = new Ably.Realtime(tokenDetails.token);
 });
 
 // requestToken can take two optional params
-// tokenParams: https://www.ably.com/documentation/rest/authentication/#token-params
-// authOptions: https://www.ably.com/documentation/rest/authentication/#auth-options
+// tokenParams: https://www.ably.com/docs/rest/authentication/#token-params
+// authOptions: https://www.ably.com/docs/rest/authentication/#auth-options
 client.auth.requestToken(tokenParams, authOptions, function(err, tokenDetails) { ... });
 ```
 
@@ -435,8 +435,8 @@ client.auth.createTokenRequest(function(err, tokenRequest) {
 });
 
 // createTokenRequest can take two optional params
-// tokenParams: https://www.ably.com/documentation/rest/authentication/#token-params
-// authOptions: https://www.ably.com/documentation/rest/authentication/#auth-options
+// tokenParams: https://www.ably.com/docs/rest/authentication/#token-params
+// authOptions: https://www.ably.com/docs/rest/authentication/#auth-options
 client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequest) { ... });
 ```
 
@@ -554,7 +554,7 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 ## Known Limitations
 
-This library currently does not support being the [target of a push notification](https://www.ably.com/documentation/general/push#activate) (i.e. web push).
+This library currently does not support being the [target of a push notification](https://www.ably.com/docs/general/push/activate-subscribe) (i.e. web push).
 
 #### Browser-specific issues
 

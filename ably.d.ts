@@ -161,7 +161,7 @@ declare namespace Types {
 
     /**
      * Can be used to explicitly recover a connection.
-     * See https://www.ably.com/documentation/realtime/connection#connection-state-recovery
+     * See https://www.ably.com/docs/realtime/connection#connection-state-recovery
      */
     recover?:
       | string
