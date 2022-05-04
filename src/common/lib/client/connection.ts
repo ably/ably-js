@@ -6,6 +6,7 @@ import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
 import Realtime from './realtime';
+import Platform from 'common/platform';
 
 function noop() {}
 
@@ -34,12 +35,12 @@ class Connection extends EventEmitter {
 
     this.connectionManager.on('connectionstate', (stateChange: ConnectionStateChange) => {
       const state = (this.state = stateChange.current as string);
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.emit(state, stateChange);
       });
     });
     this.connectionManager.on('update', (stateChange: ConnectionStateChange) => {
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.emit('update', stateChange);
       });
     });

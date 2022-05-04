@@ -13,5 +13,5 @@ export default class Platform {
   static Http: typeof IHttp;
   static Transports: Array<(connectionManager: typeof ConnectionManager) => Transport>;
   static Defaults: IDefaults;
-  static WebStorage: IWebStorage;
+  static WebStorage: IWebStorage | null;
 }

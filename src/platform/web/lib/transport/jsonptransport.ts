@@ -49,7 +49,7 @@ export function createRequest(
   /* JSONP requests are used either with the context being a realtime
    * transport, or with timeouts passed in (for when used by a rest client),
    * or completely standalone.  Use the appropriate timeouts in each case */
-  timeouts = timeouts || Defaults.TIMEOUTS;
+  timeouts = timeouts || Defaults().TIMEOUTS;
   return new Request(
     undefined,
     uri,
@@ -113,7 +113,7 @@ class JSONPTransport extends CometTransport {
     /* JSONP requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
      * or completely standalone.  Use the appropriate timeouts in each case */
-    timeouts = this?.timeouts || timeouts || Defaults.TIMEOUTS;
+    timeouts = this?.timeouts || timeouts || Defaults().TIMEOUTS;
     return createRequest(uri, headers, params, body, requestMode, timeouts, method);
   }
 }
@@ -192,7 +192,7 @@ export class Request extends EventEmitter {
     script.type = 'text/javascript';
     script.charset = 'UTF-8';
     script.onerror = (err: string | Event) => {
-      this.complete(new ErrorInfo('JSONP script error (event: ' + Utils.inspect(err) + ')', null, 400));
+      this.complete(new ErrorInfo('JSONP script error (event: ' + Platform.Config.inspect(err) + ')', null, 400));
     };
 
     type JSONPResponse = {

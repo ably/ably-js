@@ -22,7 +22,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * Connect with available http transports; internet connectivity check should work
      */
     it('http_connectivity_check', function (done) {
-      new Ably.Realtime.Http().checkConnectivity(function (err, res) {
+      new Ably.Realtime.Platform.Http().checkConnectivity(function (err, res) {
         try {
           expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
         } catch (err) {

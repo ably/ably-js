@@ -84,13 +84,13 @@ class EventEmitter {
       if (typeof listener === 'function') {
         this.any.push(listener);
       } else {
-        throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+        throw new Error('EventListener.on(): Invalid arguments: ' + Platform.Config.inspect(args));
       }
     }
     if (args.length === 2) {
       const [event, listener] = args;
       if (typeof listener !== 'function') {
-        throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+        throw new Error('EventListener.on(): Invalid arguments: ' + Platform.Config.inspect(args));
       }
       if (Utils.isEmptyArg(event)) {
         this.any.push(listener);
@@ -100,7 +100,7 @@ class EventEmitter {
         });
       } else {
         if (typeof event !== 'string') {
-          throw new Error('EventListener.on(): Invalid arguments: ' + Utils.inspect(args));
+          throw new Error('EventListener.on(): Invalid arguments: ' + Platform.Config.inspect(args));
         }
         const listeners = this.events[event] || (this.events[event] = []);
         listeners.push(listener);
@@ -146,7 +146,7 @@ class EventEmitter {
       /* ... or we take event to be the actual event name and listener to be all */
     } else {
       if (typeof secondArg !== 'function') {
-        throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
+        throw new Error('EventEmitter.off(): invalid arguments:' + Platform.Config.inspect(args));
       }
       [event, listener] = [firstArg, secondArg];
     }
@@ -165,7 +165,7 @@ class EventEmitter {
 
     /* "normal" case where event is an actual event */
     if (typeof event !== 'string') {
-      throw new Error('EventEmitter.off(): invalid arguments:' + Utils.inspect(args));
+      throw new Error('EventEmitter.off(): invalid arguments:' + Platform.Config.inspect(args));
     }
     if (listener) {
       removeListener([this.events, this.eventsOnce], listener, event);
@@ -244,7 +244,7 @@ class EventEmitter {
     if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Config.Promise) {
       const event = args[0];
       if (typeof event !== 'string') {
-        throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
+        throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
       return new Platform.Config.Promise((resolve) => {
         this.once(event, resolve);
@@ -256,7 +256,7 @@ class EventEmitter {
       this.anyOnce.push(firstArg);
     } else if (Utils.isEmptyArg(firstArg)) {
       if (typeof secondArg !== 'function') {
-        throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
+        throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
       this.anyOnce.push(secondArg);
     } else if (Utils.isArray(firstArg)) {
@@ -267,7 +267,7 @@ class EventEmitter {
           self.off(eventName, listenerWrapper);
         });
         if (typeof secondArg !== 'function') {
-          throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
+          throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
         }
         secondArg.apply(this, innerArgs);
       };
@@ -276,12 +276,12 @@ class EventEmitter {
       });
     } else {
       if (typeof firstArg !== 'string') {
-        throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
+        throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
       const listeners = this.eventsOnce[firstArg] || (this.eventsOnce[firstArg] = []);
       if (secondArg) {
         if (typeof secondArg !== 'function') {
-          throw new Error('EventEmitter.once(): Invalid arguments:' + Utils.inspect(args));
+          throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
         }
         listeners.push(secondArg);
       }

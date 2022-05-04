@@ -68,12 +68,10 @@ const getDefaultLoggers = (): [Function, Function] => {
   return [consoleLogger, errorLogger].map(getHandler) as [Function, Function];
 };
 
-const [logHandler, logErrorHandler] = getDefaultLoggers();
-
 class Logger {
   private static logLevel: LogLevels = LogLevels.Error; // default logLevel
-  private static logHandler: Function = logHandler;
-  private static logErrorHandler: Function = logErrorHandler;
+  private static logHandler: Function;
+  private static logErrorHandler: Function;
 
   // public constants
   static readonly LOG_NONE: LogLevels = LogLevels.None;
@@ -87,6 +85,12 @@ class Logger {
 
   constructor() {
     Logger.logLevel = Logger.LOG_DEFAULT;
+  }
+
+  static initLogHandlers(){
+    const [logHandler, logErrorHandler] = getDefaultLoggers();
+    this.logHandler = logHandler;
+    this.logErrorHandler = logErrorHandler;
   }
 
   /* public static functions */

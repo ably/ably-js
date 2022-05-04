@@ -81,19 +81,6 @@ const browserConfig = {
     ...baseConfig.output,
     filename: 'ably.js',
   },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: platformPath("web", "platform"),
-      'platform-http': platformPath("web", 'lib', 'util', 'http'),
-      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
-      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
-      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
-      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
-      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
-      'platform-transports': platformPath("web", 'lib', 'transport'),
-    },
-  },
   node: {
     crypto: 'empty',
     Buffer: false,
@@ -111,19 +98,6 @@ const nativeScriptConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-nativescript.js',
-  },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: platformPath("nativescript", "platform"),
-      'platform-http': platformPath("web", 'lib', 'util', 'http'),
-      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
-      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
-      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
-      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
-      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
-      'platform-transports': platformPath("web", 'lib', 'transport', 'withoutjsonp'),
-    },
   },
   node: {
     crypto: 'empty',
@@ -150,16 +124,6 @@ const reactNativeConfig = {
   },
   resolve: {
     extensions: ['.js', '.ts'],
-    alias: {
-      platform: platformPath("react-native", "platform"),
-      'platform-http': platformPath("web", 'lib', 'util', 'http'),
-      'platform-bufferutils': platformPath("web", 'lib', 'util', 'bufferutils'),
-      'platform-defaults': platformPath("web", 'lib', 'util', 'defaults'),
-      'platform-crypto': platformPath("web", 'lib', 'util', 'crypto'),
-      'platform-webstorage': platformPath("web", 'lib', 'util', 'webstorage'),
-      'platform-msgpack': platformPath("web", 'lib', 'util', 'msgpack'),
-      'platform-transports': platformPath("web", 'lib', 'transport', 'withoutjsonp'),
-    },
   },
   node: {
     crypto: 'empty',

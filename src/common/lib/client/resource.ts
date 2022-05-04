@@ -7,8 +7,6 @@ import ErrorInfo from '../types/errorinfo';
 import Rest from './rest';
 import { ErrnoException } from '../../types/http';
 
-const msgpack = Platform.Config.msgpack;
-
 function withAuthDetails(
   rest: Rest,
   headers: Record<string, string>,
@@ -219,7 +217,7 @@ class Resource {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
-            decodedBody = msgpack.decode(body as Buffer);
+            decodedBody = Platform.Config.msgpack.decode(body as Buffer);
           } catch (decodeErr) {
             Logger.logAction(
               Logger.LOG_MICRO,

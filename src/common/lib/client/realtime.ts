@@ -11,10 +11,13 @@ import { ChannelOptions } from '../../types/channel';
 import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../ably';
+import ConnectionManager from "../transport/connectionmanager";
+import Platform from 'common/platform';
 
 class Realtime extends Rest {
   channels: any;
   connection: Connection;
+
 
   constructor(options: ClientOptions) {
     super(options);
@@ -35,12 +38,16 @@ class Realtime extends Rest {
   }
 
   static Promise = function (options: DeprecatedClientOptions): Realtime {
-    options = Defaults.objectifyOptions(options);
+    options = Defaults().objectifyOptions(options);
     options.promises = true;
     return new Realtime(options);
   };
 
   static Callbacks = Realtime;
+  static Utils = Utils;
+  static ConnectionManager = ConnectionManager;
+  static Platform = Platform;
+  static ProtocolMessage = ProtocolMessage;
 }
 
 class Channels extends EventEmitter {

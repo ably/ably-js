@@ -1,13 +1,13 @@
-import * as Utils from '../../../../common/lib/util/utils';
-import EventEmitter from '../../../../common/lib/util/eventemitter';
-import ErrorInfo from '../../../../common/lib/types/errorinfo';
-import Logger from '../../../../common/lib/util/logger';
-import Defaults from '../../../../common/lib/util/defaults';
-import * as BufferUtils from 'platform-bufferutils';
-import HttpMethods from '../../../../common/constants/HttpMethods';
-import IXHRRequest from '../../../../common/types/IXHRRequest';
-import { RequestParams } from '../../../../common/types/http';
-import XHRStates from '../../../../common/constants/XHRStates';
+import * as Utils from 'common/lib/util/utils';
+import EventEmitter from 'common/lib/util/eventemitter';
+import ErrorInfo from 'common/lib/types/errorinfo';
+import Logger from 'common/lib/util/logger';
+import Defaults from 'common/lib/util/defaults';
+import HttpMethods from 'common/constants/HttpMethods';
+import IXHRRequest from 'common/types/IXHRRequest';
+import { RequestParams } from 'common/types/http';
+import XHRStates from 'common/constants/XHRStates';
+import Platform from 'common/platform'
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
   return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');
@@ -116,7 +116,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     /* XHR requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
      * or completely standalone.  Use the appropriate timeouts in each case */
-    const _timeouts = timeouts || Defaults.TIMEOUTS;
+    const _timeouts = timeouts || Defaults().TIMEOUTS;
     return new XHRRequest(
       uri,
       headers,
@@ -242,7 +242,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
            * we set the responseType expecting msgpack, the response will be
            * an ArrayBuffer containing json */
           const jsonResponseBody =
-            xhr.responseType === 'arraybuffer' ? BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
+            xhr.responseType === 'arraybuffer' ? Platform.BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
           if (jsonResponseBody.length) {
             parsedResponse = JSON.parse(jsonResponseBody);
           } else {
@@ -279,7 +279,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       let err = getAblyError(parsedResponse, headers);
       if (!err) {
         err = new ErrorInfo(
-          'Error response received from server: ' + statusCode + ' body was: ' + Utils.inspect(parsedResponse),
+          'Error response received from server: ' + statusCode + ' body was: ' + Platform.Config.inspect(parsedResponse),
           null,
           statusCode
         );
@@ -311,7 +311,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     const onStreamEnd = () => {
       onProgress();
       this.streamComplete = true;
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.complete();
       });
     };

@@ -10,14 +10,15 @@ define([
   'async',
 ], function (testAppModule, clientModule, testAppManager, async) {
   var utils = clientModule.Ably.Realtime.Utils;
-  var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
+  var platform = clientModule.Ably.Realtime.Platform;
+  var supportedTransports = ()=>utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
     /* Don't include jsonp in availableTransports if xhr works. Why? Because
      * you can't abort requests. So recv's stick around for 90s till realtime
      * ends them. So in a test, the browsers max-connections-per-host limit
      * fills up quickly, which messes up other comet transports too */
-    availableTransports = utils.arrIn(supportedTransports, 'xhr_polling')
-      ? utils.arrWithoutValue(supportedTransports, 'jsonp')
-      : supportedTransports,
+    availableTransports = ()=>utils.arrIn(supportedTransports(), 'xhr_polling')
+      ? utils.arrWithoutValue(supportedTransports(), 'jsonp')
+      : supportedTransports(),
     bestTransport = availableTransports[0],
     /* IANA reserved; requests to it will hang forever */
     unroutableHost = '10.255.255.1',
@@ -82,7 +83,7 @@ define([
 
   function callbackOnClose(realtime, callback) {
     if (!realtime.connection.connectionManager.activeProtocol) {
-      utils.nextTick(function () {
+      platform.Config.nextTick(function () {
         realtime.close();
         callback();
       });
@@ -94,7 +95,7 @@ define([
     /* wait a tick before closing in order to avoid the final close
      * happening synchronously in a publish/attach callback, which
      * complicates channelattach_publish_invalid etc. */
-    utils.nextTick(function () {
+    platform.Config.nextTick(function () {
       realtime.close();
     });
   }
@@ -125,7 +126,8 @@ define([
   /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
   function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
     var itFn = skip ? it.skip : it;
-    utils.arrForEach(availableTransports, function (transport) {
+    let transports = availableTransports();
+    utils.arrForEach(transports, function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',
         testFn({ transports: [transport], useBinaryProtocol: true })
@@ -140,8 +142,8 @@ define([
      * nodecomet+upgrade if comet is explicitly requested
      * */
     if (!excludeUpgrade) {
-      itFn(name + '_with_binary_transport', testFn({ transports: availableTransports, useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', testFn({ transports: availableTransports, useBinaryProtocol: false }));
+      itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
     }
   }
 

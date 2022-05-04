@@ -21,31 +21,27 @@ import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 type Realtime = any;
 type ClientOptions = any;
 
-const WebStorage = Platform.WebStorage;
-const PlatformTransports = Platform.Transports;
-
-const haveWebStorage = typeof WebStorage !== 'undefined' && WebStorage.localSupported;
-const haveSessionStorage = typeof WebStorage !== 'undefined' && WebStorage.sessionSupported;
+const haveWebStorage = ()=>typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
+const haveSessionStorage = ()=>typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
 const actions = ProtocolMessage.Action;
 const noop = function () {};
-const transportPreferenceOrder = Defaults.transportPreferenceOrder;
-const optimalTransport = transportPreferenceOrder[transportPreferenceOrder.length - 1];
+const transportPreferenceOrder = ()=>Platform.Defaults.transportPreferenceOrder;
 const transportPreferenceName = 'ably-transport-preference';
 
 const sessionRecoveryName = 'ably-connection-recovery';
 function getSessionRecoverData() {
-  return haveSessionStorage && WebStorage?.getSession?.(sessionRecoveryName);
+  return haveSessionStorage() && Platform.WebStorage?.getSession?.(sessionRecoveryName);
 }
 function setSessionRecoverData(value: any) {
-  return haveSessionStorage && WebStorage?.setSession?.(sessionRecoveryName, value);
+  return haveSessionStorage() && Platform.WebStorage?.setSession?.(sessionRecoveryName, value);
 }
 function clearSessionRecoverData() {
-  return haveSessionStorage && WebStorage?.removeSession?.(sessionRecoveryName);
+  return haveSessionStorage() && Platform.WebStorage?.removeSession?.(sessionRecoveryName);
 }
 
 function betterTransportThan(a: Transport, b: Transport) {
   return (
-    Utils.arrIndexOf(transportPreferenceOrder, a.shortName) > Utils.arrIndexOf(transportPreferenceOrder, b.shortName)
+    Utils.arrIndexOf(transportPreferenceOrder(), a.shortName) > Utils.arrIndexOf(transportPreferenceOrder(), b.shortName)
   );
 }
 
@@ -107,6 +103,7 @@ export class TransportParams {
 
     this.connectionSerial = undefined;
     this.timeSerial = undefined;
+
   }
 
   getConnectParams(authParams: Record<string, unknown>): Record<string, string> {
@@ -154,8 +151,8 @@ export class TransportParams {
     if (this.heartbeats !== undefined) {
       params.heartbeats = this.heartbeats;
     }
-    params.v = Defaults.apiVersion;
-    params.agent = encodeURIComponent(Defaults.agent);
+    params.v = Defaults().apiVersion;
+    params.agent = encodeURIComponent(Defaults().agent);
     if (options.transportParams !== undefined) {
       Utils.mixin(params, options.transportParams);
     }
@@ -233,6 +230,10 @@ class ConnectionManager extends EventEmitter {
 
   constructor(realtime: Realtime, options: ClientOptions) {
     super();
+    WebSocketTransport(ConnectionManager);
+    Utils.arrForEach(Platform.Transports, function (initFn) {
+      initFn(ConnectionManager);
+    });
     this.realtime = realtime;
     this.options = options;
     const timeouts = options.timeouts;
@@ -312,18 +313,18 @@ class ConnectionManager extends EventEmitter {
     this.maxIdleInterval = null;
 
     this.transports = Utils.intersect(
-      options.transports || Defaults.defaultTransports,
+      options.transports || Defaults().defaultTransports,
       ConnectionManager.supportedTransports
     );
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
      * that's both requested and supported. Normally this will be xhr_polling;
      * if xhr isn't supported it will be jsonp. If the user has forced a
      * transport, it'll just be that one. */
-    this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
-    this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
+    this.baseTransport = Utils.intersect(Defaults().baseTransportOrder, this.transports)[0];
+    this.upgradeTransports = Utils.intersect(this.transports, Defaults().upgradeTransports);
     this.transportPreference = null;
 
-    this.httpHosts = Defaults.getHosts(options);
+    this.httpHosts = Defaults().getHosts(options);
     this.activeProtocol = null;
     this.proposedTransports = [];
     this.pendingTransports = [];
@@ -338,7 +339,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
-      'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']'
+      'requested transports = [' + (options.transports || Defaults().defaultTransports) + ']'
     );
     Logger.logAction(
       Logger.LOG_MICRO,
@@ -356,7 +357,7 @@ class ConnectionManager extends EventEmitter {
     const addEventListener = Platform.Config.addEventListener;
     if (addEventListener) {
       /* intercept close event in browser to persist connection id if requested */
-      if (haveSessionStorage && typeof options.recover === 'function') {
+      if (haveSessionStorage() && typeof options.recover === 'function') {
         /* Usually can't use bind as not supported in IE8, but IE doesn't support sessionStorage, so... */
         addEventListener('beforeunload', this.persistConnection.bind(this));
       }
@@ -565,7 +566,7 @@ class ConnectionManager extends EventEmitter {
 
     Utils.arrDeleteValue(this.proposedTransports, transport);
     this.pendingTransports.push(transport);
-
+    const optimalTransport = transportPreferenceOrder()[transportPreferenceOrder.length - 1];
     transport.once(
       'connected',
       (
@@ -591,7 +592,7 @@ class ConnectionManager extends EventEmitter {
 
           /* allow connectImpl to start the upgrade process if needed, but allow
            * other event handlers, including activating the transport, to run first */
-          Utils.nextTick(() => {
+          Platform.Config.nextTick(() => {
             this.connectImpl(transportParams);
           });
         }
@@ -911,7 +912,7 @@ class ConnectionManager extends EventEmitter {
      * callback at the moment; if we add it now we'll be adding it to the end
      * of the listeners array and it'll be called immediately) */
     this.onConnectionDetailsUpdate(connectionDetails, transport);
-    Utils.nextTick(() => {
+    Platform.Config.nextTick(() => {
       transport.on(
         'connected',
         (connectedErr: ErrorInfo, _connectionId: string, connectionDetails: Record<string, any>) => {
@@ -1042,7 +1043,7 @@ class ConnectionManager extends EventEmitter {
        * In case of an upgrade, this will trigger an immediate activation of
        * the upgrade transport, so delay a tick so this transport can finish
        * deactivating */
-      Utils.nextTick(function () {
+      Platform.Config.nextTick(function () {
         (currentProtocol as Protocol).clearPendingMessages();
       });
       this.activeProtocol = this.host = null;
@@ -1183,7 +1184,7 @@ class ConnectionManager extends EventEmitter {
        * state will be updated and so that it will be applied after
        * Channels#onTransportUpdate, else channels will not have an ATTACHED
        * sent twice (once from this and once from that). */
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.realtime.channels.reattach();
       });
     } else if (this.options.checkChannelsOnResume) {
@@ -1308,7 +1309,7 @@ class ConnectionManager extends EventEmitter {
    * state for later recovery. Only applicable in the browser context.
    */
   persistConnection(): void {
-    if (haveSessionStorage) {
+    if (haveSessionStorage()) {
       const recoveryKey = this.realtime.connection.recoveryKey;
       if (recoveryKey) {
         setSessionRecoverData({
@@ -1523,7 +1524,7 @@ class ConnectionManager extends EventEmitter {
         );
         setTimeout(autoReconnect, 1000 - sinceLast);
       } else {
-        Utils.nextTick(autoReconnect);
+        Platform.Config.nextTick(autoReconnect);
       }
     } else if (state === 'disconnected' || state === 'suspended') {
       this.startRetryTimer(newState.retryDelay as number);
@@ -1534,7 +1535,7 @@ class ConnectionManager extends EventEmitter {
     if ((state === 'disconnected' && !retryImmediately) || state === 'suspended' || newState.terminal) {
       /* Wait till the next tick so the connection state change is enacted,
        * so aborting transports doesn't trigger redundant state changes */
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.disconnectAllTransports();
       });
     }
@@ -1587,7 +1588,7 @@ class ConnectionManager extends EventEmitter {
     this.enactStateChange(change);
 
     if (state == 'connecting') {
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.startConnect();
       });
     }
@@ -1845,7 +1846,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.upgradeIfNeeded()',
-      'upgrade possibilities: ' + Utils.inspect(upgradePossibilities)
+      'upgrade possibilities: ' + Platform.Config.inspect(upgradePossibilities)
     );
 
     if (!upgradePossibilities.length) {
@@ -1911,7 +1912,7 @@ class ConnectionManager extends EventEmitter {
         ) {
           this.disconnectAllTransports(/* exceptActive: */ true);
           const transportParams = (this.activeProtocol as Protocol).getTransport().params;
-          Utils.nextTick(() => {
+          Platform.Config.nextTick(() => {
             if (this.state.state === 'connected') {
               this.upgradeIfNeeded(transportParams);
             }
@@ -2227,7 +2228,7 @@ class ConnectionManager extends EventEmitter {
         /* ensure that no callback happens for the currently outstanding operation */
         completed = true;
         /* repeat but picking up the new transport */
-        Utils.nextTick(() => {
+        Platform.Config.nextTick(() => {
           this.ping(null, callback);
         });
       }
@@ -2246,22 +2247,22 @@ class ConnectionManager extends EventEmitter {
   }
 
   getTransportPreference(): string {
-    return this.transportPreference || (haveWebStorage && WebStorage.get?.(transportPreferenceName));
+    return this.transportPreference || (haveWebStorage() && Platform.WebStorage?.get?.(transportPreferenceName));
   }
 
   persistTransportPreference(transport: Transport): void {
-    if (Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
+    if (Utils.arrIn(Defaults().upgradeTransports, transport.shortName)) {
       this.transportPreference = transport.shortName;
-      if (haveWebStorage) {
-        WebStorage.set?.(transportPreferenceName, transport.shortName);
+      if (haveWebStorage()) {
+        Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);
       }
     }
   }
 
   unpersistTransportPreference(): void {
     this.transportPreference = null;
-    if (haveWebStorage) {
-      WebStorage.remove?.(transportPreferenceName);
+    if (haveWebStorage()) {
+      Platform.WebStorage?.remove?.(transportPreferenceName);
     }
   }
 
@@ -2310,9 +2311,5 @@ class ConnectionManager extends EventEmitter {
   }
 }
 
-WebSocketTransport(ConnectionManager);
-Utils.arrForEach(PlatformTransports, function (initFn) {
-  initFn(ConnectionManager);
-});
 
 export default ConnectionManager;

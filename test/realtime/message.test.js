@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var displayError = helper.displayError;
   var utils = helper.Utils;
+  let config = Ably.Realtime.Platform.Config;
   var closeAndFinish = helper.closeAndFinish;
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var monitorConnection = helper.monitorConnection;
@@ -894,7 +895,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     ++received;
                     if (received === 2) {
                       /* wait a tick to make sure no more messages come in */
-                      utils.nextTick(function () {
+                      config.nextTick(function () {
                         innercb();
                       });
                     }

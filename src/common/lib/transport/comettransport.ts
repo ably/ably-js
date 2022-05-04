@@ -10,6 +10,7 @@ import IXHRRequest from '../../types/IXHRRequest';
 import * as API from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
+import Platform from "common/platform";
 
 /* TODO: can remove once realtime sends protocol message responses for comet errors */
 function shouldBeErrorAction(err: ErrorInfo) {
@@ -72,8 +73,8 @@ abstract class CometTransport extends Transport {
     Transport.prototype.connect.call(this);
     const params = this.params;
     const options = params.options;
-    const host = Defaults.getHost(options, params.host);
-    const port = Defaults.getPort(options);
+    const host = Defaults().getHost(options, params.host);
+    const port = Defaults().getPort(options);
     const cometScheme = options.tls ? 'https://' : 'http://';
 
     this.baseUri = cometScheme + host + ':' + port + '/comet/';
@@ -143,7 +144,7 @@ abstract class CometTransport extends Transport {
           }
           return;
         }
-        Utils.nextTick(() => {
+        Platform.Config.nextTick(() => {
           this.recv();
         });
       });
@@ -192,7 +193,7 @@ abstract class CometTransport extends Transport {
       /* In almost all cases the transport will be finished before it's
        * disposed. Finish here just to make sure. */
       this.finish('disconnected', ConnectionErrors.disconnected);
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.emit('disposed');
       });
     }
@@ -287,7 +288,7 @@ abstract class CometTransport extends Transport {
       }
 
       if (this.pendingItems) {
-        Utils.nextTick(() => {
+        Platform.Config.nextTick(() => {
           /* If there's a new send request by now, any pending items will have
            * been picked up by that; any new ones added since then will be
            * picked up after that one completes */
@@ -336,7 +337,7 @@ abstract class CometTransport extends Transport {
         }
         return;
       }
-      Utils.nextTick(() => {
+      Platform.Config.nextTick(() => {
         this.recv();
       });
     });

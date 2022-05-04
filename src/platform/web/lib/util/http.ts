@@ -32,10 +32,10 @@ function getHosts(client: Rest | Realtime): string[] {
     connectionHost = connection && connection.connectionManager.host;
 
   if (connectionHost) {
-    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+    return [connectionHost].concat(Defaults().getFallbackHosts(client.options));
   }
 
-  return Defaults.getHosts(client.options);
+  return Defaults().getHosts(client.options);
 }
 
 const Http: typeof IHttp = class {
@@ -71,7 +71,7 @@ const Http: typeof IHttp = class {
       };
 
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        const upUrl = Defaults.internetUpUrl;
+        const upUrl = Defaults().internetUpUrl;
         Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
         this.doUri(
           HttpMethods.Get,
@@ -107,14 +107,14 @@ const Http: typeof IHttp = class {
           method
         );
         req.once('complete', callback);
-        Utils.nextTick(function () {
+        Platform.Config.nextTick(function () {
           req.exec();
         });
         return req;
       };
 
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
-        const upUrl = Defaults.jsonpInternetUpUrl;
+        const upUrl = Defaults().jsonpInternetUpUrl;
 
         if (this.checksInProgress) {
           this.checksInProgress.push(callback);
@@ -130,7 +130,7 @@ const Http: typeof IHttp = class {
           null,
           null,
           XHRStates.REQ_SEND,
-          Defaults.TIMEOUTS
+          Defaults().TIMEOUTS
         );
         req.once('complete', (err: Error, response: string) => {
           const result = !err && response;
@@ -139,7 +139,7 @@ const Http: typeof IHttp = class {
             (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
           this.checksInProgress = null;
         });
-        Utils.nextTick(function () {
+        Platform.Config.nextTick(function () {
           req.exec();
         });
       };

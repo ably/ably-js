@@ -9,7 +9,6 @@ import NodeWebSocket from 'ws';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Auth from '../client/auth';
 
-const WebSocket = Platform.Config.WebSocket;
 const shortName = 'web_socket';
 
 function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
@@ -26,11 +25,11 @@ class WebSocketTransport extends Transport {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
     params.heartbeats = Platform.Config.useProtocolHeartbeats;
-    this.wsHost = Defaults.getHost(params.options, params.host, true);
+    this.wsHost = Defaults().getHost(params.options, params.host, true);
   }
 
   static isAvailable() {
-    return !!WebSocket;
+    return !!Platform.Config.WebSocket;
   }
 
   static tryConnect(
@@ -58,7 +57,7 @@ class WebSocketTransport extends Transport {
       for (const key in connectParams) uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
     }
     this.uri = uri;
-    return new WebSocket(uri);
+    return new Platform.Config.WebSocket(uri);
   }
 
   toString() {
@@ -72,7 +71,7 @@ class WebSocketTransport extends Transport {
       params = this.params,
       options = params.options;
     const wsScheme = options.tls ? 'wss://' : 'ws://';
-    const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
+    const wsUri = wsScheme + this.wsHost + ':' + Defaults().getPort(options) + '/';
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
     this.auth.getAuthParams(function (err: ErrorInfo, authParams: Record<string, string>) {
       if (self.isDisposed) {
@@ -189,7 +188,7 @@ class WebSocketTransport extends Transport {
     /* Wait a tick before aborting: if the websocket was connected, this event
      * will be immediately followed by an onclose event with a close code. Allow
      * that to close it (so we see the close code) rather than anticipating it */
-    Utils.nextTick(() => {
+    Platform.Config.nextTick(() => {
       this.disconnect(Error(err.message));
     });
   }
@@ -206,7 +205,7 @@ class WebSocketTransport extends Transport {
       delete this.wsConnection;
       /* defer until the next event loop cycle before closing the socket,
        * giving some implementations the opportunity to send any outstanding close message */
-      Utils.nextTick(function () {
+      Platform.Config.nextTick(function () {
         Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
         if (!wsConnection) {
           throw new Error('WebSocketTransport.dispose(): wsConnection is not defined');

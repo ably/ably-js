@@ -1,3 +1,4 @@
+import Platform from 'common/platform';
 import * as Utils from '../util/utils';
 
 export default class ErrorInfo {
@@ -28,7 +29,7 @@ export default class ErrorInfo {
   static fromValues(values: Record<string, unknown> | ErrorInfo | Error): ErrorInfo {
     const { message, code, statusCode } = values as ErrorInfo;
     if (typeof message !== 'string' || typeof code !== 'number' || typeof statusCode !== 'number') {
-      throw new Error('ErrorInfo.fromValues(): invalid values: ' + Utils.inspect(values));
+      throw new Error('ErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
     }
     const result = Object.assign(new ErrorInfo(message, code, statusCode), values);
     if (result.code && !result.href) {

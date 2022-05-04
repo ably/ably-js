@@ -43,21 +43,22 @@ function normaliseAuthcallbackError(err: any) {
   return err;
 }
 
-let hmac: (text: string, key: string) => string;
-let toBase64: (str: string) => string;
-if (Platform.Config.createHmac) {
-  toBase64 = (str) => Buffer.from(str, 'ascii').toString('base64');
-  hmac = function (text, key) {
+let toBase64 = (str: string): string => {
+  if(Platform.Config.createHmac){
+    return Buffer.from(str, 'ascii').toString('base64')
+  }
+  return stringifyBase64(parseUtf8(str))
+};
+
+let hmac = (text: string, key: string): string => {
+  if (Platform.Config.createHmac){
     const inst = (Platform.Config.createHmac as typeof createHmac)('SHA256', key);
     inst.update(text);
     return inst.digest('base64');
-  };
-} else {
-  toBase64 = (str) => stringifyBase64(parseUtf8(str));
-  hmac = function (text, key) {
-    return stringifyBase64(HmacSHA256(text, key));
-  };
-}
+  }
+  return stringifyBase64(HmacSHA256(text, key));
+};
+
 
 function c14n(capability?: string | Record<string, Array<string>>) {
   if (!capability) return '';

@@ -7,6 +7,7 @@ import ErrorInfo from '../types/errorinfo';
 import Auth from '../client/auth';
 import * as API from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
+import Platform from 'common/platform';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
@@ -172,7 +173,7 @@ abstract class Transport extends EventEmitter {
           'received error action; connectionId = ' +
             this.connectionManager.connectionId +
             '; err = ' +
-            Utils.inspect(message.error) +
+            Platform.Config.inspect(message.error) +
             (message.channel ? ', channel: ' + message.channel : '')
         );
         if (message.channel === undefined) {

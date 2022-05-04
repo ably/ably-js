@@ -16,8 +16,6 @@ import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 
 import Platform from '../../platform'
 
 const noop = function () {};
-const msgpack = Platform.Config.msgpack;
-
 class Rest {
   options: NormalisedClientOptions;
   baseUri: (host: string) => string;
@@ -38,14 +36,14 @@ class Rest {
       Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
       throw new Error(msg);
     }
-    const optionsObj = Defaults.objectifyOptions(options);
+    const optionsObj = Defaults().objectifyOptions(options);
 
     if (optionsObj.log) {
       Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
     }
-    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Utils.inspect(options));
+    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
 
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
+    const normalOptions = (this.options = Defaults().normaliseOptions(optionsObj));
 
     /* process options */
     if (normalOptions.key) {
@@ -70,10 +68,10 @@ class Rest {
         );
     }
 
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
+    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults().version);
 
     this.baseUri = this.authority = function (host) {
-      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
+      return Defaults().getHttpScheme(normalOptions) + host + ':' + Defaults().getPort(normalOptions, false);
     };
     this._currentFallback = null;
 
@@ -176,8 +174,8 @@ class Rest {
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
     const useBinary = this.options.useBinaryProtocol,
-      encoder = useBinary ? msgpack.encode : JSON.stringify,
-      decoder = useBinary ? msgpack.decode : JSON.parse,
+      encoder = useBinary ? Platform.Config.msgpack.encode : JSON.stringify,
+      decoder = useBinary ? Platform.Config.msgpack.decode : JSON.parse,
       format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
     params = params || {};
@@ -230,12 +228,13 @@ class Rest {
   }
 
   static Promise = function (options: DeprecatedClientOptions): Rest {
-    options = Defaults.objectifyOptions(options);
+    options = Defaults().objectifyOptions(options);
     options.promises = true;
     return new Rest(options);
   };
 
   static Callbacks = Rest;
+  static Platform = Platform;
 }
 
 class Channels {

@@ -143,8 +143,11 @@ export function prototypicalClone(
  * See node.js util.inherits
  */
 export const inherits =
-  Platform.Config.inherits ||
   function (ctor: any, superCtor: Function) {
+    if(Platform.Config.inherits){
+      Platform.Config.inherits(ctor, superCtor);
+      return
+    }
     ctor.super_ = superCtor;
     ctor.prototype = prototypicalClone(superCtor.prototype, { constructor: ctor });
   };
@@ -336,7 +339,7 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
   });
 }
 
-export const nextTick = Platform.Config.nextTick;
+//export const nextTick = Platform.Config.nextTick;
 
 const contentTypes = {
   json: 'application/json',
@@ -350,8 +353,8 @@ export function defaultGetHeaders(format?: Format): Record<string, string> {
   const accept = contentTypes[format || Format.json];
   return {
     accept: accept,
-    'X-Ably-Version': Defaults.apiVersion,
-    'Ably-Agent': Defaults.agent,
+    'X-Ably-Version': Defaults().apiVersion,
+    'Ably-Agent': Defaults().agent,
   };
 }
 
@@ -362,8 +365,8 @@ export function defaultPostHeaders(format?: Format): Record<string, string> {
   return {
     accept: accept,
     'content-type': contentType,
-    'X-Ably-Version': Defaults.apiVersion,
-    'Ably-Agent': Defaults.agent,
+    'X-Ably-Version': Defaults().apiVersion,
+    'Ably-Agent': Defaults().agent,
   };
 }
 
@@ -396,7 +399,8 @@ export const now =
     return new Date().getTime();
   };
 
-export const inspect = Platform.Config.inspect;
+//export const inspect = Platform.Config.inspect;
+// TODO: remove
 
 export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
   return err.constructor.name == 'ErrorInfo';
@@ -432,46 +436,43 @@ export function cheapRandStr(): string {
   return String(Math.random()).substr(2);
 }
 
+
 /* Takes param the minimum number of bytes of entropy the string must
  * include, not the length of the string. String length produced is not
  * guaranteed. */
-export const randomString =
-  Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'
-    ? function (numBytes: number) {
-        const uIntArr = new Uint8Array(numBytes);
-        (Platform.Config.getRandomValues as Function)(uIntArr);
-        return Platform.BufferUtils.base64Encode(uIntArr);
-      }
-    : function (numBytes: number) {
-        /* Old browser; fall back to Math.random. Could just use a
-         * CryptoJS version of the above, but want this to still work in nocrypto
-         * versions of the library */
-        const charset = Platform.BufferUtils.base64CharSet;
-        /* base64 has 33% overhead; round length up */
-        const length = Math.round((numBytes * 4) / 3);
-        let result = '';
-        for (let i = 0; i < length; i++) {
-          result += charset[randomPosn(charset)];
-        }
-        return result;
-      };
+export const randomString = (numBytes: number): string => {
+  if(Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'){
+    const uIntArr = new Uint8Array(numBytes);
+    (Platform.Config.getRandomValues as Function)(uIntArr);
+    return Platform.BufferUtils.base64Encode(uIntArr);
+  }
+  /* Old browser; fall back to Math.random. Could just use a
+        * CryptoJS version of the above, but want this to still work in nocrypto
+        * versions of the library */
+  const charset = Platform.BufferUtils.base64CharSet;
+  /* base64 has 33% overhead; round length up */
+  const length = Math.round((numBytes * 4) / 3);
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += charset[randomPosn(charset)];
+  }
+  return result;
+};
 
-export const randomHexString =
-  Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'
-    ? function (numBytes: number) {
-        const uIntArr = new Uint8Array(numBytes);
-        (Platform.Config.getRandomValues as Function)(uIntArr);
-        return Platform.BufferUtils.hexEncode(uIntArr);
-      }
-    : function (numBytes: number) {
-        const charset = Platform.BufferUtils.hexCharSet;
-        const length = numBytes * 2;
-        let result = '';
-        for (let i = 0; i < length; i++) {
-          result += charset[randomPosn(charset)];
-        }
-        return result;
-      };
+export const randomHexString = (numBytes: number): string => {
+  if(Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'){
+    const uIntArr = new Uint8Array(numBytes);
+    (Platform.Config.getRandomValues as Function)(uIntArr);
+    return Platform.BufferUtils.hexEncode(uIntArr);
+  }
+  const charset = Platform.BufferUtils.hexCharSet;
+  const length = numBytes * 2;
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += charset[randomPosn(charset)];
+  }
+  return result;
+};
 
 /* Pick n elements at random without replacement from an array */
 export function arrChooseN<T>(arr: Array<T>, n: number): Array<T> {
