@@ -42,7 +42,7 @@ async function run() {
 	}
 
 	const isTag = await git("tag --points-at HEAD");
-	if (isTag)
+	if (!isTag)
 		throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
 
 	if(!config.skipCheckout)
