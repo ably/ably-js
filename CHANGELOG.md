@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.21](https://github.com/ably/ably-js/tree/1.2.21) (2022-05-05)
+- Make `Connection.id` and `Connection.key` optional [\#952](https://github.com/ably/ably-js/issue/952)
+- Remove support for MozWebSocket [\#954](https://github.com/ably/ably-js/issue/954)
+- Fix a bug with promisified `EventEmitter.whenState` [\#962](https://github.com/ably/ably-js/pull/962)
+- Update ably.com/documentation urls [\#964](https://github.com/ably/ably-js/pull/964)
+- Remove console.log statements from msgpack encoder [\#966](https://github.com/ably/ably-js/pull/966)
+- Fix nativescript bundle [\#971](https://github.com/ably/ably-js/pull/971)
+
 ## [1.2.20](https://github.com/ably/ably-js/tree/1.2.20) (2022-04-06)
 - Fix error where calling realtime presence update caused call stack errors [\#949](https://github.com/ably/ably-js/issue/949)
 - Fix an issue where Ably-Agent headers were encoded incorrectly [\#950](https://github.com/ably/ably-js/pull/950)
