@@ -119,6 +119,7 @@ const nativeScriptConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-nativescript.js',
+    globalObject: 'global',
   },
   resolve: {
     ...baseConfig.resolve,
