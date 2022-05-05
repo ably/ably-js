@@ -230,10 +230,7 @@ class ConnectionManager extends EventEmitter {
 
   constructor(realtime: Realtime, options: ClientOptions) {
     super();
-    WebSocketTransport(ConnectionManager);
-    Utils.arrForEach(Platform.Transports, function (initFn) {
-      initFn(ConnectionManager);
-    });
+    ConnectionManager.initTransports();
     this.realtime = realtime;
     this.options = options;
     const timeouts = options.timeouts;
@@ -405,6 +402,13 @@ class ConnectionManager extends EventEmitter {
    *********************/
 
   static supportedTransports: Record<string, typeof Transport> = {};
+
+  static initTransports(){
+    WebSocketTransport(ConnectionManager);
+    Utils.arrForEach(Platform.Transports, function (initFn) {
+      initFn(ConnectionManager);
+    });
+  }
 
   createTransportParams(host: string | null, mode: string): TransportParams {
     const params = new TransportParams(this.options, host, mode, this.connectionKey);

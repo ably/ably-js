@@ -288,7 +288,7 @@ When a 128 bit or 256 bit key is provided to the library, the `data` attributes 
 ```javascript
 // Generate a random 256-bit key for demonstration purposes (in
 // practice you need to create one and distribute it to clients yourselves)
-Ably.Realtime.Crypto.generateRandomKey(function (err, key) {
+Ably.Realtime.Platform.Crypto.generateRandomKey(function (err, key) {
   var channel = client.channels.get('channelName', { cipher: { key: key } });
 
   channel.subscribe(function (message) {

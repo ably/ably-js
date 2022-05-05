@@ -11,14 +11,15 @@ define([
 ], function (testAppModule, clientModule, testAppManager, async) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
-  var supportedTransports = ()=>utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
+  clientModule.Ably.Realtime.ConnectionManager.initTransports();
+  var supportedTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
     /* Don't include jsonp in availableTransports if xhr works. Why? Because
      * you can't abort requests. So recv's stick around for 90s till realtime
      * ends them. So in a test, the browsers max-connections-per-host limit
      * fills up quickly, which messes up other comet transports too */
-    availableTransports = ()=>utils.arrIn(supportedTransports(), 'xhr_polling')
-      ? utils.arrWithoutValue(supportedTransports(), 'jsonp')
-      : supportedTransports(),
+    availableTransports = utils.arrIn(supportedTransports, 'xhr_polling')
+      ? utils.arrWithoutValue(supportedTransports, 'jsonp')
+      : supportedTransports,
     bestTransport = availableTransports[0],
     /* IANA reserved; requests to it will hang forever */
     unroutableHost = '10.255.255.1',
@@ -126,7 +127,7 @@ define([
   /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
   function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
     var itFn = skip ? it.skip : it;
-    let transports = availableTransports();
+    let transports = availableTransports;
     utils.arrForEach(transports, function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',

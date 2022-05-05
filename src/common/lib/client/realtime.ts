@@ -48,6 +48,7 @@ class Realtime extends Rest {
   static ConnectionManager = ConnectionManager;
   static Platform = Platform;
   static ProtocolMessage = ProtocolMessage;
+
 }
 
 class Channels extends EventEmitter {
