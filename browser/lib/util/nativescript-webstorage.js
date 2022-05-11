@@ -1,5 +1,5 @@
 import * as Utils from '../../../common/lib/util/utils';
-import appSettings from 'application-settings';
+import appSettings from '@nativescript/core/application-settings';
 
 var WebStorage = (function () {
   function WebStorage() {}
