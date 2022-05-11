@@ -2083,7 +2083,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     if (typeof Promise !== 'undefined') {
-      describe.only('presence_promise', function () {
+      describe('presence_promise', function () {
         var options = { clientId: testClientId, promises: true };
 
         it('enter_get', function (done) {
