@@ -599,5 +599,21 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         }
       );
     });
+
+    if (typeof Promise !== 'undefined') {
+      it('stats_promise', function (done) {
+        var client = helper.AblyRest({ promises: true });
+
+        client
+          .stats()
+          .then(function () {
+            console.log('here');
+            done();
+          })
+          ['catch'](function (err) {
+            done(err);
+          });
+      });
+    }
   });
 });

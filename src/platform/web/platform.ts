@@ -1,7 +1,6 @@
 import msgpack from './lib/util/msgpack';
 import { TypedArray, IPlatform } from '../../common/types/IPlatform';
 
-declare var MozWebSocket: typeof WebSocket; // For Chrome 14 and Firefox 7
 declare var msCrypto: typeof crypto; // for IE11
 
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
@@ -28,7 +27,7 @@ const Platform: IPlatform = {
   currentUrl: currentUrl,
   noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
   binaryType: 'arraybuffer',
-  WebSocket: global.WebSocket || MozWebSocket,
+  WebSocket: global.WebSocket,
   xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
   jsonpSupported: typeof document !== 'undefined',
   allowComet: allowComet(),

@@ -15,9 +15,6 @@ async function run() {
 		bucket: S3_DEFAULT_BUCKET,
 		// The root folder inside the S3 bucket where the files should be places
 		root: S3_DEFAULT_ROOT,
-		// S3 Credentials
-		s3Key: process.env.AWS_ACCESS_KEY,
-		s3Secret: process.env.AWS_SECRET_ACCESS_KEY,
 		// Local path to start from
 		path: ".",
 		// Comma separated directories (relative to `path`) to upload
@@ -29,20 +26,12 @@ async function run() {
 		...argv,
 	};
 
-	if (!config.s3Key || !config.s3Secret)
-		throw new Error(`Missing S3 credentials, provide either --s3Key and --s3Secret or environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY`);
-
 	// Resolve all the paths into full paths
 	config.path = path.resolve(config.path);
 	config.includeDirs = config.includeDirs.split(",").map((dir) => path.resolve(dir));
 	config.excludeDirs = config.excludeDirs.split(",").map((dir) => path.resolve(dir));
 
-	const s3 = new AWS.S3({
-		region: "REGION",
-		accessKeyId: config.s3Key,
-		secretAccessKey: config.s3Secret,
-		endpoint: config.endpoint,
-	});
+	const s3 = new AWS.S3();
 
 	// If no tag is specified, run an output displaying all available tags
 	if (!config.tag) {
@@ -53,7 +42,7 @@ async function run() {
 	}
 
 	const isTag = await git("tag --points-at HEAD");
-	if (isTag)
+	if (!isTag)
 		throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
 
 	if(!config.skipCheckout)

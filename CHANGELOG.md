@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.21](https://github.com/ably/ably-js/tree/1.2.21) (2022-05-05)
+- Make `Connection.id` and `Connection.key` optional [\#952](https://github.com/ably/ably-js/issue/952)
+- Remove support for MozWebSocket [\#954](https://github.com/ably/ably-js/issue/954)
+- Fix a bug with promisified `EventEmitter.whenState` [\#962](https://github.com/ably/ably-js/pull/962)
+- Update ably.com/documentation urls [\#964](https://github.com/ably/ably-js/pull/964)
+- Remove console.log statements from msgpack encoder [\#966](https://github.com/ably/ably-js/pull/966)
+- Fix nativescript bundle [\#971](https://github.com/ably/ably-js/pull/971)
+
 ## [1.2.20](https://github.com/ably/ably-js/tree/1.2.20) (2022-04-06)
 - Fix error where calling realtime presence update caused call stack errors [\#949](https://github.com/ably/ably-js/issue/949)
 - Fix an issue where Ably-Agent headers were encoded incorrectly [\#950](https://github.com/ably/ably-js/pull/950)
@@ -102,7 +110,7 @@ That is fixed in this release with
 
 Adds the capability to subscribe to a channel in delta mode.
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 [Full Changelog](https://github.com/ably/ably-js/compare/1.1.25...1.2.0)
 

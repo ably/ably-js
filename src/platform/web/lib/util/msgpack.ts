@@ -474,14 +474,6 @@ function encodeableKeys(value: { [key: string]: unknown }, sparse?: boolean) {
 function _encode(value: unknown, view: DataView, offset: number, sparse?: boolean): number {
   const type = typeof value;
 
-  switch (typeof value) {
-    case 'string':
-      console.log(value.length);
-      break;
-    case 'number':
-      console.log(Math.sqrt(value));
-  }
-
   // Strings Bytes
   // There are four string types: fixstr/str8/str16/str32
   if (typeof value === 'string') {

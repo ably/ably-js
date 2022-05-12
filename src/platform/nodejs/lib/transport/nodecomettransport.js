@@ -6,12 +6,12 @@ import ErrorInfo from '../../../../common/lib/types/errorinfo';
 import EventEmitter from '../../../../common/lib/util/eventemitter';
 import HttpStatusCodes from '../../../../common/constants/HttpStatusCodes';
 import XHRStates from '../../../../common/constants/XHRStates';
+import http from 'http';
+import https from 'https';
+import url from 'url';
+import util from 'util';
 
 var NodeCometTransport = function (connectionManager) {
-  var http = require('http');
-  var https = require('https');
-  var url = require('url');
-  var util = require('util');
   var noop = function () {};
   var shortName = 'comet';
 

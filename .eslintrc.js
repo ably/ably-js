@@ -24,6 +24,7 @@ module.exports = {
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
     "security/detect-object-injection": "off",
+    "@typescript-eslint/no-var-requires": "error",
   },
   overrides: [
     {
