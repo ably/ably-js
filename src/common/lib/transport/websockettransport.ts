@@ -25,7 +25,7 @@ class WebSocketTransport extends Transport {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
     params.heartbeats = Platform.Config.useProtocolHeartbeats;
-    this.wsHost = Defaults().getHost(params.options, params.host, true);
+    this.wsHost = Defaults.getHost(params.options, params.host, true);
   }
 
   static isAvailable() {
@@ -71,7 +71,7 @@ class WebSocketTransport extends Transport {
       params = this.params,
       options = params.options;
     const wsScheme = options.tls ? 'wss://' : 'ws://';
-    const wsUri = wsScheme + this.wsHost + ':' + Defaults().getPort(options) + '/';
+    const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
     this.auth.getAuthParams(function (err: ErrorInfo, authParams: Record<string, string>) {
       if (self.isDisposed) {

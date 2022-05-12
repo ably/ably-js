@@ -30,12 +30,8 @@ _._ = function (id: string) {
   return _['_' + id] || noop;
 };
 let idCounter = 1;
-let head: HTMLHeadElement | null = null;
 const shortName = 'jsonp';
 
-if (Platform.Config.jsonpSupported) {
-  head = document.getElementsByTagName('head')[0];
-}
 
 export function createRequest(
   uri: string,
@@ -49,7 +45,7 @@ export function createRequest(
   /* JSONP requests are used either with the context being a realtime
    * transport, or with timeouts passed in (for when used by a rest client),
    * or completely standalone.  Use the appropriate timeouts in each case */
-  timeouts = timeouts || Defaults().TIMEOUTS;
+  timeouts = timeouts || Defaults.TIMEOUTS;
   return new Request(
     undefined,
     uri,
@@ -113,7 +109,7 @@ class JSONPTransport extends CometTransport {
     /* JSONP requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
      * or completely standalone.  Use the appropriate timeouts in each case */
-    timeouts = this?.timeouts || timeouts || Defaults().TIMEOUTS;
+    timeouts = this?.timeouts || timeouts || Defaults.TIMEOUTS;
     return createRequest(uri, headers, params, body, requestMode, timeouts, method);
   }
 }
@@ -230,6 +226,7 @@ export class Request extends EventEmitter {
     const timeout =
       this.requestMode == XHRStates.REQ_SEND ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout;
     this.timer = setTimeout(this.abort.bind(this), timeout);
+    let head = document.getElementsByTagName('head')[0];
     (head as HTMLHeadElement).insertBefore(script, (head as HTMLHeadElement).firstChild);
   }
 

@@ -13,7 +13,7 @@ class PresenceMessage {
   timestamp?: number;
   clientId?: string;
   connectionId?: string;
-  data?: string | Buffer;
+  data?: string | Buffer | Uint8Array;
   encoding?: string;
   size?: number;
 
@@ -49,13 +49,13 @@ class PresenceMessage {
   toJSON(): {
     clientId?: string;
     action: number;
-    data: string | Buffer;
+    data: string | Buffer | Uint8Array;
     encoding?: string;
   } {
     /* encode data to base64 if present and we're returning real JSON;
      * although msgpack calls toJSON(), we know it is a stringify()
      * call if it has a non-empty arguments list */
-    let data = this.data as string | Buffer;
+    let data = this.data as string | Buffer | Uint8Array;
     let encoding = this.encoding;
     if (data && Platform.BufferUtils.isBuffer(data)) {
       if (arguments.length > 0) {

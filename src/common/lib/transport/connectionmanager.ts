@@ -151,8 +151,8 @@ export class TransportParams {
     if (this.heartbeats !== undefined) {
       params.heartbeats = this.heartbeats;
     }
-    params.v = Defaults().apiVersion;
-    params.agent = encodeURIComponent(Defaults().agent);
+    params.v = Defaults.apiVersion;
+    params.agent = encodeURIComponent(Defaults.agent);
     if (options.transportParams !== undefined) {
       Utils.mixin(params, options.transportParams);
     }
@@ -310,18 +310,18 @@ class ConnectionManager extends EventEmitter {
     this.maxIdleInterval = null;
 
     this.transports = Utils.intersect(
-      options.transports || Defaults().defaultTransports,
+      options.transports || Defaults.defaultTransports,
       ConnectionManager.supportedTransports
     );
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
      * that's both requested and supported. Normally this will be xhr_polling;
      * if xhr isn't supported it will be jsonp. If the user has forced a
      * transport, it'll just be that one. */
-    this.baseTransport = Utils.intersect(Defaults().baseTransportOrder, this.transports)[0];
-    this.upgradeTransports = Utils.intersect(this.transports, Defaults().upgradeTransports);
+    this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
+    this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
     this.transportPreference = null;
 
-    this.httpHosts = Defaults().getHosts(options);
+    this.httpHosts = Defaults.getHosts(options);
     this.activeProtocol = null;
     this.proposedTransports = [];
     this.pendingTransports = [];
@@ -336,7 +336,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
-      'requested transports = [' + (options.transports || Defaults().defaultTransports) + ']'
+      'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']'
     );
     Logger.logAction(
       Logger.LOG_MICRO,
@@ -2255,7 +2255,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   persistTransportPreference(transport: Transport): void {
-    if (Utils.arrIn(Defaults().upgradeTransports, transport.shortName)) {
+    if (Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
       this.transportPreference = transport.shortName;
       if (haveWebStorage()) {
         Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);

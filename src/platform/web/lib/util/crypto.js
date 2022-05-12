@@ -3,7 +3,6 @@ import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Platform from '../../../../common/platform';
 import Logger from '../../../../common/lib/util/logger';
-import * as BufferUtils from 'platform-bufferutils';
 
 var Crypto = (function () {
   var DEFAULT_ALGORITHM = 'aes';
@@ -28,7 +27,7 @@ var Crypto = (function () {
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
       Platform.getRandomValues(nativeArray, function (err) {
-        callback(err, BufferUtils.toWordArray(nativeArray));
+        callback(err, Platform.BufferUtils.toWordArray(nativeArray));
       });
     };
   } else {
@@ -179,7 +178,7 @@ var Crypto = (function () {
     if (typeof params.key === 'string') {
       key = parseBase64(normaliseBase64(params.key));
     } else {
-      key = BufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
+      key = Platform.BufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
     }
 
     var cipherParams = new CipherParams();
@@ -229,16 +228,16 @@ var Crypto = (function () {
   function CBCCipher(params, blockLengthWords, iv) {
     this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
     this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
-    this.key = BufferUtils.toWordArray(params.key);
+    this.key = Platform.BufferUtils.toWordArray(params.key);
     if (iv) {
-      this.iv = BufferUtils.toWordArray(iv).clone();
+      this.iv = Platform.BufferUtils.toWordArray(iv).clone();
     }
     this.blockLengthWords = blockLengthWords;
   }
 
   CBCCipher.prototype.encrypt = function (plaintext, callback) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-    plaintext = BufferUtils.toWordArray(plaintext);
+    plaintext = Platform.BufferUtils.toWordArray(plaintext);
     var plaintextLength = plaintext.sigBytes,
       paddedLength = getPaddedLength(plaintextLength),
       self = this;
@@ -277,7 +276,7 @@ var Crypto = (function () {
 
   CBCCipher.prototype.decrypt = function (ciphertext) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
-    ciphertext = BufferUtils.toWordArray(ciphertext);
+    ciphertext = Platform.BufferUtils.toWordArray(ciphertext);
     var blockLengthWords = this.blockLengthWords,
       ciphertextWords = ciphertext.words,
       iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),

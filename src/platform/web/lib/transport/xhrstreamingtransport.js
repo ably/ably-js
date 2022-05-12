@@ -1,7 +1,7 @@
 import * as Utils from '../../../../common/lib/util/utils';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from 'platform';
+import Platform from '../../platform';
 import XHRRequest from './xhrrequest';
 
 var XHRStreamingTransport = function (connectionManager) {

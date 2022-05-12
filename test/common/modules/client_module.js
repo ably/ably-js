@@ -5,8 +5,6 @@
 define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably, ablyGlobals, testAppHelper) {
   var utils = Ably.Realtime.Utils;
 
-  console.log(Ably);
-
   function ablyClientOptions(options) {
     var clientOptions = utils.copy(ablyGlobals);
     utils.mixin(clientOptions, options);

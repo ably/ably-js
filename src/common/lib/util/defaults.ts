@@ -4,9 +4,45 @@ import Logger from './logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
-import PlatformDefaults from "../../../platform/nodejs/lib/util/defaults";
+import IDefaults from "../../types/IDefaults";
 
 let agent = 'ably-js/' + version;
+
+type CompleteDefaults = IDefaults & {
+  ENVIRONMENT: string,
+  REST_HOST: string,
+  REALTIME_HOST: string,
+  FALLBACK_HOSTS: string[],
+  PORT: number,
+  TLS_PORT: number,
+  TIMEOUTS: {
+    disconnectedRetryTimeout: number,
+    suspendedRetryTimeout: number,
+    httpRequestTimeout: number,
+    channelRetryTimeout: number,
+    fallbackRetryTimeout: number,
+    connectionStateTtl: number,
+    realtimeRequestTimeout: number,
+    recvTimeout: number,
+    preferenceConnectTimeout: number,
+    parallelUpgradeDelay: number,
+  },
+  httpMaxRetryCount: number,
+  maxMessageSize: number,
+  version: string,
+  apiVersion: string,
+  agent: string,
+  getHost(options: ClientOptions, host?: string | null, ws?: boolean): string
+  getPort(options: ClientOptions, tls?: boolean): number | undefined
+  getHttpScheme(options: ClientOptions): string
+  environmentFallbackHosts(environment: string): string[]
+  getFallbackHosts(options: NormalisedClientOptions): string[]
+  getHosts(options: NormalisedClientOptions): string[]
+  checkHost(host: string): void
+  getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string
+  objectifyOptions(options: ClientOptions | string): ClientOptions
+  normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions
+}
 
 const Defaults = {
   ENVIRONMENT: '',
@@ -82,7 +118,7 @@ export function environmentFallbackHosts(environment: string): string[] {
 export function getFallbackHosts(options: NormalisedClientOptions): string[] {
   const fallbackHosts = options.fallbackHosts,
     httpMaxRetryCount =
-      typeof options.httpMaxRetryCount !== 'undefined' ? options.httpMaxRetryCount : getDefaults().httpMaxRetryCount;
+      typeof options.httpMaxRetryCount !== 'undefined' ? options.httpMaxRetryCount : Defaults.httpMaxRetryCount;
 
   return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 }
@@ -107,7 +143,7 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
   if (options.restHost) {
     Logger.logAction(
       Logger.LOG_MINOR,
-      'getDefaults().normaliseOptions',
+      'Defaults.normaliseOptions',
       'restHost is set to "' +
         options.restHost +
         '" but realtimeHost is not set, so setting realtimeHost to "' +
@@ -116,14 +152,14 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
     );
     return options.restHost;
   }
-  return production ? getDefaults().REALTIME_HOST : environment + '-' + getDefaults().REALTIME_HOST;
+  return production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 }
 
 function getTimeouts(options: ClientOptions) {
   /* Allow values passed in options to override default timeouts */
   const timeouts: Record<string, number> = {};
-  for (const prop in getDefaults().TIMEOUTS) {
-    timeouts[prop] = (options as Record<string, number>)[prop] || (getDefaults().TIMEOUTS as Record<string, number>)[prop];
+  for (const prop in Defaults.TIMEOUTS) {
+    timeouts[prop] = (options as Record<string, number>)[prop] || (Defaults.TIMEOUTS as Record<string, number>)[prop];
   }
   return timeouts;
 }
@@ -154,14 +190,14 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
     if (options.fallbackHosts) {
       const msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
-      Logger.logAction(Logger.LOG_ERROR, 'getDefaults().normaliseOptions', msg);
+      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
       throw new ErrorInfo(msg, 40000, 400);
     }
 
     /* default fallbacks can't be used with custom ports */
     if (options.port || options.tlsPort) {
       const msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
-      Logger.logAction(Logger.LOG_ERROR, 'getDefaults().normaliseOptions', msg);
+      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
       throw new ErrorInfo(msg, 40000, 400);
     }
 
@@ -172,11 +208,11 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
         'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.'
       );
     } else {
-      Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.getDefaults().FALLBACK_HOSTS');
+      Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
     }
 
     /* use the default fallback hosts as requested */
-    options.fallbackHosts = getDefaults().FALLBACK_HOSTS;
+    options.fallbackHosts = Defaults.FALLBACK_HOSTS;
   }
 
   /* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
@@ -190,7 +226,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
-      'getDefaults().normaliseOptions',
+      'Defaults.normaliseOptions',
       'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter'
     );
     options.recover = undefined;
@@ -211,20 +247,20 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   if (!('queueMessages' in options)) options.queueMessages = true;
 
   /* infer hosts and fallbacks based on the configured environment */
-  const environment = (options.environment && String(options.environment).toLowerCase()) || getDefaults().ENVIRONMENT;
+  const environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
   const production = !environment || environment === 'production';
 
   if (!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
-    options.fallbackHosts = production ? getDefaults().FALLBACK_HOSTS : environmentFallbackHosts(environment);
+    options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : environmentFallbackHosts(environment);
   }
 
-  const restHost = options.restHost || (production ? getDefaults().REST_HOST : environment + '-' + getDefaults().REST_HOST);
+  const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
   const realtimeHost = getRealtimeHost(options, production, environment);
 
   Utils.arrForEach((options.fallbackHosts || []).concat(restHost, realtimeHost), checkHost);
 
-  options.port = options.port || getDefaults().PORT;
-  options.tlsPort = options.tlsPort || getDefaults().TLS_PORT;
+  options.port = options.port || Defaults.PORT;
+  options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
   if (!('tls' in options)) options.tls = true;
 
   const timeouts = getTimeouts(options);
@@ -247,7 +283,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   if (options.promises && !Platform.Config.Promise) {
     Logger.logAction(
       Logger.LOG_ERROR,
-      'getDefaults().normaliseOptions',
+      'Defaults.normaliseOptions',
       '{promises: true} was specified, but no Promise constructor found; disabling promises'
     );
     options.promises = false;
@@ -255,7 +291,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
   if (options.agents) {
     for (var key in options.agents) {
-      getDefaults().agent += ' ' + key + '/' + options.agents[key];
+      Defaults.agent += ' ' + key + '/' + options.agents[key];
     }
   }
 
@@ -265,12 +301,14 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
       'useBinaryProtocol' in options ? Platform.Config.supportsBinary && options.useBinaryProtocol : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
-    maxMessageSize: options.maxMessageSize || getDefaults().maxMessageSize,
+    maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
   };
 }
 
-export default function getDefaults(){
-  return Object.assign(Defaults, PlatformDefaults)
+export default Defaults as CompleteDefaults;
+
+export function getDefaults(platformDefaults: IDefaults){
+  return Object.assign(Defaults, platformDefaults)
 }
 

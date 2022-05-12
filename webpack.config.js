@@ -81,6 +81,9 @@ const browserConfig = {
     ...baseConfig.output,
     filename: 'ably.js',
   },
+  entry: {
+    index: platformPath("web"),
+  },
   node: {
     crypto: 'empty',
     Buffer: false,
@@ -91,6 +94,7 @@ const browserConfig = {
   optimization: {
     minimize: false,
   },
+  devtool: 'source-map',
 };
 
 const nativeScriptConfig = {
@@ -98,6 +102,9 @@ const nativeScriptConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-nativescript.js',
+  },
+  entry: {
+    index: platformPath("nativescript"),
   },
   node: {
     crypto: 'empty',
@@ -121,6 +128,9 @@ const reactNativeConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-reactnative.js',
+  },
+  entry: {
+    index: platformPath("react-native"),
   },
   resolve: {
     extensions: ['.js', '.ts'],
@@ -183,6 +193,7 @@ const webworkerConfig = {
   ],
 };
 
+// TODO
 const noEncryptionConfig = {
   ...browserConfig,
   output: {

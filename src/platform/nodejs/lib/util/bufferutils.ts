@@ -1,5 +1,5 @@
 import { TypedArray } from 'common/types/IPlatform';
-import IBufferUtils, { Bufferlike } from "common/types/IBufferUtils";
+import IBufferUtils, { Bufferlike, NodeBufferlike } from "common/types/IBufferUtils";
 
 class BufferUtils implements IBufferUtils {
 
@@ -20,8 +20,8 @@ class BufferUtils implements IBufferUtils {
     return buffer1.compare(buffer2);
   }
 
-  byteLength(buffer: Buffer | ArrayBuffer | DataView): number {
-    return buffer.byteLength;
+  byteLength(buffer: Bufferlike): number {
+    return (buffer as NodeBufferlike).byteLength;
   }
 
   hexDecode(string: string): Buffer {

@@ -116,7 +116,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     /* XHR requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
      * or completely standalone.  Use the appropriate timeouts in each case */
-    const _timeouts = timeouts || Defaults().TIMEOUTS;
+    const _timeouts = timeouts || Defaults.TIMEOUTS;
     return new XHRRequest(
       uri,
       headers,

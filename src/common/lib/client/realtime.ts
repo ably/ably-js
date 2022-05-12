@@ -39,7 +39,7 @@ class Realtime extends Rest {
   }
 
   static Promise = function (options: DeprecatedClientOptions): Realtime {
-    options = Defaults().objectifyOptions(options);
+    options = Defaults.objectifyOptions(options);
     options.promises = true;
     return new Realtime(options);
   };

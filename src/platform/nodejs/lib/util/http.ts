@@ -77,10 +77,10 @@ function getHosts(client: Rest | Realtime): string[] {
   const connectionHost = connection && connection.connectionManager.host;
 
   if (connectionHost) {
-    return [connectionHost].concat(Defaults().getFallbackHosts(client.options));
+    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
   }
 
-  return Defaults().getHosts(client.options);
+  return Defaults.getHosts(client.options);
 }
 
 const Http: typeof IHttp = class {
@@ -185,7 +185,7 @@ const Http: typeof IHttp = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults().restAgentOptions;
+    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
     // const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
     if (!this.agent) {
@@ -203,7 +203,7 @@ const Http: typeof IHttp = class {
     doOptions.agent = this.agent;
 
     doOptions.url = uri;
-    doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults().TIMEOUTS).httpRequestTimeout };
+    doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
 
     (got[method](doOptions) as CancelableRequest<Response>)
       .then((res: Response) => {
@@ -223,7 +223,7 @@ const Http: typeof IHttp = class {
     this.doUri(
       HttpMethods.Get,
       null as any,
-      Defaults().internetUpUrl,
+      Defaults.internetUpUrl,
       null,
       null,
       null,

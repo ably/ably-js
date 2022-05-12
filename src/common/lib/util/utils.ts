@@ -353,8 +353,8 @@ export function defaultGetHeaders(format?: Format): Record<string, string> {
   const accept = contentTypes[format || Format.json];
   return {
     accept: accept,
-    'X-Ably-Version': Defaults().apiVersion,
-    'Ably-Agent': Defaults().agent,
+    'X-Ably-Version': Defaults.apiVersion,
+    'Ably-Agent': Defaults.agent,
   };
 }
 
@@ -365,8 +365,8 @@ export function defaultPostHeaders(format?: Format): Record<string, string> {
   return {
     accept: accept,
     'content-type': contentType,
-    'X-Ably-Version': Defaults().apiVersion,
-    'Ably-Agent': Defaults().agent,
+    'X-Ably-Version': Defaults.apiVersion,
+    'Ably-Agent': Defaults.agent,
   };
 }
 

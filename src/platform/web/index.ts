@@ -12,16 +12,19 @@ import Config from './platform'
 // @ts-ignore
 import Transports from './lib/transport'
 import Logger from "../../common/lib/util/logger";
-import { getDefaults } from "../../common/lib/util/defaults";
+import {getDefaults} from "../../common/lib/util/defaults";
 import ConnectionManager from "../../common/lib/transport/connectionmanager";
-import PlatformDefaults from "./lib/util/defaults";
+import WebStorage from "./lib/util/webstorage";
+import PlatformDefaults from "./lib/util/defaults"
+import msgpack from "./lib/util/msgpack";
+
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
-Platform.WebStorage = null;
+Platform.WebStorage = WebStorage;
 
 Realtime.ConnectionManager = ConnectionManager;
 
@@ -34,9 +37,8 @@ if (Platform.Config.agent) {
   Platform.Defaults.agent += ' ' + Platform.Config.agent;
 }
 
-
 export default {
   Rest,
   Realtime,
-  msgpack: null,
+  msgpack,
 };

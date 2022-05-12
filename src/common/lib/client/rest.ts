@@ -36,14 +36,14 @@ class Rest {
       Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
       throw new Error(msg);
     }
-    const optionsObj = Defaults().objectifyOptions(options);
+    const optionsObj = Defaults.objectifyOptions(options);
 
     if (optionsObj.log) {
       Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
     }
     Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
 
-    const normalOptions = (this.options = Defaults().normaliseOptions(optionsObj));
+    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
 
     /* process options */
     if (normalOptions.key) {
@@ -68,10 +68,10 @@ class Rest {
         );
     }
 
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults().version);
+    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
 
     this.baseUri = this.authority = function (host) {
-      return Defaults().getHttpScheme(normalOptions) + host + ':' + Defaults().getPort(normalOptions, false);
+      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
     };
     this._currentFallback = null;
 
@@ -228,7 +228,7 @@ class Rest {
   }
 
   static Promise = function (options: DeprecatedClientOptions): Rest {
-    options = Defaults().objectifyOptions(options);
+    options = Defaults.objectifyOptions(options);
     options.promises = true;
     return new Rest(options);
   };

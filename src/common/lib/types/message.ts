@@ -4,6 +4,7 @@ import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
+import { BrowserBufferlike } from "../../types/IBufferUtils";
 
 export type CipherOptions = {
   channelCipher: {
@@ -26,7 +27,7 @@ type EncodingDecodingContext = {
       decode: Function;
     };
   };
-  baseEncodedPreviousPayload?: Buffer;
+  baseEncodedPreviousPayload?: Buffer | BrowserBufferlike;
 };
 
 function normaliseContext(context: CipherOptions | EncodingDecodingContext | ChannelOptions): EncodingDecodingContext {
