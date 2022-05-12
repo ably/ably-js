@@ -107,12 +107,10 @@ const nativeScriptConfig = {
     request: false,
     ws: false,
     'nativescript-websockets': true,
+    '@nativescript/core/application-settings': true,
   },
   optimization: {
     minimize: false,
-  },
-  performance: {
-    hints: false,
   },
 };
 
@@ -127,6 +125,7 @@ const reactNativeConfig = {
   },
   resolve: {
     extensions: ['.js', '.ts'],
+    plugins: [new TsconfigPathsPlugin()],
   },
   node: {
     crypto: 'empty',
@@ -139,9 +138,6 @@ const reactNativeConfig = {
   },
   optimization: {
     minimize: false,
-  },
-  performance: {
-    hints: false,
   },
 };
 

@@ -10,7 +10,7 @@ import Crypto from '../web/lib/util/crypto';
 import Http from '../web/lib/util/http';
 import Config from './platform';
 // @ts-ignore
-import Transports from './lib/transport';
+import Transports from '../web/lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import ConnectionManager from '../../common/lib/transport/connectionmanager';

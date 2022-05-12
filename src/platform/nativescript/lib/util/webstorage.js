@@ -1,4 +1,4 @@
-import * as Utils from '../../../common/lib/util/utils';
+import * as Utils from '../../../../common/lib/util/utils';
 import appSettings from '@nativescript/core/application-settings';
 
 var WebStorage = (function () {

@@ -6,10 +6,10 @@ import Platform from '../../common/platform';
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
-import Http from './lib/util/http';
+import Http from '../web/lib/util/http';
 import Config from '../web/platform';
 // @ts-ignore
-import Transports from './lib/transport';
+import Transports from '../web/lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import ConnectionManager from '../../common/lib/transport/connectionmanager';

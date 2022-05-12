@@ -8,6 +8,7 @@ import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
 import Crypto from '../web/lib/util/crypto';
 import Http from '../web/lib/util/http';
+// @ts-ignore
 import Config from './platform';
 // @ts-ignore
 import Transports from '../web/lib/transport';
@@ -15,7 +16,7 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import ConnectionManager from '../../common/lib/transport/connectionmanager';
 // @ts-ignore
-import WebStorage from '../lib/util/webstorage';
+import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
 

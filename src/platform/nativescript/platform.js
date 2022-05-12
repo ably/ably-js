@@ -1,10 +1,8 @@
 /* eslint-disable no-undef */
 import msgpack from '../web/lib/util/msgpack';
-import { IPlatform } from "../../common/types/IPlatform";
-import '@nativescript/types';
 require('nativescript-websockets');
 
-var randomBytes: (size: number)=>string;
+var randomBytes;
 if (global.android) {
   randomBytes = function (size) {
     var sr = new java.security.SecureRandom();
@@ -15,35 +13,34 @@ if (global.android) {
 } else {
   randomBytes = function (size) {
     var bytes = NSMutableData.dataWithLength(size);
-    //@ts-ignore
     SecRandomCopyBytes(kSecRandomDefault, size, bytes.mutableBytes());
     return bytes.base64EncodedStringWithOptions(0);
   };
 }
 
-const Platform: IPlatform = {
+var Platform = {
   agent: 'nativescript',
   logTimestamps: true,
   noUpgrade: false,
   binaryType: 'arraybuffer',
   WebSocket: WebSocket,
-  xhrSupported: !!XMLHttpRequest,
+  xhrSupported: XMLHttpRequest,
   allowComet: true,
   jsonpSupported: false,
   streamingSupported: false,
   useProtocolHeartbeats: true,
   createHmac: null,
   msgpack: msgpack,
-  supportsBinary: typeof TextDecoder !== 'undefined' && !!TextDecoder,
+  supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder,
   preferBinary: false,
   ArrayBuffer: ArrayBuffer,
   atob: null,
-  nextTick: (f: ()=>void) => {
+  nextTick: function (f) {
     setTimeout(f, 0);
   },
   addEventListener: null,
   inspect: JSON.stringify,
-  stringByteSize: function (str: string) {
+  stringByteSize: function (str) {
     /* str.length will be an underestimate for non-ascii strings. But if we're
      * in a browser too old to support TextDecoder, not much we can do. Better
      * to underestimate, so if we do go over-size, the server will reject the
@@ -53,7 +50,7 @@ const Platform: IPlatform = {
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
   Promise: global.Promise,
-  getRandomValues: function (arr: any, callback: any) {
+  getRandomValues: function (arr, callback) {
     var bytes = randomBytes(arr.length);
     for (var i = 0; i < arr.length; i++) {
       arr[i] = bytes[i];

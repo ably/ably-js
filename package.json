@@ -25,7 +25,6 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
-    "@nativescript/types": "^8.2.0",
     "@types/crypto-js": "^4.0.1",
     "@types/node": "^15.0.0",
     "@types/request": "^2.48.7",
