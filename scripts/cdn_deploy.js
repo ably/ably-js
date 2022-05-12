@@ -48,7 +48,7 @@ async function run() {
 	if(!config.skipCheckout)
 		await git(`checkout tags/${config.tag}`);
 
-	console.log(`Starting Ably Javascript S3 library deployment for version ${await git("symbolic-ref --short HEAD")}`);
+	console.log(`Starting Ably Javascript S3 library deployment`);
 	console.log("Bucket:", config.bucket);
 	console.log("Output Root:", config.root);
 	console.log("Input Path:", config.path);
