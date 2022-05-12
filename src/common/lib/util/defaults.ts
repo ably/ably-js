@@ -4,45 +4,45 @@ import Logger from './logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
-import IDefaults from "../../types/IDefaults";
+import IDefaults from '../../types/IDefaults';
 
 let agent = 'ably-js/' + version;
 
 type CompleteDefaults = IDefaults & {
-  ENVIRONMENT: string,
-  REST_HOST: string,
-  REALTIME_HOST: string,
-  FALLBACK_HOSTS: string[],
-  PORT: number,
-  TLS_PORT: number,
+  ENVIRONMENT: string;
+  REST_HOST: string;
+  REALTIME_HOST: string;
+  FALLBACK_HOSTS: string[];
+  PORT: number;
+  TLS_PORT: number;
   TIMEOUTS: {
-    disconnectedRetryTimeout: number,
-    suspendedRetryTimeout: number,
-    httpRequestTimeout: number,
-    channelRetryTimeout: number,
-    fallbackRetryTimeout: number,
-    connectionStateTtl: number,
-    realtimeRequestTimeout: number,
-    recvTimeout: number,
-    preferenceConnectTimeout: number,
-    parallelUpgradeDelay: number,
-  },
-  httpMaxRetryCount: number,
-  maxMessageSize: number,
-  version: string,
-  apiVersion: string,
-  agent: string,
-  getHost(options: ClientOptions, host?: string | null, ws?: boolean): string
-  getPort(options: ClientOptions, tls?: boolean): number | undefined
-  getHttpScheme(options: ClientOptions): string
-  environmentFallbackHosts(environment: string): string[]
-  getFallbackHosts(options: NormalisedClientOptions): string[]
-  getHosts(options: NormalisedClientOptions): string[]
-  checkHost(host: string): void
-  getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string
-  objectifyOptions(options: ClientOptions | string): ClientOptions
-  normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions
-}
+    disconnectedRetryTimeout: number;
+    suspendedRetryTimeout: number;
+    httpRequestTimeout: number;
+    channelRetryTimeout: number;
+    fallbackRetryTimeout: number;
+    connectionStateTtl: number;
+    realtimeRequestTimeout: number;
+    recvTimeout: number;
+    preferenceConnectTimeout: number;
+    parallelUpgradeDelay: number;
+  };
+  httpMaxRetryCount: number;
+  maxMessageSize: number;
+  version: string;
+  apiVersion: string;
+  agent: string;
+  getHost(options: ClientOptions, host?: string | null, ws?: boolean): string;
+  getPort(options: ClientOptions, tls?: boolean): number | undefined;
+  getHttpScheme(options: ClientOptions): string;
+  environmentFallbackHosts(environment: string): string[];
+  getFallbackHosts(options: NormalisedClientOptions): string[];
+  getHosts(options: NormalisedClientOptions): string[];
+  checkHost(host: string): void;
+  getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
+  objectifyOptions(options: ClientOptions | string): ClientOptions;
+  normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions;
+};
 
 const Defaults = {
   ENVIRONMENT: '',
@@ -298,7 +298,9 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   return {
     ...options,
     useBinaryProtocol:
-      'useBinaryProtocol' in options ? Platform.Config.supportsBinary && options.useBinaryProtocol : Platform.Config.preferBinary,
+      'useBinaryProtocol' in options
+        ? Platform.Config.supportsBinary && options.useBinaryProtocol
+        : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
@@ -308,7 +310,6 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
 export default Defaults as CompleteDefaults;
 
-export function getDefaults(platformDefaults: IDefaults){
-  return Object.assign(Defaults, platformDefaults)
+export function getDefaults(platformDefaults: IDefaults) {
+  return Object.assign(Defaults, platformDefaults);
 }
-

@@ -43,14 +43,14 @@ const baseConfig = {
   },
 };
 
-function platformPath(platform, ...dir){
+function platformPath(platform, ...dir) {
   return path.resolve(__dirname, 'src', 'platform', platform, ...dir);
 }
 
 const nodeConfig = {
   ...baseConfig,
   entry: {
-    index: platformPath("nodejs"),
+    index: platformPath('nodejs'),
   },
   output: {
     ...baseConfig.output,
@@ -82,7 +82,7 @@ const browserConfig = {
     filename: 'ably.js',
   },
   entry: {
-    index: platformPath("web"),
+    index: platformPath('web'),
   },
   node: {
     crypto: 'empty',
@@ -104,7 +104,7 @@ const nativeScriptConfig = {
     filename: 'ably-nativescript.js',
   },
   entry: {
-    index: platformPath("nativescript"),
+    index: platformPath('nativescript'),
   },
   node: {
     crypto: 'empty',
@@ -130,7 +130,7 @@ const reactNativeConfig = {
     filename: 'ably-reactnative.js',
   },
   entry: {
-    index: platformPath("react-native"),
+    index: platformPath('react-native'),
   },
   resolve: {
     extensions: ['.js', '.ts'],
@@ -185,7 +185,7 @@ const webworkerConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: platformPath("web",  'fragments', 'ably.d.ts'),
+          from: platformPath('web', 'fragments', 'ably.d.ts'),
           to: path.resolve(__dirname, 'build', 'ably-webworker.min.d.ts'),
         },
       ],
@@ -204,7 +204,7 @@ const noEncryptionConfig = {
     rules: [
       ...baseConfig.module.rules,
       {
-        test: platformPath("web", 'lib', 'util', 'crypto'),
+        test: platformPath('web', 'lib', 'util', 'crypto'),
         use: 'null-loader',
       },
     ],
@@ -221,7 +221,7 @@ const noEncryptionMinConfig = {
     rules: [
       ...baseConfig.module.rules,
       {
-        test: platformPath("web", 'lib', 'util', 'crypto'),
+        test: platformPath('web', 'lib', 'util', 'crypto'),
         use: 'null-loader',
       },
     ],

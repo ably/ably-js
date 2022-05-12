@@ -88,7 +88,8 @@ class PresenceMessage {
     if (this.encoding) result += '; encoding=' + this.encoding;
     if (this.data) {
       if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (Platform.BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
+      else if (Platform.BufferUtils.isBuffer(this.data))
+        result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     result += ']';

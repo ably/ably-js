@@ -1,10 +1,10 @@
-import Platform from 'common/platform'
+import Platform from 'common/platform';
 import Logger from '../util/logger';
 import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
-import { BrowserBufferlike } from "../../types/IBufferUtils";
+import { BrowserBufferlike } from '../../types/IBufferUtils';
 
 export type CipherOptions = {
   channelCipher: {
@@ -127,7 +127,8 @@ class Message {
     if (this.extras) result += '; extras =' + JSON.stringify(this.extras);
     if (this.data) {
       if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (Platform.BufferUtils.isBuffer(this.data)) result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
+      else if (Platform.BufferUtils.isBuffer(this.data))
+        result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
@@ -158,7 +159,8 @@ class Message {
 
   static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
     const data = msg.data;
-    const nativeDataType = typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+    const nativeDataType =
+      typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
 
     if (!nativeDataType) {
       if (Utils.isObject(data) || Utils.isArray(data)) {

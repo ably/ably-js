@@ -1,6 +1,6 @@
 'use strict';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from '../../../../common/platform'
+import Platform from '../../../../common/platform';
 import crypto from 'crypto';
 
 var Crypto = (function () {

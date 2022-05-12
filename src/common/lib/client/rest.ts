@@ -13,7 +13,7 @@ import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
-import Platform from '../../platform'
+import Platform from '../../platform';
 
 const noop = function () {};
 class Rest {

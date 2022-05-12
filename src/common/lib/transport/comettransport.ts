@@ -10,7 +10,7 @@ import IXHRRequest from '../../types/IXHRRequest';
 import * as API from '../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
-import Platform from "common/platform";
+import Platform from 'common/platform';
 
 /* TODO: can remove once realtime sends protocol message responses for comet errors */
 function shouldBeErrorAction(err: ErrorInfo) {

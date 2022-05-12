@@ -13,7 +13,7 @@ import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
-import Platform from '../../platform'
+import Platform from '../../platform';
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -44,21 +44,20 @@ function normaliseAuthcallbackError(err: any) {
 }
 
 let toBase64 = (str: string): string => {
-  if(Platform.Config.createHmac){
-    return Buffer.from(str, 'ascii').toString('base64')
+  if (Platform.Config.createHmac) {
+    return Buffer.from(str, 'ascii').toString('base64');
   }
-  return stringifyBase64(parseUtf8(str))
+  return stringifyBase64(parseUtf8(str));
 };
 
 let hmac = (text: string, key: string): string => {
-  if (Platform.Config.createHmac){
+  if (Platform.Config.createHmac) {
     const inst = (Platform.Config.createHmac as typeof createHmac)('SHA256', key);
     inst.update(text);
     return inst.digest('base64');
   }
   return stringifyBase64(HmacSHA256(text, key));
 };
-
 
 function c14n(capability?: string | Record<string, Array<string>>) {
   if (!capability) return '';

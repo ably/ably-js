@@ -1,14 +1,13 @@
 import * as Utils from 'common/lib/util/utils';
-import IWebStorage from "common/types/IWebStorage";
+import IWebStorage from 'common/types/IWebStorage';
 
 const test = 'ablyjs-storage-test';
 
 class Webstorage implements IWebStorage {
-
   sessionSupported: boolean;
   localSupported: boolean;
 
-  constructor(){
+  constructor() {
     /* Even just accessing the session/localStorage object can throw a
      * security exception in some circumstances with some browsers. In
      * others, calling setItem will throw. So have to check in this
@@ -64,8 +63,8 @@ class Webstorage implements IWebStorage {
   }
 
   private _get(name: string, session?: boolean) {
-    if(session && !this.sessionSupported)throw  new Error("Session Storage not supported");
-    if(!session && !this.localSupported)throw  new Error("Local Storage not supported");
+    if (session && !this.sessionSupported) throw new Error('Session Storage not supported');
+    if (!session && !this.localSupported) throw new Error('Local Storage not supported');
     const rawItem = this.storageInterface(session).getItem(name);
     if (!rawItem) return null;
     const wrappedValue = JSON.parse(rawItem);

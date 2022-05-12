@@ -4,13 +4,12 @@ import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/bu
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import { TypedArray } from 'common/types/IPlatform';
-import IBufferUtils from "common/types/IBufferUtils";
-import { Bufferlike } from "common/types/IBufferUtils";
+import IBufferUtils from 'common/types/IBufferUtils';
+import { Bufferlike } from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
  * returns a Uint8Array (and won't work on browsers too old to support it) */
-
 
 class BufferUtils implements IBufferUtils {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -27,7 +26,6 @@ class BufferUtils implements IBufferUtils {
   isTypedArray(ob: unknown): ob is TypedArray {
     return !!ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob);
   }
-
 
   // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
   uint8ViewToBase64(bytes: Uint8Array) {
@@ -171,10 +169,10 @@ class BufferUtils implements IBufferUtils {
   }
 
   /* For utf8 decoding we apply slightly stricter input validation than to
- * hexEncode/base64Encode/etc: in those we accept anything that Buffer.from
- * can take (in particular allowing strings, which are just interpreted as
- * binary); here we ensure that the input is actually a buffer since trying
- * to utf8-decode a string to another string is almost certainly a mistake */
+   * hexEncode/base64Encode/etc: in those we accept anything that Buffer.from
+   * can take (in particular allowing strings, which are just interpreted as
+   * binary); here we ensure that the input is actually a buffer since trying
+   * to utf8-decode a string to another string is almost certainly a mistake */
   utf8Decode(buffer: Bufferlike) {
     if (!this.isBuffer(buffer)) {
       throw new Error('Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray');
@@ -220,14 +218,4 @@ class BufferUtils implements IBufferUtils {
   }
 }
 
-export default new BufferUtils;
-
-
-
-
-
-
-
-
-
-
+export default new BufferUtils();

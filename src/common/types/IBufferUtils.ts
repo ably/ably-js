@@ -1,6 +1,5 @@
-import { TypedArray } from "./IPlatform";
+import { TypedArray } from './IPlatform';
 import WordArray from 'crypto-js/build/lib-typedarrays';
-
 
 export type NodeBufferlike = Buffer | ArrayBuffer | TypedArray;
 // As browsers don't support Buffer, ArrayBuffer is used if supported, and WordArray if not
@@ -8,7 +7,6 @@ export type BrowserBufferlike = ArrayBuffer | WordArray;
 
 // A Buffer or a type which can be converted to a buffer
 export type Bufferlike = NodeBufferlike | BrowserBufferlike;
-
 
 export default interface IBufferUtils {
   base64CharSet: string;

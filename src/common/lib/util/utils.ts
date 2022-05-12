@@ -142,15 +142,14 @@ export function prototypicalClone(
  * define here (so can make use of other Utils fns)
  * See node.js util.inherits
  */
-export const inherits =
-  function (ctor: any, superCtor: Function) {
-    if(Platform.Config.inherits){
-      Platform.Config.inherits(ctor, superCtor);
-      return
-    }
-    ctor.super_ = superCtor;
-    ctor.prototype = prototypicalClone(superCtor.prototype, { constructor: ctor });
-  };
+export const inherits = function (ctor: any, superCtor: Function) {
+  if (Platform.Config.inherits) {
+    Platform.Config.inherits(ctor, superCtor);
+    return;
+  }
+  ctor.super_ = superCtor;
+  ctor.prototype = prototypicalClone(superCtor.prototype, { constructor: ctor });
+};
 
 /*
  * Determine whether or not an object has an enumerable
@@ -407,7 +406,8 @@ export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
 }
 
 export function inspectError(err: unknown): string {
-  if (err instanceof Error || (err as ErrorInfo)?.constructor?.name === 'ErrorInfo') return Platform.Config.inspect(err);
+  if (err instanceof Error || (err as ErrorInfo)?.constructor?.name === 'ErrorInfo')
+    return Platform.Config.inspect(err);
   return (err as Error).toString();
 }
 
@@ -436,19 +436,18 @@ export function cheapRandStr(): string {
   return String(Math.random()).substr(2);
 }
 
-
 /* Takes param the minimum number of bytes of entropy the string must
  * include, not the length of the string. String length produced is not
  * guaranteed. */
 export const randomString = (numBytes: number): string => {
-  if(Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'){
+  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
     const uIntArr = new Uint8Array(numBytes);
     (Platform.Config.getRandomValues as Function)(uIntArr);
     return Platform.BufferUtils.base64Encode(uIntArr);
   }
   /* Old browser; fall back to Math.random. Could just use a
-        * CryptoJS version of the above, but want this to still work in nocrypto
-        * versions of the library */
+   * CryptoJS version of the above, but want this to still work in nocrypto
+   * versions of the library */
   const charset = Platform.BufferUtils.base64CharSet;
   /* base64 has 33% overhead; round length up */
   const length = Math.round((numBytes * 4) / 3);
@@ -460,7 +459,7 @@ export const randomString = (numBytes: number): string => {
 };
 
 export const randomHexString = (numBytes: number): string => {
-  if(Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined'){
+  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
     const uIntArr = new Uint8Array(numBytes);
     (Platform.Config.getRandomValues as Function)(uIntArr);
     return Platform.BufferUtils.hexEncode(uIntArr);

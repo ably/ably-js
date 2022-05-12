@@ -11,14 +11,13 @@ import { ChannelOptions } from '../../types/channel';
 import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../ably';
-import ConnectionManager from "../transport/connectionmanager";
+import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
 
 class Realtime extends Rest {
   channels: any;
   connection: Connection;
-
 
   constructor(options: ClientOptions) {
     super(options);
@@ -50,7 +49,6 @@ class Realtime extends Rest {
   static Platform = Platform;
   static ProtocolMessage = ProtocolMessage;
   static Message = Message;
-
 }
 
 class Channels extends EventEmitter {

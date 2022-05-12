@@ -21,11 +21,11 @@ import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 type Realtime = any;
 type ClientOptions = any;
 
-const haveWebStorage = ()=>typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
-const haveSessionStorage = ()=>typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
+const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
+const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
 const actions = ProtocolMessage.Action;
 const noop = function () {};
-const transportPreferenceOrder = ()=>Platform.Defaults.transportPreferenceOrder;
+const transportPreferenceOrder = () => Platform.Defaults.transportPreferenceOrder;
 const transportPreferenceName = 'ably-transport-preference';
 
 const sessionRecoveryName = 'ably-connection-recovery';
@@ -41,7 +41,8 @@ function clearSessionRecoverData() {
 
 function betterTransportThan(a: Transport, b: Transport) {
   return (
-    Utils.arrIndexOf(transportPreferenceOrder(), a.shortName) > Utils.arrIndexOf(transportPreferenceOrder(), b.shortName)
+    Utils.arrIndexOf(transportPreferenceOrder(), a.shortName) >
+    Utils.arrIndexOf(transportPreferenceOrder(), b.shortName)
   );
 }
 
@@ -103,7 +104,6 @@ export class TransportParams {
 
     this.connectionSerial = undefined;
     this.timeSerial = undefined;
-
   }
 
   getConnectParams(authParams: Record<string, unknown>): Record<string, string> {
@@ -403,7 +403,7 @@ class ConnectionManager extends EventEmitter {
 
   static supportedTransports: Record<string, typeof Transport> = {};
 
-  static initTransports(){
+  static initTransports() {
     WebSocketTransport(ConnectionManager);
     Utils.arrForEach(Platform.Transports, function (initFn) {
       initFn(ConnectionManager);
@@ -2314,6 +2314,5 @@ class ConnectionManager extends EventEmitter {
     this.emit('connectiondetails', connectionDetails);
   }
 }
-
 
 export default ConnectionManager;

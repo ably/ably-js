@@ -1,8 +1,7 @@
 import { TypedArray } from 'common/types/IPlatform';
-import IBufferUtils, { Bufferlike, NodeBufferlike } from "common/types/IBufferUtils";
+import IBufferUtils, { Bufferlike, NodeBufferlike } from 'common/types/IBufferUtils';
 
 class BufferUtils implements IBufferUtils {
-
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -36,9 +35,8 @@ class BufferUtils implements IBufferUtils {
     return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
   }
 
-
   /* In node, BufferUtils methods that return binary objects return a Buffer
- * for historical reasons; the browser equivalents return ArrayBuffers */
+   * for historical reasons; the browser equivalents return ArrayBuffers */
   isBuffer(buffer: unknown): buffer is Bufferlike {
     return Buffer.isBuffer(buffer) || this.isArrayBuffer(buffer) || ArrayBuffer.isView(buffer);
   }

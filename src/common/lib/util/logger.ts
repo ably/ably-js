@@ -87,7 +87,7 @@ class Logger {
     Logger.logLevel = Logger.LOG_DEFAULT;
   }
 
-  static initLogHandlers(){
+  static initLogHandlers() {
     const [logHandler, logErrorHandler] = getDefaultLoggers();
     this.logHandler = logHandler;
     this.logErrorHandler = logErrorHandler;

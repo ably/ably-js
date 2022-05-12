@@ -32,7 +32,6 @@ _._ = function (id: string) {
 let idCounter = 1;
 const shortName = 'jsonp';
 
-
 export function createRequest(
   uri: string,
   headers: Record<string, string> | null,

@@ -7,7 +7,7 @@ import HttpMethods from 'common/constants/HttpMethods';
 import IXHRRequest from 'common/types/IXHRRequest';
 import { RequestParams } from 'common/types/http';
 import XHRStates from 'common/constants/XHRStates';
-import Platform from 'common/platform'
+import Platform from 'common/platform';
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
   return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');
@@ -242,7 +242,9 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
            * we set the responseType expecting msgpack, the response will be
            * an ArrayBuffer containing json */
           const jsonResponseBody =
-            xhr.responseType === 'arraybuffer' ? Platform.BufferUtils.utf8Decode(xhr.response) : String(xhr.responseText);
+            xhr.responseType === 'arraybuffer'
+              ? Platform.BufferUtils.utf8Decode(xhr.response)
+              : String(xhr.responseText);
           if (jsonResponseBody.length) {
             parsedResponse = JSON.parse(jsonResponseBody);
           } else {
@@ -279,7 +281,10 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       let err = getAblyError(parsedResponse, headers);
       if (!err) {
         err = new ErrorInfo(
-          'Error response received from server: ' + statusCode + ' body was: ' + Platform.Config.inspect(parsedResponse),
+          'Error response received from server: ' +
+            statusCode +
+            ' body was: ' +
+            Platform.Config.inspect(parsedResponse),
           null,
           statusCode
         );

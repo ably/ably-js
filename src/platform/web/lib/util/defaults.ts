@@ -40,5 +40,4 @@ const Defaults: IDefaults = {
 //   Defaults.upgradeTransports = [];
 // }
 
-
 export default Defaults;
