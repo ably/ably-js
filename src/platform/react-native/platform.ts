@@ -15,7 +15,7 @@ const Platform: IPlatform = {
   useProtocolHeartbeats: true,
   createHmac: null,
   msgpack: msgpack,
-  supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder ? true : false,
+  supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
   preferBinary: false,
   ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
   atob: global.atob,

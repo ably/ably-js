@@ -4,7 +4,7 @@
  */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
-const banner = require('./src/platform/web/fragments/license');
+const banner = require('./src/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
 // This is needed for baseUrl to resolve correctly from tsconfig
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
@@ -56,15 +56,6 @@ const nodeConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-node.js',
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: /(platform-webstorage|platform-msgpack)/,
-        use: 'null-loader',
-      },
-    ],
   },
   target: 'node',
   externals: {
@@ -187,7 +178,7 @@ const webworkerConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: platformPath('web', 'fragments', 'ably.d.ts'),
+          from: path.resolve(__dirname, 'src', 'fragments', 'ably.d.ts'),
           to: path.resolve(__dirname, 'build', 'ably-webworker.min.d.ts'),
         },
       ],
@@ -195,38 +186,25 @@ const webworkerConfig = {
   ],
 };
 
-// TODO
 const noEncryptionConfig = {
   ...browserConfig,
+  entry: {
+    index: platformPath('web-noencryption'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably.noencryption.js',
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: platformPath('web', 'lib', 'util', 'crypto'),
-        use: 'null-loader',
-      },
-    ],
   },
 };
 
 const noEncryptionMinConfig = {
   ...browserMinConfig,
+  entry: {
+    index: platformPath('web-noencryption'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably.noencryption.min.js',
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: platformPath('web', 'lib', 'util', 'crypto'),
-        use: 'null-loader',
-      },
-    ],
   },
   devtool: 'source-map',
 };
