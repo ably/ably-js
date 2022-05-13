@@ -429,7 +429,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       /*
        * Check heartbeat does not fire on inactive transport, binary protocol
        */
-      it('upgradeheartbeat3', function (done) {
+      it.only('upgradeheartbeat3', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
           var realtime = helper.AblyRealtime(transportOpts);
@@ -440,10 +440,11 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           var connectionManager = realtime.connection.connectionManager;
           connectionManager.on('transport.active', function (transport) {
             var transportDescription = transport.toString();
-            //console.log('active transport: ' + transportDescription);
+            console.log('active transport: ' + transportDescription);
             if (transportDescription.indexOf('/comet/') > -1) {
               cometTransport = transport;
               cometTransport.on('heartbeat', function () {
+                console.log("Got comet transport");
                 closeAndFinish(done, realtime, new Error('verify heartbeat does not fire on inactive transport'));
               });
             }

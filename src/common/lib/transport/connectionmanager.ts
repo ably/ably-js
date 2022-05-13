@@ -25,7 +25,6 @@ const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platf
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
 const actions = ProtocolMessage.Action;
 const noop = function () {};
-const transportPreferenceOrder = () => Platform.Defaults.transportPreferenceOrder;
 const transportPreferenceName = 'ably-transport-preference';
 
 const sessionRecoveryName = 'ably-connection-recovery';
@@ -41,8 +40,8 @@ function clearSessionRecoverData() {
 
 function betterTransportThan(a: Transport, b: Transport) {
   return (
-    Utils.arrIndexOf(transportPreferenceOrder(), a.shortName) >
-    Utils.arrIndexOf(transportPreferenceOrder(), b.shortName)
+    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, a.shortName) >
+    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, b.shortName)
   );
 }
 
@@ -570,7 +569,7 @@ class ConnectionManager extends EventEmitter {
 
     Utils.arrDeleteValue(this.proposedTransports, transport);
     this.pendingTransports.push(transport);
-    const optimalTransport = transportPreferenceOrder()[transportPreferenceOrder.length - 1];
+    const optimalTransport = Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
     transport.once(
       'connected',
       (

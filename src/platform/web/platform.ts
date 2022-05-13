@@ -1,5 +1,5 @@
 import msgpack from './lib/util/msgpack';
-import { TypedArray, IPlatform } from '../../common/types/IPlatform';
+import { IPlatform, TypedArray } from '../../common/types/IPlatform';
 
 declare var msCrypto: typeof crypto; // for IE11
 
