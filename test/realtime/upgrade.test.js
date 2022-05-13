@@ -429,7 +429,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       /*
        * Check heartbeat does not fire on inactive transport, binary protocol
        */
-      it.only('upgradeheartbeat3', function (done) {
+      it('upgradeheartbeat3', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
           var realtime = helper.AblyRealtime(transportOpts);
