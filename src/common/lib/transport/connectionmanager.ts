@@ -569,7 +569,8 @@ class ConnectionManager extends EventEmitter {
 
     Utils.arrDeleteValue(this.proposedTransports, transport);
     this.pendingTransports.push(transport);
-    const optimalTransport = Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
+    const optimalTransport =
+      Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
     transport.once(
       'connected',
       (
