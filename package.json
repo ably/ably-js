@@ -94,7 +94,7 @@
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
     "format": "prettier --write --ignore-path .gitignore src test src/ably.d.ts webpack.config.js Gruntfile.js",
-    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test src/ably.d.ts webpack.config.js Gruntfile.js",
+    "format:check": "prettier --check --ignore-path .gitignore src test src/ably.d.ts webpack.config.js Gruntfile.js",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js"
   }
