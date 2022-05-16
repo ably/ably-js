@@ -118,6 +118,30 @@ declare namespace Types {
 
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
+  interface ChannelDetails {
+    channelId: string;
+    name: string;
+    status: ChannelStatus;
+  }
+
+  interface ChannelStatus {
+    isActive: boolean;
+    occupancy: ChannelOccupancy;
+  }
+
+  interface ChannelOccupancy {
+    metrics: ChannelMetrics;
+  }
+
+  interface ChannelMetrics {
+    connections: number;
+    presenceConnections: number;
+    presenceMembers: number;
+    presenceSubscribers: number;
+    publishers: number;
+    subscribers: number;
+  }
+
   // Interfaces
   interface ClientOptions extends AuthOptions {
     /**
