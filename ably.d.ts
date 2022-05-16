@@ -674,6 +674,7 @@ declare namespace Types {
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    status(callback: StandardCallback<ChannelDetails>): void;
   }
 
   class ChannelPromise extends ChannelBase {
@@ -681,6 +682,7 @@ declare namespace Types {
     history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
     publish(messages: any, options?: PublishOptions): Promise<void>;
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    status(): Promise<ChannelDetails>;
   }
 
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
