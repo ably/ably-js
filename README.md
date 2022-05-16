@@ -459,6 +459,16 @@ client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
 client.time(function(err, time) { ... }); // time is in ms since epoch
 ```
 
+### Getting the status of a channel
+
+```javascript
+channel.status(function(err, channelDetails) {
+  channelDetails.channelId        // The name of the channel
+  channelDetails.status.isActive  // A boolean indicating whether the channel is active
+  channelDetails.status.occupancy // Contains metadata relating to the occupants of the channel
+});
+```
+
 ## Using the async API style
 
 ### Realtime Example
@@ -530,6 +540,10 @@ const ablyRestPromiseExample = async () => {
   // Fetching the Ably service time
   const time = await client.time();
   console.log(`Ably service time: ${time}`);
+  
+  // Getting the status of a channel
+  const channelDetails = await channel.status();
+  console.log(channelDetails);
 
   client.close();
 };
