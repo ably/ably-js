@@ -66,9 +66,7 @@ async function run() {
           config.includeDirs.find((d) => file.startsWith(d)),
           file
         );
-        const extIndex = relativePath.indexOf('.');
-        const ext = relativePath.substring(extIndex);
-        const newPath = `${relativePath.substring(0, extIndex)}-${version}${ext}`;
+        const newPath = `${relativePath.split('.js')[0]}-${version}.js`;
         let fileData = fs.readFileSync(file).toString();
         if (newPath.endsWith('.min.js'))
           fileData = fileData.replace('//# sourceMappingURL=ably.min.js.map', `//# sourceMappingURL=${newPath}.map`);
