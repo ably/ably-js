@@ -65,7 +65,8 @@ async function run() {
           config.includeDirs.find((d) => file.startsWith(d)),
           file
         );
-        const newPath = `${relativePath.split('.js')[0]}-${version}.js`;
+        const split = relativePath.split('.js');
+        const newPath = `${split[0]}-${version}.js${split[1]}`;
         let fileData = fs.readFileSync(file).toString();
         let ContentType;
         if (newPath.endsWith('.min.js')) {
