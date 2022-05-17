@@ -42,7 +42,7 @@ async function run() {
 
   const isTag = await git('tag --points-at HEAD');
   if (!isTag)
-    throw new Error(`Reference '${config.tag}' is a branch not a tag, please select a versioned release to deploy.`);
+    throw new Error(`Tag name '${config.tag}' does not point at HEAD.`);
 
   if (!config.skipCheckout) await git(`checkout tags/${config.tag}`);
 
