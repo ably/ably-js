@@ -120,7 +120,6 @@ declare namespace Types {
 
   interface ChannelDetails {
     channelId: string;
-    name: string;
     status: ChannelStatus;
   }
 
