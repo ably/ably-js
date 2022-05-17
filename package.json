@@ -98,8 +98,8 @@
     "lint:fix": "eslint --fix .",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
-    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
+    "format": "prettier --write --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "sourcemap": "source-map-explorer browser/static/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
   }
