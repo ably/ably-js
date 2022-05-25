@@ -14,7 +14,7 @@ import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import WebSocketTransport from './websockettransport';
 import Transport from './transport';
-import * as API from 'ably';
+import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 

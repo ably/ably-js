@@ -1,2 +1,2 @@
-import Ably = require('../../../ably');
+import Ably = require('../../../../ably');
 export = Ably;

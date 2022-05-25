@@ -10,7 +10,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
-import * as API from '../../../ably';
+import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';

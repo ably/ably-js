@@ -9,7 +9,7 @@ import ChannelStateChange from './channelstatechange';
 import ErrorInfo from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
-import * as API from '../../../ably';
+import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';

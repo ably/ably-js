@@ -7,7 +7,7 @@ import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
 import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
-import * as API from '../../../ably';
+import * as API from '../../../../ably';
 import { StandardCallback } from '../../types/utils';
 import Rest from './rest';
 import Realtime from './realtime';
