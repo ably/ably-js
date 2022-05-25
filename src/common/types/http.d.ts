@@ -1,7 +1,7 @@
 import HttpMethods from '../constants/HttpMethods';
 import Rest from '../lib/client/rest';
 import ErrorInfo from '../lib/types/errorinfo';
-import http from 'src/common/types/http';
+import http from 'http';
 import https from 'https';
 
 export type PathParameter = string | ((host: string) => string);
