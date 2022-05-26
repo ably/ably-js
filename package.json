@@ -16,7 +16,7 @@
     "./build/ably-node.js": "./build/ably-commonjs.js"
   },
   "files": [
-    "src/**",
+    "build/**",
     "ably.d.ts",
     "callbacks.d.ts",
     "callbacks.js",
