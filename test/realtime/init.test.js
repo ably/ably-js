@@ -375,7 +375,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
       realtime.connection.once('connected', function () {
         try {
-          var hosts = new Ably.Rest.Http()._getHosts(realtime);
+          var hosts = new Ably.Rest.Platform.Http()._getHosts(realtime);
           /* restHost rather than realtimeHost as that's what connectionManager
            * knows about; converted to realtimeHost by the websocketTransport */
           expect(hosts[0]).to.equal(realtime.options.restHost, 'Check connected realtime host is the first option');
@@ -396,7 +396,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         fallbackHosts: [goodHost, 'b', 'c'],
       });
       realtime.connection.once('connected', function () {
-        var hosts = new Ably.Rest.Http()._getHosts(realtime);
+        var hosts = new Ably.Realtime.Platform.Http()._getHosts(realtime);
         /* restHost rather than realtimeHost as that's what connectionManager
          * knows about; converted to realtimeHost by the websocketTransport */
         try {

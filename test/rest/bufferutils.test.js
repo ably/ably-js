@@ -2,7 +2,7 @@
 
 define(['ably', 'chai'], function (Ably, chai) {
   var expect = chai.expect;
-  var BufferUtils = Ably.Realtime.BufferUtils;
+  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var testString = 'test';
   var testBase64 = 'dGVzdA==';
   var testHex = '74657374';

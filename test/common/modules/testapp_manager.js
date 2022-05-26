@@ -103,7 +103,7 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
              * simulation apps self-delete after a while */
             callback();
           } else {
-            new ably.Rest.Http().doUri(
+            new ably.Rest.Platform.Http().doUri(
               options.method,
               null,
               uri,

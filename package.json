@@ -1,23 +1,23 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably, the realtime messaging service",
-  "version": "1.2.21",
+  "version": "1.2.22",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
-  "main": "./browser/static/ably-node.js",
-  "typings": "./ably.d.ts",
+  "main": "./build/ably-node.js",
+  "typings": "./build/ably.d.ts",
   "react-native": {
-    "./browser/static/ably-node.js": "./browser/static/ably-reactnative.js"
+    "./build/ably-node.js": "./build/ably-reactnative.js"
   },
   "browser": {
-    "./browser/static/ably-node.js": "./browser/static/ably-commonjs.js"
+    "./build/ably-node.js": "./build/ably-commonjs.js"
   },
   "files": [
+    "build/**",
     "ably.d.ts",
-    "browser/static/**",
     "callbacks.d.ts",
     "callbacks.js",
     "promises.d.ts",
@@ -43,7 +43,6 @@
     "copy-webpack-plugin": "^6.4.1",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
-    "ejs": "~2.5",
     "eslint": "^7.13.0",
     "eslint-plugin-security": "^1.4.0",
     "express": "^4.17.1",
@@ -67,6 +66,7 @@
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
     "ts-loader": "^8.2.0",
+    "tsconfig-paths-webpack-plugin": "^3.5.2",
     "tslib": "^2.3.1",
     "typescript": "^4.2.4",
     "webpack": "^4.44.2",
@@ -98,9 +98,9 @@
     "lint:fix": "eslint --fix .",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
-    "format:check": "prettier --check --ignore-path .gitignore common browser nodejs test ably.d.ts webpack.config.js Gruntfile.js",
-    "sourcemap": "source-map-explorer browser/static/ably.min.js",
-    "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
+    "format": "prettier --write --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "format:check": "prettier --check --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "sourcemap": "source-map-explorer build/ably.min.js",
+    "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js"
   }
 }

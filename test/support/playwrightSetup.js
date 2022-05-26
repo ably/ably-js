@@ -1,4 +1,3 @@
-console.log('hello?');
 const { EVENT_RUN_END, EVENT_TEST_FAIL, EVENT_TEST_PASS, EVENT_SUITE_BEGIN, EVENT_SUITE_END } = Mocha.Runner.constants;
 
 const { ok: passSymbol, err: failSymbol } = Mocha.reporters.Base.symbols;

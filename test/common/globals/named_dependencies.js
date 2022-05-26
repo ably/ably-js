@@ -2,8 +2,8 @@
 define(function () {
   return (module.exports = {
     // Ably modules
-    ably: { browser: 'browser/static/ably', node: 'browser/static/ably-node' },
-    'ably.noencryption': { browser: 'browser/static/ably.noencryption' },
+    ably: { browser: 'build/ably', node: 'build/ably-node' },
+    'ably.noencryption': { browser: 'build/ably.noencryption' },
     base64: { browser: 'node_modules/crypto-js/build/enc-base64', node: 'skip' },
     utf8: { browser: 'node_modules/crypto-js/build/enc-utf8', node: 'skip' },
     'vcdiff-decoder': {

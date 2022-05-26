@@ -372,7 +372,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   cb(err);
                 }
               });
-              helper.Utils.nextTick(function () {
+              Ably.Realtime.Platform.Config.nextTick(function () {
                 failureFn(realtime);
               });
             },

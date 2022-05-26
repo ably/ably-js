@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.22](https://github.com/ably/ably-js/tree/1.2.22) (2022-05-18)
+- Fix bug in RealtimeChannel.subscribe promisify when second argument is
+  undefined [\#984](https://github.com/ably/ably-js/issue/984)
+- Update deprecated NativeScript application settings import [\#980](https://github.com/ably/ably-js/issue/980)
+
 ## [1.2.21](https://github.com/ably/ably-js/tree/1.2.21) (2022-05-05)
 - Make `Connection.id` and `Connection.key` optional [\#952](https://github.com/ably/ably-js/issue/952)
 - Remove support for MozWebSocket [\#954](https://github.com/ably/ably-js/issue/954)

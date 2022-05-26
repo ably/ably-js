@@ -1,6 +1,6 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai, Ably) {
   var expect = chai.expect;
   var rest;
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
@@ -658,7 +658,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               connection.once('closed', function () {
                 cb();
               });
-              helper.Utils.nextTick(function () {
+              Ably.Realtime.Platform.Config.nextTick(function () {
                 connection.close();
               });
             },

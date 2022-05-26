@@ -40,7 +40,7 @@ module.exports = {
     },
   ],
   ignorePatterns: [
-    "browser/static",
+    "build",
     "test",
     "tools",
     "scripts",

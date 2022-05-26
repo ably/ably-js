@@ -11,12 +11,11 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-webpack');
 
   var dirs = {
-    common: 'common',
-    browser: 'browser',
-    fragments: 'browser/fragments',
-    static: 'browser/static',
-    dest: 'browser/static',
-    compat: 'browser/compat',
+    common: 'src/common',
+    browser: 'src/platform/web',
+    fragments: 'src/platform/web/fragments',
+    static: 'build',
+    dest: 'build',
     crypto_js: 'node_modules/crypto-js/src',
     tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar',
   };
