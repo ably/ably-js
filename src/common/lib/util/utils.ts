@@ -338,7 +338,6 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
   });
 }
 
-//export const nextTick = Platform.Config.nextTick;
 
 const contentTypes = {
   json: 'application/json',
