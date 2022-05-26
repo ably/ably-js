@@ -96,7 +96,7 @@ Intellisense in IDEs with TypeScript support is supported:
 
 ![TypeScript suggestions](./resources/typescript-demo.gif)
 
-If you need to explicitly import the type definitions, see [ably.d.ts](src/ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
+If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
 
 ## Async API style
 
