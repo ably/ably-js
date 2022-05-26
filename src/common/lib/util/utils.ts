@@ -338,7 +338,6 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
   });
 }
 
-
 const contentTypes = {
   json: 'application/json',
   jsonp: 'application/javascript',
@@ -396,7 +395,6 @@ export const now =
     /* IE 8 */
     return new Date().getTime();
   };
-
 
 export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
   return err.constructor.name == 'ErrorInfo';
