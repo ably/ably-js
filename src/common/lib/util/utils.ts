@@ -397,8 +397,6 @@ export const now =
     return new Date().getTime();
   };
 
-//export const inspect = Platform.Config.inspect;
-// TODO: remove
 
 export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
   return err.constructor.name == 'ErrorInfo';
