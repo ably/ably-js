@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
   var loadTestData = helper.loadTestData;
-  var BufferUtils = Ably.Realtime.BufferUtils;
+  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var displayError = helper.displayError;
   var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
   var closeAndFinish = helper.closeAndFinish;

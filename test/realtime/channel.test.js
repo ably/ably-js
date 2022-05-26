@@ -718,9 +718,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       params: params,
                     },
                     function () {
-                      /* Wait a tick so we don't depend on whether the update event runs the
+                      /* Wait a tick so we don' depend on whether the update event runs the
                        * channelUpdated listener or the setOptions listener first */
-                      helper.Utils.nextTick(function () {
+                      Ably.Realtime.Platform.Config.nextTick(function () {
                         expect(
                           setOptionsReturned,
                           'setOptions should return immediately and call back after the reattach'
@@ -747,7 +747,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       modes: modes,
                     },
                     function () {
-                      helper.Utils.nextTick(function () {
+                      Ably.Realtime.Platform.Config.nextTick(function () {
                         expect(
                           setOptionsReturned,
                           'setOptions should return immediately and call back after the reattach'
@@ -1224,7 +1224,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             closeAndFinish(done, realtime, err);
             return;
           }
-          helper.Utils.nextTick(function () {
+          Ably.Realtime.Platform.Config.nextTick(function () {
             transport.onProtocolMessage(
               createPM({
                 action: 13,
@@ -1378,7 +1378,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* nexttick so that it doesn't pick up the suspended event */
-            helper.Utils.nextTick(function () {
+            Ably.Realtime.Platform.Config.nextTick(function () {
               channel.once(function (stateChange) {
                 expect(stateChange.current).to.equal('attaching', 'Check channel tries again after a bit');
                 cb();
@@ -1427,7 +1427,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
             helper.becomeSuspended(realtime, function () {
               /* nextTick as connection event is emitted before channel state is changed */
-              helper.Utils.nextTick(function () {
+              Ably.Realtime.Platform.Config.nextTick(function () {
                 expect(channel.state).to.equal('suspended', 'check channel state is suspended');
                 cb();
               });

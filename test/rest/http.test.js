@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var rest;
   var expect = chai.expect;
-  var Defaults = Ably.Rest.Defaults;
+  var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('rest/http', function () {
     this.timeout(60 * 1000);
@@ -50,8 +50,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         }
       }
 
-      var do_inner = Ably.Rest.Http.do;
-      Ably.Rest.Http.do = testRequestHandler;
+      var do_inner = Ably.Realtime.Platform.Http.do;
+      Ably.Rest.Platform.Http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
       rest.auth.requestToken();
@@ -62,7 +62,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       channel.presence.get();
 
       // Clean interceptors from Http.do
-      Ably.Rest.Http.do = do_inner;
+      Ably.Rest.Platform.Http.do = do_inner;
 
       done();
     });

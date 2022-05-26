@@ -1,7 +1,7 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
-  var Utils = Ably.Rest.Utils;
+  var Utils = helper.Utils;
   var exports = {};
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
@@ -109,7 +109,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           data: { foo: 'bar' },
         };
 
-        var baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+        var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
         var pushRecipient = {
           transportType: 'ablyChannel',
           channel: 'pushenabled:foo',
@@ -153,7 +153,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             data: { foo: 'bar' },
           };
 
-          var baseUri = realtime.baseUri(Ably.Rest.Defaults.getHost(realtime.options));
+          var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
           var pushRecipient = {
             transportType: 'ablyChannel',
             channel: 'pushenabled:foo',

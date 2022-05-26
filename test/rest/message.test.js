@@ -231,7 +231,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         idOne,
         idTwo,
         originalPublish = channel._publish,
-        originalDoUri = Ably.Rest.Http.doUri;
+        originalDoUri = Ably.Realtime.Platform.Http.doUri;
 
       channel._publish = function (requestBody) {
         try {
@@ -251,7 +251,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       };
 
-      Ably.Rest.Http.doUri = function (method, rest, uri, headers, body, params, callback) {
+      Ably.Rest.Platform.Http.doUri = function (method, rest, uri, headers, body, params, callback) {
         originalDoUri(method, rest, uri, headers, body, params, function (err) {
           if (err) {
             done(err);
@@ -261,7 +261,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           /* Fake a publish error from realtime */
           callback({ message: 'moo', code: 50300, statusCode: 503 });
         });
-        Ably.Rest.Http.doUri = originalDoUri;
+        Ably.Rest.Platform.Http.doUri = originalDoUri;
       };
 
       channel.publish([{ name: 'one' }, { name: 'two' }], function (err) {

@@ -4,22 +4,22 @@
  */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
-const banner = require('./browser/fragments/license');
+const banner = require('./src/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
-
-const nodePath = path.resolve(__dirname, 'nodejs');
-const browserPath = path.resolve(__dirname, 'browser');
+// This is needed for baseUrl to resolve correctly from tsconfig
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 
 const baseConfig = {
   mode: 'production',
   entry: {
-    index: path.resolve(__dirname, 'common', 'lib', 'index.js'),
+    index: path.resolve(__dirname, 'src', 'common', 'lib', 'index.js'),
   },
   resolve: {
     extensions: ['.js', '.ts'],
+    plugins: [new TsconfigPathsPlugin()],
   },
   output: {
-    path: path.resolve(__dirname, 'browser/static'),
+    path: path.resolve(__dirname, 'build'),
     library: 'Ably',
     libraryTarget: 'umd',
     libraryExport: 'default',
@@ -44,34 +44,18 @@ const baseConfig = {
   },
 };
 
+function platformPath(platform, ...dir) {
+  return path.resolve(__dirname, 'src', 'platform', platform, ...dir);
+}
+
 const nodeConfig = {
   ...baseConfig,
+  entry: {
+    index: platformPath('nodejs'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably-node.js',
-  },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: path.resolve(nodePath, 'platform'),
-      'platform-http': path.resolve(nodePath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(nodePath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(nodePath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(nodePath, 'lib', 'util', 'crypto'),
-      'platform-transports': path.resolve(nodePath, 'lib', 'transport'),
-      // webpack null-loader is used to ensure that the following modules resolve to null - webpack won't compile unless these aliases are pointing at a valid module so these values are irrelevant.
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-    },
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: /(platform-webstorage|platform-msgpack)/,
-        use: 'null-loader',
-      },
-    ],
   },
   target: 'node',
   externals: {
@@ -89,18 +73,8 @@ const browserConfig = {
     ...baseConfig.output,
     filename: 'ably.js',
   },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-browser'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport'),
-    },
+  entry: {
+    index: platformPath('web'),
   },
   node: {
     crypto: 'empty',
@@ -112,6 +86,7 @@ const browserConfig = {
   optimization: {
     minimize: false,
   },
+  devtool: 'source-map',
 };
 
 const nativeScriptConfig = {
@@ -121,18 +96,8 @@ const nativeScriptConfig = {
     filename: 'ably-nativescript.js',
     globalObject: 'global',
   },
-  resolve: {
-    ...baseConfig.resolve,
-    alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-nativescript'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
-    },
+  entry: {
+    index: platformPath('nativescript'),
   },
   node: {
     crypto: 'empty',
@@ -142,12 +107,10 @@ const nativeScriptConfig = {
     request: false,
     ws: false,
     'nativescript-websockets': true,
+    '@nativescript/core/application-settings': true,
   },
   optimization: {
     minimize: false,
-  },
-  performance: {
-    hints: false,
   },
 };
 
@@ -157,18 +120,12 @@ const reactNativeConfig = {
     ...baseConfig.output,
     filename: 'ably-reactnative.js',
   },
+  entry: {
+    index: platformPath('react-native'),
+  },
   resolve: {
     extensions: ['.js', '.ts'],
-    alias: {
-      platform: path.resolve(browserPath, 'fragments', 'platform-reactnative'),
-      'platform-http': path.resolve(browserPath, 'lib', 'util', 'http'),
-      'platform-bufferutils': path.resolve(browserPath, 'lib', 'util', 'bufferutils'),
-      'platform-defaults': path.resolve(browserPath, 'lib', 'util', 'defaults'),
-      'platform-crypto': path.resolve(browserPath, 'lib', 'util', 'crypto'),
-      'platform-webstorage': path.resolve(browserPath, 'lib', 'util', 'webstorage'),
-      'platform-msgpack': path.resolve(browserPath, 'lib', 'util', 'msgpack'),
-      'platform-transports': path.resolve(browserPath, 'lib', 'transport', 'withoutjsonp'),
-    },
+    plugins: [new TsconfigPathsPlugin()],
   },
   node: {
     crypto: 'empty',
@@ -181,9 +138,6 @@ const reactNativeConfig = {
   },
   optimization: {
     minimize: false,
-  },
-  performance: {
-    hints: false,
   },
 };
 
@@ -220,8 +174,8 @@ const webworkerConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: path.resolve(browserPath, 'fragments', 'ably.d.ts'),
-          to: path.resolve(browserPath, 'static', 'ably-webworker.min.d.ts'),
+          from: path.resolve(__dirname, 'src', 'fragments', 'ably.d.ts'),
+          to: path.resolve(__dirname, 'build', 'ably-webworker.min.d.ts'),
         },
       ],
     }),
@@ -230,35 +184,23 @@ const webworkerConfig = {
 
 const noEncryptionConfig = {
   ...browserConfig,
+  entry: {
+    index: platformPath('web-noencryption'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably.noencryption.js',
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
-        use: 'null-loader',
-      },
-    ],
   },
 };
 
 const noEncryptionMinConfig = {
   ...browserMinConfig,
+  entry: {
+    index: platformPath('web-noencryption'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably.noencryption.min.js',
-  },
-  module: {
-    rules: [
-      ...baseConfig.module.rules,
-      {
-        test: path.resolve(browserPath, 'lib', 'util', 'crypto'),
-        use: 'null-loader',
-      },
-    ],
   },
   devtool: 'source-map',
 };

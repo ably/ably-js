@@ -1691,7 +1691,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
              * sent in one protocol message */
             channel.presence.subscribe('enter', function () {
               channel.presence.unsubscribe('enter');
-              helper.Utils.nextTick(cb);
+              Ably.Realtime.Platform.Config.nextTick(cb);
             });
           },
           function (cb) {

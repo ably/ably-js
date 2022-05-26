@@ -3,8 +3,8 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
   var loadTestData = helper.loadTestData;
-  var BufferUtils = Ably.Realtime.BufferUtils;
-  var Crypto = Ably.Realtime.Crypto;
+  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
+  var Crypto = Ably.Realtime.Platform.Crypto;
   var Message = Ably.Realtime.Message;
   var displayError = helper.displayError;
   var testResourcesPath = helper.testResourcesPath;
@@ -153,7 +153,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        var b64key = Ably.Realtime.BufferUtils.base64Encode(key);
+        var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
           expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
