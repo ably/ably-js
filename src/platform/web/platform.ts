@@ -1,6 +1,9 @@
 import msgpack from './lib/util/msgpack';
 import { IPlatform, TypedArray } from '../../common/types/IPlatform';
 
+// Workaround for salesforce lightning locker compat
+const globalOrWindow = global || window;
+
 declare var msCrypto: typeof crypto; // for IE11
 
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
@@ -13,12 +16,12 @@ function allowComet() {
   /* xhr requests from local files are unreliable in some browsers, such as Chrome 65 and higher -- see eg
    * https://stackoverflow.com/questions/49256429/chrome-65-unable-to-make-post-requests-from-local-files-to-flask
    * So if websockets are supported, then just forget about comet transports and use that */
-  const loc = global.location;
-  return !global.WebSocket || !loc || !loc.origin || loc.origin.indexOf('http') > -1;
+  const loc = globalOrWindow.location;
+  return !globalOrWindow.WebSocket || !loc || !loc.origin || loc.origin.indexOf('http') > -1;
 }
 
-const userAgent = global.navigator && global.navigator.userAgent.toString();
-const currentUrl = global.location && global.location.href;
+const userAgent = globalOrWindow.navigator && globalOrWindow.navigator.userAgent.toString();
+const currentUrl = globalOrWindow.location && globalOrWindow.location.href;
 
 const Platform: IPlatform = {
   agent: 'browser',
@@ -27,36 +30,36 @@ const Platform: IPlatform = {
   currentUrl: currentUrl,
   noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
   binaryType: 'arraybuffer',
-  WebSocket: global.WebSocket,
-  xhrSupported: global.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
+  WebSocket: globalOrWindow.WebSocket,
+  xhrSupported: globalOrWindow.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
   jsonpSupported: typeof document !== 'undefined',
   allowComet: allowComet(),
   streamingSupported: true,
   useProtocolHeartbeats: true,
   createHmac: null,
   msgpack: msgpack,
-  supportsBinary: !!global.TextDecoder,
+  supportsBinary: !!globalOrWindow.TextDecoder,
   preferBinary: false,
-  ArrayBuffer: global.ArrayBuffer,
-  atob: global.atob,
+  ArrayBuffer: globalOrWindow.ArrayBuffer,
+  atob: globalOrWindow.atob,
   nextTick:
-    typeof global.setImmediate !== 'undefined'
-      ? global.setImmediate.bind(global)
+    typeof globalOrWindow.setImmediate !== 'undefined'
+      ? globalOrWindow.setImmediate.bind(globalOrWindow)
       : function (f: () => void) {
           setTimeout(f, 0);
         },
-  addEventListener: global.addEventListener,
+  addEventListener: globalOrWindow.addEventListener,
   inspect: JSON.stringify,
   stringByteSize: function (str: string) {
     /* str.length will be an underestimate for non-ascii strings. But if we're
      * in a browser too old to support TextDecoder, not much we can do. Better
      * to underestimate, so if we do go over-size, the server will reject the
      * message */
-    return (global.TextDecoder && new global.TextEncoder().encode(str).length) || str.length;
+    return (globalOrWindow.TextDecoder && new globalOrWindow.TextEncoder().encode(str).length) || str.length;
   },
-  TextEncoder: global.TextEncoder,
-  TextDecoder: global.TextDecoder,
-  Promise: global.Promise,
+  TextEncoder: globalOrWindow.TextEncoder,
+  TextDecoder: globalOrWindow.TextDecoder,
+  Promise: globalOrWindow.Promise,
   getRandomValues: (function (crypto) {
     if (crypto === undefined) {
       return undefined;
@@ -67,7 +70,7 @@ const Platform: IPlatform = {
         callback(null);
       }
     };
-  })(global.crypto || msCrypto),
+  })(globalOrWindow.crypto || msCrypto),
 };
 
 export default Platform;
