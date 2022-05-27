@@ -27,7 +27,7 @@ function withAuthDetails(
   }
 }
 
-function unenvelope(callback: ResourceCallback, format: Utils.Format | null): ResourceCallback {
+function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | null): ResourceCallback<T> {
   return (err, body, outerHeaders, unpacked, outerStatusCode) => {
     if (err && !body) {
       callback(err);
@@ -85,8 +85,8 @@ function urlFromPathAndParams(path: string, params: Record<string, any>) {
   return path + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler(
-  callback: ResourceCallback,
+function logResponseHandler<T>(
+  callback: ResourceCallback<T>,
   method: HttpMethods,
   path: string,
   params: Record<string, string>
@@ -113,27 +113,27 @@ function logResponseHandler(
       );
     }
     if (callback) {
-      callback(err, body, headers, unpacked, statusCode);
+      callback(err, body as T, headers, unpacked, statusCode);
     }
   };
 }
 
-export type ResourceCallback = (
+export type ResourceCallback<T = unknown> = (
   err: ErrorInfo | null,
-  body?: unknown,
+  body?: T,
   headers?: Record<string, string>,
   unpacked?: boolean,
   statusCode?: number
 ) => void;
 
 class Resource {
-  static get(
+  static get<T = unknown>(
     rest: Rest,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallback<T>
   ): void {
     Resource.do(HttpMethods.Get, rest, path, null, headers, params, envelope, callback);
   }
@@ -185,7 +185,7 @@ class Resource {
     Resource.do(HttpMethods.Put, rest, path, body, headers, params, envelope, callback);
   }
 
-  static do(
+  static do<T>(
     method: HttpMethods,
     rest: Rest,
     path: string,
@@ -193,7 +193,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallback<T>
   ): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       callback = logResponseHandler(callback, method, path, params);

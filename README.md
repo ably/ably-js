@@ -404,6 +404,16 @@ channel.presence.history(function(err, messagesPage) { // PaginatedResult
 channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
 ```
 
+### Getting the status of a channel
+
+```javascript
+channel.status(function(err, channelDetails) {
+  channelDetails.channelId        // The name of the channel
+  channelDetails.status.isActive  // A boolean indicating whether the channel is active
+  channelDetails.status.occupancy // Contains metadata relating to the occupants of the channel
+});
+```
+
 ### Generate Token and Token Request
 
 See https://www.ably.com/docs/general/authentication for an
@@ -518,6 +528,10 @@ const ablyRestPromiseExample = async () => {
   const history = await channel.history({ limit: 25 });
   console.log(await history.current());
 
+  // Getting the status of a channel
+  const channelDetails = await channel.status();
+  console.log(channelDetails);
+
   // Requesting a token
   const token = await client.auth.requestToken(tokenParams);
 
@@ -531,7 +545,7 @@ const ablyRestPromiseExample = async () => {
   // Fetching the Ably service time
   const time = await client.time();
   console.log(`Ably service time: ${time}`);
-
+  
   client.close();
 };
 

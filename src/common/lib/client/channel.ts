@@ -7,9 +7,10 @@ import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
-import { PaginatedResultCallback } from '../../types/utils';
+import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Rest from './rest';
 import Realtime from './realtime';
+import * as API from '../../../../ably';
 import Platform from 'common/platform';
 
 interface RestHistoryParams {
@@ -188,6 +189,17 @@ class Channel extends EventEmitter {
 
   _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
     Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, null, callback);
+  }
+
+  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
+    if (typeof callback !== 'function' && this.rest.options.promises) {
+      return Utils.promisify(this, 'status', []);
+    }
+
+    const format = this.rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
+    const headers = Utils.defaultPostHeaders(format);
+
+    Resource.get<API.Types.ChannelDetails>(this.rest, this.basePath, headers, {}, format, callback || noop);
   }
 }
 

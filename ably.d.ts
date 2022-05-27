@@ -118,6 +118,29 @@ declare namespace Types {
 
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
+  interface ChannelDetails {
+    channelId: string;
+    status: ChannelStatus;
+  }
+
+  interface ChannelStatus {
+    isActive: boolean;
+    occupancy: ChannelOccupancy;
+  }
+
+  interface ChannelOccupancy {
+    metrics: ChannelMetrics;
+  }
+
+  interface ChannelMetrics {
+    connections: number;
+    presenceConnections: number;
+    presenceMembers: number;
+    presenceSubscribers: number;
+    publishers: number;
+    subscribers: number;
+  }
+
   // Interfaces
   interface ClientOptions extends AuthOptions {
     /**
@@ -650,6 +673,7 @@ declare namespace Types {
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    status(callback: StandardCallback<ChannelDetails>): void;
   }
 
   class ChannelPromise extends ChannelBase {
@@ -657,6 +681,7 @@ declare namespace Types {
     history: (params?: RestHistoryParams) => Promise<PaginatedResult<Message>>;
     publish(messages: any, options?: PublishOptions): Promise<void>;
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    status(): Promise<ChannelDetails>;
   }
 
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
