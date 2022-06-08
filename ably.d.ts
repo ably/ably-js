@@ -1348,9 +1348,13 @@ declare namespace Types {
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      */
     subscribe(
-      action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
+      action?: PresenceAction | Array<PresenceAction>,
       listener?: messageCallback<PresenceMessage>
     ): Promise<void>;
+    /**
+     * Subscribe to presence message events on this channel. The caller supplies a listener function, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+     */
+    subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
      * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
      */
