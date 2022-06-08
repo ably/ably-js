@@ -120,6 +120,29 @@ declare namespace Types {
 
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
+  interface ChannelDetails {
+    channelId: string;
+    status: ChannelStatus;
+  }
+
+  interface ChannelStatus {
+    isActive: boolean;
+    occupancy: ChannelOccupancy;
+  }
+
+  interface ChannelOccupancy {
+    metrics: ChannelMetrics;
+  }
+
+  interface ChannelMetrics {
+    connections: number;
+    presenceConnections: number;
+    presenceMembers: number;
+    presenceSubscribers: number;
+    publishers: number;
+    subscribers: number;
+  }
+
   /**
    * Configuration options for the creation of a new client.
    */
@@ -216,7 +239,7 @@ declare namespace Types {
         ) => void);
 
     /**
-     * Use a non-secure connection connection. By default, a TLS connection is used to connect to Ably
+     * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
      */
     tls?: boolean;
 
@@ -254,7 +277,7 @@ declare namespace Types {
     /**
      * Can be used to pass in arbitrary connection parameters.
      */
-    transportParams?: { [k: string]: string };
+    transportParams?: { [k: string]: string | number };
 
     /**
      * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket`, `xhr`, and `jsonp`.
@@ -280,6 +303,10 @@ declare namespace Types {
      * Timeout for any single HTTP request and response.
      */
     httpRequestTimeout?: number;
+
+    realtimeRequestTimeout?: number;
+
+    plugins?: { vcdiff?: any };
   }
 
   interface AuthOptions {
@@ -338,6 +365,11 @@ declare namespace Types {
 
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string. This option is primarily intended to be used in situations where the library is instantiated with a key; note that a `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [client identities](https://ably.com/documentation/how-ably-works#client-identity).
+     */
+
+    /**
+     * Optional clientId that can be used to specify the identity for this client. In most cases
+     * it is preferable to instead specify a clientId in the token issued to this client.
      */
     clientId?: string;
   }
@@ -597,7 +629,7 @@ declare namespace Types {
 
   type ChannelParams = { [key: string]: string };
 
-  type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE';
+  type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE' | 'ATTACH_RESUME';
   type ChannelModes = Array<ChannelMode>;
 
   /**
@@ -865,7 +897,7 @@ declare namespace Types {
   // promisified version of the lib, but still allow once to be used in a way
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
-  class EventEmitter<CallbackType, ResultType, EventType, StateType> {
+  class EventEmitter<CallbackType, ResultType, EventType> {
     on(event: EventType | EventType[], callback: CallbackType): void;
     on(callback: CallbackType): void;
     once(event: EventType, callback: CallbackType): void;
@@ -1377,6 +1409,7 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      */
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    status(callback: StandardCallback<ChannelDetails>): void;
   }
 
   class ChannelPromise extends ChannelBase {
@@ -1396,9 +1429,10 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload.
      */
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    status(): Promise<ChannelDetails>;
   }
 
-  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent, ChannelState> {
+  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     readonly name: string;
     errorReason: ErrorInfo;
     readonly state: ChannelState;
@@ -1668,12 +1702,7 @@ declare namespace Types {
     getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
   }
 
-  class ConnectionBase extends EventEmitter<
-    connectionEventCallback,
-    ConnectionStateChange,
-    ConnectionEvent,
-    ConnectionState
-  > {
+  class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
      * When a connection failure occurs this property contains the ErrorInfo.
      */
@@ -1681,13 +1710,13 @@ declare namespace Types {
     /**
      * A unique public identifier String for this connection, used to identify this member in presence events and messages.
      */
-    id: string;
+    id?: string;
     /**
      * A unique private connection key String used to recover or resume a connection, assigned by Ably. When recovering a connection explicitly, the recoveryKey is used in the recover client options as it contains both the key and the last message serial.
      *
      * This private connection key can also be used by other REST clients to publish on behalf of this client. See the [publishing over REST on behalf of a realtime client documentation](https://ably.com/documentation/rest/channels#publish-on-behalf) for more info.
      */
-    key: string;
+    key?: string;
     /**
      * The recovery key String can be used by another client to recover this connection’s state in the recover client options property. See [connection state recover options](https://ably.com/documentation/realtime/connection#connection-state-recover-options) for more information.
      */

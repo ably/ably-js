@@ -22,12 +22,11 @@
 5. Create a PR for the release branch
 6. Once the release PR is landed to the `main` branch, checkout the `main` branch locally (remember to pull the remote changes) and run `npm run build`
 7. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to git
-8. Ensure that the infrastructure repository is in the same directory as `ably-js` and is up to date with the remote main branch
-9. Run `npm run grunt -- release:deploy` (requires the SDKDeveloper AWS role) - pushes commit and tag, then publishes to the Ably CDN
-10. Run `npm publish .` (should require OTP) - publishes to NPM
-11. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-12. For nontrivial releases: update the ably-js submodule ref in the realtime repo
-13. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
+8. Run `npm publish .` (should require OTP) - publishes to NPM
+9. Run the GitHub action "Publish to CDN" with the new tag name
+10. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
+11. For nontrivial releases: update the ably-js submodule ref in the realtime repo
+12. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
 
 ## Test suite
 
@@ -43,7 +42,7 @@ Run the Mocha test suite
 
 Or run just one or more test files
 
-    npm run test:node -- --test=spec/realtime/auth.test.js
+    npm run test:node -- --test=test/realtime/auth.test.js
 
 ### Debugging the mocha tests locally with a debugger
 
@@ -53,11 +52,11 @@ Run the following command to launch tests with the debugger enabled. The tests w
 
 Alternatively you can also run the tests for single file
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:node --test=test/spec/presence.test.js
+    node --inspect-brk=9229 node_modules/.bin/grunt test:node --test=test/realtime/auth.test.js
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
-browser/static directory, not the raw source files, and breakpoints in files under spec/test should work directly.
+browser/static directory, not the raw source files, and breakpoints in files under test should work directly.
 
 ### Debugging the tests in a browser with Mocha test runner
 
@@ -66,8 +65,6 @@ Run the following command to start a local Mocha test runner web server
     npm run test:webserver
 
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
-
-Note: If any files have been added or remove, running the task `npm run requirejs` will ensure all the necessary RequireJS dependencies are loaded into the browser by updating spec/support/browser_file_list.js
 
 ### Testing environment variables for Node.js
 

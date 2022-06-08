@@ -2,6 +2,36 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.22](https://github.com/ably/ably-js/tree/1.2.22) (2022-05-18)
+- Fix bug in RealtimeChannel.subscribe promisify when second argument is
+  undefined [\#984](https://github.com/ably/ably-js/issue/984)
+- Update deprecated NativeScript application settings import [\#980](https://github.com/ably/ably-js/issue/980)
+
+## [1.2.21](https://github.com/ably/ably-js/tree/1.2.21) (2022-05-05)
+- Make `Connection.id` and `Connection.key` optional [\#952](https://github.com/ably/ably-js/issue/952)
+- Remove support for MozWebSocket [\#954](https://github.com/ably/ably-js/issue/954)
+- Fix a bug with promisified `EventEmitter.whenState` [\#962](https://github.com/ably/ably-js/pull/962)
+- Update ably.com/documentation urls [\#964](https://github.com/ably/ably-js/pull/964)
+- Remove console.log statements from msgpack encoder [\#966](https://github.com/ably/ably-js/pull/966)
+- Fix nativescript bundle [\#971](https://github.com/ably/ably-js/pull/971)
+
+## [1.2.20](https://github.com/ably/ably-js/tree/1.2.20) (2022-04-06)
+- Fix error where calling realtime presence update caused call stack errors [\#949](https://github.com/ably/ably-js/issue/949)
+- Fix an issue where Ably-Agent headers were encoded incorrectly [\#950](https://github.com/ably/ably-js/pull/950)
+
+## [1.2.19](https://github.com/ably/ably-js/tree/1.2.19) (2022-04-05)
+- Fix error where some promisified REST methods caused call stack errors [\#943](https://github.com/ably/ably-js/issue/943)
+- Fix wasClean implementation for reactnative websocket transport [\#946](https://github.com/ably/ably-js/pull/946)
+- Ensure that Ably-Agent is always URI encoded [\#947](https://github.com/ably/ably-js/pull/947)
+
+## [1.2.18](https://github.com/ably/ably-js/tree/1.2.18) (2022-03-31)
+- Convert library source code to TypeScript [\#762](https://github.com/ably/ably-js/pull/762)
+- Add `realtimeRequestTimeout` to ClientOptions type [\#934](https://github.com/ably/ably-js/pull/934)
+- Override toJSON for HttpPaginatedResponse [\#913](https://github.com/ably/ably-js/pull/913)
+- Throw ErrorInfo when invalid key supplied [\#912](https://github.com/ably/ably-js/pull/912)
+- Remove ErrorReporter [\#908](https://github.com/ably/ably-js/pull/908)
+- Fix nonsensical error in RealtimePresence.leaveClient when channel state is invalid [\#911](https://github.com/ably/ably-js/pull/911)
+
 ## [1.2.17](https://github.com/ably/ably-js/tree/1.2.17) (2022-01-14)
 - Remove NPM preinstall script (this was breaking NPM installs when outside a git repository) [\#876](https://github.com/ably/ably-js/pull/876)
 
@@ -85,7 +115,7 @@ That is fixed in this release with
 
 Adds the capability to subscribe to a channel in delta mode.
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 [Full Changelog](https://github.com/ably/ably-js/compare/1.1.25...1.2.0)
 

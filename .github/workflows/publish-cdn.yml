@@ -1,0 +1,29 @@
+name: Publish to CDN
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.version }}
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_PRODUCTION }}:role/github-actions-sdk
+          aws-region: us-east-1
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}

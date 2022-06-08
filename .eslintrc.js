@@ -1,36 +1,56 @@
 module.exports = {
+  root: true,
   env: {
     es6: true,
     node: true,
-    browser: true
+    browser: true,
+  },
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    sourceType: "module",
   },
   plugins: [
+    "@typescript-eslint",
     "security",
-    '@typescript-eslint',
-    'jsdoc'
+    'jsdoc',
   ],
   extends: [
-    "plugin:security/recommended"
+    "eslint:recommended",
+    "plugin:security/recommended",
   ],
-  parser: '@typescript-eslint/parser',
   rules: {
-    "no-undef": "error",
     // comma-dangle used for browser compatibility for browsers that don't support trailing commas
-    "comma-dangle": ["error", "never"],
+    "comma-dangle": ["error", "always-multiline"],
     "eol-last": "error",
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
-    "security/detect-object-injection": "off"
-  },
-  parserOptions: {
-    sourceType: "module"
+    "security/detect-object-injection": "off",
+    "@typescript-eslint/no-var-requires": "error",
   },
   overrides: [
     {
+      files: ["**/*.{ts,tsx}"],
+      rules: {
+	"comma-dangle": ["error", "only-multiline"],
+	"@typescript-eslint/no-unused-vars": ["error"],
+
+	// TypeScript already enforces these rules better than any eslint setup can
+	"no-undef": "off",
+	"no-dupe-class-members": "off",
+      },
+    },
+    {
       files: 'ably.d.ts',
       extends: [
-        'plugin:jsdoc/recommended'
-      ]
-    }
-  ]
+        'plugin:jsdoc/recommended',
+      ],
+    },
+  ],
+  ignorePatterns: [
+    "build",
+    "test",
+    "tools",
+    "scripts",
+    "Gruntfile.js",
+  ],
 }

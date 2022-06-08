@@ -1,23 +1,23 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably, the realtime messaging service",
-  "version": "1.2.17",
+  "version": "1.2.22",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
-  "main": "./browser/static/ably-node.js",
-  "typings": "./ably.d.ts",
+  "main": "./build/ably-node.js",
+  "typings": "./build/ably.d.ts",
   "react-native": {
-    "./browser/static/ably-node.js": "./browser/static/ably-reactnative.js"
+    "./build/ably-node.js": "./build/ably-reactnative.js"
   },
   "browser": {
-    "./browser/static/ably-node.js": "./browser/static/ably-commonjs.js"
+    "./build/ably-node.js": "./build/ably-commonjs.js"
   },
   "files": [
+    "build/**",
     "ably.d.ts",
-    "browser/static/**",
     "callbacks.d.ts",
     "callbacks.js",
     "promises.d.ts",
@@ -25,21 +25,24 @@
     "resources/**"
   ],
   "dependencies": {
-    "@ably/msgpack-js": "^0.3.3",
+    "@ably/msgpack-js": "^0.4.0",
     "got": "^11.8.2",
     "ws": "^5.1"
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
+    "@types/crypto-js": "^4.0.1",
     "@types/node": "^15.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.2.0",
-    "@typescript-eslint/parser": "^5.2.0",
+    "@types/request": "^2.48.7",
+    "@types/ws": "^8.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.14.0",
+    "@typescript-eslint/parser": "^5.14.0",
     "async": "ably-forks/async#requirejs",
+    "aws-sdk": "^2.1075.0",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
     "cors": "~2.7",
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
-    "ejs": "~2.5",
     "eslint": "^7.13.0",
     "eslint-plugin-jsdoc": "^37.0.3",
     "eslint-plugin-security": "^1.4.0",
@@ -55,13 +58,17 @@
     "grunt-webpack": "^4.0.2",
     "hexy": "~0.2",
     "kexec": "ably-forks/node-kexec#update-for-node-12",
+    "minimist": "^1.2.5",
     "mocha": "^8.1.3",
     "null-loader": "^4.0.1",
     "playwright": "^1.10.0",
+    "prettier": "^2.5.1",
     "requirejs": "~2.1",
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
     "ts-loader": "^8.2.0",
+    "tsconfig-paths-webpack-plugin": "^3.5.2",
+    "tslib": "^2.3.1",
     "typescript": "^4.2.4",
     "webpack": "^4.44.2",
     "webpack-cli": "^4.2.0"
@@ -82,15 +89,19 @@
     "test": "grunt test",
     "test:node": "grunt test:node",
     "test:webserver": "grunt test:webserver",
-    "test:playwright": "node spec/support/runPlaywrightTests.js",
+    "test:playwright": "node test/support/runPlaywrightTests.js",
     "concat": "grunt concat",
-    "build": "grunt build",
+    "build": "grunt build:all",
+    "build:node": "grunt build:node",
+    "build:browser": "grunt build:browser",
     "requirejs": "grunt requirejs",
-    "lint": "eslint nodejs/**/*.js common/**/*.js browser/lib/**/*.js ably.d.ts",
-    "lint:fix": "eslint --fix nodejs/**/*.js common/**/*.js browser/lib/**/*.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "sourcemap": "source-map-explorer browser/static/ably.min.js",
-    "sourcemap:noencryption": "source-map-explorer browser/static/ably.noencryption.min.js"
+    "format": "prettier --write --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "format:check": "prettier --check --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "sourcemap": "source-map-explorer build/ably.min.js",
+    "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js"
   }
 }

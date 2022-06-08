@@ -2,10 +2,13 @@
   "compilerOptions": {
     "target": "es3",
     "module": "commonjs",
-    "lib": ["ES5"],
+    "lib": ["ES5", "DOM", "webworker"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "baseUrl": "./src"
   }
 }
