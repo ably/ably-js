@@ -313,10 +313,10 @@ declare namespace Types {
     /**
      * A function which is called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed `TokenRequest` ; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/documentation/core-features/authentication#ably-jwt). See [an authentication callback example](https://jsbin.ably.com/azazav/1/edit?javascript,live) or [our authentication documentation](https://ably.com/documentation/rest/authentication) for details of the Ably TokenRequest format and associated API calls.
      */
-    authCallback?: (
+    authCallback?(
       data: TokenParams,
       callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
-    ) => void;
+    ): void;
 
     /**
      * A set of key value pair headers to be added to any request made to the `authUrl`. Useful when an application requires these to be added to validate the request or implement the response. If the `authHeaders` object contains an `authorization` key, then `withCredentials` will be set on the xhr request.
@@ -963,7 +963,7 @@ declare namespace Types {
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
-    time: (callback?: Types.timeCallback) => void;
+    time(callback?: Types.timeCallback): void;
     /**
      * A reference to the `Push` object.
      */
@@ -987,21 +987,21 @@ declare namespace Types {
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
      */
-    request: <T = any>(
+    request<T = any>(
       method: string,
       path: string,
       params?: any,
       body?: any[] | any,
       headers?: any
-    ) => Promise<Types.HttpPaginatedResponse<T>>;
+    ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      */
-    stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
-    time: () => Promise<number>;
+    time(): Promise<number>;
     /**
      * A reference to the `Push` object.
      */
@@ -1012,8 +1012,8 @@ declare namespace Types {
     static Promise: typeof Types.RealtimePromise;
     static Callbacks: typeof Types.RealtimeCallbacks;
     clientId: string;
-    close: () => void;
-    connect: () => void;
+    close(): void;
+    connect(): void;
   }
 
   class RealtimeCallbacks extends RealtimeBase {
@@ -1032,14 +1032,14 @@ declare namespace Types {
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
      */
-    request: <T = any>(
+    request<T = any>(
       method: string,
       path: string,
       params?: any,
       body?: any[] | any,
       headers?: any,
       callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
-    ) => void;
+    ): void;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      */
@@ -1051,7 +1051,7 @@ declare namespace Types {
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
-    time: (callback?: Types.timeCallback) => void;
+    time(callback?: Types.timeCallback): void;
     /**
      * A reference to the `Push` object.
      */
@@ -1074,21 +1074,21 @@ declare namespace Types {
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
      */
-    request: <T = any>(
+    request<T = any>(
       method: string,
       path: string,
       params?: any,
       body?: any[] | any,
       headers?: any
-    ) => Promise<Types.HttpPaginatedResponse<T>>;
+    ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      */
-    stats: (params?: any) => Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
-    time: () => Promise<number>;
+    time(): Promise<number>;
     /**
      * A reference to the `Push` object.
      */
