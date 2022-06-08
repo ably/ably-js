@@ -3,8 +3,6 @@
 // Definitions by: Ably <https://github.com/ably/>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-import { AgentOptions } from 'http';
-
 declare namespace Types {
   namespace ChannelState {
     type INITIALIZED = 'initialized';
@@ -209,7 +207,10 @@ declare namespace Types {
      *
      * See the [NodeJS docs](https://nodejs.org/api/http.html#new-agentoptions) for descriptions of these options.
      */
-    restAgentOptions?: AgentOptions;
+    restAgentOptions?: {
+      maxSockets?: number;
+      keepAlive?: boolean;
+    };
 
     /**
      * This option allows a connection to inherit the state of a previous connection that may have existed under a different instance of the Realtime library. This might typically be used by clients of the browser library to ensure connection state can be preserved when the user refreshes the page. A recovery key string can be explicitly provided, or alternatively if a callback function is provided, the client library will automatically persist the recovery key between page reloads and call the callback when the connection is recoverable. The callback is then responsible for confirming whether the connection should be recovered or not. See [connection state recovery](https://ably.com/documentation/realtime/connection/#connection-state-recovery) for further information.
