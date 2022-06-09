@@ -83,14 +83,6 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
   return true;
 }
 
-function getBackoffCoefficient(n: number) {
-  return Math.min((n + 2) / 3, 2);
-}
-
-function getJitterCoefficient() {
-  return 1 - Math.random() * 0.2;
-}
-
 export class TransportParams {
   options: ClientOptions;
   host: string | null;
@@ -1518,7 +1510,10 @@ class ConnectionManager extends EventEmitter {
     let retryDelay = newState.retryDelay;
     if (newState.state === 'disconnected') {
       this.disconnectedRetryCount++;
-      retryDelay = (newState.retryDelay as number) * getBackoffCoefficient(this.disconnectedRetryCount) * getJitterCoefficient()
+      retryDelay =
+        (newState.retryDelay as number) *
+        Utils.getBackoffCoefficient(this.disconnectedRetryCount) *
+        Utils.getJitterCoefficient();
     }
 
     const change = new ConnectionStateChange(
