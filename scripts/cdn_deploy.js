@@ -21,7 +21,7 @@ async function run() {
     // Comma separated directories (relative to `path`) to exclude from upload
     excludeDirs: 'node_modules,.git',
     // Regex to match files against for upload
-    fileRegex: '^ably(\\.noencryption)?(\\.min)?\\.js(\\.map)?',
+    fileRegex: '^ably(\\.noencryption)?(\\.min)?\\.js',
     ...argv,
   };
 
@@ -66,21 +66,14 @@ async function run() {
           file
         );
         const split = relativePath.split('.js');
-        const newPath = `${split[0]}-${version}.js${split[1]}`;
+        const newPath = `${split[0]}-${version}.js`;
         let fileData = fs.readFileSync(file).toString();
-        let ContentType;
-        if (newPath.endsWith('.min.js')) {
-          fileData = fileData.replace('//# sourceMappingURL=ably.min.js.map', `//# sourceMappingURL=${newPath}.map`);
-          ContentType = 'application/json';
-        } else {
-          ContentType = 'application/javascript';
-        }
 
         await upload(s3, {
           Body: fileData,
           Key: path.join(config.root, newPath),
           Bucket: config.bucket,
-          ContentType,
+          ContentType: 'application/javascript',
         });
       }
     }
