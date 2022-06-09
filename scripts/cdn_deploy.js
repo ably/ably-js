@@ -70,7 +70,7 @@ async function run() {
         let fileData = fs.readFileSync(file).toString();
 
         // Remove sourcemap links - these give warnings when used from the CDN
-        if(newPath.includes(".min")) {
+        if (newPath.includes('.min')) {
           fileData = fileData.replace(/^\/\/#\ssourceMappingURL=.*$/gm, '');
         }
 
