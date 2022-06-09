@@ -6,6 +6,9 @@ export type LoggerOptions = {
 };
 type LoggerFunction = (...args: string[]) => void;
 
+// Workaround for salesforce lightning locker compatibility
+let globalOrWindow = global || window;
+
 enum LogLevels {
   None = 0,
   Error = 1,
@@ -44,7 +47,7 @@ const getDefaultLoggers = (): [Function, Function] => {
   /* Can't just check for console && console.log; fails in IE <=9 */
   if (
     (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') /* node */ ||
-    (global.console && global.console.log && typeof global.console.log.apply === 'function') /* sensible browsers */
+    typeof globalOrWindow?.console?.log?.apply === 'function' /* sensible browsers */
   ) {
     consoleLogger = function (...args: unknown[]) {
       console.log.apply(console, args);
@@ -54,7 +57,7 @@ const getDefaultLoggers = (): [Function, Function] => {
           console.warn.apply(console, args);
         }
       : consoleLogger;
-  } else if (global.console && (global.console.log as unknown)) {
+  } else if (globalOrWindow?.console.log as unknown) {
     /* IE <= 9 with the console open -- console.log does not
      * inherit from Function, so has no apply method */
     consoleLogger = errorLogger = function () {

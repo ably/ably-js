@@ -12,14 +12,15 @@ import ConnectionManager, { TransportParams } from 'common/lib/transport/connect
 import { TryConnectCallback } from 'common/lib/transport/transport';
 import XHRStates from 'common/constants/XHRStates';
 
-declare const global: {
+// Workaround for salesforce lightning locker compatibility
+let globalOrWindow = (global || window) as unknown as {
   _ablyjs_jsonp: Record<string, unknown>;
   JSONPTransport: typeof JSONPTransport;
 };
 
 const noop = function () {};
 /* Can't just use window.Ably, as that won't exist if using the commonjs version. */
-const _: Record<string, unknown> = (global._ablyjs_jsonp = {});
+const _: Record<string, unknown> = (globalOrWindow._ablyjs_jsonp = {});
 
 /* express strips out parantheses from the callback!
  * Kludge to still alow its responses to work, while not keeping the
@@ -263,7 +264,7 @@ export class Request extends EventEmitter {
 }
 
 export default function (connectionManager: typeof ConnectionManager): typeof JSONPTransport {
-  global.JSONPTransport = JSONPTransport;
+  globalOrWindow.JSONPTransport = JSONPTransport;
   if (JSONPTransport.isAvailable()) {
     connectionManager.supportedTransports[shortName] = JSONPTransport;
   }
