@@ -21,7 +21,7 @@ async function run() {
     // Comma separated directories (relative to `path`) to exclude from upload
     excludeDirs: 'node_modules,.git',
     // Regex to match files against for upload
-    fileRegex: '^ably(\\.noencryption)?(\\.min)?\\.js',
+    fileRegex: '^ably(\\.noencryption)?(\\.min)?\\.js$',
     ...argv,
   };
 
@@ -69,12 +69,13 @@ async function run() {
         const newPath = `${split[0]}-${version}.js`;
         let fileData = fs.readFileSync(file).toString();
 
-        await upload(s3, {
-          Body: fileData,
-          Key: path.join(config.root, newPath),
-          Bucket: config.bucket,
-          ContentType: 'application/javascript',
-        });
+        fs.writeFileSync(path.join('cdn', newPath), fileData);
+        // await upload(s3, {
+        //   Body: fileData,
+        //   Key: path.join(config.root, newPath),
+        //   Bucket: config.bucket,
+        //   ContentType: 'application/javascript',
+        // });
       }
     }
     console.log('Success!');
