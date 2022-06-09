@@ -69,13 +69,12 @@ async function run() {
         const newPath = `${split[0]}-${version}.js`;
         let fileData = fs.readFileSync(file).toString();
 
-        fs.writeFileSync(path.join('cdn', newPath), fileData);
-        // await upload(s3, {
-        //   Body: fileData,
-        //   Key: path.join(config.root, newPath),
-        //   Bucket: config.bucket,
-        //   ContentType: 'application/javascript',
-        // });
+        await upload(s3, {
+          Body: fileData,
+          Key: path.join(config.root, newPath),
+          Bucket: config.bucket,
+          ContentType: 'application/javascript',
+        });
       }
     }
     console.log('Success!');
