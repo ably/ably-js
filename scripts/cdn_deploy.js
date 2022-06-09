@@ -69,6 +69,11 @@ async function run() {
         const newPath = `${split[0]}-${version}.js`;
         let fileData = fs.readFileSync(file).toString();
 
+        // Remove sourcemap links - these give warnings when used from the CDN
+        if(newPath.includes(".min")) {
+          fileData = fileData.replace(/^\/\/#\ssourceMappingURL=.*$/gm, '');
+        }
+
         await upload(s3, {
           Body: fileData,
           Key: path.join(config.root, newPath),
