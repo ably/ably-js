@@ -49,6 +49,7 @@ class Realtime extends Rest {
   static Platform = Platform;
   static ProtocolMessage = ProtocolMessage;
   static Message = Message;
+  static Crypto = Platform.Crypto;
 }
 
 class Channels extends EventEmitter {
