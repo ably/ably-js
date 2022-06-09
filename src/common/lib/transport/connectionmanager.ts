@@ -83,6 +83,14 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
   return true;
 }
 
+function getBackoffCoefficient(n: number) {
+  return Math.min((n + 2) / 3, 2);
+}
+
+function getJitterCoefficient() {
+  return 1 - Math.random() * 0.2;
+}
+
 export class TransportParams {
   options: ClientOptions;
   host: string | null;
@@ -226,6 +234,7 @@ class ConnectionManager extends EventEmitter {
   transitionTimer?: number | NodeJS.Timeout | null;
   suspendTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
+  disconnectedRetryCount: number = 0;
 
   constructor(realtime: Realtime, options: ClientOptions) {
     super();
@@ -1496,17 +1505,28 @@ class ConnectionManager extends EventEmitter {
     this.cancelRetryTimer();
     this.checkSuspendTimer(indicated.state);
 
+    if (state === 'suspended' || state === 'connected') {
+      this.disconnectedRetryCount = 0;
+    }
+
     /* do nothing if we're unable to move from the current state */
     if (this.state.terminal) return;
 
     /* process new state */
-    const newState = this.states[indicated.state],
-      change = new ConnectionStateChange(
-        this.state.state,
-        newState.state,
-        newState.retryDelay,
-        indicated.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
-      );
+    const newState = this.states[indicated.state];
+
+    let retryDelay = newState.retryDelay;
+    if (newState.state === 'disconnected') {
+      this.disconnectedRetryCount++;
+      retryDelay = (newState.retryDelay as number) * getBackoffCoefficient(this.disconnectedRetryCount) * getJitterCoefficient()
+    }
+
+    const change = new ConnectionStateChange(
+      this.state.state,
+      newState.state,
+      retryDelay,
+      indicated.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
+    );
 
     if (retryImmediately) {
       const autoReconnect = () => {
@@ -1531,7 +1551,7 @@ class ConnectionManager extends EventEmitter {
         Platform.Config.nextTick(autoReconnect);
       }
     } else if (state === 'disconnected' || state === 'suspended') {
-      this.startRetryTimer(newState.retryDelay as number);
+      this.startRetryTimer(retryDelay as number);
     }
 
     /* If going into disconnect/suspended (and not retrying immediately), or a
