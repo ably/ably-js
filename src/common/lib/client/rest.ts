@@ -235,7 +235,7 @@ class Rest {
 
   static Callbacks = Rest;
   static Platform = Platform;
-  static Crypto = Platform.Crypto;
+  static Crypto?: typeof Platform.Crypto;
 }
 
 class Channels {

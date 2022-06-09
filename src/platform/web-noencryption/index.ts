@@ -24,6 +24,9 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
+Rest.Crypto = Crypto;
+Realtime.Crypto = Crypto;
+
 Realtime.ConnectionManager = ConnectionManager;
 
 Logger.initLogHandlers();
