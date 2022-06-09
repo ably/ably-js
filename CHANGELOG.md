@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.24](https://github.com/ably/ably-js/tree/1.2.24) (2022-06-09)
+- Revert a bug in 1.2.23 where the Crypto interface was removed from the public API
+- Revert change to package.json typings field
+- Remove sourcemap links from CDN uploads
+
 ## [1.2.23](https://github.com/ably/ably-js/tree/1.2.23) (2022-06-09)
 - Add `Channel.status` method to get channel lifecycle status [\#985](https://github.com/ably/ably-js/pull/985)
 - Fix bug in compatibility with Salesforce Lightning Components [\#993](https://github.com/ably/ably-js/pull/993)
