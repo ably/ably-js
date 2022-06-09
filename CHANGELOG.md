@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.23](https://github.com/ably/ably-js/tree/1.2.23) (2022-06-09)
+- Add `Channel.status` method to get channel lifecycle status [\#985](https://github.com/ably/ably-js/pull/985)
+- Fix bug in compatibility with Salesforce Lightning Components [\#993](https://github.com/ably/ably-js/pull/993)
+- Revert uploading sourcemaps to the CDN [\#998](https://github.com/ably/ably-js/pull/998)
+
 ## [1.2.22](https://github.com/ably/ably-js/tree/1.2.22) (2022-05-18)
 - Fix bug in RealtimeChannel.subscribe promisify when second argument is
   undefined [\#984](https://github.com/ably/ably-js/issue/984)
