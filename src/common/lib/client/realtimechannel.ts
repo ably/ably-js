@@ -435,6 +435,22 @@ class RealtimeChannel extends Channel {
     return this.attach(callback || noop);
   }
 
+  subscribeWithFilter(filter: (m: Message)=>boolean, listener: Function, callback?: ErrCallback): void | Promise<void> {
+    if (!callback && this.realtime.options.promises) {
+      return Utils.promisify(this, 'subscribeWithFilter', [filter, listener]);
+    }
+
+    if (this.state === 'failed') {
+      callback?.(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+      return;
+    }
+
+    this.subscriptions.on((m: Message)=>filter(m) && listener(m));
+
+    return this.attach(callback || noop);
+  }
+
+
   unsubscribe(...args: unknown[] /* [event], listener */): void {
     const _args = RealtimeChannel.processListenerArgs(args);
     const event = _args[0];
