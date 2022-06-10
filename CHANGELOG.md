@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.25](https://github.com/ably/ably-js/tree/1.2.25) (2022-06-10)
+- Fix a bug in 1.2.24 where Message and PresenceMessage were removed from the public API[\#1004](https://github.com/ably/ably-js/pull/1004)
+
 ## [1.2.24](https://github.com/ably/ably-js/tree/1.2.24) (2022-06-09)
 - Revert a bug in 1.2.23 where the Crypto interface was removed from the public API
 - Revert change to package.json typings field
