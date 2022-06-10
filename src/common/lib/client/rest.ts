@@ -14,6 +14,7 @@ import { ErrnoException, IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
+import Message from '../types/message';
 
 const noop = function () {};
 class Rest {
@@ -236,6 +237,7 @@ class Rest {
   static Callbacks = Rest;
   static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
+  static Message?: typeof Message;
 }
 
 class Channels {

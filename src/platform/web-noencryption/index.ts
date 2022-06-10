@@ -16,6 +16,7 @@ import ConnectionManager from '../../common/lib/transport/connectionmanager';
 import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
+import Message from 'common/lib/types/message';
 
 Platform.Crypto = null;
 Platform.BufferUtils = BufferUtils;
@@ -26,6 +27,9 @@ Platform.WebStorage = WebStorage;
 
 Rest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
+
+Rest.Message = Message;
+Realtime.Message = Message;
 
 Realtime.ConnectionManager = ConnectionManager;
 
