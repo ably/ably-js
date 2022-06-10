@@ -714,6 +714,7 @@ declare namespace Types {
       listener?: messageCallback<Message>,
       callbackWhenAttached?: errorCallback
     ) => void;
+    subscribeWithFilter: (filter: (Message)=>boolean, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
@@ -730,6 +731,7 @@ declare namespace Types {
       eventOrCallback: messageCallback<Message> | string | Array<string>,
       listener?: messageCallback<Message>
     ) => Promise<void>;
+    subscribeWithFilter: (filter: (Message)=>boolean, listener?: messageCallback<Message>) => void;
     publish(messages: any, options?: PublishOptions): Promise<void>;
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
     whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
