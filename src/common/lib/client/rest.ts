@@ -15,6 +15,7 @@ import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 
 
 import Platform from '../../platform';
 import Message from '../types/message';
+import PresenceMessage from '../types/presencemessage';
 
 const noop = function () {};
 class Rest {
@@ -238,6 +239,7 @@ class Rest {
   static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
   static Message?: typeof Message;
+  static PresenceMessage?: typeof PresenceMessage;
 }
 
 class Channels {
