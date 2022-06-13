@@ -15,7 +15,7 @@ var XHRStreamingTransport = function (connectionManager) {
   Utils.inherits(XHRStreamingTransport, CometTransport);
 
   XHRStreamingTransport.isAvailable = function () {
-    return Platform.xhrSupported && Platform.streamingSupported && Platform.allowComet;
+    return Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet;
   };
 
   XHRStreamingTransport.tryConnect = function (connectionManager, auth, params, callback) {
