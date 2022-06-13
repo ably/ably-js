@@ -1,6 +1,6 @@
 import * as Utils from '../../../../common/lib/util/utils';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from '../../platform';
+import Platform from '../../../../common/platform';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import XHRRequest from './xhrrequest';
 
