@@ -1,6 +1,6 @@
 import * as Utils from '../../../../common/lib/util/utils';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from '../../platform';
+import Platform from '../../../../common/platform';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import XHRRequest from './xhrrequest';
 
@@ -15,7 +15,7 @@ var XHRPollingTransport = function (connectionManager) {
   Utils.inherits(XHRPollingTransport, CometTransport);
 
   XHRPollingTransport.isAvailable = function () {
-    return Platform.xhrSupported && Platform.allowComet;
+    return Platform.Config.xhrSupported && Platform.Config.allowComet;
   };
 
   XHRPollingTransport.tryConnect = function (connectionManager, auth, params, callback) {
