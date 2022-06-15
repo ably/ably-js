@@ -24,6 +24,13 @@ interface RealtimeHistoryParams {
   from_serial?: number;
 }
 
+type MessageFilter = {
+  name?: string;
+  refId?: string;
+  refType?: string;
+  hasRef?: boolean;
+};
+
 const actions = ProtocolMessage.Action;
 const noop = function () {};
 const statechangeOp = 'statechange';
@@ -56,6 +63,7 @@ class RealtimeChannel extends Channel {
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
   subscriptions: EventEmitter;
+  filteredSubscriptions: {[key: string]: (m: Message)=>any};
   syncChannelSerial?: number | null;
   properties: { attachSerial: number | null | undefined };
   errorReason: ErrorInfo | string | null;
@@ -83,6 +91,7 @@ class RealtimeChannel extends Channel {
     this.connectionManager = realtime.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
+    this.filteredSubscriptions = {};
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
@@ -430,15 +439,36 @@ class RealtimeChannel extends Channel {
       return;
     }
 
-    this.subscriptions.on(event, listener);
+    // Filtered
+    if(typeof event === "object"){
+      this._subscribeFilter(event, listener);
+    }else{
+      this.subscriptions.on(event, listener);
+    }
 
     return this.attach(callback || noop);
   }
 
+  _subscribeFilter(filter: MessageFilter, listener: (m: Message)=>any){
+    const filteredListener = (m: Message)=>{
+      const mapping: {[key in keyof MessageFilter]: any} = {
+        name: m.name,
+        refId: m.extras?.reference?.id,
+        refType: m.extras?.reference?.type,
+        hasRef: !!m.extras?.reference?.id
+      };
+      if(Object.entries(filter).find(([key, value])=>value !== undefined ? mapping[key as keyof MessageFilter] === value : false))return;
+      listener(m);
+    };
+    this.subscriptions.on(filteredListener);
+    this.filteredSubscriptions[JSON.stringify(filter)] = listener;
+  }
+
   unsubscribe(...args: unknown[] /* [event], listener */): void {
-    const _args = RealtimeChannel.processListenerArgs(args);
-    const event = _args[0];
-    const listener = _args[1];
+    const [event, listener] = RealtimeChannel.processListenerArgs(args);
+    if(typeof event === "object"){
+      this.subscriptions.off(this.filteredSubscriptions[JSON.stringify(event)]);
+    }
     this.subscriptions.off(event, listener);
   }
 
