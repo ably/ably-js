@@ -212,7 +212,6 @@ declare namespace Types {
     httpMaxRetryDuration?: number;
     httpOpenTimeout?: number;
     httpRequestTimeout?: number;
-    // Not in IDL - in feature spec, this is only something that the CONNECTED ProtocolMessage sent by Realtime can specify, doesn't seem to be user-configurable. Was only added to this interface recently, in https://github.com/ably/ably-js/pull/934, but no clue to motivation
     realtimeRequestTimeout?: number;
 
     plugins?: { vcdiff?: any };
