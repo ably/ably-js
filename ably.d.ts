@@ -722,6 +722,7 @@ declare namespace Types {
     syncComplete: boolean;
     // Not clear what this callback to unsubscribe is?
     unsubscribe: (
+      // In IDL, you can only specify a single PresenceAction, ditto in spec (RTP7)
       presenceOrListener?: PresenceAction | Array<PresenceAction> | messageCallback<PresenceMessage>,
       listener?: messageCallback<PresenceMessage>
     ) => void;
@@ -739,6 +740,7 @@ declare namespace Types {
     ) => void;
     // again, this accepts multiple presence actions
     subscribe: (
+      // In IDL, you can only specify a single PresenceAction, ditto in spec (RTP6)
       presenceOrListener: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
       listener?: messageCallback<PresenceMessage>,
       callbackWhenAttached?: errorCallback
@@ -756,6 +758,7 @@ declare namespace Types {
     get: (params?: RealtimePresenceParams) => Promise<PresenceMessage[]>;
     history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<PresenceMessage>>;
     subscribe: (
+      // In IDL, you can only specify a single PresenceAction, ditto in spec (RTP6)
       action?: PresenceAction | messageCallback<PresenceMessage> | Array<PresenceAction>,
       listener?: messageCallback<PresenceMessage>
     ) => Promise<void>;
@@ -801,6 +804,7 @@ declare namespace Types {
     params: ChannelParams;
     modes: ChannelModes;
     unsubscribe: (
+      // In IDL, you can only specify a single name, ditto in spec (RTL8)
       eventOrListener?: string | Array<string> | messageCallback<Message>,
       listener?: messageCallback<Message>
     ) => void;
@@ -821,6 +825,7 @@ declare namespace Types {
     ) => void;
     setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
     subscribe: (
+      // In IDL, you can only specify a single name, ditto in spec (RTL7)
       eventOrCallback: messageCallback<Message> | string | Array<string>,
       listener?: messageCallback<Message>,
       callbackWhenAttached?: errorCallback
@@ -840,6 +845,7 @@ declare namespace Types {
     history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
     setOptions: (options: ChannelOptions) => Promise<void>;
     subscribe: (
+      // In IDL, you can only specify a single name, ditto in spec (RTL7)
       eventOrCallback: messageCallback<Message> | string | Array<string>,
       listener?: messageCallback<Message>
     ) => Promise<void>;
