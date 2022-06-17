@@ -705,7 +705,7 @@ declare namespace Types {
     refId?: string;
     refType?: string;
     hasRef?: boolean;
-  }
+  };
 
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     presence: RealtimePresenceCallbacks;

@@ -31,7 +31,7 @@ type MessageFilter = {
   hasRef?: boolean;
 };
 
-type MessageListener = (m: Message)=>any;
+type MessageListener = (m: Message) => any;
 
 const actions = ProtocolMessage.Action;
 const noop = function () {};
@@ -58,8 +58,6 @@ function validateChannelOptions(options: API.Types.ChannelOptions) {
     }
   }
 }
-
-
 
 class RealtimeChannel extends Channel {
   realtime: Realtime;
@@ -445,25 +443,29 @@ class RealtimeChannel extends Channel {
     }
 
     // Filtered
-    if(event && typeof event === "object" && !Array.isArray(event)){
+    if (event && typeof event === 'object' && !Array.isArray(event)) {
       this._subscribeFilter(event, listener);
-    }else{
+    } else {
       this.subscriptions.on(event, listener);
     }
 
     return this.attach(callback || noop);
   }
 
-  _subscribeFilter(filter: MessageFilter, listener: MessageListener){
-    const filteredListener = (m: Message)=>{
-      const mapping: {[key in keyof MessageFilter]: any} = {
+  _subscribeFilter(filter: MessageFilter, listener: MessageListener) {
+    const filteredListener = (m: Message) => {
+      const mapping: { [key in keyof MessageFilter]: any } = {
         name: m.name,
         refId: m.extras?.reference?.id,
         refType: m.extras?.reference?.type,
-        hasRef: !!m.extras?.reference?.id
+        hasRef: !!m.extras?.reference?.id,
       };
       // Check if any values are defined in the filter and if they match the value in the message object
-      if(Object.entries(filter).find(([key, value])=>value !== undefined ? mapping[key as keyof MessageFilter] !== value : false)){
+      if (
+        Object.entries(filter).find(([key, value]) =>
+          value !== undefined ? mapping[key as keyof MessageFilter] !== value : false
+        )
+      ) {
         return;
       }
       listener(m);
@@ -473,38 +475,44 @@ class RealtimeChannel extends Channel {
   }
 
   // Adds a new filtered subscription
-  _addFilteredSubscription(filter: MessageFilter, realListener: MessageListener, filteredListener: MessageListener){
-    if(this.filteredSubscriptions.has(realListener)){
+  _addFilteredSubscription(filter: MessageFilter, realListener: MessageListener, filteredListener: MessageListener) {
+    if (this.filteredSubscriptions.has(realListener)) {
       const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<MessageFilter, MessageListener[]>;
       // Add the filtered listener to the map, or append to the array if this filter has already been used
       realListenerMap.set(filter, realListenerMap?.get(filter)?.concat(filteredListener) || [filteredListener]);
-    }else{
-      this.filteredSubscriptions.set(realListener, new Map<MessageFilter, MessageListener[]>([[filter, [filteredListener]]]))
+    } else {
+      this.filteredSubscriptions.set(
+        realListener,
+        new Map<MessageFilter, MessageListener[]>([[filter, [filteredListener]]])
+      );
     }
   }
 
-  _getFilteredSubscriptions(filter: MessageFilter | undefined, realListener: MessageListener | undefined): MessageListener[] {
+  _getFilteredSubscriptions(
+    filter: MessageFilter | undefined,
+    realListener: MessageListener | undefined
+  ): MessageListener[] {
     // Only a filter is passed in with no specific listener
-    if(!realListener && filter){
+    if (!realListener && filter) {
       // Return each listener which is attached to the specified filter object
       return Array.from(this.filteredSubscriptions.values())
-        .map((filterMaps)=>filterMaps.get(filter))
-        .reduce((prev, cur)=>cur ? (prev as MessageListener[]).concat(...cur) : prev, []) as MessageListener[];
+        .map((filterMaps) => filterMaps.get(filter))
+        .reduce((prev, cur) => (cur ? (prev as MessageListener[]).concat(...cur) : prev), []) as MessageListener[];
     }
 
     // No subscriptions for this listener
-    if(!realListener || !this.filteredSubscriptions.has(realListener)) {
+    if (!realListener || !this.filteredSubscriptions.has(realListener)) {
       return [];
     }
     const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<MessageFilter, MessageListener[]>;
     // If no filter is specified return all listeners using that function
-    if(!filter) {
+    if (!filter) {
       // array.flat is not available unless we support es2019 or higher
       return Array.from(realListenerMap.values()).reduce((prev, cur) => prev.concat(...cur), []);
     }
 
     // No subscriptions matching this filter
-    if(!realListenerMap.has(filter)){
+    if (!realListenerMap.has(filter)) {
       return [];
     }
 
@@ -515,9 +523,9 @@ class RealtimeChannel extends Channel {
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
-    if(typeof event === "object" && !listener || this.filteredSubscriptions.has(listener)){
-      this._getFilteredSubscriptions(event, listener).forEach((l)=>this.subscriptions.off(l));
-      return
+    if ((typeof event === 'object' && !listener) || this.filteredSubscriptions.has(listener)) {
+      this._getFilteredSubscriptions(event, listener).forEach((l) => this.subscriptions.off(l));
+      return;
     }
 
     this.subscriptions.off(event, listener);
