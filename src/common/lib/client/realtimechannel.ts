@@ -445,7 +445,7 @@ class RealtimeChannel extends Channel {
     }
 
     // Filtered
-    if(event && typeof event === "object"){
+    if(event && typeof event === "object" && !Array.isArray(event)){
       this._subscribeFilter(event, listener);
     }else{
       this.subscriptions.on(event, listener);
