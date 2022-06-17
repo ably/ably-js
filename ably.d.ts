@@ -691,7 +691,7 @@ declare namespace Types {
     params: ChannelParams;
     modes: ChannelModes;
     unsubscribe: (
-      eventOrListener?: string | Array<string> | messageCallback<Message>,
+      eventOrListener?: string | Array<string> | messageCallback<Message> | MessageFilter,
       listener?: messageCallback<Message>
     ) => void;
   }
@@ -699,6 +699,13 @@ declare namespace Types {
   type PublishOptions = {
     quickAck?: boolean;
   };
+
+  type MessageFilter = {
+    name?: string;
+    refId?: string;
+    refType?: string;
+    hasRef?: boolean;
+  }
 
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     presence: RealtimePresenceCallbacks;
@@ -710,11 +717,10 @@ declare namespace Types {
     ) => void;
     setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
     subscribe: (
-      eventOrCallback: messageCallback<Message> | string | Array<string>,
+      eventOrCallback: messageCallback<Message> | string | Array<string> | MessageFilter,
       listener?: messageCallback<Message>,
       callbackWhenAttached?: errorCallback
     ) => void;
-    subscribeWithFilter: (filter: (Message)=>boolean, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback) => void;
     publish(messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, callback?: errorCallback): void;
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
@@ -728,10 +734,9 @@ declare namespace Types {
     history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
     setOptions: (options: ChannelOptions) => Promise<void>;
     subscribe: (
-      eventOrCallback: messageCallback<Message> | string | Array<string>,
+      eventOrCallback: messageCallback<Message> | string | Array<string> | MessageFilter,
       listener?: messageCallback<Message>
     ) => Promise<void>;
-    subscribeWithFilter: (filter: (Message)=>boolean, listener?: messageCallback<Message>) => void;
     publish(messages: any, options?: PublishOptions): Promise<void>;
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
     whenState: (targetState: ChannelState) => Promise<ChannelStateChange>;
