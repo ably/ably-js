@@ -185,6 +185,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    it('disconnected_backoff', function (done) {
+      var disconnectedRetryTimeout = 150;
+      var realtime = helper.AblyRealtime({
+        disconnectedRetryTimeout: disconnectedRetryTimeout,
+        realtimeHost: 'invalid',
+      });
+
+      var retryCount = 0;
+
+      realtime.connection.on(function (stateChange) {
+        if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
+          if (retryCount > 4) {
+            closeAndFinish(done, realtime);
+            return;
+          }
+          try {
+            expect(stateChange.retryIn).to.be.below(disconnectedRetryTimeout + Math.min(retryCount, 3) * 50);
+            expect(stateChange.retryIn).to.be.above(0.8 * (disconnectedRetryTimeout + Math.min(retryCount, 3) * 50));
+            retryCount += 1;
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+          }
+        }
+      });
+    });
+
     /*
      * Check operations on a failed channel give the right errors
      */
