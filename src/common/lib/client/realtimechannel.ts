@@ -700,14 +700,16 @@ class RealtimeChannel extends Channel {
       state + (reason ? '; reason: ' + reason : '')
     );
 
+    if (state !== 'attaching' && state !== 'suspended') {
+      this.retryCount = 0;
+    }
+
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
     if (state === 'attached') {
-      this.retryCount = 0;
       this.onAttached();
       this.setInProgress(syncOp, hasPresence);
       this.setInProgress(statechangeOp, false);
     } else if (state === 'detached' || state === 'failed' || state === 'suspended') {
-      this.retryCount = 0;
       this.setInProgress(statechangeOp, false);
       this.setInProgress(syncOp, false);
     }
