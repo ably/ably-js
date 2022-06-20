@@ -354,6 +354,50 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    it('channel_backoff', function (done) {
+      var channelRetryTimeout = 150;
+      var realtime = helper.AblyRealtime({ channelRetryTimeout: channelRetryTimeout, realtimeRequestTimeout: 1 }),
+        channel = realtime.channels.get('failed_attach'),
+        originalOnMessage = channel.onMessage.bind(channel),
+        retryCount = 0;
+
+      channel.onMessage = function (message) {
+        // Ignore ATTACHED messages
+        if (message.action === 11) {
+          return;
+        }
+        originalOnMessage(message);
+      };
+
+      channel.attach(function (err) {
+        if (err) {
+          var lastSuspended = performance.now();
+          channel.on(function (stateChange) {
+            if (stateChange.current === 'suspended') {
+              if (retryCount > 4) {
+                closeAndFinish(done, realtime);
+                return;
+              }
+              var elapsedSinceSuspneded = performance.now() - lastSuspended;
+              lastSuspended = performance.now();
+              try {
+                // JS timers don't work precisely and realtimeRequestTimeout can't be 0 so add 5ms to the max timeout length each retry
+                expect(elapsedSinceSuspneded).to.be.below(
+                  channelRetryTimeout + Math.min(retryCount, 3) * 50 + 5 * (retryCount + 1)
+                );
+                expect(elapsedSinceSuspneded).to.be.above(0.8 * (channelRetryTimeout + Math.min(retryCount, 3) * 50));
+                retryCount += 1;
+              } catch (err) {
+                closeAndFinish(done, realtime, err);
+              }
+            }
+          });
+        } else {
+          closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
+        }
+      });
+    });
+
     /* RTN7c
      * Publish a message, then before it receives an ack, disconnect the
      * transport, and let the connection go into some terminal failure state.
