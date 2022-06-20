@@ -65,7 +65,6 @@ class RealtimeChannel extends Channel {
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
   subscriptions: EventEmitter;
-  //filteredSubscriptions: {[key: string]: (m: Message)=>any};
   filteredSubscriptions: Map<MessageListener, Map<MessageFilter, MessageListener[]>>;
   syncChannelSerial?: number | null;
   properties: { attachSerial: number | null | undefined };

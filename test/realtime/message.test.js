@@ -917,6 +917,75 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    it('subscribe_with_filter_object', function (done) {
+      const realtime = helper.AblyRealtime();
+      const channel = realtime.channels.get('subscribe_with_filter_array');
+
+      function send(cb) {
+        channel.publish(
+          [
+            {
+              name: 'correct',
+              extras: {
+                reference: {
+                  type: 'com.ably.test',
+                  id: '0123456789',
+                },
+              },
+            },
+            {
+              name: 'incorrect-noref',
+            },
+            {
+              name: 'incorrect-badtype',
+              extras: {
+                reference: {
+                  type: 'com.ably.incorrect',
+                  id: '0123456789',
+                },
+              },
+            },
+            {
+              name: 'incorrect-badid',
+              extras: {
+                reference: {
+                  type: 'com.ably.test',
+                  id: '000000000000',
+                },
+              },
+            },
+          ],
+          cb
+        );
+      }
+
+      function subscribe(cb) {
+        channel.subscribe(
+          {
+            refType: 'com.ably.test',
+            refId: '0123456789',
+          },
+          (m) => {
+            try {
+              expect(m.name).to.be.equal('correct', 'Correct message received');
+            } catch (e) {
+              return cb(e);
+            }
+            config.nextTick(cb);
+          }
+        );
+      }
+
+      async.series(
+        [
+          (cb) => realtime.connection.once('connected', () => cb()),
+          (cb) => channel.attach(cb),
+          (cb) => async.parallel([subscribe, send], cb),
+        ],
+        (err) => closeAndFinish(done, realtime, err)
+      );
+    });
+
     it('extras_field', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('extras_field'),
