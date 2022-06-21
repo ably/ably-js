@@ -919,7 +919,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('subscribe_with_filter_object', function (done) {
       const realtime = helper.AblyRealtime();
-      const channel = realtime.channels.get('subscribe_with_filter_array');
+      const channel = realtime.channels.get('subscribe_with_filter_object');
 
       function send(cb) {
         channel.publish(
