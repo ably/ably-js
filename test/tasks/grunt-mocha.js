@@ -10,6 +10,7 @@ module.exports = function (grunt) {
     debug = grunt.option('debug'),
     inspector = grunt.option('inspector'),
     fgrep = grunt.option('fgrep'),
+    junit = grunt.option('junit'),
     helpers = ['test/support/modules_helper.js', 'test/support/test_helper.js', 'test/support/root_hooks.js'];
 
   function getRelativePath(files) {
@@ -43,6 +44,12 @@ module.exports = function (grunt) {
 
       if (fgrep) {
         runTests += ' --fgrep ' + fgrep;
+      }
+
+      if (junit) {
+        runTests += ` --reporter mocha-junit-reporter --reporter-options mochaFile=./junit/node-${
+          process.version.split('.')[0]
+        }.junit`;
       }
 
       var done = this.async(),
