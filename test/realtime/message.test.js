@@ -971,6 +971,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             } catch (e) {
               return cb(e);
             }
+            // Wait for any errant messages to arrive before continuing
             config.nextTick(cb);
           }
         );
@@ -981,6 +982,51 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           (cb) => realtime.connection.once('connected', () => cb()),
           (cb) => channel.attach(cb),
           (cb) => async.parallel([subscribe, send], cb),
+        ],
+        (err) => closeAndFinish(done, realtime, err)
+      );
+    });
+
+    it('unsubscribe_with_filter_object', function (done) {
+      const realtime = helper.AblyRealtime();
+      const channel = realtime.channels.get('unsubscribe_with_filter_object');
+
+      function send(cb) {
+        channel.publish(
+          [
+            {
+              name: 'incorrect',
+              extras: {
+                reference: {
+                  type: 'com.ably.test',
+                  id: '0123456789',
+                },
+              },
+            },
+          ],
+          cb
+        );
+      }
+
+      function unsubscribe(cb) {
+        try {
+          const listener = () => expect.fail('Listener should not fire');
+          channel.subscribe({refType: 'com.ably.test', refId: '0123456789'}, listener);
+          expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
+          channel.unsubscribe(listener);
+          expect(channel.filteredSubscriptions.has(listener), 'Listener should no longer be present after unsubscribing').to.be.false;
+          config.nextTick(cb);
+        }catch(e){
+          cb(e);
+        }
+      }
+
+      async.series(
+        [
+          (cb) => realtime.connection.once('connected', () => cb()),
+          (cb) => channel.attach(cb),
+          unsubscribe,
+          send,
         ],
         (err) => closeAndFinish(done, realtime, err)
       );
