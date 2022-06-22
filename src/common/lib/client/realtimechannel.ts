@@ -56,7 +56,10 @@ class RealtimeChannel extends Channel {
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
   subscriptions: EventEmitter;
-  filteredSubscriptions: Map<API.Types.messageCallback<Message>, Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>>;
+  filteredSubscriptions: Map<
+    API.Types.messageCallback<Message>,
+    Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+  >;
   syncChannelSerial?: number | null;
   properties: { attachSerial: number | null | undefined };
   errorReason: ErrorInfo | string | null;
@@ -84,7 +87,10 @@ class RealtimeChannel extends Channel {
     this.connectionManager = realtime.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
-    this.filteredSubscriptions = new Map<API.Types.messageCallback<Message>, Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>>();
+    this.filteredSubscriptions = new Map<
+      API.Types.messageCallback<Message>,
+      Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+    >();
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
@@ -465,9 +471,16 @@ class RealtimeChannel extends Channel {
   }
 
   // Adds a new filtered subscription
-  _addFilteredSubscription(filter: API.Types.MessageFilter, realListener: API.Types.messageCallback<Message>, filteredListener: API.Types.messageCallback<Message>) {
+  _addFilteredSubscription(
+    filter: API.Types.MessageFilter,
+    realListener: API.Types.messageCallback<Message>,
+    filteredListener: API.Types.messageCallback<Message>
+  ) {
     if (this.filteredSubscriptions.has(realListener)) {
-      const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>;
+      const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
+        API.Types.MessageFilter,
+        API.Types.messageCallback<Message>[]
+      >;
       // Add the filtered listener to the map, or append to the array if this filter has already been used
       realListenerMap.set(filter, realListenerMap?.get(filter)?.concat(filteredListener) || [filteredListener]);
     } else {
@@ -486,24 +499,30 @@ class RealtimeChannel extends Channel {
     if (!realListener && filter) {
       // Return each listener which is attached to the specified filter object
       return Array.from(this.filteredSubscriptions.entries())
-        .map(([key,filterMaps]) => {
+        .map(([key, filterMaps]) => {
           // Get (then delete) the maps matching this filter
           let listenerMaps = filterMaps.get(filter);
           filterMaps.delete(filter);
           // Clear the parent if nothing is left
-          if(filterMaps.size === 0) {
+          if (filterMaps.size === 0) {
             this.filteredSubscriptions.delete(key);
           }
           return listenerMaps;
         })
-        .reduce((prev, cur) => (cur ? (prev as API.Types.messageCallback<Message>[]).concat(...cur) : prev), []) as API.Types.messageCallback<Message>[];
+        .reduce(
+          (prev, cur) => (cur ? (prev as API.Types.messageCallback<Message>[]).concat(...cur) : prev),
+          []
+        ) as API.Types.messageCallback<Message>[];
     }
 
     // No subscriptions for this listener
     if (!realListener || !this.filteredSubscriptions.has(realListener)) {
       return [];
     }
-    const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>;
+    const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
+      API.Types.MessageFilter,
+      API.Types.messageCallback<Message>[]
+    >;
     // If no filter is specified return all listeners using that function
     if (!filter) {
       // array.flat is not available unless we support es2019 or higher

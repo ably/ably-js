@@ -1011,23 +1011,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       function unsubscribe(cb) {
         try {
           const listener = () => expect.fail('Listener should not fire');
-          channel.subscribe({refType: 'com.ably.test', refId: '0123456789'}, listener);
+          channel.subscribe({ refType: 'com.ably.test', refId: '0123456789' }, listener);
           expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
           channel.unsubscribe(listener);
-          expect(channel.filteredSubscriptions.has(listener), 'Listener should no longer be present after unsubscribing').to.be.false;
+          expect(
+            channel.filteredSubscriptions.has(listener),
+            'Listener should no longer be present after unsubscribing'
+          ).to.be.false;
           config.nextTick(cb);
-        }catch(e){
+        } catch (e) {
           cb(e);
         }
       }
 
       async.series(
-        [
-          (cb) => realtime.connection.once('connected', () => cb()),
-          (cb) => channel.attach(cb),
-          unsubscribe,
-          send,
-        ],
+        [(cb) => realtime.connection.once('connected', () => cb()), (cb) => channel.attach(cb), unsubscribe, send],
         (err) => closeAndFinish(done, realtime, err)
       );
     });
