@@ -702,7 +702,7 @@ declare namespace Types {
 
   type MessageFilter = {
     name?: string;
-    refId?: string;
+    refTimeserial?: string;
     refType?: string;
     hasRef?: boolean;
   };
