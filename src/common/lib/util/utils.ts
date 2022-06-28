@@ -519,3 +519,11 @@ export function allToUpperCase(arr: Array<string>): Array<string> {
     return element && element.toUpperCase();
   });
 }
+
+export function getBackoffCoefficient(n: number) {
+  return Math.min((n + 2) / 3, 2);
+}
+
+export function getJitterCoefficient() {
+  return 1 - Math.random() * 0.2;
+}

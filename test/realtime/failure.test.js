@@ -185,6 +185,36 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    utils.arrForEach(availableTransports, function (transport) {
+      it('disconnected_backoff_' + transport, function (done) {
+        var disconnectedRetryTimeout = 150;
+        var realtime = helper.AblyRealtime({
+          disconnectedRetryTimeout: disconnectedRetryTimeout,
+          realtimeHost: 'invalid',
+          restHost: 'invalid',
+          transports: [transport],
+        });
+
+        var retryCount = 0;
+
+        realtime.connection.on(function (stateChange) {
+          if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
+            if (retryCount > 4) {
+              closeAndFinish(done, realtime);
+              return;
+            }
+            try {
+              expect(stateChange.retryIn).to.be.below(disconnectedRetryTimeout + Math.min(retryCount, 3) * 50);
+              expect(stateChange.retryIn).to.be.above(0.8 * (disconnectedRetryTimeout + Math.min(retryCount, 3) * 50));
+              retryCount += 1;
+            } catch (err) {
+              closeAndFinish(done, realtime, err);
+            }
+          }
+        });
+      });
+    });
+
     /*
      * Check operations on a failed channel give the right errors
      */
@@ -324,6 +354,58 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               closeAndFinish(done, realtime, err);
             }
           });
+        });
+      });
+    });
+
+    utils.arrForEach(availableTransports, function (transport) {
+      it('channel_backoff_' + transport, function (done) {
+        var channelRetryTimeout = 150;
+        var realtime = helper.AblyRealtime({
+            channelRetryTimeout: channelRetryTimeout,
+            realtimeRequestTimeout: 1,
+            transports: [transport],
+          }),
+          channel = realtime.channels.get('failed_attach'),
+          originalOnMessage = channel.onMessage.bind(channel),
+          retryCount = 0;
+
+        var performance = isBrowser ? window.performance : require('perf_hooks').performance;
+
+        channel.onMessage = function (message) {
+          // Ignore ATTACHED messages
+          if (message.action === 11) {
+            return;
+          }
+          originalOnMessage(message);
+        };
+
+        channel.attach(function (err) {
+          if (err) {
+            var lastSuspended = performance.now();
+            channel.on(function (stateChange) {
+              if (stateChange.current === 'suspended') {
+                if (retryCount > 4) {
+                  closeAndFinish(done, realtime);
+                  return;
+                }
+                var elapsedSinceSuspneded = performance.now() - lastSuspended;
+                lastSuspended = performance.now();
+                try {
+                  // JS timers don't work precisely and realtimeRequestTimeout can't be 0 so add 5ms to the max timeout length each retry
+                  expect(elapsedSinceSuspneded).to.be.below(
+                    channelRetryTimeout + Math.min(retryCount, 3) * 50 + 5 * (retryCount + 1)
+                  );
+                  expect(elapsedSinceSuspneded).to.be.above(0.8 * (channelRetryTimeout + Math.min(retryCount, 3) * 50));
+                  retryCount += 1;
+                } catch (err) {
+                  closeAndFinish(done, realtime, err);
+                }
+              }
+            });
+          } else {
+            closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
+          }
         });
       });
     });
