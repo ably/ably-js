@@ -3,5 +3,6 @@
   "out": "./docs/generated",
   "entryPoints": ["./ably.d.ts"],
   "treatWarningsAsErrors": true,
-  "includeVersion": true
+  "includeVersion": true,
+  "validation": true
 }
