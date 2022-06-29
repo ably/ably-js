@@ -19,5 +19,6 @@
     "TypeAlias",
     "Variable",
     "Namespace"
-  ]
+  ],
+  "readme": "./docs/landing.md"
 }
