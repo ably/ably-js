@@ -74,6 +74,7 @@ class RealtimeChannel extends Channel {
   modes: string[] | undefined;
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
+  retryCount: number = 0;
 
   constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
     super(realtime, name, options);
@@ -699,6 +700,10 @@ class RealtimeChannel extends Channel {
       state + (reason ? '; reason: ' + reason : '')
     );
 
+    if (state !== 'attaching' && state !== 'suspended') {
+      this.retryCount = 0;
+    }
+
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
     if (state === 'attached') {
       this.onAttached();
@@ -804,6 +809,12 @@ class RealtimeChannel extends Channel {
   startRetryTimer(): void {
     if (this.retryTimer) return;
 
+    this.retryCount++;
+    const retryDelay =
+      this.realtime.options.timeouts.channelRetryTimeout *
+      Utils.getJitterCoefficient() *
+      Utils.getBackoffCoefficient(this.retryCount);
+
     this.retryTimer = setTimeout(() => {
       /* If connection is not connected, just leave in suspended, a reattach
        * will be triggered once it connects again */
@@ -812,7 +823,7 @@ class RealtimeChannel extends Channel {
         Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel retry timer expired', 'attempting a new attach');
         this.requestState('attaching');
       }
-    }, this.realtime.options.timeouts.channelRetryTimeout);
+    }, retryDelay);
   }
 
   cancelRetryTimer(): void {

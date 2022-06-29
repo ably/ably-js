@@ -15,6 +15,8 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import ConnectionManager from '../../common/lib/transport/connectionmanager';
 import PlatformDefaults from './lib/util/defaults';
+import Message from 'common/lib/types/message';
+import PresenceMessage from 'common/lib/types/presencemessage';
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -22,6 +24,15 @@ Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
+
+Rest.Crypto = Crypto;
+Realtime.Crypto = Crypto;
+
+Rest.Message = Message;
+Realtime.Message = Message;
+
+Rest.PresenceMessage = PresenceMessage;
+Realtime.PresenceMessage = PresenceMessage;
 
 Realtime.ConnectionManager = ConnectionManager;
 

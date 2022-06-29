@@ -1,7 +1,7 @@
 import * as Utils from '../../../../common/lib/util/utils';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from '../../platform';
+import Platform from '../../../../common/platform';
 import XHRRequest from './xhrrequest';
 
 var XHRStreamingTransport = function (connectionManager) {
@@ -15,7 +15,7 @@ var XHRStreamingTransport = function (connectionManager) {
   Utils.inherits(XHRStreamingTransport, CometTransport);
 
   XHRStreamingTransport.isAvailable = function () {
-    return Platform.xhrSupported && Platform.streamingSupported && Platform.allowComet;
+    return Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet;
   };
 
   XHRStreamingTransport.tryConnect = function (connectionManager, auth, params, callback) {

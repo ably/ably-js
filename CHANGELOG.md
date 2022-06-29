@@ -2,6 +2,19 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.25](https://github.com/ably/ably-js/tree/1.2.25) (2022-06-10)
+- Fix a bug in 1.2.23 where Message and PresenceMessage were removed from the public API [\#1004](https://github.com/ably/ably-js/pull/1004)
+
+## [1.2.24](https://github.com/ably/ably-js/tree/1.2.24) (2022-06-09)
+- Revert a bug in 1.2.23 where the Crypto interface was removed from the public API
+- Revert change to package.json typings field
+- Remove sourcemap links from CDN uploads
+
+## [1.2.23](https://github.com/ably/ably-js/tree/1.2.23) (2022-06-09)
+- Add `Channel.status` method to get channel lifecycle status [\#985](https://github.com/ably/ably-js/pull/985)
+- Fix bug in compatibility with Salesforce Lightning Components [\#993](https://github.com/ably/ably-js/pull/993)
+- Revert uploading sourcemaps to the CDN [\#998](https://github.com/ably/ably-js/pull/998)
+
 ## [1.2.22](https://github.com/ably/ably-js/tree/1.2.22) (2022-05-18)
 - Fix bug in RealtimeChannel.subscribe promisify when second argument is
   undefined [\#984](https://github.com/ably/ably-js/issue/984)

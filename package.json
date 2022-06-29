@@ -1,14 +1,14 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably, the realtime messaging service",
-  "version": "1.2.22",
+  "version": "1.2.25",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
   "main": "./build/ably-node.js",
-  "typings": "./build/ably.d.ts",
+  "typings": "./ably.d.ts",
   "react-native": {
     "./build/ably-node.js": "./build/ably-reactnative.js"
   },
