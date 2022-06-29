@@ -927,9 +927,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             {
               name: 'correct',
               extras: {
-                reference: {
+                ref: {
                   type: 'com.ably.test',
-                  id: '0123456789',
+                  timeserial: '0123456789',
                 },
               },
             },
@@ -939,18 +939,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             {
               name: 'incorrect-badtype',
               extras: {
-                reference: {
+                ref: {
                   type: 'com.ably.incorrect',
-                  id: '0123456789',
+                  timeserial: '0123456789',
                 },
               },
             },
             {
               name: 'incorrect-badid',
               extras: {
-                reference: {
+                ref: {
                   type: 'com.ably.test',
-                  id: '000000000000',
+                  timeserial: '000000000000',
                 },
               },
             },
@@ -963,7 +963,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel.subscribe(
           {
             refType: 'com.ably.test',
-            refId: '0123456789',
+            refTimeserial: '0123456789',
           },
           (m) => {
             try {
@@ -997,7 +997,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             {
               name: 'incorrect',
               extras: {
-                reference: {
+                ref: {
                   type: 'com.ably.test',
                   id: '0123456789',
                 },
@@ -1011,7 +1011,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       function unsubscribe(cb) {
         try {
           const listener = () => expect.fail('Listener should not fire');
-          channel.subscribe({ refType: 'com.ably.test', refId: '0123456789' }, listener);
+          channel.subscribe({ refType: 'com.ably.test', refTimeserial: '0123456789' }, listener);
           expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
           channel.unsubscribe(listener);
           expect(
