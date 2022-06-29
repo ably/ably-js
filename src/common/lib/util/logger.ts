@@ -1,5 +1,4 @@
 import Platform from 'common/platform';
-import * as Utils from 'common/lib/util/utils';
 
 export type LoggerOptions = {
   handler: LoggerFunction;
@@ -8,7 +7,8 @@ export type LoggerOptions = {
 type LoggerFunction = (...args: string[]) => void;
 
 // Workaround for salesforce lightning locker compatibility
-let globalObject = Utils.getGlobalObject();
+// This is a shorthand version of Utils.getGlobalObject (which we can't use here without creating a circular import)
+let globalObject = global || (typeof window !== 'undefined' ? window : self);
 
 enum LogLevels {
   None = 0,
