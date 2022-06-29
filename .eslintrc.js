@@ -51,6 +51,7 @@ module.exports = {
     "test",
     "tools",
     "scripts",
+    "docs",
     "Gruntfile.js",
   ],
 }

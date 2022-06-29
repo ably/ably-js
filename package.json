@@ -103,6 +103,7 @@
     "format": "prettier --write --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "format:check": "prettier --check --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "sourcemap": "source-map-explorer build/ably.min.js",
-    "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js"
+    "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js",
+    "docs": "typedoc"
   }
 }

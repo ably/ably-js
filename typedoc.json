@@ -1,0 +1,7 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "out": "./docs/generated",
+  "entryPoints": ["./ably.d.ts"],
+  "treatWarningsAsErrors": true,
+  "includeVersion": true
+}
