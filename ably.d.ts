@@ -4,15 +4,42 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 declare namespace Types {
+  /**
+   * Not yet documented.
+   */
   namespace ChannelState {
+    /**
+     * Not yet documented.
+     */
     type INITIALIZED = 'initialized';
+    /**
+     * Not yet documented.
+     */
     type ATTACHING = 'attaching';
+    /**
+     * Not yet documented.
+     */
     type ATTACHED = 'attached';
+    /**
+     * Not yet documented.
+     */
     type DETACHING = 'detaching';
+    /**
+     * Not yet documented.
+     */
     type DETACHED = 'detached';
+    /**
+     * Not yet documented.
+     */
     type SUSPENDED = 'suspended';
+    /**
+     * Not yet documented.
+     */
     type FAILED = 'failed';
   }
+  /**
+   * Not yet documented.
+   */
   type ChannelState =
     | ChannelState.FAILED
     | ChannelState.INITIALIZED
@@ -22,16 +49,46 @@ declare namespace Types {
     | ChannelState.DETACHED
     | ChannelState.DETACHING;
 
+  /**
+   * Not yet documented.
+   */
   namespace ChannelEvent {
+    /**
+     * Not yet documented.
+     */
     type INITIALIZED = 'initialized';
+    /**
+     * Not yet documented.
+     */
     type ATTACHING = 'attaching';
+    /**
+     * Not yet documented.
+     */
     type ATTACHED = 'attached';
+    /**
+     * Not yet documented.
+     */
     type DETACHING = 'detaching';
+    /**
+     * Not yet documented.
+     */
     type DETACHED = 'detached';
+    /**
+     * Not yet documented.
+     */
     type SUSPENDED = 'suspended';
+    /**
+     * Not yet documented.
+     */
     type FAILED = 'failed';
+    /**
+     * Not yet documented.
+     */
     type UPDATE = 'update';
   }
+  /**
+   * Not yet documented.
+   */
   type ChannelEvent =
     | ChannelEvent.FAILED
     | ChannelEvent.INITIALIZED
@@ -42,16 +99,46 @@ declare namespace Types {
     | ChannelEvent.DETACHING
     | ChannelEvent.UPDATE;
 
+  /**
+   * Not yet documented.
+   */
   namespace ConnectionState {
+    /**
+     * Not yet documented.
+     */
     type INITIALIZED = 'initialized';
+    /**
+     * Not yet documented.
+     */
     type CONNECTING = 'connecting';
+    /**
+     * Not yet documented.
+     */
     type CONNECTED = 'connected';
+    /**
+     * Not yet documented.
+     */
     type DISCONNECTED = 'disconnected';
+    /**
+     * Not yet documented.
+     */
     type SUSPENDED = 'suspended';
+    /**
+     * Not yet documented.
+     */
     type CLOSING = 'closing';
+    /**
+     * Not yet documented.
+     */
     type CLOSED = 'closed';
+    /**
+     * Not yet documented.
+     */
     type FAILED = 'failed';
   }
+  /**
+   * Not yet documented.
+   */
   type ConnectionState =
     | ConnectionState.INITIALIZED
     | ConnectionState.CONNECTED
@@ -62,17 +149,50 @@ declare namespace Types {
     | ConnectionState.CLOSING
     | ConnectionState.FAILED;
 
+  /**
+   * Not yet documented.
+   */
   namespace ConnectionEvent {
+    /**
+     * Not yet documented.
+     */
     type INITIALIZED = 'initialized';
+    /**
+     * Not yet documented.
+     */
     type CONNECTING = 'connecting';
+    /**
+     * Not yet documented.
+     */
     type CONNECTED = 'connected';
+    /**
+     * Not yet documented.
+     */
     type DISCONNECTED = 'disconnected';
+    /**
+     * Not yet documented.
+     */
     type SUSPENDED = 'suspended';
+    /**
+     * Not yet documented.
+     */
     type CLOSING = 'closing';
+    /**
+     * Not yet documented.
+     */
     type CLOSED = 'closed';
+    /**
+     * Not yet documented.
+     */
     type FAILED = 'failed';
+    /**
+     * Not yet documented.
+     */
     type UPDATE = 'update';
   }
+  /**
+   * Not yet documented.
+   */
   type ConnectionEvent =
     | ConnectionEvent.INITIALIZED
     | ConnectionEvent.CONNECTED
@@ -84,13 +204,34 @@ declare namespace Types {
     | ConnectionEvent.FAILED
     | ConnectionEvent.UPDATE;
 
+  /**
+   * Not yet documented.
+   */
   namespace PresenceAction {
+    /**
+     * Not yet documented.
+     */
     type ABSENT = 'absent';
+    /**
+     * Not yet documented.
+     */
     type PRESENT = 'present';
+    /**
+     * Not yet documented.
+     */
     type ENTER = 'enter';
+    /**
+     * Not yet documented.
+     */
     type LEAVE = 'leave';
+    /**
+     * Not yet documented.
+     */
     type UPDATE = 'update';
   }
+  /**
+   * Not yet documented.
+   */
   type PresenceAction =
     | PresenceAction.ABSENT
     | PresenceAction.PRESENT
@@ -98,46 +239,124 @@ declare namespace Types {
     | PresenceAction.LEAVE
     | PresenceAction.UPDATE;
 
+  /**
+   * Not yet documented.
+   */
   namespace StatsIntervalGranularity {
+    /**
+     * Not yet documented.
+     */
     type MINUTE = 'minute';
+    /**
+     * Not yet documented.
+     */
     type HOUR = 'hour';
+    /**
+     * Not yet documented.
+     */
     type DAY = 'day';
+    /**
+     * Not yet documented.
+     */
     type MONTH = 'month';
   }
+  /**
+   * Not yet documented.
+   */
   type StatsIntervalGranularity =
     | StatsIntervalGranularity.MINUTE
     | StatsIntervalGranularity.HOUR
     | StatsIntervalGranularity.DAY
     | StatsIntervalGranularity.MONTH;
 
+  /**
+   * Not yet documented.
+   */
   namespace HTTPMethods {
+    /**
+     * Not yet documented.
+     */
     type POST = 'POST';
+    /**
+     * Not yet documented.
+     */
     type GET = 'GET';
   }
+  /**
+   * Not yet documented.
+   */
   type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
+  /**
+   * Not yet documented.
+   */
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
+  /**
+   * Not yet documented.
+   */
   interface ChannelDetails {
+    /**
+     * Not yet documented.
+     */
     channelId: string;
+    /**
+     * Not yet documented.
+     */
     status: ChannelStatus;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface ChannelStatus {
+    /**
+     * Not yet documented.
+     */
     isActive: boolean;
+    /**
+     * Not yet documented.
+     */
     occupancy: ChannelOccupancy;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface ChannelOccupancy {
+    /**
+     * Not yet documented.
+     */
     metrics: ChannelMetrics;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface ChannelMetrics {
+    /**
+     * Not yet documented.
+     */
     connections: number;
+    /**
+     * Not yet documented.
+     */
     presenceConnections: number;
+    /**
+     * Not yet documented.
+     */
     presenceMembers: number;
+    /**
+     * Not yet documented.
+     */
     presenceSubscribers: number;
+    /**
+     * Not yet documented.
+     */
     publishers: number;
+    /**
+     * Not yet documented.
+     */
     subscribers: number;
   }
 
@@ -208,7 +427,13 @@ declare namespace Types {
      * See the [NodeJS docs](https://nodejs.org/api/http.html#new-agentoptions) for descriptions of these options.
      */
     restAgentOptions?: {
+      /**
+       * Not yet documented.
+       */
       maxSockets?: number;
+      /**
+       * Not yet documented.
+       */
       keepAlive?: boolean;
     };
 
@@ -283,17 +508,34 @@ declare namespace Types {
      */
     httpRequestTimeout?: number;
 
+    /**
+     * Not yet documented.
+     */
     realtimeRequestTimeout?: number;
 
-    plugins?: { vcdiff?: any };
+    /**
+     * Not yet documented.
+     */
+    plugins?: {
+      /**
+       * Not yet documented.
+       */
+      vcdiff?: any;
+    };
   }
 
+  /**
+   * Not yet documented.
+   */
   interface AuthOptions {
     /**
      * A function which is called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed `TokenRequest` ; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/documentation/core-features/authentication#ably-jwt). See [an authentication callback example](https://jsbin.ably.com/azazav/1/edit?javascript,live) or [our authentication documentation](https://ably.com/documentation/rest/authentication) for details of the Ably TokenRequest format and associated API calls.
      */
     authCallback?(
       data: TokenParams,
+      /**
+       * Not yet documented.
+       */
       callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
     ): void;
 
@@ -353,6 +595,9 @@ declare namespace Types {
     clientId?: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   type capabilityOp =
     | 'publish'
     | 'subscribe'
@@ -362,6 +607,9 @@ declare namespace Types {
     | 'channel-metadata'
     | 'push-subscribe'
     | 'push-admin';
+  /**
+   * Not yet documented.
+   */
   type CapabilityOp = capabilityOp;
 
   /**
@@ -606,9 +854,18 @@ declare namespace Types {
     ttl?: number;
   }
 
+  /**
+   * Not yet documented.
+   */
   type ChannelParams = { [key: string]: string };
 
+  /**
+   * Not yet documented.
+   */
   type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE' | 'ATTACH_RESUME';
+  /**
+   * Not yet documented.
+   */
   type ChannelModes = Array<ChannelMode>;
 
   /**
@@ -623,9 +880,15 @@ declare namespace Types {
      * Optional [parameters](https://ably.com/documentation/realtime/channels/channel-parameters/overview) which specify behaviour of the channel.
      */
     params?: ChannelParams;
+    /**
+     * Not yet documented.
+     */
     modes?: ChannelModes;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface RestHistoryParams {
     /**
      * Earliest time in milliseconds since the epoch for any messages retrieved.
@@ -645,6 +908,9 @@ declare namespace Types {
     limit?: number;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface RestPresenceParams {
     /**
      * Maximum number of presence members to retrieve.
@@ -660,6 +926,9 @@ declare namespace Types {
     connectionId?: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface RealtimePresenceParams {
     /**
      * When true (default) waits for the initial presence synchronization following channel attachment to complete before returning the members present. When false, the current list of members is returned without waiting for a complete synchronization.
@@ -675,6 +944,9 @@ declare namespace Types {
     connectionId?: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface RealtimeHistoryParams {
     /**
      * Earliest time in milliseconds since the epoch for any messages retrieved.
@@ -698,6 +970,9 @@ declare namespace Types {
     untilAttach?: boolean;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface LogInfo {
     /**
      * A number controlling the verbosity of the output. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
@@ -710,6 +985,9 @@ declare namespace Types {
     handler?: (msg: string) => void;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface ChannelStateChange {
     /**
      * The new current state.
@@ -729,6 +1007,9 @@ declare namespace Types {
     resumed: boolean;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface ConnectionStateChange {
     /**
      * The new state.
@@ -776,6 +1057,9 @@ declare namespace Types {
      * Secret value for the device.
      */
     deviceSecret?: string;
+    /**
+     * Not yet documented.
+     */
     push: DevicePushDetails;
   }
 
@@ -797,8 +1081,14 @@ declare namespace Types {
     clientId?: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
+  /**
+   * Not yet documented.
+   */
   interface DevicePushDetails {
     /**
      * Push recipient details for this device. See the [REST API push publish documentation](https://ably.com/documentation/rest-api#message-extras-push) for more details.
@@ -814,6 +1104,9 @@ declare namespace Types {
     error?: ErrorInfo;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface DeviceRegistrationParams {
     /**
      * Filter to restrict to devices associated with the given client identifier
@@ -827,9 +1120,15 @@ declare namespace Types {
      * Maximum number of devices per page to retrieve, up to 1,000. Defaults to 100.
      */
     limit?: number;
+    /**
+     * Not yet documented.
+     */
     state?: DevicePushState;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface PushChannelSubscriptionParams {
     /**
      * Filter to restrict to subscriptions associated with the given channel.
@@ -849,6 +1148,9 @@ declare namespace Types {
     limit?: number;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface PushChannelsParams {
     /**
      * Maximum number of channels per page to retrieve, up to 1,000. Defaults to 100.
@@ -857,16 +1159,49 @@ declare namespace Types {
   }
 
   // Common Listeners
+  /**
+   * Not yet documented.
+   */
   type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
+  /**
+   * Not yet documented.
+   */
   type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
+  /**
+   * Not yet documented.
+   */
   type messageCallback<T> = (message: T) => void;
+  /**
+   * Not yet documented.
+   */
   type errorCallback = (error?: ErrorInfo | null) => void;
+  /**
+   * Not yet documented.
+   */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
+  /**
+   * Not yet documented.
+   */
   type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
+  /**
+   * Not yet documented.
+   */
   type timeCallback = StandardCallback<number>;
+  /**
+   * Not yet documented.
+   */
   type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
+  /**
+   * Not yet documented.
+   */
   type tokenDetailsCallback = StandardCallback<TokenDetails>;
+  /**
+   * Not yet documented.
+   */
   type tokenRequestCallback = StandardCallback<TokenRequest>;
+  /**
+   * Not yet documented.
+   */
   type recoverConnectionCallback = (
     lastConnectionDetails: {
       /**
@@ -886,9 +1221,18 @@ declare namespace Types {
        */
       clientId: string | null;
     },
+    /**
+     * Not yet documented.
+     */
     callback: (shouldRecover: boolean) => void
   ) => void;
+  /**
+   * Not yet documented.
+   */
   type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
+  /**
+   * Not yet documented.
+   */
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
   // Internal Classes
@@ -897,18 +1241,48 @@ declare namespace Types {
   // promisified version of the lib, but still allow once to be used in a way
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
+  /**
+   * Not yet documented.
+   */
   class EventEmitter<CallbackType, ResultType, EventType> {
+    /**
+     * Not yet documented.
+     */
     on(event: EventType | EventType[], callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     on(callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     once(event: EventType, callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     once(callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     once(event?: EventType): Promise<ResultType>;
+    /**
+     * Not yet documented.
+     */
     off(event: EventType, callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     off(callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     */
     listeners(eventName?: EventType): CallbackType[] | null;
   }
 
   // Classes
+  /**
+   * Not yet documented.
+   */
   class RestBase {
     /**
      * Creates an Ably client instance
@@ -922,16 +1296,31 @@ declare namespace Types {
      * @param key An Ably API Key
      */
     constructor(key: string);
+    /**
+     * Not yet documented.
+     */
     static Crypto: Types.Crypto;
+    /**
+     * Not yet documented.
+     */
     static Message: Types.MessageStatic;
+    /**
+     * Not yet documented.
+     */
     static PresenceMessage: Types.PresenceMessageStatic;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RestCallbacks extends RestBase {
     /**
      * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
      */
     static Promise: typeof Types.RestPromise;
+    /**
+     * Not yet documented.
+     */
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * A reference to the Auth authentication object.
@@ -970,11 +1359,17 @@ declare namespace Types {
     push: Types.PushCallbacks;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RestPromise extends RestBase {
     /**
      * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
      */
     static Promise: typeof Types.RestPromise;
+    /**
+     * Not yet documented.
+     */
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * A reference to the Auth authentication object.
@@ -1008,14 +1403,35 @@ declare namespace Types {
     push: Types.PushPromise;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimeBase extends RestBase {
+    /**
+     * Not yet documented.
+     */
     static Promise: typeof Types.RealtimePromise;
+    /**
+     * Not yet documented.
+     */
     static Callbacks: typeof Types.RealtimeCallbacks;
+    /**
+     * Not yet documented.
+     */
     clientId: string;
+    /**
+     * Not yet documented.
+     */
     close(): void;
+    /**
+     * Not yet documented.
+     */
     connect(): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimeCallbacks extends RealtimeBase {
     /**
      * A reference to the Auth authentication object.
@@ -1058,6 +1474,9 @@ declare namespace Types {
     push: Types.PushCallbacks;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimePromise extends RealtimeBase {
     /**
      * A reference to the Auth authentication object.
@@ -1095,6 +1514,9 @@ declare namespace Types {
     push: Types.PushPromise;
   }
 
+  /**
+   * Not yet documented.
+   */
   class AuthBase {
     /**
      * The client ID string, if any, configured for this client connection. See [identified clients](https://ably.com/documentation/realtime/authentication#identified-clients) for more information on trusted client identifiers.
@@ -1102,6 +1524,9 @@ declare namespace Types {
     clientId: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   class AuthCallbacks extends AuthBase {
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
@@ -1173,6 +1598,9 @@ declare namespace Types {
     requestToken(callback?: tokenDetailsCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class AuthPromise extends AuthBase {
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
@@ -1198,6 +1626,9 @@ declare namespace Types {
     requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PresenceCallbacks {
     /**
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
@@ -1217,6 +1648,9 @@ declare namespace Types {
     history(callback: paginatedResultCallback<PresenceMessage>): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PresencePromise {
     /**
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
@@ -1228,7 +1662,13 @@ declare namespace Types {
     history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimePresenceBase {
+    /**
+     * Not yet documented.
+     */
     syncComplete: boolean;
     /**
      * Unsubscribe the given listener from presence message events on this channel for the given PresenceAction. This removes an earlier event-specific subscription.
@@ -1244,6 +1684,9 @@ declare namespace Types {
     unsubscribe(): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     /**
      * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
@@ -1331,6 +1774,9 @@ declare namespace Types {
     leaveClient(clientId: string, callback?: errorCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimePresencePromise extends RealtimePresenceBase {
     /**
      * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
@@ -1381,6 +1827,9 @@ declare namespace Types {
     leaveClient(clientId: string, data?: any): Promise<void>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ChannelBase {
     /**
      * The name String unique to this channel.
@@ -1388,6 +1837,9 @@ declare namespace Types {
     name: string;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ChannelCallbacks extends ChannelBase {
     /**
      * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
@@ -1413,9 +1865,15 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      */
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    /**
+     * Not yet documented.
+     */
     status(callback: StandardCallback<ChannelDetails>): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ChannelPromise extends ChannelBase {
     /**
      * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
@@ -1433,14 +1891,35 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload.
      */
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    /**
+     * Not yet documented.
+     */
     status(): Promise<ChannelDetails>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
+    /**
+     * Not yet documented.
+     */
     readonly name: string;
+    /**
+     * Not yet documented.
+     */
     errorReason: ErrorInfo;
+    /**
+     * Not yet documented.
+     */
     readonly state: ChannelState;
+    /**
+     * Not yet documented.
+     */
     params: ChannelParams;
+    /**
+     * Not yet documented.
+     */
     modes: ChannelModes;
     /**
      * Unsubscribe the given listener for the specified event name. This removes an earlier event-specific subscription.
@@ -1452,10 +1931,19 @@ declare namespace Types {
     unsubscribe(listener?: messageCallback<Message>): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   type PublishOptions = {
+    /**
+     * Not yet documented.
+     */
     quickAck?: boolean;
   };
 
+  /**
+   * Not yet documented.
+   */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
      * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
@@ -1481,6 +1969,9 @@ declare namespace Types {
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
      */
     history(callback?: paginatedResultCallback<Message>): void;
+    /**
+     * Not yet documented.
+     */
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
@@ -1506,9 +1997,15 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      */
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    /**
+     * Not yet documented.
+     */
     whenState(targetState: ChannelState, callback: channelEventCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
      * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
@@ -1530,6 +2027,9 @@ declare namespace Types {
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
+    /**
+     * Not yet documented.
+     */
     setOptions(options: ChannelOptions): Promise<void>;
     /**
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
@@ -1547,9 +2047,15 @@ declare namespace Types {
      * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      */
     publish(messages: any, options?: PublishOptions): Promise<void>;
+    /**
+     * Not yet documented.
+     */
     whenState(targetState: ChannelState): Promise<ChannelStateChange>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class Channels<T> {
     /**
      * Creates a new Channel object if none for the channel exists, or returns the existing channel object.
@@ -1608,6 +2114,9 @@ declare namespace Types {
     timestamp: number;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface MessageStatic {
     /**
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
@@ -1619,6 +2128,9 @@ declare namespace Types {
     fromEncodedArray: fromEncodedArray<Message>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PresenceMessage {
     constructor();
     /**
@@ -1659,6 +2171,9 @@ declare namespace Types {
     timestamp: number;
   }
 
+  /**
+   * Not yet documented.
+   */
   interface PresenceMessageStatic {
     /**
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
@@ -1670,10 +2185,19 @@ declare namespace Types {
     fromEncodedArray: fromEncodedArray<PresenceMessage>;
   }
 
+  /**
+   * Not yet documented.
+   */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
+  /**
+   * Not yet documented.
+   */
   type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
 
+  /**
+   * Not yet documented.
+   */
   type CipherParamOptions = {
     /**
      * A binary (ArrayBuffer or WordArray) or base64-encoded String containing the secret key used for encryption and decryption.
@@ -1693,6 +2217,9 @@ declare namespace Types {
     mode?: 'cbc';
   };
 
+  /**
+   * Not yet documented.
+   */
   interface Crypto {
     /**
      * This call obtains a CipherParams object using the values passed in (which must be a subset of CipherParams fields that at a minimum includes a key), filling in any unspecified fields with default values, and checks that the result is a valid and self-consistent.
@@ -1706,6 +2233,9 @@ declare namespace Types {
     getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
      * When a connection failure occurs this property contains the ErrorInfo.
@@ -1743,19 +2273,31 @@ declare namespace Types {
     connect(): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ConnectionCallbacks extends ConnectionBase {
     /**
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      */
     ping(callback?: Types.StandardCallback<number>): void;
+    /**
+     * Not yet documented.
+     */
     whenState(targetState: ConnectionState, callback: connectionEventCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class ConnectionPromise extends ConnectionBase {
     /**
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      */
     ping(): Promise<number>;
+    /**
+     * Not yet documented.
+     */
     whenState(targetState: ConnectionState): Promise<ConnectionStateChange>;
   }
 
@@ -1825,7 +2367,13 @@ declare namespace Types {
      * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
      */
     next(): Promise<PaginatedResult<T>>;
+    /**
+     * Not yet documented.
+     */
     current(results: paginatedResultCallback<T>): void;
+    /**
+     * Not yet documented.
+     */
     current(): Promise<PaginatedResult<T>>;
     /**
      * Returns `true` if there are more pages available by calling next and returns `false` if this page is the last page available.
@@ -1837,6 +2385,9 @@ declare namespace Types {
     isLast(): boolean;
   }
 
+  /**
+   * Not yet documented.
+   */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
     /**
      * The HTTP status code of the response.
@@ -1846,7 +2397,13 @@ declare namespace Types {
      * Whether that HTTP status code indicates success (equivalent to 200 <= statusCode < 300).
      */
     success: boolean;
+    /**
+     * Not yet documented.
+     */
     errorCode: number;
+    /**
+     * Not yet documented.
+     */
     errorMessage: string;
     /**
      * The response’s headers.
@@ -1854,14 +2411,29 @@ declare namespace Types {
     headers: any;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushCallbacks {
+    /**
+     * Not yet documented.
+     */
     admin: PushAdminCallbacks;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushPromise {
+    /**
+     * Not yet documented.
+     */
     admin: PushAdminPromise;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushAdminCallbacks {
     /**
      * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
@@ -1877,6 +2449,9 @@ declare namespace Types {
     publish(recipient: any, payload: any, callback?: errorCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushAdminPromise {
     /**
      * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
@@ -1892,6 +2467,9 @@ declare namespace Types {
     publish(recipient: any, payload: any): Promise<void>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushDeviceRegistrationsCallbacks {
     /**
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
@@ -1915,6 +2493,9 @@ declare namespace Types {
     removeWhere(params: DeviceRegistrationParams, callback?: errorCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushDeviceRegistrationsPromise {
     /**
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
@@ -1938,6 +2519,9 @@ declare namespace Types {
     removeWhere(params: DeviceRegistrationParams): Promise<void>;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushChannelSubscriptionsCallbacks {
     /**
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
@@ -1961,6 +2545,9 @@ declare namespace Types {
     removeWhere(params: PushChannelSubscriptionParams, callback?: errorCallback): void;
   }
 
+  /**
+   * Not yet documented.
+   */
   class PushChannelSubscriptionsPromise {
     /**
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
