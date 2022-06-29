@@ -452,9 +452,9 @@ class RealtimeChannel extends Channel {
     const filteredListener = (m: Message) => {
       const mapping: { [key in keyof API.Types.MessageFilter]: any } = {
         name: m.name,
-        refId: m.extras?.reference?.id,
-        refType: m.extras?.reference?.type,
-        hasRef: !!m.extras?.reference?.id,
+        refTimeserial: m.extras?.ref?.timeserial,
+        refType: m.extras?.ref?.type,
+        isRef: !!m.extras?.ref?.timeserial,
       };
       // Check if any values are defined in the filter and if they match the value in the message object
       if (
