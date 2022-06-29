@@ -26,7 +26,7 @@ This SDK supports the following platforms:
 
 **WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
 ```js
-import Ably from 'ably/browser/static/ably-webworker.min';
+import Ably from 'ably/build/ably-webworker.min';
 ```
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
