@@ -215,29 +215,7 @@ declare namespace Types {
     /**
      * This option allows a connection to inherit the state of a previous connection that may have existed under a different instance of the Realtime library. This might typically be used by clients of the browser library to ensure connection state can be preserved when the user refreshes the page. A recovery key string can be explicitly provided, or alternatively if a callback function is provided, the client library will automatically persist the recovery key between page reloads and call the callback when the connection is recoverable. The callback is then responsible for confirming whether the connection should be recovered or not. See [connection state recovery](https://ably.com/documentation/realtime/connection/#connection-state-recovery) for further information.
      */
-    recover?:
-      | string
-      | ((
-          lastConnectionDetails: {
-            /**
-             * The recovery key can be used by another client to recover this connection’s state in the `recover` client options property. See [connection state recover options](https://ably.com/documentation/realtime/connection/#connection-state-recover-options) for more information.
-             */
-            recoveryKey: string;
-            /**
-             * The time at which the previous client was abruptly disconnected before the page was unloaded. This is represented as milliseconds since epoch.
-             */
-            disconnectedAt: number;
-            /**
-             * A clone of the `location` object of the previous page’s document object before the page was unloaded. A common use case for this attribute is to ensure that the previous page URL is the same as the current URL before allowing the connection to be recovered. For example, you may want the connection to be recovered only for page reloads, but not when a user navigates to a different page.
-             */
-            location: string;
-            /**
-             * The `clientId` of the client’s `Auth` object before the page was unloaded. A common use case for this attribute is to ensure that the current logged in user’s `clientId` matches the previous connection’s `clientId` before allowing the connection to be recovered. Ably prohibits changing a `clientId` for an existing connection, so any mismatch in `clientId` during a recover will result in the connection moving to the failed state.
-             */
-            clientId: string | null;
-          },
-          callback: (shouldRecover: boolean) => void
-        ) => void);
+    recover?: string | recoverConnectionCallback;
 
     /**
      * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
@@ -889,6 +867,27 @@ declare namespace Types {
   type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
   type tokenDetailsCallback = StandardCallback<TokenDetails>;
   type tokenRequestCallback = StandardCallback<TokenRequest>;
+  type recoverConnectionCallback = (
+    lastConnectionDetails: {
+      /**
+       * The recovery key can be used by another client to recover this connection’s state in the `recover` client options property. See [connection state recover options](https://ably.com/documentation/realtime/connection/#connection-state-recover-options) for more information.
+       */
+      recoveryKey: string;
+      /**
+       * The time at which the previous client was abruptly disconnected before the page was unloaded. This is represented as milliseconds since epoch.
+       */
+      disconnectedAt: number;
+      /**
+       * A clone of the `location` object of the previous page’s document object before the page was unloaded. A common use case for this attribute is to ensure that the previous page URL is the same as the current URL before allowing the connection to be recovered. For example, you may want the connection to be recovered only for page reloads, but not when a user navigates to a different page.
+       */
+      location: string;
+      /**
+       * The `clientId` of the client’s `Auth` object before the page was unloaded. A common use case for this attribute is to ensure that the current logged in user’s `clientId` matches the previous connection’s `clientId` before allowing the connection to be recovered. Ably prohibits changing a `clientId` for an existing connection, so any mismatch in `clientId` during a recover will result in the connection moving to the failed state.
+       */
+      clientId: string | null;
+    },
+    callback: (shouldRecover: boolean) => void
+  ) => void;
   type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
