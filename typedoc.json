@@ -17,6 +17,7 @@
     "Parameter",
     "Property",
     "TypeAlias",
-    "Variable"
+    "Variable",
+    "Namespace"
   ]
 }

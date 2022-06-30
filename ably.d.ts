@@ -3,6 +3,9 @@
 // Definitions by: Ably <https://github.com/ably/>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
+/**
+ * Not yet documented.
+ */
 declare namespace Types {
   /**
    * Not yet documented.
