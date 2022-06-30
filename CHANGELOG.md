@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.26](https://github.com/ably/ably-js/tree/1.2.26) (2022-06-30)
+- Improve global object fallback logic (fixes an issue when using the library in some service worker contexts) [\#1016](https://github.com/ably/ably-js/pull/1016)
+- Add backoff and jitter to channel and connection retry strategies [\#1008](https://github.com/ably/ably-js/pull/1008)
+- Bump versions for some underlying dependencies [\#1010](https://github.com/ably/ably-js/pull/1010)
+- Fix a bug with xhr transports for react-native [\#1007](https://github.com/ably/ably-js/pull/1007)
+
 ## [1.2.25](https://github.com/ably/ably-js/tree/1.2.25) (2022-06-10)
 - Fix a bug in 1.2.23 where Message and PresenceMessage were removed from the public API [\#1004](https://github.com/ably/ably-js/pull/1004)
 
