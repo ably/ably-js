@@ -104,6 +104,6 @@
     "format:check": "prettier --check --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js",
-    "docs": "typedoc"
+    "docs": "typedoc --entryPoints ably.d.ts --out docs/generated/default --readme docs/landing-pages/default.md && typedoc --entryPoints promises.d.ts --out docs/generated/promises --name \"ably (Promise-based)\" --readme docs/landing-pages/promises.md"
   }
 }

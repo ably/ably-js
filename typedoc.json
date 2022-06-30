@@ -1,7 +1,5 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "out": "./docs/generated",
-  "entryPoints": ["./ably.d.ts"],
   "treatWarningsAsErrors": true,
   "includeVersion": true,
   "validation": true,
@@ -19,6 +17,5 @@
     "TypeAlias",
     "Variable",
     "Namespace"
-  ],
-  "readme": "./docs/landing.md"
+  ]
 }
