@@ -527,3 +527,15 @@ export function getBackoffCoefficient(n: number) {
 export function getJitterCoefficient() {
   return 1 - Math.random() * 0.2;
 }
+
+export function getGlobalObject() {
+  if (global) {
+    return global;
+  }
+
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+
+  return self;
+}
