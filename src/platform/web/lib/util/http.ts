@@ -11,6 +11,9 @@ import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
+import fetchRequest from '../transport/fetchrequest';
+
+const globalObject = Utils.getGlobalObject();
 
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
@@ -142,6 +145,26 @@ const Http: typeof IHttp = class {
         Platform.Config.nextTick(function () {
           req.exec();
         });
+      };
+    } else if (globalObject.fetch as unknown) {
+      this.supportsAuthHeaders = true;
+      this.Request = fetchRequest;
+      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+        const upUrl = Defaults.internetUpUrl;
+        Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+        this.doUri(
+          HttpMethods.Get,
+          null as any,
+          upUrl,
+          null,
+          null,
+          null,
+          function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
+            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+            Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+            callback(null, result);
+          }
+        );
       };
     }
   }
