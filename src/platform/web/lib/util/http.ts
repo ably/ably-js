@@ -48,7 +48,7 @@ const Http: typeof IHttp = class {
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
 
   constructor() {
-    if (Platform.Config.xhrSupported) {
+    if (false as unknown) {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
@@ -90,7 +90,7 @@ const Http: typeof IHttp = class {
           }
         );
       };
-    } else if (Platform.Config.jsonpSupported) {
+    } else if (!true as unknown) {
       this.Request = function (
         method: HttpMethods,
         rest: Rest | null,
