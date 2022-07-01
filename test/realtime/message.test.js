@@ -965,7 +965,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             refType: 'com.ably.test',
             refTimeserial: '0123456789',
           },
-          (m) => {
+          function (m) {
             try {
               expect(m.name).to.be.equal('correct', 'Correct message received');
             } catch (e) {
@@ -979,11 +979,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       async.series(
         [
-          (cb) => realtime.connection.once('connected', () => cb()),
-          (cb) => channel.attach(cb),
-          (cb) => async.parallel([subscribe, send], cb),
+          function (cb) {
+            return realtime.connection.once('connected', function () {
+              return cb();
+            });
+          },
+          function (cb) {
+            return channel.attach(cb);
+          },
+          function (cb) {
+            return async.parallel([subscribe, send], cb);
+          },
         ],
-        (err) => closeAndFinish(done, realtime, err)
+        function (err) {
+          return closeAndFinish(done, realtime, err);
+        }
       );
     });
 
@@ -1010,7 +1020,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       function unsubscribe(cb) {
         try {
-          const listener = () => expect.fail('Listener should not fire');
+          const listener = function () {
+            return expect.fail('Listener should not fire');
+          };
           channel.subscribe({ refType: 'com.ably.test', refTimeserial: '0123456789' }, listener);
           expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
           channel.unsubscribe(listener);
@@ -1025,8 +1037,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
 
       async.series(
-        [(cb) => realtime.connection.once('connected', () => cb()), (cb) => channel.attach(cb), unsubscribe, send],
-        (err) => closeAndFinish(done, realtime, err)
+        [
+          function (cb) {
+            realtime.connection.once('connected', function () {
+              return cb();
+            });
+          },
+          function (cb) {
+            return channel.attach(cb);
+          },
+          unsubscribe,
+          send,
+        ],
+        function (err) {
+          return closeAndFinish(done, realtime, err);
+        }
       );
     });
 
