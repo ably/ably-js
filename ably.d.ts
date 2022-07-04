@@ -530,11 +530,17 @@ declare namespace Types {
   interface AuthOptions {
     /**
      * A function which is called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed `TokenRequest` ; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/documentation/core-features/authentication#ably-jwt). See [an authentication callback example](https://jsbin.ably.com/azazav/1/edit?javascript,live) or [our authentication documentation](https://ably.com/documentation/rest/authentication) for details of the Ably TokenRequest format and associated API calls.
+     *
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     authCallback?(
       data: TokenParams,
       /**
        * Not yet documented.
+       *
+       * @param error - Not yet documented.
+       * @param tokenRequestOrDetails - Not yet documented.
        */
       callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
     ): void;
@@ -981,6 +987,8 @@ declare namespace Types {
 
     /**
      * A function to handle each line of log output. If handler is not specified, `console.log` is used.
+     *
+     * @param msg - Not yet documented.
      */
     handler?: (msg: string) => void;
   }
@@ -1161,6 +1169,9 @@ declare namespace Types {
   // Common Listeners
   /**
    * Not yet documented.
+   *
+   * @param err - Not yet documented.
+   * @param result - Not yet documented.
    */
   type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
   /**
@@ -1169,38 +1180,57 @@ declare namespace Types {
   type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
   /**
    * Not yet documented.
+   *
+   * @param message - Not yet documented.
    */
   type messageCallback<T> = (message: T) => void;
   /**
    * Not yet documented.
+   *
+   * @param error - Not yet documented.
    */
   type errorCallback = (error?: ErrorInfo | null) => void;
   /**
    * Not yet documented.
+   *
+   * @param changeStateChange - Not yet documented.
    */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
   /**
    * Not yet documented.
+   *
+   * @param connectionStateChange - Not yet documented.
    */
   type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
   /**
    * Not yet documented.
+   *
+   * @param timeCallback - Not yet documented.
    */
   type timeCallback = StandardCallback<number>;
   /**
    * Not yet documented.
+   *
+   * @param realtimePresenceGetCallback - Not yet documented.
    */
   type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
   /**
    * Not yet documented.
+   *
+   * @param tokenDetailsCallback - Not yet documented.
    */
   type tokenDetailsCallback = StandardCallback<TokenDetails>;
   /**
    * Not yet documented.
+   *
+   * @param tokenRequestCallback - Not yet documented.
    */
   type tokenRequestCallback = StandardCallback<TokenRequest>;
   /**
    * Not yet documented.
+   *
+   * @param lastConnectionDetails - Not yet documented.
+   * @param callback - Not yet documented.
    */
   type recoverConnectionCallback = (
     lastConnectionDetails: {
@@ -1223,15 +1253,23 @@ declare namespace Types {
     },
     /**
      * Not yet documented.
+     *
+     * @param shouldRecover - Not yet documented.
      */
     callback: (shouldRecover: boolean) => void
   ) => void;
   /**
    * Not yet documented.
+   *
+   * @param JsonObject - Not yet documented.
+   * @param channelOptions - Not yet documented.
    */
   type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
   /**
    * Not yet documented.
+   *
+   * @param JsonArray - Not yet documented.
+   * @param channelOptions - Not yet documented.
    */
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
@@ -1247,34 +1285,53 @@ declare namespace Types {
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
      * Not yet documented.
+     *
+     * @param event - Not yet documented.
+     * @param callback - Not yet documented.
      */
     on(event: EventType | EventType[], callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param callback - Not yet documented.
      */
     on(callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param event - Not yet documented.
+     * @param callback - Not yet documented.
      */
     once(event: EventType, callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param callback - Not yet documented.
      */
     once(callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param event - Not yet documented.
      */
     once(event?: EventType): Promise<ResultType>;
     /**
      * Not yet documented.
+     *
+     * @param event - Not yet documented.
+     * @param callback - Not yet documented.
      */
     off(event: EventType, callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param callback - Not yet documented.
      */
     off(callback: CallbackType): void;
     /**
      * Not yet documented.
+     *
+     * @param eventName - Not yet documented.
      */
     listeners(eventName?: EventType): CallbackType[] | null;
   }
@@ -1332,6 +1389,13 @@ declare namespace Types {
     channels: Types.Channels<Types.ChannelCallbacks>;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+     *
+     * @param method - Not yet documented.
+     * @param path - Not yet documented.
+     * @param params - Not yet documented.
+     * @param body - Not yet documented.
+     * @param headers - Not yet documented.
+     * @param callback - Not yet documented.
      */
     request<T = any>(
       method: string,
@@ -1343,14 +1407,21 @@ declare namespace Types {
     ): void;
     /**
      * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     stats(params?: any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param callback - Not yet documented.
      */
     stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
+     *
+     * @param callback - Not yet documented.
      */
     time(callback?: Types.timeCallback): void;
     /**
@@ -1381,6 +1452,12 @@ declare namespace Types {
     channels: Types.Channels<Types.ChannelPromise>;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+     *
+     * @param method - Not yet documented.
+     * @param path - Not yet documented.
+     * @param params - Not yet documented.
+     * @param body - Not yet documented.
+     * @param headers - Not yet documented.
      */
     request<T = any>(
       method: string,
@@ -1391,6 +1468,8 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param params - Not yet documented.
      */
     stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
@@ -1447,6 +1526,13 @@ declare namespace Types {
     connection: Types.ConnectionCallbacks;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+     *
+     * @param method - Not yet documented.
+     * @param path - Not yet documented.
+     * @param params - Not yet documented.
+     * @param body - Not yet documented.
+     * @param headers - Not yet documented.
+     * @param callback - Not yet documented.
      */
     request<T = any>(
       method: string,
@@ -1458,14 +1544,21 @@ declare namespace Types {
     ): void;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     stats(params: any, callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param callback - Not yet documented.
      */
     stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
+     *
+     * @param callback - Not yet documented.
      */
     time(callback?: Types.timeCallback): void;
     /**
@@ -1492,6 +1585,12 @@ declare namespace Types {
     connection: Types.ConnectionPromise;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to handle authentication, paging, fallback hosts, MsgPack and JSON support, etc. themselves.
+     *
+     * @param method - Not yet documented.
+     * @param path - Not yet documented.
+     * @param params - Not yet documented.
+     * @param body - Not yet documented.
+     * @param headers - Not yet documented.
      */
     request<T = any>(
       method: string,
@@ -1502,6 +1601,8 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
+     *
+     * @param params - Not yet documented.
      */
     stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
@@ -1532,16 +1633,25 @@ declare namespace Types {
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
      *
      * Any `tokenParams` and `authOptions` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams` and `authOptions`.
+     *
+     * @param tokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
+     * @param callback - Not yet documented.
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
      *
      * Any `tokenParams` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams`.
+     *
+     * @param tokenParams - Not yet documented.
+     * @param callback - Not yet documented.
      */
     authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
+     *
+     * @param callback - Not yet documented.
      */
     authorize(callback?: tokenDetailsCallback): void;
     /**
@@ -1550,6 +1660,10 @@ declare namespace Types {
      * Both `authOptions` and `tokenParams` are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param tokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
+     * @param callback - Not yet documented.
      */
     createTokenRequest(
       tokenParams?: TokenParams | null,
@@ -1562,12 +1676,17 @@ declare namespace Types {
      * The `tokenParams` parameter is optional. When omitted or `null`, the default token parameters for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param tokenParams - Not yet documented.
+     * @param callback - Not yet documented.
      */
     createTokenRequest(tokenParams?: TokenParams | null, callback?: tokenRequestCallback): void;
     /**
      * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param callback - Not yet documented.
      */
     createTokenRequest(callback?: tokenRequestCallback): void;
     /**
@@ -1576,6 +1695,10 @@ declare namespace Types {
      * Both `authOptions` and `tokenParams` are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param TokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
+     * @param callback - Not yet documented.
      */
     requestToken(
       TokenParams?: TokenParams | null,
@@ -1588,12 +1711,17 @@ declare namespace Types {
      * The `tokenParams` parameter is optional. When omitted or `null`, the default token parameters for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param TokenParams - Not yet documented.
+     * @param callback - Not yet documented.
      */
     requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
     /**
      * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param callback - Not yet documented.
      */
     requestToken(callback?: tokenDetailsCallback): void;
   }
@@ -1606,6 +1734,9 @@ declare namespace Types {
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
      *
      * Any `tokenParams` and `authOptions` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams` and `authOptions`.
+     *
+     * @param tokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
     /**
@@ -1614,6 +1745,9 @@ declare namespace Types {
      * Both `authOptions` and `tokenParams` are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param tokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
      */
     createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
     /**
@@ -1622,6 +1756,9 @@ declare namespace Types {
      * Both `authOptions` and `tokenParams` are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
      *
      * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
+     *
+     * @param TokenParams - Not yet documented.
+     * @param authOptions - Not yet documented.
      */
     requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
   }
@@ -1632,18 +1769,28 @@ declare namespace Types {
   class PresenceCallbacks {
     /**
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     get(params?: RestPresenceParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+     *
+     * @param callback - Not yet documented.
      */
     get(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param callback - Not yet documented.
      */
     history(callback: paginatedResultCallback<PresenceMessage>): void;
   }
@@ -1654,10 +1801,14 @@ declare namespace Types {
   class PresencePromise {
     /**
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
+     *
+     * @param params - Not yet documented.
      */
     get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
   }
@@ -1672,10 +1823,15 @@ declare namespace Types {
     syncComplete: boolean;
     /**
      * Unsubscribe the given listener from presence message events on this channel for the given PresenceAction. This removes an earlier event-specific subscription.
+     *
+     * @param presence - Not yet documented.
+     * @param listener - Not yet documented.
      */
     unsubscribe(presence?: PresenceAction | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): void;
     /**
      * Unsubscribe the given listener from presence message events on this channel. This removes an earlier subscription.
+     *
+     * @param listener - Not yet documented.
      */
     unsubscribe(listener?: messageCallback<PresenceMessage>): void;
     /**
@@ -1694,6 +1850,9 @@ declare namespace Types {
      * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
      *
      * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
@@ -1702,18 +1861,29 @@ declare namespace Types {
      * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
      *
      * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+     *
+     * @param callback - Not yet documented.
      */
     get(callback?: realtimePresenceGetCallback): void;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param callback - Not yet documented.
      */
     history(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+     *
+     * @param presence - Not yet documented.
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(
       presence: PresenceAction | Array<PresenceAction>,
@@ -1722,54 +1892,93 @@ declare namespace Types {
     ): void;
     /**
      * Subscribe to presence message events on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+     *
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
     /**
      * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+     *
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     enter(data?: any, callback?: errorCallback): void;
     /**
      * Enter a presence channel without any data. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+     *
+     * @param callback - Not yet documented.
      */
     enter(callback?: errorCallback): void;
     /**
      * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+     *
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     update(data?: any, callback?: errorCallback): void;
     /**
      * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+     *
+     * @param callback - Not yet documented.
      */
     update(callback?: errorCallback): void;
     /**
      * Leave a presence channel and emit data that is associated with the current leaving member.
+     *
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     leave(data?: any, callback?: errorCallback): void;
     /**
      * Leave a presence channel without emitting any data.
+     *
+     * @param callback - Not yet documented.
      */
     leave(callback?: errorCallback): void;
     /**
      * Enter a presence channel and provide data that is associated with the current present member.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
      * Enter a presence channel on behalf of the provided ClientId without any data.
+     *
+     * @param clientId - Not yet documented.
+     * @param callback - Not yet documented.
      */
     enterClient(clientId: string, callback?: errorCallback): void;
     /**
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     updateClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+     *
+     * @param clientId - Not yet documented.
+     * @param callback - Not yet documented.
      */
     updateClient(clientId: string, callback?: errorCallback): void;
     /**
      * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
+     * @param callback - Not yet documented.
      */
     leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
      * Leave a presence channel on behalf of the provided ClientId without emitting any data.
+     *
+     * @param clientId - Not yet documented.
+     * @param callback - Not yet documented.
      */
     leaveClient(clientId: string, callback?: errorCallback): void;
   }
@@ -1784,14 +1993,21 @@ declare namespace Types {
      * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
      *
      * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
+     *
+     * @param params - Not yet documented.
      */
     get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
     /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+     *
+     * @param action - Not yet documented.
+     * @param listener - Not yet documented.
      */
     subscribe(
       action?: PresenceAction | Array<PresenceAction>,
@@ -1799,30 +2015,47 @@ declare namespace Types {
     ): Promise<void>;
     /**
      * Subscribe to presence message events on this channel. The caller supplies a listener function, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
+     *
+     * @param listener - Not yet documented.
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
      * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
+     *
+     * @param data - Not yet documented.
      */
     enter(data?: any): Promise<void>;
     /**
      * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
+     *
+     * @param data - Not yet documented.
      */
     update(data?: any): Promise<void>;
     /**
      * Leave a presence channel and emit data that is associated with the current leaving member.
+     *
+     * @param data - Not yet documented.
      */
     leave(data?: any): Promise<void>;
     /**
      * Enter a presence channel and provide data that is associated with the current present member.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
      */
     enterClient(clientId: string, data?: any): Promise<void>;
     /**
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
      */
     updateClient(clientId: string, data?: any): Promise<void>;
     /**
      * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
+     *
+     * @param clientId - Not yet documented.
+     * @param data - Not yet documented.
      */
     leaveClient(clientId: string, data?: any): Promise<void>;
   }
@@ -1847,26 +2080,45 @@ declare namespace Types {
     presence: PresenceCallbacks;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param callback - Not yet documented.
      */
     history(callback?: paginatedResultCallback<Message>): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(name: string, messages: any, callback?: errorCallback): void;
     /**
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. It is worth noting that there are additional considerations and constraints if you want to publish multiple messages idempotently in one publish operation with client-supplied IDs.
+     *
+     * @param messages - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(messages: any, callback?: errorCallback): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
      * Not yet documented.
+     *
+     * @param callback - Not yet documented.
      */
     status(callback: StandardCallback<ChannelDetails>): void;
   }
@@ -1881,14 +2133,23 @@ declare namespace Types {
     presence: PresencePromise;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
     /**
      * Publish several messages on this channel.
+     *
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
      */
     publish(messages: any, options?: PublishOptions): Promise<void>;
     /**
      * Publish a single message on this channel based on a given event name and payload.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
      */
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
     /**
@@ -1923,10 +2184,15 @@ declare namespace Types {
     modes: ChannelModes;
     /**
      * Unsubscribe the given listener for the specified event name. This removes an earlier event-specific subscription.
+     *
+     * @param event - Not yet documented.
+     * @param listener - Not yet documented.
      */
     unsubscribe(event?: string | Array<string>, listener?: messageCallback<Message>): void;
     /**
      * Unsubscribe the given listener (for any/all event names). This removes an earlier subscription.
+     *
+     * @param listener - Not yet documented.
      */
     unsubscribe(listener?: messageCallback<Message>): void;
   }
@@ -1953,28 +2219,44 @@ declare namespace Types {
      * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel will be received by any channel listeners registered using `subscribe()`. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
      *
      * As a convenience, `attach()` will be called implicitly if subscribe for the Channel is called, or `enter()` or `subscribe()` is called on the Presence for this Channel.
+     *
+     * @param callback - Not yet documented.
      */
     attach(callback?: errorCallback): void;
     /**
      * Detach from this channel. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
      *
      * Please note: Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     *
+     * @param callback - Not yet documented.
      */
     detach(callback?: errorCallback): void;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param callback - Not yet documented.
      */
     history(callback?: paginatedResultCallback<Message>): void;
     /**
      * Not yet documented.
+     *
+     * @param options - Not yet documented.
+     * @param callback - Not yet documented.
      */
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+     *
+     * @param event - Not yet documented.
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(
       event: string | Array<string>,
@@ -1983,22 +2265,40 @@ declare namespace Types {
     ): void;
     /**
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+     *
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(name: string, messages: any, callback?: errorCallback): void;
     /**
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
+     *
+     * @param messages - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(messages: any, callback?: errorCallback): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
      * Not yet documented.
+     *
+     * @param targetState - Not yet documented.
+     * @param callback - Not yet documented.
      */
     whenState(targetState: ChannelState, callback: channelEventCallback): void;
   }
@@ -2025,30 +2325,48 @@ declare namespace Types {
     detach(): Promise<void>;
     /**
      * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
+     *
+     * @param params - Not yet documented.
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
      * Not yet documented.
+     *
+     * @param options - Not yet documented.
      */
     setOptions(options: ChannelOptions): Promise<void>;
     /**
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+     *
+     * @param event - Not yet documented.
+     * @param listener - Not yet documented.
      */
     subscribe(event: string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+     *
+     * @param callback - Not yet documented.
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
      * Publish a single message on this channel based on a given event name and payload. When publish is called, it won’t attempt to implicitly attach to the channel.
+     *
+     * @param name - Not yet documented.
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
      */
     publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
     /**
      * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
+     *
+     * @param messages - Not yet documented.
+     * @param options - Not yet documented.
      */
     publish(messages: any, options?: PublishOptions): Promise<void>;
     /**
      * Not yet documented.
+     *
+     * @param targetState - Not yet documented.
      */
     whenState(targetState: ChannelState): Promise<ChannelStateChange>;
   }
@@ -2059,10 +2377,15 @@ declare namespace Types {
   class Channels<T> {
     /**
      * Creates a new Channel object if none for the channel exists, or returns the existing channel object.
+     *
+     * @param name - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
      * Unsubscribes all listeners from a given Channel by name.
+     *
+     * @param name - Not yet documented.
      */
     release(name: string): void;
   }
@@ -2231,10 +2554,15 @@ declare namespace Types {
      * This call obtains a CipherParams object using the values passed in (which must be a subset of CipherParams fields that at a minimum includes a key), filling in any unspecified fields with default values, and checks that the result is a valid and self-consistent.
      *
      * You will rarely need to call this yourself, since the client library will handle it for you if you specify cipher params when initializing a channel or when setting channel options with channel.setOptions().
+     *
+     * @param callback - Not yet documented.
      */
     generateRandomKey(callback: Types.StandardCallback<CipherKey>): void;
     /**
      * This call obtains a randomly-generated binary key of the specified key length.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
   }
@@ -2285,10 +2613,15 @@ declare namespace Types {
   class ConnectionCallbacks extends ConnectionBase {
     /**
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
+     *
+     * @param callback - Not yet documented.
      */
     ping(callback?: Types.StandardCallback<number>): void;
     /**
      * Not yet documented.
+     *
+     * @param targetState - Not yet documented.
+     * @param callback - Not yet documented.
      */
     whenState(targetState: ConnectionState, callback: connectionEventCallback): void;
   }
@@ -2303,6 +2636,8 @@ declare namespace Types {
     ping(): Promise<number>;
     /**
      * Not yet documented.
+     *
+     * @param targetState - Not yet documented.
      */
     whenState(targetState: ConnectionState): Promise<ConnectionStateChange>;
   }
@@ -2359,6 +2694,8 @@ declare namespace Types {
     items: T[];
     /**
      * Returns a new PaginatedResult for the first page of results.
+     *
+     * @param results - Not yet documented.
      */
     first(results: paginatedResultCallback<T>): void;
     /**
@@ -2367,6 +2704,8 @@ declare namespace Types {
     first(): Promise<PaginatedResult<T>>;
     /**
      * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
+     *
+     * @param results - Not yet documented.
      */
     next(results: paginatedResultCallback<T>): void;
     /**
@@ -2375,6 +2714,8 @@ declare namespace Types {
     next(): Promise<PaginatedResult<T>>;
     /**
      * Not yet documented.
+     *
+     * @param results - Not yet documented.
      */
     current(results: paginatedResultCallback<T>): void;
     /**
@@ -2451,6 +2792,10 @@ declare namespace Types {
     channelSubscriptions: PushChannelSubscriptionsCallbacks;
     /**
      * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
+     *
+     * @param recipient - Not yet documented.
+     * @param payload - Not yet documented.
+     * @param callback - Not yet documented.
      */
     publish(recipient: any, payload: any, callback?: errorCallback): void;
   }
@@ -2469,6 +2814,9 @@ declare namespace Types {
     channelSubscriptions: PushChannelSubscriptionsPromise;
     /**
      * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
+     *
+     * @param recipient - Not yet documented.
+     * @param payload - Not yet documented.
      */
     publish(recipient: any, payload: any): Promise<void>;
   }
@@ -2479,22 +2827,37 @@ declare namespace Types {
   class PushDeviceRegistrationsCallbacks {
     /**
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
+     * @param callback - Not yet documented.
      */
     save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
     /**
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceIdOrDetails - Not yet documented.
+     * @param callback - Not yet documented.
      */
     get(deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
     /**
      * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceIdOrDetails - Not yet documented.
+     * @param callback - Not yet documented.
      */
     remove(deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback): void;
     /**
      * Delete all devices matching the params filter. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     removeWhere(params: DeviceRegistrationParams, callback?: errorCallback): void;
   }
@@ -2505,22 +2868,32 @@ declare namespace Types {
   class PushDeviceRegistrationsPromise {
     /**
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
      */
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceIdOrDetails - Not yet documented.
      */
     get(deviceIdOrDetails: DeviceDetails | string): Promise<DeviceDetails>;
     /**
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
      */
     list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
     /**
      * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceIdOrDetails - Not yet documented.
      */
     remove(deviceIdOrDetails: DeviceDetails | string): Promise<void>;
     /**
      * Delete all devices matching the params filter. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
      */
     removeWhere(params: DeviceRegistrationParams): Promise<void>;
   }
@@ -2531,22 +2904,37 @@ declare namespace Types {
   class PushChannelSubscriptionsCallbacks {
     /**
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
+     *
+     * @param subscription - Not yet documented.
+     * @param callback - Not yet documented.
      */
     save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
     /**
      * Retrieve all push channel subscriptions that match the provided params filter as a paginated list of PushChannelSubscription objects. Each PushChannelSubscription represents a device or set of devices sharing the same client identifier registered to a channel to receive push notifications.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
     /**
      * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
     /**
      * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
+     *
+     * @param subscription - Not yet documented.
+     * @param callback - Not yet documented.
      */
     remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
     /**
      * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
+     * @param callback - Not yet documented.
      */
     removeWhere(params: PushChannelSubscriptionParams, callback?: errorCallback): void;
   }
@@ -2557,22 +2945,32 @@ declare namespace Types {
   class PushChannelSubscriptionsPromise {
     /**
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
+     *
+     * @param subscription - Not yet documented.
      */
     save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
     /**
      * Retrieve all push channel subscriptions that match the provided params filter as a paginated list of PushChannelSubscription objects. Each PushChannelSubscription represents a device or set of devices sharing the same client identifier registered to a channel to receive push notifications.
+     *
+     * @param params - Not yet documented.
      */
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
     /**
      * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
      */
     listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
     /**
      * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
+     *
+     * @param subscription - Not yet documented.
      */
     remove(subscription: PushChannelSubscription): Promise<void>;
     /**
      * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
+     *
+     * @param params - Not yet documented.
      */
     removeWhere(params: PushChannelSubscriptionParams): Promise<void>;
   }
