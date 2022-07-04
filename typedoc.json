@@ -8,6 +8,7 @@
   "requiredToBeDocumented": [
     "Accessor",
     "Class",
+    "Constructor",
     "Enum",
     "EnumMember",
     "Function",

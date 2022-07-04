@@ -2071,6 +2071,9 @@ declare namespace Types {
    * A Message represents an individual message that is sent to or received from Ably.
    */
   class Message {
+    /**
+     * Not yet documented.
+     */
     constructor();
     /**
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
@@ -2132,6 +2135,9 @@ declare namespace Types {
    * Not yet documented.
    */
   class PresenceMessage {
+    /**
+     * Not yet documented.
+     */
     constructor();
     /**
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
