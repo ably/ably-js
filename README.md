@@ -308,6 +308,20 @@ channel.setOptions({cipher: {key: <key>}}, function() {
 })
 ```
 
+### Message interactions
+
+Message Interactions allow you to interact with messages previously sent to a channel. Once a channel is enabled with Message Interactions, messages received by that channel will contain a unique `timeSerial` that can be referenced by later messages.
+
+Example emoji reaction to a message:
+
+```javascript
+const sendReaction = (emoji) => {
+    channel.publish('', { body: 😀, extras: { reference: { type: com.ably.chat.reaction, timeserial: "1656424960320-1" } } })
+}
+```
+
+See https://www.ably.com/docs/realtime/messages#message-interactions for more detail.
+
 ## Using the REST API
 
 This readme gives some basic examples. For our full API documentation, please go to https://www.ably.com/docs .
