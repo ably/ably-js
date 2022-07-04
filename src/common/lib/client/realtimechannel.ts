@@ -472,11 +472,11 @@ class RealtimeChannel extends Channel {
     realListener: API.Types.messageCallback<Message>,
     filteredListener: API.Types.messageCallback<Message>
   ) {
-    if(!this.filteredSubscriptions){
+    if (!this.filteredSubscriptions) {
       this.filteredSubscriptions = new Map<
         API.Types.messageCallback<Message>,
         Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
-        >();
+      >();
     }
     if (this.filteredSubscriptions.has(realListener)) {
       const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
@@ -498,8 +498,8 @@ class RealtimeChannel extends Channel {
     realListener: API.Types.messageCallback<Message> | undefined
   ): API.Types.messageCallback<Message>[] {
     // No filtered subscriptions map means there has been no filtered subscriptions yet, so return nothing
-    if(!this.filteredSubscriptions){
-      return []
+    if (!this.filteredSubscriptions) {
+      return [];
     }
     // Only a filter is passed in with no specific listener
     if (!realListener && filter) {
