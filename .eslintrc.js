@@ -12,6 +12,7 @@ module.exports = {
   plugins: [
     "@typescript-eslint",
     "security",
+    'jsdoc',
   ],
   extends: [
     "eslint:recommended",
@@ -37,6 +38,12 @@ module.exports = {
 	"no-undef": "off",
 	"no-dupe-class-members": "off",
       },
+    },
+    {
+      files: 'ably.d.ts',
+      extends: [
+        'plugin:jsdoc/recommended',
+      ],
     },
   ],
   ignorePatterns: [
