@@ -56,7 +56,7 @@ class RealtimeChannel extends Channel {
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
   subscriptions: EventEmitter;
-  filteredSubscriptions: Map<
+  filteredSubscriptions?: Map<
     API.Types.messageCallback<Message>,
     Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
   >;
@@ -87,10 +87,6 @@ class RealtimeChannel extends Channel {
     this.connectionManager = realtime.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
-    this.filteredSubscriptions = new Map<
-      API.Types.messageCallback<Message>,
-      Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
-    >();
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
@@ -476,6 +472,12 @@ class RealtimeChannel extends Channel {
     realListener: API.Types.messageCallback<Message>,
     filteredListener: API.Types.messageCallback<Message>
   ) {
+    if(!this.filteredSubscriptions){
+      this.filteredSubscriptions = new Map<
+        API.Types.messageCallback<Message>,
+        Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+        >();
+    }
     if (this.filteredSubscriptions.has(realListener)) {
       const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
         API.Types.MessageFilter,
@@ -495,6 +497,10 @@ class RealtimeChannel extends Channel {
     filter: API.Types.MessageFilter | undefined,
     realListener: API.Types.messageCallback<Message> | undefined
   ): API.Types.messageCallback<Message>[] {
+    // No filtered subscriptions map means there has been no filtered subscriptions yet, so return nothing
+    if(!this.filteredSubscriptions){
+      return []
+    }
     // Only a filter is passed in with no specific listener
     if (!realListener && filter) {
       // Return each listener which is attached to the specified filter object
@@ -505,7 +511,7 @@ class RealtimeChannel extends Channel {
           filterMaps.delete(filter);
           // Clear the parent if nothing is left
           if (filterMaps.size === 0) {
-            this.filteredSubscriptions.delete(key);
+            this.filteredSubscriptions?.delete(key);
           }
           return listenerMaps;
         })
@@ -542,7 +548,7 @@ class RealtimeChannel extends Channel {
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
-    if ((typeof event === 'object' && !listener) || this.filteredSubscriptions.has(listener)) {
+    if ((typeof event === 'object' && !listener) || this.filteredSubscriptions?.has(listener)) {
       this._getAndDeleteFilteredSubscriptions(event, listener).forEach((l) => this.subscriptions.off(l));
       return;
     }
