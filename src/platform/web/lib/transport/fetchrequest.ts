@@ -38,6 +38,8 @@ export default function fetchRequest(
     rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
 
+  console.log({ uri, _method, headers, body });
+
   fetch(uri + '?' + new URLSearchParams(params || {}), {
     method: _method,
     headers: fetchHeaders,
@@ -47,6 +49,8 @@ export default function fetchRequest(
     .then((res) => {
       clearTimeout(timeout);
       const contentType = res.headers.get('Content-Type');
+      console.log(`Request to ${uri + '?' + new URLSearchParams(params || {})}`);
+      console.log(`Response status: ${res.status} with Content-Type: ${contentType}`);
       if (!res.ok) {
         if (!contentType) {
           // TODO
@@ -55,6 +59,8 @@ export default function fetchRequest(
         }
         if (contentType && contentType.indexOf('application/json') > -1) {
           res.json().then((body) => {
+            console.log('here');
+            console.log(body);
             const err =
               getAblyError(body, res.headers) ||
               new ErrorInfo(
@@ -75,10 +81,23 @@ export default function fetchRequest(
         return;
       }
       if (contentType.indexOf('application/json') > -1) {
-        res.json().then((body) => {
+        res.text().then((text) => {
+          console.log({ text });
+          const body = JSON.parse(text);
           callback(null, body, res.headers, true, res.status);
-          return;
         });
+        // res
+        //   .json()
+        //   .then((body) => {
+        //     callback(null, body, res.headers, true, res.status);
+        //     return;
+        //   })
+        //   .catch((err) => {
+        //     console.log(err);
+        //     res.text().then((body) => {
+        //       console.log(body);
+        //     });
+        //   });
       }
       if (contentType.indexOf('application/x-msgpack') > -1) {
         res.arrayBuffer().then((body) => {
