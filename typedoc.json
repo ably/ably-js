@@ -4,5 +4,17 @@
   "entryPoints": ["./ably.d.ts"],
   "treatWarningsAsErrors": true,
   "includeVersion": true,
-  "validation": true
+  "validation": true,
+  "requiredToBeDocumented": [
+    "Accessor",
+    "Class",
+    "Enum",
+    "EnumMember",
+    "Function",
+    "Interface",
+    "Method",
+    "Property",
+    "TypeAlias",
+    "Variable"
+  ]
 }
