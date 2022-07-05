@@ -691,13 +691,20 @@ declare namespace Types {
     params: ChannelParams;
     modes: ChannelModes;
     unsubscribe: (
-      eventOrListener?: string | Array<string> | messageCallback<Message>,
+      eventOrListener?: string | Array<string> | messageCallback<Message> | MessageFilter,
       listener?: messageCallback<Message>
     ) => void;
   }
 
   type PublishOptions = {
     quickAck?: boolean;
+  };
+
+  type MessageFilter = {
+    name?: string;
+    refTimeserial?: string;
+    refType?: string;
+    isRef?: boolean;
   };
 
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
@@ -710,7 +717,7 @@ declare namespace Types {
     ) => void;
     setOptions: (options: ChannelOptions, callback?: errorCallback) => void;
     subscribe: (
-      eventOrCallback: messageCallback<Message> | string | Array<string>,
+      eventOrCallback: messageCallback<Message> | string | Array<string> | MessageFilter,
       listener?: messageCallback<Message>,
       callbackWhenAttached?: errorCallback
     ) => void;
@@ -727,7 +734,7 @@ declare namespace Types {
     history: (params?: RealtimeHistoryParams) => Promise<PaginatedResult<Message>>;
     setOptions: (options: ChannelOptions) => Promise<void>;
     subscribe: (
-      eventOrCallback: messageCallback<Message> | string | Array<string>,
+      eventOrCallback: messageCallback<Message> | string | Array<string> | MessageFilter,
       listener?: messageCallback<Message>
     ) => Promise<void>;
     publish(messages: any, options?: PublishOptions): Promise<void>;
