@@ -3811,6 +3811,10 @@ declare namespace Types {
      */
     clientId: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The ID of the connection associated with the client that published the `PresenceMessage`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The connection ID of the publisher of this presence update.
      * END LEGACY DOCSTRING
