@@ -1966,6 +1966,12 @@ declare namespace Types {
      */
     stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     *
+     * @returns The time as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      * END LEGACY DOCSTRING
@@ -2091,6 +2097,12 @@ declare namespace Types {
         | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */
     ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     *
+     * @returns The time as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      * END LEGACY DOCSTRING
