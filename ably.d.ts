@@ -3615,6 +3615,14 @@ declare namespace Types {
      */
     generateRandomKey(keyLength?: number, callback?: Types.StandardCallback<CipherKey>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns a [`CipherParams`]{@link CipherParams} object, using the default values for any fields not supplied by the [`CipherParamOptions`]{@link CipherParamOptions} object.
+     *
+     * @param CipherParamOptions - A [`CipherParamOptions`]{@link CipherParamOptions} object.
+     *
+     * @returns A [`CipherParams`]{@link CipherParams} object, using the default values for any fields not supplied.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * This call obtains a randomly-generated binary key of the specified key length.
      * END LEGACY DOCSTRING
