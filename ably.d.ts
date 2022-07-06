@@ -2556,7 +2556,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the retrieval of the current and historic presence set for a channel.
+   * END CANONICAL DOCSTRING
    */
   class PresenceCallbacks {
     /**
@@ -2596,7 +2598,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the retrieval of the current and historic presence set for a channel.
+   * END CANONICAL DOCSTRING
    */
   class PresencePromise {
     /**
