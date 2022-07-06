@@ -1788,6 +1788,12 @@ declare namespace Types {
      */
     constructor(options: Types.ClientOptions);
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Constructs a `RestClient` object using an Ably API key or token string.
+     *
+     * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Creates an Ably client instance
      *
