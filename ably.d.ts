@@ -2936,6 +2936,14 @@ declare namespace Types {
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param clientId - The ID of the client to update in the presence set.
+     * @param Data - The payload to update for the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
      * END LEGACY DOCSTRING
@@ -3109,6 +3117,14 @@ declare namespace Types {
      */
     enterClient(clientId: string, data?: any): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param clientId - The ID of the client to update in the presence set.
+     * @param Data - The payload to update for the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
      * END LEGACY DOCSTRING
