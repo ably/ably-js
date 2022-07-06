@@ -2718,6 +2718,12 @@ declare namespace Types {
      */
     syncComplete: boolean;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel for a given [`PresenceAction`]{@link PresenceAction}.
+     *
+     * @param PresenceAction - A specific [`PresenceAction`]{@link PresenceAction} to deregister the listener for.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe the given listener from presence message events on this channel for the given PresenceAction. This removes an earlier event-specific subscription.
      * END LEGACY DOCSTRING
