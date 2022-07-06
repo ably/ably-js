@@ -1890,6 +1890,33 @@ declare namespace Types {
       callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
     ): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     *
+     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default epoch()
+     * END PARAM CANONICAL API DEFAULT
+     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default now()
+     * END PARAM CANONICAL API DEFAULT
+     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Backwards
+     * END PARAM CANONICAL API DEFAULT
+     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default 100
+     * END PARAM CANONICAL API DEFAULT
+     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Minute
+     * END PARAM CANONICAL API DEFAULT
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      * END LEGACY DOCSTRING
@@ -1904,6 +1931,33 @@ declare namespace Types {
       callback?: Types.paginatedResultCallback<Types.Stats>
     ): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     *
+     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default epoch()
+     * END PARAM CANONICAL API DEFAULT
+     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default now()
+     * END PARAM CANONICAL API DEFAULT
+     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Backwards
+     * END PARAM CANONICAL API DEFAULT
+     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default 100
+     * END PARAM CANONICAL API DEFAULT
+     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Minute
+     * END PARAM CANONICAL API DEFAULT
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      * END LEGACY DOCSTRING
@@ -1998,6 +2052,33 @@ declare namespace Types {
       headers?: any
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     *
+     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default epoch()
+     * END PARAM CANONICAL API DEFAULT
+     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default now()
+     * END PARAM CANONICAL API DEFAULT
+     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Backwards
+     * END PARAM CANONICAL API DEFAULT
+     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default 100
+     * END PARAM CANONICAL API DEFAULT
+     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default .Minute
+     * END PARAM CANONICAL API DEFAULT
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      * END LEGACY DOCSTRING
