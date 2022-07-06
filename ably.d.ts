@@ -782,6 +782,14 @@ declare namespace Types {
      */
     keyLength: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The cipher mode. Only `CBC` is supported and is the default value.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default "CBC"
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * The cipher mode (default: CBC).
      * END LEGACY DOCSTRING
