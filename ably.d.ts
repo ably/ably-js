@@ -2870,6 +2870,13 @@ declare namespace Types {
      */
     subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param Data - The payload associated with the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
      * END LEGACY DOCSTRING
@@ -3018,6 +3025,13 @@ declare namespace Types {
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param Data - The payload associated with the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Enter a presence channel and provide data that is associated with the current present member. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
      * END LEGACY DOCSTRING
