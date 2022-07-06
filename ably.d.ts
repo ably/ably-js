@@ -738,6 +738,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Sets the properties to configure encryption for a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * An object containing configuration options for a channel cipher, including algorithm, mode, key length and key. ably-js currently supports AES with CBC, PKCS#7 with a default key length of 256 bits, and AES128.
    * END LEGACY DOCSTRING
