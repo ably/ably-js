@@ -2834,6 +2834,12 @@ declare namespace Types {
       callbackWhenAttached?: errorCallback
     ): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param (PresenceMessage) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to presence message events on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      * END LEGACY DOCSTRING
@@ -2970,6 +2976,12 @@ declare namespace Types {
       listener?: messageCallback<PresenceMessage>
     ): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param (PresenceMessage) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to presence message events on this channel. The caller supplies a listener function, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      * END LEGACY DOCSTRING
