@@ -1780,6 +1780,12 @@ declare namespace Types {
    */
   class RestBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Construct a `RestClient` object using an Ably [`ClientOptions`]{@link ClientOptions} object.
+     *
+     * @param ClientOptions - A [`ClientOptions`]{@link ClientOptions} object to configure the client connection to Ably.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Creates an Ably client instance
      *
