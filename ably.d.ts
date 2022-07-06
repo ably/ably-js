@@ -748,6 +748,14 @@ declare namespace Types {
    */
   interface CipherParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The algorithm to use for encryption. Only `AES` is supported and is the default value.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default "AES"
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”.
      * END LEGACY DOCSTRING
