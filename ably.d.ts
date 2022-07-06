@@ -2237,6 +2237,10 @@ declare namespace Types {
      */
     time(callback?: Types.timeCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Push`]{@link Push} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the `Push` object.
      * END LEGACY DOCSTRING
@@ -2309,6 +2313,10 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Push`]{@link Push} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the `Push` object.
      * END LEGACY DOCSTRING
