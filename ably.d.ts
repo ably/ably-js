@@ -3759,6 +3759,13 @@ declare namespace Types {
      */
     constructor();
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     *
+     * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      *
@@ -3825,6 +3832,13 @@ declare namespace Types {
    */
   interface PresenceMessageStatic {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     *
+     * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      *
