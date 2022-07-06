@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.27](https://github.com/ably/ably-js/tree/1.2.27) (2022-07-06)
+- Add filtered subscription type to RealtimeChannel [\#1008](https://github.com/ably/ably-js/pull/1003)
+
 ## [1.2.26](https://github.com/ably/ably-js/tree/1.2.26) (2022-06-30)
 - Improve global object fallback logic (fixes an issue when using the library in some service worker contexts) [\#1016](https://github.com/ably/ably-js/pull/1016)
 - Add backoff and jitter to channel and connection retry strategies [\#1008](https://github.com/ably/ably-js/pull/1008)
