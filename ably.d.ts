@@ -56,7 +56,7 @@ declare namespace Types {
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the possible states of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
+   * Describes the possible states of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    */
   type ChannelState =
@@ -116,14 +116,14 @@ declare namespace Types {
     type FAILED = 'failed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An event for changes to channel conditions that do not result in a change in [`ChannelState`]{@link ChannelState}.
+     * An event for changes to channel conditions that do not result in a change in {@link ChannelState}.
      * END CANONICAL DOCSTRING
      */
     type UPDATE = 'update';
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the events emitted by a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object. An event is either an `UPDATE` or a [`ChannelState`]{@link ChannelState}.
+   * Describes the events emitted by a {@link ChannelBase} or {@link RealtimeChannelBase} object. An event is either an `UPDATE` or a {@link ChannelState}.
    * END CANONICAL DOCSTRING
    */
   type ChannelEvent =
@@ -166,7 +166,7 @@ declare namespace Types {
     type DISCONNECTED = 'disconnected';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
@@ -178,20 +178,20 @@ declare namespace Types {
     type CLOSING = 'closing';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
      * END CANONICAL DOCSTRING
      */
     type CLOSED = 'closed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
      * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the realtime [`ConnectionBase`]{@link ConnectionBase} object states.
+   * Describes the realtime {@link ConnectionBase} object states.
    * END CANONICAL DOCSTRING
    */
   type ConnectionState =
@@ -234,7 +234,7 @@ declare namespace Types {
     type DISCONNECTED = 'disconnected';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
@@ -246,26 +246,26 @@ declare namespace Types {
     type CLOSING = 'closing';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
      * END CANONICAL DOCSTRING
      */
     type CLOSED = 'closed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
      * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An event for changes to connection conditions for which the [`ConnectionState`]{@link ConnectionState} does not change.
+     * An event for changes to connection conditions for which the {@link ConnectionState} does not change.
      * END CANONICAL DOCSTRING
      */
     type UPDATE = 'update';
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the events emitted by a [`ConnectionBase`]{@link ConnectionBase} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
+   * Describes the events emitted by a {@link ConnectionBase} object. An event is either an `UPDATE` or a {@link ConnectionState}.
    * END CANONICAL DOCSTRING
    */
   type ConnectionEvent =
@@ -391,7 +391,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the details of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object such as its ID and [`ChannelStatus`]{@link ChannelStatus}.
+   * Contains the details of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as its ID and {@link ChannelStatus}.
    * END CANONICAL DOCSTRING
    */
   interface ChannelDetails {
@@ -403,7 +403,7 @@ declare namespace Types {
     channelId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ChannelStatus`]{@link ChannelStatus} object.
+     * A {@link ChannelStatus} object.
      * END CANONICAL DOCSTRING
      */
     status: ChannelStatus;
@@ -411,7 +411,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the status of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object such as whether it is active and its [`ChannelOccupancy`]{@link ChannelOccupancy}.
+   * Contains the status of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as whether it is active and its {@link ChannelOccupancy}.
    * END CANONICAL DOCSTRING
    */
   interface ChannelStatus {
@@ -423,7 +423,7 @@ declare namespace Types {
     isActive: boolean;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ChannelOccupancy`]{@link ChannelOccupancy} object.
+     * A {@link ChannelOccupancy} object.
      * END CANONICAL DOCSTRING
      */
     occupancy: ChannelOccupancy;
@@ -431,13 +431,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the metrics of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
+   * Contains the metrics of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    */
   interface ChannelOccupancy {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ChannelMetrics`]{@link ChannelMetrics} object.
+     * A {@link ChannelMetrics} object.
      * END CANONICAL DOCSTRING
      */
     metrics: ChannelMetrics;
@@ -445,7 +445,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the metrics associated with a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
+   * Contains the metrics associated with a {@link ChannelBase} or {@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
    * END CANONICAL DOCSTRING
    */
   interface ChannelMetrics {
@@ -457,7 +457,7 @@ declare namespace Types {
     connections: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PRESENCE`]{@link ChannelMode#PRESENCE}.
+     * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE}.
      * END CANONICAL DOCSTRING
      */
     presenceConnections: number;
@@ -469,19 +469,19 @@ declare namespace Types {
     presenceMembers: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PRESENCE_SUBSCRIBE`]{@link ChannelMode#PRESENCE_SUBSCRIBE}.
+     * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE_SUBSCRIBE}.
      * END CANONICAL DOCSTRING
      */
     presenceSubscribers: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PUBLISH`]{@link ChannelMode#PUBLISH}.
+     * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PUBLISH}.
      * END CANONICAL DOCSTRING
      */
     publishers: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`SUBSCRIBE`]{@link ChannelMode#SUBSCRIBE}.
+     * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.SUBSCRIBE}.
      * END CANONICAL DOCSTRING
      */
     subscribers: number;
@@ -489,7 +489,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Passes additional client-specific properties to the REST [`constructor()`]{@link RestBase#constructor} or the Realtime [`constructor()`]{@link RealtimeBase#constructor}.
+   * Passes additional client-specific properties to the REST {@link RestBase.constructor | `constructor()`} or the Realtime {@link RealtimeBase.constructor | `constructor()`}.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -499,7 +499,7 @@ declare namespace Types {
   interface ClientOptions extends AuthOptions {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the [`connect()`]{@link ConnectionBase#connect} method. The default is `true`.
+     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link ConnectionBase.connect | `connect()`} method. The default is `true`.
      *
      * @defaultValue `true`
      * END CANONICAL DOCSTRING
@@ -512,7 +512,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When a [`TokenParams`]{@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably [`TokenRequest`s]{@link TokenRequest}.
+     * When a {@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably {@link TokenRequest | `TokenRequest`s}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -701,7 +701,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * If the connection is still in the [`DISCONNECTED`]{@link ConnectionState#DISCONNECTED} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
+     * If the connection is still in the {@link ConnectionState.DISCONNECTED} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
      *
      * @defaultValue 15s
      * END CANONICAL DOCSTRING
@@ -714,7 +714,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When the connection enters the [`SUSPENDED`]{@link ConnectionState#SUSPENDED} state, after this delay, if the state is still [`SUSPENDED`]{@link ConnectionState#SUSPENDED}, the client library attempts to reconnect automatically. The default is 30 seconds.
+     * When the connection enters the {@link ConnectionState.SUSPENDED} state, after this delay, if the state is still {@link ConnectionState.SUSPENDED | `SUSPENDED`}, the client library attempts to reconnect automatically. The default is 30 seconds.
      *
      * @defaultValue 30s
      * END CANONICAL DOCSTRING
@@ -847,7 +847,7 @@ declare namespace Types {
   interface AuthOptions {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed [`TokenRequest`]{@link TokenRequest}; a [`TokenDetails`]{@link TokenDetails} (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication#ably-jwt). See [the authentication documentation](https://ably.com/docs/realtime/authentication) for details of the Ably [`TokenRequest`]{@link TokenRequest} format and associated API calls.
+     * Called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication.ably-jwt). See [the authentication documentation](https://ably.com/docs/realtime/authentication) for details of the Ably {@link TokenRequest} format and associated API calls.
      *
      * @param TokenParams - The parameters that should be used to generate the token.
      *
@@ -909,7 +909,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A URL that the library may use to obtain a token string (in plain text format), or a signed [`TokenRequest`]{@link TokenRequest} or [`TokenDetails`]{@link TokenDetails} (in JSON format) from.
+     * A URL that the library may use to obtain a token string (in plain text format), or a signed {@link TokenRequest} or {@link TokenDetails} (in JSON format) from.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -920,7 +920,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The full API key string, as obtained from the [Ably dashboard](https://ably.com/dashboard). Use this option if you wish to use Basic authentication, or wish to be able to issue Ably Tokens without needing to defer to a separate entity to sign Ably [`TokenRequest`s]{@link TokenRequest}. Read more about [Basic authentication](https://ably.com/docs/core-features/authentication#basic-authentication).
+     * The full API key string, as obtained from the [Ably dashboard](https://ably.com/dashboard). Use this option if you wish to use Basic authentication, or wish to be able to issue Ably Tokens without needing to defer to a separate entity to sign Ably {@link TokenRequest | `TokenRequest`s}. Read more about [Basic authentication](https://ably.com/docs/core-features/authentication#basic-authentication).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -931,7 +931,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * If `true`, the library queries the Ably servers for the current time when issuing [`TokenRequest`s]{@link TokenRequest} instead of relying on a locally-available time of day. Knowing the time accurately is needed to create valid signed Ably [`TokenRequest`s]{@link TokenRequest}, so this option is useful for library instances on auth servers where for some reason the server clock cannot be kept synchronized through normal means, such as an [NTP daemon](https://en.wikipedia.org/wiki/Ntpd). The server is queried for the current time once per client library instance (which stores the offset from the local clock), so if using this option you should avoid instancing a new version of the library for each request. The default is `false`.
+     * If `true`, the library queries the Ably servers for the current time when issuing {@link TokenRequest | `TokenRequest`s} instead of relying on a locally-available time of day. Knowing the time accurately is needed to create valid signed Ably {@link TokenRequest | `TokenRequest`s}, so this option is useful for library instances on auth servers where for some reason the server clock cannot be kept synchronized through normal means, such as an [NTP daemon](https://en.wikipedia.org/wiki/Ntpd). The server is queried for the current time once per client library instance (which stores the offset from the local clock), so if using this option you should avoid instancing a new version of the library for each request. The default is `false`.
      *
      * @defaultValue `false`
      * END CANONICAL DOCSTRING
@@ -944,7 +944,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An authenticated token. This can either be a [`TokenDetails`]{@link TokenDetails} object, a [`TokenRequest`]{@link TokenRequest} object, or token string (obtained from the `token` property of a [`TokenDetails`]{@link TokenDetails} component of an Ably [`TokenRequest`]{@link TokenRequest} response, or a JSON Web Token satisfying [the Ably requirements for JWTs](https://ably.com/docs/core-features/authentication#ably-jwt)). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
+     * An authenticated token. This can either be a {@link TokenDetails} object, a {@link TokenRequest} object, or token string (obtained from the `token` property of a {@link TokenDetails} component of an Ably {@link TokenRequest} response, or a JSON Web Token satisfying [the Ably requirements for JWTs](https://ably.com/docs/core-features/authentication#ably-jwt)). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -955,7 +955,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An authenticated [`TokenDetails`]{@link TokenDetails} object (most commonly obtained from an Ably Token Request response). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Use this option if you wish to use Token authentication. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
+     * An authenticated {@link TokenDetails} object (most commonly obtained from an Ably Token Request response). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Use this option if you wish to use Token authentication. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -966,7 +966,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When `true`, forces token authentication to be used by the library. If a `clientId` is not specified in the [`ClientOptions`]{@link ClientOptions} or [`TokenParams`]{@link TokenParams}, then the Ably Token issued is [anonymous](https://ably.com/docs/core-features/authentication#identified-clients).
+     * When `true`, forces token authentication to be used by the library. If a `clientId` is not specified in the {@link ClientOptions} or {@link TokenParams}, then the Ably Token issued is [anonymous](https://ably.com/docs/core-features/authentication#identified-clients).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1045,7 +1045,7 @@ declare namespace Types {
     clientId?: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A cryptographically secure random string of at least 16 characters, used to ensure the [`TokenRequest`]{@link TokenRequest} cannot be reused.
+     * A cryptographically secure random string of at least 16 characters, used to ensure the {@link TokenRequest} cannot be reused.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1079,7 +1079,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Sets the properties to configure encryption for a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
+   * Sets the properties to configure encryption for a {@link ChannelBase} or {@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -1219,7 +1219,7 @@ declare namespace Types {
   interface StatsMessageTypes {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of messages and presence messages.
+     * A {@link StatsMessageCount} object containing the count and byte value of messages and presence messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1229,7 +1229,7 @@ declare namespace Types {
     all: StatsMessageCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of messages.
+     * A {@link StatsMessageCount} object containing the count and byte value of messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1239,7 +1239,7 @@ declare namespace Types {
     messages: StatsMessageCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of presence messages.
+     * A {@link StatsMessageCount} object containing the count and byte value of presence messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1365,7 +1365,7 @@ declare namespace Types {
   interface StatsConnectionTypes {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
+     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1375,7 +1375,7 @@ declare namespace Types {
     all: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
+     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1385,7 +1385,7 @@ declare namespace Types {
     plain: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections.
+     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1407,7 +1407,7 @@ declare namespace Types {
   interface StatsMessageTraffic {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for all messages (includes `realtime`, `rest` and `webhook` messages).
+     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for all messages (includes `realtime`, `rest` and `webhook` messages).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1417,7 +1417,7 @@ declare namespace Types {
     all: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
+     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1427,7 +1427,7 @@ declare namespace Types {
     realtime: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a rest transport such as WebSocket.
+     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a rest transport such as WebSocket.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1437,7 +1437,7 @@ declare namespace Types {
     rest: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
+     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1511,7 +1511,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the properties of a request for a token to Ably. Tokens are generated using [`AuthCallbacks.requestToken`]{@link AuthCallbacks#requestToken} or [`AuthPromise.requestToken`]{@link AuthPromise#requestToken}.
+   * Contains the properties of a request for a token to Ably. Tokens are generated using {@link AuthCallbacks.requestToken} or {@link AuthPromise.requestToken}.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -1634,7 +1634,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the possible flags used to configure client capabilities, using [`ChannelOptions`]{@link ChannelOptions}.
+   * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
    * END CANONICAL DOCSTRING
    */
   type ChannelMode =
@@ -1650,7 +1650,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Passes additional properties to a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, such as encryption, [`ChannelMode`]{@link ChannelMode} and channel parameters.
+   * Passes additional properties to a {@link ChannelBase} or {@link RealtimeChannelBase} object, such as encryption, {@link ChannelMode} and channel parameters.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -1680,7 +1680,7 @@ declare namespace Types {
     params?: ChannelParams;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An array of [`ChannelMode`]{@link ChannelMode} objects.
+     * An array of {@link ChannelMode} objects.
      * END CANONICAL DOCSTRING
      */
     modes?: ChannelModes;
@@ -1831,13 +1831,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains state change information emitted by [`ChannelBase`]{@link ChannelBase} and [`RealtimeChannelBase`]{@link RealtimeChannelBase} objects.
+   * Contains state change information emitted by {@link ChannelBase} and {@link RealtimeChannelBase} objects.
    * END CANONICAL DOCSTRING
    */
   interface ChannelStateChange {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The new current [`ChannelState`]{@link ChannelState}.
+     * The new current {@link ChannelState}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1847,7 +1847,7 @@ declare namespace Types {
     current: ChannelState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The previous state. For the [`UPDATE`]{@link ChannelEvent#UPDATE} event, this is equal to the `current` [`ChannelState`]{@link ChannelState}.
+     * The previous state. For the {@link ChannelEvent.UPDATE} event, this is equal to the `current` {@link ChannelState}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1857,7 +1857,7 @@ declare namespace Types {
     previous: ChannelState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`ErrorInfo`]{@link ErrorInfo} object containing any information relating to the transition.
+     * An {@link ErrorInfo} object containing any information relating to the transition.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1879,13 +1879,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains [`ConnectionState`]{@link ConnectionState} change information emitted by the [`ConnectionBase`]{@link ConnectionBase} object.
+   * Contains {@link ConnectionState} change information emitted by the {@link ConnectionBase} object.
    * END CANONICAL DOCSTRING
    */
   interface ConnectionStateChange {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The new [`ConnectionState`]{@link ConnectionState}.
+     * The new {@link ConnectionState}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1895,7 +1895,7 @@ declare namespace Types {
     current: ConnectionState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The previous [`ConnectionState`]{@link ConnectionState}. For the [`UPDATE`]{@link ConnectionEvent#UPDATE} event, this is equal to the current [`ConnectionState`]{@link ConnectionState}.
+     * The previous {@link ConnectionState}. For the {@link ConnectionEvent.UPDATE} event, this is equal to the current {@link ConnectionState}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1905,7 +1905,7 @@ declare namespace Types {
     previous: ConnectionState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`ErrorInfo`]{@link ErrorInfo} object containing any information relating to the transition.
+     * An {@link ErrorInfo} object containing any information relating to the transition.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2057,7 +2057,7 @@ declare namespace Types {
     clientId?: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The [`DevicePlatform`]{@link DevicePlatform} associated with the device. Describes the platform the device uses, such as `android` or `ios`.
+     * The {@link DevicePlatform} associated with the device. Describes the platform the device uses, such as `android` or `ios`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2067,7 +2067,7 @@ declare namespace Types {
     platform: DevicePlatform;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The [`DeviceFormFactor`]{@link DeviceFormFactor} object associated with the device. Describes the type of the device, such as `phone` or `tablet`.
+     * The {@link DeviceFormFactor} object associated with the device. Describes the type of the device, such as `phone` or `tablet`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2093,7 +2093,7 @@ declare namespace Types {
     deviceSecret?: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The [`DevicePushDetails`]{@link DevicePushDetails} object associated with the device. Describes the details of the push registration of the device.
+     * The {@link DevicePushDetails} object associated with the device. Describes the details of the push registration of the device.
      * END CANONICAL DOCSTRING
      */
     push: DevicePushDetails;
@@ -2174,7 +2174,7 @@ declare namespace Types {
     state?: DevicePushState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`ErrorInfo`]{@link ErrorInfo} object describing the most recent error when the `state` is `Failing` or `Failed`.
+     * An {@link ErrorInfo} object describing the most recent error when the `state` is `Failing` or `Failed`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2400,7 +2400,7 @@ declare namespace Types {
   // present both methods
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`ConnectionBase`]{@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
    * END CANONICAL DOCSTRING
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
@@ -2511,15 +2511,15 @@ declare namespace Types {
   class RestBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Construct a `RestClient` object using an Ably [`ClientOptions`]{@link Types.ClientOptions} object.
+     * Construct a `RestClient` object using an Ably {@link Types.ClientOptions} object.
      *
-     * @param ClientOptions - A [`ClientOptions`]{@link Types.ClientOptions} object to configure the client connection to Ably.
+     * @param ClientOptions - A {@link Types.ClientOptions} object to configure the client connection to Ably.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DOCSTRING
-     * Constructs a `RealtimeClient` object using an Ably [`ClientOptions`]{@link ClientOptions} object.
+     * Constructs a `RealtimeClient` object using an Ably {@link ClientOptions} object.
      *
-     * @param ClientOptions - A [`ClientOptions`]{@link ClientOptions} object.
+     * @param ClientOptions - A {@link ClientOptions} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2581,7 +2581,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthCallbacks`]{@link Types.AuthCallbacks} object.
+     * An {@link Types.AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2591,7 +2591,7 @@ declare namespace Types {
     auth: Types.AuthCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Types.Channels} object.
+     * A {@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2609,7 +2609,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An {@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2633,7 +2633,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2656,7 +2656,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2674,7 +2674,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2697,7 +2697,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2709,7 +2709,7 @@ declare namespace Types {
     stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -2723,7 +2723,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushCallbacks`]{@link Types.PushCallbacks} object.
+     * A {@link Types.PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2751,7 +2751,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthPromise`]{@link Types.AuthPromise} object.
+     * An {@link Types.AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2761,7 +2761,7 @@ declare namespace Types {
     auth: Types.AuthPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Types.Channels} object.
+     * A {@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2779,7 +2779,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An {@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2801,7 +2801,7 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2824,7 +2824,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2840,7 +2840,7 @@ declare namespace Types {
     ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -2852,7 +2852,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushPromise`]{@link Types.PushPromise} object.
+     * A {@link Types.PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2882,13 +2882,13 @@ declare namespace Types {
     clientId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.close()`]{@link Types.ConnectionBase#close} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to [`connect()`]{@link Types.ConnectionBase#connect}.
+     * Calls {@link Types.ConnectionBase.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.ConnectionBase.connect | `connect()`}.
      * END CANONICAL DOCSTRING
      */
     close(): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.connect()`]{@link Types.ConnectionBase#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link Types.ClientOptions#autoConnect} property is disabled.
+     * Calls {@link Types.ConnectionBase.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
      * END CANONICAL DOCSTRING
      */
     connect(): void;
@@ -2896,13 +2896,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A client that extends the functionality of [`RestCallbacks`]{@link RestCallbacks} and provides additional realtime-specific features.
+   * A client that extends the functionality of {@link RestCallbacks} and provides additional realtime-specific features.
    * END CANONICAL DOCSTRING
    */
   class RealtimeCallbacks extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthCallbacks`]{@link Types.AuthCallbacks} object.
+     * An {@link Types.AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2912,7 +2912,7 @@ declare namespace Types {
     auth: Types.AuthCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Types.Channels} object.
+     * A {@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2922,7 +2922,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelCallbacks>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ConnectionCallbacks`]{@link Types.ConnectionCallbacks} object.
+     * A {@link Types.ConnectionCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2940,7 +2940,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An {@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2964,7 +2964,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -2972,7 +2972,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2990,7 +2990,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -2998,7 +2998,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3010,7 +3010,7 @@ declare namespace Types {
     stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -3024,7 +3024,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushCallbacks`]{@link Types.PushCallbacks} object.
+     * A {@link Types.PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3036,13 +3036,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A client that extends the functionality of [`RestPromise`]{@link RestPromise} and provides additional realtime-specific features.
+   * A client that extends the functionality of {@link RestPromise} and provides additional realtime-specific features.
    * END CANONICAL DOCSTRING
    */
   class RealtimePromise extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthPromise`]{@link Types.AuthPromise} object.
+     * An {@link Types.AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3052,7 +3052,7 @@ declare namespace Types {
     auth: Types.AuthPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Types.Channels} object.
+     * A {@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3062,7 +3062,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelPromise>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ConnectionPromise`]{@link Types.ConnectionPromise} object.
+     * A {@link Types.ConnectionPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3080,7 +3080,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An {@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3102,7 +3102,7 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -3110,7 +3110,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3126,7 +3126,7 @@ declare namespace Types {
     ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -3138,7 +3138,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushPromise`]{@link Types.PushPromise} object.
+     * A {@link Types.PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3166,18 +3166,18 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Creates Ably [`TokenRequest`]{@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
+   * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
    * END CANONICAL DOCSTRING
    */
   class AuthCallbacks extends AuthBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * @returns A {@link TokenDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3193,12 +3193,12 @@ declare namespace Types {
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Creates and signs an Ably [`TokenRequest`]{@link TokenRequest} based on the specified (or if none specified, the client library stored) [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably [`TokenRequest`]{@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably [`TokenRequest`]{@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the [`ClientOptions`]{@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably [`TokenRequest`]{@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenRequest`]{@link TokenRequest} object.
+     * @returns A {@link TokenRequest} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3220,12 +3220,12 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions}. Both [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the [`ClientOptions`]{@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably [`TokenRequest`]{@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * @returns A {@link TokenDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3249,18 +3249,18 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Creates Ably [`TokenRequest`]{@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
+   * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
    * END CANONICAL DOCSTRING
    */
   class AuthPromise extends AuthBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * @returns A {@link TokenDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3275,12 +3275,12 @@ declare namespace Types {
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Creates and signs an Ably [`TokenRequest`]{@link TokenRequest} based on the specified (or if none specified, the client library stored) [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably [`TokenRequest`]{@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably [`TokenRequest`]{@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the [`ClientOptions`]{@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably [`TokenRequest`]{@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenRequest`]{@link TokenRequest} object.
+     * @returns A {@link TokenRequest} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3297,12 +3297,12 @@ declare namespace Types {
     createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions}. Both [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the [`ClientOptions`]{@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably [`TokenRequest`]{@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
-     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * @returns A {@link TokenDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3327,7 +3327,7 @@ declare namespace Types {
   class PresenceCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
      * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -3336,7 +3336,7 @@ declare namespace Types {
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3357,7 +3357,7 @@ declare namespace Types {
     get(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3373,7 +3373,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3386,7 +3386,7 @@ declare namespace Types {
     history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3402,7 +3402,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3422,7 +3422,7 @@ declare namespace Types {
   class PresencePromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
      * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -3431,7 +3431,7 @@ declare namespace Types {
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3443,7 +3443,7 @@ declare namespace Types {
     get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3459,7 +3459,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3483,9 +3483,9 @@ declare namespace Types {
     syncComplete: boolean;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel for a given [`PresenceAction`]{@link PresenceAction}.
+     * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}.
      *
-     * @param PresenceAction - A specific [`PresenceAction`]{@link PresenceAction} to deregister the listener for.
+     * @param PresenceAction - A specific {@link PresenceAction} to deregister the listener for.
      * @param (PresenceMessage) -> - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -3518,7 +3518,7 @@ declare namespace Types {
     unsubscribe(presence: Array<PresenceAction>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel.
+     * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel.
      *
      * @param (PresenceMessage) -> - An event listener function.
      * END CANONICAL DOCSTRING
@@ -3532,7 +3532,7 @@ declare namespace Types {
     unsubscribe(listener: messageCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Deregisters all listeners currently receiving [`PresenceMessage`]{@link PresenceMessage} for the channel.
+     * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3550,16 +3550,16 @@ declare namespace Types {
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
-     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is [`ATTACHED`]{@link ChannelState#ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
+     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
      * BEGIN CANONICAL PARAM DEFAULT INFO
      * default true
      * END CANONICAL PARAM DEFAULT INFO
      * @param clientId - Filters the array of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
      *
-     * @returns An array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns An array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3576,7 +3576,7 @@ declare namespace Types {
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3589,7 +3589,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
 
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3602,9 +3602,9 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation.
      *
-     * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
+     * @param `PresenceAction` \| `[PresenceAction]` - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -3623,7 +3623,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation.
      *
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -3654,7 +3654,7 @@ declare namespace Types {
     enter(data?: any, callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an [`ENTER`]{@link PresenceAction#ENTER} event. An optional callback may be provided to notify of the success or failure of the operation.
+     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event. An optional callback may be provided to notify of the success or failure of the operation.
      *
      * @param Data - The payload to update for the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
@@ -3748,16 +3748,16 @@ declare namespace Types {
   class RealtimePresencePromise extends RealtimePresenceBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
-     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is [`ATTACHED`]{@link ChannelState#ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
+     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
      * BEGIN CANONICAL PARAM DEFAULT INFO
      * default true
      * END CANONICAL PARAM DEFAULT INFO
      * @param clientId - Filters the array of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
      *
-     * @returns An array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns An array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3773,7 +3773,7 @@ declare namespace Types {
     get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3786,7 +3786,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
 
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3798,9 +3798,9 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
      *
-     * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
+     * @param `PresenceAction` \| `[PresenceAction]` - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -3817,7 +3817,7 @@ declare namespace Types {
     ): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
      *
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -3846,7 +3846,7 @@ declare namespace Types {
     enter(data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an [`ENTER`]{@link PresenceAction#ENTER} event. An optional callback may be provided to notify of the success or failure of the operation.
+     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event. An optional callback may be provided to notify of the success or failure of the operation.
      *
      * @param Data - The payload to update for the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
@@ -3951,7 +3951,7 @@ declare namespace Types {
   class ChannelCallbacks extends ChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PresenceCallbacks`]{@link PresenceCallbacks} object.
+     * A {@link PresenceCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3961,7 +3961,7 @@ declare namespace Types {
     presence: PresenceCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3977,7 +3977,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4009,7 +4009,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
-     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param [`Message`] - An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4024,7 +4024,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
-     * @param Message - A [`Message`]{@link Message} object.
+     * @param Message - A {@link Message} object.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
@@ -4052,9 +4052,9 @@ declare namespace Types {
     publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`ChannelDetails`]{@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
+     * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
-     * @returns A [`ChannelDetails`]{@link ChannelDetails} object.
+     * @returns A {@link ChannelDetails} object.
      * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
@@ -4070,7 +4070,7 @@ declare namespace Types {
   class ChannelPromise extends ChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PresencePromise`]{@link PresencePromise} object.
+     * A {@link PresencePromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4080,7 +4080,7 @@ declare namespace Types {
     presence: PresencePromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4096,7 +4096,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4110,7 +4110,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
-     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param [`Message`] - An array of {@link Message} objects.
      * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
@@ -4126,7 +4126,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
-     * @param Message - A [`Message`]{@link Message} object.
+     * @param Message - A {@link Message} object.
      * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
@@ -4154,9 +4154,9 @@ declare namespace Types {
     publish(name: string, data: any, options?: PublishOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`ChannelDetails`]{@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
+     * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
-     * @returns A [`ChannelDetails`]{@link ChannelDetails} object.
+     * @returns A {@link ChannelDetails} object.
      * END CANONICAL DOCSTRING
      */
     status(): Promise<ChannelDetails>;
@@ -4174,13 +4174,13 @@ declare namespace Types {
     readonly name: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`ErrorInfo`]{@link ErrorInfo} object describing the last error which occurred on the channel, if any.
+     * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any.
      * END CANONICAL DOCSTRING
      */
     errorReason: ErrorInfo;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The current [`ChannelState`]{@link ChannelState} of the channel.
+     * The current {@link ChannelState} of the channel.
      * END CANONICAL DOCSTRING
      */
     readonly state: ChannelState;
@@ -4192,7 +4192,7 @@ declare namespace Types {
     params: ChannelParams;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An array of [`ChannelMode`]{@link ChannelMode} objects.
+     * An array of {@link ChannelMode} objects.
      * END CANONICAL DOCSTRING
      */
     modes: ChannelModes;
@@ -4248,7 +4248,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners to messages on this channel that match the supplied filter.
      *
-     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
+     * @param MessageFilter - A {@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -4290,7 +4290,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains properties to filter messages with when calling [`RealtimeChannelCallbacks.subscribe()`]{@link RealtimeChannelCallbacks#subscribe} or [`RealtimeChannelPromise.subscribe()`]{@link RealtimeChannelPromise#subscribe}.
+   * Contains properties to filter messages with when calling {@link RealtimeChannelCallbacks.subscribe | `RealtimeChannelCallbacks.subscribe()`} or {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
    * END CANONICAL DOCSTRING
    */
   type MessageFilter = {
@@ -4328,13 +4328,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object of a channel.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresenceCallbacks} object of a channel.
    * END CANONICAL DOCSTRING
    */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object.
+     * A {@link RealtimePresenceCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4344,7 +4344,7 @@ declare namespace Types {
     presence: RealtimePresenceCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannelCallbacks#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannelCallbacks#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresenceCallbacks#enter} or [`subscribe()`]{@link RealtimePresenceCallbacks#subscribe} are called on the [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelCallbacks.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelCallbacks.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresenceCallbacks.enter | `enter()`} or {@link RealtimePresenceCallbacks.subscribe | `subscribe()`} are called on the {@link RealtimePresenceCallbacks} object for this channel.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4358,7 +4358,7 @@ declare namespace Types {
     attach(callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4372,7 +4372,7 @@ declare namespace Types {
     detach(callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4392,7 +4392,7 @@ declare namespace Types {
      * default false
      * END CANONICAL PARAM DEFAULT INFO
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4405,9 +4405,9 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Sets the [`ChannelOptions`]{@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
+     * Sets the {@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
      *
-     * @param options - A [`ChannelOptions`]{@link ChannelOptions} object.
+     * @param options - A {@link ChannelOptions} object.
      * END CANONICAL DOCSTRING
      *
      * @param options - Not yet documented.
@@ -4416,7 +4416,7 @@ declare namespace Types {
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation.
      *
      * @param String - The event name.
      * @param (Message) - An event listener function.
@@ -4433,7 +4433,7 @@ declare namespace Types {
     subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation.
      *
      * @param [`String`] - An array of event names.
      * @param (Message) - An event listener function.
@@ -4446,9 +4446,9 @@ declare namespace Types {
     subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannel.attach | `attach()`} operation.
      *
-     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
+     * @param MessageFilter - A {@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -4459,7 +4459,7 @@ declare namespace Types {
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation.
      *
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -4493,7 +4493,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param [`Message`] - An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4508,7 +4508,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param Message - A [`Message`]{@link Message} object.
+     * @param Message - A {@link Message} object.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
@@ -4543,13 +4543,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresencePromise`]{@link RealtimePresencePromise} object of a channel.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresencePromise} object of a channel.
    * END CANONICAL DOCSTRING
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RealtimePresencePromise`]{@link RealtimePresencePromise} object.
+     * A {@link RealtimePresencePromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4559,7 +4559,7 @@ declare namespace Types {
     presence: RealtimePresencePromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannelPromise#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannelPromise#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresencePromise#enter} or [`subscribe()`]{@link RealtimePresencePromise#subscribe} are called on the [`RealtimePresencePromise`]{@link RealtimePresencePromise} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4571,7 +4571,7 @@ declare namespace Types {
     attach(): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4583,7 +4583,7 @@ declare namespace Types {
     detach(): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4603,7 +4603,7 @@ declare namespace Types {
      * default false
      * END CANONICAL PARAM DEFAULT INFO
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4615,9 +4615,9 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Sets the [`ChannelOptions`]{@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
+     * Sets the {@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
      *
-     * @param options - A [`ChannelOptions`]{@link ChannelOptions} object.
+     * @param options - A {@link ChannelOptions} object.
      * END CANONICAL DOCSTRING
      *
      * @param options - Not yet documented.
@@ -4625,7 +4625,7 @@ declare namespace Types {
     setOptions(options: ChannelOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
      *
      * @param String - The event name.
      * @param (Message) - An event listener function.
@@ -4641,7 +4641,7 @@ declare namespace Types {
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
      *
      * @param [`String`] - An array of event names.
      * @param (Message) - An event listener function.
@@ -4653,9 +4653,9 @@ declare namespace Types {
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannel.attach | `attach()`} operation.
      *
-     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
+     * @param MessageFilter - A {@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -4665,7 +4665,7 @@ declare namespace Types {
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
      *
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -4697,7 +4697,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param [`Message`] - An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4711,7 +4711,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param Message - A [`Message`]{@link Message} object.
+     * @param Message - A {@link Message} object.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
@@ -4727,18 +4727,18 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Creates and destroys [`ChannelBase`]{@link ChannelBase} and [`RealtimeChannelBase`]{@link RealtimeChannelBase} objects.
+   * Creates and destroys {@link ChannelBase} and {@link RealtimeChannelBase} objects.
    * END CANONICAL DOCSTRING
    */
   class Channels<T> {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Creates a new [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, with the specified [`ChannelOptions`]{@link ChannelOptions}, or returns the existing channel object.
+     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param String - The channel name.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object.
+     * @param ChannelOptions - A {@link ChannelOptions} object.
      *
-     * @returns A [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
+     * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4751,7 +4751,7 @@ declare namespace Types {
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Releases a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the [`ChannelState`]{@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+     * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
      * @param String - The channel name.
      * END CANONICAL DOCSTRING
@@ -4784,7 +4784,7 @@ declare namespace Types {
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonObject - A `Message`-like deserialized object.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns A `Message` object.
      * END CANONICAL DOCSTRING
@@ -4802,9 +4802,9 @@ declare namespace Types {
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
-     * @returns An array of [`Message`]{@link Message} objects.
+     * @returns An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4857,7 +4857,7 @@ declare namespace Types {
     encoding: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, [`delta`]{@link DeltaExtras}, [`ref`]{@link ReferenceExtras} and `headers`.
+     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, {@link DeltaExtras | `delta`}, {@link ReferenceExtras | `ref`} and `headers`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4906,7 +4906,7 @@ declare namespace Types {
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonObject - A `Message`-like deserialized object.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns A `Message` object.
      * END CANONICAL DOCSTRING
@@ -4924,9 +4924,9 @@ declare namespace Types {
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
-     * @returns An array of [`Message`]{@link Message} objects.
+     * @returns An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4951,10 +4951,10 @@ declare namespace Types {
     constructor();
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4967,10 +4967,10 @@ declare namespace Types {
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4983,7 +4983,7 @@ declare namespace Types {
     static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The type of [`PresenceAction`]{@link PresenceAction} the `PresenceMessage` is for.
+     * The type of {@link PresenceAction} the `PresenceMessage` is for.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5059,10 +5059,10 @@ declare namespace Types {
   interface PresenceMessageStatic {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5075,10 +5075,10 @@ declare namespace Types {
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5103,7 +5103,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the properties used to generate a [`CipherParams`]{@link CipherParams} object.
+   * Contains the properties used to generate a {@link CipherParams} object.
    * END CANONICAL DOCSTRING
    */
   type CipherParamOptions = {
@@ -5151,7 +5151,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the properties required to configure the encryption of [`Message`]{@link Message} payloads.
+   * Contains the properties required to configure the encryption of {@link Message} payloads.
    * END CANONICAL DOCSTRING
    */
   interface Crypto {
@@ -5177,11 +5177,11 @@ declare namespace Types {
     generateRandomKey(keyLength?: number, callback?: Types.StandardCallback<CipherKey>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Returns a [`CipherParams`]{@link CipherParams} object, using the default values for any fields not supplied by the [`CipherParamOptions`]{@link CipherParamOptions} object.
+     * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
-     * @param CipherParamOptions - A [`CipherParamOptions`]{@link CipherParamOptions} object.
+     * @param CipherParamOptions - A {@link CipherParamOptions} object.
      *
-     * @returns A [`CipherParams`]{@link CipherParams} object, using the default values for any fields not supplied.
+     * @returns A {@link CipherParams} object, using the default values for any fields not supplied.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5200,7 +5200,7 @@ declare namespace Types {
   class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`ErrorInfo`]{@link ErrorInfo} object describing the last error received if a connection failure occurs.
+     * An {@link ErrorInfo} object describing the last error received if a connection failure occurs.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5252,7 +5252,7 @@ declare namespace Types {
     serial: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The current [`ConnectionState`]{@link ConnectionState} of the connection.
+     * The current {@link ConnectionState} of the connection.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5262,7 +5262,7 @@ declare namespace Types {
     readonly state: ConnectionState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Causes the connection to close, entering the [`CLOSING`]{@link ConnectionState#CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to [`connect()`]{@link ConnectionBase#connect}.
+     * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link ConnectionBase.connect | `connect()`}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5272,7 +5272,7 @@ declare namespace Types {
     close(): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the [`ClientOptions`]{@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the [`CONNECTING`]{@link ConnectionState#CONNECTING} state.
+     * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the {@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the {@link ConnectionState.CONNECTING} state.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5349,7 +5349,7 @@ declare namespace Types {
   class Stats {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing the aggregate count of all message stats.
+     * A {@link StatsMessageTypes} object containing the aggregate count of all message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5359,7 +5359,7 @@ declare namespace Types {
     all: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsRequestCount`]{@link StatsRequestCount} object containing a breakdown of API Requests.
+     * A {@link StatsRequestCount} object containing a breakdown of API Requests.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5369,7 +5369,7 @@ declare namespace Types {
     apiRequests: StatsRequestCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of channels.
+     * A {@link StatsResourceCount} object containing a breakdown of channels.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5379,7 +5379,7 @@ declare namespace Types {
     channels: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsConnectionTypes`]{@link StatsConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
+     * A {@link StatsConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5389,7 +5389,7 @@ declare namespace Types {
     connections: StatsConnectionTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTraffic`]{@link StatsMessageTraffic} object containing the aggregate count of inbound message stats.
+     * A {@link StatsMessageTraffic} object containing the aggregate count of inbound message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5409,7 +5409,7 @@ declare namespace Types {
     intervalId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTraffic`]{@link StatsMessageTraffic} object containing the aggregate count of outbound message stats.
+     * A {@link StatsMessageTraffic} object containing the aggregate count of outbound message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5419,7 +5419,7 @@ declare namespace Types {
     outbound: StatsMessageTraffic;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing the aggregate count of persisted message stats.
+     * A {@link StatsMessageTypes} object containing the aggregate count of persisted message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5429,7 +5429,7 @@ declare namespace Types {
     persisted: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`StatsRequestCount`]{@link StatsRequestCount} object containing a breakdown of Ably Token requests.
+     * A {@link StatsRequestCount} object containing a breakdown of Ably Token requests.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5451,7 +5451,7 @@ declare namespace Types {
   class PaginatedResult<T> {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Contains the current page of results; for example, an array of [`Message`]{@link Message} or [`PresenceMessage`]{@link PresenceMessage} objects for a channel history request.
+     * Contains the current page of results; for example, an array of {@link Message} or {@link PresenceMessage} objects for a channel history request.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5549,7 +5549,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A superset of [`PaginatedResult`]{@link Types.PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
+   * A superset of {@link Types.PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
    * END CANONICAL DOCSTRING
    */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
@@ -5605,7 +5605,7 @@ declare namespace Types {
   class PushCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushAdminCallbacks`]{@link PushAdminCallbacks} object.
+     * A {@link PushAdminCallbacks} object.
      * END CANONICAL DOCSTRING
      */
     admin: PushAdminCallbacks;
@@ -5619,7 +5619,7 @@ declare namespace Types {
   class PushPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushAdmin`]{@link PushAdminPromise} object.
+     * A {@link PushAdminPromise | `PushAdmin`} object.
      * END CANONICAL DOCSTRING
      */
     admin: PushAdminPromise;
@@ -5633,7 +5633,7 @@ declare namespace Types {
   class PushAdminCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushDeviceRegistrationsCallbacks`]{@link PushDeviceRegistrationsCallbacks} object.
+     * A {@link PushDeviceRegistrationsCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5643,7 +5643,7 @@ declare namespace Types {
     deviceRegistrations: PushDeviceRegistrationsCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushChannelSubscriptionsCallbacks`]{@link PushChannelSubscriptionsCallbacks} object.
+     * A {@link PushChannelSubscriptionsCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5678,7 +5678,7 @@ declare namespace Types {
   class PushAdminPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushDeviceRegistrationsPromise`]{@link PushDeviceRegistrationsPromise} object.
+     * A {@link PushDeviceRegistrationsPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5688,7 +5688,7 @@ declare namespace Types {
     deviceRegistrations: PushDeviceRegistrationsPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushChannelSubscriptionsPromise`]{@link PushChannelSubscriptionsPromise} object.
+     * A {@link PushChannelSubscriptionsPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5722,11 +5722,11 @@ declare namespace Types {
   class PushDeviceRegistrationsCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers or updates a [`DeviceDetails`]{@link DeviceDetails} object with Ably. Returns the new, or updated [`DeviceDetails`]{@link DeviceDetails} object.
+     * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object to create or update.
+     * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5739,11 +5739,11 @@ declare namespace Types {
     save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
+     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5756,11 +5756,11 @@ declare namespace Types {
     get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5773,11 +5773,11 @@ declare namespace Types {
     get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5805,9 +5805,9 @@ declare namespace Types {
     remove(deviceId: string, callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Removes a device registered to receive push notifications from Ably using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5843,11 +5843,11 @@ declare namespace Types {
   class PushDeviceRegistrationsPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers or updates a [`DeviceDetails`]{@link DeviceDetails} object with Ably. Returns the new, or updated [`DeviceDetails`]{@link DeviceDetails} object.
+     * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object to create or update.
+     * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5859,11 +5859,11 @@ declare namespace Types {
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
+     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5875,11 +5875,11 @@ declare namespace Types {
     get(deviceId: string): Promise<DeviceDetails>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      *
-     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * @returns A {@link DeviceDetails} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5891,11 +5891,11 @@ declare namespace Types {
     get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5921,9 +5921,9 @@ declare namespace Types {
     remove(deviceId: string): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Removes a device registered to receive push notifications from Ably using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5957,11 +5957,11 @@ declare namespace Types {
   class PushChannelSubscriptionsCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
-     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
      *
-     * @returns A [`PushChannelSubscription`]{@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * @returns A {@link PushChannelSubscription} object describing the new or updated subscriptions.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5974,11 +5974,11 @@ declare namespace Types {
     save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5991,11 +5991,11 @@ declare namespace Types {
     list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of channel names.
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of channel names.
+     * @returns A {@link Types.PaginatedResult} object containing an array of channel names.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6010,7 +6010,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
-     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6046,11 +6046,11 @@ declare namespace Types {
   class PushChannelSubscriptionsPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
-     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
      *
-     * @returns A [`PushChannelSubscription`]{@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * @returns A {@link PushChannelSubscription} object describing the new or updated subscriptions.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6062,11 +6062,11 @@ declare namespace Types {
     save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6078,11 +6078,11 @@ declare namespace Types {
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of channel names.
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of channel names.
+     * @returns A {@link Types.PaginatedResult} object containing an array of channel names.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6096,7 +6096,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
-     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6138,7 +6138,7 @@ export declare class Rest extends Types.RestCallbacks {}
 
 /**
  * BEGIN CANONICAL DOCSTRING
- * A client that extends the functionality of [`Rest`]{@link Rest} and provides additional realtime-specific features.
+ * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  * END CANONICAL DOCSTRING
  *
  * BEGIN LEGACY DOCSTRING

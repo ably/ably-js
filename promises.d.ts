@@ -14,7 +14,7 @@ import Ably = require('./ably');
 export declare class Rest extends Ably.Rest.Promise {}
 /**
  * BEGIN CANONICAL DOCSTRING
- * A client that extends the functionality of [`Rest`]{@link Rest} and provides additional realtime-specific features.
+ * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  * END CANONICAL DOCSTRING
  *
  * BEGIN LEGACY DOCSTRING
