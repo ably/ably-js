@@ -762,6 +762,10 @@ declare namespace Types {
      */
     algorithm: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The private key used to encrypt and decrypt payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A binary (`ArrayBuffer` or `WordArray`) or base64-encoded String containing the secret key used for encryption and decryption.
      * END LEGACY DOCSTRING
