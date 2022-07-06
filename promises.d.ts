@@ -1,6 +1,10 @@
 import Ably = require('./ably');
 
 /**
+ * BEGIN CANONICAL DOCSTRING
+ * The `Rest` object offers a simple stateless API to interact directly with Ably's REST API.
+ * END CANONICAL DOCSTRING
+ *
  * BEGIN LEGACY DOCSTRING
  * The Ably REST client offers a simple stateless API to interact directly with Ably’s REST API.
  *

@@ -1810,7 +1810,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A client that offers a simple stateless API to interact directly with Ably's REST API.
+   * END CANONICAL DOCSTRING
    */
   class RestCallbacks extends RestBase {
     /**
@@ -1894,7 +1896,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A client that offers a simple stateless API to interact directly with Ably's REST API.
+   * END CANONICAL DOCSTRING
    */
   class RestPromise extends RestBase {
     /**
@@ -3870,6 +3874,10 @@ declare namespace Types {
 }
 
 /**
+ * BEGIN CANONICAL DOCSTRING
+ * A client that offers a simple stateless API to interact directly with Ably's REST API.
+ * END CANONICAL DOCSTRING
+ *
  * BEGIN LEGACY DOCSTRING
  * The Ably REST client offers a simple stateless API to interact directly with Ably’s REST API.
  *
