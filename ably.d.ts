@@ -2145,7 +2145,9 @@ declare namespace Types {
      */
     static Callbacks: typeof Types.RealtimeCallbacks;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
+     * END CANONICAL DOCSTRING
      */
     clientId: string;
     /**
