@@ -3775,6 +3775,13 @@ declare namespace Types {
      */
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     *
+     * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      *
@@ -3848,6 +3855,13 @@ declare namespace Types {
      */
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in [`ChannelOptions`]{@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+     *
+     * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object containing the cipher.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      *
