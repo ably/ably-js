@@ -3831,6 +3831,10 @@ declare namespace Types {
      */
     data: any;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * This will typically be empty as all presence messages received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * This will typically be empty as all presence updates received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
      * END LEGACY DOCSTRING
