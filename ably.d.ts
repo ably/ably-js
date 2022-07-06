@@ -2562,6 +2562,19 @@ declare namespace Types {
    */
   class PresenceCallbacks {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     *
+     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default 100
+     * END PARAM CANONICAL API DEFAULT
+     * @param clientId - Filters the list of returned presence members by a specific client using its ID.
+     * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
      * END LEGACY DOCSTRING
@@ -2604,6 +2617,19 @@ declare namespace Types {
    */
   class PresencePromise {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     *
+     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * BEGIN PARAM CANONICAL API DEFAULT
+     * api-default 100
+     * END PARAM CANONICAL API DEFAULT
+     * @param clientId - Filters the list of returned presence members by a specific client using its ID.
+     * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Get the current presence member set for this channel. In the REST client library this method directly queries [Ably’s REST presence API](https://ably.com/documentation/rest-api#presence).
      * END LEGACY DOCSTRING
