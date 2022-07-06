@@ -1800,6 +1800,12 @@ declare namespace Types {
      * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
      * END CANONICAL DOCSTRING
      *
+     * BEGIN CANONICAL DOCSTRING
+     * Constructs a `RealtimeClient` object using an Ably API key or token string.
+     *
+     * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Creates an Ably client instance
      *
