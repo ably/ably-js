@@ -2147,7 +2147,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+   * END CANONICAL DOCSTRING
    */
   class RealtimeCallbacks extends RealtimeBase {
     /**
@@ -2227,7 +2229,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+   * END CANONICAL DOCSTRING
    */
   class RealtimePromise extends RealtimeBase {
     /**
@@ -4040,6 +4044,10 @@ declare namespace Types {
 export declare class Rest extends Types.RestCallbacks {}
 
 /**
+ * BEGIN CANONICAL DOCSTRING
+ * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+ * END CANONICAL DOCSTRING
+ *
  * BEGIN LEGACY DOCSTRING
  * The Ably Realtime client establishes and maintains a persistent connection to Ably and provides methods to publish and subscribe to messages over a low latency realtime connection.
  *

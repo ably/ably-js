@@ -13,6 +13,10 @@ import Ably = require('./ably');
  */
 export declare class Rest extends Ably.Rest.Promise {}
 /**
+ * BEGIN CANONICAL DOCSTRING
+ * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+ * END CANONICAL DOCSTRING
+ *
  * BEGIN LEGACY DOCSTRING
  * The Ably Realtime client establishes and maintains a persistent connection to Ably and provides methods to publish and subscribe to messages over a low latency realtime connection.
  *
