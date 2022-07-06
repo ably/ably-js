@@ -3801,6 +3801,10 @@ declare namespace Types {
      */
     action: PresenceAction;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The ID of the client that published the `PresenceMessage`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The client ID of the publisher of this presence update.
      * END LEGACY DOCSTRING
