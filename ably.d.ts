@@ -3851,6 +3851,10 @@ declare namespace Types {
      */
     id: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The time the `PresenceMessage` was received by Ably, as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Timestamp when the presence update was received by Ably, as milliseconds since the epoch.
      * END LEGACY DOCSTRING
