@@ -2746,6 +2746,10 @@ declare namespace Types {
      */
     unsubscribe(presence: Array<PresenceAction>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe the given listener from presence message events on this channel. This removes an earlier subscription.
      * END LEGACY DOCSTRING
