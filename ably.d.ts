@@ -3749,7 +3749,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains an individual presence update sent to, or received from, Ably.
+   * END CANONICAL DOCSTRING
    */
   class PresenceMessage {
     /**
