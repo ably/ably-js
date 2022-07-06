@@ -2760,7 +2760,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
+   * END CANONICAL DOCSTRING
    */
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     /**
@@ -2868,7 +2870,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
+   * END CANONICAL DOCSTRING
    */
   class RealtimePresencePromise extends RealtimePresenceBase {
     /**
