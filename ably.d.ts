@@ -2157,7 +2157,9 @@ declare namespace Types {
      */
     close(): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Calls [`connection.connect()`]{@link Connection#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link ClientOptions#autoConnect} property is disabled.
+     * END CANONICAL DOCSTRING
      */
     connect(): void;
   }
