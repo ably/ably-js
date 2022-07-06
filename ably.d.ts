@@ -3597,7 +3597,9 @@ declare namespace Types {
   };
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the properties required to configure the encryption of [`Message`]{@link Message} payloads.
+   * END CANONICAL DOCSTRING
    */
   interface Crypto {
     /**
