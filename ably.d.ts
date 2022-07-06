@@ -2954,6 +2954,14 @@ declare namespace Types {
      */
     updateClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param clientId - The ID of the client to leave the presence set for.
+     * @param Data - The payload associated with the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
      * END LEGACY DOCSTRING
@@ -3134,6 +3142,14 @@ declare namespace Types {
      */
     updateClient(clientId: string, data?: any): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param clientId - The ID of the client to leave the presence set for.
+     * @param Data - The payload associated with the presence member.
+     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
      * END LEGACY DOCSTRING
