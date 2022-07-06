@@ -1838,6 +1838,10 @@ declare namespace Types {
      */
     static Callbacks: typeof Types.RestCallbacks;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An [`Auth`]{@link Auth} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the Auth authentication object.
      * END LEGACY DOCSTRING
@@ -1924,6 +1928,10 @@ declare namespace Types {
      */
     static Callbacks: typeof Types.RestCallbacks;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An [`Auth`]{@link Auth} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the Auth authentication object.
      * END LEGACY DOCSTRING
