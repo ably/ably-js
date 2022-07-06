@@ -315,8 +315,8 @@ Message Interactions allow you to interact with messages previously sent to a ch
 Example emoji reaction to a message:
 
 ```javascript
-const sendReaction = (emoji) => {
-    channel.publish('', { body: "😀", extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
+function sendReaction(emoji) {
+    channel.publish('event_name', { body: emoji, extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
 }
 ```
 
