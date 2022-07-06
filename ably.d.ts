@@ -772,6 +772,10 @@ declare namespace Types {
      */
     key: CipherKey;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The length of the key in bits; for example 128 or 256.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The key length in bits of the cipher, either 128 or 256.
      * END LEGACY DOCSTRING
