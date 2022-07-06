@@ -2187,6 +2187,10 @@ declare namespace Types {
      */
     channels: Types.Channels<Types.RealtimeChannelCallbacks>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Connection`]{@link Connection} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the `Connection` object.
      * END LEGACY DOCSTRING
@@ -2281,6 +2285,10 @@ declare namespace Types {
      */
     channels: Types.Channels<Types.RealtimeChannelPromise>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Connection`]{@link Connection} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A reference to the `Connection` object.
      * END LEGACY DOCSTRING
