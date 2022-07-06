@@ -2820,6 +2820,13 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
+     * @param (PresenceMessage) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      * END LEGACY DOCSTRING
@@ -2964,6 +2971,13 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
+     * @param (PresenceMessage) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      * END LEGACY DOCSTRING
