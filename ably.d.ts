@@ -3841,6 +3841,10 @@ declare namespace Types {
      */
     encoding: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A unique ID assigned to each `PresenceMessage` by Ably.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unique ID assigned by Ably to this presence update.
      * END LEGACY DOCSTRING
