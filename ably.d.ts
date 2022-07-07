@@ -2631,7 +2631,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`Auth`]{@link Auth} object.
+     * An [`AuthCallbacks`]{@link AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2773,7 +2773,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Push`]{@link Push} object.
+     * A [`PushCallbacks`]{@link PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2801,7 +2801,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`Auth`]{@link Auth} object.
+     * An [`AuthPromise`]{@link AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2902,7 +2902,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Push`]{@link Push} object.
+     * A [`PushPromise`]{@link PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2946,13 +2946,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+   * A client that extends the functionality of [`RestCallbacks`]{@link RestCallbacks} and provides additional realtime-specific features.
    * END CANONICAL DOCSTRING
    */
   class RealtimeCallbacks extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`Auth`]{@link Auth} object.
+     * An [`AuthCallbacks`]{@link AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2972,7 +2972,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelCallbacks>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Connection`]{@link Connection} object.
+     * A [`ConnectionCallbacks`]{@link ConnectionCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3074,7 +3074,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Push`]{@link Push} object.
+     * A [`PushCallbacks`]{@link PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3086,13 +3086,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A client that extends the functionality of the [`RestClient`]{@link RestClient} and provides additional realtime-specific features.
+   * A client that extends the functionality of [`RestPromise`]{@link RestPromise} and provides additional realtime-specific features.
    * END CANONICAL DOCSTRING
    */
   class RealtimePromise extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`Auth`]{@link Auth} object.
+     * An [`AuthPromise`]{@link AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3112,7 +3112,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelPromise>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Connection`]{@link Connection} object.
+     * A [`ConnectionPromise`]{@link ConnectionPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3188,7 +3188,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Push`]{@link Push} object.
+     * A [`PushPromise`]{@link PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3652,7 +3652,7 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
      *
      * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
      * @param (PresenceMessage) - An event listener function.
@@ -3673,7 +3673,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
      *
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -3848,7 +3848,7 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} matching a given [`PresenceAction`]{@link PresenceAction}, or an action within an array of [`PresenceAction`s]{@link PresenceAction}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
      *
      * @param `PresenceAction` \| `[PresenceAction]` - A [`PresenceAction`]{@link PresenceAction} or an array of [`PresenceAction`s]{@link PresenceAction} to register the listener for.
      * @param (PresenceMessage) - An event listener function.
@@ -3867,7 +3867,7 @@ declare namespace Types {
     ): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener that is called each time a [`PresenceMessage`]{@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
      *
      * @param (PresenceMessage) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -4001,7 +4001,7 @@ declare namespace Types {
   class ChannelCallbacks extends ChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RestPresence`]{@link RestPresence} object.
+     * A [`PresenceCallbacks`]{@link PresenceCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4120,7 +4120,7 @@ declare namespace Types {
   class ChannelPromise extends ChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RestPresence`]{@link RestPresence} object.
+     * A [`PresencePromise`]{@link PresencePromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4378,13 +4378,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresence`]{@link RealtimePresence} object of a channel.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object of a channel.
    * END CANONICAL DOCSTRING
    */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RealtimePresence`]{@link RealtimePresence} object.
+     * A [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4394,7 +4394,7 @@ declare namespace Types {
     presence: RealtimePresenceCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannel#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannel#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresence#enter} or [`subscribe()`]{@link RealtimePresence#subscribe} are called on the [`RealtimePresence`]{@link RealtimePresence} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannelCallbacks#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannelCallbacks#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresenceCallbacks#enter} or [`subscribe()`]{@link RealtimePresenceCallbacks#subscribe} are called on the [`RealtimePresenceCallbacks`]{@link RealtimePresenceCallbacks} object for this channel.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4466,7 +4466,7 @@ declare namespace Types {
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
      *
      * @param String - The event name.
      * @param (Message) - An event listener function.
@@ -4483,7 +4483,7 @@ declare namespace Types {
     subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
      *
      * @param [`String`] - An array of event names.
      * @param (Message) - An event listener function.
@@ -4509,7 +4509,7 @@ declare namespace Types {
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelCallbacks#attach} operation.
      *
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -4593,13 +4593,13 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresence`]{@link RealtimePresence} object of a channel.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresencePromise`]{@link RealtimePresencePromise} object of a channel.
    * END CANONICAL DOCSTRING
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`RealtimePresence`]{@link RealtimePresence} object.
+     * A [`RealtimePresencePromise`]{@link RealtimePresencePromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4609,7 +4609,7 @@ declare namespace Types {
     presence: RealtimePresencePromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannel#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannel#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresence#enter} or [`subscribe()`]{@link RealtimePresence#subscribe} are called on the [`RealtimePresence`]{@link RealtimePresence} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using [`subscribe()`]{@link RealtimeChannelPromise#subscribe}. Any resulting channel state change will be emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if [`subscribe()`]{@link RealtimeChannelPromise#subscribe} for the channel is called, or [`enter()`]{@link RealtimePresencePromise#enter} or [`subscribe()`]{@link RealtimePresencePromise#subscribe} are called on the [`RealtimePresencePromise`]{@link RealtimePresencePromise} object for this channel.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4675,7 +4675,7 @@ declare namespace Types {
     setOptions(options: ChannelOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
      *
      * @param String - The event name.
      * @param (Message) - An event listener function.
@@ -4691,7 +4691,7 @@ declare namespace Types {
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
      *
      * @param [`String`] - An array of event names.
      * @param (Message) - An event listener function.
@@ -4715,7 +4715,7 @@ declare namespace Types {
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannelPromise#attach} operation.
      *
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
@@ -5655,7 +5655,7 @@ declare namespace Types {
   class PushCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushAdmin`]{@link PushAdmin} object.
+     * A [`PushAdminCallbacks`]{@link PushAdminCallbacks} object.
      * END CANONICAL DOCSTRING
      */
     admin: PushAdminCallbacks;
@@ -5669,7 +5669,7 @@ declare namespace Types {
   class PushPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushAdmin`]{@link PushAdmin} object.
+     * A [`PushAdmin`]{@link PushAdminPromise} object.
      * END CANONICAL DOCSTRING
      */
     admin: PushAdminPromise;
@@ -5683,7 +5683,7 @@ declare namespace Types {
   class PushAdminCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushDeviceRegistrations`]{@link PushDeviceRegistrations} object.
+     * A [`PushDeviceRegistrationsCallbacks`]{@link PushDeviceRegistrationsCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5693,7 +5693,7 @@ declare namespace Types {
     deviceRegistrations: PushDeviceRegistrationsCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushChannelSubscriptions`]{@link PushChannelSubscriptions} object.
+     * A [`PushChannelSubscriptionsCallbacks`]{@link PushChannelSubscriptionsCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5728,7 +5728,7 @@ declare namespace Types {
   class PushAdminPromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushDeviceRegistrations`]{@link PushDeviceRegistrations} object.
+     * A [`PushDeviceRegistrationsPromise`]{@link PushDeviceRegistrationsPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5738,7 +5738,7 @@ declare namespace Types {
     deviceRegistrations: PushDeviceRegistrationsPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushChannelSubscriptions`]{@link PushChannelSubscriptions} object.
+     * A [`PushChannelSubscriptionsPromise`]{@link PushChannelSubscriptionsPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
