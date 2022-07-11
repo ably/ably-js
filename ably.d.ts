@@ -415,6 +415,10 @@ declare namespace Types {
     echoMessages?: boolean;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enables a [custom environment](https://ably.com/docs/platform-customization) to be used with the Ably service.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Allows a [custom environment](https://faqs.ably.com/steps-to-set-up-custom-environments-dedicated-clusters-and-regional-restrictions-for-your-account), region or cluster to be used with the Ably service. Please [contact us](https://ably.com/contact) if you require a custom environment. Note that once a custom environment is specified, the [fallback host functionality](https://faqs.ably.com/routing-around-network-and-dns-issues) is disabled by default.
      * END LEGACY DOCSTRING
