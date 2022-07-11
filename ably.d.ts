@@ -348,7 +348,9 @@ declare namespace Types {
     type MONTH = 'month';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the interval unit over which statistics are gathered.
+   * END CANONICAL DOCSTRING
    */
   type StatsIntervalGranularity =
     | StatsIntervalGranularity.MINUTE
