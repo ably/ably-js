@@ -1828,6 +1828,10 @@ declare namespace Types {
      */
     reason?: ErrorInfo;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Duration in milliseconds, after which the client retries a connection where applicable.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Duration upon which the client will retry a connection where applicable, as milliseconds.
      * END LEGACY DOCSTRING
