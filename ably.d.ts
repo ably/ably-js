@@ -258,7 +258,9 @@ declare namespace Types {
      */
     type PRESENT = 'present';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A new member has entered the channel.
+     * END CANONICAL DOCSTRING
      */
     type ENTER = 'enter';
     /**
