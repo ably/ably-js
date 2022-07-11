@@ -1306,6 +1306,10 @@ declare namespace Types {
     level?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Controls the log output of the library. This is a function to handle each line of log output.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A function to handle each line of log output. If handler is not specified, `console.log` is used.
      * END LEGACY DOCSTRING
