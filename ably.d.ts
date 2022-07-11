@@ -4177,6 +4177,10 @@ declare namespace Types {
      */
     encoding: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include [`push`]{@link Push}, [`delta`]{@link DeltaExtras}, [`ref`]{@link ReferenceExtras} and `headers`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Metadata and/or ancillary payloads, if provided. The only currently valid payload for extras is the push object.
      * END LEGACY DOCSTRING
