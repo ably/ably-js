@@ -342,7 +342,9 @@ declare namespace Types {
      */
     channelId: string;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A [`ChannelStatus`]{@link ChannelStatus} object.
+     * END CANONICAL DOCSTRING
      */
     status: ChannelStatus;
   }
