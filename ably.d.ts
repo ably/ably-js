@@ -4087,6 +4087,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains an individual message that is sent to, or received from, Ably.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A Message represents an individual message that is sent to or received from Ably.
    * END LEGACY DOCSTRING
