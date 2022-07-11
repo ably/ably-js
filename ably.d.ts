@@ -1308,6 +1308,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the properties of a request for a token to Ably. Tokens are generated using [`requestToken`]{@link Auth#requestToken}.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * The parameters for an Ably TokenRequest. Tokens are requested using `Auth.requestToken`.
    * END LEGACY DOCSTRING
