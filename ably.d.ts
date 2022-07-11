@@ -4187,6 +4187,10 @@ declare namespace Types {
      */
     extras: any;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Unique ID assigned by Ably to this message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A Unique ID assigned by Ably to this message.
      * END LEGACY DOCSTRING
