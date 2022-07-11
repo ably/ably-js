@@ -1919,7 +1919,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the type of device receiving a push notification.
+   * END CANONICAL DOCSTRING
    */
   type DeviceFormFactor =
     | DeviceFormFactor.PHONE
