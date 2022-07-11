@@ -493,6 +493,14 @@ declare namespace Types {
     realtimeHost?: string;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host. If you have been provided a set of custom fallback hosts by Ably, please specify them here.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default nil
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
      *
