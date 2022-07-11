@@ -120,7 +120,9 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the events emitted by a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object. An event is either an `UPDATE` or a [`ChannelState`]{@link ChannelState}.
+   * END CANONICAL DOCSTRING
    */
   type ChannelEvent =
     | ChannelEvent.FAILED
