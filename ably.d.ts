@@ -362,7 +362,9 @@ declare namespace Types {
      */
     isActive: boolean;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A [`ChannelOccupancy`]{@link ChannelOccupancy} object.
+     * END CANONICAL DOCSTRING
      */
     occupancy: ChannelOccupancy;
   }
