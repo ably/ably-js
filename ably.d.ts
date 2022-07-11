@@ -433,6 +433,14 @@ declare namespace Types {
     log?: LogInfo;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 80
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably port to be specified.
      * END LEGACY DOCSTRING
