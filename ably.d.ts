@@ -350,7 +350,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the status of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object such as whether it is active and its [`ChannelOccupancy`]{@link ChannelOccupancy}.
+   * END CANONICAL DOCSTRING
    */
   interface ChannelStatus {
     /**
