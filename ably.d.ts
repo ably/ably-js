@@ -1348,6 +1348,10 @@ declare namespace Types {
      */
     keyName: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The Message Authentication Code for this request.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The Message Authentication Code for this request.
      * END LEGACY DOCSTRING
