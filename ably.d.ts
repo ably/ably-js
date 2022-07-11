@@ -147,7 +147,9 @@ declare namespace Types {
      */
     type INITIALIZED = 'initialized';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection attempt has been initiated. The connecting state is entered as soon as the library has completed initialization, and is reentered each time connection is re-attempted following disconnection.
+     * END CANONICAL DOCSTRING
      */
     type CONNECTING = 'connecting';
     /**
@@ -201,7 +203,9 @@ declare namespace Types {
      */
     type INITIALIZED = 'initialized';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection attempt has been initiated. The connecting state is entered as soon as the library has completed initialization, and is reentered each time connection is re-attempted following disconnection.
+     * END CANONICAL DOCSTRING
      */
     type CONNECTING = 'connecting';
     /**
