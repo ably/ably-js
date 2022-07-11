@@ -719,7 +719,9 @@ declare namespace Types {
     realtimeRequestTimeout?: number;
 
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A map between a [`PluginType`]{@link PluginType} and a `Plugin` object.
+     * END CANONICAL DOCSTRING
      */
     plugins?: {
       /**
