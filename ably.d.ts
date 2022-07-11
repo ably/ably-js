@@ -4137,6 +4137,10 @@ declare namespace Types {
      */
     static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The client ID of the publisher of this message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The client ID of the publisher of this message.
      * END LEGACY DOCSTRING
