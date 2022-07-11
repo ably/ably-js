@@ -620,6 +620,10 @@ declare namespace Types {
     idempotentRestPublishing?: boolean;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A set of key-value pairs that can be used to pass in arbitrary connection parameters, such as [`heartbeatInterval`](https://ably.com/docs/realtime/connection#heartbeats) or [`remainPresentFor`](https://ably.com/docs/realtime/presence#unstable-connections).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Can be used to pass in arbitrary connection parameters.
      * END LEGACY DOCSTRING
