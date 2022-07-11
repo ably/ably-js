@@ -1656,6 +1656,10 @@ declare namespace Types {
    */
   interface ChannelStateChange {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The new current [`ChannelState`]{@link ChannelState}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The new current state.
      * END LEGACY DOCSTRING
