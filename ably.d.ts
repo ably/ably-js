@@ -448,6 +448,14 @@ declare namespace Types {
     port?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * If `false`, this disables the default behavior whereby the library queues messages on a connection in the disconnected or connecting states. The default behavior enables applications to submit messages immediately upon instantiating the library without having to wait for the connection to be established. Applications may use this option to disable queueing if they wish to have application-level control over the queueing. The default is `true`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default true
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * If false, this disables the default behavior whereby the library queues messages on a connection in the disconnected or connecting states. The default behavior allows applications to submit messages immediately upon instancing the library without having to wait for the connection to be established. Applications may use this option to disable queueing if they wish to have application-level control over the queueing under those conditions.
      * END LEGACY DOCSTRING
