@@ -1368,6 +1368,10 @@ declare namespace Types {
      */
     nonce: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The timestamp of this request as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The timestamp of this request in milliseconds.
      * END LEGACY DOCSTRING
