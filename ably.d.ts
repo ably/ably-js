@@ -4101,6 +4101,15 @@ declare namespace Types {
      */
     constructor();
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
+     *
+     * @param JsonObject - A `Message`-like deserialized object.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     *
+     * @returns A `Message` object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
      *
@@ -4173,6 +4182,15 @@ declare namespace Types {
    */
   interface MessageStatic {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
+     *
+     * @param JsonObject - A `Message`-like deserialized object.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     *
+     * @returns A `Message` object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
      *
