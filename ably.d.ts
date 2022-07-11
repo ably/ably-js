@@ -1455,7 +1455,9 @@ declare namespace Types {
      */
     type PRESENCE = 'PRESENCE';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The client can receive presence messages.
+     * END CANONICAL DOCSTRING
      */
     type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
     /**
