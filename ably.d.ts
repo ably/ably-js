@@ -36,7 +36,9 @@ declare namespace Types {
      */
     type DETACHING = 'detaching';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel, having previously been `ATTACHED`, has been detached by the user.
+     * END CANONICAL DOCSTRING
      */
     type DETACHED = 'detached';
     /**
@@ -91,7 +93,9 @@ declare namespace Types {
      */
     type DETACHING = 'detaching';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel, having previously been `ATTACHED`, has been detached by the user.
+     * END CANONICAL DOCSTRING
      */
     type DETACHED = 'detached';
     /**
