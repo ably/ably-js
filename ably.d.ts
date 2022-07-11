@@ -1650,7 +1650,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains state change information emitted by [`RestChannel`]{@link RestChannel} and [`RealtimeChannel`]{@link RealtimeChannel} objects.
+   * END CANONICAL DOCSTRING
    */
   interface ChannelStateChange {
     /**
