@@ -790,6 +790,14 @@ declare namespace Types {
     authHeaders?: { [index: string]: string };
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The HTTP verb to use for any request made to the `authUrl`, either `GET` or `POST`. The default value is `GET`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default .GET
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * The HTTP verb to use for the request, either `GET` or `POST`. Defaults to `GET`.
      * END LEGACY DOCSTRING
