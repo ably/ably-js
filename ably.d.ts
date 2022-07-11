@@ -262,7 +262,9 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the events emitted by a [`Connection`]{@link} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
+   * END CANONICAL DOCSTRING
    */
   type ConnectionEvent =
     | ConnectionEvent.INITIALIZED
