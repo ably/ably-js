@@ -343,7 +343,9 @@ declare namespace Types {
      */
     type HOUR = 'hour';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Interval unit over which statistics are gathered as days.
+     * END CANONICAL DOCSTRING
      */
     type DAY = 'day';
     /**
