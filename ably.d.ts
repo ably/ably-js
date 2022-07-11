@@ -420,7 +420,9 @@ declare namespace Types {
      */
     publishers: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`SUBSCRIBE`]{@link ChannelMode#SUBSCRIBE}.
+     * END CANONICAL DOCSTRING
      */
     subscribers: number;
   }
