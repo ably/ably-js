@@ -4119,6 +4119,15 @@ declare namespace Types {
      */
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
+     *
+     * @param JsonArray - An array of `Message`-like deserialized objects.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     *
+     * @returns An array of [`Message`]{@link Message} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
      *
@@ -4200,6 +4209,15 @@ declare namespace Types {
      */
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
+     *
+     * @param JsonArray - An array of `Message`-like deserialized objects.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     *
+     * @returns An array of [`Message`]{@link Message} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
      *
