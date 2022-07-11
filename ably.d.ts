@@ -24,7 +24,9 @@ declare namespace Types {
      */
     type ATTACHING = 'attaching';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The attach has succeeded. In the `ATTACHED` state a client may publish and subscribe to messages, or be present on the channel.
+     * END CANONICAL DOCSTRING
      */
     type ATTACHED = 'attached';
     /**
@@ -75,7 +77,9 @@ declare namespace Types {
      */
     type ATTACHING = 'attaching';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The attach has succeeded. In the `ATTACHED` state a client may publish and subscribe to messages, or be present on the channel.
+     * END CANONICAL DOCSTRING
      */
     type ATTACHED = 'attached';
     /**
