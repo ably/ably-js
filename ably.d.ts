@@ -41,7 +41,9 @@ declare namespace Types {
     type FAILED = 'failed';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the possible states of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+   * END CANONICAL DOCSTRING
    */
   type ChannelState =
     | ChannelState.FAILED
