@@ -669,6 +669,14 @@ declare namespace Types {
     httpMaxRetryCount?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The maximum elapsed time in which fallback host retries for HTTP requests will be attempted. The default is 15 seconds.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 15s
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum elapsed time in which fallback host retries for HTTP requests will be attempted.
      * END LEGACY DOCSTRING
