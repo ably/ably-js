@@ -159,7 +159,9 @@ declare namespace Types {
      */
     type CONNECTED = 'connected';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
+     * END CANONICAL DOCSTRING
      */
     type DISCONNECTED = 'disconnected';
     /**
@@ -217,7 +219,9 @@ declare namespace Types {
      */
     type CONNECTED = 'connected';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
+     * END CANONICAL DOCSTRING
      */
     type DISCONNECTED = 'disconnected';
     /**
