@@ -330,7 +330,9 @@ declare namespace Types {
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the details of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object such as its ID and [`ChannelStatus`]{@link ChannelStatus}.
+   * END CANONICAL DOCSTRING
    */
   interface ChannelDetails {
     /**
