@@ -1792,7 +1792,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains [`ConnectionState`]{@link} change information emitted by the [`Connection`]{@link} object.
+   * END CANONICAL DOCSTRING
    */
   interface ConnectionStateChange {
     /**
