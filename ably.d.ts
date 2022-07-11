@@ -1818,6 +1818,10 @@ declare namespace Types {
      */
     previous: ConnectionState;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An [`ErrorInfo`]{@link ErrorInfo} object containing any information relating to the transition.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * An ErrorInfo containing any information relating to the transition.
      * END LEGACY DOCSTRING
