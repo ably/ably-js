@@ -171,7 +171,9 @@ declare namespace Types {
      */
     type SUSPENDED = 'suspended';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An explicit request by the developer to close the connection has been sent to the Ably service. If a reply is not received from Ably within a short period of time, the connection is forcibly terminated and the connection state becomes `CLOSED`.
+     * END CANONICAL DOCSTRING
      */
     type CLOSING = 'closing';
     /**
@@ -233,7 +235,9 @@ declare namespace Types {
      */
     type SUSPENDED = 'suspended';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An explicit request by the developer to close the connection has been sent to the Ably service. If a reply is not received from Ably within a short period of time, the connection is forcibly terminated and the connection state becomes `CLOSED`.
+     * END CANONICAL DOCSTRING
      */
     type CLOSING = 'closing';
     /**
