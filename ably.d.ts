@@ -1186,6 +1186,10 @@ declare namespace Types {
    */
   interface ErrorInfo {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Ably error code (see [ably-common/protocol/errors.json](https://github.com/ably/ably-common/blob/main/protocol/errors.json)).
      * END LEGACY DOCSTRING
