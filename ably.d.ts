@@ -376,7 +376,9 @@ declare namespace Types {
    */
   interface ChannelOccupancy {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A [`ChannelMetrics`]{@link ChannelMetrics} object.
+     * END CANONICAL DOCSTRING
      */
     metrics: ChannelMetrics;
   }
