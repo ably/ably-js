@@ -384,7 +384,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the metrics associated with a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel}, such as the number of publishers, subscribers and connections it has.
+   * END CANONICAL DOCSTRING
    */
   interface ChannelMetrics {
     /**
