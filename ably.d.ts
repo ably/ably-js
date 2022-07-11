@@ -396,7 +396,9 @@ declare namespace Types {
      */
     connections: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PRESENCE`]{@link ChannelMode#PRESENCE}.
+     * END CANONICAL DOCSTRING
      */
     presenceConnections: number;
     /**
