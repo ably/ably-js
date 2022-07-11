@@ -408,7 +408,9 @@ declare namespace Types {
      */
     presenceMembers: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PRESENCE_SUBSCRIBE`]{@link ChannelMode#PRESENCE_SUBSCRIBE}.
+     * END CANONICAL DOCSTRING
      */
     presenceSubscribers: number;
     /**
