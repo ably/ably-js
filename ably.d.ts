@@ -864,6 +864,10 @@ declare namespace Types {
     token?: TokenDetails | string;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An authenticated [`TokenDetails`]{@link TokenDetails} object (most commonly obtained from an Ably Token Request response). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Use this option if you wish to use Token authentication. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * An authenticated `TokenDetails` object (most commonly obtained from an Ably Token Request response). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that allows the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Use this option if you wish to use Token authentication. Read more about [Token authentication](https://ably.com/documentation/core-features/authentication#token-authentication).
      * END LEGACY DOCSTRING
