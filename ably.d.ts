@@ -1686,6 +1686,10 @@ declare namespace Types {
      */
     reason?: ErrorInfo;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Indicates whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/docs/realtime/channels#nonfatal-errors) for more info.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A boolean indicated whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/documentation/realtime/channels#nonfatal-errors) for more info.
      * END LEGACY DOCSTRING
