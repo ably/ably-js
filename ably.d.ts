@@ -257,7 +257,9 @@ declare namespace Types {
      */
     type FAILED = 'failed';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An event for changes to connection conditions for which the [`ConnectionState`]{@link ConnectionState} does not change.
+     * END CANONICAL DOCSTRING
      */
     type UPDATE = 'update';
   }
