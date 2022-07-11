@@ -1927,7 +1927,9 @@ declare namespace Types {
      */
     type EMBEDDED = 'embedded';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is other.
+     * END CANONICAL DOCSTRING
      */
     type OTHER = 'other';
   }
