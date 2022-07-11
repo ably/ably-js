@@ -331,7 +331,9 @@ declare namespace Types {
    */
   namespace StatsIntervalGranularity {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Interval unit over which statistics are gathered as minutes.
+     * END CANONICAL DOCSTRING
      */
     type MINUTE = 'minute';
     /**
