@@ -270,7 +270,9 @@ declare namespace Types {
      */
     type LEAVE = 'leave';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An already present member has updated their member data. Being notified of member data updates can be very useful, for example, it can be used to update the status of a user when they are typing a message.
+     * END CANONICAL DOCSTRING
      */
     type UPDATE = 'update';
   }
