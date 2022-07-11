@@ -30,7 +30,9 @@ declare namespace Types {
      */
     type ATTACHED = 'attached';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A detach has been initiated on an `ATTACHED` channel by sending a request to Ably. This is a transient state, followed either by a transition to `DETACHED` or `FAILED`.
+     * END CANONICAL DOCSTRING
      */
     type DETACHING = 'detaching';
     /**
@@ -83,7 +85,9 @@ declare namespace Types {
      */
     type ATTACHED = 'attached';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A detach has been initiated on an `ATTACHED` channel by sending a request to Ably. This is a transient state, followed either by a transition to `DETACHED` or `FAILED`.
+     * END CANONICAL DOCSTRING
      */
     type DETACHING = 'detaching';
     /**
