@@ -976,6 +976,14 @@ declare namespace Types {
      */
     timestamp?: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Requested time to live for the token in milliseconds. The default is 60 minutes.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default 60min
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * Requested time to live for the token in milliseconds. When omitted, Ably will default to a TTL of 60 minutes.
      * END LEGACY DOCSTRING
