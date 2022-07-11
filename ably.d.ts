@@ -683,6 +683,14 @@ declare namespace Types {
     httpOpenTimeout?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Timeout for a client performing a complete HTTP request to Ably, including the connection phase. The default is 10 seconds.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 10s
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * Timeout for any single HTTP request and response.
      * END LEGACY DOCSTRING
