@@ -1328,6 +1328,10 @@ declare namespace Types {
      */
     capability: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The client ID to associate with the requested Ably Token. When provided, the Ably Token may only be used to perform operations on behalf of that client ID.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The client ID to associate with the requested Ably Token. When provided, the Ably Token may only be used to perform operations on behalf of that client ID.
      * END LEGACY DOCSTRING
