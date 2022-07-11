@@ -932,6 +932,14 @@ declare namespace Types {
    */
   interface TokenParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The capabilities associated with this Ably Token. The capabilities value is a JSON-encoded representation of the resource paths and associated operations. Read more about capabilities in the [capabilities docs](https://ably.com/docs/core-features/authentication/#capabilities-explained).
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default `'{"*":["*"]}'`
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * Capability requirements JSON stringified for the token. When omitted, Ably will default to the capabilities of the underlying key.
      * END LEGACY DOCSTRING
