@@ -42,7 +42,9 @@ declare namespace Types {
      */
     type DETACHED = 'detached';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
+     * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
@@ -99,7 +101,9 @@ declare namespace Types {
      */
     type DETACHED = 'detached';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
+     * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
