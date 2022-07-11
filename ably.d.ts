@@ -264,7 +264,9 @@ declare namespace Types {
      */
     type ENTER = 'enter';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A member who was present has now left the channel. This may be a result of an explicit request to leave or implicitly when detaching from the channel. Alternatively, if a member's connection is abruptly disconnected and they do not resume their connection within a minute, Ably treats this as a leave event as the client is no longer present.
+     * END CANONICAL DOCSTRING
      */
     type LEAVE = 'leave';
     /**
