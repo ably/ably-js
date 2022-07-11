@@ -832,7 +832,7 @@ declare namespace Types {
     plugins?: {
       /**
        * BEGIN CANONICAL DOCSTRING
-       * A plugin capable of decoding `vcdiff`-encoded messages. It must implement the [`VCDiffDecoder`]{@link VCDiffDecoder} interface.
+       * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
        * END CANONICAL DOCSTRING
        */
       vcdiff?: any;
