@@ -867,7 +867,9 @@ declare namespace Types {
      */
     plugins?: {
       /**
-       * Not yet documented.
+       * BEGIN CANONICAL DOCSTRING
+       * A plugin capable of decoding `vcdiff`-encoded messages. It must implement the [`VCDiffDecoder`]{@link VCDiffDecoder} interface.
+       * END CANONICAL DOCSTRING
        */
       vcdiff?: any;
     };
