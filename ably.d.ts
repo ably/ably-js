@@ -414,7 +414,9 @@ declare namespace Types {
      */
     presenceSubscribers: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a [`ChannelMode`]{@link ChannelMode} flag that excludes [`PUBLISH`]{@link ChannelMode#PUBLISH}.
+     * END CANONICAL DOCSTRING
      */
     publishers: number;
     /**
