@@ -252,7 +252,9 @@ declare namespace Types {
      */
     type ABSENT = 'absent';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * When subscribing to presence events on a channel that already has members present, this event is emitted for every member already present on the channel before the subscribe listener was registered.
+     * END CANONICAL DOCSTRING
      */
     type PRESENT = 'present';
     /**
