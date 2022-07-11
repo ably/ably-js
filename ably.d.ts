@@ -4197,6 +4197,10 @@ declare namespace Types {
      */
     id: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The event name.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The event name, if provided.
      * END LEGACY DOCSTRING
