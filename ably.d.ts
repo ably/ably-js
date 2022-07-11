@@ -1885,7 +1885,9 @@ declare namespace Types {
    */
   namespace DeviceFormFactor {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is a phone.
+     * END CANONICAL DOCSTRING
      */
     type PHONE = 'phone';
     /**
