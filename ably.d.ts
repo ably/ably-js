@@ -875,6 +875,10 @@ declare namespace Types {
     tokenDetails?: TokenDetails;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When `true`, forces token authentication to be used by the library. If a `clientId` is not specified in the [`ClientOptions`]{@link ClientOptions} or [`TokenParams`]{@link TokenParams}, then the Ably Token issued is [anonymous](https://ably.com/docs/core-features/authentication#identified-clients).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When true, forces Token authentication to be used by the library. Please note that if a `clientId` is not specified in the `ClientOptions` or `TokenParams`, then the Ably Token issued will be [anonymous](https://faqs.ably.com/authenticated-and-identified-clients).
      * END LEGACY DOCSTRING
