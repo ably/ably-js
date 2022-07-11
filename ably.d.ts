@@ -956,6 +956,10 @@ declare namespace Types {
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A cryptographically secure random string of at least 16 characters, used to ensure the [`TokenRequest`]{@link TokenRequest} cannot be reused.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * An unquoted, un-escaped random string of at least 16 characters, used to ensure the TokenRequest cannot be reused.
      * END LEGACY DOCSTRING
