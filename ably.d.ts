@@ -1866,7 +1866,9 @@ declare namespace Types {
      */
     type IOS = 'ios';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device platform is a web browser.
+     * END CANONICAL DOCSTRING
      */
     type BROWSER = 'browser';
   }
