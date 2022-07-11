@@ -1459,7 +1459,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the possible flags used to configure client capabilities, using [`ChannelOptions`]{@link ChannelOptions}.
+   * END CANONICAL DOCSTRING
    */
   type ChannelMode =
     | ChannelMode.PUBLISH
