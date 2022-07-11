@@ -356,7 +356,9 @@ declare namespace Types {
    */
   interface ChannelStatus {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * If `true`, the channel is active, otherwise `false`.
+     * END CANONICAL DOCSTRING
      */
     isActive: boolean;
     /**
