@@ -400,6 +400,14 @@ declare namespace Types {
     defaultTokenParams?: TokenParams;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * If `false`, prevents messages originating from this connection being echoed back on the same connection. The default is `true`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default true
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * If false, prevents messages originating from this connection being echoed back on the same connection. Defaults to `true`.
      * END LEGACY DOCSTRING
