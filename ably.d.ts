@@ -1798,6 +1798,10 @@ declare namespace Types {
    */
   interface ConnectionStateChange {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The new [`ConnectionState`]{@link ConnectionState}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The new state.
      * END LEGACY DOCSTRING
