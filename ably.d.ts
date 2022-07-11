@@ -165,7 +165,9 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link Connection#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
@@ -225,7 +227,9 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link Connection#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
