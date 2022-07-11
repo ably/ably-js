@@ -336,7 +336,9 @@ declare namespace Types {
    */
   interface ChannelDetails {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The identifier of the channel.
+     * END CANONICAL DOCSTRING
      */
     channelId: string;
     /**
