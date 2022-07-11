@@ -246,7 +246,9 @@ declare namespace Types {
    */
   namespace PresenceAction {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A member is not present in the channel.
+     * END CANONICAL DOCSTRING
      */
     type ABSENT = 'absent';
     /**
