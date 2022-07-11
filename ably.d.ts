@@ -654,6 +654,14 @@ declare namespace Types {
     transports?: Transport[];
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host is unreachable or indicates that it is unserviceable. The default value is 3.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 3
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host is unreachable or indicates that it is unserviceable.
      * END LEGACY DOCSTRING
