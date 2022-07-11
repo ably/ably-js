@@ -1909,7 +1909,9 @@ declare namespace Types {
      */
     type TV = 'tv';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is a watch.
+     * END CANONICAL DOCSTRING
      */
     type WATCH = 'watch';
     /**
