@@ -871,7 +871,38 @@ declare namespace Types {
   /**
    * Not yet documented.
    */
-  type ChannelMode = 'PUBLISH' | 'SUBSCRIBE' | 'PRESENCE' | 'PRESENCE_SUBSCRIBE' | 'ATTACH_RESUME';
+  namespace ChannelMode {
+    /**
+     * Not yet documented.
+     */
+    type PUBLISH = 'PUBLISH';
+    /**
+     * Not yet documented.
+     */
+    type SUBSCRIBE = 'SUBSCRIBE';
+    /**
+     * Not yet documented.
+     */
+    type PRESENCE = 'PRESENCE';
+    /**
+     * Not yet documented.
+     */
+    type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
+    /**
+     * Not yet documented.
+     */
+    type ATTACH_RESUME = 'ATTACH_RESUME';
+  }
+
+  /**
+   * Not yet documented.
+   */
+  type ChannelMode =
+    | ChannelMode.PUBLISH
+    | ChannelMode.SUBSCRIBE
+    | ChannelMode.PRESENCE
+    | ChannelMode.PRESENCE_SUBSCRIBE
+    | ChannelMode.ATTACH_RESUME;
   /**
    * Not yet documented.
    */
