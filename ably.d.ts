@@ -1296,6 +1296,10 @@ declare namespace Types {
      */
     issued: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The [Ably Token](https://ably.com/docs/core-features/authentication#ably-tokens) itself. A typical Ably Token string appears with the form `xVLyHw.A-pwh7wicf3afTfgiw4k2Ku33kcnSA7z6y8FjuYpe3QaNRTEo4`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The [Ably Token](https://ably.com/documentation/core-features/authentication#ably-tokens) itself. A typical Ably Token string may appear like `xVLyHw.A-pwh7wicf3afTfgiw4k2Ku33kcnSA7z6y8FjuYpe3QaNRTEo4`.
      * END LEGACY DOCSTRING
