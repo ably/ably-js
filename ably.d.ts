@@ -1206,6 +1206,10 @@ declare namespace Types {
      */
     message: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * HTTP Status Code corresponding to this error, where applicable.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * HTTP Status Code corresponding to this error, where applicable.
      * END LEGACY DOCSTRING
