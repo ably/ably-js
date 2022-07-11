@@ -153,7 +153,9 @@ declare namespace Types {
      */
     type CONNECTING = 'connecting';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection exists and is active.
+     * END CANONICAL DOCSTRING
      */
     type CONNECTED = 'connected';
     /**
@@ -209,7 +211,9 @@ declare namespace Types {
      */
     type CONNECTING = 'connecting';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection exists and is active.
+     * END CANONICAL DOCSTRING
      */
     type CONNECTED = 'connected';
     /**
