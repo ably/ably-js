@@ -576,6 +576,14 @@ declare namespace Types {
     tlsPort?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When `true`, the more efficient MsgPack binary encoding is used. When `false`, JSON text encoding is used. The default is `true`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default true
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * When true, the more efficient MsgPack binary encoding is used.
      * When false, JSON text encoding is used.
