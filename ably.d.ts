@@ -1854,7 +1854,9 @@ declare namespace Types {
    */
   namespace DevicePlatform {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device platform is Android.
+     * END CANONICAL DOCSTRING
      */
     type ANDROID = 'android';
     /**
