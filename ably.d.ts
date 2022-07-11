@@ -922,6 +922,10 @@ declare namespace Types {
   type CapabilityOp = capabilityOp;
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Defines the properties of an Ably Token.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * An object providing parameters of a token request. These params are used when invoking `Auth.authorize`, `Auth.requestToken`, and `Auth.createTokenRequest`.
    * END LEGACY DOCSTRING
