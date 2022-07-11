@@ -1276,6 +1276,10 @@ declare namespace Types {
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The timestamp at which this token expires as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The time (in milliseconds since the epoch) at which this token expires.
      * END LEGACY DOCSTRING
