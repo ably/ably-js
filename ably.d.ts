@@ -826,7 +826,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A map between a [`PluginType`]{@link PluginType} and a `Plugin` object.
+     * A map between a plugin type and a `Plugin` object.
      * END CANONICAL DOCSTRING
      */
     plugins?: {
