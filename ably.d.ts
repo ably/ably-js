@@ -1921,7 +1921,9 @@ declare namespace Types {
      */
     type CAR = 'car';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is embedded.
+     * END CANONICAL DOCSTRING
      */
     type EMBEDDED = 'embedded';
     /**
