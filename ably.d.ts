@@ -668,6 +668,14 @@ declare namespace Types {
     httpMaxRetryDuration?: number;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Timeout for opening a connection to Ably to initiate an HTTP request. The default is 4 seconds.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 4s
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * Timeout for opening the connection, available in the client library if supported by the transport.
      * END LEGACY DOCSTRING
