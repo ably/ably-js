@@ -561,6 +561,14 @@ declare namespace Types {
     tls?: boolean;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enables a non-default Ably TLS port to be specified. For development environments only. The default value is 443.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default 443
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably TLS port to be specified.
      * END LEGACY DOCSTRING
