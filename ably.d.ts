@@ -48,7 +48,9 @@ declare namespace Types {
      */
     type SUSPENDED = 'suspended';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An indefinite failure condition. This state is entered if a channel error has been received from the Ably service, such as an attempt to attach without the necessary access rights.
+     * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
   }
@@ -107,7 +109,9 @@ declare namespace Types {
      */
     type SUSPENDED = 'suspended';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An indefinite failure condition. This state is entered if a channel error has been received from the Ably service, such as an attempt to attach without the necessary access rights.
+     * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
     /**
