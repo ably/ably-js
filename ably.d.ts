@@ -1256,6 +1256,10 @@ declare namespace Types {
    */
   interface TokenDetails {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The capabilities associated with this Ably Token. The capabilities value is a JSON-encoded representation of the resource paths and associated operations. Read more about capabilities in the [capabilities docs](https://ably.com/docs/core-features/authentication/#capabilities-explained).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The capability associated with this Ably Token. The capability is a a JSON stringified canonicalized representation of the resource paths and associated operations. [Read more about authentication and capabilities](https://ably.com/documentation/core-features/authentication/#capabilities-explained).
      * END LEGACY DOCSTRING
