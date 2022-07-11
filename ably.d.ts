@@ -1072,6 +1072,29 @@ declare namespace Types {
   }
 
   /**
+   * Not yet documented.
+   */
+  namespace DevicePlatform {
+    /**
+     * Not yet documented.
+     */
+    type ANDROID = 'android';
+    /**
+     * Not yet documented.
+     */
+    type IOS = 'ios';
+    /**
+     * Not yet documented.
+     */
+    type BROWSER = 'browser';
+  }
+
+  /**
+   * Not yet documented.
+   */
+  type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
+
+  /**
    * A type encapsulating attributes of a device registered for push notifications.
    */
   interface DeviceDetails {
@@ -1086,7 +1109,7 @@ declare namespace Types {
     /**
      * Platform of the push device.
      */
-    platform: 'android' | 'ios' | 'browser';
+    platform: DevicePlatform;
     /**
      * Form factor of the push device.
      */
