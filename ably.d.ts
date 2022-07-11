@@ -12,7 +12,9 @@ declare namespace Types {
    */
   namespace ChannelState {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel has been initialized but no attach has yet been attempted.
+     * END CANONICAL DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
@@ -59,7 +61,9 @@ declare namespace Types {
    */
   namespace ChannelEvent {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel has been initialized but no attach has yet been attempted.
+     * END CANONICAL DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
