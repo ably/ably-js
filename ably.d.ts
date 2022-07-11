@@ -1503,6 +1503,10 @@ declare namespace Types {
      */
     cipher?: CipherParamOptions | CipherParams;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * [Channel Parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) that configure the behavior of the channel.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Optional [parameters](https://ably.com/documentation/realtime/channels/channel-parameters/overview) which specify behaviour of the channel.
      * END LEGACY DOCSTRING
