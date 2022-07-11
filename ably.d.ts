@@ -4207,6 +4207,10 @@ declare namespace Types {
      */
     name: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Timestamp when the message was received by the Ably, as milliseconds since the epoch
      * END LEGACY DOCSTRING
