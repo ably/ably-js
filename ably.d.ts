@@ -4157,6 +4157,10 @@ declare namespace Types {
      */
     connectionId: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The message payload, if provided.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The message payload, if provided.
      * END LEGACY DOCSTRING
