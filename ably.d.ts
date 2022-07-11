@@ -816,6 +816,10 @@ declare namespace Types {
     authParams?: { [index: string]: string };
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A URL that the library may use to obtain a token string (in plain text format), or a signed [`TokenRequest`]{@link TokenRequest} or [`TokenDetails`]{@link TokenDetails} (in JSON format) from.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A URL that the library may use to obtain a token string (in plain text format), or a signed TokenRequest or TokenDetails (in JSON format).
      * END LEGACY DOCSTRING
