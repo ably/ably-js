@@ -4147,6 +4147,10 @@ declare namespace Types {
      */
     clientId: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The connection ID of the publisher of this message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The connection ID of the publisher of this message.
      * END LEGACY DOCSTRING
