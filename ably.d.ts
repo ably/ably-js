@@ -183,7 +183,9 @@ declare namespace Types {
      */
     type CLOSED = 'closed';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}.
+     * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
   }
@@ -249,7 +251,9 @@ declare namespace Types {
      */
     type CLOSED = 'closed';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}.
+     * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
     /**
