@@ -141,7 +141,9 @@ declare namespace Types {
    */
   namespace ConnectionState {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection with this state has been initialized but no connection has yet been attempted.
+     * END CANONICAL DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
@@ -193,7 +195,9 @@ declare namespace Types {
    */
   namespace ConnectionEvent {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A connection with this state has been initialized but no connection has yet been attempted.
+     * END CANONICAL DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
