@@ -1095,6 +1095,57 @@ declare namespace Types {
   type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
 
   /**
+   * Not yet documented.
+   */
+  namespace DeviceFormFactor {
+    /**
+     * Not yet documented.
+     */
+    type PHONE = 'phone';
+    /**
+     * Not yet documented.
+     */
+    type TABLET = 'tablet';
+    /**
+     * Not yet documented.
+     */
+    type DESKTOP = 'desktop';
+    /**
+     * Not yet documented.
+     */
+    type TV = 'tv';
+    /**
+     * Not yet documented.
+     */
+    type WATCH = 'watch';
+    /**
+     * Not yet documented.
+     */
+    type CAR = 'car';
+    /**
+     * Not yet documented.
+     */
+    type EMBEDDED = 'embedded';
+    /**
+     * Not yet documented.
+     */
+    type OTHER = 'other';
+  }
+
+  /**
+   * Not yet documented.
+   */
+  type DeviceFormFactor =
+    | DeviceFormFactor.PHONE
+    | DeviceFormFactor.TABLET
+    | DeviceFormFactor.DESKTOP
+    | DeviceFormFactor.TV
+    | DeviceFormFactor.WATCH
+    | DeviceFormFactor.CAR
+    | DeviceFormFactor.EMBEDDED
+    | DeviceFormFactor.OTHER;
+
+  /**
    * A type encapsulating attributes of a device registered for push notifications.
    */
   interface DeviceDetails {
@@ -1113,7 +1164,7 @@ declare namespace Types {
     /**
      * Form factor of the push device.
      */
-    formFactor: 'phone' | 'tablet' | 'desktop' | 'tv' | 'watch' | 'car' | 'embedded' | 'other';
+    formFactor: DeviceFormFactor;
     /**
      * Optional metadata object for this device. The metadata for a device may only be set by clients with `push-admin` privileges.
      */
