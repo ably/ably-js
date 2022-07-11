@@ -1808,6 +1808,10 @@ declare namespace Types {
      */
     current: ConnectionState;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The previous [`ConnectionState`]{@link ConnectionState}. For the [`UPDATE`]{@link ConnectionEvent#UPDATE} event, this is equal to the current [`ConnectionState`]{@link ConnectionState}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The previous state. (for the update event, this will be equal to the current state).
      * END LEGACY DOCSTRING
