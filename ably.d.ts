@@ -115,7 +115,9 @@ declare namespace Types {
      */
     type FAILED = 'failed';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An event for changes to channel conditions that do not result in a change in [`ChannelState`]{@link ChannelState}.
+     * END CANONICAL DOCSTRING
      */
     type UPDATE = 'update';
   }
