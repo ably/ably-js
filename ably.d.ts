@@ -1868,7 +1868,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the device receiving push notifications.
+   * END CANONICAL DOCSTRING
    */
   type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
 
