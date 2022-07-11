@@ -1860,7 +1860,9 @@ declare namespace Types {
      */
     type ANDROID = 'android';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device platform is iOS.
+     * END CANONICAL DOCSTRING
      */
     type IOS = 'ios';
     /**
