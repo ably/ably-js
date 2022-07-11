@@ -1338,6 +1338,10 @@ declare namespace Types {
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The name of the key against which this request is made. The key name is public, whereas the key secret is private.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The key name of the key against which this request is made. The key name is public, whereas the key secret is private.
      * END LEGACY DOCSTRING
