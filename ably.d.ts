@@ -349,7 +349,9 @@ declare namespace Types {
      */
     type DAY = 'day';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Interval unit over which statistics are gathered as months.
+     * END CANONICAL DOCSTRING
      */
     type MONTH = 'month';
   }
