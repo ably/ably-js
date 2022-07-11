@@ -1666,6 +1666,10 @@ declare namespace Types {
      */
     current: ChannelState;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The previous state. For the [`UPDATE`]{@link ChannelEvent#UPDATE} event, this is equal to the `current` [`ChannelState`]{@link ChannelState}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The previous state. (for the `update` event, this will be equal to the current state).
      * END LEGACY DOCSTRING
