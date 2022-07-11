@@ -174,7 +174,9 @@ declare namespace Types {
     type FAILED = 'failed';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the realtime [`Connection`]{@link Connection} object states.
+   * END CANONICAL DOCSTRING
    */
   type ConnectionState =
     | ConnectionState.INITIALIZED
