@@ -1196,6 +1196,10 @@ declare namespace Types {
      */
     code: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Additional message information, where available.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Additional message information, where available.
      * END LEGACY DOCSTRING
