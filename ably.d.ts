@@ -779,6 +779,10 @@ declare namespace Types {
     ): void;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A set of key-value pair headers to be added to any request made to the `authUrl`. Useful when an application requires these to be added to validate the request or implement the response. If the `authHeaders` object contains an `authorization` key, then `withCredentials` is set on the XHR request.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A set of key value pair headers to be added to any request made to the `authUrl`. Useful when an application requires these to be added to validate the request or implement the response. If the `authHeaders` object contains an `authorization` key, then [the `withCredentials` property](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/withCredentials) will be set on the underlying XHR (`XMLHttpRequest`) object.
      * END LEGACY DOCSTRING
