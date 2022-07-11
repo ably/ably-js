@@ -1915,7 +1915,9 @@ declare namespace Types {
      */
     type WATCH = 'watch';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is a car.
+     * END CANONICAL DOCSTRING
      */
     type CAR = 'car';
     /**
