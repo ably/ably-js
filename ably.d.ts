@@ -1483,6 +1483,10 @@ declare namespace Types {
   type ChannelModes = Array<ChannelMode>;
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Passes additional properties to a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, such as encryption, [`ChannelMode`]{@link ChannelMode} and channel parameters.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * Channel options are used for setting [channel parameters](https://ably.com/documentation/realtime/channels/channel-parameters/overview) and [configuring encryption](https://ably.com/documentation/realtime/encryption).
    * END LEGACY DOCSTRING
