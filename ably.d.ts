@@ -478,6 +478,14 @@ declare namespace Types {
     restHost?: string;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Enables a non-default Ably host to be specified for realtime connections. For development environments only. The default value is `realtime.ably.io`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default "realtime.ably.io"
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably host to be specified for realtime connections.
      * END LEGACY DOCSTRING
