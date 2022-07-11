@@ -546,6 +546,14 @@ declare namespace Types {
     recover?: string | recoverConnectionCallback;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When `false`, the client will use an insecure connection. The default is `true`, meaning a TLS connection will be used to connect to Ably.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default true
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
      * END LEGACY DOCSTRING
