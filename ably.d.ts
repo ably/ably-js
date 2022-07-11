@@ -1437,7 +1437,9 @@ declare namespace Types {
    */
   namespace ChannelMode {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The client can publish messages.
+     * END CANONICAL DOCSTRING
      */
     type PUBLISH = 'PUBLISH';
     /**
