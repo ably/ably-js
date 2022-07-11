@@ -1903,7 +1903,9 @@ declare namespace Types {
      */
     type DESKTOP = 'desktop';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The device is a TV.
+     * END CANONICAL DOCSTRING
      */
     type TV = 'tv';
     /**
