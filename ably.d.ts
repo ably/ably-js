@@ -389,6 +389,10 @@ declare namespace Types {
     autoConnect?: boolean;
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When a [`TokenParams`]{@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably [`TokenRequest`s]{@link TokenRequest}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When a `TokenParams` object is provided, it will override the client library defaults when issuing new Ably Tokens or Ably TokenRequests.
      * END LEGACY DOCSTRING
