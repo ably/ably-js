@@ -390,7 +390,9 @@ declare namespace Types {
    */
   interface ChannelMetrics {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of realtime connections attached to the channel.
+     * END CANONICAL DOCSTRING
      */
     connections: number;
     /**
