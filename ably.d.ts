@@ -1246,6 +1246,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains an Ably Token and its associated metadata.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * The details of Ably Token string and its associated metadata.
    * END LEGACY DOCSTRING
