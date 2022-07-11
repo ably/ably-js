@@ -267,7 +267,9 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Describes the possible actions members in the presence set can emit.
+   * END CANONICAL DOCSTRING
    */
   type PresenceAction =
     | PresenceAction.ABSENT
