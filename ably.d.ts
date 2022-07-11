@@ -402,7 +402,9 @@ declare namespace Types {
      */
     presenceConnections: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The number of members in the presence set of the channel.
+     * END CANONICAL DOCSTRING
      */
     presenceMembers: number;
     /**
