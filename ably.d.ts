@@ -1443,7 +1443,9 @@ declare namespace Types {
      */
     type PUBLISH = 'PUBLISH';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The client can subscribe to messages.
+     * END CANONICAL DOCSTRING
      */
     type SUBSCRIBE = 'SUBSCRIBE';
     /**
