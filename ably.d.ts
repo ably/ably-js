@@ -4018,6 +4018,10 @@ declare namespace Types {
    */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`RealtimePresence`]{@link RealtimePresence} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
      * END LEGACY DOCSTRING
@@ -4146,6 +4150,10 @@ declare namespace Types {
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`RealtimePresence`]{@link RealtimePresence} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Provides access to the Presence object for this channel which can be used to access members present on the channel, or participate in presence.
      * END LEGACY DOCSTRING
