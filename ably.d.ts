@@ -4013,7 +4013,11 @@ declare namespace Types {
      */
     publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves a [`ChannelDetails`]{@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
+     *
+     * @returns A [`ChannelDetails`]{@link ChannelDetails} object.
+     * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
      */
@@ -4091,7 +4095,11 @@ declare namespace Types {
      */
     publish(name: string, data: any, options?: PublishOptions): Promise<void>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves a [`ChannelDetails`]{@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
+     *
+     * @returns A [`ChannelDetails`]{@link ChannelDetails} object.
+     * END CANONICAL DOCSTRING
      */
     status(): Promise<ChannelDetails>;
   }
