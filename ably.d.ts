@@ -4135,6 +4135,13 @@ declare namespace Types {
      */
     subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
+     *
+     * @param name - The event name.
+     * @param data - The message payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      * END LEGACY DOCSTRING
@@ -4171,6 +4178,13 @@ declare namespace Types {
      */
     publish(message: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
+     *
+     * @param name - The event name.
+     * @param data - The message payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      * END LEGACY DOCSTRING
@@ -4299,6 +4313,13 @@ declare namespace Types {
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
+     *
+     * @param name - The event name.
+     * @param data - The message payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload. When publish is called, it won’t attempt to implicitly attach to the channel.
      * END LEGACY DOCSTRING
