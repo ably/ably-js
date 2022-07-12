@@ -3919,7 +3919,9 @@ declare namespace Types {
      */
     readonly state: ChannelState;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Optional [channel parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) that configure the behavior of the channel.
+     * END CANONICAL DOCSTRING
      */
     params: ChannelParams;
     /**
