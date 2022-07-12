@@ -5392,6 +5392,10 @@ declare namespace Types {
      */
     statusCode: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Whether `statusCode` indicates success. This is equivalent to `200 <= statusCode < 300`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Whether that HTTP status code indicates success (equivalent to 200 <= statusCode < 300).
      * END LEGACY DOCSTRING
