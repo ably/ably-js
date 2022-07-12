@@ -2465,7 +2465,12 @@ declare namespace Types {
      */
     once(): Promise<ResultType>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Removes all registrations that match both the specified listener and the specified event.
+     *
+     * @param Event - The named event.
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
      * @param callback - Not yet documented.
