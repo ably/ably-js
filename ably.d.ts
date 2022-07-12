@@ -4000,7 +4000,9 @@ declare namespace Types {
      */
     unsubscribe(listener: messageCallback<Message>): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
+     * END CANONICAL DOCSTRING
      */
     unsubscribe(): void;
   }
