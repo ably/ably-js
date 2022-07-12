@@ -5027,6 +5027,10 @@ declare namespace Types {
    */
   class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An [`ErrorInfo`]{@link ErrorInfo} object describing the last error received if a connection failure occurs.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When a connection failure occurs this property contains the ErrorInfo.
      * END LEGACY DOCSTRING
