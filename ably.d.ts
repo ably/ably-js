@@ -4126,6 +4126,12 @@ declare namespace Types {
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      * END LEGACY DOCSTRING
@@ -4305,6 +4311,12 @@ declare namespace Types {
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      * END LEGACY DOCSTRING
