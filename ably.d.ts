@@ -3907,7 +3907,9 @@ declare namespace Types {
      */
     readonly name: string;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An [`ErrorInfo`]{@link ErrorInfo} object describing the last error which occurred on the channel, if any.
+     * END CANONICAL DOCSTRING
      */
     errorReason: ErrorInfo;
     /**
