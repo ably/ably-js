@@ -3019,6 +3019,15 @@ declare namespace Types {
    */
   class AuthCallbacks extends AuthBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
+     *
+     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
+     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     *
+     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
      *
@@ -3075,6 +3084,15 @@ declare namespace Types {
    */
   class AuthPromise extends AuthBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any [`TokenParams`]{@link TokenParams} and [`AuthOptions`]{@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
+     *
+     * @param TokenParams - A [`TokenParams`]{@link TokenParams} object.
+     * @param AuthOptions - An [`AuthOptions`]{@link AuthOptions} object.
+     *
+     * @returns A [`TokenDetails`]{@link TokenDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
      *
