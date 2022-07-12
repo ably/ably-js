@@ -3959,7 +3959,11 @@ declare namespace Types {
      */
     unsubscribe(events: Array<string>, listener: messageCallback<Message>): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters all listeners for the given event name.
+     *
+     * @param String - The event name.
+     * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
      */
