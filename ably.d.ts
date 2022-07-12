@@ -5288,6 +5288,12 @@ declare namespace Types {
      */
     items: T[];
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns a new `PaginatedResult` for the first page of results.
+     *
+     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns a new PaginatedResult for the first page of results.
      * END LEGACY DOCSTRING
@@ -5296,6 +5302,12 @@ declare namespace Types {
      */
     first(results: paginatedResultCallback<T>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns a new `PaginatedResult` for the first page of results.
+     *
+     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns a new PaginatedResult for the first page of results.
      * END LEGACY DOCSTRING
