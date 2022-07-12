@@ -4260,6 +4260,12 @@ declare namespace Types {
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Releases a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the [`ChannelState`]{@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+     *
+     * @param String - The channel name.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribes all listeners from a given Channel by name.
      * END LEGACY DOCSTRING
