@@ -5059,6 +5059,10 @@ declare namespace Types {
      */
     key?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The recovery key string can be used by another client to recover this connection's state in the recover client options property. See [connection state recover options](https://ably.com/docs/realtime/connection#connection-state-recover-options) for more information.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The recovery key String can be used by another client to recover this connection’s state in the recover client options property. See [connection state recover options](https://ably.com/documentation/realtime/connection#connection-state-recover-options) for more information.
      * END LEGACY DOCSTRING
