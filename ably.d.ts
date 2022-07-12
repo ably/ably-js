@@ -5376,7 +5376,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A superset of [`PaginatedResult`]{@link PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
+   * END CANONICAL DOCSTRING
    */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
     /**
