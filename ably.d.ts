@@ -2409,7 +2409,11 @@ declare namespace Types {
      */
     on(events: EventType[], callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener all events. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+     *
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
      */
