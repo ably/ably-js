@@ -3919,6 +3919,10 @@ declare namespace Types {
    */
   class ChannelBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The channel name.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The name String unique to this channel.
      * END LEGACY DOCSTRING
