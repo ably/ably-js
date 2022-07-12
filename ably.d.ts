@@ -3973,6 +3973,12 @@ declare namespace Types {
      */
     unsubscribe(filter: MessageFilter, listener?: messageCallback<Message>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters the given listener (for any/all event names). This removes an earlier subscription.
+     *
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe the given listener (for any/all event names). This removes an earlier subscription.
      * END LEGACY DOCSTRING
