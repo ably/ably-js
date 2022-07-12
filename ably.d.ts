@@ -5117,6 +5117,12 @@ declare namespace Types {
    */
   class ConnectionCallbacks extends ConnectionBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
+     *
+     * @returns The response time in milliseconds.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      * END LEGACY DOCSTRING
@@ -5140,6 +5146,12 @@ declare namespace Types {
    */
   class ConnectionPromise extends ConnectionBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
+     *
+     * @returns The response time in milliseconds.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      * END LEGACY DOCSTRING
