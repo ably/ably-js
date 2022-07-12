@@ -5382,6 +5382,10 @@ declare namespace Types {
    */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The HTTP status code of the response.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The HTTP status code of the response.
      * END LEGACY DOCSTRING
