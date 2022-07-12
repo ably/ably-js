@@ -5408,7 +5408,9 @@ declare namespace Types {
      */
     errorCode: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The error message if the `X-Ably-Errormessage` HTTP header is sent in the response.
+     * END CANONICAL DOCSTRING
      */
     errorMessage: string;
     /**
