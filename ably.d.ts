@@ -2395,7 +2395,12 @@ declare namespace Types {
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+     *
+     * @param Event - The named event to listen for.
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
      * @param callback - Not yet documented.
