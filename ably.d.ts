@@ -4100,6 +4100,13 @@ declare namespace Types {
      */
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param String - The event name.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      * END LEGACY DOCSTRING
@@ -4288,6 +4295,13 @@ declare namespace Types {
      */
     setOptions(options: ChannelOptions): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param String - The event name.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe to messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      * END LEGACY DOCSTRING
