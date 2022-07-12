@@ -3009,7 +3009,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Creates Ably [`TokenRequest`]{@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
+   * END CANONICAL DOCSTRING
    */
   class AuthCallbacks extends AuthBase {
     /**
@@ -3063,7 +3065,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Creates Ably [`TokenRequest`]{@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
+   * END CANONICAL DOCSTRING
    */
   class AuthPromise extends AuthBase {
     /**
