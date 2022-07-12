@@ -5314,6 +5314,12 @@ declare namespace Types {
      */
     first(): Promise<PaginatedResult<T>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
+     *
+     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
      * END LEGACY DOCSTRING
@@ -5322,6 +5328,12 @@ declare namespace Types {
      */
     next(results: paginatedResultCallback<T>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
+     *
+     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns a new PaginatedResult loaded with the next page of results. If there are no further pages, then `null` is returned.
      * END LEGACY DOCSTRING
