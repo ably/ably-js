@@ -4008,7 +4008,9 @@ declare namespace Types {
   };
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresence`]{@link RealtimePresence} object of a channel.
+   * END CANONICAL DOCSTRING
    */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
@@ -4134,7 +4136,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the [`RealtimePresence`]{@link RealtimePresence} object of a channel.
+   * END CANONICAL DOCSTRING
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
