@@ -3927,7 +3927,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables messages to be published and historic messages to be retrieved for a channel.
+   * END CANONICAL DOCSTRING
    */
   class ChannelCallbacks extends ChannelBase {
     /**
@@ -3991,7 +3993,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables messages to be published and historic messages to be retrieved for a channel.
+   * END CANONICAL DOCSTRING
    */
   class ChannelPromise extends ChannelBase {
     /**
