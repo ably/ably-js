@@ -5350,6 +5350,12 @@ declare namespace Types {
      */
     hasNext(): boolean;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns `true` if this page is the last page and returns `false` if there are more pages available by calling next available.
+     *
+     * @returns Whether or not this is the last page of results.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns `true` if this page is the last page and returns `false` if there are more pages available by calling next available.
      * END LEGACY DOCSTRING
