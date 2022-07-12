@@ -5338,6 +5338,12 @@ declare namespace Types {
      */
     current(): Promise<PaginatedResult<T>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Returns `true` if there are more pages available by calling next and returns `false` if this page is the last page available.
+     *
+     * @returns Whether or not there are more pages of results.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Returns `true` if there are more pages available by calling next and returns `false` if this page is the last page available.
      * END LEGACY DOCSTRING
