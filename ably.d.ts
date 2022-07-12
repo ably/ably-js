@@ -3913,7 +3913,9 @@ declare namespace Types {
      */
     errorReason: ErrorInfo;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The current [`ChannelState`]{@link ChannelState} of the channel.
+     * END CANONICAL DOCSTRING
      */
     readonly state: ChannelState;
     /**
