@@ -4126,7 +4126,11 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Sets the [`ChannelOptions`]{@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param options - A [`ChannelOptions`]{@link ChannelOptions} object.
+     * END CANONICAL DOCSTRING
      *
      * @param options - Not yet documented.
      * @param callback - Not yet documented.
@@ -4332,7 +4336,11 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Sets the [`ChannelOptions`]{@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * @param options - A [`ChannelOptions`]{@link ChannelOptions} object.
+     * END CANONICAL DOCSTRING
      *
      * @param options - Not yet documented.
      */
