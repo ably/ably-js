@@ -4145,6 +4145,12 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     *
+     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      * END LEGACY DOCSTRING
@@ -4302,6 +4308,12 @@ declare namespace Types {
      */
     publish(name: string, data: any): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     *
+     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      * END LEGACY DOCSTRING
