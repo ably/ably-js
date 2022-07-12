@@ -2424,7 +2424,12 @@ declare namespace Types {
      */
     on(callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener for the first occurrence of a single named event specified as the `Event` argument. If `once` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once` ensures that each registration is only invoked once.
+     *
+     * @param Event - The named event to listen for.
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
      * @param callback - Not yet documented.
@@ -2441,7 +2446,12 @@ declare namespace Types {
      */
     once(callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener for the first occurrence of a single named event specified as the `Event` argument. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
+     *
+     * @param Event - The named event to listen for.
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
      */
