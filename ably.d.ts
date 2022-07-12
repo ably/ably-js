@@ -4242,6 +4242,15 @@ declare namespace Types {
    */
   class Channels<T> {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Creates a new [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, with the specified [`ChannelOptions`]{@link ChannelOptions}, or returns the existing channel object.
+     *
+     * @param String - The channel name.
+     * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object.
+     *
+     * @returns A [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Creates a new Channel object if none for the channel exists, or returns the existing channel object.
      * END LEGACY DOCSTRING
