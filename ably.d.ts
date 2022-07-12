@@ -3931,6 +3931,13 @@ declare namespace Types {
      */
     modes: ChannelModes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
+     *
+     * @param String - The event name.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe the given listener for the specified event name. This removes an earlier event-specific subscription.
      * END LEGACY DOCSTRING
