@@ -4046,6 +4046,10 @@ declare namespace Types {
      */
     attach(callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Detach from this channel. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
      *
@@ -4180,6 +4184,10 @@ declare namespace Types {
      */
     attach(): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the [`on()`]{@link EventEmitter#on} or [`once()`]{@link EventEmitter#once} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Detach from this channel. Any resulting channel state change will be emitted to any listeners registered using the on or once methods.
      *
