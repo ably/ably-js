@@ -5079,6 +5079,10 @@ declare namespace Types {
      */
     serial: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The current [`ConnectionState`]{@link ConnectionState} of the connection.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The current state of this Connection. See [Connection states](https://ably.com/documentation/realtime/connection#connection-states) for more information.
      * END LEGACY DOCSTRING
