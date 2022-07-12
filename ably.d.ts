@@ -2472,7 +2472,11 @@ declare namespace Types {
      */
     off(event: EventType, callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters the specified listener. Removes all registrations matching the given listener, regardless of whether they are associated with an event or not.
+     *
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
      */
