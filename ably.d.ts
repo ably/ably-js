@@ -3937,6 +3937,10 @@ declare namespace Types {
    */
   class ChannelCallbacks extends ChannelBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`RestPresence`]{@link RestPresence} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
      * END LEGACY DOCSTRING
@@ -4003,6 +4007,10 @@ declare namespace Types {
    */
   class ChannelPromise extends ChannelBase {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`RestPresence`]{@link RestPresence} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Provides access to the REST Presence object for this channel which can be used to get members present on the channel, or retrieve presence event history.
      * END LEGACY DOCSTRING
