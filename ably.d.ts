@@ -1157,9 +1157,9 @@ declare namespace Types {
      * Additional message information, where available.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * Additional message information, where available.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     message: string;
     /**
@@ -1167,9 +1167,9 @@ declare namespace Types {
      * HTTP Status Code corresponding to this error, where applicable.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * HTTP Status Code corresponding to this error, where applicable.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     statusCode: number;
   }
@@ -1533,9 +1533,9 @@ declare namespace Types {
      * The client ID to associate with the requested Ably Token. When provided, the Ably Token may only be used to perform operations on behalf of that client ID.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The client ID to associate with the requested Ably Token. When provided, the Ably Token may only be used to perform operations on behalf of that client ID.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     clientId?: string;
     /**
@@ -1553,9 +1553,9 @@ declare namespace Types {
      * The Message Authentication Code for this request.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The Message Authentication Code for this request.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     mac: string;
     /**
@@ -4771,9 +4771,9 @@ declare namespace Types {
      * The client ID of the publisher of this message.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The client ID of the publisher of this message.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     clientId: string;
     /**
@@ -4781,9 +4781,9 @@ declare namespace Types {
      * The connection ID of the publisher of this message.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The connection ID of the publisher of this message.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     connectionId: string;
     /**
@@ -4791,9 +4791,9 @@ declare namespace Types {
      * The message payload, if provided.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The message payload, if provided.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     data: any;
     /**
@@ -5507,9 +5507,9 @@ declare namespace Types {
      * The HTTP status code of the response.
      * END CANONICAL DOCSTRING
      *
-     * BEGIN LEGACY DOCSTRING
+     * BEGIN LEGACY-MATCHES-CANONICAL DOCSTRING
      * The HTTP status code of the response.
-     * END LEGACY DOCSTRING
+     * END LEGACY-MATCHES-CANONICAL DOCSTRING
      */
     statusCode: number;
     /**

@@ -15,6 +15,9 @@ COMMENT_END = "*/"
   canonical_end_line_number = nil
   canonical_with_params_start_line_numbers = []
   canonical_has_params = false
+  legacy_start_line_number = nil
+  legacy_end_line_number = nil
+  legacy_matches_canonical_legacy_start_and_end_line_numbers = []
 
   lines.each_with_index do |line, index|
     line_number = index + 1
@@ -23,9 +26,12 @@ COMMENT_END = "*/"
     when /^\s*#{Regexp.escape(DOC_COMMENT_START)}$/
       in_doc_comment = true
     when /^\s*#{Regexp.escape(COMMENT_END)}$/
-      in_doc_comment = false
-      canonical_docstring = nil
-      legacy_docstring = nil
+      if canonical_docstring && canonical_docstring == legacy_docstring
+        legacy_matches_canonical_legacy_start_and_end_line_numbers += [legacy_start_line_number, legacy_end_line_number]
+      end
+    in_doc_comment = false
+    canonical_docstring = nil
+    legacy_docstring = nil
     when /^\s*\* BEGIN CANONICAL DOCSTRING$/
       if in_doc_comment
         in_canonical_docstring = true
@@ -38,9 +44,15 @@ COMMENT_END = "*/"
         canonical_end_line_number = line_number
       end
     when /^\s*\* BEGIN LEGACY DOCSTRING$/
-      in_legacy_docstring = true if in_doc_comment
+      if in_doc_comment
+        in_legacy_docstring = true
+        legacy_start_line_number = line_number
+      end
     when /^\s*\* END LEGACY DOCSTRING$/
-      in_legacy_docstring = false if in_legacy_docstring
+      if in_legacy_docstring
+        in_legacy_docstring = false
+        legacy_end_line_number = line_number
+      end
     when /^\s*\*(.*)/
       if line =~ /@param/ && in_canonical_docstring
         canonical_with_params_start_line_numbers << canonical_start_line_number
@@ -71,6 +83,16 @@ COMMENT_END = "*/"
         line
       end
     end.flatten
+  when 'mark-legacy-matches-canonical'
+    new_lines = lines.each_with_index.map do |line, index|
+      line_number = index + 1
+
+      if legacy_matches_canonical_legacy_start_and_end_line_numbers.include?(line_number)
+        line.sub('LEGACY', 'LEGACY-MATCHES-CANONICAL')
+      else
+        line
+      end
+    end
   else
     raise "Unrecognised argument #{ARGV[0]}."
   end
