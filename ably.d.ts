@@ -2389,7 +2389,9 @@ declare namespace Types {
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`Connection`]{@link} object emits events for connection state using the `EventEmitter` pattern.
+   * END CANONICAL DOCSTRING
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
