@@ -4154,7 +4154,11 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Publish a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     *
+     * @param Message - A [`Message`]{@link Message} object.
+     * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
      * @param callback - Not yet documented.
@@ -4306,7 +4310,11 @@ declare namespace Types {
      */
     publish(messages: any[]): Promise<void>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Publish a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     *
+     * @param Message - A [`Message`]{@link Message} object.
+     * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
      */
