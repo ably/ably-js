@@ -5278,6 +5278,10 @@ declare namespace Types {
    */
   class PaginatedResult<T> {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Contains the current page of results; for example, an array of [`Message`]{@link Message} or [`PresenceMessage`]{@link PresenceMessage} objects for a channel history request.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Contains the current page of results (for example an Array of Message or PresenceMessage objects for a channel history request).
      * END LEGACY DOCSTRING
