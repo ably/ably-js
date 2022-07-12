@@ -4117,7 +4117,12 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param [`String`] - An array of event names.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
      * @param listener - Not yet documented.
@@ -4311,7 +4316,12 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
+     *
+     * @param [`String`] - An array of event names.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
      * @param listener - Not yet documented.
