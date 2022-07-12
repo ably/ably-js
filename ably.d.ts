@@ -5037,6 +5037,10 @@ declare namespace Types {
      */
     errorReason: ErrorInfo;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A unique public identifier for this connection, used to identify this member.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * A unique public identifier String for this connection, used to identify this member in presence events and messages.
      * END LEGACY DOCSTRING
