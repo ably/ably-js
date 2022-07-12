@@ -3947,7 +3947,12 @@ declare namespace Types {
      */
     unsubscribe(event: string, listener: messageCallback<Message>): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters the given listener from all event names in the array.
+     *
+     * @param [`String`] - An array of event names.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
      * @param listener - Not yet documented.
