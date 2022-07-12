@@ -3969,7 +3969,11 @@ declare namespace Types {
      */
     unsubscribe(event: string): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters all listeners for all event names in the array.
+     *
+     * @param [`String`] - An array of event names.
+     * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
      */
