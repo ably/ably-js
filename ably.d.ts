@@ -5402,7 +5402,9 @@ declare namespace Types {
      */
     success: boolean;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The error code if the `X-Ably-Errorcode` HTTP header is sent in the response.
+     * END CANONICAL DOCSTRING
      */
     errorCode: number;
     /**
