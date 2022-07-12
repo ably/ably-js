@@ -5089,6 +5089,10 @@ declare namespace Types {
      */
     readonly state: ConnectionState;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Causes the connection to close, entering the [`CLOSING`]{@link ConnectionState#CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to [`connect()`]{@link Connection#connect}.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to `connect`.
      * END LEGACY DOCSTRING
