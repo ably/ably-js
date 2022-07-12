@@ -5079,7 +5079,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of a connection to Ably.
+   * END CANONICAL DOCSTRING
    */
   class ConnectionCallbacks extends ConnectionBase {
     /**
@@ -5100,7 +5102,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of a connection to Ably.
+   * END CANONICAL DOCSTRING
    */
   class ConnectionPromise extends ConnectionBase {
     /**
