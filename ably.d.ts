@@ -2431,7 +2431,11 @@ declare namespace Types {
      */
     once(event: EventType, callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener for the first event that is emitted. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
+     *
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
      */
@@ -2443,7 +2447,11 @@ declare namespace Types {
      */
     once(event: EventType): Promise<ResultType>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers the provided listener for the first event that is emitted. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
+     *
+     * @param Data - The event listener.
+     * END CANONICAL DOCSTRING
      */
     once(): Promise<ResultType>;
     /**
