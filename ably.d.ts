@@ -3923,7 +3923,9 @@ declare namespace Types {
      */
     params: ChannelParams;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An array of [`ChannelMode`]{@link ChannelMode} objects.
+     * END CANONICAL DOCSTRING
      */
     modes: ChannelModes;
     /**
