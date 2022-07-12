@@ -5414,6 +5414,10 @@ declare namespace Types {
      */
     errorMessage: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The headers of the response.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The response’s headers.
      * END LEGACY DOCSTRING
