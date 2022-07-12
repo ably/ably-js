@@ -5268,6 +5268,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains a page of results for message or presence history, stats, or REST presence requests. A `PaginatedResult` response from a REST API paginated query is also accompanied by metadata that indicates the relative queries available to the `PaginatedResult` object.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A PaginatedResult is a type that represents a page of results for all message and presence history, stats and REST presence requests. The response from a Ably REST API paginated query is accompanied by metadata that indicates the relative queries available to the PaginatedResult object.
    * END LEGACY DOCSTRING
