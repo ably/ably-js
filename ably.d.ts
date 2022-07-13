@@ -3986,6 +3986,13 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. It is worth noting that there are additional considerations and constraints if you want to publish multiple messages idempotently in one publish operation with client-supplied IDs.
      * END LEGACY DOCSTRING
@@ -4074,6 +4081,13 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param [`Message`] - An array of [`Message`]{@link Message} objects.
+     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish several messages on this channel.
      * END LEGACY DOCSTRING
