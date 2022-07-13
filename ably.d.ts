@@ -3995,7 +3995,12 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param Message - A [`Message`]{@link Message} object.
+     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
      * @param callback - Not yet documented.
@@ -4078,7 +4083,12 @@ declare namespace Types {
      */
     publish(messages: any[], options?: PublishOptions): Promise<void>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param Message - A [`Message`]{@link Message} object.
+     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
      * @param options - Not yet documented.
