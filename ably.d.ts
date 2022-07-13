@@ -12,52 +12,36 @@ declare namespace Types {
    */
   namespace ChannelState {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel has been initialized but no attach has yet been attempted.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An attach has been initiated by sending a request to Ably. This is a transient state, followed either by a transition to `ATTACHED`, `SUSPENDED`, or `FAILED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ATTACHING = 'attaching';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The attach has succeeded. In the `ATTACHED` state a client may publish and subscribe to messages, or be present on the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ATTACHED = 'attached';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A detach has been initiated on an `ATTACHED` channel by sending a request to Ably. This is a transient state, followed either by a transition to `DETACHED` or `FAILED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DETACHING = 'detaching';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel, having previously been `ATTACHED`, has been detached by the user.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DETACHED = 'detached';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An indefinite failure condition. This state is entered if a channel error has been received from the Ably service, such as an attempt to attach without the necessary access rights.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type FAILED = 'failed';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the possible states of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type ChannelState =
     | ChannelState.FAILED
@@ -73,58 +57,40 @@ declare namespace Types {
    */
   namespace ChannelEvent {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel has been initialized but no attach has yet been attempted.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An attach has been initiated by sending a request to Ably. This is a transient state, followed either by a transition to `ATTACHED`, `SUSPENDED`, or `FAILED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ATTACHING = 'attaching';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The attach has succeeded. In the `ATTACHED` state a client may publish and subscribe to messages, or be present on the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ATTACHED = 'attached';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A detach has been initiated on an `ATTACHED` channel by sending a request to Ably. This is a transient state, followed either by a transition to `DETACHED` or `FAILED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DETACHING = 'detaching';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel, having previously been `ATTACHED`, has been detached by the user.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DETACHED = 'detached';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An indefinite failure condition. This state is entered if a channel error has been received from the Ably service, such as an attempt to attach without the necessary access rights.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type FAILED = 'failed';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An event for changes to channel conditions that do not result in a change in {@link ChannelState}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type UPDATE = 'update';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the events emitted by a {@link ChannelBase} or {@link RealtimeChannelBase} object. An event is either an `UPDATE` or a {@link ChannelState}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type ChannelEvent =
     | ChannelEvent.FAILED
@@ -141,58 +107,40 @@ declare namespace Types {
    */
   namespace ConnectionState {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection with this state has been initialized but no connection has yet been attempted.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection attempt has been initiated. The connecting state is entered as soon as the library has completed initialization, and is reentered each time connection is re-attempted following disconnection.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CONNECTING = 'connecting';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection exists and is active.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CONNECTED = 'connected';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
-     * END CANONICAL-ONLY DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An explicit request by the developer to close the connection has been sent to the Ably service. If a reply is not received from Ably within a short period of time, the connection is forcibly terminated and the connection state becomes `CLOSED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CLOSING = 'closing';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CLOSED = 'closed';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type FAILED = 'failed';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the realtime {@link ConnectionBase} object states.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type ConnectionState =
     | ConnectionState.INITIALIZED
@@ -209,64 +157,44 @@ declare namespace Types {
    */
   namespace ConnectionEvent {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection with this state has been initialized but no connection has yet been attempted.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type INITIALIZED = 'initialized';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection attempt has been initiated. The connecting state is entered as soon as the library has completed initialization, and is reentered each time connection is re-attempted following disconnection.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CONNECTING = 'connecting';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A connection exists and is active.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CONNECTED = 'connected';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
-     * END CANONICAL-ONLY DOCSTRING
      */
     type SUSPENDED = 'suspended';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An explicit request by the developer to close the connection has been sent to the Ably service. If a reply is not received from Ably within a short period of time, the connection is forcibly terminated and the connection state becomes `CLOSED`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CLOSING = 'closing';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CLOSED = 'closed';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type FAILED = 'failed';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An event for changes to connection conditions for which the {@link ConnectionState} does not change.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type UPDATE = 'update';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the events emitted by a {@link ConnectionBase} object. An event is either an `UPDATE` or a {@link ConnectionState}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type ConnectionEvent =
     | ConnectionEvent.INITIALIZED
@@ -284,40 +212,28 @@ declare namespace Types {
    */
   namespace PresenceAction {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A member is not present in the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ABSENT = 'absent';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * When subscribing to presence events on a channel that already has members present, this event is emitted for every member already present on the channel before the subscribe listener was registered.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type PRESENT = 'present';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A new member has entered the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ENTER = 'enter';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A member who was present has now left the channel. This may be a result of an explicit request to leave or implicitly when detaching from the channel. Alternatively, if a member's connection is abruptly disconnected and they do not resume their connection within a minute, Ably treats this as a leave event as the client is no longer present.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type LEAVE = 'leave';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An already present member has updated their member data. Being notified of member data updates can be very useful, for example, it can be used to update the status of a user when they are typing a message.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type UPDATE = 'update';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the possible actions members in the presence set can emit.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type PresenceAction =
     | PresenceAction.ABSENT
@@ -331,34 +247,24 @@ declare namespace Types {
    */
   namespace StatsIntervalGranularity {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Interval unit over which statistics are gathered as minutes.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type MINUTE = 'minute';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Interval unit over which statistics are gathered as hours.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type HOUR = 'hour';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Interval unit over which statistics are gathered as days.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DAY = 'day';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Interval unit over which statistics are gathered as months.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type MONTH = 'month';
   }
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the interval unit over which statistics are gathered.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type StatsIntervalGranularity =
     | StatsIntervalGranularity.MINUTE
@@ -390,99 +296,69 @@ declare namespace Types {
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the details of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as its ID and {@link ChannelStatus}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ChannelDetails {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The identifier of the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     channelId: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A {@link ChannelStatus} object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     status: ChannelStatus;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the status of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as whether it is active and its {@link ChannelOccupancy}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ChannelStatus {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * If `true`, the channel is active, otherwise `false`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     isActive: boolean;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A {@link ChannelOccupancy} object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     occupancy: ChannelOccupancy;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the metrics of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ChannelOccupancy {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A {@link ChannelMetrics} object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     metrics: ChannelMetrics;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the metrics associated with a {@link ChannelBase} or {@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ChannelMetrics {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of realtime connections attached to the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     connections: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     presenceConnections: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of members in the presence set of the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     presenceMembers: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE_SUBSCRIBE}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     presenceSubscribers: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PUBLISH}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     publishers: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.SUBSCRIBE}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     subscribers: number;
   }
@@ -816,33 +692,25 @@ declare namespace Types {
     httpRequestTimeout?: number;
 
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Timeout for the wait of acknowledgement for operations performed via a realtime connection, before the client library considers a request failed and triggers a failure condition. Operations include establishing a connection with Ably, or sending a `HEARTBEAT`, `CONNECT`, `ATTACH`, `DETACH` or `CLOSE` request. It is the equivalent of `httpRequestTimeout` but for realtime operations, rather than REST. The default is 10 seconds.
      *
      * @defaultValue 10s
-     * END CANONICAL-ONLY DOCSTRING
      */
     realtimeRequestTimeout?: number;
 
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A map between a plugin type and a plugin object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     plugins?: {
       /**
-       * BEGIN CANONICAL-ONLY DOCSTRING
        * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
-       * END CANONICAL-ONLY DOCSTRING
        */
       vcdiff?: any;
     };
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Passes authentication-specific properties in authentication requests to Ably. Properties set using `AuthOptions` are used instead of the default values set when the client library is instantiated, as opposed to being merged with them.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface AuthOptions {
     /**
@@ -1578,27 +1446,19 @@ declare namespace Types {
    */
   namespace ChannelMode {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The client can publish messages.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type PUBLISH = 'PUBLISH';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The client can subscribe to messages.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type SUBSCRIBE = 'SUBSCRIBE';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The client can enter the presence set.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type PRESENCE = 'PRESENCE';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The client can receive presence messages.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
     /**
@@ -1608,9 +1468,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type ChannelMode =
     | ChannelMode.PUBLISH
@@ -1654,9 +1512,7 @@ declare namespace Types {
      */
     params?: ChannelParams;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An array of {@link ChannelMode} objects.
-     * END CANONICAL-ONLY DOCSTRING
      */
     modes?: ChannelModes;
   }
@@ -1899,9 +1755,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains state change information emitted by {@link ChannelBase} and {@link RealtimeChannelBase} objects.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ChannelStateChange {
     /**
@@ -1947,9 +1801,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains {@link ConnectionState} change information emitted by the {@link ConnectionBase} object.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface ConnectionStateChange {
     /**
@@ -1999,29 +1851,21 @@ declare namespace Types {
    */
   namespace DevicePlatform {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device platform is Android.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type ANDROID = 'android';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device platform is iOS.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type IOS = 'ios';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device platform is a web browser.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type BROWSER = 'browser';
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the device receiving push notifications.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
 
@@ -2030,59 +1874,41 @@ declare namespace Types {
    */
   namespace DeviceFormFactor {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is a phone.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type PHONE = 'phone';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is tablet.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type TABLET = 'tablet';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is a desktop.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type DESKTOP = 'desktop';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is a TV.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type TV = 'tv';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is a watch.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type WATCH = 'watch';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is a car.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type CAR = 'car';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is embedded.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type EMBEDDED = 'embedded';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The device is other.
-     * END CANONICAL-ONLY DOCSTRING
      */
     type OTHER = 'other';
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Describes the type of device receiving a push notification.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type DeviceFormFactor =
     | DeviceFormFactor.PHONE
@@ -2161,9 +1987,7 @@ declare namespace Types {
      */
     deviceSecret?: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The {@link DevicePushDetails} object associated with the device. Describes the details of the push registration of the device.
-     * END CANONICAL-ONLY DOCSTRING
      */
     push: DevicePushDetails;
   }
@@ -2216,9 +2040,7 @@ declare namespace Types {
   type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the details of the push registration of a device.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface DevicePushDetails {
     /**
@@ -2358,43 +2180,33 @@ declare namespace Types {
    */
   interface StatsParams {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      *
      * @defaultValue The Unix epoch.
-     * END CANONICAL-ONLY DOCSTRING
      */
     start?: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      *
      * @defaultValue The current time.
-     * END CANONICAL-ONLY DOCSTRING
      */
     end?: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The order for which stats are returned in. Valid values are `'backwards'` which orders stats from most recent to oldest, or `'forwards'` which orders stats from oldest to most recent. The default is `'backwards'`.
      *
      * @defaultValue `'backwards'`
-     * END CANONICAL-ONLY DOCSTRING
      */
     direction?: 'backwards' | 'forwards';
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      *
      * @defaultValue 100
-     * END CANONICAL-ONLY DOCSTRING
      */
     limit?: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
      * @defaultValue `StatsIntervalGranularity.MINUTE`
-     * END CANONICAL-ONLY DOCSTRING
      */
     unit?: StatsIntervalGranularity;
   }
@@ -2518,21 +2330,14 @@ declare namespace Types {
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
      * @param event - The named event to listen for.
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param event - Not yet documented.
-     * @param callback - Not yet documented.
      */
     on(event: EventType, callback: CallbackType): void;
     /**
@@ -2543,77 +2348,49 @@ declare namespace Types {
      */
     on(events: EventType[], callback: CallbackType): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers the provided listener all events. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param callback - Not yet documented.
      */
     on(callback: CallbackType): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers the provided listener for the first occurrence of a single named event specified as the `Event` argument. If `once` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once` ensures that each registration is only invoked once.
      *
      * @param event - The named event to listen for.
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param event - Not yet documented.
-     * @param callback - Not yet documented.
      */
     once(event: EventType, callback: CallbackType): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers the provided listener for the first event that is emitted. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
      *
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param callback - Not yet documented.
      */
     once(callback: CallbackType): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Returns a promise which resolves upon the first occurrence of a single named event specified as the `Event` argument.
      *
      * @param event - The named event to listen for.
      *
      * @returns A promise which resolves upon the first occurrence of the named event.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param event - Not yet documented.
      */
     once(event: EventType): Promise<ResultType>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Returns a promise which resolves upon the first occurrence of an event.
      *
      * @returns A promise which resolves upon the first occurrence of an event.
-     * END CANONICAL-ONLY DOCSTRING
      */
     once(): Promise<ResultType>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Removes all registrations that match both the specified listener and the specified event.
      *
      * @param event - The named event.
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param event - Not yet documented.
-     * @param callback - Not yet documented.
      */
     off(event: EventType, callback: CallbackType): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters the specified listener. Removes all registrations matching the given listener, regardless of whether they are associated with an event or not.
      *
      * @param callback - The event listener.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param callback - Not yet documented.
      */
     off(callback: CallbackType): void;
     /**
@@ -2672,9 +2449,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A client that offers a simple stateless API to interact directly with Ably's REST API.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RestCallbacks extends RestBase {
     /**
@@ -2795,9 +2570,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A client that offers a simple stateless API to interact directly with Ably's REST API.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RestPromise extends RestBase {
     /**
@@ -2913,29 +2686,21 @@ declare namespace Types {
      */
     static Callbacks: typeof Types.RealtimeCallbacks;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
-     * END CANONICAL-ONLY DOCSTRING
      */
     clientId: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Calls {@link Types.ConnectionBase.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.ConnectionBase.connect | `connect()`}.
-     * END CANONICAL-ONLY DOCSTRING
      */
     close(): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Calls {@link Types.ConnectionBase.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
-     * END CANONICAL-ONLY DOCSTRING
      */
     connect(): void;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A client that extends the functionality of {@link RestCallbacks} and provides additional realtime-specific features.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimeCallbacks extends RealtimeBase {
     /**
@@ -3056,9 +2821,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A client that extends the functionality of {@link RestPromise} and provides additional realtime-specific features.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimePromise extends RealtimeBase {
     /**
@@ -3178,9 +2941,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class AuthCallbacks extends AuthBase {
     /**
@@ -3258,9 +3019,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class AuthPromise extends AuthBase {
     /**
@@ -3330,9 +3089,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the retrieval of the current and historic presence set for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PresenceCallbacks {
     /**
@@ -3392,9 +3149,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the retrieval of the current and historic presence set for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PresencePromise {
     /**
@@ -3436,9 +3191,7 @@ declare namespace Types {
    */
   class RealtimePresenceBase {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete.
-     * END CANONICAL-ONLY DOCSTRING
      */
     syncComplete: boolean;
     /**
@@ -3503,9 +3256,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     /**
@@ -3687,9 +3438,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimePresencePromise extends RealtimePresenceBase {
     /**
@@ -3886,9 +3635,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables messages to be published and historic messages to be retrieved for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class ChannelCallbacks extends ChannelBase {
     /**
@@ -3952,15 +3699,10 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Publishes a message to the channel.
      *
      * @param message - A {@link Message} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param message - Not yet documented.
-     * @param callback - Not yet documented.
      */
     publish(message: any, callback?: errorCallback): void;
     /**
@@ -3984,21 +3726,15 @@ declare namespace Types {
      */
     publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
      * @param callback - A function which, upon success, will be called a {@link ChannelDetails} object. Upon failure, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param callback - Not yet documented.
      */
     status(callback: StandardCallback<ChannelDetails>): void;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables messages to be published and historic messages to be retrieved for a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class ChannelPromise extends ChannelBase {
     /**
@@ -4046,17 +3782,12 @@ declare namespace Types {
      */
     publish(messages: any[], options?: PublishOptions): Promise<void>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Publishes a message to the channel.
      *
      * @param message - A {@link Message} object.
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param message - Not yet documented.
-     * @param options - Not yet documented.
      */
     publish(message: any, options?: PublishOptions): Promise<void>;
     /**
@@ -4080,11 +3811,9 @@ declare namespace Types {
      */
     publish(name: string, data: any, options?: PublishOptions): Promise<void>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
      * @returns A promise which, upon success, will be fulfilled a {@link ChannelDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
-     * END CANONICAL-ONLY DOCSTRING
      */
     status(): Promise<ChannelDetails>;
   }
@@ -4094,33 +3823,23 @@ declare namespace Types {
    */
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The channel name.
-     * END CANONICAL-ONLY DOCSTRING
      */
     readonly name: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any.
-     * END CANONICAL-ONLY DOCSTRING
      */
     errorReason: ErrorInfo;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The current {@link ChannelState} of the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     readonly state: ChannelState;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Optional [channel parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) that configure the behavior of the channel.
-     * END CANONICAL-ONLY DOCSTRING
      */
     params: ChannelParams;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * An array of {@link ChannelMode} objects.
-     * END CANONICAL-ONLY DOCSTRING
      */
     modes: ChannelModes;
     /**
@@ -4140,47 +3859,29 @@ declare namespace Types {
      */
     unsubscribe(event: string, listener: messageCallback<Message>): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters the given listener from all event names in the array.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param events - Not yet documented.
-     * @param listener - Not yet documented.
      */
     unsubscribe(events: Array<string>, listener: messageCallback<Message>): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters all listeners for the given event name.
      *
      * @param event - The event name.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param event - Not yet documented.
      */
     unsubscribe(event: string): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters all listeners for all event names in the array.
      *
      * @param events - An array of event names.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param events - Not yet documented.
      */
     unsubscribe(events: Array<string>): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters all listeners to messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param filter - Not yet documented.
-     * @param listener - Not yet documented.
      */
     unsubscribe(filter: MessageFilter, listener?: messageCallback<Message>): void;
     /**
@@ -4198,9 +3899,7 @@ declare namespace Types {
      */
     unsubscribe(listener: messageCallback<Message>): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
-     * END CANONICAL-ONLY DOCSTRING
      */
     unsubscribe(): void;
   }
@@ -4216,47 +3915,33 @@ declare namespace Types {
   };
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains properties to filter messages with when calling {@link RealtimeChannelCallbacks.subscribe | `RealtimeChannelCallbacks.subscribe()`} or {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type MessageFilter = {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Filters messages by a specific message `name`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     name?: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Filters messages by a specific `extras.ref.timeserial` value.
-     * END CANONICAL-ONLY DOCSTRING
      */
     refTimeserial?: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Filters messages by a specific `extras.ref.type` value.
-     * END CANONICAL-ONLY DOCSTRING
      */
     refType?: string;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Filters messages based on whether they contain an `extras.ref`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     isRef?: boolean;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Filters messages by a specific message `clientId`.
-     * END CANONICAL-ONLY DOCSTRING
      */
     clientId: string;
   };
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresenceCallbacks} object of a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
     /**
@@ -4318,15 +4003,10 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Sets the {@link ChannelOptions} for the channel.
      *
      * @param options - A {@link ChannelOptions} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param options - Not yet documented.
-     * @param callback - Not yet documented.
      */
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
@@ -4348,31 +4028,19 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param events - Not yet documented.
-     * @param listener - Not yet documented.
-     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param filter - Not yet documented.
-     * @param listener - Not yet documented.
-     * @param callbackWhenAttached - Not yet documented.
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
@@ -4426,15 +4094,10 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param message - A {@link Message} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param message - Not yet documented.
-     * @param callback - Not yet documented.
      */
     publish(message: any, callback?: errorCallback): void;
     /**
@@ -4465,9 +4128,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresencePromise} object of a channel.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
@@ -4525,15 +4186,11 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Sets the {@link ChannelOptions} for the channel.
      *
      * @param options - A {@link ChannelOptions} object.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param options - Not yet documented.
      */
     setOptions(options: ChannelOptions): Promise<void>;
     /**
@@ -4555,31 +4212,21 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param events - Not yet documented.
-     * @param listener - Not yet documented.
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
 
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param filter - Not yet documented.
-     * @param listener - Not yet documented.
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
@@ -4633,15 +4280,11 @@ declare namespace Types {
      */
     publish(messages: any[]): Promise<void>;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param message - A {@link Message} object.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-     * END CANONICAL-ONLY DOCSTRING
-     *
-     * @param message - Not yet documented.
      */
     publish(message: any): Promise<void>;
     /**
@@ -4653,9 +4296,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Creates and destroys {@link ChannelBase} and {@link RealtimeChannelBase} objects.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class Channels<T> {
     /**
@@ -4849,9 +4490,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains an individual presence update sent to, or received from, Ably.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PresenceMessage {
     /**
@@ -5011,9 +4650,7 @@ declare namespace Types {
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the properties used to generate a {@link CipherParams} object.
-   * END CANONICAL-ONLY DOCSTRING
    */
   type CipherParamOptions = {
     /**
@@ -5059,9 +4696,7 @@ declare namespace Types {
   };
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Contains the properties required to configure the encryption of {@link Message} payloads.
-   * END CANONICAL-ONLY DOCSTRING
    */
   interface Crypto {
     /**
@@ -5190,9 +4825,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of a connection to Ably.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class ConnectionCallbacks extends ConnectionBase {
     /**
@@ -5219,9 +4852,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of a connection to Ably.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class ConnectionPromise extends ConnectionBase {
     /**
@@ -5455,9 +5086,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * A superset of {@link Types.PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
     /**
@@ -5475,15 +5104,11 @@ declare namespace Types {
      */
     success: boolean;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The error code if the `X-Ably-Errorcode` HTTP header is sent in the response.
-     * END CANONICAL-ONLY DOCSTRING
      */
     errorCode: number;
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * The error message if the `X-Ably-Errormessage` HTTP header is sent in the response.
-     * END CANONICAL-ONLY DOCSTRING
      */
     errorMessage: string;
     /**
@@ -5499,37 +5124,27 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables a device to be registered and deregistered from receiving push notifications.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushCallbacks {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A {@link PushAdminCallbacks} object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     admin: PushAdminCallbacks;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables a device to be registered and deregistered from receiving push notifications.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushPromise {
     /**
-     * BEGIN CANONICAL-ONLY DOCSTRING
      * A {@link PushAdminPromise | `PushAdmin`} object.
-     * END CANONICAL-ONLY DOCSTRING
      */
     admin: PushAdminPromise;
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushAdminCallbacks {
     /**
@@ -5573,9 +5188,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushAdminPromise {
     /**
@@ -5619,9 +5232,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of push notification registrations with Ably.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushDeviceRegistrationsCallbacks {
     /**
@@ -5740,9 +5351,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables the management of push notification registrations with Ably.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushDeviceRegistrationsPromise {
     /**
@@ -5860,9 +5469,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables device push channel subscriptions.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushChannelSubscriptionsCallbacks {
     /**
@@ -5948,9 +5555,7 @@ declare namespace Types {
   }
 
   /**
-   * BEGIN CANONICAL-ONLY DOCSTRING
    * Enables device push channel subscriptions.
-   * END CANONICAL-ONLY DOCSTRING
    */
   class PushChannelSubscriptionsPromise {
     /**
