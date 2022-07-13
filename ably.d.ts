@@ -3976,6 +3976,13 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param name - The name of the message.
+     * @param data - The payload of the message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      * END LEGACY DOCSTRING
@@ -4014,6 +4021,13 @@ declare namespace Types {
      */
     publish(message: any, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param name - The name of the message.
+     * @param data - The payload of the message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      * END LEGACY DOCSTRING
@@ -4109,6 +4123,13 @@ declare namespace Types {
      */
     publish(message: any, options?: PublishOptions): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     *
+     * @param name - The name of the message.
+     * @param data - The payload of the message.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publish a single message on this channel based on a given event name and payload.
      * END LEGACY DOCSTRING
