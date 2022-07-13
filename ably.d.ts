@@ -850,8 +850,7 @@ declare namespace Types {
      * Called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication.ably-jwt). See [the authentication documentation](https://ably.com/docs/realtime/authentication) for details of the Ably {@link TokenRequest} format and associated API calls.
      *
      * @param TokenParams - The parameters that should be used to generate the token.
-     *
-     * @returns One of: an Ably Token string (in plain text format); a signed `TokenRequest`; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication#ably-jwt).
+     * @param callback - A function which, upon success, the `authCallback` should call with one of: an Ably Token string (in plain text format); a signed `TokenRequest`; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication#ably-jwt). Upon failure, the `authCallback` should call this function with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2608,8 +2607,7 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     *
-     * @returns An {@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @param callback - A function which, upon success, will be called with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2655,8 +2653,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2696,8 +2693,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2711,7 +2707,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns The time as milliseconds since the Unix epoch.
+     * @param callback - A function which, upon success, will be called with the time as milliseconds since the Unix epoch. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2939,8 +2935,7 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     *
-     * @returns An {@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @param callback - A function which, upon success, will be called with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2971,8 +2966,7 @@ declare namespace Types {
      * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2997,8 +2991,7 @@ declare namespace Types {
      * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3012,7 +3005,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns The time as milliseconds since the Unix epoch.
+     * @param callback - A function which, upon success, will be called with the time as milliseconds since the Unix epoch. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3176,8 +3169,7 @@ declare namespace Types {
      *
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
-     *
-     * @returns A {@link TokenDetails} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3197,8 +3189,7 @@ declare namespace Types {
      *
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
-     *
-     * @returns A {@link TokenRequest} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3224,8 +3215,7 @@ declare namespace Types {
      *
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
-     *
-     * @returns A {@link TokenDetails} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3335,8 +3325,7 @@ declare namespace Types {
      * END PARAM CANONICAL API DEFAULT
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3372,8 +3361,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3401,8 +3389,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3558,8 +3545,7 @@ declare namespace Types {
      * END CANONICAL PARAM DEFAULT INFO
      * @param clientId - Filters the array of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
-     *
-     * @returns An array of {@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3588,8 +3574,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
-
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3976,8 +3961,7 @@ declare namespace Types {
      * BEGIN PARAM CANONICAL API DEFAULT
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4054,7 +4038,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
-     * @returns A {@link ChannelDetails} object.
+     * @param callback - A function which, upon success, will be called a {@link ChannelDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
@@ -4391,8 +4375,7 @@ declare namespace Types {
      * BEGIN CANONICAL PARAM DEFAULT INFO
      * default false
      * END CANONICAL PARAM DEFAULT INFO
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5160,8 +5143,7 @@ declare namespace Types {
      * Generates a random key to be used in the encryption of the channel. If the language cryptographic randomness primitives are blocking or async, a callback is used. The callback returns a generated binary key.
      *
      * @param keyLength - The length of the key, in bits, to be generated. If not specified, this is equal to the default `keyLength` of the default algorithm: for AES this is 256 bits.
-     *
-     * @returns The key as a binary, for example, a byte array.
+     * @param callback - A function which, upon success, will be called with the generated key as a binary, for example, a byte array. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5180,8 +5162,7 @@ declare namespace Types {
      * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
      * @param CipherParamOptions - A {@link CipherParamOptions} object.
-     *
-     * @returns A {@link CipherParams} object, using the default values for any fields not supplied.
+     * @param callback - A function which, upon success, will be called with a {@link CipherParams} object, using the default values for any fields not supplied. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5292,7 +5273,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      *
-     * @returns The response time in milliseconds.
+     * @param callback - A function which, upon success, will be called with the response time in milliseconds. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5463,7 +5444,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` for the first page of results.
      *
-     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * @param results - A function which, upon success, will be called with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5489,7 +5470,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
      *
-     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * @param results - A function which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5725,8 +5706,7 @@ declare namespace Types {
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
      * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
-     *
-     * @returns A {@link DeviceDetails} object.
+     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5743,7 +5723,7 @@ declare namespace Types {
      *
      * @param deviceId - The unique ID of the device.
      *
-     * @returns A {@link DeviceDetails} object.
+     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5759,8 +5739,7 @@ declare namespace Types {
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
      * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
-     *
-     * @returns A {@link DeviceDetails} object.
+     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5776,8 +5755,7 @@ declare namespace Types {
      * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5960,8 +5938,7 @@ declare namespace Types {
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
      * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
-     *
-     * @returns A {@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * @param callback - A function which, upon success, will be called with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5977,8 +5954,7 @@ declare namespace Types {
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5994,8 +5970,7 @@ declare namespace Types {
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
-     *
-     * @returns A {@link Types.PaginatedResult} object containing an array of channel names.
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
