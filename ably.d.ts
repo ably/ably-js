@@ -850,7 +850,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication.ably-jwt). See [the authentication documentation](https://ably.com/docs/realtime/authentication) for details of the Ably {@link TokenRequest} format and associated API calls.
      *
-     * @param TokenParams - The parameters that should be used to generate the token.
+     * @param data - The parameters that should be used to generate the token.
      * @param callback - A function which, upon success, the `authCallback` should call with one of: an Ably Token string (in plain text format); a signed `TokenRequest`; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication#ably-jwt). Upon failure, the `authCallback` should call this function with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -2554,8 +2554,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
-     * @param Event - The named event to listen for.
-     * @param Data - The event listener.
+     * @param event - The named event to listen for.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
@@ -2574,7 +2574,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener all events. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
-     * @param Data - The event listener.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
@@ -2585,8 +2585,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the first occurrence of a single named event specified as the `Event` argument. If `once` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once` ensures that each registration is only invoked once.
      *
-     * @param Event - The named event to listen for.
-     * @param Data - The event listener.
+     * @param event - The named event to listen for.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
@@ -2598,7 +2598,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the first event that is emitted. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
      *
-     * @param Data - The event listener.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
@@ -2609,7 +2609,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a promise which resolves upon the first occurrence of a single named event specified as the `Event` argument.
      *
-     * @param Event - The named event to listen for.
+     * @param event - The named event to listen for.
      *
      * @returns A promise which resolves upon the first occurrence of the named event.
      * END CANONICAL DOCSTRING
@@ -2630,8 +2630,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes all registrations that match both the specified listener and the specified event.
      *
-     * @param Event - The named event.
-     * @param Data - The event listener.
+     * @param event - The named event.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
@@ -2643,7 +2643,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the specified listener. Removes all registrations matching the given listener, regardless of whether they are associated with an event or not.
      *
-     * @param Data - The event listener.
+     * @param callback - The event listener.
      * END CANONICAL DOCSTRING
      *
      * @param callback - Not yet documented.
@@ -2667,7 +2667,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
-     * @param ClientOptions - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+     * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2682,7 +2682,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Constructs a client object using an Ably API key or token string.
      *
-     * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
+     * @param keyOrToken - The Ably API key or token string used to validate the client.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3235,8 +3235,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param authOptions - An {@link AuthOptions} object.
      * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3256,8 +3256,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param authOptions - An {@link AuthOptions} object.
      * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3284,7 +3284,7 @@ CANONICAL WITH PARAMS
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param authOptions - An {@link AuthOptions} object.
      * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3318,8 +3318,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param authOptions - An {@link AuthOptions} object.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -3339,8 +3339,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param authOptions - An {@link AuthOptions} object.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenRequest} object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -3363,7 +3363,7 @@ CANONICAL WITH PARAMS
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param TokenParams - A {@link TokenParams} object.
-     * @param AuthOptions - An {@link AuthOptions} object.
+     * @param authOptions - An {@link AuthOptions} object.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -3504,8 +3504,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}.
      *
-     * @param PresenceAction - A specific {@link PresenceAction} to deregister the listener for.
-     * @param (PresenceMessage) -> - An event listener function.
+     * @param presence - A specific {@link PresenceAction} to deregister the listener for.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3540,7 +3540,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel.
      *
-     * @param (PresenceMessage) -> - An event listener function.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3611,8 +3611,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
-     * @param `PresenceAction` \| `[PresenceAction]` - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
-     * @param (PresenceMessage) - An event listener function.
+     * @param presence - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3634,7 +3634,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
-     * @param (PresenceMessage) - An event listener function.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3651,7 +3651,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3668,7 +3668,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
-     * @param Data - The payload to update for the presence member.
+     * @param data - The payload to update for the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3685,7 +3685,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3703,7 +3703,7 @@ CANONICAL WITH PARAMS
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to enter into the presence set.
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3722,7 +3722,7 @@ CANONICAL WITH PARAMS
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to update in the presence set.
-     * @param Data - The payload to update for the presence member.
+     * @param data - The payload to update for the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3741,7 +3741,7 @@ CANONICAL WITH PARAMS
      * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to leave the presence set for.
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3805,8 +3805,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
-     * @param `PresenceAction` \| `[PresenceAction]` - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
-     * @param (PresenceMessage) - An event listener function.
+     * @param action - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
+     * @param listener - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3827,7 +3827,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
-     * @param (PresenceMessage) - An event listener function.
+     * @param listener - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3844,7 +3844,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3861,7 +3861,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
-     * @param Data - The payload to update for the presence member.
+     * @param data - The payload to update for the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3878,7 +3878,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3896,7 +3896,7 @@ CANONICAL WITH PARAMS
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to enter into the presence set.
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3915,7 +3915,7 @@ CANONICAL WITH PARAMS
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to update in the presence set.
-     * @param Data - The payload to update for the presence member.
+     * @param data - The payload to update for the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3934,7 +3934,7 @@ CANONICAL WITH PARAMS
      * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to leave the presence set for.
-     * @param Data - The payload associated with the presence member.
+     * @param data - The payload associated with the presence member.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4022,7 +4022,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel.
      *
-     * @param [`Message`] - An array of {@link Message} objects.
+     * @param messages - An array of {@link Message} objects.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4039,7 +4039,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel.
      *
-     * @param Message - A {@link Message} object.
+     * @param message - A {@link Message} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4119,8 +4119,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel.
      *
-     * @param [`Message`] - An array of {@link Message} objects.
-     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * @param messages - An array of {@link Message} objects.
+     * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4138,8 +4138,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel.
      *
-     * @param Message - A {@link Message} object.
-     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     * @param message - A {@link Message} object.
+     * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4218,8 +4218,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
      *
-     * @param String - The event name.
-     * @param (Message) - An event listener function.
+     * @param event - The event name.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4235,8 +4235,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener from all event names in the array.
      *
-     * @param [`String`] - An array of event names.
-     * @param (Message) - An event listener function.
+     * @param events - An array of event names.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
@@ -4248,7 +4248,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners for the given event name.
      *
-     * @param String - The event name.
+     * @param event - The event name.
      * END CANONICAL DOCSTRING
      *
      * @param event - Not yet documented.
@@ -4259,7 +4259,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners for all event names in the array.
      *
-     * @param [`String`] - An array of event names.
+     * @param events - An array of event names.
      * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
@@ -4270,8 +4270,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners to messages on this channel that match the supplied filter.
      *
-     * @param MessageFilter - A {@link MessageFilter}.
-     * @param (Message) - An event listener function.
+     * @param filter - A {@link MessageFilter}.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * @param filter - Not yet documented.
@@ -4283,7 +4283,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener (for any/all event names). This removes an earlier subscription.
      *
-     * @param (Message) - An event listener function.
+     * @param listener - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4434,8 +4434,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      *
-     * @param String - The event name.
-     * @param (Message) - An event listener function.
+     * @param event - The event name.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4453,8 +4453,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
-     * @param [`String`] - An array of event names.
-     * @param (Message) - An event listener function.
+     * @param events - An array of event names.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4468,8 +4468,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
-     * @param MessageFilter - A {@link MessageFilter}.
-     * @param (Message) - An event listener function.
+     * @param filter - A {@link MessageFilter}.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4483,7 +4483,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
-     * @param (Message) - An event listener function.
+     * @param listener - An event listener function.
      * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4519,7 +4519,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param [`Message`] - An array of {@link Message} objects.
+     * @param messages - An array of {@link Message} objects.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4536,7 +4536,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param Message - A {@link Message} object.
+     * @param message - A {@link Message} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4651,8 +4651,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      *
-     * @param String - The event name.
-     * @param (Message) - An event listener function.
+     * @param event - The event name.
+     * @param listener - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4670,8 +4670,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
-     * @param [`String`] - An array of event names.
-     * @param (Message) - An event listener function.
+     * @param events - An array of event names.
+     * @param listener - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4685,8 +4685,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
-     * @param MessageFilter - A {@link MessageFilter}.
-     * @param (Message) - An event listener function.
+     * @param filter - A {@link MessageFilter}.
+     * @param listener - An event listener function.
 
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4700,7 +4700,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
-     * @param (Message) - An event listener function.
+     * @param callback - An event listener function.
      *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4736,7 +4736,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param [`Message`] - An array of {@link Message} objects.
+     * @param messages - An array of {@link Message} objects.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4753,7 +4753,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
-     * @param Message - A {@link Message} object.
+     * @param message - A {@link Message} object.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -4780,8 +4780,8 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
-     * @param String - The channel name.
-     * @param ChannelOptions - A {@link ChannelOptions} object.
+     * @param name - The channel name.
+     * @param channelOptions - A {@link ChannelOptions} object.
      *
      * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
      * END CANONICAL DOCSTRING
@@ -4799,7 +4799,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
-     * @param String - The channel name.
+     * @param name - The channel name.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4831,7 +4831,7 @@ CANONICAL WITH PARAMS
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonObject - A `Message`-like deserialized object.
-     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns A `Message` object.
      * END CANONICAL DOCSTRING
@@ -4850,7 +4850,7 @@ CANONICAL WITH PARAMS
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
@@ -4955,7 +4955,7 @@ CANONICAL WITH PARAMS
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonObject - A `Message`-like deserialized object.
-     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns A `Message` object.
      * END CANONICAL DOCSTRING
@@ -4974,7 +4974,7 @@ CANONICAL WITH PARAMS
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param ChannelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
      *
      * @returns An array of {@link Message} objects.
      * END CANONICAL DOCSTRING
@@ -5005,7 +5005,7 @@ CANONICAL WITH PARAMS
      * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
+     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5022,7 +5022,7 @@ CANONICAL WITH PARAMS
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
+     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5115,7 +5115,7 @@ CANONICAL WITH PARAMS
      * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
+     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5132,7 +5132,7 @@ CANONICAL WITH PARAMS
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param ChannelOptions - A {@link ChannelOptions} object containing the cipher.
+     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5234,7 +5234,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
-     * @param CipherParamOptions - A {@link CipherParamOptions} object.
+     * @param params - A {@link CipherParamOptions} object.
      * @param callback - A function which, upon success, will be called with a {@link CipherParams} object, using the default values for any fields not supplied. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5714,7 +5714,7 @@ CANONICAL WITH PARAMS
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
      * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
-     * @param data - A JSON object containing the push notification payload.
+     * @param payload - A JSON object containing the push notification payload.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5761,7 +5761,7 @@ CANONICAL WITH PARAMS
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
      * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
-     * @param data - A JSON object containing the push notification payload.
+     * @param payload - A JSON object containing the push notification payload.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -5787,7 +5787,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
+     * @param deviceDetails - The {@link DeviceDetails} object to create or update.
      * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5822,7 +5822,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
+     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5873,7 +5873,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
+     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5915,7 +5915,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
+     * @param deviceDetails - The {@link DeviceDetails} object to create or update.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -5949,7 +5949,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
+     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -6000,7 +6000,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
-     * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
+     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -6042,7 +6042,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
-     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
+     * @param subscription - A {@link PushChannelSubscription} object.
      * @param callback - A function which, upon success, will be called with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -6093,7 +6093,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
-     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
+     * @param subscription - A {@link PushChannelSubscription} object.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -6135,7 +6135,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
-     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
+     * @param subscription - A {@link PushChannelSubscription} object.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -6186,7 +6186,7 @@ CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
-     * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
+     * @param subscription - A {@link PushChannelSubscription} object.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
