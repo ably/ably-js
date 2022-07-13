@@ -2506,7 +2506,7 @@ declare namespace Types {
 
   // Classes
   /**
-   * Not yet documented.
+   * The `RestBase` class acts as a base class for the {@link RestCallbacks} and {@link RestPromise} classes.
    */
   class RestBase {
     /**
@@ -3143,7 +3143,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `AuthBase` class acts as a base class for the {@link AuthCallbacks} and {@link AuthPromise} classes.
    */
   class AuthBase {
     /**
@@ -3460,7 +3460,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RealtimePresenceBase` class acts as a base class for the {@link RealtimePresenceCallbacks} and {@link RealtimePresencePromise} classes.
    */
   class RealtimePresenceBase {
     /**
@@ -3938,7 +3938,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `ChannelBase` class acts as a base class for the {@link ChannelCallbacks} and {@link ChannelPromise} classes.
    */
   class ChannelBase {
     /**
@@ -4182,7 +4182,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RealtimeChannelBase` class acts as a base class for the {@link RealtimeChannelCallbacks} and {@link RealtimeChannelPromise} classes.
    */
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     /**
@@ -5244,7 +5244,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `ConnectionBase` class acts as a base class for the {@link ChannelCallbacks} and {@link ChannelPromise} classes.
    */
   class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
