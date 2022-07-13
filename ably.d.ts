@@ -846,6 +846,7 @@ declare namespace Types {
    */
   interface AuthOptions {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Called when a new token is required. The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format); a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication.ably-jwt). See [the authentication documentation](https://ably.com/docs/realtime/authentication) for details of the Ably {@link TokenRequest} format and associated API calls.
      *
@@ -1907,6 +1908,7 @@ declare namespace Types {
     level?: number;
 
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
      *
@@ -2548,6 +2550,7 @@ declare namespace Types {
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
@@ -2567,6 +2570,7 @@ declare namespace Types {
      */
     on(events: EventType[], callback: CallbackType): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener all events. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
@@ -2577,6 +2581,7 @@ declare namespace Types {
      */
     on(callback: CallbackType): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the first occurrence of a single named event specified as the `Event` argument. If `once` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once` ensures that each registration is only invoked once.
      *
@@ -2589,6 +2594,7 @@ declare namespace Types {
      */
     once(event: EventType, callback: CallbackType): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers the provided listener for the first event that is emitted. If `once()` is called more than once with the same listener, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `once()`, and an event is emitted once, the listener would be invoked twice. However, all subsequent events emitted would not invoke the listener as `once()` ensures that each registration is only invoked once.
      *
@@ -2599,6 +2605,7 @@ declare namespace Types {
      */
     once(callback: CallbackType): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a promise which resolves upon the first occurrence of a single named event specified as the `Event` argument.
      *
@@ -2619,6 +2626,7 @@ declare namespace Types {
      */
     once(): Promise<ResultType>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes all registrations that match both the specified listener and the specified event.
      *
@@ -2631,6 +2639,7 @@ declare namespace Types {
      */
     off(event: EventType, callback: CallbackType): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the specified listener. Removes all registrations matching the given listener, regardless of whether they are associated with an event or not.
      *
@@ -2654,6 +2663,7 @@ declare namespace Types {
    */
   class RestBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
@@ -2668,6 +2678,7 @@ declare namespace Types {
      */
     constructor(options: Types.ClientOptions);
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Constructs a client object using an Ably API key or token string.
      *
@@ -2732,6 +2743,7 @@ declare namespace Types {
      */
     channels: Types.Channels<Types.ChannelCallbacks>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -2763,6 +2775,7 @@ declare namespace Types {
       callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
     ): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -2779,6 +2792,7 @@ declare namespace Types {
      */
     stats(params?: StatsParams | any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics, using the default parameters described in the {@link Types.StatsParams} interface. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -2793,6 +2807,7 @@ declare namespace Types {
      */
     stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
@@ -2855,6 +2870,7 @@ declare namespace Types {
      */
     channels: Types.Channels<Types.ChannelPromise>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -2885,6 +2901,7 @@ declare namespace Types {
       headers?: any
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -2993,6 +3010,7 @@ declare namespace Types {
      */
     connection: Types.ConnectionCallbacks;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -3024,6 +3042,7 @@ declare namespace Types {
       callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
     ): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -3040,6 +3059,7 @@ declare namespace Types {
      */
     stats(params: StatsParams | any, callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics, using the default parameters described in the {@link Types.StatsParams} interface. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -3054,6 +3074,7 @@ declare namespace Types {
      */
     stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
@@ -3116,6 +3137,7 @@ declare namespace Types {
      */
     connection: Types.ConnectionPromise;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -3146,6 +3168,7 @@ declare namespace Types {
       headers?: any
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
@@ -3208,6 +3231,7 @@ declare namespace Types {
    */
   class AuthCallbacks extends AuthBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
@@ -3228,6 +3252,7 @@ declare namespace Types {
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
@@ -3254,6 +3279,7 @@ declare namespace Types {
       callback?: tokenRequestCallback
     ): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
@@ -3288,6 +3314,7 @@ declare namespace Types {
    */
   class AuthPromise extends AuthBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
@@ -3308,6 +3335,7 @@ declare namespace Types {
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
@@ -3330,6 +3358,7 @@ declare namespace Types {
      */
     createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
@@ -3360,6 +3389,7 @@ declare namespace Types {
    */
   class PresenceCallbacks {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
@@ -3384,6 +3414,7 @@ declare namespace Types {
      */
     get(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3400,6 +3431,7 @@ declare namespace Types {
      */
     history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3422,6 +3454,7 @@ declare namespace Types {
    */
   class PresencePromise {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
@@ -3438,6 +3471,7 @@ declare namespace Types {
      */
     get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3466,6 +3500,7 @@ declare namespace Types {
      */
     syncComplete: boolean;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}.
      *
@@ -3501,6 +3536,7 @@ declare namespace Types {
      */
     unsubscribe(presence: Array<PresenceAction>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel.
      *
@@ -3533,6 +3569,7 @@ declare namespace Types {
    */
   class RealtimePresenceCallbacks extends RealtimePresenceBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
@@ -3553,6 +3590,7 @@ declare namespace Types {
      */
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3569,6 +3607,7 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
@@ -3591,6 +3630,7 @@ declare namespace Types {
       callbackWhenAttached?: errorCallback
     ): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
@@ -3607,6 +3647,7 @@ declare namespace Types {
      */
     subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
@@ -3623,6 +3664,7 @@ declare namespace Types {
      */
     enter(data?: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
@@ -3639,6 +3681,7 @@ declare namespace Types {
      */
     update(data?: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
@@ -3655,6 +3698,7 @@ declare namespace Types {
      */
     leave(data?: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3673,6 +3717,7 @@ declare namespace Types {
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3691,6 +3736,7 @@ declare namespace Types {
      */
     updateClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3717,6 +3763,7 @@ declare namespace Types {
    */
   class RealtimePresencePromise extends RealtimePresenceBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
@@ -3737,6 +3784,7 @@ declare namespace Types {
      */
     get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3753,6 +3801,7 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
@@ -3774,6 +3823,7 @@ declare namespace Types {
       listener?: messageCallback<PresenceMessage>
     ): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
@@ -3790,6 +3840,7 @@ declare namespace Types {
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
@@ -3806,6 +3857,7 @@ declare namespace Types {
      */
     enter(data?: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
@@ -3822,6 +3874,7 @@ declare namespace Types {
      */
     update(data?: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
@@ -3838,6 +3891,7 @@ declare namespace Types {
      */
     leave(data?: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3856,6 +3910,7 @@ declare namespace Types {
      */
     enterClient(clientId: string, data?: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3874,6 +3929,7 @@ declare namespace Types {
      */
     updateClient(clientId: string, data?: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -3926,6 +3982,7 @@ declare namespace Types {
      */
     presence: PresenceCallbacks;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -3942,6 +3999,7 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload.
      *
@@ -3960,6 +4018,7 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel.
      *
@@ -3976,6 +4035,7 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel.
      *
@@ -3988,6 +4048,7 @@ declare namespace Types {
      */
     publish(message: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload.
      *
@@ -4008,6 +4069,7 @@ declare namespace Types {
      */
     publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
@@ -4036,6 +4098,7 @@ declare namespace Types {
      */
     presence: PresencePromise;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -4052,6 +4115,7 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel.
      *
@@ -4070,6 +4134,7 @@ declare namespace Types {
      */
     publish(messages: any[], options?: PublishOptions): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a message to the channel.
      *
@@ -4084,6 +4149,7 @@ declare namespace Types {
      */
     publish(message: any, options?: PublishOptions): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload.
      *
@@ -4148,6 +4214,7 @@ declare namespace Types {
      */
     modes: ChannelModes;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
      *
@@ -4164,6 +4231,7 @@ declare namespace Types {
      */
     unsubscribe(event: string, listener: messageCallback<Message>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener from all event names in the array.
      *
@@ -4176,6 +4244,7 @@ declare namespace Types {
      */
     unsubscribe(events: Array<string>, listener: messageCallback<Message>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners for the given event name.
      *
@@ -4186,6 +4255,7 @@ declare namespace Types {
      */
     unsubscribe(event: string): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners for all event names in the array.
      *
@@ -4196,6 +4266,7 @@ declare namespace Types {
      */
     unsubscribe(events: Array<string>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners to messages on this channel that match the supplied filter.
      *
@@ -4208,6 +4279,7 @@ declare namespace Types {
      */
     unsubscribe(filter: MessageFilter, listener?: messageCallback<Message>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Deregisters the given listener (for any/all event names). This removes an earlier subscription.
      *
@@ -4294,6 +4366,7 @@ declare namespace Types {
      */
     presence: RealtimePresenceCallbacks;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelCallbacks.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelCallbacks.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresenceCallbacks.enter | `enter()`} or {@link RealtimePresenceCallbacks.subscribe | `subscribe()`} are called on the {@link RealtimePresenceCallbacks} object for this channel.
      *
@@ -4310,6 +4383,7 @@ declare namespace Types {
      */
     attach(callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      *
@@ -4326,6 +4400,7 @@ declare namespace Types {
      */
     detach(callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -4342,6 +4417,7 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Sets the {@link ChannelOptions} for the channel.
      *
@@ -4354,6 +4430,7 @@ declare namespace Types {
      */
     setOptions(options: ChannelOptions, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      *
@@ -4372,6 +4449,7 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
@@ -4386,6 +4464,7 @@ declare namespace Types {
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
@@ -4400,6 +4479,7 @@ declare namespace Types {
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
@@ -4416,6 +4496,7 @@ declare namespace Types {
      */
     subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
@@ -4434,6 +4515,7 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
@@ -4450,6 +4532,7 @@ declare namespace Types {
      */
     publish(messages: any[], callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
@@ -4462,6 +4545,7 @@ declare namespace Types {
      */
     publish(message: any, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
@@ -4533,6 +4617,7 @@ declare namespace Types {
      */
     detach(): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -4549,6 +4634,7 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Sets the {@link ChannelOptions} for the channel.
      *
@@ -4561,6 +4647,7 @@ declare namespace Types {
      */
     setOptions(options: ChannelOptions): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      *
@@ -4579,6 +4666,7 @@ declare namespace Types {
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel for multiple event name values.
      *
@@ -4593,6 +4681,7 @@ declare namespace Types {
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter.
      *
@@ -4607,6 +4696,7 @@ declare namespace Types {
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
@@ -4623,6 +4713,7 @@ declare namespace Types {
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
@@ -4641,6 +4732,7 @@ declare namespace Types {
      */
     publish(name: string, data: any): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
@@ -4657,6 +4749,7 @@ declare namespace Types {
      */
     publish(messages: any[]): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
@@ -4683,6 +4776,7 @@ declare namespace Types {
    */
   class Channels<T> {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
@@ -4701,6 +4795,7 @@ declare namespace Types {
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
@@ -4731,6 +4826,7 @@ declare namespace Types {
      */
     constructor();
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
@@ -4749,6 +4845,7 @@ declare namespace Types {
      */
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
@@ -4853,6 +4950,7 @@ declare namespace Types {
    */
   interface MessageStatic {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
      *
@@ -4871,6 +4969,7 @@ declare namespace Types {
      */
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
@@ -4901,6 +5000,7 @@ declare namespace Types {
      */
     constructor();
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
@@ -4917,6 +5017,7 @@ declare namespace Types {
      */
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
@@ -5009,6 +5110,7 @@ declare namespace Types {
    */
   interface PresenceMessageStatic {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
@@ -5025,6 +5127,7 @@ declare namespace Types {
      */
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
@@ -5107,6 +5210,7 @@ declare namespace Types {
    */
   interface Crypto {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Generates a random key to be used in the encryption of the channel. If the language cryptographic randomness primitives are blocking or async, a callback is used. The callback returns a generated binary key.
      *
@@ -5126,6 +5230,7 @@ declare namespace Types {
      */
     generateRandomKey(keyLength?: number, callback?: Types.StandardCallback<CipherKey>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
@@ -5238,6 +5343,7 @@ declare namespace Types {
    */
   class ConnectionCallbacks extends ConnectionBase {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      *
@@ -5409,6 +5515,7 @@ declare namespace Types {
      */
     items: T[];
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` for the first page of results.
      *
@@ -5435,6 +5542,7 @@ declare namespace Types {
      */
     first(): Promise<PaginatedResult<T>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
      *
@@ -5601,6 +5709,7 @@ declare namespace Types {
      */
     channelSubscriptions: PushChannelSubscriptionsCallbacks;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
@@ -5647,6 +5756,7 @@ declare namespace Types {
      */
     channelSubscriptions: PushChannelSubscriptionsPromise;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
@@ -5673,6 +5783,7 @@ declare namespace Types {
    */
   class PushDeviceRegistrationsCallbacks {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
@@ -5689,6 +5800,7 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
@@ -5706,6 +5818,7 @@ declare namespace Types {
      */
     get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
@@ -5722,6 +5835,7 @@ declare namespace Types {
      */
     get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
@@ -5738,6 +5852,7 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using its `deviceId`.
      *
@@ -5754,6 +5869,7 @@ declare namespace Types {
      */
     remove(deviceId: string, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
@@ -5770,6 +5886,7 @@ declare namespace Types {
      */
     remove(deviceDetails: DeviceDetails, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
@@ -5794,6 +5911,7 @@ declare namespace Types {
    */
   class PushDeviceRegistrationsPromise {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
@@ -5810,6 +5928,7 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
@@ -5826,6 +5945,7 @@ declare namespace Types {
      */
     get(deviceId: string): Promise<DeviceDetails>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
@@ -5842,6 +5962,7 @@ declare namespace Types {
      */
     get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
@@ -5858,6 +5979,7 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using its `deviceId`.
      *
@@ -5874,6 +5996,7 @@ declare namespace Types {
      */
     remove(deviceId: string): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
@@ -5890,6 +6013,7 @@ declare namespace Types {
      */
     remove(deviceDetails: DeviceDetails): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
@@ -5914,6 +6038,7 @@ declare namespace Types {
    */
   class PushChannelSubscriptionsCallbacks {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
@@ -5930,6 +6055,7 @@ declare namespace Types {
      */
     save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
@@ -5946,6 +6072,7 @@ declare namespace Types {
      */
     list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
@@ -5962,6 +6089,7 @@ declare namespace Types {
      */
     listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
@@ -5978,6 +6106,7 @@ declare namespace Types {
      */
     remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
      *
@@ -6002,6 +6131,7 @@ declare namespace Types {
    */
   class PushChannelSubscriptionsPromise {
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
@@ -6018,6 +6148,7 @@ declare namespace Types {
      */
     save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
@@ -6034,6 +6165,7 @@ declare namespace Types {
      */
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
@@ -6050,6 +6182,7 @@ declare namespace Types {
      */
     listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
@@ -6066,6 +6199,7 @@ declare namespace Types {
      */
     remove(subscription: PushChannelSubscription): Promise<void>;
     /**
+CANONICAL WITH PARAMS
      * BEGIN CANONICAL DOCSTRING
      * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
      *
