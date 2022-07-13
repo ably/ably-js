@@ -8,7 +8,7 @@
  */
 declare namespace Types {
   /**
-   * Not yet documented.
+   * The `ChannelState` namespace describes the possible values of the {@link ChannelState:type} type.
    */
   namespace ChannelState {
     /**
@@ -69,7 +69,7 @@ declare namespace Types {
     | ChannelState.DETACHING;
 
   /**
-   * Not yet documented.
+   * The `ChannelEvent` namespace describes the possible values of the {@link ChannelEvent:type} type.
    */
   namespace ChannelEvent {
     /**
@@ -137,7 +137,7 @@ declare namespace Types {
     | ChannelEvent.UPDATE;
 
   /**
-   * Not yet documented.
+   * The `ConnectionState` namespace describes the possible values of the {@link ConnectionState:type} type.
    */
   namespace ConnectionState {
     /**
@@ -205,7 +205,7 @@ declare namespace Types {
     | ConnectionState.FAILED;
 
   /**
-   * Not yet documented.
+   * The `ConnectionEvent` namespace describes the possible values of the {@link ConnectionEvent:type} type.
    */
   namespace ConnectionEvent {
     /**
@@ -280,7 +280,7 @@ declare namespace Types {
     | ConnectionEvent.UPDATE;
 
   /**
-   * Not yet documented.
+   * The `PresenceAction` namespace describes the possible values of the {@link PresenceAction:type} type.
    */
   namespace PresenceAction {
     /**
@@ -327,7 +327,7 @@ declare namespace Types {
     | PresenceAction.UPDATE;
 
   /**
-   * Not yet documented.
+   * The `StatsIntervalGranularity` namespace describes the possible values of the {@link StatsIntervalGranularity:type} type.
    */
   namespace StatsIntervalGranularity {
     /**
@@ -1598,7 +1598,7 @@ declare namespace Types {
   type ChannelParams = { [key: string]: string };
 
   /**
-   * Not yet documented.
+   * The `ChannelMode` namespace describes the possible values of the {@link ChannelMode:type} type.
    */
   namespace ChannelMode {
     /**
@@ -1925,7 +1925,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `DevicePlatform` namespace describes the possible values of the {@link DevicePlatform:type} type.
    */
   namespace DevicePlatform {
     /**
@@ -1956,7 +1956,7 @@ declare namespace Types {
   type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
 
   /**
-   * Not yet documented.
+   * The `DeviceFormFactor` namespace describes the possible values of the {@link DeviceFormFactor:type} type.
    */
   namespace DeviceFormFactor {
     /**
