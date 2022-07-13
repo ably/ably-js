@@ -1686,7 +1686,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link PresenceCallbacks.history}
+   * - {@link PresencePromise.history}
+   * - {@link ChannelCallbacks.history}
+   * - {@link ChannelPromise.history}
    */
   interface RestHistoryParams {
     /**
