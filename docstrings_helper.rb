@@ -18,6 +18,7 @@ COMMENT_END = "*/"
   legacy_start_line_number = nil
   legacy_end_line_number = nil
   legacy_matches_canonical_legacy_start_and_end_line_numbers = []
+  canonical_only_start_and_end_line_numbers = []
 
   lines.each_with_index do |line, index|
     line_number = index + 1
@@ -29,6 +30,11 @@ COMMENT_END = "*/"
       if canonical_docstring && canonical_docstring == legacy_docstring
         legacy_matches_canonical_legacy_start_and_end_line_numbers += [legacy_start_line_number, legacy_end_line_number]
       end
+
+    if canonical_docstring && !legacy_docstring
+      canonical_only_start_and_end_line_numbers += [canonical_start_line_number, canonical_end_line_number]
+    end
+
     in_doc_comment = false
     canonical_docstring = nil
     legacy_docstring = nil
@@ -89,6 +95,16 @@ COMMENT_END = "*/"
 
       if legacy_matches_canonical_legacy_start_and_end_line_numbers.include?(line_number)
         line.sub('LEGACY', 'LEGACY-MATCHES-CANONICAL')
+      else
+        line
+      end
+    end
+  when 'mark-canonical-without-legacy'
+    new_lines = lines.each_with_index.map do |line, index|
+      line_number = index + 1
+
+      if canonical_only_start_and_end_line_numbers.include?(line_number)
+        line.sub('CANONICAL', 'CANONICAL-ONLY')
       else
         line
       end
