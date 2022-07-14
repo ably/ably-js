@@ -2775,7 +2775,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An {@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns A promise which, upon success, will be fulfilled with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2820,7 +2820,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2838,7 +2838,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns The time as milliseconds since the Unix epoch.
+     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3073,7 +3073,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An {@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns A promise which, upon success, will be fulfilled with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3103,7 +3103,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3121,7 +3121,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns The time as milliseconds since the Unix epoch.
+     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3250,7 +3250,7 @@ declare namespace Types {
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A {@link TokenDetails} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3270,7 +3270,7 @@ declare namespace Types {
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A {@link TokenRequest} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link TokenRequest} object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3292,7 +3292,7 @@ declare namespace Types {
      * @param TokenParams - A {@link TokenParams} object.
      * @param AuthOptions - An {@link AuthOptions} object.
      *
-     * @returns A {@link TokenDetails} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3418,7 +3418,7 @@ declare namespace Types {
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3446,7 +3446,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3750,7 +3750,7 @@ declare namespace Types {
      * @param clientId - Filters the array of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
      *
-     * @returns An array of {@link PresenceMessage} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3779,7 +3779,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
 
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4092,7 +4092,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4152,7 +4152,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
      *
-     * @returns A {@link ChannelDetails} object.
+     * @returns A promise which, upon success, will be fulfilled a {@link ChannelDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      */
     status(): Promise<ChannelDetails>;
@@ -4611,7 +4611,7 @@ declare namespace Types {
      * default false
      * END CANONICAL PARAM DEFAULT INFO
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link Message} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5327,7 +5327,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      *
-     * @returns The response time in milliseconds.
+     * @returns A promise which, upon success, will be fulfilled with the response time in milliseconds. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5483,7 +5483,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` for the first page of results.
      *
-     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5509,7 +5509,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
      *
-     * @returns A page of results for message and presence history, stats, and REST presence requests.
+     * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5854,7 +5854,7 @@ declare namespace Types {
      *
      * @param DeviceDetails - The {@link DeviceDetails} object to create or update.
      *
-     * @returns A {@link DeviceDetails} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5870,7 +5870,7 @@ declare namespace Types {
      *
      * @param deviceId - The unique ID of the device.
      *
-     * @returns A {@link DeviceDetails} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5886,7 +5886,7 @@ declare namespace Types {
      *
      * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
      *
-     * @returns A {@link DeviceDetails} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5902,7 +5902,7 @@ declare namespace Types {
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6056,7 +6056,7 @@ declare namespace Types {
      *
      * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
      *
-     * @returns A {@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * @returns A promise which, upon success, will be fulfilled with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6072,7 +6072,7 @@ declare namespace Types {
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6088,7 +6088,7 @@ declare namespace Types {
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
      *
-     * @returns A {@link Types.PaginatedResult} object containing an array of channel names.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
