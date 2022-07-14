@@ -1695,24 +1695,52 @@ declare namespace Types {
    */
   interface RestHistoryParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Earliest time in milliseconds since the epoch for any messages retrieved.
      * END LEGACY DOCSTRING
      */
     start?: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default now()
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * Latest time in milliseconds since the epoch for any messages retrieved.
      * END LEGACY DOCSTRING
      */
     end?: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default .Backwards
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * The direction to order messages retrieved. Defaults to backwards.
      * END LEGACY DOCSTRING
      */
     direction?: 'forwards' | 'backwards';
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default 100
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of messages to retrieve up to 1,000. Defaults to 100.
      * END LEGACY DOCSTRING
@@ -3354,19 +3382,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
-     * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which messages should be retrieved.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3382,19 +3398,6 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
-     * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3438,19 +3441,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
-     * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which messages should be retrieved.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -3978,19 +3969,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
-     * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which messages should be retrieved.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -4100,19 +4079,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
-     * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which messages should be retrieved.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
