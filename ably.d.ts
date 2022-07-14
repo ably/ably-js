@@ -3791,10 +3791,12 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
      * @param `PresenceAction` \| `[PresenceAction]` - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param (PresenceMessage) - An event listener function.
+     *
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3810,9 +3812,11 @@ declare namespace Types {
     ): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
+     * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
      * @param (PresenceMessage) - An event listener function.
+     *
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3824,10 +3828,12 @@ declare namespace Types {
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel. An optional callback may be provided to notify of the success or failure of the operation.
+     * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
      * @param Data - The payload associated with the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3839,10 +3845,12 @@ declare namespace Types {
     enter(data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event. An optional callback may be provided to notify of the success or failure of the operation.
+     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
      * @param Data - The payload to update for the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3854,10 +3862,12 @@ declare namespace Types {
     update(data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it. An optional callback may be provided to notify of the success or failure of the operation.
+     * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
      * @param Data - The payload associated with the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3869,11 +3879,13 @@ declare namespace Types {
     leave(data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to enter into the presence set.
      * @param Data - The payload associated with the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3886,11 +3898,13 @@ declare namespace Types {
     enterClient(clientId: string, data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to update in the presence set.
      * @param Data - The payload to update for the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3903,11 +3917,13 @@ declare namespace Types {
     updateClient(clientId: string, data?: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`. An optional callback may be provided to notify of the success or failure of the operation.
+     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to leave the presence set for.
      * @param Data - The payload associated with the presence member.
      * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4104,10 +4120,12 @@ declare namespace Types {
     history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * Publishes an array of messages to the channel.
      *
      * @param [`Message`] - An array of {@link Message} objects.
      * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4120,10 +4138,12 @@ declare namespace Types {
     publish(messages: any[], options?: PublishOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * Publishes a message to the channel.
      *
      * @param Message - A {@link Message} object.
      * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
@@ -4132,11 +4152,13 @@ declare namespace Types {
     publish(message: any, options?: PublishOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * Publishes a single message to the channel with the given event name and payload.
      *
      * @param name - The name of the message.
      * @param data - The payload of the message.
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4567,7 +4589,9 @@ declare namespace Types {
     presence: RealtimePresencePromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4579,7 +4603,9 @@ declare namespace Types {
     attach(): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. A callback may optionally be passed in to this call to be notified of success or failure of the operation. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4623,9 +4649,11 @@ declare namespace Types {
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Sets the {@link ChannelOptions} for the channel. An optional callback may be provided to notify of the success or failure of the operation.
+     * Sets the {@link ChannelOptions} for the channel.
      *
      * @param options - A {@link ChannelOptions} object.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * @param options - Not yet documented.
@@ -4633,10 +4661,12 @@ declare namespace Types {
     setOptions(options: ChannelOptions): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
+     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
      *
      * @param String - The event name.
      * @param (Message) - An event listener function.
+     *
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4649,10 +4679,12 @@ declare namespace Types {
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel for multiple event name values. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
+     * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param [`String`] - An array of event names.
      * @param (Message) - An event listener function.
+     *
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * @param events - Not yet documented.
@@ -4661,10 +4693,12 @@ declare namespace Types {
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannel.attach | `attach()`} operation.
+     * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param MessageFilter - A {@link MessageFilter}.
      * @param (Message) - An event listener function.
+
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * @param filter - Not yet documented.
@@ -4673,9 +4707,11 @@ declare namespace Types {
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. A callback may optionally be passed in to this call to be notified of success or failure of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation.
+     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param (Message) - An event listener function.
+     *
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4687,10 +4723,12 @@ declare namespace Types {
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publishes a single message to the channel with the given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
+     * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
      * @param name - The event name.
      * @param data - The message payload.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4703,9 +4741,11 @@ declare namespace Types {
     publish(name: string, data: any): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param [`Message`] - An array of {@link Message} objects.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4717,9 +4757,11 @@ declare namespace Types {
     publish(messages: any[]): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Publish a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param Message - A {@link Message} object.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
@@ -5709,6 +5751,8 @@ declare namespace Types {
      *
      * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
      * @param data - A JSON object containing the push notification payload.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5917,6 +5961,8 @@ declare namespace Types {
      * Removes a device registered to receive push notifications from Ably using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5931,6 +5977,8 @@ declare namespace Types {
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
      * @param DeviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5945,6 +5993,8 @@ declare namespace Types {
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId` and `deviceId`.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6103,6 +6153,8 @@ declare namespace Types {
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
      * @param PushChannelSubscription - A {@link PushChannelSubscription} object.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6117,6 +6169,8 @@ declare namespace Types {
      * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, and optionally either `clientId` or `deviceId`.
+     *
+     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
