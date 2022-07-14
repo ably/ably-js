@@ -1784,7 +1784,10 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RealtimePresenceParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link RealtimePresenceCallbacks.get}
+   * - {@link RealtimePresencePromise.get}
    */
   interface RealtimePresenceParams {
     /**
