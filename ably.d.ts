@@ -1825,7 +1825,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RealtimeHistoryParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link RealtimePresenceCallbacks.history}
+   * - {@link RealtimePresencePromise.history}
+   * - {@link RealtimeChannelCallbacks.history}
+   * - {@link RealtimeChannelPromise.history}
    */
   interface RealtimeHistoryParams {
     /**
