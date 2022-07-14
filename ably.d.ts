@@ -1750,18 +1750,34 @@ declare namespace Types {
    */
   interface RestPresenceParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default 100
+     * END CANONICAL API DEFAULT
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of presence members to retrieve.
      * END LEGACY DOCSTRING
      */
     limit?: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Filters the list of returned presence members by a specific client using its ID.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When provided, will filter array of members returned that match the provided clientId string.
      * END LEGACY DOCSTRING
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Filters the list of returned presence members by a specific connection using its ID.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When provided, will filter array of members returned that match the provided connectionId string.
      * END LEGACY DOCSTRING
@@ -3350,12 +3366,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
-     * @param clientId - Filters the list of returned presence members by a specific client using its ID.
-     * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
+     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3417,12 +3428,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
-     * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
-     * @param clientId - Filters the list of returned presence members by a specific client using its ID.
-     * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
+     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
