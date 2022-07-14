@@ -1743,7 +1743,10 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `RestPresenceParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link PresenceCallbacks.get}
+   * - {@link PresencePromise.get}
    */
   interface RestPresenceParams {
     /**
