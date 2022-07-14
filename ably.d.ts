@@ -1791,18 +1791,34 @@ declare namespace Types {
    */
   interface RealtimePresenceParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL DEFAULT INFO
+     * default true
+     * END CANONICAL DEFAULT INFO
+     *
      * BEGIN LEGACY DOCSTRING
      * When true (default) waits for the initial presence synchronization following channel attachment to complete before returning the members present. When false, the current list of members is returned without waiting for a complete synchronization.
      * END LEGACY DOCSTRING
      */
     waitForSync?: boolean;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Filters the array of returned presence members by a specific client using its ID.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When provided, will filter array of members returned that match the provided clientId string.
      * END LEGACY DOCSTRING
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Filters the array of returned presence members by a specific connection using its ID.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When provided, will filter array of members returned that match the provided connectionId string.
      * END LEGACY DOCSTRING
@@ -3540,12 +3556,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
-     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
-     * BEGIN CANONICAL PARAM DEFAULT INFO
-     * default true
-     * END CANONICAL PARAM DEFAULT INFO
-     * @param clientId - Filters the array of returned presence members by a specific client using its ID.
-     * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
+     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
      * @param callback - A function which, upon success, will be called with an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3744,12 +3755,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
-     * @param waitForSync - Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
-     * BEGIN CANONICAL PARAM DEFAULT INFO
-     * default true
-     * END CANONICAL PARAM DEFAULT INFO
-     * @param clientId - Filters the array of returned presence members by a specific client using its ID.
-     * @param connectionId - Filters the array of returned presence members by a specific connection using its ID.
+     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
      *
      * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
