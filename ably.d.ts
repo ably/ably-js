@@ -500,11 +500,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the [`connect()`]{@link ConnectionBase#connect} method. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When true as soon as the client is instantiated it will connect to Ably. You can optionally set this to false and explicitly connect to Ably when require using the `connect` method. Defaults to `true`.
@@ -526,11 +524,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * If `false`, prevents messages originating from this connection being echoed back on the same connection. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * If false, prevents messages originating from this connection being echoed back on the same connection. Defaults to `true`.
@@ -559,11 +555,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 80
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 80
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably port to be specified.
@@ -574,11 +568,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * If `false`, this disables the default behavior whereby the library queues messages on a connection in the disconnected or connecting states. The default behavior enables applications to submit messages immediately upon instantiating the library without having to wait for the connection to be established. Applications may use this option to disable queueing if they wish to have application-level control over the queueing. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * If false, this disables the default behavior whereby the library queues messages on a connection in the disconnected or connecting states. The default behavior allows applications to submit messages immediately upon instancing the library without having to wait for the connection to be established. Applications may use this option to disable queueing if they wish to have application-level control over the queueing under those conditions.
@@ -589,11 +581,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Enables a non-default Ably host to be specified. For development environments only. The default value is `rest.ably.io`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default "rest.ably.io"
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `"rest.ably.io"`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably host to be specified.
@@ -604,11 +594,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Enables a non-default Ably host to be specified for realtime connections. For development environments only. The default value is `realtime.ably.io`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default "realtime.ably.io"
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `"realtime.ably.io"`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably host to be specified for realtime connections.
@@ -619,11 +607,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host. If you have been provided a set of custom fallback hosts by Ably, please specify them here.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default ['a.ably-realtime.com', 'b.ably-realtime.com', 'c.ably-realtime.com', 'd.ably-realtime.com', 'e.ably-realtime.com']
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `['a.ably-realtime.com', 'b.ably-realtime.com', 'c.ably-realtime.com', 'd.ably-realtime.com', 'e.ably-realtime.com']``
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
@@ -676,11 +662,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * When `false`, the client will use an insecure connection. The default is `true`, meaning a TLS connection will be used to connect to Ably.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Use a non-secure connection. By default, a TLS connection is used to connect to Ably
@@ -691,11 +675,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Enables a non-default Ably TLS port to be specified. For development environments only. The default value is 443.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 443
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 443
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * For development environments only; allows a non-default Ably TLS port to be specified.
@@ -706,11 +688,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * When `true`, the more efficient MsgPack binary encoding is used. When `false`, JSON text encoding is used. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When true, the more efficient MsgPack binary encoding is used.
@@ -722,11 +702,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * If the connection is still in the [`DISCONNECTED`]{@link ConnectionState#DISCONNECTED} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 15s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 15s
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When the connection enters the `DISCONNECTED` state, after this delay in milliseconds, if the state is still `DISCONNECTED`, the client library will attempt to reconnect automatically. Defaults to 15,000ms.
@@ -737,11 +715,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * When the connection enters the [`SUSPENDED`]{@link ConnectionState#SUSPENDED} state, after this delay, if the state is still [`SUSPENDED`]{@link ConnectionState#SUSPENDED}, the client library attempts to reconnect automatically. The default is 30 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 30s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 30s
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When the connection enters the `SUSPENDED` state, after this delay in milliseconds, if the state is still `SUSPENDED`, the client library will attempt to reconnect automatically.
@@ -759,11 +735,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * When `true`, enables idempotent publishing by assigning a unique message ID client-side, allowing the Ably servers to discard automatic publish retries following a failure such as a network fault. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When true, enables idempotent publishing by assigning a unique message ID client-side, allowing the Ably servers to discard automatic publish retries following a failure such as a network fault. We recommend you enable this by default. In version 1.2 onwards, idempotent publishing for retries will be enabled by default.
@@ -792,11 +766,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host is unreachable or indicates that it is unserviceable. The default value is 3.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 3
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 3
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host is unreachable or indicates that it is unserviceable.
@@ -807,11 +779,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The maximum elapsed time in which fallback host retries for HTTP requests will be attempted. The default is 15 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 15s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 15s
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Maximum elapsed time in which fallback host retries for HTTP requests will be attempted.
@@ -822,11 +792,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Timeout for opening a connection to Ably to initiate an HTTP request. The default is 4 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 4s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 4s
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Timeout for opening the connection, available in the client library if supported by the transport.
@@ -837,11 +805,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Timeout for a client performing a complete HTTP request to Ably, including the connection phase. The default is 10 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 10s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 10s
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Timeout for any single HTTP request and response.
@@ -852,11 +818,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Timeout for the wait of acknowledgement for operations performed via a realtime connection, before the client library considers a request failed and triggers a failure condition. Operations include establishing a connection with Ably, or sending a `HEARTBEAT`, `CONNECT`, `ATTACH`, `DETACH` or `CLOSE` request. It is the equivalent of `httpRequestTimeout` but for realtime operations, rather than REST. The default is 10 seconds.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default 10s
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue 10s
+     * END CANONICAL DOCSTRING
      */
     realtimeRequestTimeout?: number;
 
@@ -922,11 +886,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The HTTP verb to use for any request made to the `authUrl`, either `GET` or `POST`. The default value is `GET`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default .GET
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `HTTPMethods.GET`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * The HTTP verb to use for the request, either `GET` or `POST`. Defaults to `GET`.
@@ -970,11 +932,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * If `true`, the library queries the Ably servers for the current time when issuing [`TokenRequest`s]{@link TokenRequest} instead of relying on a locally-available time of day. Knowing the time accurately is needed to create valid signed Ably [`TokenRequest`s]{@link TokenRequest}, so this option is useful for library instances on auth servers where for some reason the server clock cannot be kept synchronized through normal means, such as an [NTP daemon](https://en.wikipedia.org/wiki/Ntpd). The server is queried for the current time once per client library instance (which stores the offset from the local clock), so if using this option you should avoid instancing a new version of the library for each request. The default is `false`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default false
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `false`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * If true, the library will query the Ably servers for the current time when issuing `TokenRequest`s instead of relying on a locally-available time of day. Knowing the time accurately is needed to create valid signed Ably [TokenRequests](https://ably.com/documentation/realtime/authentication#token-authentication), so this option is useful for library instances on auth servers where for some reason the server clock cannot be kept synchronized through normal means, such as an [NTP daemon](https://en.wikipedia.org/wiki/Ntpd). The server is queried for the current time once per client library instance (which stores the offset from the local clock), so if using this option you should avoid instancing a new version of the library for each request.
@@ -1134,11 +1094,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The algorithm to use for encryption. Only `AES` is supported and is the default value.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default "AES"
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `"AES"`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * The name of the algorithm in the default system provider, or the lower-cased version of it; eg “aes” or “AES”.
@@ -1168,11 +1126,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The cipher mode. Only `CBC` is supported and is the default value.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default "CBC"
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `"CBC"`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * The cipher mode (default: CBC).
