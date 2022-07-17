@@ -3564,6 +3564,8 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel.
+     *
+     * @param (PresenceMessage) -> - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
