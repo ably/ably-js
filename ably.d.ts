@@ -701,7 +701,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * If the connection is still in the {@link ConnectionState.DISCONNECTED} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
+     * If the connection is still in the {@link ConnectionState.DISCONNECTED} state after this delay in milliseconds, the client library will attempt to reconnect automatically. The default is 15 seconds.
      *
      * @defaultValue 15s
      * END CANONICAL DOCSTRING
@@ -714,7 +714,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When the connection enters the {@link ConnectionState.SUSPENDED} state, after this delay, if the state is still {@link ConnectionState.SUSPENDED | `SUSPENDED`}, the client library attempts to reconnect automatically. The default is 30 seconds.
+     * When the connection enters the {@link ConnectionState.SUSPENDED} state, after this delay in milliseconds, if the state is still {@link ConnectionState.SUSPENDED | `SUSPENDED`}, the client library attempts to reconnect automatically. The default is 30 seconds.
      *
      * @defaultValue 30s
      * END CANONICAL DOCSTRING
@@ -778,7 +778,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The maximum elapsed time in which fallback host retries for HTTP requests will be attempted. The default is 15 seconds.
+     * The maximum elapsed time in milliseconds in which fallback host retries for HTTP requests will be attempted. The default is 15 seconds.
      *
      * @defaultValue 15s
      * END CANONICAL DOCSTRING
@@ -791,7 +791,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Timeout for opening a connection to Ably to initiate an HTTP request. The default is 4 seconds.
+     * Timeout in milliseconds for opening a connection to Ably to initiate an HTTP request. The default is 4 seconds.
      *
      * @defaultValue 4s
      * END CANONICAL DOCSTRING
@@ -804,7 +804,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Timeout for a client performing a complete HTTP request to Ably, including the connection phase. The default is 10 seconds.
+     * Timeout in milliseconds for a client performing a complete HTTP request to Ably, including the connection phase. The default is 10 seconds.
      *
      * @defaultValue 10s
      * END CANONICAL DOCSTRING
