@@ -3611,7 +3611,6 @@ declare namespace Types {
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3628,7 +3627,6 @@ declare namespace Types {
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
      * @param Data - The payload to update for the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3645,7 +3643,6 @@ declare namespace Types {
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3663,7 +3660,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to enter into the presence set.
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3682,7 +3678,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to update in the presence set.
      * @param Data - The payload to update for the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3701,7 +3696,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to leave the presence set for.
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3800,7 +3794,6 @@ declare namespace Types {
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3817,7 +3810,6 @@ declare namespace Types {
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
      * @param Data - The payload to update for the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3834,7 +3826,6 @@ declare namespace Types {
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3852,7 +3843,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to enter into the presence set.
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3871,7 +3861,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to update in the presence set.
      * @param Data - The payload to update for the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
@@ -3890,7 +3879,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to leave the presence set for.
      * @param Data - The payload associated with the presence member.
-     * @param extras - A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
