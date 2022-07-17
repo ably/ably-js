@@ -1399,10 +1399,8 @@ declare namespace Types {
    */
   type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
   /**
-   * Not yet documented.
-   *
-   * @param JsonArray - Not yet documented.
-   * @param channelOptions - Not yet documented.
+   * @ignore
+   * @deprecated No longer used by this library - kept here since it used to be part of our public API. Will be removed in next major version release.
    */
   type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
@@ -2606,8 +2604,11 @@ declare namespace Types {
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonArray - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    static fromEncodedArray: fromEncodedArray<Message>;
+    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
     /**
      * The client ID of the publisher of this message.
      */
@@ -2655,8 +2656,11 @@ declare namespace Types {
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonArray - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    fromEncodedArray: fromEncodedArray<Message>;
+    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
   }
 
   /**
@@ -2676,8 +2680,11 @@ declare namespace Types {
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonArray - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    static fromEncodedArray: fromEncodedArray<PresenceMessage>;
+    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
     /**
      * The event signified by a PresenceMessage.
      */
@@ -2721,8 +2728,11 @@ declare namespace Types {
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonArray - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    fromEncodedArray: fromEncodedArray<PresenceMessage>;
+    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
   }
 
   /**
