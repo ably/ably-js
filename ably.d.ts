@@ -1394,10 +1394,8 @@ declare namespace Types {
     callback: recoverConnectionCompletionCallback
   ) => void;
   /**
-   * Not yet documented.
-   *
-   * @param JsonObject - Not yet documented.
-   * @param channelOptions - Not yet documented.
+   * @ignore
+   * @deprecated No longer used by this library - kept here since it used to be part of our public API. Will be removed in next major version release.
    */
   type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
   /**
@@ -2601,8 +2599,11 @@ declare namespace Types {
     constructor();
     /**
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonObject - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    static fromEncoded: fromEncoded<Message>;
+    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
      */
@@ -2647,8 +2648,11 @@ declare namespace Types {
   interface MessageStatic {
     /**
      * A static factory method to create a Message from a deserialized Message-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonObject - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    fromEncoded: fromEncoded<Message>;
+    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
     /**
      * A static factory method to create an array of Messages from an array of deserialized Message-like object encoded using Ably’s wire protocol.
      */
@@ -2665,8 +2669,11 @@ declare namespace Types {
     constructor();
     /**
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonObject - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    static fromEncoded: fromEncoded<PresenceMessage>;
+    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      */
@@ -2707,8 +2714,11 @@ declare namespace Types {
   interface PresenceMessageStatic {
     /**
      * A static factory method to create a PresenceMessage from a deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
+     *
+     * @param JsonObject - Not yet documented.
+     * @param channelOptions - Not yet documented.
      */
-    fromEncoded: fromEncoded<PresenceMessage>;
+    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
     /**
      * A static factory method to create an array of PresenceMessages from an array of deserialized PresenceMessage-like object encoded using Ably’s wire protocol.
      */
