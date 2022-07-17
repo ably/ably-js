@@ -3532,6 +3532,7 @@ declare namespace Types {
      * Deregisters a specific listener that is registered to receive [`PresenceMessage`]{@link PresenceMessage} on the channel for a given [`PresenceAction`]{@link PresenceAction}.
      *
      * @param PresenceAction - A specific [`PresenceAction`]{@link PresenceAction} to deregister the listener for.
+     * @param (PresenceMessage) -> - An event listener function.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
