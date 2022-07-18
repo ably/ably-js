@@ -4,6 +4,7 @@ import ConnectionManager from './lib/transport/connectionmanager';
 import IDefaults from './types/IDefaults';
 import IWebStorage from './types/IWebStorage';
 import IBufferUtils from './types/IBufferUtils';
+import Transport from './lib/transport/transport';
 
 export default class Platform {
   static Config: IPlatform;

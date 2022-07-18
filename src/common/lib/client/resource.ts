@@ -38,7 +38,11 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
       try {
         body = Utils.decodeBody(body, format);
       } catch (e) {
-        callback(e);
+        if (Utils.isErrorInfo(e)) {
+          callback(e);
+        } else {
+          callback(new ErrorInfo(Utils.inspectError(e), null));
+        }
         return;
       }
     }

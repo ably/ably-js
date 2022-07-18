@@ -1232,6 +1232,12 @@ declare namespace Types {
   /**
    * Not yet documented.
    *
+   * @param shouldRecover - Not yet documented.
+   */
+  type recoverConnectionCompletionCallback = (shouldRecover: boolean) => void;
+  /**
+   * Not yet documented.
+   *
    * @param lastConnectionDetails - Not yet documented.
    * @param callback - Not yet documented.
    */
@@ -1254,12 +1260,7 @@ declare namespace Types {
        */
       clientId: string | null;
     },
-    /**
-     * Not yet documented.
-     *
-     * @param shouldRecover - Not yet documented.
-     */
-    callback: (shouldRecover: boolean) => void
+    callback: recoverConnectionCompletionCallback
   ) => void;
   /**
    * Not yet documented.
