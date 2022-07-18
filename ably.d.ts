@@ -2561,9 +2561,9 @@ declare namespace Types {
   class RestBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Construct a `RestClient` object using an Ably [`ClientOptions`]{@link ClientOptions} object.
+     * Construct a `RestClient` object using an Ably [`ClientOptions`]{@link Types.ClientOptions} object.
      *
-     * @param ClientOptions - A [`ClientOptions`]{@link ClientOptions} object to configure the client connection to Ably.
+     * @param ClientOptions - A [`ClientOptions`]{@link Types.ClientOptions} object to configure the client connection to Ably.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DOCSTRING
@@ -2631,7 +2631,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthCallbacks`]{@link AuthCallbacks} object.
+     * An [`AuthCallbacks`]{@link Types.AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2641,7 +2641,7 @@ declare namespace Types {
     auth: Types.AuthCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Channels} object.
+     * A [`Channels`]{@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2659,7 +2659,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2683,7 +2683,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2706,7 +2706,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2724,7 +2724,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2747,7 +2747,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2759,7 +2759,7 @@ declare namespace Types {
     stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -2773,7 +2773,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushCallbacks`]{@link PushCallbacks} object.
+     * A [`PushCallbacks`]{@link Types.PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2801,7 +2801,7 @@ declare namespace Types {
     static Callbacks: typeof Types.RestCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthPromise`]{@link AuthPromise} object.
+     * An [`AuthPromise`]{@link Types.AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2811,7 +2811,7 @@ declare namespace Types {
     auth: Types.AuthPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Channels} object.
+     * A [`Channels`]{@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2829,7 +2829,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2851,7 +2851,7 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -2874,7 +2874,7 @@ declare namespace Types {
      * api-default .Minute
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2890,7 +2890,7 @@ declare namespace Types {
     ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -2902,7 +2902,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushPromise`]{@link PushPromise} object.
+     * A [`PushPromise`]{@link Types.PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2932,13 +2932,13 @@ declare namespace Types {
     clientId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.close()`]{@link ConnectionBase#close} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to [`connect()`]{@link ConnectionBase#connect}.
+     * Calls [`connection.close()`]{@link Types.ConnectionBase#close} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to [`connect()`]{@link Types.ConnectionBase#connect}.
      * END CANONICAL DOCSTRING
      */
     close(): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.connect()`]{@link ConnectionBase#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link ClientOptions#autoConnect} property is disabled.
+     * Calls [`connection.connect()`]{@link Types.ConnectionBase#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link Types.ClientOptions#autoConnect} property is disabled.
      * END CANONICAL DOCSTRING
      */
     connect(): void;
@@ -2952,7 +2952,7 @@ declare namespace Types {
   class RealtimeCallbacks extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthCallbacks`]{@link AuthCallbacks} object.
+     * An [`AuthCallbacks`]{@link Types.AuthCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2962,7 +2962,7 @@ declare namespace Types {
     auth: Types.AuthCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Channels} object.
+     * A [`Channels`]{@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2972,7 +2972,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelCallbacks>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ConnectionCallbacks`]{@link ConnectionCallbacks} object.
+     * A [`ConnectionCallbacks`]{@link Types.ConnectionCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2990,7 +2990,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3014,7 +3014,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -3022,7 +3022,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3040,7 +3040,7 @@ declare namespace Types {
     ): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -3048,7 +3048,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3060,7 +3060,7 @@ declare namespace Types {
     stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -3074,7 +3074,7 @@ declare namespace Types {
     time(callback?: Types.timeCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushCallbacks`]{@link PushCallbacks} object.
+     * A [`PushCallbacks`]{@link Types.PushCallbacks} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3092,7 +3092,7 @@ declare namespace Types {
   class RealtimePromise extends RealtimeBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * An [`AuthPromise`]{@link AuthPromise} object.
+     * An [`AuthPromise`]{@link Types.AuthPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3102,7 +3102,7 @@ declare namespace Types {
     auth: Types.AuthPromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Channels`]{@link Channels} object.
+     * A [`Channels`]{@link Types.Channels} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3112,7 +3112,7 @@ declare namespace Types {
     channels: Types.Channels<Types.RealtimeChannelPromise>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`ConnectionPromise`]{@link ConnectionPromise} object.
+     * A [`ConnectionPromise`]{@link Types.ConnectionPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3130,7 +3130,7 @@ declare namespace Types {
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
      *
-     * @returns An [`HttpPaginatedResponse`]{@link HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
+     * @returns An [`HttpPaginatedResponse`]{@link Types.HttpPaginatedResponse} response object returned by the HTTP request, containing an empty or JSON-encodable object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3152,7 +3152,7 @@ declare namespace Types {
     ): Promise<Types.HttpPaginatedResponse<T>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`Stats`]{@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`Stats`]{@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
@@ -3160,7 +3160,7 @@ declare namespace Types {
      * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Stats`]{@link Stats} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Stats`]{@link Types.Stats} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3176,7 +3176,7 @@ declare namespace Types {
     ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link ClientOptions#queryTime} property instead of this method.
+     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably [`TokenRequest`s]{@link Types.TokenRequest} with a more accurate timestamp should use the [`queryTime`]{@link Types.ClientOptions#queryTime} property instead of this method.
      *
      * @returns The time as milliseconds since the Unix epoch.
      * END CANONICAL DOCSTRING
@@ -3188,7 +3188,7 @@ declare namespace Types {
     time(): Promise<number>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`PushPromise`]{@link PushPromise} object.
+     * A [`PushPromise`]{@link Types.PushPromise} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3377,7 +3377,7 @@ declare namespace Types {
   class PresenceCallbacks {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      *
      * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -3386,7 +3386,7 @@ declare namespace Types {
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3407,7 +3407,7 @@ declare namespace Types {
     get(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3423,7 +3423,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3436,7 +3436,7 @@ declare namespace Types {
     history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3452,7 +3452,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3472,7 +3472,7 @@ declare namespace Types {
   class PresencePromise {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * Retrieves the current members present on the channel and the metadata for each member, such as their [`PresenceAction`]{@link PresenceAction} and ID. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      *
      * @param limit - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
      * BEGIN PARAM CANONICAL API DEFAULT
@@ -3481,7 +3481,7 @@ declare namespace Types {
      * @param clientId - Filters the list of returned presence members by a specific client using its ID.
      * @param connectionId - Filters the list of returned presence members by a specific connection using its ID.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3493,7 +3493,7 @@ declare namespace Types {
     get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3509,7 +3509,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3626,7 +3626,7 @@ declare namespace Types {
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3639,7 +3639,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
 
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -3823,7 +3823,7 @@ declare namespace Types {
     get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`PresenceMessage`]{@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -3836,7 +3836,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
 
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PresenceMessage`]{@link PresenceMessage} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4011,7 +4011,7 @@ declare namespace Types {
     presence: PresenceCallbacks;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4027,7 +4027,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4130,7 +4130,7 @@ declare namespace Types {
     presence: PresencePromise;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4146,7 +4146,7 @@ declare namespace Types {
      * api-default 100
      * END PARAM CANONICAL API DEFAULT
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4422,7 +4422,7 @@ declare namespace Types {
     detach(callback?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4442,7 +4442,7 @@ declare namespace Types {
      * default false
      * END CANONICAL PARAM DEFAULT INFO
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4633,7 +4633,7 @@ declare namespace Types {
     detach(): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of historical [`Message`]{@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param start - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
      * @param end - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -4653,7 +4653,7 @@ declare namespace Types {
      * default false
      * END CANONICAL PARAM DEFAULT INFO
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`Message`]{@link Message} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5599,7 +5599,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A superset of [`PaginatedResult`]{@link PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
+   * A superset of [`PaginatedResult`]{@link Types.PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
    * END CANONICAL DOCSTRING
    */
   class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
@@ -5823,11 +5823,11 @@ declare namespace Types {
     get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5941,11 +5941,11 @@ declare namespace Types {
     get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6024,11 +6024,11 @@ declare namespace Types {
     save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6041,11 +6041,11 @@ declare namespace Types {
     list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of channel names.
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of channel names.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of channel names.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6112,11 +6112,11 @@ declare namespace Types {
     save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of [`PushChannelSubscription`]{@link PushChannelSubscription} objects.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -6128,11 +6128,11 @@ declare namespace Types {
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of channel names.
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
      *
-     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of channel names.
+     * @returns A [`PaginatedResult`]{@link Types.PaginatedResult} object containing an array of channel names.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
