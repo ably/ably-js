@@ -2146,6 +2146,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the subscriptions of a device, or a group of devices sharing the same `clientId`, has to a channel in order to receive push notifications.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * An object encapsulating the subscription of a device or group of devices sharing a client identifier to a channel in order to receive push notifications.
    * END LEGACY DOCSTRING
