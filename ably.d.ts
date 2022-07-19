@@ -2195,6 +2195,10 @@ declare namespace Types {
      */
     state?: DevicePushState;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * An [`ErrorInfo`]{@link ErrorInfo} object describing the most recent error when the `state` is `Failing` or `Failed`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * When the device’s state is failing or failed, this attribute contains the reason for the most recent failure.
      * END LEGACY DOCSTRING
