@@ -2118,6 +2118,10 @@ declare namespace Types {
      */
     formFactor: DeviceFormFactor;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A JSON object of key-value pairs that contains metadata for the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Optional metadata object for this device. The metadata for a device may only be set by clients with `push-admin` privileges.
      * END LEGACY DOCSTRING
