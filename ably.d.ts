@@ -2177,7 +2177,9 @@ declare namespace Types {
   type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the details of the push registration of a device.
+   * END CANONICAL DOCSTRING
    */
   interface DevicePushDetails {
     /**
