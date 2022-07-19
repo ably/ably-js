@@ -5641,7 +5641,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
+   * END CANONICAL DOCSTRING
    */
   class PushAdminCallbacks {
     /**
@@ -5669,7 +5671,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
+   * END CANONICAL DOCSTRING
    */
   class PushAdminPromise {
     /**
