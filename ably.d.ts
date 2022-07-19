@@ -5804,6 +5804,12 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes a device registered to receive push notifications from Ably using its `deviceId`.
+     *
+     * @param deviceId - The unique ID of the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Remove a device registered for receiving push registrations that matches the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
@@ -5909,6 +5915,12 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes a device registered to receive push notifications from Ably using its `deviceId`.
+     *
+     * @param deviceId - The unique ID of the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Remove a device registered for receiving push registrations that matches the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
