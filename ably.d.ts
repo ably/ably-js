@@ -6037,6 +6037,12 @@ declare namespace Types {
      */
     remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
+     *
+     * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, and optionally either `clientId` or `deviceId`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
      * END LEGACY DOCSTRING
@@ -6116,6 +6122,12 @@ declare namespace Types {
      */
     remove(subscription: PushChannelSubscription): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
+     *
+     * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, and optionally either `clientId` or `deviceId`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Delete all push channel subscriptions matching the params filter. Requires push-admin permission.
      * END LEGACY DOCSTRING
