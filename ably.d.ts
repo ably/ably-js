@@ -5736,6 +5736,14 @@ declare namespace Types {
    */
   class PushDeviceRegistrationsCallbacks {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers or updates a [`DeviceDetails`]{@link DeviceDetails} object with Ably. Returns the new, or updated [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object to create or update.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
@@ -5831,6 +5839,14 @@ declare namespace Types {
    */
   class PushDeviceRegistrationsPromise {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Registers or updates a [`DeviceDetails`]{@link DeviceDetails} object with Ably. Returns the new, or updated [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object to create or update.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Register a new DeviceDetails object, or update an existing DeviceDetails object with the Ably service. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
