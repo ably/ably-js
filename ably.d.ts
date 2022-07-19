@@ -5657,6 +5657,10 @@ declare namespace Types {
      */
     deviceRegistrations: PushDeviceRegistrationsCallbacks;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushChannelSubscriptions`]{@link PushChannelSubscriptions} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The returned PushChannelSubscriptions object provides functionality for subscribing, listing and unsubscribing individual devices or groups of identified devices to push notifications published on channels.
      * END LEGACY DOCSTRING
@@ -5698,6 +5702,10 @@ declare namespace Types {
      */
     deviceRegistrations: PushDeviceRegistrationsPromise;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushChannelSubscriptions`]{@link PushChannelSubscriptions} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The returned PushChannelSubscriptions object provides functionality for subscribing, listing and unsubscribing individual devices or groups of identified devices to push notifications published on channels.
      * END LEGACY DOCSTRING
