@@ -5647,6 +5647,10 @@ declare namespace Types {
    */
   class PushAdminCallbacks {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushDeviceRegistrations`]{@link PushDeviceRegistrations} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
      * END LEGACY DOCSTRING
@@ -5684,6 +5688,10 @@ declare namespace Types {
    */
   class PushAdminPromise {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushDeviceRegistrations`]{@link PushDeviceRegistrations} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The returned DeviceRegistrations object provides functionality for registering, updating, listing and de-registering push devices.
      * END LEGACY DOCSTRING
