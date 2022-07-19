@@ -2138,7 +2138,9 @@ declare namespace Types {
      */
     deviceSecret?: string;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The [`DevicePushDetails`]{@link DevicePushDetails} object associated with the device. Describes the details of the push registration of the device.
+     * END CANONICAL DOCSTRING
      */
     push: DevicePushDetails;
   }
