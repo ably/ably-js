@@ -2072,6 +2072,10 @@ declare namespace Types {
     | DeviceFormFactor.OTHER;
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the properties of a device registered for push notifications.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A type encapsulating attributes of a device registered for push notifications.
    * END LEGACY DOCSTRING
