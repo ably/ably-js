@@ -5619,7 +5619,9 @@ declare namespace Types {
    */
   class PushCallbacks {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushAdmin`]{@link PushAdmin} object.
+     * END CANONICAL DOCSTRING
      */
     admin: PushAdminCallbacks;
   }
@@ -5631,7 +5633,9 @@ declare namespace Types {
    */
   class PushPromise {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * A [`PushAdmin`]{@link PushAdmin} object.
+     * END CANONICAL DOCSTRING
      */
     admin: PushAdminPromise;
   }
