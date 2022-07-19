@@ -5997,6 +5997,14 @@ declare namespace Types {
      */
     list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of channel names.
+     *
+     * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of channel names.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
      * END LEGACY DOCSTRING
@@ -6056,6 +6064,14 @@ declare namespace Types {
      */
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves all channels with at least one device subscribed to push notifications. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of channel names.
+     *
+     * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of channel names.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Retrieve a list of channels with at least one subscribed device as a paginated list of channel name String objects. Requires push-admin permission.
      * END LEGACY DOCSTRING
