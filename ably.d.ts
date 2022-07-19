@@ -5834,6 +5834,12 @@ declare namespace Types {
      */
     remove(deviceDetails: DeviceDetails, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
+     *
+     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId` and `deviceId`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Delete all devices matching the params filter. Requires push-admin permission.
      * END LEGACY DOCSTRING
@@ -5943,6 +5949,12 @@ declare namespace Types {
      */
     remove(deviceDetails: DeviceDetails): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
+     *
+     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId` and `deviceId`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Delete all devices matching the params filter. Requires push-admin permission.
      * END LEGACY DOCSTRING
