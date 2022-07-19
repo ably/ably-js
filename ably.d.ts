@@ -5971,6 +5971,14 @@ declare namespace Types {
    */
   class PushChannelSubscriptionsCallbacks {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     *
+     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     *
+     * @returns A [`PushChannelSubscription`]{@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
      * END LEGACY DOCSTRING
@@ -6040,6 +6048,14 @@ declare namespace Types {
    */
   class PushChannelSubscriptionsPromise {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     *
+     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     *
+     * @returns A [`PushChannelSubscription`]{@link PushChannelSubscription} object describing the new or updated subscriptions.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Subscribe a device or group of devices sharing a client identifier for push notifications published on a channel.
      * END LEGACY DOCSTRING
