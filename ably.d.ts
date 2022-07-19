@@ -5754,6 +5754,14 @@ declare namespace Types {
      */
     get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
@@ -5823,6 +5831,14 @@ declare namespace Types {
      */
     get(deviceId: string): Promise<DeviceDetails>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
