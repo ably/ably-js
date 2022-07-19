@@ -5730,7 +5730,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of push notification registrations with Ably.
+   * END CANONICAL DOCSTRING
    */
   class PushDeviceRegistrationsCallbacks {
     /**
@@ -5799,7 +5801,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables the management of push notification registrations with Ably.
+   * END CANONICAL DOCSTRING
    */
   class PushDeviceRegistrationsPromise {
     /**
