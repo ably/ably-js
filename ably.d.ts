@@ -5779,6 +5779,14 @@ declare namespace Types {
      */
     get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     *
+     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
      * END LEGACY DOCSTRING
@@ -5863,6 +5871,14 @@ declare namespace Types {
      */
     get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves all devices matching the filter `params` provided. Returns a [`PaginatedResult`]{@link PaginatedResult} object, containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     *
+     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
+     *
+     * @returns A [`PaginatedResult`]{@link PaginatedResult} object containing an array of [`DeviceDetails`]{@link DeviceDetails} objects.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
      * END LEGACY DOCSTRING
