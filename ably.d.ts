@@ -2092,6 +2092,10 @@ declare namespace Types {
      */
     id: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The client ID the device is connected to Ably with.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Optional trusted [client identifier](https://ably.com/documentation/core-features/authentication#identified-clients) for the device.
      * END LEGACY DOCSTRING
