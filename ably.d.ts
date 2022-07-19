@@ -5813,6 +5813,12 @@ declare namespace Types {
      */
     remove(deviceId: string, callback?: errorCallback): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes a device registered to receive push notifications from Ably using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Remove a device registered for receiving push registrations that matches the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
@@ -5911,6 +5917,12 @@ declare namespace Types {
      */
     remove(deviceId: string): Promise<void>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Removes a device registered to receive push notifications from Ably using the `id` property of a [`DeviceDetails`]{@link DeviceDetails} object.
+     *
+     * @param DeviceDetails - The [`DeviceDetails`]{@link DeviceDetails} object containing the `id` property of the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Remove a device registered for receiving push registrations that matches the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
