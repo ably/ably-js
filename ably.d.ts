@@ -5965,7 +5965,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables device push channel subscriptions.
+   * END CANONICAL DOCSTRING
    */
   class PushChannelSubscriptionsCallbacks {
     /**
@@ -6016,7 +6018,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables device push channel subscriptions.
+   * END CANONICAL DOCSTRING
    */
   class PushChannelSubscriptionsPromise {
     /**
