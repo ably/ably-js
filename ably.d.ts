@@ -5613,7 +5613,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables a device to be registered and deregistered from receiving push notifications.
+   * END CANONICAL DOCSTRING
    */
   class PushCallbacks {
     /**
@@ -5623,7 +5625,9 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Enables a device to be registered and deregistered from receiving push notifications.
+   * END CANONICAL DOCSTRING
    */
   class PushPromise {
     /**
