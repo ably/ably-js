@@ -1274,6 +1274,32 @@ declare namespace Types {
     limit?: number;
   }
 
+  /**
+   * Not yet documented.
+   */
+  interface StatsParams {
+    /**
+     * Not yet documented.
+     */
+    start?: number;
+    /**
+     * Not yet documented.
+     */
+    end?: number;
+    /**
+     * Not yet documented.
+     */
+    direction?: 'backwards' | 'forwards';
+    /**
+     * Not yet documented.
+     */
+    limit?: number;
+    /**
+     * Not yet documented.
+     */
+    unit?: StatsIntervalGranularity;
+  }
+
   // Common Listeners
   /**
    * Not yet documented.
@@ -1520,7 +1546,12 @@ declare namespace Types {
      * @param params - Not yet documented.
      * @param callback - Not yet documented.
      */
-    stats(params?: any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
+    stats(
+      params?:
+        | StatsParams
+        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */,
+      callback?: Types.paginatedResultCallback<Types.Stats>
+    ): void;
     /**
      * Queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      *
@@ -1580,7 +1611,11 @@ declare namespace Types {
      *
      * @param params - Not yet documented.
      */
-    stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(
+      params?:
+        | StatsParams
+        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */
+    ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
@@ -1657,7 +1692,12 @@ declare namespace Types {
      * @param params - Not yet documented.
      * @param callback - Not yet documented.
      */
-    stats(params: any, callback: Types.paginatedResultCallback<Types.Stats>): void;
+    stats(
+      params:
+        | StatsParams
+        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */,
+      callback: Types.paginatedResultCallback<Types.Stats>
+    ): void;
     /**
      * This method queries the [REST `/stats` API](https://ably.com/documentation/rest-api#stats) and retrieves your application’s usage statistics. A PaginatedResult is returned, containing an array of stats for the first page of results. PaginatedResult objects are iterable providing a means to page through historical statistics. [See an example set of raw stats returned via the REST API](https://ably.com/documentation/general/statistics).
      *
@@ -1713,7 +1753,11 @@ declare namespace Types {
      *
      * @param params - Not yet documented.
      */
-    stats(params?: any): Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(
+      params?:
+        | StatsParams
+        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */
+    ): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Obtains the time from the Ably service as milliseconds since epoch. (Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably TokenRequests with a more accurate timestamp should use the `queryTime` ClientOption instead of this method).
      */
