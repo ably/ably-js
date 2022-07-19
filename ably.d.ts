@@ -2108,6 +2108,10 @@ declare namespace Types {
      */
     platform: DevicePlatform;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The [`DeviceFormFactor`]{@link DeviceFormFactor} object associated with the device. Describes the type of the device, such as `phone` or `tablet`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Form factor of the push device.
      * END LEGACY DOCSTRING
