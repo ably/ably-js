@@ -2162,6 +2162,10 @@ declare namespace Types {
      */
     channel: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The unique ID of the device.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The device with this identifier is linked to this channel subscription. When present, `clientId` is never present.
      * END LEGACY DOCSTRING
