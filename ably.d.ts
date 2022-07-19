@@ -5659,6 +5659,13 @@ declare namespace Types {
      */
     channelSubscriptions: PushChannelSubscriptionsCallbacks;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
+     *
+     * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
+     * @param data - A JSON object containing the push notification payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
      * END LEGACY DOCSTRING
@@ -5689,6 +5696,13 @@ declare namespace Types {
      */
     channelSubscriptions: PushChannelSubscriptionsPromise;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
+     *
+     * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
+     * @param data - A JSON object containing the push notification payload.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Publishes a push notification directly to a device or group of devices sharing a client identifier. See the [push notification direct publishing documentation](https://ably.com/documentation/general/push/publish#direct-publishing) for more information.
      * END LEGACY DOCSTRING
