@@ -2193,6 +2193,10 @@ declare namespace Types {
      */
     recipient: any;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The current state of the push registration.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The current state of the push device.
      * END LEGACY DOCSTRING
