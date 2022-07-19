@@ -5745,6 +5745,14 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
+     *
+     * @param deviceId - The unique ID of the device.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
@@ -5823,6 +5831,14 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Retrieves the [`DeviceDetails`]{@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
+     *
+     * @param deviceId - The unique ID of the device.
+     *
+     * @returns A [`DeviceDetails`]{@link DeviceDetails} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      * END LEGACY DOCSTRING
