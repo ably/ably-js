@@ -6022,6 +6022,12 @@ declare namespace Types {
      */
     listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
+     *
+     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
      * END LEGACY DOCSTRING
@@ -6096,6 +6102,12 @@ declare namespace Types {
      */
     listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
+     *
+     * @param PushChannelSubscription - A [`PushChannelSubscription`]{@link PushChannelSubscription} object.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Unsubscribe a device or group of devices sharing a client identifier from push notifications on a channel. Requires push-admin permission or, in the case of a subscription associated with a given deviceId, push-subscribe permission together with device authentication matching that deviceId.
      * END LEGACY DOCSTRING
