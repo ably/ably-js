@@ -2183,6 +2183,10 @@ declare namespace Types {
    */
   interface DevicePushDetails {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A JSON object of key-value pairs that contains of the push transport and address.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Push recipient details for this device. See the [REST API push publish documentation](https://ably.com/documentation/rest-api#message-extras-push) for more details.
      * END LEGACY DOCSTRING
