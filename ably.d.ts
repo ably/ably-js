@@ -2156,6 +2156,10 @@ declare namespace Types {
    */
   interface PushChannelSubscription {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The channel the push notification subscription is for.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The channel that this push notification subscription is associated with.
      * END LEGACY DOCSTRING
