@@ -2102,6 +2102,10 @@ declare namespace Types {
      */
     clientId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The [`DevicePlatform`]{@link DevicePlatform} associated with the device. Describes the platform the device uses, such as `android` or `ios`.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Platform of the push device.
      * END LEGACY DOCSTRING
