@@ -1859,11 +1859,11 @@ declare namespace Types {
     end?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
+     * The order for which messages are returned in. Valid values are `'backwards'` which orders messages from most recent to oldest, or `'forwards'` which orders messages from oldest to most recent. The default is `'backwards'`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL API DEFAULT
-     * api-default .Backwards
+     * api-default `'backwards'`
      * END CANONICAL API DEFAULT
      *
      * BEGIN LEGACY DOCSTRING
