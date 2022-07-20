@@ -2313,7 +2313,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `PushChannelSubscriptionParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link PushChannelSubscriptionsCallbacks.list}
+   * - {@link PushChannelSubscriptionsCallbacks.removeWhere}
+   * - {@link PushChannelSubscriptionsPromise.list}
+   * - {@link PushChannelSubscriptionsPromise.removeWhere}
    */
   interface PushChannelSubscriptionParams {
     /**
