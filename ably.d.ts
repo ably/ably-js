@@ -2276,7 +2276,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `DeviceRegistrationParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link PushDeviceRegistrationsCallbacks.list}
+   * - {@link PushDeviceRegistrationsCallbacks.removeWhere}
+   * - {@link PushDeviceRegistrationsPromise.list}
+   * - {@link PushDeviceRegistrationsPromise.removeWhere}
    */
   interface DeviceRegistrationParams {
     /**
