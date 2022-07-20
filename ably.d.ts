@@ -2359,6 +2359,10 @@ declare namespace Types {
    */
   interface PushChannelsParams {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A limit on the number of channels returned, up to 1,000.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of channels per page to retrieve, up to 1,000. Defaults to 100.
      * END LEGACY DOCSTRING
@@ -5992,7 +5996,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
-     * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
+     * @param params - An object containing key-value pairs to filter channels by.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -6080,7 +6084,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
-     * @param params - An object containing key-value pairs to filter channels by. Can contain a `limit` on the number of channels returned, up to 1,000.
+     * @param params - An object containing key-value pairs to filter channels by.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
