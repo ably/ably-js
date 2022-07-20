@@ -2376,11 +2376,11 @@ declare namespace Types {
     end?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
+     * The order for which stats are returned in. Valid values are `'backwards'` which orders stats from most recent to oldest, or `'forwards'` which orders stats from oldest to most recent. The default is `'backwards'`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL API DEFAULT
-     * api-default .Backwards
+     * api-default `'backwards'`
      * END CANONICAL API DEFAULT
      */
     direction?: 'backwards' | 'forwards';
