@@ -2355,23 +2355,53 @@ declare namespace Types {
    */
   interface StatsParams {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default epoch()
+     * END CANONICAL API DEFAULT
      */
     start?: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default now()
+     * END CANONICAL API DEFAULT
      */
     end?: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default .Backwards
+     * END CANONICAL API DEFAULT
      */
     direction?: 'backwards' | 'forwards';
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default 100
+     * END CANONICAL API DEFAULT
      */
     limit?: number;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * END CANONICAL DOCSTRING
+     *
+     * BEGIN CANONICAL API DEFAULT
+     * api-default .Minute
+     * END CANONICAL API DEFAULT
      */
     unit?: StatsIntervalGranularity;
   }
@@ -2731,26 +2761,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default epoch()
-     * END PARAM CANONICAL API DEFAULT
-     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
-     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Minute
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -2761,12 +2772,7 @@ declare namespace Types {
      * @param params - Not yet documented.
      * @param callback - Not yet documented.
      */
-    stats(
-      params?:
-        | StatsParams
-        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */,
-      callback?: Types.paginatedResultCallback<Types.Stats>
-    ): void;
+    stats(params?: StatsParams | any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
@@ -2897,26 +2903,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default epoch()
-     * END PARAM CANONICAL API DEFAULT
-     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
-     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Minute
-     * END PARAM CANONICAL API DEFAULT
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -2927,11 +2914,7 @@ declare namespace Types {
      *
      * @param params - Not yet documented.
      */
-    stats(
-      params?:
-        | StatsParams
-        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */
-    ): Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
@@ -3059,11 +3042,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
-     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -3074,12 +3053,7 @@ declare namespace Types {
      * @param params - Not yet documented.
      * @param callback - Not yet documented.
      */
-    stats(
-      params:
-        | StatsParams
-        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */,
-      callback: Types.paginatedResultCallback<Types.Stats>
-    ): void;
+    stats(params: StatsParams | any, callback: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
@@ -3195,11 +3169,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
-     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
@@ -3210,11 +3180,7 @@ declare namespace Types {
      *
      * @param params - Not yet documented.
      */
-    stats(
-      params?:
-        | StatsParams
-        | any /* The `any` here is for backwards compatibility - will be removed in next major release of this SDK. */
-    ): Promise<Types.PaginatedResult<Types.Stats>>;
+    stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * BEGIN CANONICAL DOCSTRING
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
