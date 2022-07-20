@@ -2396,7 +2396,7 @@ declare namespace Types {
     limit?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
+     * Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL API DEFAULT
