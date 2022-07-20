@@ -2346,7 +2346,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * The `StatsParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link RestCallbacks.stats}
+   * - {@link RestPromise.stats}
+   * - {@link RealtimeCallbacks.stats}
+   * - {@link RealtimePromise.stats}
    */
   interface StatsParams {
     /**
