@@ -1718,9 +1718,9 @@ declare namespace Types {
     end?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
+     * The order for which messages are returned in. Valid values are `'backwards'` which orders messages from most recent to oldest, or `'forwards'` which orders messages from oldest to most recent. The default is `'backwards'`.
      *
-     * @defaultValue .Backwards
+     * @defaultValue `'backwards'`
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
