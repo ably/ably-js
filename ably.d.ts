@@ -2340,6 +2340,10 @@ declare namespace Types {
      */
     deviceId?: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A limit on the number of devices returned, up to 1,000.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of channel subscriptions per page to retrieve, up to 1,000. Defaults to 100.
      * END LEGACY DOCSTRING
@@ -5969,7 +5973,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
-     * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
+     * @param params - An object containing key-value pairs to filter subscriptions by.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -6057,7 +6061,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
-     * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, `clientId`, `deviceId` and a `limit` on the number of devices returned, up to 1,000.
+     * @param params - An object containing key-value pairs to filter subscriptions by.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
