@@ -622,7 +622,7 @@ declare namespace Types {
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DEFAULT INFO
-     * default nil
+     * default ['a.ably-realtime.com', 'b.ably-realtime.com', 'c.ably-realtime.com', 'd.ably-realtime.com', 'e.ably-realtime.com']
      * END CANONICAL DEFAULT INFO
      *
      * BEGIN LEGACY DOCSTRING
