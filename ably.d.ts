@@ -1100,7 +1100,7 @@ declare namespace Types {
     algorithm: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The private key used to encrypt and decrypt payloads.
+     * The private key used to encrypt and decrypt payloads. You should not set this value directly; rather, you should pass a `key` of type {@link Types.CipherKeyParam} to {@link Crypto.getDefaultParams}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
