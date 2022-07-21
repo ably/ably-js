@@ -1024,11 +1024,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The capabilities associated with this Ably Token. The capabilities value is a JSON-encoded representation of the resource paths and associated operations. Read more about capabilities in the [capabilities docs](https://ably.com/docs/core-features/authentication/#capabilities-explained).
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default `'{"*":["*"]}'`
-     * END CANONICAL API DEFAULT
+     * @defaultValue `'{"*":["*"]}'`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Capability requirements JSON stringified for the token. When omitted, Ably will default to the capabilities of the underlying key.
@@ -1068,11 +1066,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Requested time to live for the token in milliseconds. The default is 60 minutes.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default 60min
-     * END CANONICAL API DEFAULT
+     * @defaultValue 60min
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Requested time to live for the token in milliseconds. When omitted, Ably will default to a TTL of 60 minutes.
@@ -1586,11 +1582,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Requested time to live for the Ably Token in milliseconds. If the Ably `TokenRequest` is successful, the TTL of the returned Ably Token is less than or equal to this value, depending on application settings and the attributes of the issuing key. The default is 60 minutes.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default 60min
-     * END CANONICAL API DEFAULT
+     * @defaultValue 60min
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Requested time to live for the Ably Token in milliseconds. If the Ably TokenRequest is successful, the TTL of the returned Ably Token will be less than or equal to this value depending on application settings and the attributes of the issuing key.
