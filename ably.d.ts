@@ -5804,7 +5804,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
-     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId` and `deviceId`.
+     * @param params - An object containing key-value pairs to filter devices by. This object’s {@link DeviceRegistrationParams.limit} property will be ignored.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -5924,7 +5924,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
-     * @param params - An object containing key-value pairs to filter devices by. Can contain `clientId` and `deviceId`.
+     * @param params - An object containing key-value pairs to filter devices by. This object’s {@link DeviceRegistrationParams.limit} property will be ignored.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      * END CANONICAL DOCSTRING
