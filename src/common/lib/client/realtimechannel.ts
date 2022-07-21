@@ -452,6 +452,7 @@ class RealtimeChannel extends Channel {
         refTimeserial: m.extras?.ref?.timeserial,
         refType: m.extras?.ref?.type,
         isRef: !!m.extras?.ref?.timeserial,
+        clientId: m.clientId,
       };
       // Check if any values are defined in the filter and if they match the value in the message object
       if (
