@@ -1793,11 +1793,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL DEFAULT INFO
-     * default true
-     * END CANONICAL DEFAULT INFO
+     * @defaultValue `true`
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * When true (default) waits for the initial presence synchronization following channel attachment to complete before returning the members present. When false, the current list of members is returned without waiting for a complete synchronization.
