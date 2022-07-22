@@ -1708,7 +1708,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * The time until messages are retrieved, specified as milliseconds since the Unix epoch.
      *
-     * @defaultValue now()
+     * @defaultValue The current time.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1847,7 +1847,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * The time until messages are retrieved, specified as milliseconds since the Unix epoch.
      *
-     * @defaultValue now()
+     * @defaultValue The current time.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2393,7 +2393,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      *
-     * @defaultValue now()
+     * @defaultValue The current time.
      * END CANONICAL DOCSTRING
      */
     end?: number;
@@ -2800,7 +2800,7 @@ declare namespace Types {
      * END PARAM CANONICAL API DEFAULT
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default now()
+     * api-default The current time.
      * END PARAM CANONICAL API DEFAULT
      * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
      * BEGIN PARAM CANONICAL API DEFAULT
