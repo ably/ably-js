@@ -2357,51 +2357,41 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default epoch()
-     * END CANONICAL API DEFAULT
+     * @defaultValue epoch()
+     * END CANONICAL DOCSTRING
      */
     start?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
      * The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default now()
-     * END CANONICAL API DEFAULT
+     * @defaultValue now()
+     * END CANONICAL DOCSTRING
      */
     end?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
      * The order for which stats are returned in. Valid values are `'backwards'` which orders stats from most recent to oldest, or `'forwards'` which orders stats from oldest to most recent. The default is `'backwards'`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default `'backwards'`
-     * END CANONICAL API DEFAULT
+     * @defaultValue `'backwards'`
+     * END CANONICAL DOCSTRING
      */
     direction?: 'backwards' | 'forwards';
     /**
      * BEGIN CANONICAL DOCSTRING
      * An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default 100
-     * END CANONICAL API DEFAULT
+     * @defaultValue 100
+     * END CANONICAL DOCSTRING
      */
     limit?: number;
     /**
      * BEGIN CANONICAL DOCSTRING
      * Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default `StatsIntervalGranularity.MINUTE`
-     * END CANONICAL API DEFAULT
+     * @defaultValue `StatsIntervalGranularity.MINUTE`
+     * END CANONICAL DOCSTRING
      */
     unit?: StatsIntervalGranularity;
   }
