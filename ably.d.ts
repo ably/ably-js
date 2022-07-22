@@ -1752,11 +1752,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default 100
-     * END CANONICAL API DEFAULT
+     * @defaultValue 100
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of presence members to retrieve.
