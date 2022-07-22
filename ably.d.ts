@@ -2385,7 +2385,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      *
-     * @defaultValue epoch()
+     * @defaultValue The Unix epoch.
      * END CANONICAL DOCSTRING
      */
     start?: number;
@@ -2796,7 +2796,7 @@ declare namespace Types {
      *
      * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default epoch()
+     * api-default The Unix epoch.
      * END PARAM CANONICAL API DEFAULT
      * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      * BEGIN PARAM CANONICAL API DEFAULT
