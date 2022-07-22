@@ -705,6 +705,7 @@ declare namespace Types {
     refTimeserial?: string;
     refType?: string;
     isRef?: boolean;
+    clientId: string;
   };
 
   class RealtimeChannelCallbacks extends RealtimeChannelBase {
