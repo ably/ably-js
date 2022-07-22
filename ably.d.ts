@@ -1707,11 +1707,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The time until messages are retrieved, specified as milliseconds since the Unix epoch.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default now()
-     * END CANONICAL API DEFAULT
+     * @defaultValue now()
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Latest time in milliseconds since the epoch for any messages retrieved.
@@ -1721,11 +1719,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * The order for which messages are returned in. Valid values are `backwards` which orders messages from most recent to oldest, or `forwards` which orders messages from oldest to most recent. The default is `backwards`.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END CANONICAL API DEFAULT
+     * @defaultValue .Backwards
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * The direction to order messages retrieved. Defaults to backwards.
@@ -1735,11 +1731,9 @@ declare namespace Types {
     /**
      * BEGIN CANONICAL DOCSTRING
      * An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
-     * END CANONICAL DOCSTRING
      *
-     * BEGIN CANONICAL API DEFAULT
-     * api-default 100
-     * END CANONICAL API DEFAULT
+     * @defaultValue 100
+     * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
      * Maximum number of messages to retrieve up to 1,000. Defaults to 100.
