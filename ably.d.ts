@@ -2008,12 +2008,6 @@ declare namespace Types {
      */
     update(data?: any, callback?: errorCallback): void;
     /**
-     * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
-     *
-     * @param callback - Not yet documented.
-     */
-    update(callback?: errorCallback): void;
-    /**
      * Leave a presence channel and emit data that is associated with the current leaving member.
      *
      * @param data - Not yet documented.
