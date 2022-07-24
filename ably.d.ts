@@ -2935,12 +2935,19 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
     /**
-     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      *
-     * @param deviceIdOrDetails - Not yet documented.
+     * @param deviceId - Not yet documented.
      * @param callback - Not yet documented.
      */
-    get(deviceIdOrDetails: DeviceDetails | string, callback: Types.StandardCallback<DeviceDetails>): void;
+    get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
+    /**
+     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
+     * @param callback - Not yet documented.
+     */
+    get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
     /**
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
      *
@@ -2949,12 +2956,19 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
     /**
-     * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     * Remove a device registered for receiving push registrations that matches the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      *
-     * @param deviceIdOrDetails - Not yet documented.
+     * @param deviceId - Not yet documented.
      * @param callback - Not yet documented.
      */
-    remove(deviceIdOrDetails: DeviceDetails | string, callback?: errorCallback): void;
+    remove(deviceId: string, callback?: errorCallback): void;
+    /**
+     * Remove a device registered for receiving push registrations that matches the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
+     * @param callback - Not yet documented.
+     */
+    remove(deviceDetails: DeviceDetails, callback?: errorCallback): void;
     /**
      * Delete all devices matching the params filter. Requires push-admin permission.
      *
@@ -2975,11 +2989,17 @@ declare namespace Types {
      */
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
-     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      *
-     * @param deviceIdOrDetails - Not yet documented.
+     * @param deviceId - Not yet documented.
      */
-    get(deviceIdOrDetails: DeviceDetails | string): Promise<DeviceDetails>;
+    get(deviceId: string): Promise<DeviceDetails>;
+    /**
+     * Obtain the DeviceDetails for a device registered for receiving push registrations matching the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
+     */
+    get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
     /**
      * Retrieve all devices matching the params filter as a paginated list of DeviceDetails objects. Requires push-admin permission.
      *
@@ -2987,11 +3007,17 @@ declare namespace Types {
      */
     list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
     /**
-     * Remove a device registered for receiving push registrations that matches the deviceId argument, or the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     * Remove a device registered for receiving push registrations that matches the deviceId argument. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
      *
-     * @param deviceIdOrDetails - Not yet documented.
+     * @param deviceId - Not yet documented.
      */
-    remove(deviceIdOrDetails: DeviceDetails | string): Promise<void>;
+    remove(deviceId: string): Promise<void>;
+    /**
+     * Remove a device registered for receiving push registrations that matches the id attribute of the provided DeviceDetails object. Requires push-admin permission or push-subscribe permission together with device authentication matching the requested deviceId.
+     *
+     * @param deviceDetails - Not yet documented.
+     */
+    remove(deviceDetails: DeviceDetails): Promise<void>;
     /**
      * Delete all devices matching the params filter. Requires push-admin permission.
      *
