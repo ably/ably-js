@@ -2778,7 +2778,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -2792,28 +2792,8 @@ declare namespace Types {
     stats(params?: StatsParams | any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
+     * Queries the REST `/stats` API and retrieves your application's usage statistics, using the default parameters described in the {@link Types.StatsParams} interface. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default The Unix epoch.
-     * END PARAM CANONICAL API DEFAULT
-     * @param end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default The current time.
-     * END PARAM CANONICAL API DEFAULT
-     * @param direction - The order for which stats are returned in. Valid values are `backwards` which orders stats from most recent to oldest, or `forwards` which orders stats from oldest to most recent. The default is `backwards`.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Backwards
-     * END PARAM CANONICAL API DEFAULT
-     * @param limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default 100
-     * END PARAM CANONICAL API DEFAULT
-     * @param unit - `minute`, `hour`, `day` or `month`. Based on the unit selected, the given `start` or `end` times are rounded down to the start of the relevant interval depending on the unit granularity of the query.
-     * BEGIN PARAM CANONICAL API DEFAULT
-     * api-default .Minute
-     * END PARAM CANONICAL API DEFAULT
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
      * END CANONICAL DOCSTRING
      *
@@ -2920,7 +2900,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
-     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
+     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
      *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      * END CANONICAL DOCSTRING
