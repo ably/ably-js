@@ -2038,13 +2038,6 @@ declare namespace Types {
      * @param callback - Not yet documented.
      */
     leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
-    /**
-     * Leave a presence channel on behalf of the provided ClientId without emitting any data.
-     *
-     * @param clientId - Not yet documented.
-     * @param callback - Not yet documented.
-     */
-    leaveClient(clientId: string, callback?: errorCallback): void;
   }
 
   /**
