@@ -1820,25 +1820,6 @@ declare namespace Types {
       authOptions?: AuthOptions | null,
       callback?: tokenDetailsCallback
     ): void;
-    /**
-     * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
-     *
-     * The `tokenParams` parameter is optional. When omitted or `null`, the default token parameters for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
-     *
-     * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
-     *
-     * @param TokenParams - Not yet documented.
-     * @param callback - Not yet documented.
-     */
-    requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
-    /**
-     * Calls the [requestToken REST API endpoint](https://ably.com/documentation/rest-api#request-token) to obtain an Ably Token according to the specified tokenParams and authOptions.
-     *
-     * To understand why an Ably `TokenRequest` may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/documentation/core-features/authentication/#token-authentication).
-     *
-     * @param callback - Not yet documented.
-     */
-    requestToken(callback?: tokenDetailsCallback): void;
   }
 
   /**
