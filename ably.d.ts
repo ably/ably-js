@@ -2031,13 +2031,6 @@ declare namespace Types {
      */
     updateClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
-     * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
-     *
-     * @param clientId - Not yet documented.
-     * @param callback - Not yet documented.
-     */
-    updateClient(clientId: string, callback?: errorCallback): void;
-    /**
      * Leave a presence channel on behalf of the provided ClientId and emit data that is associated with the current leaving member.
      *
      * @param clientId - Not yet documented.
