@@ -2015,12 +2015,6 @@ declare namespace Types {
      */
     leave(data?: any, callback?: errorCallback): void;
     /**
-     * Leave a presence channel without emitting any data.
-     *
-     * @param callback - Not yet documented.
-     */
-    leave(callback?: errorCallback): void;
-    /**
      * Enter a presence channel and provide data that is associated with the current present member.
      *
      * @param clientId - Not yet documented.
