@@ -1789,21 +1789,6 @@ declare namespace Types {
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
-     * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
-     *
-     * Any `tokenParams` objects passed in will entirely replace (as opposed to being merged with) the currently client library saved `tokenParams`.
-     *
-     * @param tokenParams - Not yet documented.
-     * @param callback - Not yet documented.
-     */
-    authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
-    /**
-     * Instructs the library to get a new token immediately. When using the realtime client, it will upgrade the current realtime connection to use the new token, or if not connected, will initiate a connection to Ably once the new token has been obtained. Also stores any `tokenParams` and `authOptions` passed in as the new defaults, to be used for all subsequent implicit or explicit token requests.
-     *
-     * @param callback - Not yet documented.
-     */
-    authorize(callback?: tokenDetailsCallback): void;
-    /**
      * Creates and signs an Ably `TokenRequest` based on the specified (or if none specified, the client library stored) `tokenParams` and `authOptions`. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably `TokenRequest` must be obtained from the key owner. Use this to generate an Ably `TokenRequest` in order to implement an Ably Token request callback for use by other clients.
      *
      * Both `authOptions` and `tokenParams` are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the `ClientOptions` when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in will be used instead of (rather than being merged with) the default values.
