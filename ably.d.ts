@@ -2001,12 +2001,6 @@ declare namespace Types {
      */
     enter(data?: any, callback?: errorCallback): void;
     /**
-     * Enter a presence channel without any data. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling enter will implicitly attach the channel.
-     *
-     * @param callback - Not yet documented.
-     */
-    enter(callback?: errorCallback): void;
-    /**
      * Update the current member’s data and broadcast an update event to all subscribers. data may be null. If the channel is initialized (i.e. no attempt to attach has yet been made for this channel), then calling update will implicitly attach the channel.
      *
      * @param data - Not yet documented.
