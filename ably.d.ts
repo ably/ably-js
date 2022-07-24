@@ -2023,13 +2023,6 @@ declare namespace Types {
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
     /**
-     * Enter a presence channel on behalf of the provided ClientId without any data.
-     *
-     * @param clientId - Not yet documented.
-     * @param callback - Not yet documented.
-     */
-    enterClient(clientId: string, callback?: errorCallback): void;
-    /**
      * Update the member data on behalf of the provided ClientId and broadcast an update event to all subscribers.
      *
      * @param clientId - Not yet documented.
