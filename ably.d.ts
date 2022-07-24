@@ -2334,11 +2334,15 @@ declare namespace Types {
      * @param listener - Not yet documented.
      * @param callbackWhenAttached - Not yet documented.
      */
-    subscribe(
-      event: string | Array<string>,
-      listener?: messageCallback<Message>,
-      callbackWhenAttached?: errorCallback
-    ): void;
+    subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+    /**
+     * Not yet documented.
+     *
+     * @param events - Not yet documented.
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
+     */
+    subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * Not yet documented.
      *
@@ -2432,7 +2436,14 @@ declare namespace Types {
      * @param event - Not yet documented.
      * @param listener - Not yet documented.
      */
-    subscribe(event: string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
+    /**
+     * Not yet documented.
+     *
+     * @param events - Not yet documented.
+     * @param listener - Not yet documented.
+     */
+    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
      * Not yet documented.
      *
