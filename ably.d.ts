@@ -4087,6 +4087,7 @@ declare namespace Types {
      *
      * @param name - The name of the message.
      * @param data - The payload of the message.
+     * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4189,6 +4190,7 @@ declare namespace Types {
      *
      * @param name - The name of the message.
      * @param data - The payload of the message.
+     * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
