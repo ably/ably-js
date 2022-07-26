@@ -2070,7 +2070,7 @@ declare namespace Types {
      * @param listener - Not yet documented.
      */
     subscribe(
-      action?: PresenceAction | Array<PresenceAction>,
+      action: PresenceAction | Array<PresenceAction>,
       listener?: messageCallback<PresenceMessage>
     ): Promise<void>;
     /**
