@@ -1923,13 +1923,32 @@ declare namespace Types {
      * @param presence - Not yet documented.
      * @param listener - Not yet documented.
      */
-    unsubscribe(presence?: PresenceAction | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): void;
+    unsubscribe(presence: PresenceAction, listener: messageCallback<PresenceMessage>): void;
     /**
-     * Unsubscribe the given listener from presence message events on this channel. This removes an earlier subscription.
+     * Not yet documented.
+     *
+     * @param presence - Not yet documented.
+     * @param listener - Not yet documented.
+     */
+    unsubscribe(presence: Array<PresenceAction>, listener: messageCallback<PresenceMessage>): void;
+    /**
+     * Not yet documented.
+     *
+     * @param presence - Not yet documented.
+     */
+    unsubscribe(presence: PresenceAction): void;
+    /**
+     * Not yet documented.
+     *
+     * @param presence - Not yet documented.
+     */
+    unsubscribe(presence: Array<PresenceAction>): void;
+    /**
+     * Not yet documented.
      *
      * @param listener - Not yet documented.
      */
-    unsubscribe(listener?: messageCallback<PresenceMessage>): void;
+    unsubscribe(listener: messageCallback<PresenceMessage>): void;
     /**
      * Unsubscribes all listeners to presence message events on this channel. This removes all earlier subscriptions.
      */
