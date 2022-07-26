@@ -2655,15 +2655,9 @@ declare namespace Types {
   class RestBase {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Construct a `RestClient` object using an Ably {@link Types.ClientOptions} object.
+     * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
      * @param ClientOptions - A {@link Types.ClientOptions} object to configure the client connection to Ably.
-     * END CANONICAL DOCSTRING
-     *
-     * BEGIN CANONICAL DOCSTRING
-     * Constructs a `RealtimeClient` object using an Ably {@link ClientOptions} object.
-     *
-     * @param ClientOptions - A {@link ClientOptions} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -2675,13 +2669,7 @@ declare namespace Types {
     constructor(options: Types.ClientOptions);
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Constructs a `RestClient` object using an Ably API key or token string.
-     *
-     * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
-     * END CANONICAL DOCSTRING
-     *
-     * BEGIN CANONICAL DOCSTRING
-     * Constructs a `RealtimeClient` object using an Ably API key or token string.
+     * Constructs a client object using an Ably API key or token string.
      *
      * @param keyOrTokenStr - The Ably API key or token string used to validate the client.
      * END CANONICAL DOCSTRING
