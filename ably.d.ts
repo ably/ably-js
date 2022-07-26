@@ -2140,7 +2140,14 @@ declare namespace Types {
      * @param messages - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(messages: any, callback?: errorCallback): void;
+    publish(messages: any[], callback?: errorCallback): void;
+    /**
+     * Not yet documented.
+     *
+     * @param message - Not yet documented.
+     * @param callback - Not yet documented.
+     */
+    publish(message: any, callback?: errorCallback): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
@@ -2178,7 +2185,14 @@ declare namespace Types {
      * @param messages - Not yet documented.
      * @param options - Not yet documented.
      */
-    publish(messages: any, options?: PublishOptions): Promise<void>;
+    publish(messages: any[], options?: PublishOptions): Promise<void>;
+    /**
+     * Not yet documented.
+     *
+     * @param message - Not yet documented.
+     * @param options - Not yet documented.
+     */
+    publish(message: any, options?: PublishOptions): Promise<void>;
     /**
      * Publish a single message on this channel based on a given event name and payload.
      *
@@ -2354,7 +2368,14 @@ declare namespace Types {
      * @param messages - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(messages: any, callback?: errorCallback): void;
+    publish(messages: any[], callback?: errorCallback): void;
+    /**
+     * Not yet documented.
+     *
+     * @param message - Not yet documented.
+     * @param callback - Not yet documented.
+     */
+    publish(message: any, callback?: errorCallback): void;
     /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      *
@@ -2439,7 +2460,14 @@ declare namespace Types {
      * @param messages - Not yet documented.
      * @param options - Not yet documented.
      */
-    publish(messages: any, options?: PublishOptions): Promise<void>;
+    publish(messages: any[], options?: PublishOptions): Promise<void>;
+    /**
+     * Not yet documented.
+     *
+     * @param message - Not yet documented.
+     * @param options - Not yet documented.
+     */
+    publish(message: any, options?: PublishOptions): Promise<void>;
     /**
      * Not yet documented.
      *
