@@ -1969,12 +1969,6 @@ declare namespace Types {
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
-     * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
-     *
-     * @param callback - Not yet documented.
-     */
-    history(callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
      * Subscribe to presence message events with a given PresenceAction on this channel. The caller supplies a handler, which is called each time one or more presence events occurs such as a member entering or leaving a channel.
      *
      * @param presence - Not yet documented.
