@@ -4060,7 +4060,6 @@ declare namespace Types {
      * Publishes an array of messages to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
      * @param [`Message`] - An array of [`Message`]{@link Message} objects.
-     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4076,7 +4075,6 @@ declare namespace Types {
      * Publishes a message to the channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
      * @param Message - A [`Message`]{@link Message} object.
-     * @param params - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * END CANONICAL DOCSTRING
      *
      * @param message - Not yet documented.
