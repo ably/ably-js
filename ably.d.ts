@@ -2149,10 +2149,10 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(name: string, messages: any, callback?: errorCallback): void;
+    publish(name: string, data: any, callback?: errorCallback): void;
     /**
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. It is worth noting that there are additional considerations and constraints if you want to publish multiple messages idempotently in one publish operation with client-supplied IDs.
      *
@@ -2171,11 +2171,11 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param options - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
      * Not yet documented.
      *
@@ -2216,10 +2216,10 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param options - Not yet documented.
      */
-    publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    publish(name: string, data: any, options?: PublishOptions): Promise<void>;
     /**
      * Not yet documented.
      */
@@ -2381,10 +2381,10 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(name: string, messages: any, callback?: errorCallback): void;
+    publish(name: string, data: any, callback?: errorCallback): void;
     /**
      * Publish several messages on this channel. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      *
@@ -2403,11 +2403,11 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation. When publish is called, it won’t attempt to implicitly attach to the channel.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param options - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(name: string, messages: any, options?: PublishOptions, callback?: errorCallback): void;
+    publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
     /**
      * Not yet documented.
      *
@@ -2480,10 +2480,10 @@ declare namespace Types {
      * Publish a single message on this channel based on a given event name and payload. When publish is called, it won’t attempt to implicitly attach to the channel.
      *
      * @param name - Not yet documented.
-     * @param messages - Not yet documented.
+     * @param data - Not yet documented.
      * @param options - Not yet documented.
      */
-    publish(name: string, messages: any, options?: PublishOptions): Promise<void>;
+    publish(name: string, data: any, options?: PublishOptions): Promise<void>;
     /**
      * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      *
