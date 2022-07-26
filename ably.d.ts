@@ -2127,12 +2127,6 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
-     * Gets a paginated set of historical messages for this channel. If the channel is configured to persist messages to disk, then message history will typically be available for 24 – 72 hours. If not, messages are only retained in memory by the Ably service for two minutes.
-     *
-     * @param callback - Not yet documented.
-     */
-    history(callback?: paginatedResultCallback<Message>): void;
-    /**
      * Publish a single message on this channel based on a given event name and payload. A callback may optionally be passed in to this call to be notified of success or failure of the operation.
      *
      * @param name - Not yet documented.
