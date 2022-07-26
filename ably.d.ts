@@ -2776,9 +2776,10 @@ declare namespace Types {
      *
      * You will rarely need to call this yourself, since the client library will handle it for you if you specify cipher params when initializing a channel or when setting channel options with channel.setOptions().
      *
+     * @param keyLength - The length of the key in bits. If not specified, then this method will use a key length of 256 bits.
      * @param callback - Not yet documented.
      */
-    generateRandomKey(callback?: Types.StandardCallback<CipherKey>): void;
+    generateRandomKey(keyLength?: number, callback?: Types.StandardCallback<CipherKey>): void;
     /**
      * This call obtains a randomly-generated binary key of the specified key length.
      *
