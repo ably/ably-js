@@ -1952,16 +1952,6 @@ declare namespace Types {
      */
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
-     * Get the current presence member set for this channel. Typically, this method returns the member set immediately as the member set is retained in memory by the client. However, by default this method will wait until the presence member set is synchronized, so if the synchronization is not yet complete following a channel being attached, this method will wait until the presence member set is synchronized.
-     *
-     * When a channel is `attached`, the Ably service immediately synchronizes the presence member set with the client. Typically this process completes in milliseconds, however when the presence member set is very large, bandwidth constraints may slow this synchronization process down.
-     *
-     * When a channel is `initialized` (i.e. no attempt to attach has yet been made for this channel), then calling `get` will implicitly attach the channel.
-     *
-     * @param callback - Not yet documented.
-     */
-    get(callback?: realtimePresenceGetCallback): void;
-    /**
      * Gets a paginated set of historical presence message events for this channel. If the channel is configured to persist messages to disk, then the presence message event history will typically be available for 24 – 72 hours. If not, presence message events are only retained in memory by the Ably service for two minutes.
      *
      * @param params - Not yet documented.
