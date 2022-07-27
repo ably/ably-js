@@ -2778,7 +2778,7 @@ declare namespace Types {
      *
      * @param callback - Not yet documented.
      */
-    generateRandomKey(callback: Types.StandardCallback<CipherKey>): void;
+    generateRandomKey(callback?: Types.StandardCallback<CipherKey>): void;
     /**
      * This call obtains a randomly-generated binary key of the specified key length.
      *
