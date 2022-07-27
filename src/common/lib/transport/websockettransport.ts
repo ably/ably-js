@@ -39,12 +39,27 @@ class WebSocketTransport extends Transport {
     callback: TryConnectCallback
   ) {
     const transport = new WebSocketTransport(connectionManager, auth, params);
+
+    let transportAttemptTimer: NodeJS.Timeout | number;
     const errorCb = function (this: { event: string }, err: ErrorInfo) {
+      clearTimeout(transportAttemptTimer);
       callback({ event: this.event, error: err });
     };
+
+    const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
+    transportAttemptTimer = setTimeout(() => {
+      transport.off(['wsopen', 'disconnected', 'failed']);
+      transport.dispose();
+      errorCb.call(
+        { event: 'disconnected' },
+        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
+      );
+    }, realtimeRequestTimeout);
+
     transport.on(['failed', 'disconnected'], errorCb);
     transport.on('wsopen', function () {
       Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
+      clearTimeout(transportAttemptTimer);
       transport.off(['failed', 'disconnected'], errorCb);
       callback(null, transport);
     });
