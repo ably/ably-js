@@ -1420,7 +1420,14 @@ declare namespace Types {
      * @param event - Not yet documented.
      * @param callback - Not yet documented.
      */
-    on(event: EventType | EventType[], callback: CallbackType): void;
+    on(event: EventType, callback: CallbackType): void;
+    /**
+     * Not yet documented.
+     *
+     * @param events - Not yet documented.
+     * @param callback - Not yet documented.
+     */
+    on(events: EventType[], callback: CallbackType): void;
     /**
      * Not yet documented.
      *
