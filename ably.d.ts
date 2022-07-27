@@ -2256,7 +2256,26 @@ declare namespace Types {
      * @param event - Not yet documented.
      * @param listener - Not yet documented.
      */
-    unsubscribe(event?: string | Array<string>, listener?: messageCallback<Message>): void;
+    unsubscribe(event: string, listener: messageCallback<Message>): void;
+    /**
+     * Not yet documented.
+     *
+     * @param events - Not yet documented.
+     * @param listener - Not yet documented.
+     */
+    unsubscribe(events: Array<string>, listener: messageCallback<Message>): void;
+    /**
+     * Not yet documented.
+     *
+     * @param event - Not yet documented.
+     */
+    unsubscribe(event: string): void;
+    /**
+     * Not yet documented.
+     *
+     * @param events - Not yet documented.
+     */
+    unsubscribe(events: Array<string>): void;
     /**
      * Not yet documented.
      *
@@ -2269,7 +2288,11 @@ declare namespace Types {
      *
      * @param listener - Not yet documented.
      */
-    unsubscribe(listener?: messageCallback<Message>): void;
+    unsubscribe(listener: messageCallback<Message>): void;
+    /**
+     * Not yet documented.
+     */
+    unsubscribe(): void;
   }
 
   /**
