@@ -401,6 +401,38 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         }
         closeAndFinish(done, realtime);
       });
+
+      /*
+       * Check behaviour when going through a proxy which doesn't send any xhr streaming
+       * responses until the stream closes (simulated by a transportparam interpreted by
+       * realtime)
+       */
+      it('connection behaviour with a proxy through which streaming is broken', function (done) {
+        const realtime = helper.AblyRealtime({
+          transportParams: {
+            simulateNoStreamingProxy: true,
+            maxStreamDuration: 7500,
+          },
+          realtimeRequestTimeout: 5000,
+          transports: ['xhr_polling', 'xhr_streaming'],
+        });
+        realtime.connection.once('connected', function () {
+          const connectionEvents = [];
+          realtime.connection.on(function () {
+            connectionEvents.push(this.event);
+          });
+          // After 10s, we should have remained connected, and still be on xhr_polling;
+          // xhr_streaming should have failed to connect after 5s, and in particular
+          // should not have completed the upgrade after 7.5s.
+          setTimeout(function () {
+            expect(realtime.connection.state).to.equal('connected');
+            const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+            expect(transport.shortName).to.equal('xhr_polling');
+            expect(connectionEvents.length).to.equal(0);
+            closeAndFinish(done, realtime);
+          }, 10000);
+        });
+      });
     });
   }
 });

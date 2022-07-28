@@ -9,7 +9,6 @@ import Auth from 'common/lib/client/auth';
 import HttpMethods from 'common/constants/HttpMethods';
 import { RequestParams } from 'common/types/http';
 import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
-import { TryConnectCallback } from 'common/lib/transport/transport';
 import XHRStates from 'common/constants/XHRStates';
 
 // Workaround for salesforce lightning locker compatibility
@@ -68,29 +67,6 @@ class JSONPTransport extends CometTransport {
 
   static isAvailable() {
     return Platform.Config.jsonpSupported && Platform.Config.allowComet;
-  }
-
-  /* connectivity check; since this has a hard-coded callback id,
-   * we just make sure that we handle concurrent requests (but the
-   * connectionmanager should ensure this doesn't happen anyway */
-
-  static tryConnect(
-    connectionManager: ConnectionManager,
-    auth: Auth,
-    params: TransportParams,
-    callback: TryConnectCallback
-  ) {
-    const transport = new JSONPTransport(connectionManager, auth, params);
-    const errorCb = function (this: { event: string }, err: ErrorInfo) {
-      callback({ event: this.event, error: err });
-    };
-    transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('preconnect', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'JSONPTransport.tryConnect()', 'viable transport ' + transport);
-      transport.off(['failed', 'disconnected'], errorCb);
-      callback(null, transport);
-    });
-    transport.connect();
   }
 
   toString() {

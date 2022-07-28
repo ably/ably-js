@@ -13,7 +13,7 @@ import Auth from 'common/lib/client/auth';
 import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import WebSocketTransport from './websockettransport';
-import Transport from './transport';
+import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
@@ -401,7 +401,7 @@ class ConnectionManager extends EventEmitter {
    * transport management
    *********************/
 
-  static supportedTransports: Record<string, typeof Transport> = {};
+  static supportedTransports: Record<string, TransportCtor> = {};
 
   static initTransports() {
     WebSocketTransport(ConnectionManager);
@@ -484,7 +484,9 @@ class ConnectionManager extends EventEmitter {
    */
   tryATransport(transportParams: TransportParams, candidate: string, callback: Function): void {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
-    ConnectionManager.supportedTransports[candidate].tryConnect?.(
+
+    Transport.tryConnect(
+      ConnectionManager.supportedTransports[candidate],
       this,
       this.realtime.auth,
       transportParams,
