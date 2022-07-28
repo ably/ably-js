@@ -14,6 +14,13 @@ export type TryConnectCallback = (
   transport?: Transport
 ) => void;
 
+export type TransportCtor = new (
+  connectionManager: ConnectionManager,
+  auth: Auth,
+  params: TransportParams,
+  forceJsonProtocol?: boolean
+) => Transport;
+
 const actions = ProtocolMessage.Action;
 const closeMessage = ProtocolMessage.fromValues({ action: actions.CLOSE });
 const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNECT });
@@ -279,12 +286,42 @@ abstract class Transport extends EventEmitter {
     }
   }
 
-  static tryConnect?: (
+  static tryConnect(
+    transportCtor: TransportCtor,
     connectionManager: ConnectionManager,
     auth: Auth,
     transportParams: TransportParams,
     callback: TryConnectCallback
-  ) => void;
+  ): void {
+    const transport = new transportCtor(connectionManager, auth, transportParams);
+
+    let transportAttemptTimer: NodeJS.Timeout | number;
+
+    const errorCb = function (this: { event: string }, err: ErrorInfo) {
+      clearTimeout(transportAttemptTimer);
+      callback({ event: this.event, error: err });
+    };
+
+    const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
+    transportAttemptTimer = setTimeout(() => {
+      transport.off(['preconnect', 'disconnected', 'failed']);
+      transport.dispose();
+      errorCb.call(
+        { event: 'disconnected' },
+        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
+      );
+    }, realtimeRequestTimeout);
+
+    transport.on(['failed', 'disconnected'], errorCb);
+    transport.on('preconnect', function () {
+      Logger.logAction(Logger.LOG_MINOR, 'Transport.tryConnect()', 'viable transport ' + transport);
+      clearTimeout(transportAttemptTimer);
+      transport.off(['failed', 'disconnected'], errorCb);
+      callback(null, transport);
+    });
+    transport.connect();
+  }
+
   onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
 }
 
