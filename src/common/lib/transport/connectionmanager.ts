@@ -1264,15 +1264,17 @@ class ConnectionManager extends EventEmitter {
     }
     if (connectionSerial !== undefined) {
       if (connectionSerial <= (this.connectionSerial as number) && !force) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.setConnectionSerial()',
-          'received message with connectionSerial ' +
-            connectionSerial +
-            ', but current connectionSerial is ' +
-            this.connectionSerial +
-            '; assuming message is a duplicate and discarding it'
-        );
+        if (fromChannelMessage) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.setConnectionSerial()',
+            'received message with connectionSerial ' +
+              connectionSerial +
+              ', but current connectionSerial is ' +
+              this.connectionSerial +
+              '; assuming message is a duplicate and discarding it'
+          );
+        }
         return true;
       }
       this.realtime.connection.serial = this.connectionSerial = connectionSerial;
