@@ -48,7 +48,7 @@ class WebSocketTransport extends Transport {
 
     const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
     transportAttemptTimer = setTimeout(() => {
-      transport.off(['wsopen', 'disconnected', 'failed']);
+      transport.off(['preconnect', 'disconnected', 'failed']);
       transport.dispose();
       errorCb.call(
         { event: 'disconnected' },
@@ -57,7 +57,7 @@ class WebSocketTransport extends Transport {
     }, realtimeRequestTimeout);
 
     transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('wsopen', function () {
+    transport.on('preconnect', function () {
       Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
       clearTimeout(transportAttemptTimer);
       transport.off(['failed', 'disconnected'], errorCb);
@@ -169,7 +169,7 @@ class WebSocketTransport extends Transport {
 
   onWsOpen() {
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
-    this.emit('wsopen');
+    this.emit('preconnect');
   }
 
   onWsClose(ev: number | CloseEvent) {
