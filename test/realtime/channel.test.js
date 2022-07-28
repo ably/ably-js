@@ -1352,7 +1352,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       /* Use a fixed transport as attaches are resent when the transport changes */
       var realtime = helper.AblyRealtime({
           transports: [helper.bestTransport],
-          realtimeRequestTimeout: 100,
+          realtimeRequestTimeout: 2000,
           channelRetryTimeout: 100,
         }),
         channelName = 'channel_attach_timeout',
@@ -1423,7 +1423,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             channel.sendMessage = function (msg) {
               expect(false, 'Channel tried to send a message ' + JSON.stringify(msg)).to.be.ok;
             };
-            realtime.options.timeouts.realtimeRequestTimeout = 100;
+            realtime.options.timeouts.realtimeRequestTimeout = 2000;
 
             helper.becomeSuspended(realtime, function () {
               /* nextTick as connection event is emitted before channel state is changed */
