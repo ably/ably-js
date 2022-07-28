@@ -1214,7 +1214,7 @@ class ConnectionManager extends EventEmitter {
     this.realtime.connection.id = this.connectionId = connectionId;
     this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
     const forceResetMessageSerial = connIdChanged || !prevConnId;
-    this.setConnectionSerial(connectionPosition, forceResetMessageSerial);
+    this.setConnectionSerial(connectionPosition, forceResetMessageSerial, false);
   }
 
   clearConnection(): void {
@@ -1228,7 +1228,7 @@ class ConnectionManager extends EventEmitter {
   /* force: set the connectionSerial even if it's less than the current
    * connectionSerial. Used for new connections.
    * Returns true iff the message was rejected as a duplicate. */
-  setConnectionSerial(connectionPosition: any, force?: boolean): void | true {
+  setConnectionSerial(connectionPosition: any, force?: boolean, fromChannelMessage?: boolean): void | true {
     const timeSerial = connectionPosition.timeSerial,
       connectionSerial = connectionPosition.connectionSerial;
     Logger.logAction(
@@ -1245,15 +1245,17 @@ class ConnectionManager extends EventEmitter {
     );
     if (timeSerial !== undefined) {
       if (timeSerial <= (this.timeSerial as number) && !force) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.setConnectionSerial()',
-          'received message with timeSerial ' +
-            timeSerial +
-            ', but current timeSerial is ' +
-            this.timeSerial +
-            '; assuming message is a duplicate and discarding it'
-        );
+        if (fromChannelMessage) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.setConnectionSerial()',
+            'received message with timeSerial ' +
+              timeSerial +
+              ', but current timeSerial is ' +
+              this.timeSerial +
+              '; assuming message is a duplicate and discarding it'
+          );
+        }
         return true;
       }
       this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
@@ -2165,7 +2167,7 @@ class ConnectionManager extends EventEmitter {
      * idle), message can validly arrive on it even though it isn't active */
     if (onActiveTransport || onUpgradeTransport) {
       if (notControlMsg) {
-        const suppressed = this.setConnectionSerial(message);
+        const suppressed = this.setConnectionSerial(message, false, true);
         if (suppressed) {
           return;
         }
