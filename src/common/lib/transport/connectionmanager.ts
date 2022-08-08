@@ -1320,7 +1320,6 @@ class ConnectionManager extends EventEmitter {
       );
       this.clearConnection();
       this.states.connecting.failState = 'suspended';
-      this.states.connecting.queueEvents = false;
     }
   }
 
@@ -1443,7 +1442,6 @@ class ConnectionManager extends EventEmitter {
           'requesting new state: suspended'
         );
         this.states.connecting.failState = 'suspended';
-        this.states.connecting.queueEvents = false;
         this.notifyState({ state: 'suspended' });
       }
     }, this.connectionStateTtl);
@@ -1455,7 +1453,6 @@ class ConnectionManager extends EventEmitter {
 
   cancelSuspendTimer(): void {
     this.states.connecting.failState = 'disconnected';
-    this.states.connecting.queueEvents = true;
     if (this.suspendTimer) {
       clearTimeout(this.suspendTimer as number);
       this.suspendTimer = null;
