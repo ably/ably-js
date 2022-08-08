@@ -76,7 +76,6 @@ class ProtocolMessage {
   presence?: PresenceMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
-  timeSerial?: number;
 
   static Action = actions;
 

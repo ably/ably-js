@@ -90,7 +90,6 @@ export class TransportParams {
   format?: Utils.Format;
   connectionKey?: string;
   connectionSerial?: number;
-  timeSerial?: string;
   stream?: any;
   heartbeats?: boolean;
 
@@ -102,7 +101,6 @@ export class TransportParams {
     this.format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
 
     this.connectionSerial = undefined;
-    this.timeSerial = undefined;
   }
 
   getConnectParams(authParams: Record<string, unknown>): Record<string, string> {
@@ -114,9 +112,7 @@ export class TransportParams {
         break;
       case 'resume':
         params.resume = this.connectionKey as string;
-        if (this.timeSerial !== undefined) {
-          params.timeSerial = this.timeSerial as string;
-        } else if (this.connectionSerial !== undefined) {
+        if (this.connectionSerial !== undefined) {
           params.connectionSerial = this.connectionSerial;
         }
         break;
@@ -124,12 +120,7 @@ export class TransportParams {
         const match = (options.recover as string).split(':');
         if (match) {
           params.recover = match[0];
-          const recoverSerial = match[1];
-          if (isNaN(Number(recoverSerial))) {
-            params.timeSerial = recoverSerial;
-          } else {
-            params.connectionSerial = recoverSerial;
-          }
+          params.connectionSerial = match[1];
         }
         break;
       }
@@ -169,9 +160,6 @@ export class TransportParams {
     if (this.connectionSerial !== undefined) {
       result += ',connectionSerial=' + this.connectionSerial;
     }
-    if (this.timeSerial) {
-      result += ',timeSerial=' + this.timeSerial;
-    }
     if (this.format) {
       result += ',format=' + this.format;
     }
@@ -204,7 +192,6 @@ class ConnectionManager extends EventEmitter {
   connectionDetails?: Record<string, any>;
   connectionId?: string;
   connectionKey?: string;
-  timeSerial?: number;
   connectionSerial?: number;
   connectionStateTtl: number;
   maxIdleInterval: number | null;
@@ -304,7 +291,6 @@ class ConnectionManager extends EventEmitter {
     this.connectionDetails = undefined;
     this.connectionId = undefined;
     this.connectionKey = undefined;
-    this.timeSerial = undefined;
     this.connectionSerial = undefined;
     this.connectionStateTtl = timeouts.connectionStateTtl;
     this.maxIdleInterval = null;
@@ -412,9 +398,7 @@ class ConnectionManager extends EventEmitter {
 
   createTransportParams(host: string | null, mode: string): TransportParams {
     const params = new TransportParams(this.options, host, mode, this.connectionKey);
-    if (this.timeSerial) {
-      params.timeSerial = String(this.timeSerial);
-    } else if (this.connectionSerial !== undefined) {
+    if (this.connectionSerial !== undefined) {
       params.connectionSerial = this.connectionSerial;
     }
     return params;
@@ -737,9 +721,9 @@ class ConnectionManager extends EventEmitter {
           Logger.LOG_ERROR,
           'ConnectionManager.scheduleTransportActivation()',
           'Upgrade resulted in new connectionId; resetting library connection position from ' +
-            (this.timeSerial || this.connectionSerial) +
+            this.connectionSerial +
             ' to ' +
-            ((syncPosition as ConnectionManager).timeSerial || (syncPosition as ConnectionManager).connectionSerial) +
+            (syncPosition as ConnectionManager).connectionSerial +
             '; upgrade error was ' +
             error
         );
@@ -832,7 +816,7 @@ class ConnectionManager extends EventEmitter {
    * @param transport the transport instance
    * @param connectionId the id of the new active connection
    * @param connectionDetails the details of the new active connection
-   * @param connectionPosition the position at the point activation; either {connectionSerial: <serial>} or {timeSerial: <serial>}
+   * @param connectionPosition the position at the point activation, {connectionSerial: <serial>}
    */
   activateTransport(
     error: ErrorInfo,
@@ -859,7 +843,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.activateTransport()',
-        'serial =  ' + (connectionPosition.timeSerial || connectionPosition.connectionSerial)
+        'serial =  ' + connectionPosition.connectionSerial
       );
     }
 
@@ -1146,9 +1130,7 @@ class ConnectionManager extends EventEmitter {
       connectionKey: this.connectionKey,
     });
 
-    if (requestedSyncPosition.timeSerial) {
-      syncMessage.timeSerial = requestedSyncPosition.timeSerial;
-    } else if (requestedSyncPosition.connectionSerial !== undefined) {
+    if (requestedSyncPosition.connectionSerial !== undefined) {
       syncMessage.connectionSerial = requestedSyncPosition.connectionSerial;
     }
     transport.send(syncMessage);
@@ -1229,39 +1211,17 @@ class ConnectionManager extends EventEmitter {
    * connectionSerial. Used for new connections.
    * Returns true iff the message was rejected as a duplicate. */
   setConnectionSerial(connectionPosition: any, force?: boolean, fromChannelMessage?: boolean): void | true {
-    const timeSerial = connectionPosition.timeSerial,
-      connectionSerial = connectionPosition.connectionSerial;
+    const connectionSerial = connectionPosition.connectionSerial;
     Logger.logAction(
       Logger.LOG_MICRO,
       'ConnectionManager.setConnectionSerial()',
       'Updating connection serial; serial = ' +
         connectionSerial +
-        '; timeSerial = ' +
-        timeSerial +
         '; force = ' +
         force +
         '; previous = ' +
         this.connectionSerial
     );
-    if (timeSerial !== undefined) {
-      if (timeSerial <= (this.timeSerial as number) && !force) {
-        if (fromChannelMessage) {
-          Logger.logAction(
-            Logger.LOG_ERROR,
-            'ConnectionManager.setConnectionSerial()',
-            'received message with timeSerial ' +
-              timeSerial +
-              ', but current timeSerial is ' +
-              this.timeSerial +
-              '; assuming message is a duplicate and discarding it'
-          );
-        }
-        return true;
-      }
-      this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
-      this.setRecoveryKey();
-      return;
-    }
     if (connectionSerial !== undefined) {
       if (connectionSerial <= (this.connectionSerial as number) && !force) {
         if (fromChannelMessage) {
@@ -1284,13 +1244,11 @@ class ConnectionManager extends EventEmitter {
 
   clearConnectionSerial(): void {
     this.realtime.connection.serial = this.connectionSerial = undefined;
-    this.realtime.connection.timeSerial = this.timeSerial = undefined;
     this.clearRecoveryKey();
   }
 
   setRecoveryKey(): void {
-    this.realtime.connection.recoveryKey =
-      this.connectionKey + ':' + (this.timeSerial || this.connectionSerial) + ':' + this.msgSerial;
+    this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
   }
 
   clearRecoveryKey(): void {
