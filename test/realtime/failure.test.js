@@ -507,7 +507,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     );
 
     it('idle_transport_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 100 }),
+      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
 
       realtime.connection.connectionManager.on('transport.pending', function (transport) {
