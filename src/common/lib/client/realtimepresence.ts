@@ -23,7 +23,7 @@ interface RealtimeHistoryParams {
   direction?: string;
   limit?: number;
   untilAttach?: boolean;
-  from_serial?: number | null;
+  from_serial?: string | null;
 }
 
 const noop = function () {};

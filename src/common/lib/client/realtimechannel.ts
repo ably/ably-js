@@ -21,7 +21,7 @@ interface RealtimeHistoryParams {
   direction?: string;
   limit?: number;
   untilAttach?: boolean;
-  from_serial?: number;
+  from_serial?: string;
 }
 
 const actions = ProtocolMessage.Action;
@@ -60,8 +60,8 @@ class RealtimeChannel extends Channel {
     API.Types.messageCallback<Message>,
     Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
   >;
-  syncChannelSerial?: number | null;
-  properties: { attachSerial: number | null | undefined };
+  syncChannelSerial?: string | null;
+  properties: { attachSerial: string | null | undefined };
   errorReason: ErrorInfo | string | null;
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
@@ -70,7 +70,7 @@ class RealtimeChannel extends Channel {
   _decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined };
   _lastPayload: {
     messageId?: string | null;
-    protocolMessageChannelSerial?: number | null;
+    protocolMessageChannelSerial?: string | null;
     decodeFailureRecoveryInProgress: null | boolean;
   };
   _allChannelChanges: EventEmitter;
