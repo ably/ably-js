@@ -472,7 +472,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 cb(err);
                 return;
               }
-              recoveryKey = connection.recoveryKey;
+              recoveryKey = connection.getRecoveryKey();
               cb();
             });
           },
@@ -629,5 +629,121 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime], err);
       }
     });
+
+    testOnAllTransports(
+      'recover_multiple',
+      function (realtimeOpts) {
+        return function (done) {
+          const MSG_COUNT = 5;
+
+          const txRest = helper.AblyRest();
+          const rxRealtime = helper.AblyRealtime(mixin(realtimeOpts));
+
+          const channelNames = Array(10).fill().map(() => String(Math.random()));
+          const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
+
+          let recoveryKey;
+          let rxRealtimeRecover;
+          let rxRecoverChannels;
+
+          async.series(
+            [
+              function (cb) {
+                async.parallel(rxChannels.map((channel) => function (cb) {
+                  channel.attach(cb);
+                }), cb);
+              },
+              function (cb) {
+                function sendAndAwait(_, cb) {
+                  async.parallel(channelNames.map((name) => function (cb) {
+                    const tx = txRest.channels.get(name);
+                    const rx = rxRealtime.channels.get(name);
+                    const event = String(Math.random());
+                    async.parallel(
+                      [
+                        function (cb) {
+                          tx.publish(event, null, cb);
+                        },
+                        function (cb) {
+                          rx.subscribe(event, function (msg) {
+                            rx.unsubscribe(event);
+                            cb();
+                          });
+                        },
+                      ],
+                      cb
+                    )
+                  }), cb);
+                }
+                // Publish messages on each channel.
+                async.timesSeries(MSG_COUNT, sendAndAwait, cb);
+              },
+              function (cb) {
+                recoveryKey = rxRealtime.connection.getRecoveryKey();
+                helper.becomeSuspended(rxRealtime, cb);
+              },
+              function (cb) {
+                function publishAll(_, cb) {
+                  async.parallel(channelNames.map((name) => function (cb) {
+                    const tx = txRest.channels.get(name);
+                    tx.publish('sentWhileDisconnected', null, cb);
+                  }), cb);
+                }
+                // Publish another MSG_COUNT messages on each channel (which are no
+                // longer received by rxRealtime).
+                async.timesSeries(MSG_COUNT, publishAll, cb);
+              },
+              function (cb) {
+                rxRealtimeRecover = helper.AblyRealtime({ recover: recoveryKey });
+                rxRecoverChannels = channelNames.map((name) => rxRealtimeRecover.channels.get(name));
+                cb();
+              },
+              function (cb) {
+                // Subscribe to the first channels before becoming connected
+                // (so when the transport is activated the channels serials
+                // should be set).
+                async.parallel(rxRecoverChannels.slice(0, 5).map((channel) => function (cb) {
+                  let recoveredCount = 0;
+                  channel.subscribe('sentWhileDisconnected', function(msg) {
+                    recoveredCount++;
+                  });
+                  setTimeout(function () {
+                    try {
+                      expect(recoveredCount).to.equal(MSG_COUNT);
+                      cb();
+                    } catch (err) {
+                      cb(err);
+                    }
+                  }, 2000);
+                }), cb);
+              },
+              function (cb) {
+                // Subscribe to the next 5 channels after becoming connected
+                // (so the recovery key should be used to lookup channel serials
+                // when getting a channel).
+                async.parallel(rxRecoverChannels.slice(5).map((channel) => function (cb) {
+                  let recoveredCount = 0;
+                  channel.subscribe('sentWhileDisconnected', function(msg) {
+                    recoveredCount++;
+                  });
+                  setTimeout(function () {
+                    try {
+                      expect(recoveredCount).to.equal(MSG_COUNT);
+                      cb();
+                    } catch (err) {
+                      cb(err);
+                    }
+                  }, 2000);
+                }), cb);
+              }
+            ],
+            function (err) {
+              closeAndFinish(done, rxRealtime, err);
+            }
+          );
+        };
+      },
+      /* excludeUpgrade: */ true
+    );
   });
 });
