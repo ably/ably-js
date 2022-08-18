@@ -112,9 +112,6 @@ export class TransportParams {
         break;
       case 'resume':
         params.resume = this.connectionKey as string;
-        if (this.connectionSerial !== undefined) {
-          params.connectionSerial = this.connectionSerial;
-        }
         break;
       case 'recover': {
         const match = (options.recover as string).split(':');
