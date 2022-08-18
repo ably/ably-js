@@ -100,6 +100,11 @@ class Channels extends EventEmitter {
         channel.checkPendingState();
       } else if (channel.state === 'suspended') {
         channel.attach();
+      } else if (channel.state === 'attached') {
+        // Reattach on a new connection to request the channelSerial of the
+        // last message received. Note requests state attaching as
+        // channel.attach() doesn't do anything if already attached.
+        channel.requestState('attaching');
       }
     }
   }
