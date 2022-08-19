@@ -56,15 +56,39 @@ class Channels extends EventEmitter {
   realtime: Realtime;
   all: Record<string, RealtimeChannel>;
   inProgress: Record<string, RealtimeChannel>;
+  recoverySerials: { [name: string]: string };
 
   constructor(realtime: Realtime) {
     super();
     this.realtime = realtime;
     this.all = {};
     this.inProgress = {};
+    this.recoverySerials = {};
     realtime.connection.connectionManager.on('transport.active', () => {
       this.onTransportActive();
     });
+  }
+
+  channelSerials(): { [ name: string ]: string } {
+    let serials: { [ name: string ]: string } = {};
+    for (const [name, channel] of Object.entries(this.all)) {
+      if (channel.channelSerial) {
+        serials[name] = channel.channelSerial;
+      }
+    }
+    return serials;
+  }
+
+  setRecoveryChannelSerials(channelSerials: { [ name: string ]: string }) {
+    for (const [name, serial] of Object.entries(channelSerials)) {
+      // If the channel doesn't already exist store the serial for if it
+      // attaches later.
+      if (name in this.all) {
+        this.all[name].channelSerial = serial;
+      } else {
+        this.recoverySerials[name] = serial;
+      }
+    }
   }
 
   onChannelMessage(msg: ProtocolMessage) {
@@ -170,6 +194,10 @@ class Channels extends EventEmitter {
     let channel = this.all[name];
     if (!channel) {
       channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
+      if (name in this.recoverySerials) {
+        channel.channelSerial = this.recoverySerials[name];
+        delete this.recoverySerials[name];
+      }
     } else if (channelOptions) {
       if (channel._shouldReattachToSetOptions(channelOptions)) {
         throw new ErrorInfo(
