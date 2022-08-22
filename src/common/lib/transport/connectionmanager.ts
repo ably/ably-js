@@ -780,33 +780,16 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.scheduleTransportActivation()',
         'Syncing transport; transport = ' + transport
       );
-      this.sync(
-        transport,
-        syncPosition as ConnectionManager,
-        (syncErr: Error, connectionId: string, postSyncPosition: ConnectionManager) => {
-          /* If there's been some problem with syncing (and the connection hasn't
-           * closed or something in the meantime), we have a problem -- we can't
-           * just fall back on the old transport, as we don't know whether
-           * realtime got the sync -- if it did, the old transport is no longer
-           * valid. To be safe, we disconnect both and start again from scratch. */
-          if (syncErr) {
-            if (this.state === this.states.synchronizing) {
-              Logger.logAction(
-                Logger.LOG_ERROR,
-                'ConnectionManager.scheduleTransportActivation()',
-                'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr
-              );
-              this.disconnectAllTransports();
-            }
-            return;
-          }
+      this.sync(transport, () => {
           const finishUpgrade = () => {
             Logger.logAction(
               Logger.LOG_MINOR,
               'ConnectionManager.scheduleTransportActivation()',
               'Activating transport; transport = ' + transport
             );
-            this.activateTransport(error, transport, connectionId, connectionDetails, postSyncPosition);
+            // TODO(AD) why would connection ID change from SYNC?
+            // @ts-ignore
+            this.activateTransport(error, transport, this.connectionId, connectionDetails, { connectionSerial: this.connectionSerial });
             /* Restore pre-sync state. If state has changed in the meantime,
              * don't touch it -- since the websocket transport waits a tick before
              * disposing itself, it's possible for it to have happily synced
@@ -1164,27 +1147,11 @@ class ConnectionManager extends EventEmitter {
    * Called when activating a new transport, to ensure message delivery
    * on the new transport synchronises with the messages already received
    */
-  sync(transport: Transport, requestedSyncPosition: ConnectionManager, callback: Function): void {
-    const timeout = setTimeout(function () {
-      transport.off('sync');
-      callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
-    }, this.options.timeouts.realtimeRequestTimeout);
-
-    /* send sync request */
-    const syncMessage = ProtocolMessage.fromValues({
+  sync(transport: Transport, callback: Function): void {
+    transport.send(ProtocolMessage.fromValues({
       action: actions.SYNC,
-      connectionKey: this.connectionKey,
-    });
-
-    if (requestedSyncPosition.connectionSerial !== undefined) {
-      syncMessage.connectionSerial = requestedSyncPosition.connectionSerial;
-    }
-    transport.send(syncMessage);
-
-    transport.once('sync', function (connectionId: string, syncPosition: ConnectionManager) {
-      clearTimeout(timeout);
-      callback(null, connectionId, syncPosition);
-    });
+    }));
+    callback(null);
   }
 
   setConnection(
