@@ -235,26 +235,6 @@ class Channels extends EventEmitter {
   setInProgress(channel: RealtimeChannel, operation: string, inProgress: boolean) {
     this.inProgress[channel.name] = this.inProgress[channel.name] || {};
     (this.inProgress[channel.name] as any)[operation] = inProgress;
-    if (!inProgress && this.hasNopending()) {
-      this.emit('nopending');
-    }
-  }
-
-  onceNopending(listener: ErrCallback) {
-    if (this.hasNopending()) {
-      listener();
-      return;
-    }
-    this.once('nopending', listener);
-  }
-
-  hasNopending() {
-    return Utils.arrEvery(
-      Utils.valuesArray(this.inProgress, true) as any,
-      function (operations: Record<string, unknown>) {
-        return !Utils.containsValue(operations, true);
-      }
-    );
   }
 }
 
