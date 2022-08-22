@@ -709,7 +709,7 @@ class ConnectionManager extends EventEmitter {
     );
 
     this.realtime.channels.onceNopending((err: ErrorInfo) => {
-      let oldProtocol: Protocol | null;
+      let oldProtocol: Protocol | null = null;
       if (err) {
         Logger.logAction(
           Logger.LOG_ERROR,
@@ -780,61 +780,60 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.scheduleTransportActivation()',
         'Syncing transport; transport = ' + transport
       );
-      this.sync(transport, () => {
-          const finishUpgrade = () => {
-            Logger.logAction(
-              Logger.LOG_MINOR,
-              'ConnectionManager.scheduleTransportActivation()',
-              'Activating transport; transport = ' + transport
-            );
-            // TODO(AD) why would connection ID change from SYNC?
-            // @ts-ignore
-            this.activateTransport(error, transport, this.connectionId, connectionDetails, { connectionSerial: this.connectionSerial });
-            /* Restore pre-sync state. If state has changed in the meantime,
-             * don't touch it -- since the websocket transport waits a tick before
-             * disposing itself, it's possible for it to have happily synced
-             * without err while, unknown to it, the connection has closed in the
-             * meantime and the ws transport is scheduled for death */
-            if (this.state === this.states.synchronizing) {
-              Logger.logAction(
-                Logger.LOG_MICRO,
-                'ConnectionManager.scheduleTransportActivation()',
-                'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport
-              );
-              this.state = this.states.connected;
-            } else {
-              Logger.logAction(
-                Logger.LOG_MINOR,
-                'ConnectionManager.scheduleTransportActivation()',
-                'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged'
-              );
-            }
-            if (this.state.sendEvents) {
-              this.sendQueuedMessages();
-            }
-          };
+      this.sync(transport);
 
-          /* Wait until sync is done and old transport is idle before activating new transport. This
-           * guarantees that messages arrive at realtime in the same order they are sent.
-           *
-           * If a message times out on the old transport, since it's still the active transport the
-           * message will be requeued. deactivateTransport will see the pending transport and notify
-           * the `connecting` state without starting a new connection, so the new transport can take
-           * over once deactivateTransport clears the old protocol's queue.
-           *
-           * If there is no old protocol, that meant that we weren't in the connected state at the
-           * beginning of the sync - likely the base transport died just before the sync. So can just
-           * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
-           * fine, activatetransport will deal with that. */
-          if (oldProtocol) {
-            /* Most of the time this will be already true: the new-transport sync will have given
-             * enough time for in-flight messages on the old transport to complete. */
-            oldProtocol.onceIdle(finishUpgrade);
-          } else {
-            finishUpgrade();
-          }
+      const finishUpgrade = () => {
+        Logger.logAction(
+          Logger.LOG_MINOR,
+          'ConnectionManager.scheduleTransportActivation()',
+          'Activating transport; transport = ' + transport
+        );
+        // TODO(AD) why would connection ID change from SYNC?
+        // @ts-ignore
+        this.activateTransport(error, transport, this.connectionId, connectionDetails, { connectionSerial: this.connectionSerial });
+        /* Restore pre-sync state. If state has changed in the meantime,
+         * don't touch it -- since the websocket transport waits a tick before
+         * disposing itself, it's possible for it to have happily synced
+         * without err while, unknown to it, the connection has closed in the
+         * meantime and the ws transport is scheduled for death */
+        if (this.state === this.states.synchronizing) {
+          Logger.logAction(
+            Logger.LOG_MICRO,
+            'ConnectionManager.scheduleTransportActivation()',
+            'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport
+          );
+          this.state = this.states.connected;
+        } else {
+          Logger.logAction(
+            Logger.LOG_MINOR,
+            'ConnectionManager.scheduleTransportActivation()',
+            'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged'
+          );
         }
-      );
+        if (this.state.sendEvents) {
+          this.sendQueuedMessages();
+        }
+      };
+
+      /* Wait until sync is done and old transport is idle before activating new transport. This
+       * guarantees that messages arrive at realtime in the same order they are sent.
+       *
+       * If a message times out on the old transport, since it's still the active transport the
+       * message will be requeued. deactivateTransport will see the pending transport and notify
+       * the `connecting` state without starting a new connection, so the new transport can take
+       * over once deactivateTransport clears the old protocol's queue.
+       *
+       * If there is no old protocol, that meant that we weren't in the connected state at the
+       * beginning of the sync - likely the base transport died just before the sync. So can just
+       * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
+       * fine, activatetransport will deal with that. */
+      if (oldProtocol) {
+        /* Most of the time this will be already true: the new-transport sync will have given
+         * enough time for in-flight messages on the old transport to complete. */
+        oldProtocol.onceIdle(finishUpgrade);
+      } else {
+        finishUpgrade();
+      }
     });
   }
 
@@ -1147,11 +1146,10 @@ class ConnectionManager extends EventEmitter {
    * Called when activating a new transport, to ensure message delivery
    * on the new transport synchronises with the messages already received
    */
-  sync(transport: Transport, callback: Function): void {
+  sync(transport: Transport): void {
     transport.send(ProtocolMessage.fromValues({
       action: actions.SYNC,
     }));
-    callback(null);
   }
 
   setConnection(
