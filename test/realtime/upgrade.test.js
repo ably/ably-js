@@ -533,93 +533,98 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
        * Check that a message that fails to publish on a comet transport can be
        * seamlessly transferred to the websocket transport and published there
        */
-      it('message_timeout_stalling_upgrade', function (done) {
-        var realtime = helper.AblyRealtime({ transports: helper.availableTransports, httpRequestTimeout: 3000 }),
-          channel = realtime.channels.get('timeout1'),
-          connectionManager = realtime.connection.connectionManager;
+      // TODO(AD) if this is no longer relevant need another way to test
+      // not stalling upgrade
+      // it('message_timeout_stalling_upgrade', function (done) {
+      //   var realtime = helper.AblyRealtime({ transports: helper.availableTransports, httpRequestTimeout: 3000 }),
+      //     channel = realtime.channels.get('timeout1'),
+      //     connectionManager = realtime.connection.connectionManager;
 
-        realtime.connection.once('connected', function () {
-          channel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            /* Sabotage comet sending */
-            var transport = connectionManager.activeProtocol.getTransport();
-            try {
-              expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
-            } catch (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            transport.sendUri = helper.unroutableAddress;
+      //   realtime.connection.once('connected', function () {
+      //     channel.attach(function (err) {
+      //       if (err) {
+      //         closeAndFinish(done, realtime, err);
+      //         return;
+      //       }
+      //       /* Sabotage comet sending */
+      //       var transport = connectionManager.activeProtocol.getTransport();
+      //       try {
+      //         // TODO(AD) why does this expect to still be comet? as used
+      //         // to wait for attached and sync resp?
+      //         expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
+      //       } catch (err) {
+      //         closeAndFinish(done, realtime, err);
+      //         return;
+      //       }
+      //       transport.sendUri = helper.unroutableAddress;
 
-            async.parallel(
-              [
-                function (cb) {
-                  channel.subscribe('event', function () {
-                    cb();
-                  });
-                },
-                function (cb) {
-                  channel.publish('event', null, function (err) {
-                    try {
-                      expect(!err, 'Successfully published message').to.be.ok;
-                    } catch (err) {
-                      cb(err);
-                      return;
-                    }
-                    cb();
-                  });
-                },
-              ],
-              function (err) {
-                closeAndFinish(done, realtime, err);
-              }
-            );
-          });
-        });
-      });
+      //       async.parallel(
+      //         [
+      //           function (cb) {
+      //             channel.subscribe('event', function () {
+      //               cb();
+      //             });
+      //           },
+      //           function (cb) {
+      //             channel.publish('event', null, function (err) {
+      //               try {
+      //                 expect(!err, 'Successfully published message').to.be.ok;
+      //               } catch (err) {
+      //                 cb(err);
+      //                 return;
+      //               }
+      //               cb();
+      //             });
+      //           },
+      //         ],
+      //         function (err) {
+      //           closeAndFinish(done, realtime, err);
+      //         }
+      //       );
+      //     });
+      //   });
+      // });
 
       /*
        * Check that a lack of response to an upgrade sync doesn't stall things forever
        */
-      it('unresponsive_upgrade_sync', function (done) {
-        var realtime = helper.AblyRealtime({ transports: helper.availableTransports, realtimeRequestTimeout: 2000 }),
-          connection = realtime.connection;
+      // TODO(AD) remove - no longer wait for response
+      // it('unresponsive_upgrade_sync', function (done) {
+      //   var realtime = helper.AblyRealtime({ transports: helper.availableTransports, realtimeRequestTimeout: 2000 }),
+      //     connection = realtime.connection;
 
-        connection.connectionManager.on('transport.pending', function (transport) {
-          if (!helper.isWebsocket(transport)) return;
+      //   connection.connectionManager.on('transport.pending', function (transport) {
+      //     if (!helper.isWebsocket(transport)) return;
 
-          var originalOnProtocolMessage = transport.onProtocolMessage;
-          /* Stub out sync message one time */
-          transport.onProtocolMessage = function (message) {
-            if (message.action === 16) {
-              connection.connectionManager.off('transport.pending');
-              transport.onProtocolMessage = originalOnProtocolMessage;
-            } else {
-              originalOnProtocolMessage.call(transport, message);
-            }
-          };
-        });
+      //     var originalOnProtocolMessage = transport.onProtocolMessage;
+      //     /* Stub out sync message one time */
+      //     transport.onProtocolMessage = function (message) {
+      //       if (message.action === 16) {
+      //         connection.connectionManager.off('transport.pending');
+      //         transport.onProtocolMessage = originalOnProtocolMessage;
+      //       } else {
+      //         originalOnProtocolMessage.call(transport, message);
+      //       }
+      //     };
+      //   });
 
-        connection.once('connected', function () {
-          connection.once('disconnected', function () {
-            connection.once('connected', function () {
-              if (helper.isWebsocket(connection.connectionManager.activeProtocol.getTransport())) {
-                /* Must be running multiple tests at once and another one set the transport preference */
-                closeAndFinish(done, realtime);
-              } else {
-                connection.connectionManager.on('transport.active', function (transport) {
-                  if (helper.isWebsocket(transport)) {
-                    closeAndFinish(done, realtime);
-                  }
-                });
-              }
-            });
-          });
-        });
-      });
+      //   connection.once('connected', function () {
+      //     connection.once('disconnected', function () {
+      //       connection.once('connected', function () {
+      //         if (helper.isWebsocket(connection.connectionManager.activeProtocol.getTransport())) {
+      //           /* Must be running multiple tests at once and another one set the transport preference */
+      //           closeAndFinish(done, realtime);
+      //         } else {
+      //           connection.connectionManager.on('transport.active', function (transport) {
+      //             if (helper.isWebsocket(transport)) {
+      //               closeAndFinish(done, realtime);
+      //             }
+      //           });
+      //         }
+      //       });
+      //     });
+      //   });
+      // });
 
       /*
        * Check that after a successful upgrade, the transport pref is persisted,
