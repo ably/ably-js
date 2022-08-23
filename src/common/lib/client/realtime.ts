@@ -133,6 +133,7 @@ class Channels extends EventEmitter {
     }
   }
 
+  // TODO(AD) is this still needed?
   reattach(reason: ErrorInfo) {
     for (const channelId in this.all) {
       const channel = this.all[channelId];
