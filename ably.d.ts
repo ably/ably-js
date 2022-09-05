@@ -1452,7 +1452,11 @@ declare namespace Types {
      *
      * @param event - Not yet documented.
      */
-    once(event?: EventType): Promise<ResultType>;
+    once(event: EventType): Promise<ResultType>;
+    /**
+     * Not yet documented.
+     */
+    once(): Promise<ResultType>;
     /**
      * Not yet documented.
      *
