@@ -1314,6 +1314,10 @@ declare namespace Types {
      */
     failed: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The number of requests that were refused, typically as a result of permissions or a limit being exceeded.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Requests refused typically as a result of permissions or a limit being exceeded.
      * END LEGACY DOCSTRING
