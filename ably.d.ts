@@ -4342,7 +4342,9 @@ declare namespace Types {
      */
     name?: string;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Filters messages by a specific `extras.ref.timeserial` value.
+     * END CANONICAL DOCSTRING
      */
     refTimeserial?: string;
     /**
