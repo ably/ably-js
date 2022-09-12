@@ -1346,6 +1346,10 @@ declare namespace Types {
    */
   interface StatsResourceCount {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The average number of resources of this type used for this period.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Average resources of this type used for this period.
      * END LEGACY DOCSTRING
