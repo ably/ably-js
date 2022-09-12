@@ -1336,6 +1336,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the aggregate data for usage of a resource in a specific scope.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * Aggregate data for usage of a resource in a specific scope.
    * END LEGACY DOCSTRING
