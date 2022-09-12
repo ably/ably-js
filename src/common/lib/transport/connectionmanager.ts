@@ -565,7 +565,8 @@ class ConnectionManager extends EventEmitter {
           /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
           if (
             transport.shortName !== optimalTransport &&
-            Utils.arrIn(this.getUpgradePossibilities(), optimalTransport)
+            Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
+            this.activeProtocol
           ) {
             setTimeout(() => {
               this.scheduleTransportActivation(
@@ -669,7 +670,7 @@ class ConnectionManager extends EventEmitter {
       'Scheduling transport upgrade; transport = ' + transport
     );
 
-    this.realtime.channels.onceNopending((err: ErrorInfo) => {
+    const onReadyToUpgrade = (err?: ErrorInfo) => {
       let oldProtocol: Protocol | null;
       if (err) {
         Logger.logAction(
@@ -809,7 +810,15 @@ class ConnectionManager extends EventEmitter {
           finishUpgrade();
         }
       });
-    });
+    };
+
+    // No point waiting for pending attaches if there's no active transport, just sync and
+    // activate the new one immediately, attaches will be retried on the new one
+    if (currentTransport) {
+      this.realtime.channels.onceNopending(onReadyToUpgrade);
+    } else {
+      onReadyToUpgrade();
+    }
   }
 
   /**
@@ -1267,7 +1276,6 @@ class ConnectionManager extends EventEmitter {
       );
       this.clearConnection();
       this.states.connecting.failState = 'suspended';
-      this.states.connecting.queueEvents = false;
     }
   }
 
@@ -1390,7 +1398,6 @@ class ConnectionManager extends EventEmitter {
           'requesting new state: suspended'
         );
         this.states.connecting.failState = 'suspended';
-        this.states.connecting.queueEvents = false;
         this.notifyState({ state: 'suspended' });
       }
     }, this.connectionStateTtl);
@@ -1402,7 +1409,6 @@ class ConnectionManager extends EventEmitter {
 
   cancelSuspendTimer(): void {
     this.states.connecting.failState = 'disconnected';
-    this.states.connecting.queueEvents = true;
     if (this.suspendTimer) {
       clearTimeout(this.suspendTimer as number);
       this.suspendTimer = null;

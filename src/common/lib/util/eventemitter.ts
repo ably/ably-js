@@ -243,11 +243,8 @@ class EventEmitter {
     const argCount = args.length;
     if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Config.Promise) {
       const event = args[0];
-      if (typeof event !== 'string') {
-        throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
-      }
       return new Platform.Config.Promise((resolve) => {
-        this.once(event, resolve);
+        this.once(event as string | string[] | null, resolve);
       });
     }
 

@@ -560,7 +560,7 @@ class PresenceMap extends EventEmitter {
   constructor(presence: RealtimePresence) {
     super();
     this.presence = presence;
-    this.map = {};
+    this.map = Object.create(null);
     this.syncInProgress = false;
     this.residualMembers = null;
   }
