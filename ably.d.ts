@@ -510,6 +510,10 @@ declare namespace Types {
     fallbackHosts?: string[];
 
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * DEPRECATED: this property is deprecated and will be removed in a future version. Enables default fallback hosts to be used.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * If true, the library will use default fallbackHosts even when overriding environment or restHost/realtimeHost.
      * END LEGACY DOCSTRING
