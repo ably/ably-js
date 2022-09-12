@@ -1304,6 +1304,10 @@ declare namespace Types {
    */
   interface StatsRequestCount {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The number of requests that failed.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Requests failed.
      * END LEGACY DOCSTRING
