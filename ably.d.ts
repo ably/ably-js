@@ -5072,6 +5072,10 @@ declare namespace Types {
      */
     intervalId: string;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTraffic`]{@link Stats.MessageTraffic} object containing the aggregate count of outbound message stats.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of all outbound messages.
      * END LEGACY DOCSTRING
