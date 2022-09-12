@@ -1416,6 +1416,10 @@ declare namespace Types {
      */
     all: StatsMessageTypes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Count of messages transferred over a realtime transport such as WebSockets.
      * END LEGACY DOCSTRING
