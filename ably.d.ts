@@ -5024,6 +5024,10 @@ declare namespace Types {
    */
   class Stats {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing the aggregate count of all message stats.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Aggregates inbound and outbound messages.
      * END LEGACY DOCSTRING
