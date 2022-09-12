@@ -1400,6 +1400,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains a breakdown of summary stats data for traffic over various transport types.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A breakdown of summary stats data for traffic over various transport types.
    * END LEGACY DOCSTRING
