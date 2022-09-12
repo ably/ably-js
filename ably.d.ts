@@ -1278,6 +1278,10 @@ declare namespace Types {
      */
     messages: StatsMessageCount;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageCount`]{@link Stats.MessageCount} object containing the count and byte value of presence messages.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Count of presence messages.
      * END LEGACY DOCSTRING
