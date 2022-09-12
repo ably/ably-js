@@ -1294,6 +1294,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the aggregate counts for requests made.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * Aggregate counts for requests made.
    * END LEGACY DOCSTRING
