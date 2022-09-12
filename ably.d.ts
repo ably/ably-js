@@ -3903,7 +3903,9 @@ declare namespace Types {
    */
   class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * The channel name.
+     * END CANONICAL DOCSTRING
      */
     readonly name: string;
     /**
