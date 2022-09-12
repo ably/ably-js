@@ -5046,6 +5046,10 @@ declare namespace Types {
      */
     channels: StatsResourceCount;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.ConnectionTypes`]{@link Stats.ConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of connection stats data for different (TLS vs non-TLS) connection types.
      * END LEGACY DOCSTRING
