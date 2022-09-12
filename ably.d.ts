@@ -1267,7 +1267,7 @@ declare namespace Types {
   interface StatsMessageTypes {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageCount`]{@link Stats.MessageCount} object containing the count and byte value of messages and presence messages.
+     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of messages and presence messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1277,7 +1277,7 @@ declare namespace Types {
     all: StatsMessageCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageCount`]{@link Stats.MessageCount} object containing the count and byte value of messages.
+     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1287,7 +1287,7 @@ declare namespace Types {
     messages: StatsMessageCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageCount`]{@link Stats.MessageCount} object containing the count and byte value of presence messages.
+     * A [`StatsMessageCount`]{@link StatsMessageCount} object containing the count and byte value of presence messages.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1413,7 +1413,7 @@ declare namespace Types {
   interface StatsConnectionTypes {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
+     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1423,7 +1423,7 @@ declare namespace Types {
     all: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
+     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1433,7 +1433,7 @@ declare namespace Types {
     plain: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over TLS connections.
+     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1455,7 +1455,7 @@ declare namespace Types {
   interface StatsMessageTraffic {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for all messages (includes `realtime`, `rest` and `webhook` messages).
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for all messages (includes `realtime`, `rest` and `webhook` messages).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1465,7 +1465,7 @@ declare namespace Types {
     all: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1475,7 +1475,7 @@ declare namespace Types {
     realtime: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for messages transferred over a rest transport such as WebSocket.
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a rest transport such as WebSocket.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -1485,7 +1485,7 @@ declare namespace Types {
     rest: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5399,7 +5399,7 @@ declare namespace Types {
   class Stats {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing the aggregate count of all message stats.
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing the aggregate count of all message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5409,7 +5409,7 @@ declare namespace Types {
     all: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.RequestCount`]{@link Stats.RequestCount} object containing a breakdown of API Requests.
+     * A [`StatsRequestCount`]{@link StatsRequestCount} object containing a breakdown of API Requests.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5419,7 +5419,7 @@ declare namespace Types {
     apiRequests: StatsRequestCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of channels.
+     * A [`StatsResourceCount`]{@link StatsResourceCount} object containing a breakdown of channels.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5429,7 +5429,7 @@ declare namespace Types {
     channels: StatsResourceCount;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.ConnectionTypes`]{@link Stats.ConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
+     * A [`StatsConnectionTypes`]{@link StatsConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5439,7 +5439,7 @@ declare namespace Types {
     connections: StatsConnectionTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTraffic`]{@link Stats.MessageTraffic} object containing the aggregate count of inbound message stats.
+     * A [`StatsMessageTraffic`]{@link StatsMessageTraffic} object containing the aggregate count of inbound message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5459,7 +5459,7 @@ declare namespace Types {
     intervalId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTraffic`]{@link Stats.MessageTraffic} object containing the aggregate count of outbound message stats.
+     * A [`StatsMessageTraffic`]{@link StatsMessageTraffic} object containing the aggregate count of outbound message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5469,7 +5469,7 @@ declare namespace Types {
     outbound: StatsMessageTraffic;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing the aggregate count of persisted message stats.
+     * A [`StatsMessageTypes`]{@link StatsMessageTypes} object containing the aggregate count of persisted message stats.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -5479,7 +5479,7 @@ declare namespace Types {
     persisted: StatsMessageTypes;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A [`Stats.RequestCount`]{@link Stats.RequestCount} object containing a breakdown of Ably Token requests.
+     * A [`StatsRequestCount`]{@link StatsRequestCount} object containing a breakdown of Ably Token requests.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
