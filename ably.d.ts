@@ -1340,6 +1340,10 @@ declare namespace Types {
    */
   interface StatsConnectionTypes {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * All connection count (includes both TLS & non-TLS connections).
      * END LEGACY DOCSTRING
