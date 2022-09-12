@@ -1330,6 +1330,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains a breakdown of summary stats data for different (TLS vs non-TLS) connection types.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A breakdown of summary stats data for different (TLS vs non-TLS) connection types.
    * END LEGACY DOCSTRING
