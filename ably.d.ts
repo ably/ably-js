@@ -1436,6 +1436,10 @@ declare namespace Types {
      */
     rest: StatsMessageTypes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Count of messages delivered using WebHooks.
      * END LEGACY DOCSTRING
