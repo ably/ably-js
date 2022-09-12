@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import * as Utils from '../util/utils';
-import Transport, { TryConnectCallback } from './transport';
+import Transport from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 import ProtocolMessage from '../types/protocolmessage';
@@ -30,25 +30,6 @@ class WebSocketTransport extends Transport {
 
   static isAvailable() {
     return !!Platform.Config.WebSocket;
-  }
-
-  static tryConnect(
-    connectionManager: ConnectionManager,
-    auth: Auth,
-    params: TransportParams,
-    callback: TryConnectCallback
-  ) {
-    const transport = new WebSocketTransport(connectionManager, auth, params);
-    const errorCb = function (this: { event: string }, err: ErrorInfo) {
-      callback({ event: this.event, error: err });
-    };
-    transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('wsopen', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.tryConnect()', 'viable transport ' + transport);
-      transport.off(['failed', 'disconnected'], errorCb);
-      callback(null, transport);
-    });
-    transport.connect();
   }
 
   createWebSocket(uri: string, connectParams: Record<string, string>) {
@@ -154,7 +135,7 @@ class WebSocketTransport extends Transport {
 
   onWsOpen() {
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
-    this.emit('wsopen');
+    this.emit('preconnect');
   }
 
   onWsClose(ev: number | CloseEvent) {

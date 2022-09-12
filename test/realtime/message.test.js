@@ -917,6 +917,144 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    it('subscribe_with_filter_object', function (done) {
+      const realtime = helper.AblyRealtime();
+      const channel = realtime.channels.get('subscribe_with_filter_object');
+
+      function send(cb) {
+        channel.publish(
+          [
+            {
+              name: 'correct',
+              extras: {
+                ref: {
+                  type: 'com.ably.test',
+                  timeserial: '0123456789',
+                },
+              },
+            },
+            {
+              name: 'incorrect-noref',
+            },
+            {
+              name: 'incorrect-badtype',
+              extras: {
+                ref: {
+                  type: 'com.ably.incorrect',
+                  timeserial: '0123456789',
+                },
+              },
+            },
+            {
+              name: 'incorrect-badid',
+              extras: {
+                ref: {
+                  type: 'com.ably.test',
+                  timeserial: '000000000000',
+                },
+              },
+            },
+          ],
+          cb
+        );
+      }
+
+      function subscribe(cb) {
+        channel.subscribe(
+          {
+            refType: 'com.ably.test',
+            refTimeserial: '0123456789',
+          },
+          function (m) {
+            try {
+              expect(m.name).to.be.equal('correct', 'Correct message received');
+            } catch (e) {
+              return cb(e);
+            }
+            // Wait for any errant messages to arrive before continuing
+            config.nextTick(cb);
+          }
+        );
+      }
+
+      async.series(
+        [
+          function (cb) {
+            return realtime.connection.once('connected', function () {
+              return cb();
+            });
+          },
+          function (cb) {
+            return channel.attach(cb);
+          },
+          function (cb) {
+            return async.parallel([subscribe, send], cb);
+          },
+        ],
+        function (err) {
+          return closeAndFinish(done, realtime, err);
+        }
+      );
+    });
+
+    it('unsubscribe_with_filter_object', function (done) {
+      const realtime = helper.AblyRealtime();
+      const channel = realtime.channels.get('unsubscribe_with_filter_object');
+
+      function send(cb) {
+        channel.publish(
+          [
+            {
+              name: 'incorrect',
+              extras: {
+                ref: {
+                  type: 'com.ably.test',
+                  timeserial: '0123456789',
+                },
+              },
+            },
+          ],
+          cb
+        );
+      }
+
+      function unsubscribe(cb) {
+        try {
+          const listener = function () {
+            return expect.fail('Listener should not fire');
+          };
+          channel.subscribe({ refType: 'com.ably.test', refTimeserial: '0123456789' }, listener);
+          expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
+          channel.unsubscribe(listener);
+          expect(
+            channel.filteredSubscriptions.has(listener),
+            'Listener should no longer be present after unsubscribing'
+          ).to.be.false;
+          config.nextTick(cb);
+        } catch (e) {
+          cb(e);
+        }
+      }
+
+      async.series(
+        [
+          function (cb) {
+            realtime.connection.once('connected', function () {
+              return cb();
+            });
+          },
+          function (cb) {
+            return channel.attach(cb);
+          },
+          unsubscribe,
+          send,
+        ],
+        function (err) {
+          return closeAndFinish(done, realtime, err);
+        }
+      );
+    });
+
     it('extras_field', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('extras_field'),

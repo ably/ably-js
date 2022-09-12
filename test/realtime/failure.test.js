@@ -325,7 +325,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('attach_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 10, channelRetryTimeout: 10 }),
+      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
         channel = realtime.channels.get('failed_attach'),
         originalOnMessage = channel.onMessage.bind(channel);
 
@@ -363,7 +363,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var channelRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
             channelRetryTimeout: channelRetryTimeout,
-            realtimeRequestTimeout: 1,
             transports: [transport],
           }),
           channel = realtime.channels.get('failed_attach'),
@@ -380,32 +379,37 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           originalOnMessage(message);
         };
 
-        channel.attach(function (err) {
-          if (err) {
-            var lastSuspended = performance.now();
-            channel.on(function (stateChange) {
-              if (stateChange.current === 'suspended') {
-                if (retryCount > 4) {
-                  closeAndFinish(done, realtime);
-                  return;
+        realtime.connection.on('connected', function () {
+          realtime.options.timeouts.realtimeRequestTimeout = 1;
+          channel.attach(function (err) {
+            if (err) {
+              var lastSuspended = performance.now();
+              channel.on(function (stateChange) {
+                if (stateChange.current === 'suspended') {
+                  if (retryCount > 4) {
+                    closeAndFinish(done, realtime);
+                    return;
+                  }
+                  var elapsedSinceSuspneded = performance.now() - lastSuspended;
+                  lastSuspended = performance.now();
+                  try {
+                    // JS timers don't work precisely and realtimeRequestTimeout can't be 0 so add 5ms to the max timeout length each retry
+                    expect(elapsedSinceSuspneded).to.be.below(
+                      channelRetryTimeout + Math.min(retryCount, 3) * 50 + 5 * (retryCount + 1)
+                    );
+                    expect(elapsedSinceSuspneded).to.be.above(
+                      0.8 * (channelRetryTimeout + Math.min(retryCount, 3) * 50)
+                    );
+                    retryCount += 1;
+                  } catch (err) {
+                    closeAndFinish(done, realtime, err);
+                  }
                 }
-                var elapsedSinceSuspneded = performance.now() - lastSuspended;
-                lastSuspended = performance.now();
-                try {
-                  // JS timers don't work precisely and realtimeRequestTimeout can't be 0 so add 5ms to the max timeout length each retry
-                  expect(elapsedSinceSuspneded).to.be.below(
-                    channelRetryTimeout + Math.min(retryCount, 3) * 50 + 5 * (retryCount + 1)
-                  );
-                  expect(elapsedSinceSuspneded).to.be.above(0.8 * (channelRetryTimeout + Math.min(retryCount, 3) * 50));
-                  retryCount += 1;
-                } catch (err) {
-                  closeAndFinish(done, realtime, err);
-                }
-              }
-            });
-          } else {
-            closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
-          }
+              });
+            } else {
+              closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
+            }
+          });
         });
       });
     });
@@ -503,7 +507,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     );
 
     it('idle_transport_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 100 }),
+      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
 
       realtime.connection.connectionManager.on('transport.pending', function (transport) {

@@ -64,7 +64,7 @@ function c14n(capability?: string | Record<string, Array<string>>) {
 
   if (typeof capability == 'string') capability = JSON.parse(capability);
 
-  const c14nCapability: Record<string, Array<string>> = {};
+  const c14nCapability: Record<string, Array<string>> = Object.create(null);
   const keys = Utils.keysArray(capability as Record<string, Array<string>>, true);
   if (!keys) return '';
   keys.sort();

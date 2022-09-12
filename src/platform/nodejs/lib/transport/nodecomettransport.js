@@ -33,20 +33,6 @@ var NodeCometTransport = function (connectionManager) {
   };
   connectionManager.supportedTransports[shortName] = NodeCometTransport;
 
-  NodeCometTransport.tryConnect = function (connectionManager, auth, params, callback) {
-    var transport = new NodeCometTransport(connectionManager, auth, params);
-    var errorCb = function (err) {
-      callback({ event: this.event, error: err });
-    };
-    transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('preconnect', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.tryConnect()', 'viable transport ' + transport);
-      transport.off(['failed', 'disconnected'], errorCb);
-      callback(null, transport);
-    });
-    transport.connect();
-  };
-
   NodeCometTransport.prototype.toString = function () {
     return (
       'NodeCometTransport; uri=' +

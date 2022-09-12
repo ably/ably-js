@@ -2,6 +2,18 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.29](https://github.com/ably/ably-js/tree/1.2.29) (2022-08-08)
+- Fix upgrade bug that could lead to an indefinitely sync-pending transport [\#1041](https://github.com/ably/ably-js/pull/1041)
+- Always allow event queueing while connecting [\#1039](https://github.com/ably/ably-js/pull/1039)
+
+## [1.2.28](https://github.com/ably/ably-js/tree/1.2.28) (2022-07-28)
+- Add clientId to MessageFilter [\#1032](https://github.com/ably/ably-js/pull/1032)
+- Transports: implement timeouts in tryConnect() [\#1035](https://github.com/ably/ably-js/pull/1035)
+- Only log connectionSerial mismatch from channel messages [\#1036](https://github.com/ably/ably-js/pull/1036)
+
+## [1.2.27](https://github.com/ably/ably-js/tree/1.2.27) (2022-07-06)
+- Add filtered subscription type to RealtimeChannel [\#1003](https://github.com/ably/ably-js/pull/1003)
+
 ## [1.2.26](https://github.com/ably/ably-js/tree/1.2.26) (2022-06-30)
 - Improve global object fallback logic (fixes an issue when using the library in some service worker contexts) [\#1016](https://github.com/ably/ably-js/pull/1016)
 - Add backoff and jitter to channel and connection retry strategies [\#1008](https://github.com/ably/ably-js/pull/1008)

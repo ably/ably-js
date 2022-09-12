@@ -13,7 +13,7 @@ import Auth from 'common/lib/client/auth';
 import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import WebSocketTransport from './websockettransport';
-import Transport from './transport';
+import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
@@ -401,7 +401,7 @@ class ConnectionManager extends EventEmitter {
    * transport management
    *********************/
 
-  static supportedTransports: Record<string, typeof Transport> = {};
+  static supportedTransports: Record<string, TransportCtor> = {};
 
   static initTransports() {
     WebSocketTransport(ConnectionManager);
@@ -484,7 +484,9 @@ class ConnectionManager extends EventEmitter {
    */
   tryATransport(transportParams: TransportParams, candidate: string, callback: Function): void {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
-    ConnectionManager.supportedTransports[candidate].tryConnect?.(
+
+    Transport.tryConnect(
+      ConnectionManager.supportedTransports[candidate],
       this,
       this.realtime.auth,
       transportParams,
@@ -580,11 +582,12 @@ class ConnectionManager extends EventEmitter {
         connectionDetails: Record<string, any>,
         connectionPosition: ConnectionManager
       ) => {
-        if (mode == 'upgrade' && this.activeProtocol) {
+        if (mode == 'upgrade') {
           /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
           if (
             transport.shortName !== optimalTransport &&
-            Utils.arrIn(this.getUpgradePossibilities(), optimalTransport)
+            Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
+            this.activeProtocol
           ) {
             setTimeout(() => {
               this.scheduleTransportActivation(error, transport, connectionId, connectionDetails, connectionPosition);
@@ -676,7 +679,7 @@ class ConnectionManager extends EventEmitter {
       'Scheduling transport upgrade; transport = ' + transport
     );
 
-    this.realtime.channels.onceNopending((err: ErrorInfo) => {
+    const onReadyToUpgrade = (err?: ErrorInfo) => {
       let oldProtocol: Protocol | null;
       if (err) {
         Logger.logAction(
@@ -820,7 +823,15 @@ class ConnectionManager extends EventEmitter {
           }
         }
       );
-    });
+    };
+
+    // No point waiting for pending attaches if there's no active transport, just sync and
+    // activate the new one immediately, attaches will be retried on the new one
+    if (currentTransport) {
+      this.realtime.channels.onceNopending(onReadyToUpgrade);
+    } else {
+      onReadyToUpgrade();
+    }
   }
 
   /**
@@ -1212,7 +1223,7 @@ class ConnectionManager extends EventEmitter {
     this.realtime.connection.id = this.connectionId = connectionId;
     this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
     const forceResetMessageSerial = connIdChanged || !prevConnId;
-    this.setConnectionSerial(connectionPosition, forceResetMessageSerial);
+    this.setConnectionSerial(connectionPosition, forceResetMessageSerial, false);
   }
 
   clearConnection(): void {
@@ -1226,7 +1237,7 @@ class ConnectionManager extends EventEmitter {
   /* force: set the connectionSerial even if it's less than the current
    * connectionSerial. Used for new connections.
    * Returns true iff the message was rejected as a duplicate. */
-  setConnectionSerial(connectionPosition: any, force?: boolean): void | true {
+  setConnectionSerial(connectionPosition: any, force?: boolean, fromChannelMessage?: boolean): void | true {
     const timeSerial = connectionPosition.timeSerial,
       connectionSerial = connectionPosition.connectionSerial;
     Logger.logAction(
@@ -1243,15 +1254,17 @@ class ConnectionManager extends EventEmitter {
     );
     if (timeSerial !== undefined) {
       if (timeSerial <= (this.timeSerial as number) && !force) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.setConnectionSerial()',
-          'received message with timeSerial ' +
-            timeSerial +
-            ', but current timeSerial is ' +
-            this.timeSerial +
-            '; assuming message is a duplicate and discarding it'
-        );
+        if (fromChannelMessage) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.setConnectionSerial()',
+            'received message with timeSerial ' +
+              timeSerial +
+              ', but current timeSerial is ' +
+              this.timeSerial +
+              '; assuming message is a duplicate and discarding it'
+          );
+        }
         return true;
       }
       this.realtime.connection.timeSerial = this.timeSerial = timeSerial;
@@ -1260,15 +1273,17 @@ class ConnectionManager extends EventEmitter {
     }
     if (connectionSerial !== undefined) {
       if (connectionSerial <= (this.connectionSerial as number) && !force) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.setConnectionSerial()',
-          'received message with connectionSerial ' +
-            connectionSerial +
-            ', but current connectionSerial is ' +
-            this.connectionSerial +
-            '; assuming message is a duplicate and discarding it'
-        );
+        if (fromChannelMessage) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.setConnectionSerial()',
+            'received message with connectionSerial ' +
+              connectionSerial +
+              ', but current connectionSerial is ' +
+              this.connectionSerial +
+              '; assuming message is a duplicate and discarding it'
+          );
+        }
         return true;
       }
       this.realtime.connection.serial = this.connectionSerial = connectionSerial;
@@ -1305,7 +1320,6 @@ class ConnectionManager extends EventEmitter {
       );
       this.clearConnection();
       this.states.connecting.failState = 'suspended';
-      this.states.connecting.queueEvents = false;
     }
   }
 
@@ -1428,7 +1442,6 @@ class ConnectionManager extends EventEmitter {
           'requesting new state: suspended'
         );
         this.states.connecting.failState = 'suspended';
-        this.states.connecting.queueEvents = false;
         this.notifyState({ state: 'suspended' });
       }
     }, this.connectionStateTtl);
@@ -1440,7 +1453,6 @@ class ConnectionManager extends EventEmitter {
 
   cancelSuspendTimer(): void {
     this.states.connecting.failState = 'disconnected';
-    this.states.connecting.queueEvents = true;
     if (this.suspendTimer) {
       clearTimeout(this.suspendTimer as number);
       this.suspendTimer = null;
@@ -2163,7 +2175,7 @@ class ConnectionManager extends EventEmitter {
      * idle), message can validly arrive on it even though it isn't active */
     if (onActiveTransport || onUpgradeTransport) {
       if (notControlMsg) {
-        const suppressed = this.setConnectionSerial(message);
+        const suppressed = this.setConnectionSerial(message, false, true);
         if (suppressed) {
           return;
         }

@@ -248,7 +248,7 @@ class Channels {
 
   constructor(rest: Rest) {
     this.rest = rest;
-    this.all = {};
+    this.all = Object.create(null);
   }
 
   get(name: string, channelOptions?: ChannelOptions) {
