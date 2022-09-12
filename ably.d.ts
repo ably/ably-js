@@ -1240,6 +1240,10 @@ declare namespace Types {
      */
     count: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The total number of bytes transferred for all messages.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Total data transferred for all messages in bytes.
      * END LEGACY DOCSTRING
