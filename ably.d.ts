@@ -5014,6 +5014,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains application statistics for a specified time interval and time period.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A class representing an individual statistic for a specified interval.
    * END LEGACY DOCSTRING
