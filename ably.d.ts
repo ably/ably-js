@@ -1346,6 +1346,10 @@ declare namespace Types {
      */
     all: StatsResourceCount;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Non-TLS connection count (unencrypted).
      * END LEGACY DOCSTRING
