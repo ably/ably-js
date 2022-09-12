@@ -1352,6 +1352,10 @@ declare namespace Types {
      */
     plain: StatsResourceCount;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of usage by scope over TLS connections.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * TLS connection count.
      * END LEGACY DOCSTRING
