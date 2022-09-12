@@ -4862,6 +4862,10 @@ declare namespace Types {
      */
     keyLength?: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The cipher mode. Only `CBC` is supported.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * The cipher mode.
      * END LEGACY DOCSTRING
