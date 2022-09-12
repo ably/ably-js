@@ -1252,6 +1252,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains a breakdown of summary stats data for different (channel vs presence) message types.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * A breakdown of summary stats data for different (message vs presence) message types.
    * END LEGACY DOCSTRING
