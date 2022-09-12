@@ -1386,6 +1386,10 @@ declare namespace Types {
      */
     peak: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The number of resource requests refused within this period.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Resource requests refused within this period.
      * END LEGACY DOCSTRING
