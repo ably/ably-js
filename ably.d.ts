@@ -1316,6 +1316,10 @@ declare namespace Types {
      */
     refused: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The number of requests that succeeded.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Requests succeeded.
      * END LEGACY DOCSTRING
