@@ -5082,6 +5082,10 @@ declare namespace Types {
      */
     outbound: StatsMessageTraffic;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTypes`]{@link Stats.MessageTypes} object containing the aggregate count of persisted message stats.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Messages persisted for later retrieval via the history API.
      * END LEGACY DOCSTRING
