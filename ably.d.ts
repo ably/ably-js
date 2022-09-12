@@ -4130,7 +4130,12 @@ declare namespace Types {
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel that match the supplied filter.
+     *
+     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param filter - Not yet documented.
      * @param listener - Not yet documented.
@@ -4328,7 +4333,12 @@ declare namespace Types {
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Registers a listener for messages on this channel that match the supplied filter.
+     *
+     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param filter - Not yet documented.
      * @param listener - Not yet documented.
