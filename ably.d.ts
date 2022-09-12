@@ -4362,7 +4362,9 @@ declare namespace Types {
      */
     isRef?: boolean;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Filters messages by a specific message `clientId`.
+     * END CANONICAL DOCSTRING
      */
     clientId: string;
   };
