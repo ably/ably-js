@@ -4332,7 +4332,9 @@ declare namespace Types {
   };
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains properties to filter messages with when calling [`subscribe()`]{@link RealtimeChannel#subscribe}.
+   * END CANONICAL DOCSTRING
    */
   type MessageFilter = {
     /**
