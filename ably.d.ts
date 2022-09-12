@@ -1220,6 +1220,10 @@ declare namespace Types {
   }
 
   /**
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the aggregate counts for messages and data transferred.
+   * END CANONICAL DOCSTRING
+   *
    * BEGIN LEGACY DOCSTRING
    * Aggregate counts for messages and data transferred.
    * END LEGACY DOCSTRING
