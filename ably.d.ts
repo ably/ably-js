@@ -5040,6 +5040,10 @@ declare namespace Types {
      */
     apiRequests: StatsRequestCount;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.ResourceCount`]{@link Stats.ResourceCount} object containing a breakdown of channels.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of channels stats.
      * END LEGACY DOCSTRING
