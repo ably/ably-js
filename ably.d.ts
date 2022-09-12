@@ -1005,7 +1005,7 @@ declare namespace Types {
      */
     current: ChannelState;
     /**
-     * 	The previous state. (for the `update` event, this will be equal to the current state).
+     * The previous state. (for the `update` event, this will be equal to the current state).
      */
     previous: ChannelState;
     /**
